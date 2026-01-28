@@ -240,4 +240,178 @@ void main() {
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
     });
   });
+
+  group('AiSettingsFloatingActionButton Selection Mode', () {
+    late bool addPressed;
+    late bool deletePressed;
+
+    setUp(() {
+      addPressed = false;
+      deletePressed = false;
+    });
+
+    Widget createSelectionWidget({
+      required AiSettingsTab activeTab,
+      bool selectionMode = false,
+      int selectedCount = 0,
+    }) {
+      return MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          floatingActionButton: AiSettingsFloatingActionButton(
+            activeTab: activeTab,
+            onPressed: () => addPressed = true,
+            selectionMode: selectionMode,
+            selectedCount: selectedCount,
+            onDeletePressed: () => deletePressed = true,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('shows add FAB when selection mode is false',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+      ));
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.delete_rounded), findsNothing);
+    });
+
+    testWidgets('shows add FAB when selection mode is true but count is 0',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+      ));
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.delete_rounded), findsNothing);
+    });
+
+    testWidgets('shows delete FAB when selection mode is true and count > 0',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+        selectedCount: 3,
+      ));
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_rounded), findsNothing);
+    });
+
+    testWidgets('delete FAB shows correct count in label',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+        selectedCount: 5,
+      ));
+
+      await tester.pumpAndSettle();
+
+      // The label should contain the count (5)
+      expect(find.textContaining('5'), findsOneWidget);
+    });
+
+    testWidgets('calls onDeletePressed when delete FAB is tapped',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+        selectedCount: 2,
+      ));
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+
+      expect(deletePressed, isTrue);
+      expect(addPressed, isFalse);
+    });
+
+    testWidgets(
+        'calls onPressed when add FAB is tapped (not in selection mode)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+      ));
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pump();
+
+      expect(addPressed, isTrue);
+      expect(deletePressed, isFalse);
+    });
+
+    testWidgets('delete FAB uses error colors', (WidgetTester tester) async {
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+        selectedCount: 1,
+      ));
+
+      await tester.pumpAndSettle();
+
+      final fab = tester.widget<FloatingActionButton>(
+        find.byType(FloatingActionButton),
+      );
+
+      // Delete FAB should use errorContainer color
+      expect(fab.backgroundColor, isNotNull);
+    });
+
+    testWidgets('transitions from add to delete when selection changes',
+        (WidgetTester tester) async {
+      // Start without selection
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+      ));
+
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+
+      // Switch to selection mode with items
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.prompts,
+        selectionMode: true,
+        selectedCount: 2,
+      ));
+
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_rounded), findsNothing);
+    });
+
+    testWidgets('selection mode only affects prompts tab display',
+        (WidgetTester tester) async {
+      // Even with selection mode on other tabs, behavior should be consistent
+      // (FAB shows based on selectionMode and selectedCount, not tab)
+      await tester.pumpWidget(createSelectionWidget(
+        activeTab: AiSettingsTab.models,
+        selectionMode: true,
+        selectedCount: 3,
+      ));
+
+      await tester.pumpAndSettle();
+
+      // Should still show delete FAB because selectionMode and count > 0
+      expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+    });
+  });
 }

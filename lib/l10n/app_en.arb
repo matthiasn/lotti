@@ -218,6 +218,26 @@
   "aiSettingsTabModels": "Models",
   "aiSettingsTabPrompts": "Prompts",
   "aiSettingsTabProviders": "Providers",
+  "aiSettingsSelectLabel": "Select",
+  "aiSettingsSelectModeTooltip": "Toggle selection mode for bulk operations",
+  "aiSettingsDeleteSelectedLabel": "Delete ({count})",
+  "@aiSettingsDeleteSelectedLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiSettingsDeleteSelectedTooltip": "Delete selected prompts",
+  "aiSettingsDeleteSelectedConfirmTitle": "Delete Selected Prompts",
+  "aiSettingsDeleteSelectedConfirmMessage": "Are you sure you want to delete {count} selected prompts? This action cannot be undone.",
+  "@aiSettingsDeleteSelectedConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "aiTaskSummaryRunning": "Thinking about summarizing task...",
   "aiTaskSummaryTitle": "AI Task Summary",
   "aiTaskSummaryScheduled": "Summary in {time}",

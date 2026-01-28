@@ -44,12 +44,17 @@ class AiConfigCard extends ConsumerWidget {
     required this.config,
     required this.onTap,
     this.showCapabilities = false,
+    this.compact = false,
     super.key,
   });
 
   final AiConfig config;
   final VoidCallback onTap;
   final bool showCapabilities;
+
+  /// When true, renders only the content without the outer container styling
+  /// Used when the card is wrapped in a custom container (e.g., selection mode)
+  final bool compact;
 
   /// Determines the model family from a model configuration
   ///
@@ -78,6 +83,16 @@ class AiConfigCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // In compact mode, return just the content without outer container
+    // but still handle onTap via GestureDetector
+    if (compact) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: _buildCardContent(context),
+      );
+    }
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: AppTheme.animationDuration),
       curve: AppTheme.animationCurve,
@@ -140,123 +155,122 @@ class AiConfigCard extends ConsumerWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
             ),
-            child: Row(
-              children: [
-                // Icon with premium container
-                Container(
-                  width: AppTheme.iconContainerSize,
-                  height: AppTheme.iconContainerSize,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.3),
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(
-                        AppTheme.iconContainerBorderRadius),
-                    border: Border.all(
-                      color: context.colorScheme.primary
-                          .withValues(alpha: AppTheme.alphaPrimaryBorder),
-                    ),
-                  ),
-                  child: Icon(
-                    _getConfigIcon(),
-                    size: AppTheme.iconSize,
-                    color: context.colorScheme.primary
-                        .withValues(alpha: AppTheme.alphaPrimaryIcon),
-                  ),
-                ),
-
-                const SizedBox(width: AppTheme.spacingLarge),
-
-                // Config info with enhanced typography
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Config name
-                      Text(
-                        config.name,
-                        style: context.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: AppTheme.letterSpacingTitle,
-                          fontSize: AppTheme.titleFontSize,
-                          color: context.colorScheme.onSurface,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                      // Provider info for models
-                      if (config is AiConfigModel) ...[
-                        const SizedBox(
-                            height:
-                                AppTheme.spacingBetweenTitleAndSubtitleCompact),
-                        _CompactProviderName(
-                          providerId:
-                              (config as AiConfigModel).inferenceProviderId,
-                        ),
-                      ],
-
-                      // Provider info for prompts (via default model)
-                      if (config is AiConfigPrompt) ...[
-                        const SizedBox(
-                            height:
-                                AppTheme.spacingBetweenTitleAndSubtitleCompact),
-                        _PromptProviderBadge(
-                          modelId: (config as AiConfigPrompt).defaultModelId,
-                        ),
-                      ],
-
-                      // Description
-                      if (config.description != null &&
-                          config.description!.isNotEmpty) ...[
-                        const SizedBox(
-                            height: AppTheme.spacingBetweenTitleAndSubtitle),
-                        Text(
-                          config.description!,
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant
-                                .withValues(
-                                    alpha: AppTheme.alphaSurfaceVariant),
-                            fontSize: AppTheme.subtitleFontSize,
-                            height: AppTheme.lineHeightSubtitle,
-                            letterSpacing: AppTheme.letterSpacingSubtitle,
-                          ),
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-
-                      // Capabilities for models
-                      if (showCapabilities && config is AiConfigModel) ...[
-                        const SizedBox(height: AppTheme.spacingBetweenElements),
-                        _CapabilityIndicators(
-                          model: config as AiConfigModel,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Chevron
-                Icon(
-                  Icons.chevron_right,
-                  size: AppTheme.chevronSize,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
-                ),
-              ],
-            ),
+            child: _buildCardContent(context),
           ),
         ),
       ),
+    );
+  }
+
+  /// Builds the inner content of the card (icon, info, chevron)
+  Widget _buildCardContent(BuildContext context) {
+    return Row(
+      children: [
+        // Icon with premium container
+        Container(
+          width: AppTheme.iconContainerSize,
+          height: AppTheme.iconContainerSize,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                context.colorScheme.primaryContainer.withValues(alpha: 0.2),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius:
+                BorderRadius.circular(AppTheme.iconContainerBorderRadius),
+            border: Border.all(
+              color: context.colorScheme.primary
+                  .withValues(alpha: AppTheme.alphaPrimaryBorder),
+            ),
+          ),
+          child: Icon(
+            _getConfigIcon(),
+            size: AppTheme.iconSize,
+            color: context.colorScheme.primary
+                .withValues(alpha: AppTheme.alphaPrimaryIcon),
+          ),
+        ),
+
+        const SizedBox(width: AppTheme.spacingLarge),
+
+        // Config info with enhanced typography
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Config name
+              Text(
+                config.name,
+                style: context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: AppTheme.letterSpacingTitle,
+                  fontSize: AppTheme.titleFontSize,
+                  color: context.colorScheme.onSurface,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Provider info for models
+              if (config is AiConfigModel) ...[
+                const SizedBox(
+                    height: AppTheme.spacingBetweenTitleAndSubtitleCompact),
+                _CompactProviderName(
+                  providerId: (config as AiConfigModel).inferenceProviderId,
+                ),
+              ],
+
+              // Provider info for prompts (via default model)
+              if (config is AiConfigPrompt) ...[
+                const SizedBox(
+                    height: AppTheme.spacingBetweenTitleAndSubtitleCompact),
+                _PromptProviderBadge(
+                  modelId: (config as AiConfigPrompt).defaultModelId,
+                ),
+              ],
+
+              // Description
+              if (config.description != null &&
+                  config.description!.isNotEmpty) ...[
+                const SizedBox(height: AppTheme.spacingBetweenTitleAndSubtitle),
+                Text(
+                  config.description!,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                    fontSize: AppTheme.subtitleFontSize,
+                    height: AppTheme.lineHeightSubtitle,
+                    letterSpacing: AppTheme.letterSpacingSubtitle,
+                  ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+
+              // Capabilities for models
+              if (showCapabilities && config is AiConfigModel) ...[
+                const SizedBox(height: AppTheme.spacingBetweenElements),
+                _CapabilityIndicators(
+                  model: config as AiConfigModel,
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        // Chevron (hide in compact mode since parent handles tap)
+        if (!compact)
+          Icon(
+            Icons.chevron_right,
+            size: AppTheme.chevronSize,
+            color: context.colorScheme.onSurfaceVariant
+                .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
+          ),
+      ],
     );
   }
 

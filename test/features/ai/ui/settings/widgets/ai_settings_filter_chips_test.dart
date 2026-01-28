@@ -663,5 +663,294 @@ void main() {
         expect(find.text('Clear'), findsNothing);
       });
     });
+
+    group('selection mode toggle (Prompts tab)', () {
+      late AiSettingsFilterState promptsTabState;
+
+      setUp(() {
+        promptsTabState = AiSettingsFilterState.initial().copyWith(
+          activeTab: AiSettingsTab.prompts,
+        );
+      });
+
+      Widget createSelectionWidget({
+        AiSettingsFilterState? filterState,
+        ValueChanged<AiSettingsFilterState>? onFilterChanged,
+        VoidCallback? onDeleteSelected,
+      }) {
+        return AiTestSetup.createTestApp(
+          providerOverrides: AiTestSetup.createControllerOverrides(
+            providers: mockProviders,
+          ),
+          child: AiSettingsFilterChips(
+            filterState: filterState ?? promptsTabState,
+            onFilterChanged: onFilterChanged ??
+                (state) {
+                  filterChanges.add(state);
+                },
+            onDeleteSelected: onDeleteSelected,
+          ),
+        );
+      }
+
+      testWidgets('displays selection toggle chip on Prompts tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget());
+        await tester.pumpAndSettle();
+
+        // Should show the Select chip
+        expect(find.text('Select'), findsOneWidget);
+        expect(find.byIcon(Icons.check_box_outline_blank), findsOneWidget);
+      });
+
+      testWidgets('does not display selection toggle on Models tab',
+          (WidgetTester tester) async {
+        final modelsTabState = AiSettingsFilterState.initial().copyWith(
+          activeTab: AiSettingsTab.models,
+        );
+
+        await tester
+            .pumpWidget(createSelectionWidget(filterState: modelsTabState));
+        await tester.pumpAndSettle();
+
+        // Should NOT show the Select chip on Models tab
+        expect(find.text('Select'), findsNothing);
+      });
+
+      testWidgets('toggles selection mode on when Select chip is tapped',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget());
+        await tester.pumpAndSettle();
+
+        // Find and tap the Select chip
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        expect(selectChip, findsOneWidget);
+
+        await tester.tap(selectChip);
+        await tester.pump();
+
+        expect(filterChanges, hasLength(1));
+        expect(filterChanges.first.selectionMode, isTrue);
+      });
+
+      testWidgets('toggles selection mode off when Select chip is tapped again',
+          (WidgetTester tester) async {
+        final selectionOnState = promptsTabState.copyWith(
+          selectionMode: true,
+        );
+
+        await tester
+            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
+        await tester.pumpAndSettle();
+
+        // Should show checked icon when selection mode is on
+        expect(find.byIcon(Icons.check_box), findsOneWidget);
+
+        // Tap to turn off
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pump();
+
+        expect(filterChanges, hasLength(1));
+        expect(filterChanges.first.selectionMode, isFalse);
+        // Should also clear selection when turning off
+        expect(filterChanges.first.selectedPromptIds, isEmpty);
+      });
+
+      testWidgets('shows checked icon when selection mode is active',
+          (WidgetTester tester) async {
+        final selectionOnState = promptsTabState.copyWith(
+          selectionMode: true,
+        );
+
+        await tester
+            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.check_box), findsOneWidget);
+        expect(find.byIcon(Icons.check_box_outline_blank), findsNothing);
+      });
+
+      testWidgets('shows unchecked icon when selection mode is inactive',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.check_box_outline_blank), findsOneWidget);
+        expect(find.byIcon(Icons.check_box), findsNothing);
+      });
+
+      testWidgets(
+          'Select chip has selected visual state when selection mode is on',
+          (WidgetTester tester) async {
+        final selectionOnState = promptsTabState.copyWith(
+          selectionMode: true,
+        );
+
+        await tester
+            .pumpWidget(createSelectionWidget(filterState: selectionOnState));
+        await tester.pumpAndSettle();
+
+        final selectChip = tester.widget<FilterChip>(
+          find.ancestor(
+            of: find.text('Select'),
+            matching: find.byType(FilterChip),
+          ),
+        );
+
+        expect(selectChip.selected, isTrue);
+      });
+    });
+
+    group('delete selected button (Prompts tab)', () {
+      late AiSettingsFilterState promptsTabState;
+      late bool deletePressed;
+
+      setUp(() {
+        promptsTabState = AiSettingsFilterState.initial().copyWith(
+          activeTab: AiSettingsTab.prompts,
+        );
+        deletePressed = false;
+      });
+
+      Widget createDeleteWidget({
+        AiSettingsFilterState? filterState,
+        VoidCallback? onDeleteSelected,
+      }) {
+        return AiTestSetup.createTestApp(
+          providerOverrides: AiTestSetup.createControllerOverrides(
+            providers: mockProviders,
+          ),
+          child: AiSettingsFilterChips(
+            filterState: filterState ?? promptsTabState,
+            onFilterChanged: (state) {
+              filterChanges.add(state);
+            },
+            onDeleteSelected: onDeleteSelected ?? () => deletePressed = true,
+          ),
+        );
+      }
+
+      testWidgets('hides delete button when no prompts are selected',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createDeleteWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete_outline), findsNothing);
+      });
+
+      testWidgets('shows delete button when prompts are selected',
+          (WidgetTester tester) async {
+        final withSelectionState = promptsTabState.copyWith(
+          selectionMode: true,
+          selectedPromptIds: {'prompt-1', 'prompt-2'},
+        );
+
+        await tester
+            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      });
+
+      testWidgets('delete button shows correct count',
+          (WidgetTester tester) async {
+        final withSelectionState = promptsTabState.copyWith(
+          selectionMode: true,
+          selectedPromptIds: {'prompt-1', 'prompt-2', 'prompt-3'},
+        );
+
+        await tester
+            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpAndSettle();
+
+        // Should show "Delete (3)" or similar localized text containing the count
+        expect(find.textContaining('3'), findsOneWidget);
+      });
+
+      testWidgets('calls onDeleteSelected when delete button is tapped',
+          (WidgetTester tester) async {
+        final withSelectionState = promptsTabState.copyWith(
+          selectionMode: true,
+          selectedPromptIds: {'prompt-1'},
+        );
+
+        await tester
+            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        await tester.pumpAndSettle();
+
+        // Find and tap the delete button (ActionChip)
+        final deleteChip = find.ancestor(
+          of: find.byIcon(Icons.delete_outline),
+          matching: find.byType(ActionChip),
+        );
+        expect(deleteChip, findsOneWidget);
+
+        await tester.tap(deleteChip);
+        await tester.pump();
+
+        expect(deletePressed, isTrue);
+      });
+
+      testWidgets('delete button animates in when selection changes',
+          (WidgetTester tester) async {
+        // Start without selection
+        await tester.pumpWidget(createDeleteWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.delete_outline), findsNothing);
+
+        // Add selection
+        final withSelectionState = promptsTabState.copyWith(
+          selectionMode: true,
+          selectedPromptIds: {'prompt-1'},
+        );
+
+        await tester
+            .pumpWidget(createDeleteWidget(filterState: withSelectionState));
+        // Don't settle - check during animation
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Button should be animating in (ScaleTransition + FadeTransition)
+        expect(find.byType(ScaleTransition), findsWidgets);
+        expect(find.byType(FadeTransition), findsWidgets);
+
+        await tester.pumpAndSettle();
+        expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+      });
+
+      testWidgets('delete button works alongside response type filters',
+          (WidgetTester tester) async {
+        final withFiltersAndSelection = promptsTabState.copyWith(
+          selectionMode: true,
+          selectedPromptIds: {'prompt-1'},
+          selectedResponseTypes: {AiResponseType.taskSummary},
+        );
+
+        await tester.pumpWidget(
+            createDeleteWidget(filterState: withFiltersAndSelection));
+        await tester.pumpAndSettle();
+
+        // Both should be visible
+        expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+        expect(find.text('Task Summary'), findsOneWidget);
+
+        // Can tap delete
+        final deleteChip = find.ancestor(
+          of: find.byIcon(Icons.delete_outline),
+          matching: find.byType(ActionChip),
+        );
+        await tester.tap(deleteChip);
+        await tester.pump();
+
+        expect(deletePressed, isTrue);
+      });
+    });
   });
 }

@@ -274,8 +274,126 @@ void main() {
     });
 
     group('Compact mode', () {
-      testWidgets('uses smaller sizing in compact mode',
+      Widget createCompactWidget({
+        required AiConfig config,
+        bool compact = false,
+      }) {
+        return MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ProviderScope(
+              overrides: [
+                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: AiConfigCard(
+                config: config,
+                onTap: () {},
+                compact: compact,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('shows chevron in normal mode', (WidgetTester tester) async {
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+        ));
+
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      });
+
+      testWidgets('hides chevron in compact mode', (WidgetTester tester) async {
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+          compact: true,
+        ));
+
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
+      });
+
+      testWidgets('shows config name in both modes',
           (WidgetTester tester) async {
+        // Normal mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+        ));
+        expect(find.text(testProvider.name), findsOneWidget);
+
+        // Compact mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+          compact: true,
+        ));
+        expect(find.text(testProvider.name), findsOneWidget);
+      });
+
+      testWidgets('shows description in both modes',
+          (WidgetTester tester) async {
+        // Normal mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+        ));
+        expect(find.text(testProvider.description!), findsOneWidget);
+
+        // Compact mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+          compact: true,
+        ));
+        expect(find.text(testProvider.description!), findsOneWidget);
+      });
+
+      testWidgets('shows config icon in both modes',
+          (WidgetTester tester) async {
+        // Normal mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+        ));
+        expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+
+        // Compact mode
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+          compact: true,
+        ));
+        expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      });
+
+      testWidgets('renders without AnimatedContainer in compact mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+          compact: true,
+        ));
+
+        // In compact mode, should not have the outer AnimatedContainer
+        // (it returns just the Row content)
+        // The widget should be a simple Row, not wrapped in AnimatedContainer
+        expect(find.text(testProvider.name), findsOneWidget);
+        expect(find.byType(AnimatedContainer), findsNothing);
+      });
+
+      testWidgets('renders with AnimatedContainer in normal mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createCompactWidget(
+          config: testProvider,
+        ));
+
+        // Normal mode should have the AnimatedContainer wrapper
+        expect(find.byType(AnimatedContainer), findsOneWidget);
+      });
+
+      testWidgets('onTap still works in compact mode',
+          (WidgetTester tester) async {
+        var cardTapped = false;
+
         final widget = MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -291,7 +409,42 @@ void main() {
               ],
               child: AiConfigCard(
                 config: testProvider,
+                onTap: () => cardTapped = true,
+                compact: true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(widget);
+        await tester.tap(find.text(testProvider.name));
+        await tester.pump();
+
+        // In compact mode, AiConfigCard's onTap callback should be invoked
+        expect(cardTapped, isTrue);
+        expect(find.text(testProvider.name), findsOneWidget);
+      });
+
+      testWidgets('capabilities still show in compact mode when enabled',
+          (WidgetTester tester) async {
+        final widget = MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ProviderScope(
+              overrides: [
+                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: AiConfigCard(
+                config: testModel,
                 onTap: () {},
+                compact: true,
+                showCapabilities: true,
               ),
             ),
           ),
@@ -299,42 +452,8 @@ void main() {
 
         await tester.pumpWidget(widget);
 
-        // Should render without errors and display the config name
-        expect(find.text(testProvider.name), findsOneWidget);
-
-        // Find the icon container by its size constraints
-        final containers = tester.widgetList<Container>(find.byType(Container));
-        Container? iconContainer;
-        for (final container in containers) {
-          if (container.constraints != null &&
-              container.constraints!.hasTightWidth &&
-              container.constraints!.hasTightHeight &&
-              container.constraints!.maxWidth == 36 &&
-              container.constraints!.maxHeight == 36) {
-            iconContainer = container;
-            break;
-          }
-        }
-
-        // If we can't find by constraints, look for the decorated container with fixed size
-        if (iconContainer == null) {
-          final decoratedContainers = containers
-              .where((c) =>
-                  c.decoration is BoxDecoration &&
-                  (c.decoration as BoxDecoration?)?.gradient != null)
-              .toList();
-
-          expect(decoratedContainers.isNotEmpty, isTrue,
-              reason:
-                  'Should find at least one container with gradient decoration');
-
-          // The icon container should have width/height of 36 in compact mode
-          final iconWidget = find.descendant(
-            of: find.byType(AiConfigCard),
-            matching: find.byIcon(Icons.auto_awesome),
-          );
-          expect(iconWidget, findsOneWidget);
-        }
+        // Capabilities should still display in compact mode
+        expect(find.byIcon(Icons.text_fields), findsOneWidget);
       });
     });
 

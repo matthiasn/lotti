@@ -545,5 +545,363 @@ void main() {
       // Title should be visible
       expect(find.text('AI Settings'), findsOneWidget);
     });
+
+    group('selection mode', () {
+      testWidgets('should show Select chip on Prompts tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Should see the Select chip
+        expect(find.text('Select'), findsOneWidget);
+      });
+
+      testWidgets('should not show Select chip on Models tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Models tab
+        await tester.tap(find.text('Models'));
+        await tester.pumpAndSettle();
+
+        // Should NOT see the Select chip
+        expect(find.text('Select'), findsNothing);
+      });
+
+      testWidgets('should not show Select chip on Providers tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Stay on Providers tab (default)
+        // Should NOT see the Select chip
+        expect(find.text('Select'), findsNothing);
+      });
+
+      testWidgets('should enable selection mode when Select chip is tapped',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Tap Select chip
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // Select chip should now show selected state (checkbox icon)
+        expect(find.byIcon(Icons.check_box), findsOneWidget);
+      });
+
+      testWidgets(
+          'should show checkbox indicators when selection mode is active',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // The sliver uses AnimatedContainer as custom checkbox (not standard icon)
+        // When selection mode is on, the Select chip shows checked icon
+        expect(find.byIcon(Icons.check_box), findsOneWidget);
+
+        // And the prompt card should still be visible in compact mode
+        expect(find.text('Task Summary'), findsAtLeastNWidgets(1));
+      });
+
+      testWidgets('should show Add Prompt FAB when no items are selected',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // FAB should still show "Add Prompt" when selection mode is on but nothing selected
+        expect(find.text('Add Prompt'), findsOneWidget);
+      });
+
+      testWidgets('should show delete FAB when items are selected',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // In selection mode, tap on the prompt card text to select it
+        // (the sliver wraps cards and handles tap for selection)
+        // Find the prompt card - in selection mode it's rendered inside compact AiConfigCard
+        final promptCardFinders = find.text('Task Summary');
+        // The first one is the filter chip, the card is rendered later
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // FAB should now show delete icon
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        // And the prompt should show check icon (selected)
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+
+      testWidgets(
+          'should show delete confirmation dialog when delete FAB is tapped',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // Select a prompt by tapping on the card text
+        final promptCardFinders = find.text('Task Summary');
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // Tap delete FAB
+        final deleteFab = find.byType(FloatingActionButton);
+        await tester.tap(deleteFab);
+        await tester.pumpAndSettle();
+
+        // Should show confirmation dialog with correct title
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Delete Selected Prompts'), findsOneWidget);
+      });
+
+      testWidgets('should dismiss dialog and not delete when Cancel is tapped',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode and select a prompt
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        final promptCardFinders = find.text('Task Summary');
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // Tap delete FAB
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
+
+        // Tap Cancel button
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Dialog should be dismissed
+        expect(find.byType(AlertDialog), findsNothing);
+
+        // Selection should still be active
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+      });
+
+      testWidgets('should delete selected prompts when Delete is confirmed',
+          (WidgetTester tester) async {
+        // Set up mock to handle delete
+        when(() => mockRepository.deleteConfig('test-prompt'))
+            .thenAnswer((_) async {});
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode and select a prompt
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        final promptCardFinders = find.text('Task Summary');
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // Tap delete FAB
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
+
+        // Tap Delete button to confirm
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        // Dialog should be dismissed
+        expect(find.byType(AlertDialog), findsNothing);
+
+        // Selection mode should be exited (Add Prompt FAB should return)
+        expect(find.text('Add Prompt'), findsOneWidget);
+      });
+
+      testWidgets('should exit selection mode when Select chip is toggled off',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        // Enable selection mode
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // Select a prompt
+        final promptCardFinders = find.text('Task Summary');
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // Should be in selection mode with items selected
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+
+        // Toggle off selection mode
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // Should exit selection mode and show Add Prompt FAB
+        expect(find.text('Add Prompt'), findsOneWidget);
+      });
+
+      testWidgets('should maintain selection when switching tabs and back',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Prompts tab and enable selection
+        await tester.tap(find.text('Prompts'));
+        await tester.pumpAndSettle();
+
+        final selectChip = find.ancestor(
+          of: find.text('Select'),
+          matching: find.byType(FilterChip),
+        );
+        await tester.tap(selectChip);
+        await tester.pumpAndSettle();
+
+        // Select a prompt
+        final promptCardFinders = find.text('Task Summary');
+        // Assert the card exists before attempting to tap
+        expect(
+          promptCardFinders.evaluate().length,
+          greaterThan(1),
+          reason: 'Task Summary prompt card should be present',
+        );
+        await tester.tap(promptCardFinders.last);
+        await tester.pumpAndSettle();
+
+        // Should have delete FAB with selected item
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget); // Selected indicator
+
+        // Switch to Models tab (use Tab widget which is more reliable)
+        final modelsTab = find.text('Models');
+        await tester.tap(modelsTab);
+        await tester.pumpAndSettle();
+
+        // Verify we're on Models tab by checking for model content
+        expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
+
+        // Switch back to Prompts tab
+        final promptsTab = find.text('Prompts');
+        await tester.tap(promptsTab);
+        await tester.pumpAndSettle();
+
+        // Selection state should be maintained (delete FAB and check icon)
+        expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+    });
   });
 }

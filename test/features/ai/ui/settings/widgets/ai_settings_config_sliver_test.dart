@@ -622,5 +622,204 @@ void main() {
         expect(find.text('Footer Content'), findsOneWidget);
       });
     });
+
+    group('selection mode', () {
+      late Set<String> selectedIds;
+      late List<String> selectionChanges;
+
+      setUp(() {
+        selectedIds = {};
+        selectionChanges = [];
+      });
+
+      Widget createSelectionWidget({
+        required List<AiConfigPrompt> prompts,
+        bool selectionMode = false,
+        Set<String>? selected,
+      }) {
+        return ProviderScope(
+          overrides: [
+            aiConfigByIdProvider('model-1').overrideWith((ref) async {
+              return testModels[0];
+            }),
+            aiConfigByIdProvider('model-2').overrideWith((ref) async {
+              return testModels[1];
+            }),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  AiSettingsConfigSliver<AiConfigPrompt>(
+                    configsAsync: AsyncValue.data(prompts.cast<AiConfig>()),
+                    filteredConfigs: prompts,
+                    emptyMessage: 'No prompts',
+                    emptyIcon: Icons.psychology,
+                    onConfigTap: (config) {
+                      tappedConfigs.add(config);
+                    },
+                    selectionMode: selectionMode,
+                    selectedIds: selected ?? selectedIds,
+                    onSelectionChanged: (id) {
+                      selectionChanges.add(id);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('shows checkboxes when selection mode is enabled',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Should find checkbox containers (custom animated containers)
+        // In selection mode, cards have a leading checkbox area
+        expect(find.byIcon(Icons.check), findsNothing); // Not selected
+        expect(find.text('Test Prompt 1'), findsOneWidget);
+        expect(find.text('Test Prompt 2'), findsOneWidget);
+      });
+
+      testWidgets('shows check icon for selected items',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+          selected: {'prompt-1'}, // First prompt selected
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Should find one check icon for the selected prompt
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+
+      testWidgets('shows check icons for all selected items',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+          selected: {'prompt-1', 'prompt-2'}, // Both selected
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Should find check icons for both selected prompts
+        expect(find.byIcon(Icons.check), findsNWidgets(2));
+      });
+
+      testWidgets(
+          'calls onSelectionChanged when card is tapped in selection mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+        ));
+
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Test Prompt 1'));
+        await tester.pump();
+
+        expect(selectionChanges, ['prompt-1']);
+        // Should NOT call onConfigTap in selection mode
+        expect(tappedConfigs, isEmpty);
+      });
+
+      testWidgets('calls onConfigTap when not in selection mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+        ));
+
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Test Prompt 1'));
+        await tester.pump();
+
+        // Should call onConfigTap, not onSelectionChanged
+        expect(tappedConfigs.map((c) => c.id), ['prompt-1']);
+        expect(selectionChanges, isEmpty);
+      });
+
+      testWidgets('does not show checkboxes when selection mode is disabled',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selected: {'prompt-1'}, // Even with selected IDs
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Regular cards should show chevron, not checkbox
+        expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+        expect(find.byIcon(Icons.check), findsNothing);
+      });
+
+      testWidgets('selected card has visual distinction',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+          selected: {'prompt-1'},
+        ));
+
+        await tester.pumpAndSettle();
+
+        // The selected card should have different styling
+        // We verify by checking the AnimatedContainer exists
+        final animatedContainers = find.byType(AnimatedContainer);
+        expect(animatedContainers, findsWidgets);
+      });
+
+      testWidgets('multiple taps toggle selection correctly',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Tap first prompt
+        await tester.tap(find.text('Test Prompt 1'));
+        await tester.pump();
+
+        // Tap second prompt
+        await tester.tap(find.text('Test Prompt 2'));
+        await tester.pump();
+
+        // Tap first prompt again
+        await tester.tap(find.text('Test Prompt 1'));
+        await tester.pump();
+
+        expect(selectionChanges, ['prompt-1', 'prompt-2', 'prompt-1']);
+      });
+
+      testWidgets('swipe to delete is disabled in selection mode',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createSelectionWidget(
+          prompts: testPrompts,
+          selectionMode: true,
+        ));
+
+        await tester.pumpAndSettle();
+
+        // Try to swipe
+        await tester.drag(find.text('Test Prompt 1'), const Offset(-100, 0));
+        await tester.pump();
+
+        // Should not show delete indicator in selection mode
+        // (the card is wrapped differently)
+        expect(find.text('Delete'), findsNothing);
+      });
+    });
   });
 }

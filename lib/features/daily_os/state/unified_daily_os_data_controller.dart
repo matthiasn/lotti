@@ -189,7 +189,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final actualSlots = <ActualTimeSlot>[];
     for (final entry in entries) {
       final duration = entry.meta.dateTo.difference(entry.meta.dateFrom);
-      if (duration.inMinutes == 0) continue;
+      if (duration <= Duration.zero) continue;
 
       final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
       final linkedFrom =
