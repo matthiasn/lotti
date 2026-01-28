@@ -11,6 +11,9 @@
 /// - OpenAI: Advanced language and multimodal models
 library;
 
+import 'dart:ui';
+
+import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
 /// Represents a known model configuration that can be automatically
@@ -633,6 +636,11 @@ const ftueGeminiCategoryColor = '#4285F4'; // Google Blue
 const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
 const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
 
+/// Brand colors as Color constants for UI usage
+const ftueGeminiColor = Color(0xFF4285F4);
+const ftueOpenAiColor = Color(0xFF10A37F);
+const ftueMistralColor = Color(0xFFFF7000);
+
 // =============================================================================
 // Mistral FTUE (First Time User Experience) Model Constants
 // =============================================================================
@@ -645,12 +653,8 @@ const ftueMistralAudioModelId = 'voxtral-small-2507';
 /// Finds a KnownModel by its provider model ID from the mistralModels list.
 /// Returns null if not found.
 KnownModel? findMistralKnownModel(String providerModelId) {
-  for (final model in mistralModels) {
-    if (model.providerModelId == providerModelId) {
-      return model;
-    }
-  }
-  return null;
+  return mistralModels
+      .firstWhereOrNull((model) => model.providerModelId == providerModelId);
 }
 
 /// Returns the three KnownModel configurations needed for Mistral FTUE.

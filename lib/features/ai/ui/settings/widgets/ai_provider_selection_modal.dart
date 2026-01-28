@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -82,21 +83,21 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
                 context,
                 option: AiProviderOption.gemini,
                 icon: Icons.auto_awesome,
-                color: const Color(0xFF4285F4), // Google Blue
+                color: ftueGeminiColor,
               ),
               const SizedBox(height: 12),
               _buildProviderOption(
                 context,
                 option: AiProviderOption.openAi,
                 icon: Icons.psychology,
-                color: const Color(0xFF10A37F), // OpenAI Green
+                color: ftueOpenAiColor,
               ),
               const SizedBox(height: 12),
               _buildProviderOption(
                 context,
                 option: AiProviderOption.mistral,
                 icon: Icons.air,
-                color: const Color(0xFFFF7000), // Mistral Orange
+                color: ftueMistralColor,
               ),
               const SizedBox(height: 16),
               Text(

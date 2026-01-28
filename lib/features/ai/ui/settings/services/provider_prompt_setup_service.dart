@@ -1712,12 +1712,13 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       }
 
       // Assign to appropriate variable
-      if (config.id == ftueMistralFlashModelId) {
-        flashModel = model;
-      } else if (config.id == ftueMistralReasoningModelId) {
-        reasoningModel = model;
-      } else if (config.id == ftueMistralAudioModelId) {
-        audioModel = model;
+      switch (config.id) {
+        case ftueMistralFlashModelId:
+          flashModel = model;
+        case ftueMistralReasoningModelId:
+          reasoningModel = model;
+        case ftueMistralAudioModelId:
+          audioModel = model;
       }
     }
 

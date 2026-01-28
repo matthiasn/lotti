@@ -97,12 +97,15 @@ class AiSetupPromptService extends _$AiSetupPromptService {
       AiConfigType.inferenceProvider,
     );
 
-    return providers.whereType<AiConfigInferenceProvider>().any(
-          (p) =>
-              p.inferenceProviderType == InferenceProviderType.gemini ||
-              p.inferenceProviderType == InferenceProviderType.openAi ||
-              p.inferenceProviderType == InferenceProviderType.mistral,
-        );
+    const supportedProviders = {
+      InferenceProviderType.gemini,
+      InferenceProviderType.openAi,
+      InferenceProviderType.mistral,
+    };
+
+    return providers
+        .whereType<AiConfigInferenceProvider>()
+        .any((p) => supportedProviders.contains(p.inferenceProviderType));
   }
 
   /// Checks if the prompt was previously dismissed.
