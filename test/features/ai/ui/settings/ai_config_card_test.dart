@@ -377,6 +377,7 @@ void main() {
         // (it returns just the Row content)
         // The widget should be a simple Row, not wrapped in AnimatedContainer
         expect(find.text(testProvider.name), findsOneWidget);
+        expect(find.byType(AnimatedContainer), findsNothing);
       });
 
       testWidgets('renders with AnimatedContainer in normal mode',
