@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -149,11 +151,45 @@ class TimeBudgetCard extends ConsumerWidget {
                 categoryColor: categoryColor,
               ),
 
+              // Warning banner for categories with due tasks but no budget
+              if (progress.hasNoBudgetWarning) ...[
+                const SizedBox(height: AppTheme.spacingSmall),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border:
+                        Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        context.messages.dailyOsNoBudgetWarning,
+                        style: context.textTheme.labelSmall
+                            ?.copyWith(color: Colors.orange),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Task progress section
               if (progress.taskProgressItems.isNotEmpty) ...[
                 const SizedBox(height: AppTheme.spacingMedium),
                 const Divider(height: 1),
-                _ExpandableTaskSection(tasks: progress.taskProgressItems),
+                _ExpandableTaskSection(
+                  tasks: progress.taskProgressItems,
+                  categoryId: progress.categoryId,
+                ),
               ],
             ],
           ),
@@ -333,22 +369,24 @@ class _BudgetProgressBar extends StatelessWidget {
   }
 }
 
-/// View mode for task section.
-enum _TaskViewMode { list, grid }
-
 /// Expandable section showing tasks with their progress.
-class _ExpandableTaskSection extends StatefulWidget {
-  const _ExpandableTaskSection({required this.tasks});
+class _ExpandableTaskSection extends ConsumerStatefulWidget {
+  const _ExpandableTaskSection({
+    required this.tasks,
+    required this.categoryId,
+  });
 
   final List<TaskDayProgress> tasks;
+  final String categoryId;
 
   @override
-  State<_ExpandableTaskSection> createState() => _ExpandableTaskSectionState();
+  ConsumerState<_ExpandableTaskSection> createState() =>
+      _ExpandableTaskSectionState();
 }
 
-class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
+class _ExpandableTaskSectionState
+    extends ConsumerState<_ExpandableTaskSection> {
   bool _isExpanded = true;
-  _TaskViewMode _viewMode = _TaskViewMode.grid;
 
   Duration get _totalTime => widget.tasks.fold(
         Duration.zero,
@@ -357,6 +395,11 @@ class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModeAsync = ref.watch(
+      taskViewPreferenceProvider(categoryId: widget.categoryId),
+    );
+    final viewMode = viewModeAsync.value ?? TaskViewMode.list;
+
     return Column(
       children: [
         // Header row
@@ -388,33 +431,42 @@ class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
                   ),
                 ),
               ),
-              // View mode toggle
+              // View mode toggle - larger tap target for mobile
               if (_isExpanded) ...[
                 GestureDetector(
-                  onTap: () => setState(() {
-                    _viewMode = _viewMode == _TaskViewMode.list
-                        ? _TaskViewMode.grid
-                        : _TaskViewMode.list;
-                  }),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => ref
+                      .read(
+                        taskViewPreferenceProvider(
+                                categoryId: widget.categoryId)
+                            .notifier,
+                      )
+                      .toggle(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      viewMode == TaskViewMode.list
+                          ? Icons.grid_view_rounded
+                          : Icons.view_list_rounded,
+                      size: 20,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+              // Expand/collapse icon - larger tap target for mobile
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _isExpanded = !_isExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
                   child: Icon(
-                    _viewMode == _TaskViewMode.list
-                        ? Icons.grid_view_rounded
-                        : Icons.view_list_rounded,
+                    _isExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_right,
                     size: 20,
                     color: context.colorScheme.onSurfaceVariant,
                   ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              // Expand/collapse icon
-              GestureDetector(
-                onTap: () => setState(() => _isExpanded = !_isExpanded),
-                child: Icon(
-                  _isExpanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  size: 20,
-                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -425,14 +477,15 @@ class _ExpandableTaskSectionState extends State<_ExpandableTaskSection> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
-          child: _isExpanded ? _buildContent() : const SizedBox.shrink(),
+          child:
+              _isExpanded ? _buildContent(viewMode) : const SizedBox.shrink(),
         ),
       ],
     );
   }
 
-  Widget _buildContent() {
-    if (_viewMode == _TaskViewMode.list) {
+  Widget _buildContent(TaskViewMode viewMode) {
+    if (viewMode == TaskViewMode.list) {
       return Column(
         children:
             widget.tasks.map((item) => _TaskProgressRow(item: item)).toList(),
@@ -491,7 +544,7 @@ class _TaskProgressRow extends StatelessWidget {
       onTap: () => beamToNamed('/tasks/${task.meta.id}'),
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
             // Status indicator
@@ -506,6 +559,11 @@ class _TaskProgressRow extends StatelessWidget {
                   border: Border.all(color: statusColor, width: 1.5),
                 ),
               ),
+            // Due badge
+            if (item.isDueOrOverdue) ...[
+              const SizedBox(width: 4),
+              _DueBadge(dueDateStatus: item.dueDateStatus),
+            ],
             const SizedBox(width: 10),
             // Task title
             Expanded(
@@ -531,6 +589,43 @@ class _TaskProgressRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Badge showing due date status (Due Today or Overdue).
+class _DueBadge extends StatelessWidget {
+  const _DueBadge({required this.dueDateStatus});
+
+  final DueDateStatus dueDateStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = dueDateStatus.urgentColor ?? Colors.orange;
+    final label = _getDueLabel(dueDateStatus, context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _getDueLabel(DueDateStatus status, BuildContext context) {
+    return switch (status.urgency) {
+      DueDateUrgency.overdue => context.messages.dailyOsOverdue,
+      DueDateUrgency.dueToday => context.messages.dailyOsDueToday,
+      DueDateUrgency.normal => '',
+    };
   }
 }
 
@@ -636,6 +731,14 @@ class _TaskGridTile extends StatelessWidget {
                 ),
               ),
 
+            // Due badge (top left, below checkmark if completed)
+            if (item.isDueOrOverdue)
+              Positioned(
+                top: isCompleted ? 28 : 4,
+                left: 4,
+                child: _DueGridBadge(dueDateStatus: item.dueDateStatus),
+              ),
+
             // Title (bottom)
             Positioned(
               left: 6,
@@ -655,5 +758,43 @@ class _TaskGridTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Compact badge for grid view showing due date status.
+class _DueGridBadge extends StatelessWidget {
+  const _DueGridBadge({required this.dueDateStatus});
+
+  final DueDateStatus dueDateStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = dueDateStatus.urgentColor ?? Colors.orange;
+    final label = _getDueBadgeText(dueDateStatus, context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  // Short labels for compact grid
+  String _getDueBadgeText(DueDateStatus status, BuildContext context) {
+    return switch (status.urgency) {
+      DueDateUrgency.overdue => context.messages.dailyOsOverdueShort,
+      DueDateUrgency.dueToday => context.messages.dailyOsDueTodayShort,
+      DueDateUrgency.normal => '',
+    };
   }
 }

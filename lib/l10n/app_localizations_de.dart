@@ -1092,6 +1092,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsTasks => 'Tasks';
 
   @override
+  String get dailyOsNoBudgetWarning => 'Keine Zeit eingeplant';
+
+  @override
+  String get dailyOsDueToday => 'Heute fällig';
+
+  @override
+  String get dailyOsDueTodayShort => 'Fällig';
+
+  @override
+  String get dailyOsOverdue => 'Überfällig';
+
+  @override
+  String get dailyOsOverdueShort => 'Spät';
+
+  @override
   String get dashboardActiveLabel => 'Aktiv:';
 
   @override

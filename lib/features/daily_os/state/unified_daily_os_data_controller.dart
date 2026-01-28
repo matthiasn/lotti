@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -110,14 +111,16 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final dayStart = _date.dayAtMidnight;
     final dayEnd = dayStart.add(const Duration(days: 1));
 
-    // Fetch day plan and calendar entries in parallel
+    // Fetch day plan, calendar entries, and due tasks in parallel
     final results = await Future.wait([
       _dayPlanRepository.getOrCreateDayPlan(_date),
       db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd),
+      db.getTasksDueOnOrBefore(_date),
     ]);
 
     final dayPlan = results[0] as DayPlanEntry;
     final entries = results[1] as List<JournalEntity>;
+    final dueTasks = results[2] as List<Task>;
 
     // Fetch linked entries (parent tasks/journals) for each entry
     final entryIds = entries.map((e) => e.meta.id).toSet();
@@ -155,6 +158,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       entries: entries,
       entryIdToLinkedFromIds: entryIdToLinkedFromIds,
       linkedFromMap: linkedFromMap,
+      dueTasks: dueTasks,
     );
 
     return DailyOsData(
@@ -243,11 +247,10 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     required List<JournalEntity> entries,
     required Map<String, Set<String>> entryIdToLinkedFromIds,
     required Map<String, JournalEntity> linkedFromMap,
+    required List<Task> dueTasks,
   }) {
     final derivedBudgets = dayPlan.data.derivedBudgets;
-    if (derivedBudgets.isEmpty) {
-      return [];
-    }
+    final budgetCategoryIds = derivedBudgets.map((b) => b.categoryId).toSet();
 
     // Group entries by category, using linked parent's category if available
     final entriesByCategory = <String, List<JournalEntity>>{};
@@ -262,20 +265,95 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       }
     }
 
+    // Group due tasks by category
+    final dueTasksByCategory = <String, List<Task>>{};
+    for (final task in dueTasks) {
+      final categoryId = task.meta.categoryId;
+      if (categoryId != null) {
+        dueTasksByCategory.putIfAbsent(categoryId, () => []).add(task);
+      }
+    }
+
+    // Find categories with due tasks but no budget
+    final categoriesNeedingSyntheticBudget = dueTasksByCategory.keys
+        .where((catId) => !budgetCategoryIds.contains(catId))
+        .toSet();
+
     final cacheService = getIt<EntitiesCacheService>();
     final results = <TimeBudgetProgress>[];
 
+    // Build progress for existing budgets (include due tasks)
     for (final budget in derivedBudgets) {
       final categoryEntries = entriesByCategory[budget.categoryId] ?? [];
       final recordedDuration = _sumDurations(categoryEntries);
       final plannedDuration = budget.plannedDuration;
 
+      final categoryDueTasks = dueTasksByCategory[budget.categoryId] ?? [];
+      final categoryDueTaskIds = categoryDueTasks.map((t) => t.meta.id).toSet();
+
       // Build task progress items for this category
-      final taskProgressItems = _buildTaskProgressItems(
+      final trackedTaskItems = _buildTaskProgressItems(
         categoryEntries: categoryEntries,
         entryIdToLinkedFromIds: entryIdToLinkedFromIds,
         linkedFromMap: linkedFromMap,
       );
+      final trackedTaskIds =
+          trackedTaskItems.map((i) => i.task.meta.id).toSet();
+
+      // DEDUPLICATION: Update tracked tasks that are also due
+      final mergedTaskItems = trackedTaskItems.map((item) {
+        final taskId = item.task.meta.id;
+        if (categoryDueTaskIds.contains(taskId)) {
+          // Task has tracked time AND is due - add due date status
+          final dueStatus = getDueDateStatus(
+            dueDate: item.task.data.due,
+            referenceDate: _date,
+          );
+          return TaskDayProgress(
+            task: item.task,
+            timeSpentOnDay: item.timeSpentOnDay,
+            wasCompletedOnDay: item.wasCompletedOnDay,
+            dueDateStatus: dueStatus,
+          );
+        }
+        return item;
+      }).toList();
+
+      // Add due tasks that have NO tracked time (not already included)
+      for (final dueTask in categoryDueTasks) {
+        if (!trackedTaskIds.contains(dueTask.meta.id)) {
+          final dueStatus = getDueDateStatus(
+            dueDate: dueTask.data.due,
+            referenceDate: _date,
+          );
+          mergedTaskItems.add(
+            TaskDayProgress(
+              task: dueTask,
+              timeSpentOnDay: Duration.zero,
+              wasCompletedOnDay: false,
+              dueDateStatus: dueStatus,
+            ),
+          );
+        }
+      }
+
+      // Re-sort: time descending, due tasks without time grouped together
+      mergedTaskItems.sort((a, b) {
+        // Both have time: sort by time descending
+        if (a.timeSpentOnDay > Duration.zero &&
+            b.timeSpentOnDay > Duration.zero) {
+          return b.timeSpentOnDay.compareTo(a.timeSpentOnDay);
+        }
+        // One has time, one doesn't: time first
+        if (a.timeSpentOnDay > Duration.zero) return -1;
+        if (b.timeSpentOnDay > Duration.zero) return 1;
+        // Both zero time: sort by urgency (overdue > dueToday > normal)
+        final urgencyCompare = b.dueDateStatus.urgency.index
+            .compareTo(a.dueDateStatus.urgency.index);
+        if (urgencyCompare != 0) return urgencyCompare;
+        // Same urgency: alphabetical by title
+        return a.task.data.title.compareTo(b.task.data.title);
+      });
 
       results.add(
         TimeBudgetProgress(
@@ -285,8 +363,48 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           recordedDuration: recordedDuration,
           status: _calculateStatus(plannedDuration, recordedDuration),
           contributingEntries: categoryEntries,
-          taskProgressItems: taskProgressItems,
+          taskProgressItems: mergedTaskItems,
           blocks: budget.blocks,
+        ),
+      );
+    }
+
+    // Create synthetic budgets for categories with due tasks but no planned time
+    for (final categoryId in categoriesNeedingSyntheticBudget) {
+      final category = cacheService.getCategoryById(categoryId);
+      final categoryDueTasks = dueTasksByCategory[categoryId]!;
+
+      final taskProgressItems = categoryDueTasks.map((task) {
+        final dueStatus = getDueDateStatus(
+          dueDate: task.data.due,
+          referenceDate: _date,
+        );
+        return TaskDayProgress(
+          task: task,
+          timeSpentOnDay: Duration.zero,
+          wasCompletedOnDay: false,
+          dueDateStatus: dueStatus,
+        );
+      }).toList()
+        // Sort by urgency (overdue > dueToday > normal), then alphabetically
+        ..sort((a, b) {
+          final urgencyCompare = b.dueDateStatus.urgency.index
+              .compareTo(a.dueDateStatus.urgency.index);
+          if (urgencyCompare != 0) return urgencyCompare;
+          return a.task.data.title.compareTo(b.task.data.title);
+        });
+
+      results.add(
+        TimeBudgetProgress(
+          categoryId: categoryId,
+          category: category,
+          plannedDuration: Duration.zero,
+          recordedDuration: Duration.zero,
+          status: BudgetProgressStatus.underBudget,
+          contributingEntries: [],
+          taskProgressItems: taskProgressItems,
+          blocks: [],
+          hasNoBudgetWarning: true,
         ),
       );
     }

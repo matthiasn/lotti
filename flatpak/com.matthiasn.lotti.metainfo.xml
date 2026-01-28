@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.828" date="2026-01-28">
+      <description>
+        <p>Daily OS Due Task Visibility: Time budget cards now show tasks that are due today or overdue, even if you haven't tracked any time on them yet. This ensures important deadlines don't fall through the cracks. Due tasks display visual badges indicating urgency - red for overdue items and orange for tasks due today. Categories with due tasks but no planned time budget show a warning banner prompting you to allocate time. Tasks are intelligently sorted with tracked-time tasks first, then due tasks by urgency.</p>
+        <p>View Preference Persistence: Your preferred task view mode (list or grid) is now saved per category and persists across app restarts. The default view has changed from grid to list for better readability of task details and due date badges.</p>
+      </description>
+    </release>
     <release version="0.9.827" date="2026-01-27">
       <description>
         <p>Daily OS Task Visualization: Time budget cards now show which tasks contributed time to each category. Each task displays its time spent and completion status (checkmark for tasks completed today). Switch between grid view with task thumbnails and compact list view using the toggle button. The collapsible task section header shows the total task count and combined time. Tasks are sorted by time spent with zero-time completed tasks at the end.</p>

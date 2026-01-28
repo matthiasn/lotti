@@ -2007,6 +2007,36 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get dailyOsTasks;
 
+  /// No description provided for @dailyOsNoBudgetWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'No time budgeted'**
+  String get dailyOsNoBudgetWarning;
+
+  /// No description provided for @dailyOsDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dailyOsDueToday;
+
+  /// No description provided for @dailyOsDueTodayShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get dailyOsDueTodayShort;
+
+  /// No description provided for @dailyOsOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get dailyOsOverdue;
+
+  /// No description provided for @dailyOsOverdueShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Late'**
+  String get dailyOsOverdueShort;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:
