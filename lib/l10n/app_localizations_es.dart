@@ -523,26 +523,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiSettingsTabProviders => 'Providers';
 
   @override
-  String get aiSettingsSelectLabel => 'Select';
+  String get aiSettingsSelectLabel => 'Seleccionar';
 
   @override
   String get aiSettingsSelectModeTooltip =>
-      'Toggle selection mode for bulk operations';
+      'Alternar modo de selección para operaciones masivas';
 
   @override
   String aiSettingsDeleteSelectedLabel(int count) {
-    return 'Delete ($count)';
+    return 'Eliminar ($count)';
   }
 
   @override
-  String get aiSettingsDeleteSelectedTooltip => 'Delete selected prompts';
+  String get aiSettingsDeleteSelectedTooltip =>
+      'Eliminar prompts seleccionados';
 
   @override
-  String get aiSettingsDeleteSelectedConfirmTitle => 'Delete Selected Prompts';
+  String get aiSettingsDeleteSelectedConfirmTitle =>
+      'Eliminar prompts seleccionados';
 
   @override
   String aiSettingsDeleteSelectedConfirmMessage(int count) {
-    return 'Are you sure you want to delete $count selected prompts? This action cannot be undone.';
+    return '¿Está seguro de que desea eliminar $count prompts seleccionados? Esta acción no se puede deshacer.';
   }
 
   @override
