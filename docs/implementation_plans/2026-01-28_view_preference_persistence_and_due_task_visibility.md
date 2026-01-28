@@ -1,7 +1,8 @@
 # View Preference Persistence & Due Task Visibility
 
 **Date:** 2026-01-28
-**Status:** Planned
+**Status:** Implemented
+**Version:** 0.9.828
 **Related PRs:** #2612 (Day View Lanes), #2611 (Unified Data Controller)
 
 ## Overview
@@ -607,3 +608,55 @@ This behavior aligns with the existing `getDueDateStatus()` utility which distin
 - `DueDateStatus` and `getDueDateStatus()` from `lib/features/tasks/util/due_date_utils.dart`
 - `taskStatusRed` (overdue) and `taskStatusOrange` (dueToday) from `lib/themes/colors.dart`
 - `SettingsDb.itemByKey()` and `SettingsDb.saveSettingsItem()` from `lib/database/settings_db.dart`
+
+---
+
+## Implementation Summary
+
+**Completed: 2026-01-28**
+
+### What Was Implemented
+
+#### Part 1: View Preference Persistence
+- [x] Created `TaskViewPreference` Riverpod controller with per-category persistence
+- [x] Changed default view from Grid to List
+- [x] Converted `_ExpandableTaskSection` to `ConsumerStatefulWidget`
+- [x] View mode toggle now persists across app restarts
+
+#### Part 2: Due Task Visibility
+- [x] Added `tasksDueOnOrBefore` SQL query in `database.drift`
+- [x] Added `getTasksDueOnOrBefore()` method to `JournalDb`
+- [x] Extended `TaskDayProgress` with `dueDateStatus` field
+- [x] Extended `TimeBudgetProgress` with `hasNoBudgetWarning` field
+- [x] Modified `_buildBudgetProgress()` to merge due tasks with tracked tasks
+- [x] Implemented deduplication for tasks with both tracked time AND due date
+- [x] Created synthetic budgets for categories with due tasks but no planned time
+- [x] Added visual badges for due/overdue tasks (list and grid views)
+- [x] Added warning banner for zero-budget categories
+
+#### Additional Improvements (from code review)
+- [x] Improved sorting: overdue tasks now sort before due-today tasks
+- [x] Localized grid badge strings (`dailyOsDueTodayShort`, `dailyOsOverdueShort`)
+- [x] Added translations for de/es/fr/ro locales
+- [x] Increased tap targets for view mode toggle (mobile UX)
+- [x] Increased vertical spacing between list items (mobile UX)
+
+### Files Changed
+
+| File | Status |
+|------|--------|
+| `lib/features/daily_os/state/task_view_preference_controller.dart` | Created |
+| `lib/features/daily_os/state/task_view_preference_controller.g.dart` | Generated |
+| `lib/features/daily_os/ui/widgets/time_budget_card.dart` | Modified |
+| `lib/features/daily_os/state/time_budget_progress_controller.dart` | Modified |
+| `lib/features/daily_os/state/unified_daily_os_data_controller.dart` | Modified |
+| `lib/database/database.dart` | Modified |
+| `lib/database/database.drift` | Modified |
+| `lib/database/database.g.dart` | Regenerated |
+| `lib/l10n/app_en.arb` | Modified |
+| `lib/l10n/app_localizations*.dart` | Updated |
+| `test/features/daily_os/**` | Updated |
+
+### Follow-up Items
+
+- [ ] **Database Index for Due Date** - The `json_extract(serialized, '$.data.due')` query works but cannot use an index. For better performance on large datasets, consider adding a denormalized `due_date` column with an index. (Low priority - current implementation is acceptable for typical dataset sizes)

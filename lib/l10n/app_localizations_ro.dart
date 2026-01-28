@@ -1092,19 +1092,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsTasks => 'Tasks';
 
   @override
-  String get dailyOsNoBudgetWarning => 'No time budgeted';
+  String get dailyOsNoBudgetWarning => 'Niciun timp planificat';
 
   @override
-  String get dailyOsDueToday => 'Due today';
+  String get dailyOsDueToday => 'Scadent azi';
 
   @override
-  String get dailyOsDueTodayShort => 'Due';
+  String get dailyOsDueTodayShort => 'Azi';
 
   @override
-  String get dailyOsOverdue => 'Overdue';
+  String get dailyOsOverdue => 'Întârziat';
 
   @override
-  String get dailyOsOverdueShort => 'Late';
+  String get dailyOsOverdueShort => 'Târziu';
 
   @override
   String get dashboardActiveLabel => 'Activ:';

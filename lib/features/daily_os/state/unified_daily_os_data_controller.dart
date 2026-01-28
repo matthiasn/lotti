@@ -347,10 +347,11 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         // One has time, one doesn't: time first
         if (a.timeSpentOnDay > Duration.zero) return -1;
         if (b.timeSpentOnDay > Duration.zero) return 1;
-        // Both zero time: due tasks first, then by urgency
-        if (a.isDueOrOverdue && !b.isDueOrOverdue) return -1;
-        if (!a.isDueOrOverdue && b.isDueOrOverdue) return 1;
-        // Both due or both not: alphabetical by title
+        // Both zero time: sort by urgency (overdue > dueToday > normal)
+        final urgencyCompare = b.dueDateStatus.urgency.index
+            .compareTo(a.dueDateStatus.urgency.index);
+        if (urgencyCompare != 0) return urgencyCompare;
+        // Same urgency: alphabetical by title
         return a.task.data.title.compareTo(b.task.data.title);
       });
 
@@ -385,10 +386,11 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           dueDateStatus: dueStatus,
         );
       }).toList()
-        // Sort by urgency
+        // Sort by urgency (overdue > dueToday > normal), then alphabetically
         ..sort((a, b) {
-          if (a.isDueOrOverdue && !b.isDueOrOverdue) return -1;
-          if (!a.isDueOrOverdue && b.isDueOrOverdue) return 1;
+          final urgencyCompare = b.dueDateStatus.urgency.index
+              .compareTo(a.dueDateStatus.urgency.index);
+          if (urgencyCompare != 0) return urgencyCompare;
           return a.task.data.title.compareTo(b.task.data.title);
         });
 
