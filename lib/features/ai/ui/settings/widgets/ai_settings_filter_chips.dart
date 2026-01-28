@@ -381,7 +381,7 @@ class AiSettingsFilterChips extends ConsumerWidget {
               ),
             );
           },
-          child: filterState.hasSelectedPrompts
+          child: filterState.hasSelectedPrompts && onDeleteSelected != null
               ? ActionChip(
                   key: const ValueKey('delete_button'),
                   avatar: Icon(
