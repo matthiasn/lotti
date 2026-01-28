@@ -55,19 +55,22 @@ class AiConfigCardContainer extends StatelessWidget {
           ),
         ],
       ),
-      child: Material(
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
+      child: Semantics(
+        selected: isSelected,
+        child: Material(
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          splashColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimary),
-          highlightColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimaryHighlight),
-          child: Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: child,
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+            splashColor: context.colorScheme.primary
+                .withValues(alpha: AppTheme.alphaPrimary),
+            highlightColor: context.colorScheme.primary
+                .withValues(alpha: AppTheme.alphaPrimaryHighlight),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.cardPadding),
+              child: child,
+            ),
           ),
         ),
       ),
