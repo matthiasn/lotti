@@ -40,6 +40,19 @@ class FtueResultData {
         errors: result.errors,
       );
 
+  /// Creates from a MistralFtueResult
+  factory FtueResultData.fromMistral(MistralFtueResult result) =>
+      FtueResultData(
+        modelsCreated: result.modelsCreated,
+        modelsVerified: result.modelsVerified,
+        promptsCreated: result.promptsCreated,
+        promptsSkipped: result.promptsSkipped,
+        categoryCreated: result.categoryCreated,
+        categoryUpdated: result.categoryUpdated,
+        categoryName: result.categoryName,
+        errors: result.errors,
+      );
+
   final int modelsCreated;
   final int modelsVerified;
   final int promptsCreated;
@@ -91,6 +104,19 @@ class FtueResultDialog extends StatelessWidget {
       context: context,
       builder: (context) => FtueResultDialog._internal(
         result: FtueResultData.fromOpenAi(result),
+      ),
+    );
+  }
+
+  /// Shows the FTUE result dialog for Mistral.
+  static Future<void> showMistral(
+    BuildContext context, {
+    required MistralFtueResult result,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => FtueResultDialog._internal(
+        result: FtueResultData.fromMistral(result),
       ),
     );
   }

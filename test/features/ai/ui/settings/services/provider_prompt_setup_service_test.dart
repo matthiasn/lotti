@@ -1500,4 +1500,473 @@ void main() {
       expect(FtuePromptConfig, isNotNull);
     });
   });
+
+  group('MistralFtueResult', () {
+    test('totalModels should return sum of modelsCreated and modelsVerified',
+        () {
+      const result = MistralFtueResult(
+        modelsCreated: 2,
+        modelsVerified: 1,
+        promptsCreated: 6,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalModels, equals(3));
+    });
+
+    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
+        () {
+      const result = MistralFtueResult(
+        modelsCreated: 2,
+        modelsVerified: 1,
+        promptsCreated: 6,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalPrompts, equals(8));
+    });
+
+    test('should handle zero values correctly', () {
+      const result = MistralFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+      );
+
+      expect(result.totalModels, equals(0));
+      expect(result.totalPrompts, equals(0));
+    });
+
+    test('should include optional categoryUpdated and categoryName', () {
+      const result = MistralFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 0,
+        promptsCreated: 8,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        categoryUpdated: true,
+        categoryName: 'Test Category Mistral',
+      );
+
+      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryName, equals('Test Category Mistral'));
+    });
+
+    test('should handle errors list', () {
+      const result = MistralFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Mistral Error 1', 'Mistral Error 2'],
+      );
+
+      expect(result.errors, hasLength(2));
+      expect(result.errors, contains('Mistral Error 1'));
+      expect(result.errors, contains('Mistral Error 2'));
+    });
+  });
+
+  group('Mistral FTUE Setup - performMistralFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider mistralProvider;
+
+    setUpAll(() {
+      registerFallbackValue(
+        AiConfig.model(
+          id: 'fallback-model',
+          name: 'Fallback',
+          providerModelId: 'fallback',
+          inferenceProviderId: 'fallback',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      registerFallbackValue(
+        AiConfig.prompt(
+          id: 'fallback-prompt',
+          name: 'Fallback',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'model',
+          modelIds: ['model'],
+          createdAt: DateTime.now(),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          useReasoning: false,
+        ),
+      );
+      registerFallbackValue(
+        CategoryDefinition(
+          id: 'fallback-category',
+          name: 'Fallback',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+    });
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      mistralProvider = AiTestDataFactory.createTestProvider(
+        id: 'mistral-provider-id',
+        name: 'Mistral',
+        type: InferenceProviderType.mistral,
+        apiKey: 'test-mistral-key',
+        baseUrl: 'https://api.mistral.ai/v1',
+      );
+    });
+
+    Widget createMistralFtueTestWidget({
+      required Future<MistralFtueResult?> Function(BuildContext, WidgetRef)
+          onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('should return null for non-Mistral provider',
+        (WidgetTester tester) async {
+      final geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+      );
+
+      MistralFtueResult? result;
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: geminiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNull);
+    });
+
+    testWidgets('should create 3 models when they do not exist',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category Mistral Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      MistralFtueResult? result;
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: mistralProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(3));
+      expect(result!.modelsVerified, equals(0));
+      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsSkipped, equals(0));
+      expect(result!.categoryCreated, isTrue);
+
+      // 3 models + 8 prompts = 11 saves
+      verify(() => mockRepository.saveConfig(any())).called(11);
+    });
+
+    testWidgets('should verify existing models and skip creation',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          name: 'Mistral Small',
+          providerModelId: ftueMistralFlashModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          name: 'Magistral Medium',
+          providerModelId: ftueMistralReasoningModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          name: 'Voxtral Small',
+          providerModelId: ftueMistralAudioModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category Mistral Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      MistralFtueResult? result;
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: mistralProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(0));
+      expect(result!.modelsVerified, equals(3));
+    });
+
+    testWidgets('should skip existing prompts with same preconfiguredPromptId',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          providerModelId: ftueMistralFlashModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          providerModelId: ftueMistralReasoningModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          providerModelId: ftueMistralAudioModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+      ];
+
+      final existingPrompts = <AiConfig>[
+        AiConfig.prompt(
+          id: 'existing-prompt-id',
+          name: 'Task Summary',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'existing-flash',
+          modelIds: ['existing-flash'],
+          createdAt: DateTime.now(),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          preconfiguredPromptId: 'task_summary',
+          useReasoning: false,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => existingPrompts);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category Mistral Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      MistralFtueResult? result;
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: mistralProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.promptsSkipped, equals(1));
+      expect(result!.promptsCreated, equals(7));
+    });
+
+    testWidgets('should update existing category instead of creating new one',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      final existingCategory = CategoryDefinition(
+        id: 'existing-category-id',
+        name: 'Test Category Mistral Enabled',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => [existingCategory]);
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      MistralFtueResult? result;
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: mistralProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      expect(result, isNotNull);
+      expect(result!.categoryCreated, isFalse);
+      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryName, equals('Test Category Mistral Enabled'));
+
+      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          ));
+    });
+
+    testWidgets('should create category with Mistral orange color',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: 'Test Category Mistral Enabled',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      await tester.pumpWidget(createMistralFtueTestWidget(
+        onPressed: (context, ref) async {
+          return setupService.performMistralFtueSetup(
+            context: context,
+            ref: ref,
+            provider: mistralProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockCategoryRepository.createCategory(
+            name: 'Test Category Mistral Enabled',
+            color: '#FF7000', // Mistral Orange
+          )).called(1);
+    });
+  });
 }

@@ -24,6 +24,7 @@ void main() {
           find.text('Choose your AI provider to get started:'), findsOneWidget);
       expect(find.text('Google Gemini'), findsOneWidget);
       expect(find.text('OpenAI'), findsOneWidget);
+      expect(find.text('Mistral AI'), findsOneWidget);
     });
 
     testWidgets('displays provider descriptions', (tester) async {
@@ -45,6 +46,10 @@ void main() {
       );
       expect(
         find.text(AiProviderOption.openAi.description),
+        findsOneWidget,
+      );
+      expect(
+        find.text(AiProviderOption.mistral.description),
         findsOneWidget,
       );
     });
@@ -160,6 +165,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selectedType, equals(InferenceProviderType.openAi));
+    });
+
+    testWidgets('calls onProviderSelected with mistral when Mistral selected',
+        (tester) async {
+      InferenceProviderType? selectedType;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                await AiProviderSelectionModal.show(
+                  context,
+                  onProviderSelected: (type) => selectedType = type,
+                  onDismiss: () {},
+                );
+              },
+              child: const Text('Open Modal'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Select Mistral
+      await tester.tap(find.text('Mistral AI'));
+      await tester.pumpAndSettle();
+
+      // Tap Continue
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(selectedType, equals(InferenceProviderType.mistral));
     });
 
     testWidgets("calls onDismiss when Don't Show Again tapped", (tester) async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -29,7 +30,7 @@ class FtueSetupConfig {
     modelDescription: 'Flash, Pro, and Nano Banana Pro (image)',
     promptCount: 9,
     promptDescription: 'Optimized: Pro for complex tasks, Flash for speed',
-    categoryName: 'Test Category Gemini Enabled',
+    categoryName: ftueGeminiCategoryName,
   );
 
   /// Default configuration for OpenAI FTUE
@@ -40,16 +41,44 @@ class FtueSetupConfig {
         'GPT-5.2 (reasoning), GPT-5 Nano (fast), Audio, and Image',
     promptCount: 9,
     promptDescription: 'Optimized: GPT-5.2 for reasoning, GPT-5 Nano for speed',
-    categoryName: 'Test Category OpenAI Enabled',
+    categoryName: ftueOpenAiCategoryName,
   );
 
-  /// Get the appropriate config for a provider type
+  /// Default configuration for Mistral FTUE
+  static const mistral = FtueSetupConfig(
+    providerName: 'Mistral',
+    modelCount: 3,
+    modelDescription: 'Magistral Medium (reasoning), Mistral Small (fast), '
+        'Voxtral Small (audio)',
+    promptCount: 8,
+    promptDescription:
+        'Optimized: Magistral for reasoning, Mistral Small for speed',
+    categoryName: ftueMistralCategoryName,
+  );
+
+  /// Get the appropriate config for a provider type.
+  ///
+  /// Asserts in debug mode if an unsupported provider type is passed.
+  /// Falls back to Gemini in release mode for safety.
   static FtueSetupConfig forProviderType(InferenceProviderType type) {
-    return switch (type) {
+    final config = switch (type) {
       InferenceProviderType.gemini => gemini,
       InferenceProviderType.openAi => openAi,
-      _ => gemini, // Default to Gemini for unsupported types
+      InferenceProviderType.mistral => mistral,
+      _ => null,
     };
+
+    if (config == null) {
+      assert(
+        false,
+        'FtueSetupConfig.forProviderType: Unsupported provider type: $type. '
+        'Add a case for this provider or handle it before calling this method.',
+      );
+      // Fallback to Gemini in release mode
+      return gemini;
+    }
+
+    return config;
   }
 }
 
@@ -74,9 +103,11 @@ class FtueSetupDialog extends StatelessWidget {
     FtueSetupConfig? config,
   }) async {
     final effectiveConfig = config ??
-        (providerName == 'OpenAI'
-            ? FtueSetupConfig.openAi
-            : FtueSetupConfig.gemini);
+        switch (providerName) {
+          'OpenAI' => FtueSetupConfig.openAi,
+          'Mistral' => FtueSetupConfig.mistral,
+          _ => FtueSetupConfig.gemini,
+        };
 
     // useRootNavigator ensures dialog survives widget tree rebuilds (e.g., window resize)
     return await showDialog<bool>(

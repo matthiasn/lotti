@@ -170,7 +170,7 @@ Example Links section (these are format examples only - never copy these URLs, o
 ```''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.taskSummary,
-  useReasoning: true,
+  useReasoning: false,
   description:
       'Generate a comprehensive summary of a task including progress, remaining work, and insights',
 );
@@ -210,14 +210,29 @@ Available functions:
    - Detect based on the content of the user's request
    - Always set the language, even if it's English (use "en" for English)
 
+4. update_task_estimate: Set the time estimate for the task
+   - Call when user mentions duration: "30 minutes", "2 hours", "half a day", "a week"
+   - Convert to minutes: 1 hour = 60, half day = 240, full day = 480
+   - Required format: {"minutes": 120, "reason": "User said 2 hours", "confidence": "high"}
+   - Only sets if no estimate exists yet - will be skipped if estimate already set
+
+5. update_task_due_date: Set the due date for the task
+   - Call when user mentions deadlines: "due tomorrow", "by Friday", "needs to be done by January 15th"
+   - Required format: {"dueDate": "2024-01-19", "reason": "User said by Friday", "confidence": "high"}
+   - Use ISO 8601 date format (YYYY-MM-DD)
+   - Resolve relative dates (tomorrow, next week) to absolute dates based on today's date
+   - Only sets if no due date exists yet - will be skipped if due date already set
+
 IMPORTANT RULES:
 - You should ONLY output function calls, no other text
 - PRIORITIZE creating checklist items - this is your main task
 - ALWAYS count items first: if 2 or more, use add_multiple_checklist_items
+- If user mentions duration/time estimate, call update_task_estimate in the SAME response as checklist items
+- If user mentions deadline/due date, call update_task_due_date in the SAME response as checklist items
 - Language detection is secondary - only do it after creating items
 - Don't add items that duplicate existing checklist items
 - Deleted items avoidance: Use the Deleted Checklist Items list (if present). Do NOT re-create items with titles from that list or obvious near-duplicates unless the user explicitly requests to re-add.
-- Make all necessary function calls in a single response
+- Make all necessary function calls in a single response (checklist + estimate + due date + language)
 - If you receive an unknown function name error, use only the functions listed above
 
 UPDATE RULES (for update_checklist_items):
