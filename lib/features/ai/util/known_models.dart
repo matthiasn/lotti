@@ -509,13 +509,14 @@ const List<KnownModel> mistralModels = [
   ),
   // Reasoning model - for complex tasks
   KnownModel(
-    providerModelId: 'magistral-medium-2506',
-    name: 'Magistral Medium',
-    inputModalities: [Modality.text],
+    providerModelId: 'magistral-medium-2509',
+    name: 'Magistral Medium 1.2',
+    inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
-    description: 'Powerful reasoning model with chain-of-thought capabilities. '
-        '40k context window. Best for complex reasoning, coding, and analysis.',
+    supportsFunctionCalling: true,
+    description: 'Frontier-class multimodal reasoning model with 128k context. '
+        'Supports function calling, vision, and document AI.',
   ),
   // Audio transcription model
   KnownModel(
@@ -638,7 +639,7 @@ const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
 
 /// Model IDs used for Mistral FTUE automation
 const ftueMistralFlashModelId = 'mistral-small-2501';
-const ftueMistralReasoningModelId = 'magistral-medium-2506';
+const ftueMistralReasoningModelId = 'magistral-medium-2509';
 const ftueMistralAudioModelId = 'voxtral-small-2507';
 
 /// Finds a KnownModel by its provider model ID from the mistralModels list.

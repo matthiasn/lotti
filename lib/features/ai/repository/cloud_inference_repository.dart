@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/providers/gemini_inference_repository_provider
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
@@ -23,6 +24,7 @@ class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
+        _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
         _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
         _openAiTranscriptionRepository =
@@ -31,6 +33,7 @@ class CloudInferenceRepository {
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
+  final MistralInferenceRepository _mistralRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
@@ -154,6 +157,21 @@ class CloudInferenceRepository {
         provider: provider,
         tools: tools,
         thinkingConfig: finalThinking,
+      );
+    }
+
+    // For Mistral, use the dedicated repository to handle streaming format differences
+    if (provider != null &&
+        provider.inferenceProviderType == InferenceProviderType.mistral) {
+      return _mistralRepository.generateText(
+        prompt: prompt,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        systemMessage: systemMessage,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
       );
     }
 
@@ -453,6 +471,19 @@ class CloudInferenceRepository {
         model: model,
         temperature: temperature ?? 0.7, // Default if not specified
         provider: provider,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+      );
+    }
+
+    // For Mistral, use the dedicated repository to handle streaming format differences
+    if (provider.inferenceProviderType == InferenceProviderType.mistral) {
+      return _mistralRepository.generateTextWithMessages(
+        messages: messages,
+        model: model,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
       );
