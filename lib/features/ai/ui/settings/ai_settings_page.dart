@@ -218,6 +218,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       await repository.deleteConfig(id);
     }
 
+    // Check if widget is still mounted after async operations
+    if (!mounted) return;
+
     // Exit selection mode and refresh
     _updateFilterState(_filterState.exitSelectionMode());
 
