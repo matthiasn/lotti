@@ -2924,6 +2924,7 @@ JournalEntity buildTextEntry({
   required DateTime timestamp,
   required String text,
   DateTime? deletedAt,
+  Duration duration = const Duration(minutes: 1),
 }) {
   return JournalEntity.journalEntry(
     meta: Metadata(
@@ -2931,7 +2932,7 @@ JournalEntity buildTextEntry({
       createdAt: timestamp,
       updatedAt: timestamp,
       dateFrom: timestamp,
-      dateTo: timestamp,
+      dateTo: timestamp.add(duration),
       deletedAt: deletedAt,
       starred: false,
       private: false,

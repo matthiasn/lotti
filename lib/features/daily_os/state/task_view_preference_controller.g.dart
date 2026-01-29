@@ -54,7 +54,7 @@ final class TaskViewPreferenceProvider
 }
 
 String _$taskViewPreferenceHash() =>
-    r'665bce1a8a678c1273d5b3fe2fcb58011552ccb6';
+    r'bb502ec477574bafa5593c776a285a08bab56451';
 
 /// Controller for persisting task view mode preferences per category.
 

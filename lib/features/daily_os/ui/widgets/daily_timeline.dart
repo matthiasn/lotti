@@ -378,7 +378,7 @@ class _PlannedBlockWidget extends ConsumerWidget {
       top: top,
       left: 4,
       right: 4,
-      height: height.clamp(20.0, double.infinity),
+      height: height,
       child: GestureDetector(
         onTap: () {
           if (categoryId != null) {
@@ -459,7 +459,7 @@ class _ActualBlockWidget extends ConsumerWidget {
       top: top,
       left: left,
       width: width,
-      height: height.clamp(20.0, double.infinity),
+      height: height,
       child: GestureDetector(
         onTap: () {
           // Single tap navigates to the entry (like calendar view)

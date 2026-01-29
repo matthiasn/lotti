@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.829" date="2026-01-29">
+      <description>
+        <p>Daily OS Priority System: Tasks now display Linear-style priority badges (P0 red, P1 orange, P3 gray) in both list and grid views. Tasks without tracked time are sorted by priority first (P0→P1→P2→P3), then by urgency, then alphabetically.</p>
+        <p>Future Date Filtering: When viewing a future date, only tasks specifically due on that day are shown. Overdue tasks no longer clutter future planning views - they remain visible on today's view for review and rescheduling.</p>
+        <p>Timeline Improvements: Entry heights now accurately reflect their actual duration based on calendar scaling (removed artificial 20dp minimum).</p>
+      </description>
+    </release>
     <release version="0.9.828" date="2026-01-28">
       <description>
         <p>Daily OS Due Task Visibility: Time budget cards now show tasks that are due today or overdue, even if you haven't tracked any time on them yet. This ensures important deadlines don't fall through the cracks. Due tasks display visual badges indicating urgency - red for overdue items and orange for tasks due today. Categories with due tasks but no planned time budget show a warning banner prompting you to allocate time. Tasks are intelligently sorted with tracked-time tasks first, then due tasks by urgency.</p>

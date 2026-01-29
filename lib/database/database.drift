@@ -846,3 +846,14 @@ SELECT * FROM journal
   AND json_extract(serialized, '$.data.due') <= :endDate
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY json_extract(serialized, '$.data.due') ASC;
+
+tasksDueOn:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = 0
+  AND task_status NOT IN ('DONE', 'REJECTED')
+  AND json_extract(serialized, '$.data.due') IS NOT NULL
+  AND json_extract(serialized, '$.data.due') >= :startDate
+  AND json_extract(serialized, '$.data.due') <= :endDate
+  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY json_extract(serialized, '$.data.due') ASC;

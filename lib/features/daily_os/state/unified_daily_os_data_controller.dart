@@ -111,11 +111,22 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final dayStart = _date.dayAtMidnight;
     final dayEnd = dayStart.add(const Duration(days: 1));
 
+    // Determine if selected date is in the future (after today)
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final selectedDateStart = DateTime(_date.year, _date.month, _date.day);
+    final isFutureDate = selectedDateStart.isAfter(todayStart);
+
     // Fetch day plan, calendar entries, and due tasks in parallel
+    // For future dates: only fetch tasks due ON that specific day (hide overdue)
+    // For today/past: fetch tasks due on/before (includes overdue)
     final results = await Future.wait([
       _dayPlanRepository.getOrCreateDayPlan(_date),
       db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd),
-      db.getTasksDueOnOrBefore(_date),
+      if (isFutureDate)
+        db.getTasksDueOn(_date)
+      else
+        db.getTasksDueOnOrBefore(_date),
     ]);
 
     final dayPlan = results[0] as DayPlanEntry;
@@ -337,7 +348,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         }
       }
 
-      // Re-sort: time descending, due tasks without time grouped together
+      // Re-sort: time descending, then priority, urgency, alphabetical
       mergedTaskItems.sort((a, b) {
         // Both have time: sort by time descending
         if (a.timeSpentOnDay > Duration.zero &&
@@ -347,7 +358,11 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         // One has time, one doesn't: time first
         if (a.timeSpentOnDay > Duration.zero) return -1;
         if (b.timeSpentOnDay > Duration.zero) return 1;
-        // Both zero time: sort by urgency (overdue > dueToday > normal)
+        // Both zero time: sort by priority (lower rank = higher priority)
+        final priorityCompare =
+            a.task.data.priority.rank.compareTo(b.task.data.priority.rank);
+        if (priorityCompare != 0) return priorityCompare;
+        // Same priority: sort by urgency (overdue > dueToday > normal)
         final urgencyCompare = b.dueDateStatus.urgency.index
             .compareTo(a.dueDateStatus.urgency.index);
         if (urgencyCompare != 0) return urgencyCompare;
@@ -386,11 +401,17 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           dueDateStatus: dueStatus,
         );
       }).toList()
-        // Sort by urgency (overdue > dueToday > normal), then alphabetically
+        // Sort by priority, then urgency, then alphabetically
         ..sort((a, b) {
+          // Sort by priority first (lower rank = higher priority)
+          final priorityCompare =
+              a.task.data.priority.rank.compareTo(b.task.data.priority.rank);
+          if (priorityCompare != 0) return priorityCompare;
+          // Same priority: sort by urgency (overdue > dueToday > normal)
           final urgencyCompare = b.dueDateStatus.urgency.index
               .compareTo(a.dueDateStatus.urgency.index);
           if (urgencyCompare != 0) return urgencyCompare;
+          // Same urgency: alphabetical by title
           return a.task.data.title.compareTo(b.task.data.title);
         });
 
