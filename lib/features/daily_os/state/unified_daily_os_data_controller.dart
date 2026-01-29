@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/util/task_sort_comparators.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -465,11 +466,32 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     return items;
   }
 
+  /// Calculates the total duration of entries, accounting for overlaps.
+  ///
+  /// When entries overlap in time (e.g., a 1.5h "Gym Trip" containing a 45m
+  /// "Fitness Entry"), we calculate the **union** of time ranges to prevent
+  /// double-counting. The overlapping portion is only counted once.
+  ///
+  /// Example:
+  /// - Gym Trip: 10:00 - 11:30 (1.5h)
+  /// - Fitness Entry: 10:30 - 11:15 (45m)
+  /// - Simple sum: 2h 15m (incorrect - double-counts the overlap)
+  /// - Union: 1h 30m (correct - covers 10:00 to 11:30)
   Duration _sumDurations(List<JournalEntity> entries) {
-    return entries.fold(
-      Duration.zero,
-      (total, entry) => total + entryDuration(entry),
-    );
+    if (entries.isEmpty) return Duration.zero;
+    if (entries.length == 1) return entryDuration(entries.first);
+
+    // Convert entries to time ranges for union calculation
+    final ranges = entries
+        .map(
+          (entry) => TimeRange(
+            start: entry.meta.dateFrom,
+            end: entry.meta.dateTo,
+          ),
+        )
+        .toList();
+
+    return calculateUnionDuration(ranges);
   }
 
   BudgetProgressStatus _calculateStatus(
