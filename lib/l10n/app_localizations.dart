@@ -2037,6 +2037,12 @@ abstract class AppLocalizations {
   /// **'Late'**
   String get dailyOsOverdueShort;
 
+  /// No description provided for @dailyOsFold.
+  ///
+  /// In en, this message translates to:
+  /// **'Fold'**
+  String get dailyOsFold;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

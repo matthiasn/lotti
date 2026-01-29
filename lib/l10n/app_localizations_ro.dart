@@ -1107,6 +1107,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsOverdueShort => 'Târziu';
 
   @override
+  String get dailyOsFold => 'Restrânge';
+
+  @override
   String get dashboardActiveLabel => 'Activ:';
 
   @override

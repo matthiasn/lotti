@@ -88,6 +88,7 @@
   "dailyOsDueTodayShort": "Fällig",
   "dailyOsOverdue": "Überfällig",
   "dailyOsOverdueShort": "Spät",
+  "dailyOsFold": "Einklappen",
   "dashboardActiveLabel": "Aktiv:",
   "dashboardAddChartsTitle": "Diagramme hinzufügen:",
   "dashboardAddHabitButton": "Gewohnheitsdiagramme",

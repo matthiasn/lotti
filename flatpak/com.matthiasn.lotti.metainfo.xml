@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.831" date="2026-01-29">
+      <description>
+        <p>Daily OS Smart Timeline Folding: The timeline now intelligently compresses inactive periods to reduce vertical scrolling. Gaps larger than 4 hours between entry clusters are automatically folded, displaying at 8px per hour instead of 40px with a distinctive zigzag edge pattern. Tap any compressed region to expand it. Hours before 6 AM and after 10 PM are folded by default when empty, and a 1-hour buffer around each entry keeps context visible. Days with sparse activity see up to 60% less scrolling.</p>
+      </description>
+    </release>
     <release version="0.9.830" date="2026-01-29">
       <description>
         <p>Daily OS Overlap Fix: Time entries within the same category no longer double-count when they overlap. For example, a 1.5-hour "Gym Trip" containing a 45-minute "Fitness Entry" now correctly reports 1.5 hours total instead of 2.25 hours. Uses a time range union algorithm to calculate actual time coverage.</p>

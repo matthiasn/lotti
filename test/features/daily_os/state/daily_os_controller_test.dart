@@ -485,4 +485,210 @@ void main() {
       expect(modified.highlightedCategoryId, equals('cat-new'));
     });
   });
+
+  group('DailyOsState expandedFoldRegions', () {
+    test('default expandedFoldRegions is empty', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+      );
+
+      expect(state.expandedFoldRegions, isEmpty);
+    });
+
+    test('can set expandedFoldRegions via constructor', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0, 18},
+      );
+
+      expect(state.expandedFoldRegions, equals({0, 18}));
+    });
+
+    test('copyWith changes expandedFoldRegions', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0},
+      );
+
+      final modified = state.copyWith(expandedFoldRegions: {0, 12, 18});
+
+      expect(modified.expandedFoldRegions, equals({0, 12, 18}));
+    });
+
+    test('copyWith preserves expandedFoldRegions when not specified', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {6, 22},
+      );
+
+      final modified = state.copyWith(isEditingPlan: true);
+
+      expect(modified.expandedFoldRegions, equals({6, 22}));
+    });
+
+    test('copyWith can set expandedFoldRegions to empty set', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0, 18},
+      );
+
+      final modified = state.copyWith(expandedFoldRegions: {});
+
+      expect(modified.expandedFoldRegions, isEmpty);
+    });
+  });
+
+  group('DailyOsState fold region toggle logic', () {
+    test('adding startHour to expandedFoldRegions expands that region', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {},
+      );
+
+      // Simulate toggling region starting at hour 0
+      final currentRegions = state.expandedFoldRegions;
+      final updatedRegions = {...currentRegions, 0};
+
+      final modified = state.copyWith(expandedFoldRegions: updatedRegions);
+
+      expect(modified.expandedFoldRegions.contains(0), isTrue);
+    });
+
+    test('removing startHour from expandedFoldRegions collapses that region',
+        () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0, 18},
+      );
+
+      // Simulate toggling region starting at hour 0 (collapsing it)
+      final currentRegions = state.expandedFoldRegions;
+      final updatedRegions = currentRegions.where((r) => r != 0).toSet();
+
+      final modified = state.copyWith(expandedFoldRegions: updatedRegions);
+
+      expect(modified.expandedFoldRegions.contains(0), isFalse);
+      expect(modified.expandedFoldRegions.contains(18), isTrue);
+    });
+
+    test('multiple regions can be expanded simultaneously', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0, 6, 18, 22},
+      );
+
+      expect(state.expandedFoldRegions.length, equals(4));
+      expect(state.expandedFoldRegions.containsAll({0, 6, 18, 22}), isTrue);
+    });
+  });
+
+  group('DailyOsController fold region toggle logic (simulated)', () {
+    // These tests simulate the controller's toggleFoldRegion behavior
+    // by applying the same state transformation logic
+
+    Set<int> simulateToggleFoldRegion(Set<int> currentRegions, int startHour) {
+      if (currentRegions.contains(startHour)) {
+        return currentRegions.where((r) => r != startHour).toSet();
+      } else {
+        return {...currentRegions, startHour};
+      }
+    }
+
+    test('toggleFoldRegion adds region when not present', () {
+      const currentRegions = <int>{};
+      final updated = simulateToggleFoldRegion(currentRegions, 6);
+
+      expect(updated, contains(6));
+      expect(updated.length, equals(1));
+    });
+
+    test('toggleFoldRegion removes region when present', () {
+      const currentRegions = {6, 18};
+      final updated = simulateToggleFoldRegion(currentRegions, 6);
+
+      expect(updated, isNot(contains(6)));
+      expect(updated, contains(18));
+      expect(updated.length, equals(1));
+    });
+
+    test('toggleFoldRegion is idempotent on double toggle', () {
+      const currentRegions = <int>{};
+      final afterFirstToggle = simulateToggleFoldRegion(currentRegions, 6);
+      final afterSecondToggle = simulateToggleFoldRegion(afterFirstToggle, 6);
+
+      expect(afterSecondToggle, equals(currentRegions));
+    });
+
+    test('toggleFoldRegion handles multiple independent toggles', () {
+      var regions = <int>{};
+      regions = simulateToggleFoldRegion(regions, 0);
+      regions = simulateToggleFoldRegion(regions, 12);
+      regions = simulateToggleFoldRegion(regions, 22);
+
+      expect(regions, equals({0, 12, 22}));
+
+      regions = simulateToggleFoldRegion(regions, 12);
+      expect(regions, equals({0, 22}));
+    });
+
+    test('resetFoldState clears all regions', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedFoldRegions: {0, 6, 12, 18, 22},
+      );
+
+      // Simulate resetFoldState
+      final reset = state.copyWith(expandedFoldRegions: {});
+
+      expect(reset.expandedFoldRegions, isEmpty);
+    });
+
+    test('toggle does not affect other state properties', () {
+      final state = DailyOsState(
+        selectedDate: testDate,
+        dayPlan: null,
+        budgetProgress: [],
+        timelineData: createTestTimelineData(),
+        expandedSection: DailyOsSection.timeline,
+        highlightedCategoryId: 'cat-1',
+        isEditingPlan: true,
+      );
+
+      final toggled = state.copyWith(
+        expandedFoldRegions: {...state.expandedFoldRegions, 6},
+      );
+
+      expect(toggled.expandedSection, equals(DailyOsSection.timeline));
+      expect(toggled.highlightedCategoryId, equals('cat-1'));
+      expect(toggled.isEditingPlan, isTrue);
+      expect(toggled.expandedFoldRegions, contains(6));
+    });
+  });
 }

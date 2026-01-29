@@ -1110,6 +1110,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsOverdueShort => 'Retard';
 
   @override
+  String get dailyOsFold => 'Réduire';
+
+  @override
   String get dashboardActiveLabel => 'Actif :';
 
   @override

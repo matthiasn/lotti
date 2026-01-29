@@ -88,6 +88,7 @@
   "dailyOsDueTodayShort": "Dû",
   "dailyOsOverdue": "En retard",
   "dailyOsOverdueShort": "Retard",
+  "dailyOsFold": "Réduire",
   "dashboardActiveLabel": "Actif :",
   "dashboardAddChartsTitle": "Ajouter des graphiques :",
   "dashboardAddHabitButton": "Tableaux des habitudes",

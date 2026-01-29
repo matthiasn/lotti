@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.831] - 2026-01-29
+### Added
+- Daily OS Smart Timeline Folding: Timeline now intelligently compresses inactive periods
+  - Gaps larger than 4 hours between entry clusters are automatically folded
+  - Compressed regions display at 8px per hour (vs 40px normal) with a zigzag edge pattern
+  - Tap any compressed region to expand it to full height
+  - Hours before 6 AM and after 10 PM are folded by default when no entries exist
+  - ±1 hour buffer around each entry keeps context visible
+  - Dramatically reduces vertical scrolling on days with sparse activity
+
 ## [0.9.830] - 2026-01-29
 ### Fixed
 - Daily OS Time Calculation: Overlapping time entries within the same category no longer double-count

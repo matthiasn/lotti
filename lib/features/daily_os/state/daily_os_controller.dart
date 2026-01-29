@@ -25,6 +25,7 @@ class DailyOsState {
     this.expandedSection,
     this.isEditingPlan = false,
     this.highlightedCategoryId,
+    this.expandedFoldRegions = const {},
   });
 
   final DateTime selectedDate;
@@ -36,6 +37,10 @@ class DailyOsState {
 
   /// Currently highlighted category ID for cross-component communication.
   final String? highlightedCategoryId;
+
+  /// Set of startHour values for timeline fold regions that are expanded.
+  /// By default, all regions are collapsed (folded).
+  final Set<int> expandedFoldRegions;
 
   /// Whether the current plan is a draft.
   bool get isDraft => dayPlan?.data.isDraft ?? true;
@@ -71,6 +76,7 @@ class DailyOsState {
     DailyOsSection? expandedSection,
     bool? isEditingPlan,
     String? highlightedCategoryId,
+    Set<int>? expandedFoldRegions,
     bool clearExpandedSection = false,
     bool clearHighlight = false,
   }) {
@@ -86,6 +92,7 @@ class DailyOsState {
       highlightedCategoryId: clearHighlight
           ? null
           : (highlightedCategoryId ?? this.highlightedCategoryId),
+      expandedFoldRegions: expandedFoldRegions ?? this.expandedFoldRegions,
     );
   }
 }
@@ -184,6 +191,31 @@ class DailyOsController extends _$DailyOsController {
 
     state = AsyncData(current.copyWith(clearHighlight: true));
   }
+
+  /// Toggles a fold region between expanded and collapsed states.
+  ///
+  /// The [startHour] identifies which compressed region to toggle.
+  void toggleFoldRegion(int startHour) {
+    final current = state.value;
+    if (current == null) return;
+
+    final updatedRegions = {...current.expandedFoldRegions};
+    if (updatedRegions.contains(startHour)) {
+      updatedRegions.remove(startHour);
+    } else {
+      updatedRegions.add(startHour);
+    }
+
+    state = AsyncData(current.copyWith(expandedFoldRegions: updatedRegions));
+  }
+
+  /// Resets all fold regions to collapsed state.
+  void resetFoldState() {
+    final current = state.value;
+    if (current == null) return;
+
+    state = AsyncData(current.copyWith(expandedFoldRegions: {}));
+  }
 }
 
 /// Provides just the highlighted category ID for efficient rebuilds.
@@ -191,4 +223,11 @@ class DailyOsController extends _$DailyOsController {
 String? highlightedCategoryId(Ref ref) {
   final controllerAsync = ref.watch(dailyOsControllerProvider);
   return controllerAsync.value?.highlightedCategoryId;
+}
+
+/// Provides just the expanded fold regions for efficient rebuilds.
+@riverpod
+Set<int> expandedFoldRegions(Ref ref) {
+  final controllerAsync = ref.watch(dailyOsControllerProvider);
+  return controllerAsync.value?.expandedFoldRegions ?? {};
 }
