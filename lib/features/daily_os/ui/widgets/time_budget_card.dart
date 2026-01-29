@@ -672,6 +672,10 @@ class _PriorityGridBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = priority.colorForBrightness(Theme.of(context).brightness);
+    final textColor =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+            ? Colors.white
+            : Colors.black;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -682,7 +686,7 @@ class _PriorityGridBadge extends StatelessWidget {
       child: Text(
         priority.short,
         style: context.textTheme.labelSmall?.copyWith(
-          color: Colors.white,
+          color: textColor,
           fontSize: 9,
           fontWeight: FontWeight.w700,
         ),
@@ -696,6 +700,11 @@ class _TaskGridTile extends StatelessWidget {
   const _TaskGridTile({required this.item});
 
   final TaskDayProgress item;
+
+  // Badge layout constants
+  static const _badgeInitialTop = 4.0;
+  static const _completedBadgeHeight = 24.0; // 4px padding + 20px icon/badge
+  static const _dueBadgeHeight = 20.0; // 4px padding + 16px badge
 
   @override
   Widget build(BuildContext context) {
@@ -833,12 +842,9 @@ class _TaskGridTile extends StatelessWidget {
 
   /// Calculate the top position for the priority badge based on other badges.
   double _calculatePriorityBadgeTop(bool isCompleted, bool isDueOrOverdue) {
-    // Start from top
-    var top = 4.0;
-    // If completed, checkmark takes 24px (4 + 20 padding/size)
-    if (isCompleted) top += 24;
-    // If due badge is present, it takes 20px (4 + 16 padding/size)
-    if (isDueOrOverdue) top += 20;
+    var top = _badgeInitialTop;
+    if (isCompleted) top += _completedBadgeHeight;
+    if (isDueOrOverdue) top += _dueBadgeHeight;
     return top;
   }
 }

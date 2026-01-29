@@ -2181,7 +2181,7 @@ void main() {
       expect(items[3].task.data.priority, equals(TaskPriority.p3Low));
     });
 
-    test('priority sorting comes after urgency sorting', () async {
+    test('sorts by priority before urgency for tasks with no time', () async {
       final plan = createTestPlan(
         plannedBlocks: [
           PlannedBlock(
