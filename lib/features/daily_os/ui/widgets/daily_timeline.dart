@@ -69,16 +69,19 @@ Map<ActualTimeSlot, List<ActualTimeSlot>> _groupNestedSlots(
   final parentChildMap = <ActualTimeSlot, List<ActualTimeSlot>>{};
   final assignedChildren = <ActualTimeSlot>{};
 
-  // For each slot, find if it has a parent
-  for (final slot in sorted) {
+  // For each slot, find children (slots contained within this one).
+  // Since sorted is by duration descending, children must appear after parent.
+  for (var i = 0; i < sorted.length; i++) {
+    final slot = sorted[i];
     if (assignedChildren.contains(slot)) continue;
 
     // Initialize this slot as a potential parent
     parentChildMap[slot] = [];
 
-    // Find children: slots that are contained within this one
-    for (final other in sorted) {
-      if (other == slot || assignedChildren.contains(other)) continue;
+    // Find children: only need to check slots after this one (shorter duration)
+    for (var j = i + 1; j < sorted.length; j++) {
+      final other = sorted[j];
+      if (assignedChildren.contains(other)) continue;
 
       if (_slotContains(slot, other)) {
         parentChildMap[slot]!.add(other);
@@ -649,21 +652,84 @@ class _ActualBlockContent extends ConsumerWidget {
               label: slot.category?.name ?? '',
               child: const SizedBox.expand(),
             ),
-            // Render nested children inside this block
-            ...nestedChildren.map((child) {
-              return _NestedChildBlock(
-                child: child,
-                parent: slot,
-                parentWidth: parentWidth,
-                nestingDepth: nestingDepth + 1,
-                startHour: startHour,
-              );
-            }),
+            // Render nested children with lane assignment for overlapping siblings
+            ..._buildNestedChildWidgets(
+              nestedChildren: nestedChildren,
+              parent: slot,
+              parentWidth: parentWidth,
+              nestingDepth: nestingDepth + 1,
+              startHour: startHour,
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+/// Assigns lanes to nested children and builds their widgets.
+///
+/// This handles the case where nested children overlap with each other
+/// (e.g., two calls within a morning block that overlap in time).
+List<Widget> _buildNestedChildWidgets({
+  required List<ActualTimeSlot> nestedChildren,
+  required ActualTimeSlot parent,
+  required double parentWidth,
+  required int nestingDepth,
+  required int startHour,
+}) {
+  if (nestedChildren.isEmpty) return [];
+
+  // Apply lane assignment to handle overlapping siblings
+  final assignments = _assignLanesToSlots(nestedChildren);
+  final laneCount = assignments.isEmpty
+      ? 1
+      : assignments.map((a) => a.laneIndex).reduce(math.max) + 1;
+
+  return assignments.map((assignment) {
+    return _NestedChildBlock(
+      child: assignment.slot,
+      parent: parent,
+      parentWidth: parentWidth,
+      nestingDepth: nestingDepth,
+      startHour: startHour,
+      laneIndex: assignment.laneIndex,
+      laneCount: laneCount,
+    );
+  }).toList();
+}
+
+/// Simple lane assignment for a list of slots (used for nested children).
+List<({ActualTimeSlot slot, int laneIndex})> _assignLanesToSlots(
+  List<ActualTimeSlot> slots,
+) {
+  if (slots.isEmpty) return [];
+
+  final sorted = [...slots]..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  final laneHeap = PriorityQueue<_LaneEndTime>(
+    (a, b) => a.endTime.compareTo(b.endTime),
+  );
+
+  final assignments = <({ActualTimeSlot slot, int laneIndex})>[];
+  var nextLaneIndex = 0;
+
+  for (final slot in sorted) {
+    int assignedLane;
+
+    if (laneHeap.isNotEmpty &&
+        !slot.startTime.isBefore(laneHeap.first.endTime)) {
+      final reusedLane = laneHeap.removeFirst();
+      assignedLane = reusedLane.laneIndex;
+    } else {
+      assignedLane = nextLaneIndex++;
+    }
+
+    laneHeap.add(_LaneEndTime(laneIndex: assignedLane, endTime: slot.endTime));
+    assignments.add((slot: slot, laneIndex: assignedLane));
+  }
+
+  return assignments;
 }
 
 /// A nested child block rendered inside its parent.
@@ -674,6 +740,8 @@ class _NestedChildBlock extends ConsumerWidget {
     required this.parentWidth,
     required this.nestingDepth,
     required this.startHour,
+    required this.laneIndex,
+    required this.laneCount,
   });
 
   final ActualTimeSlot child;
@@ -681,6 +749,8 @@ class _NestedChildBlock extends ConsumerWidget {
   final double parentWidth;
   final int nestingDepth;
   final int startHour;
+  final int laneIndex;
+  final int laneCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -699,6 +769,10 @@ class _NestedChildBlock extends ConsumerWidget {
 
     // Inset from edges based on nesting depth
     final inset = _nestedInset * nestingDepth;
+    final availableWidth = parentWidth - (inset * 2);
+    final laneWidth = availableWidth / laneCount;
+    final leftOffset = inset + (laneIndex * laneWidth);
+    final gap = laneCount > 1 ? 1.0 : 0;
 
     final category = child.category;
     final categoryColor = category != null
@@ -711,8 +785,8 @@ class _NestedChildBlock extends ConsumerWidget {
 
     return Positioned(
       top: relativeTop + inset,
-      left: inset,
-      right: inset,
+      left: leftOffset,
+      width: laneWidth - gap,
       height: math.max(childHeight - (inset * 2), 8),
       child: _ActualBlockContent(
         slot: child,
@@ -720,7 +794,7 @@ class _NestedChildBlock extends ConsumerWidget {
         isHighlighted: isHighlighted,
         nestedChildren: const [], // Children don't have further nesting for now
         parentStartTime: parent.startTime,
-        parentWidth: parentWidth - (inset * 2),
+        parentWidth: laneWidth - gap,
         startHour: startHour,
         nestingDepth: nestingDepth,
       ),

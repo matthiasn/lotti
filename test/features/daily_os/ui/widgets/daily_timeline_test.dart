@@ -1458,5 +1458,70 @@ void main() {
       expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
+
+    testWidgets(
+        'renders overlapping nested children in separate lanes within parent',
+        (tester) async {
+      // When nested children overlap each other, they should be in separate
+      // lanes within the parent block (not rendered on top of each other)
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Morning work block: 9:00 - 12:00 (3 hours)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'morning-block',
+                  dateFrom: testDate.add(const Duration(hours: 9)),
+                  dateTo: testDate.add(const Duration(hours: 12)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 9)),
+                endTime: testDate.add(const Duration(hours: 12)),
+                categoryId: 'cat-1',
+              ),
+              // Call 1: 10:00 - 11:00 (overlaps with Call 2)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'call-1',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-1',
+              ),
+              // Call 2: 10:30 - 11:30 (overlaps with Call 1)
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'call-2',
+                  dateFrom:
+                      testDate.add(const Duration(hours: 10, minutes: 30)),
+                  dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 10, minutes: 30)),
+                endTime: testDate.add(const Duration(hours: 11, minutes: 30)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 14,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // All three entries should render (parent + 2 overlapping nested children)
+      // The nested children should be in separate lanes within the parent
+      expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
+      expect(find.byType(DailyTimeline), findsOneWidget);
+    });
   });
 }
