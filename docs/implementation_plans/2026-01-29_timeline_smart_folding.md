@@ -707,7 +707,7 @@ testWidgets('tapping compressed region calls onTap', (tester) async {
 
 ## Visual Mockup
 
-```
+```text
 Normal Timeline (current):
 ┌────────────────────────────────────────┐
 │ 00:00 ─────────────────────────────────│  40px

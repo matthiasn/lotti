@@ -167,6 +167,9 @@ class DailyTimeline extends ConsumerWidget {
   static const double _timeAxisWidth = 50;
   static const double _laneWidth = 120;
 
+  /// Bottom padding to prevent content from being clipped at the edge.
+  static const double _bottomPadding = 20;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
@@ -347,7 +350,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: AppTheme.animationDuration),
         curve: Curves.easeInOut,
-        height: totalHeight + 20,
+        height: totalHeight + DailyTimeline._bottomPadding,
         child: OverflowBox(
           alignment: Alignment.topCenter,
           maxHeight: double.infinity,

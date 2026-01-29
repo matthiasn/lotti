@@ -3,10 +3,6 @@ import 'package:lotti/features/daily_os/ui/widgets/zigzag_fold_indicator.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Height per hour in compressed (folded) regions.
-/// Using the constant from timeline_folding_utils.dart as single source of truth.
-const double kCompressedHourHeight = kCompressedHourHeightDefault;
-
 /// Width of the zigzag indicator on the left edge.
 const double kZigzagIndicatorWidth = 10;
 
@@ -36,7 +32,7 @@ class CompressedTimelineRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalHeight = region.hourCount * kCompressedHourHeight;
+    final totalHeight = region.hourCount * kCompressedHourHeightDefault;
 
     return GestureDetector(
       onTap: onTap,
@@ -83,7 +79,7 @@ class CompressedTimelineRegion extends StatelessWidget {
                     // Compressed hour markers
                     ...List.generate(region.hourCount, (i) {
                       return Positioned(
-                        top: i * kCompressedHourHeight,
+                        top: i * kCompressedHourHeightDefault,
                         left: 0,
                         right: 0,
                         child: Container(
@@ -185,7 +181,7 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
   @override
   void initState() {
     super.initState();
-    _collapsedHeight = widget.region.hourCount * kCompressedHourHeight;
+    _collapsedHeight = widget.region.hourCount * kCompressedHourHeightDefault;
     _expandedHeight = widget.region.hourCount * widget.normalHourHeight;
 
     _controller = AnimationController(
@@ -214,7 +210,7 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
     // Update heights if region changed
     if (oldWidget.region != widget.region ||
         oldWidget.normalHourHeight != widget.normalHourHeight) {
-      _collapsedHeight = widget.region.hourCount * kCompressedHourHeight;
+      _collapsedHeight = widget.region.hourCount * kCompressedHourHeightDefault;
       _expandedHeight = widget.region.hourCount * widget.normalHourHeight;
       _heightAnimation = Tween<double>(
         begin: _collapsedHeight,
