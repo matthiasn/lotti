@@ -118,7 +118,8 @@ void main() {
 
         final tasks = progress.contributingTasks;
         expect(tasks.length, equals(3));
-        expect(tasks.map((t) => t.meta.id), containsAll(['task-1', 'task-2', 'task-3']));
+        expect(tasks.map((t) => t.meta.id),
+            containsAll(['task-1', 'task-2', 'task-3']));
       });
 
       test('preserves order of Tasks from contributingEntries', () {
@@ -145,15 +146,15 @@ void main() {
 
     group('computed properties', () {
       test('remainingDuration returns planned minus recorded', () {
-        final progress = TimeBudgetProgress(
+        const progress = TimeBudgetProgress(
           categoryId: 'cat-1',
           category: null,
-          plannedDuration: const Duration(hours: 3),
-          recordedDuration: const Duration(hours: 1, minutes: 30),
+          plannedDuration: Duration(hours: 3),
+          recordedDuration: Duration(hours: 1, minutes: 30),
           status: BudgetProgressStatus.underBudget,
-          contributingEntries: const [],
-          pinnedTasks: const [],
-          blocks: const [],
+          contributingEntries: [],
+          pinnedTasks: [],
+          blocks: [],
         );
 
         expect(
@@ -163,60 +164,60 @@ void main() {
       });
 
       test('progressFraction returns 0 when planned is zero', () {
-        final progress = TimeBudgetProgress(
+        const progress = TimeBudgetProgress(
           categoryId: 'cat-1',
           category: null,
           plannedDuration: Duration.zero,
-          recordedDuration: const Duration(hours: 1),
+          recordedDuration: Duration(hours: 1),
           status: BudgetProgressStatus.overBudget,
-          contributingEntries: const [],
-          pinnedTasks: const [],
-          blocks: const [],
+          contributingEntries: [],
+          pinnedTasks: [],
+          blocks: [],
         );
 
         expect(progress.progressFraction, equals(0.0));
       });
 
       test('progressFraction returns correct ratio', () {
-        final progress = TimeBudgetProgress(
+        const progress = TimeBudgetProgress(
           categoryId: 'cat-1',
           category: null,
-          plannedDuration: const Duration(hours: 2),
-          recordedDuration: const Duration(hours: 1),
+          plannedDuration: Duration(hours: 2),
+          recordedDuration: Duration(hours: 1),
           status: BudgetProgressStatus.underBudget,
-          contributingEntries: const [],
-          pinnedTasks: const [],
-          blocks: const [],
+          contributingEntries: [],
+          pinnedTasks: [],
+          blocks: [],
         );
 
         expect(progress.progressFraction, equals(0.5));
       });
 
       test('isOverBudget returns true when recorded exceeds planned', () {
-        final progress = TimeBudgetProgress(
+        const progress = TimeBudgetProgress(
           categoryId: 'cat-1',
           category: null,
-          plannedDuration: const Duration(hours: 1),
-          recordedDuration: const Duration(hours: 2),
+          plannedDuration: Duration(hours: 1),
+          recordedDuration: Duration(hours: 2),
           status: BudgetProgressStatus.overBudget,
-          contributingEntries: const [],
-          pinnedTasks: const [],
-          blocks: const [],
+          contributingEntries: [],
+          pinnedTasks: [],
+          blocks: [],
         );
 
         expect(progress.isOverBudget, isTrue);
       });
 
       test('isOverBudget returns false when recorded is less than planned', () {
-        final progress = TimeBudgetProgress(
+        const progress = TimeBudgetProgress(
           categoryId: 'cat-1',
           category: null,
-          plannedDuration: const Duration(hours: 2),
-          recordedDuration: const Duration(hours: 1),
+          plannedDuration: Duration(hours: 2),
+          recordedDuration: Duration(hours: 1),
           status: BudgetProgressStatus.underBudget,
-          contributingEntries: const [],
-          pinnedTasks: const [],
-          blocks: const [],
+          contributingEntries: [],
+          pinnedTasks: [],
+          blocks: [],
         );
 
         expect(progress.isOverBudget, isFalse);

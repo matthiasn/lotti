@@ -816,7 +816,8 @@ void main() {
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
     });
 
-    testWidgets('shows both pinned and contributing sections when both have data',
+    testWidgets(
+        'shows both pinned and contributing sections when both have data',
         (tester) async {
       final pinnedTask = Task(
         meta: Metadata(

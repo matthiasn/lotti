@@ -212,8 +212,8 @@ void main() {
       final button = tester.widget(saveButtonFinder);
       expect(button, isA<FilledButton>());
 
-      // Verify save icon is present (FilledButton.icon includes an icon)
-      expect(find.byIcon(Icons.save_rounded), findsOneWidget);
+      // Verify check icon is present (FilledButton.icon includes an icon)
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
     testWidgets('dialog uses Column layout instead of AlertDialog',

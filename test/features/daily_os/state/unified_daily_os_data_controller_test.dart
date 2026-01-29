@@ -680,7 +680,8 @@ void main() {
         id: 'zero-entry-1',
         categoryId: 'cat-work',
         dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10)), // Same time = 0 duration
+        dateTo:
+            testDate.add(const Duration(hours: 10)), // Same time = 0 duration
       );
 
       when(
@@ -696,11 +697,14 @@ void main() {
 
       // Zero-duration entries should now be included
       expect(result.timelineData.actualSlots.length, equals(1));
-      expect(result.timelineData.actualSlots.first.entry.meta.id, equals('zero-entry-1'));
-      expect(result.timelineData.actualSlots.first.duration, equals(Duration.zero));
+      expect(result.timelineData.actualSlots.first.entry.meta.id,
+          equals('zero-entry-1'));
+      expect(result.timelineData.actualSlots.first.duration,
+          equals(Duration.zero));
     });
 
-    test('includes both zero-duration and normal entries in actualSlots', () async {
+    test('includes both zero-duration and normal entries in actualSlots',
+        () async {
       final plan = createTestPlan(plannedBlocks: []);
       when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
           .thenAnswer((_) async => plan);
