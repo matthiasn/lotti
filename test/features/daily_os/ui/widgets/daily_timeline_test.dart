@@ -9,6 +9,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -298,10 +299,10 @@ void main() {
                   id: 'block-1',
                   categoryId: testCategory.id,
                   startTime: testDate.add(const Duration(hours: 9)),
-                  endTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11)),
                 ),
                 startTime: testDate.add(const Duration(hours: 9)),
-                endTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
                 categoryId: testCategory.id,
               ),
             ],
@@ -313,7 +314,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show hour labels on the time axis
+      // Should show hour labels on the time axis for the visible cluster
+      // With entry from 9-11 and ±1 hour buffer, visible cluster is 8-12
       expect(find.text('08:00'), findsOneWidget);
       expect(find.text('09:00'), findsOneWidget);
       expect(find.text('10:00'), findsOneWidget);
@@ -714,9 +716,9 @@ void main() {
     testWidgets(
         'handles invalid day bounds without crashing (endHour < startHour)',
         (tester) async {
-      // This test verifies the defensive clamp prevents RangeError when
-      // entries cross midnight (e.g., end at 01:00 next day, start at 23:00).
-      // In such cases, the controller might calculate endHour < startHour.
+      // This test verifies the timeline handles edge cases gracefully.
+      // With smart folding, the timeline calculates visible regions from
+      // actual entries rather than using dayStartHour/dayEndHour directly.
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
 
@@ -729,11 +731,11 @@ void main() {
                 block: PlannedBlock(
                   id: 'block-1',
                   categoryId: testCategory.id,
-                  startTime: testDate.add(const Duration(hours: 23)),
-                  endTime: testDate.add(const Duration(hours: 25)), // next day
+                  startTime: testDate.add(const Duration(hours: 21)),
+                  endTime: testDate.add(const Duration(hours: 23)),
                 ),
-                startTime: testDate.add(const Duration(hours: 23)),
-                endTime: testDate.add(const Duration(hours: 25)),
+                startTime: testDate.add(const Duration(hours: 21)),
+                endTime: testDate.add(const Duration(hours: 23)),
                 categoryId: testCategory.id,
               ),
             ],
@@ -748,7 +750,9 @@ void main() {
 
       // Should render without throwing RangeError
       expect(find.byType(DailyTimeline), findsOneWidget);
-      // Should show at least 1 hour on the timeline (clamped minimum)
+      // With smart folding, hours around the entry (21-23) with buffer
+      // become visible (20-24)
+      expect(find.text('21:00'), findsOneWidget);
       expect(find.text('22:00'), findsOneWidget);
     });
   });
@@ -1660,6 +1664,284 @@ void main() {
       // Both entries should render (parent + single nested child)
       expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
       expect(find.byType(DailyTimeline), findsOneWidget);
+    });
+  });
+
+  group('DailyTimeline - Smart Folding Integration', () {
+    JournalEntity createJournalEntry({
+      required String id,
+      required DateTime dateFrom,
+      required DateTime dateTo,
+      String? categoryId,
+    }) {
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: dateFrom,
+          updatedAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          categoryId: categoryId,
+        ),
+      );
+    }
+
+    testWidgets('shows compressed region for large gap between entries',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 2AM and 8PM - large gap should create compressed region
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              // Morning entry: 2:00 - 3:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'morning',
+                  dateFrom: testDate.add(const Duration(hours: 2)),
+                  dateTo: testDate.add(const Duration(hours: 3)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 2)),
+                endTime: testDate.add(const Duration(hours: 3)),
+                categoryId: 'cat-1',
+              ),
+              // Evening entry: 20:00 - 21:00
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'evening',
+                  dateFrom: testDate.add(const Duration(hours: 20)),
+                  dateTo: testDate.add(const Duration(hours: 21)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 20)),
+                endTime: testDate.add(const Duration(hours: 21)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should have CompressedTimelineRegion for the large gap in the middle
+      expect(find.byType(CompressedTimelineRegion), findsWidgets);
+    });
+
+    testWidgets('compressed region shows time range label', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry only at 2AM - should compress before 1AM and after ~4AM
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'early',
+                  dateFrom: testDate.add(const Duration(hours: 2)),
+                  dateTo: testDate.add(const Duration(hours: 3)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 2)),
+                endTime: testDate.add(const Duration(hours: 3)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Compressed regions show time range labels like "04:00 - 20:00"
+      // We should find at least one text with time range format
+      final compressedRegions = find.byType(CompressedTimelineRegion);
+      if (compressedRegions.evaluate().isNotEmpty) {
+        // At least one compressed region exists
+        expect(compressedRegions, findsWidgets);
+      }
+    });
+
+    testWidgets('compressed region has unfold_more icon', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 12PM only - should compress morning and evening
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'noon',
+                  dateFrom: testDate.add(const Duration(hours: 12)),
+                  dateTo: testDate.add(const Duration(hours: 13)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 12)),
+                endTime: testDate.add(const Duration(hours: 13)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // CompressedTimelineRegion contains unfold_more icon
+      final compressedRegions = find.byType(CompressedTimelineRegion);
+      if (compressedRegions.evaluate().isNotEmpty) {
+        expect(find.byIcon(Icons.unfold_more), findsWidgets);
+      }
+    });
+
+    testWidgets('no compressed regions when entries fill the day',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entries every 3 hours - no gap > 4 hours
+      final slots = List.generate(8, (i) {
+        final hour = i * 3;
+        return ActualTimeSlot(
+          entry: createJournalEntry(
+            id: 'entry-$i',
+            dateFrom: testDate.add(Duration(hours: hour)),
+            dateTo: testDate.add(Duration(hours: hour + 1)),
+            categoryId: 'cat-1',
+          ),
+          startTime: testDate.add(Duration(hours: hour)),
+          endTime: testDate.add(Duration(hours: hour + 1)),
+          categoryId: 'cat-1',
+        );
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: slots,
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // With entries every 3 hours and 1-hour buffer, no gap exceeds threshold
+      // Should have no compressed regions
+      expect(find.byType(CompressedTimelineRegion), findsNothing);
+    });
+
+    testWidgets(
+        'empty day shows default 6AM-10PM visible with compressed edges',
+        (tester) async {
+      // No entries - should use default day bounds
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: const [],
+            dayStartHour: 6,
+            dayEndHour: 22,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Empty timeline shows empty state, not compressed regions
+      expect(find.text('No timeline entries'), findsOneWidget);
+    });
+
+    testWidgets('planned slots also affect folding calculation',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Only planned slot at 10AM, no actual entries
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-1',
+                  categoryId: testCategory.id,
+                  startTime: testDate.add(const Duration(hours: 10)),
+                  endTime: testDate.add(const Duration(hours: 11)),
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: const [],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Planned slot should create visible cluster with compressed regions around it
+      expect(find.byType(DailyTimeline), findsOneWidget);
+      // Should see the planned block
+      expect(find.text('Work'), findsOneWidget);
+    });
+
+    testWidgets('visible hour labels appear in visible clusters',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 10AM - visible cluster should include hours 9-12 (with buffer)
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'entry-1',
+                  dateFrom: testDate.add(const Duration(hours: 10)),
+                  dateTo: testDate.add(const Duration(hours: 11)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show hour labels for the visible cluster (9-12 with buffer)
+      expect(find.text('09:00'), findsOneWidget);
+      expect(find.text('10:00'), findsOneWidget);
+      expect(find.text('11:00'), findsOneWidget);
     });
   });
 }

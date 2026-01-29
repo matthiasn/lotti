@@ -101,7 +101,7 @@ final class DailyOsControllerProvider
   DailyOsController create() => DailyOsController();
 }
 
-String _$dailyOsControllerHash() => r'4af28676e54e9b0f67654b5df4025c118b0b4b75';
+String _$dailyOsControllerHash() => r'0631647b9a4061ad25159678675e992ba899f714';
 
 /// Main controller for the Daily OS view.
 ///
@@ -170,3 +170,50 @@ final class HighlightedCategoryIdProvider
 
 String _$highlightedCategoryIdHash() =>
     r'4d99c4f6b8f16b3a8738f1d7f329519a824a1d67';
+
+/// Provides just the expanded fold regions for efficient rebuilds.
+
+@ProviderFor(expandedFoldRegions)
+final expandedFoldRegionsProvider = ExpandedFoldRegionsProvider._();
+
+/// Provides just the expanded fold regions for efficient rebuilds.
+
+final class ExpandedFoldRegionsProvider
+    extends $FunctionalProvider<Set<int>, Set<int>, Set<int>>
+    with $Provider<Set<int>> {
+  /// Provides just the expanded fold regions for efficient rebuilds.
+  ExpandedFoldRegionsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'expandedFoldRegionsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$expandedFoldRegionsHash();
+
+  @$internal
+  @override
+  $ProviderElement<Set<int>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  Set<int> create(Ref ref) {
+    return expandedFoldRegions(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Set<int> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Set<int>>(value),
+    );
+  }
+}
+
+String _$expandedFoldRegionsHash() =>
+    r'18fa6afc4b558bfa56ca2a1415ff9b4d38b5aae9';

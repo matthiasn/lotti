@@ -8,8 +8,10 @@ import 'package:lotti/features/calendar/ui/pages/day_view_page.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
+import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -187,100 +189,37 @@ class DailyTimeline extends ConsumerWidget {
   }
 }
 
-/// Main timeline content with scrollable time axis.
-class _TimelineContent extends StatelessWidget {
+/// Main timeline content with scrollable time axis and smart folding.
+class _TimelineContent extends ConsumerWidget {
   const _TimelineContent({required this.data});
 
   final DailyTimelineData data;
 
   @override
-  Widget build(BuildContext context) {
-    final startHour = data.dayStartHour;
-    final endHour = data.dayEndHour;
-    // Ensure totalHours is at least 1 to prevent RangeError in List.generate
-    final totalHours = (endHour - startHour).clamp(1, 24);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expandedRegions = ref.watch(expandedFoldRegionsProvider);
+
+    // Calculate folding state based on entries
+    final foldingState = calculateFoldingState(
+      plannedSlots: data.plannedSlots,
+      actualSlots: data.actualSlots,
+    );
+
+    // Calculate total height accounting for folding
+    final totalHeight = calculateFoldedTimelineHeight(
+      foldingState: foldingState,
+      expandedRegions: expandedRegions,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section header
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingLarge,
-            vertical: AppTheme.spacingMedium,
-          ),
-          child: Row(
-            children: [
-              Icon(
-                MdiIcons.timelineClockOutline,
-                size: 20,
-                color: context.colorScheme.primary,
-              ),
-              const SizedBox(width: AppTheme.spacingSmall),
-              Text(
-                context.messages.dailyOsTimeline,
-                style: context.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              // Lane labels
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color:
-                            context.colorScheme.primary.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(
-                          color: context.colorScheme.primary
-                              .withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      context.messages.dailyOsPlan,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      context.messages.dailyOsActual,
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        _TimelineHeader(),
 
-        // Timeline grid
+        // Timeline grid with folding
         Container(
           margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingLarge),
-          height: totalHours * DailyTimeline._hourHeight + 20,
           decoration: BoxDecoration(
             color: context.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
@@ -290,107 +229,209 @@ class _TimelineContent extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-            child: Stack(
-              children: [
-                // Hour grid lines
-                ...List.generate(totalHours + 1, (i) {
-                  final hour = startHour + i;
-                  return Positioned(
-                    top: i * DailyTimeline._hourHeight,
-                    left: 0,
-                    right: 0,
-                    child: _HourGridLine(hour: hour, isFirst: i == 0),
-                  );
-                }),
-
-                // Time axis labels
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  width: DailyTimeline._timeAxisWidth,
-                  child: Column(
-                    children: List.generate(totalHours, (i) {
-                      final hour = startHour + i;
-                      return SizedBox(
-                        height: DailyTimeline._hourHeight,
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '${hour.toString().padLeft(2, '0')}:00',
-                              style: context.textTheme.labelSmall?.copyWith(
-                                color: context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.7),
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures()
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-
-                // Planned blocks lane
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: DailyTimeline._timeAxisWidth,
-                  width: DailyTimeline._laneWidth,
-                  child: Stack(
-                    children: data.plannedSlots.map((slot) {
-                      return _PlannedBlockWidget(
-                        slot: slot,
-                        startHour: startHour,
-                        date: data.date,
-                      );
-                    }).toList(),
-                  ),
-                ),
-
-                // Actual blocks lane with overlap handling and nesting
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: DailyTimeline._timeAxisWidth +
-                      DailyTimeline._laneWidth +
-                      8,
-                  right: 8,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final assignments = _assignLanes(data.actualSlots);
-                      final laneCount = _getLaneCount(assignments);
-                      final laneWidth = constraints.maxWidth / laneCount;
-
-                      return Stack(
-                        children: assignments.map((assignment) {
-                          return _ActualBlockWidget(
-                            slot: assignment.slot,
-                            startHour: startHour,
-                            laneIndex: assignment.laneIndex,
-                            laneCount: laneCount,
-                            laneWidth: laneWidth,
-                            nestedChildren: assignment.children,
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ),
-
-                // Current time indicator
-                if (_isToday(data.date))
-                  _CurrentTimeIndicator(startHour: startHour),
-              ],
+            child: _FoldedTimelineGrid(
+              data: data,
+              foldingState: foldingState,
+              expandedRegions: expandedRegions,
+              totalHeight: totalHeight,
             ),
           ),
         ),
       ],
     );
+  }
+}
+
+/// Timeline header with title and legend.
+class _TimelineHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacingLarge,
+        vertical: AppTheme.spacingMedium,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            MdiIcons.timelineClockOutline,
+            size: 20,
+            color: context.colorScheme.primary,
+          ),
+          const SizedBox(width: AppTheme.spacingSmall),
+          Text(
+            context.messages.dailyOsTimeline,
+            style: context.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          // Lane labels
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: context.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(
+                      color: context.colorScheme.primary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  context.messages.dailyOsPlan,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  context.messages.dailyOsActual,
+                  style: context.textTheme.labelSmall?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The timeline grid with folded and visible sections.
+class _FoldedTimelineGrid extends ConsumerWidget {
+  const _FoldedTimelineGrid({
+    required this.data,
+    required this.foldingState,
+    required this.expandedRegions,
+    required this.totalHeight,
+  });
+
+  final DailyTimelineData data;
+  final TimelineFoldingState foldingState;
+  final Set<int> expandedRegions;
+  final double totalHeight;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Build the list of timeline sections in order
+    final sections = _buildOrderedSections();
+
+    return SizedBox(
+      height: totalHeight + 20,
+      child: Column(
+        children: sections.map((section) {
+          return _buildSection(context, ref, section);
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Builds an ordered list of sections (visible clusters and compressed regions).
+  List<_TimelineSection> _buildOrderedSections() {
+    final sections = <_TimelineSection>[];
+
+    // Combine all regions and sort by start hour
+    final allRegions = <({int startHour, int endHour, bool isCompressed})>[];
+
+    for (final cluster in foldingState.visibleClusters) {
+      allRegions.add((
+        startHour: cluster.startHour,
+        endHour: cluster.endHour,
+        isCompressed: false,
+      ));
+    }
+
+    for (final region in foldingState.compressedRegions) {
+      allRegions.add((
+        startHour: region.startHour,
+        endHour: region.endHour,
+        isCompressed: true,
+      ));
+    }
+
+    allRegions.sort((a, b) => a.startHour.compareTo(b.startHour));
+
+    for (final region in allRegions) {
+      final isExpanded = expandedRegions.contains(region.startHour);
+
+      if (region.isCompressed && !isExpanded) {
+        // Compressed region
+        sections.add(
+          _TimelineSection.compressed(
+            CompressedRegion(
+              startHour: region.startHour,
+              endHour: region.endHour,
+            ),
+          ),
+        );
+      } else {
+        // Expanded compressed region - can be collapsed
+        sections.add(
+          _TimelineSection.visible(
+            startHour: region.startHour,
+            endHour: region.endHour,
+            canCollapse: true,
+          ),
+        );
+      }
+    }
+
+    return sections;
+  }
+
+  Widget _buildSection(
+    BuildContext context,
+    WidgetRef ref,
+    _TimelineSection section,
+  ) {
+    return switch (section) {
+      _VisibleSection(:final startHour, :final endHour, :final canCollapse) =>
+        _VisibleTimelineSection(
+          data: data,
+          startHour: startHour,
+          endHour: endHour,
+          isToday: _isToday(data.date),
+          canCollapse: canCollapse,
+          onCollapse: canCollapse
+              ? () {
+                  ref
+                      .read(dailyOsControllerProvider.notifier)
+                      .toggleFoldRegion(startHour);
+                }
+              : null,
+        ),
+      _CompressedSection(:final region) => CompressedTimelineRegion(
+          region: region,
+          timeAxisWidth: DailyTimeline._timeAxisWidth,
+          onTap: () {
+            ref
+                .read(dailyOsControllerProvider.notifier)
+                .toggleFoldRegion(region.startHour);
+          },
+        ),
+    };
   }
 
   bool _isToday(DateTime date) {
@@ -398,6 +439,223 @@ class _TimelineContent extends StatelessWidget {
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
+  }
+}
+
+/// Represents a section of the timeline.
+sealed class _TimelineSection {
+  const _TimelineSection();
+
+  factory _TimelineSection.visible({
+    required int startHour,
+    required int endHour,
+    bool canCollapse,
+  }) = _VisibleSection;
+
+  factory _TimelineSection.compressed(CompressedRegion region) =
+      _CompressedSection;
+}
+
+class _VisibleSection extends _TimelineSection {
+  const _VisibleSection({
+    required this.startHour,
+    required this.endHour,
+    this.canCollapse = false,
+  });
+
+  final int startHour;
+  final int endHour;
+
+  /// If true, this section was expanded from a compressed region and can be
+  /// collapsed back.
+  final bool canCollapse;
+}
+
+class _CompressedSection extends _TimelineSection {
+  const _CompressedSection(this.region);
+
+  final CompressedRegion region;
+}
+
+/// A visible (unfolded) section of the timeline.
+class _VisibleTimelineSection extends ConsumerWidget {
+  const _VisibleTimelineSection({
+    required this.data,
+    required this.startHour,
+    required this.endHour,
+    required this.isToday,
+    this.canCollapse = false,
+    this.onCollapse,
+  });
+
+  final DailyTimelineData data;
+  final int startHour;
+  final int endHour;
+  final bool isToday;
+
+  /// Whether this section can be collapsed (was expanded from a compressed
+  /// region).
+  final bool canCollapse;
+
+  /// Callback to collapse this section back to compressed state.
+  final VoidCallback? onCollapse;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final totalHours = endHour - startHour;
+    final sectionHeight = totalHours * DailyTimeline._hourHeight;
+
+    // Filter slots to only those in this section
+    final sectionPlannedSlots = data.plannedSlots.where((slot) {
+      return slot.startTime.hour >= startHour && slot.startTime.hour < endHour;
+    }).toList();
+
+    final sectionActualSlots = data.actualSlots.where((slot) {
+      return slot.startTime.hour >= startHour && slot.startTime.hour < endHour;
+    }).toList();
+
+    return SizedBox(
+      height: sectionHeight,
+      child: Stack(
+        children: [
+          // Hour grid lines
+          ...List.generate(totalHours + 1, (i) {
+            final hour = startHour + i;
+            return Positioned(
+              top: i * DailyTimeline._hourHeight,
+              left: 0,
+              right: 0,
+              child: _HourGridLine(hour: hour, isFirst: i == 0),
+            );
+          }),
+
+          // Time axis labels
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: DailyTimeline._timeAxisWidth,
+            child: Column(
+              children: List.generate(totalHours, (i) {
+                final hour = startHour + i;
+                return SizedBox(
+                  height: DailyTimeline._hourHeight,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '${hour.toString().padLeft(2, '0')}:00',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: context.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.7),
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+          // Collapse button for expanded regions
+          if (canCollapse && onCollapse != null)
+            Positioned(
+              top: 4,
+              left: 4,
+              child: GestureDetector(
+                onTap: onCollapse,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: context.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.unfold_less,
+                        size: 14,
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        'Fold',
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Planned blocks lane
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: DailyTimeline._timeAxisWidth,
+            width: DailyTimeline._laneWidth,
+            child: Stack(
+              children: sectionPlannedSlots.map((slot) {
+                return _PlannedBlockWidget(
+                  slot: slot,
+                  startHour: startHour,
+                  date: data.date,
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Actual blocks lane with overlap handling and nesting
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: DailyTimeline._timeAxisWidth + DailyTimeline._laneWidth + 8,
+            right: 8,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final assignments = _assignLanes(sectionActualSlots);
+                final laneCount = _getLaneCount(assignments);
+                final laneWidth = constraints.maxWidth / laneCount;
+
+                return Stack(
+                  children: assignments.map((assignment) {
+                    return _ActualBlockWidget(
+                      slot: assignment.slot,
+                      startHour: startHour,
+                      laneIndex: assignment.laneIndex,
+                      laneCount: laneCount,
+                      laneWidth: laneWidth,
+                      nestedChildren: assignment.children,
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+
+          // Current time indicator (only if in this section)
+          if (isToday && _isCurrentTimeInSection())
+            _CurrentTimeIndicator(startHour: startHour),
+        ],
+      ),
+    );
+  }
+
+  bool _isCurrentTimeInSection() {
+    final now = DateTime.now();
+    return now.hour >= startHour && now.hour < endHour;
   }
 }
 
