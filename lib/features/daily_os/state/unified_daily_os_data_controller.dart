@@ -115,10 +115,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
 
     // Determine if selected date is in the future (after today)
     // Using clock.now() for testability - can be mocked with withClock()
-    final now = clock.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final selectedDateStart = DateTime(_date.year, _date.month, _date.day);
-    final isFutureDate = selectedDateStart.isAfter(todayStart);
+    // Use dayAtMidnight for both to ensure consistent TZ/DST boundary semantics
+    final todayStart = clock.now().dayAtMidnight;
+    final isFutureDate = dayStart.isAfter(todayStart);
 
     // Fetch day plan, calendar entries, and due tasks in parallel
     // For future dates: only fetch tasks due ON that specific day (hide overdue)
