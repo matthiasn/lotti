@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.830] - 2026-01-29
+### Fixed
+- Daily OS Time Calculation: Overlapping time entries within the same category no longer double-count
+  - A 1.5h "Gym Trip" containing a 45m "Fitness Entry" now correctly reports 1.5h total (not 2.25h)
+  - Uses time range union algorithm to calculate actual time coverage without overlap inflation
+  - Applies to all budget progress calculations and time summaries
+
+### Changed
+- Daily OS Timeline: Same-category entries that fully contain another now nest visually
+  - Child entries (e.g., the workout) render inset inside their parent block (e.g., the gym trip)
+  - Reduces visual clutter by not using separate lanes for related entries
+  - Different-category entries still display in separate lanes when overlapping
+
 ## [0.9.829] - 2026-01-29
 ### Added
 - Daily OS Priority Indicators: Tasks now display priority badges (P0, P1, P3) styled like Linear

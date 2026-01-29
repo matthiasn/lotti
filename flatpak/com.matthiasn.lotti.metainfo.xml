@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.830" date="2026-01-29">
+      <description>
+        <p>Daily OS Overlap Fix: Time entries within the same category no longer double-count when they overlap. For example, a 1.5-hour "Gym Trip" containing a 45-minute "Fitness Entry" now correctly reports 1.5 hours total instead of 2.25 hours. Uses a time range union algorithm to calculate actual time coverage.</p>
+        <p>Visual Nesting: Same-category entries that fully contain another now nest visually in the timeline. Child entries render inset inside their parent block, reducing visual clutter. Different-category overlapping entries still display in separate lanes.</p>
+      </description>
+    </release>
     <release version="0.9.829" date="2026-01-29">
       <description>
         <p>Daily OS Priority System: Tasks now display Linear-style priority badges (P0 red, P1 orange, P3 gray) in both list and grid views. P2 (Medium) is hidden to reduce visual noise. Tasks without tracked time are sorted by priority first (P0→P1→P2→P3), then by urgency, then alphabetically.</p>
