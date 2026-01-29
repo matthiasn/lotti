@@ -3099,6 +3099,24 @@ abstract class AppLocalizations {
   /// **'AI Models'**
   String get modelsSettingsPageTitle;
 
+  /// No description provided for @multiSelectAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get multiSelectAddButton;
+
+  /// No description provided for @multiSelectAddButtonWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ({count})'**
+  String multiSelectAddButtonWithCount(int count);
+
+  /// No description provided for @multiSelectNoItemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No items found'**
+  String get multiSelectNoItemsFound;
+
   /// No description provided for @navTabTitleCalendar.
   ///
   /// In en, this message translates to:

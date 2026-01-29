@@ -212,8 +212,8 @@ void main() {
       final button = tester.widget(saveButtonFinder);
       expect(button, isA<FilledButton>());
 
-      // Verify save icon is present (FilledButton.icon includes an icon)
-      expect(find.byIcon(Icons.save_rounded), findsOneWidget);
+      // Verify check icon is present (FilledButton.icon includes an icon)
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
     testWidgets('dialog uses Column layout instead of AlertDialog',
@@ -272,6 +272,154 @@ void main() {
 
       final textFieldWidget = tester.widget<TextField>(textField);
       expect(textFieldWidget.autofocus, isTrue);
+    });
+
+    testWidgets('displays unit badge when unitName is not empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // measurableWater has unitName 'ml'
+      // Verify unit badge is displayed
+      expect(find.text('ml'), findsOneWidget);
+    });
+
+    testWidgets('displays description when available', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // measurableWater has description 'H₂O, with or without bubbles'
+      // Verify description is displayed with info icon
+      expect(find.text('H₂O, with or without bubbles'), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('displays section headers with icons', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Section headers should have schedule icon for date/time
+      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+      // And notes icon for comment
+      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
+    });
+
+    testWidgets('comment field renders correctly', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final commentFieldFinder =
+          find.byKey(const Key('measurement_comment_field'));
+      expect(commentFieldFinder, findsOneWidget);
+
+      // Enter a comment
+      await tester.enterText(commentFieldFinder, 'Test comment');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test comment'), findsOneWidget);
+    });
+
+    testWidgets('shows suggestions initially when form is not dirty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // When form is not dirty, suggestions should be shown
+      // (MeasurementSuggestions widget is rendered)
+      // The save button should NOT be visible initially
+      expect(find.byKey(const Key('measurement_save')), findsNothing);
+    });
+
+    testWidgets('returns empty widget when dataType is null', (tester) async {
+      // Configure mock to return null for a nonexistent ID
+      when(
+        () => mockEntitiesCacheService.getDataTypeById('nonexistent-id'),
+      ).thenAnswer((_) => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: const MeasurementDialog(
+              measurableId: 'nonexistent-id',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Should render SizedBox.shrink (empty) when dataType is null
+      // FormBuilder should not be present
+      expect(find.byType(FormBuilder), findsNothing);
     });
   });
 }

@@ -13,8 +13,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
-// Spacing constants for consistent layout
-
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({
     required this.measurableId,
@@ -139,10 +137,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
           ],
 
           // Value input card
-          _ValueInputCard(
-            dataType: dataType,
-            formKey: _formKey,
-          ),
+          _ValueInputCard(dataType: dataType),
 
           const SizedBox(height: 20),
 
@@ -176,7 +171,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
             decoration: InputDecoration(
               hintText: context.messages.addMeasurementCommentLabel,
               hintStyle: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color:
+                    context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
               filled: true,
               fillColor: context.colorScheme.surfaceContainerLow,
@@ -231,7 +227,8 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                             measurementTime: measurementTime,
                           ),
                           icon: const Icon(Icons.check_rounded),
-                          label: Text(context.messages.addMeasurementSaveButton),
+                          label:
+                              Text(context.messages.addMeasurementSaveButton),
                         ),
                       )
                     : const SizedBox.shrink(key: ValueKey('empty')),
@@ -276,13 +273,9 @@ class _SectionHeader extends StatelessWidget {
 
 /// Enhanced value input card with unit badge
 class _ValueInputCard extends StatelessWidget {
-  const _ValueInputCard({
-    required this.dataType,
-    required this.formKey,
-  });
+  const _ValueInputCard({required this.dataType});
 
   final MeasurableDataType dataType;
-  final GlobalKey<FormBuilderState> formKey;
 
   @override
   Widget build(BuildContext context) {
@@ -300,29 +293,35 @@ class _ValueInputCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Unit badge
-          if (hasUnit)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: context.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                dataType.unitName,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
+          // Display name and unit badge row
+          Row(
+            children: [
+              Text(
+                dataType.displayName,
+                style: context.textTheme.labelMedium?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
-            )
-          else
-            Text(
-              dataType.displayName,
-              style: context.textTheme.labelMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
+              if (hasUnit) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    dataType.unitName,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: context.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 8),
 
           // Large value input
@@ -339,7 +338,8 @@ class _ValueInputCard extends StatelessWidget {
               hintText: '0',
               hintStyle: context.textTheme.headlineLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color:
+                    context.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,

@@ -8,7 +8,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('TimeSpanSegmentedControl', () {
-    testWidgets('displays default segments [30, 90, 180, 365] with short labels on phone',
+    testWidgets(
+        'displays default segments [30, 90, 180, 365] with short labels on phone',
         (tester) async {
       // Default phoneMediaQueryData has width 390 < 450, so short labels are shown
       await tester.pumpWidget(

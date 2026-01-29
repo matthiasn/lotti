@@ -1092,19 +1092,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsTasks => 'Tasks';
 
   @override
-  String get dailyOsNoBudgetWarning => 'Keine Zeit eingeplant';
+  String get dailyOsNoBudgetWarning => 'No time budgeted';
 
   @override
-  String get dailyOsDueToday => 'Heute fällig';
+  String get dailyOsDueToday => 'Due today';
 
   @override
-  String get dailyOsDueTodayShort => 'Fällig';
+  String get dailyOsDueTodayShort => 'Due';
 
   @override
-  String get dailyOsOverdue => 'Überfällig';
+  String get dailyOsOverdue => 'Overdue';
 
   @override
-  String get dailyOsOverdueShort => 'Spät';
+  String get dailyOsOverdueShort => 'Late';
 
   @override
   String get dashboardActiveLabel => 'Aktiv:';
@@ -1689,6 +1689,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get modelsSettingsPageTitle => 'AI Models';
+
+  @override
+  String get multiSelectAddButton => 'Hinzufügen';
+
+  @override
+  String multiSelectAddButtonWithCount(int count) {
+    return 'Hinzufügen ($count)';
+  }
+
+  @override
+  String get multiSelectNoItemsFound => 'Keine Einträge gefunden';
 
   @override
   String get navTabTitleCalendar => 'Kalender';
