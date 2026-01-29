@@ -884,7 +884,7 @@ void main() {
       expect(kDefaultDayStart, equals(6));
       expect(kDefaultDayEnd, equals(22));
       expect(kNormalHourHeight, equals(40.0));
-      expect(kCompressedHourHeightDefault, equals(8.0));
+      expect(kCompressedHourHeight, equals(8.0));
     });
 
     test('calculateFoldingState uses default constants', () {

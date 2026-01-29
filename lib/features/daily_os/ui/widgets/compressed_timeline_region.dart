@@ -32,7 +32,7 @@ class CompressedTimelineRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalHeight = region.hourCount * kCompressedHourHeightDefault;
+    final totalHeight = region.hourCount * kCompressedHourHeight;
 
     return GestureDetector(
       onTap: onTap,
@@ -79,7 +79,7 @@ class CompressedTimelineRegion extends StatelessWidget {
                     // Compressed hour markers
                     ...List.generate(region.hourCount, (i) {
                       return Positioned(
-                        top: i * kCompressedHourHeightDefault,
+                        top: i * kCompressedHourHeight,
                         left: 0,
                         right: 0,
                         child: Container(
@@ -181,7 +181,7 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
   @override
   void initState() {
     super.initState();
-    _collapsedHeight = widget.region.hourCount * kCompressedHourHeightDefault;
+    _collapsedHeight = widget.region.hourCount * kCompressedHourHeight;
     _expandedHeight = widget.region.hourCount * widget.normalHourHeight;
 
     _controller = AnimationController(
@@ -210,7 +210,7 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
     // Update heights if region changed
     if (oldWidget.region != widget.region ||
         oldWidget.normalHourHeight != widget.normalHourHeight) {
-      _collapsedHeight = widget.region.hourCount * kCompressedHourHeightDefault;
+      _collapsedHeight = widget.region.hourCount * kCompressedHourHeight;
       _expandedHeight = widget.region.hourCount * widget.normalHourHeight;
       _heightAnimation = Tween<double>(
         begin: _collapsedHeight,

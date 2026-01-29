@@ -17,7 +17,7 @@ const int kDefaultDayEnd = 22;
 const double kNormalHourHeight = 40;
 
 /// Height per hour in compressed regions.
-const double kCompressedHourHeightDefault = 8;
+const double kCompressedHourHeight = 8;
 
 /// Represents a time range that should remain visible (not compressed).
 @immutable
@@ -250,7 +250,7 @@ double calculateFoldedTimelineHeight({
   required TimelineFoldingState foldingState,
   required Set<int> expandedRegions,
   double normalHourHeight = kNormalHourHeight,
-  double compressedHourHeight = kCompressedHourHeightDefault,
+  double compressedHourHeight = kCompressedHourHeight,
 }) {
   var totalHeight = 0.0;
 
@@ -287,7 +287,7 @@ double timeToFoldedPosition({
   required TimelineFoldingState foldingState,
   required Set<int> expandedRegions,
   double normalHourHeight = kNormalHourHeight,
-  double compressedHourHeight = kCompressedHourHeightDefault,
+  double compressedHourHeight = kCompressedHourHeight,
 }) {
   var position = 0.0;
   final timeInHours = hour + minute / 60.0;

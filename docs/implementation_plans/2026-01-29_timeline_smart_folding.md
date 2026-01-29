@@ -65,16 +65,17 @@ class VisibleCluster {
 }
 
 /// Represents a compressed time range between visible clusters.
+/// Note: This class is immutable. Expansion state is managed separately
+/// in DailyOsController.expandedFoldRegions (Set<int> of startHour values).
+@immutable
 class CompressedRegion {
   const CompressedRegion({
     required this.startHour,
     required this.endHour,
-    required this.isExpanded,
   });
 
-  final int startHour;
-  final int endHour;
-  bool isExpanded;
+  final int startHour;  // Inclusive
+  final int endHour;    // Exclusive
 
   int get hourCount => endHour - startHour;
 }
@@ -125,13 +126,14 @@ TimelineFoldingState calculateFoldingState({
     return TimelineFoldingState(
       visibleClusters: [VisibleCluster(startHour: defaultDayStart, endHour: defaultDayEnd)],
       compressedRegions: [
-        CompressedRegion(startHour: 0, endHour: defaultDayStart, isExpanded: false),
-        CompressedRegion(startHour: defaultDayEnd, endHour: 24, isExpanded: false),
+        CompressedRegion(startHour: 0, endHour: defaultDayStart),
+        CompressedRegion(startHour: defaultDayEnd, endHour: 24),
       ],
     );
   }
 
   // Step 3: Build visible clusters from occupied hours
+  // Uses a single-pass algorithm that handles gap checking during cluster building
   final sortedHours = occupiedHours.toList()..sort();
   final clusters = <VisibleCluster>[];
 
@@ -141,62 +143,71 @@ TimelineFoldingState calculateFoldingState({
   for (var i = 1; i < sortedHours.length; i++) {
     final hour = sortedHours[i];
     if (hour <= clusterEnd) {
-      // Extend current cluster
+      // Extend current cluster (contiguous hours)
       clusterEnd = hour + 1;
     } else {
-      // Finalize current cluster, start new one
-      clusters.add(VisibleCluster(startHour: clusterStart, endHour: clusterEnd));
-      clusterStart = hour;
+      // Check if gap is large enough to compress
+      final gap = hour - clusterEnd;
+      if (gap >= gapThreshold) {
+        // Finalize current cluster, start new one
+        clusters.add(VisibleCluster(startHour: clusterStart, endHour: clusterEnd));
+        clusterStart = hour;
+      }
+      // If gap is small, just extend the cluster to include this hour
       clusterEnd = hour + 1;
     }
   }
   // Add final cluster
   clusters.add(VisibleCluster(startHour: clusterStart, endHour: clusterEnd));
 
-  // Step 4: Identify compressed regions (gaps > threshold)
+  // Step 4: Identify compressed regions (gaps >= threshold)
   final compressed = <CompressedRegion>[];
 
-  // Before first cluster
-  if (clusters.first.startHour > 0) {
+  // Before first cluster (if gap is large enough)
+  final firstCluster = clusters.first;
+  if (firstCluster.startHour >= gapThreshold) {
     compressed.add(CompressedRegion(
       startHour: 0,
-      endHour: clusters.first.startHour,
-      isExpanded: false,
+      endHour: firstCluster.startHour,
     ));
+  } else if (firstCluster.startHour > 0) {
+    // Extend first cluster to start of day if gap is small
+    clusters[0] = VisibleCluster(startHour: 0, endHour: firstCluster.endHour);
   }
 
-  // Between clusters
+  // Between clusters (already handled by gap checking above)
   for (var i = 0; i < clusters.length - 1; i++) {
-    final gap = clusters[i + 1].startHour - clusters[i].endHour;
+    final currentCluster = clusters[i];
+    final nextCluster = clusters[i + 1];
+    final gap = nextCluster.startHour - currentCluster.endHour;
+
     if (gap >= gapThreshold) {
       compressed.add(CompressedRegion(
-        startHour: clusters[i].endHour,
-        endHour: clusters[i + 1].startHour,
-        isExpanded: false,
+        startHour: currentCluster.endHour,
+        endHour: nextCluster.startHour,
       ));
-    } else {
-      // Merge adjacent clusters if gap is small
-      clusters[i] = VisibleCluster(
-        startHour: clusters[i].startHour,
-        endHour: clusters[i + 1].endHour,
-      );
-      clusters.removeAt(i + 1);
-      i--; // Re-check this cluster
     }
   }
 
-  // After last cluster
-  if (clusters.last.endHour < 24) {
+  // After last cluster (if gap is large enough)
+  final lastCluster = clusters.last;
+  final endGap = 24 - lastCluster.endHour;
+  if (endGap >= gapThreshold) {
     compressed.add(CompressedRegion(
-      startHour: clusters.last.endHour,
+      startHour: lastCluster.endHour,
       endHour: 24,
-      isExpanded: false,
     ));
+  } else if (lastCluster.endHour < 24) {
+    // Extend last cluster to end of day if gap is small
+    clusters[clusters.length - 1] = VisibleCluster(
+      startHour: lastCluster.startHour,
+      endHour: 24,
+    );
   }
 
   return TimelineFoldingState(
     visibleClusters: clusters,
-    compressedRegions: compressed.where((r) => r.hourCount >= gapThreshold).toList(),
+    compressedRegions: compressed,
   );
 }
 ```
@@ -271,12 +282,12 @@ class CompressedTimelineRegion extends StatelessWidget {
   final CompressedRegion region;
   final VoidCallback onTap;
 
-  static const double compressedHourHeight = 8.0;  // vs 40px normal
+  // Uses kCompressedHourHeight from timeline_folding_utils.dart (8.0px)
   static const double zigzagWidth = 10.0;
 
   @override
   Widget build(BuildContext context) {
-    final totalHeight = region.hourCount * compressedHourHeight;
+    final totalHeight = region.hourCount * kCompressedHourHeight;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
@@ -312,7 +323,7 @@ class CompressedTimelineRegion extends StatelessWidget {
                   ...List.generate(region.hourCount, (i) {
                     final hour = region.startHour + i;
                     return Positioned(
-                      top: i * compressedHourHeight,
+                      top: i * kCompressedHourHeight,
                       left: 0,
                       right: 0,
                       child: _CompressedHourLine(hour: hour),
@@ -488,7 +499,7 @@ class _AnimatedTimelineRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final collapsedHeight = region.hourCount * 8.0;
+    final collapsedHeight = region.hourCount * kCompressedHourHeight;
     final expandedHeight = region.hourCount * DailyTimeline._hourHeight;
 
     return TweenAnimationBuilder<double>(
@@ -671,7 +682,7 @@ group('TimelineFoldingUtils', () {
 
 ```dart
 testWidgets('CompressedTimelineRegion shows time range label', (tester) async {
-  final region = CompressedRegion(startHour: 3, endHour: 13, isExpanded: false);
+  final region = CompressedRegion(startHour: 3, endHour: 13);
 
   await tester.pumpWidget(
     MaterialApp(
@@ -687,7 +698,7 @@ testWidgets('CompressedTimelineRegion shows time range label', (tester) async {
 
 testWidgets('tapping compressed region calls onTap', (tester) async {
   var tapped = false;
-  final region = CompressedRegion(startHour: 0, endHour: 6, isExpanded: false);
+  final region = CompressedRegion(startHour: 0, endHour: 6);
 
   await tester.pumpWidget(
     MaterialApp(

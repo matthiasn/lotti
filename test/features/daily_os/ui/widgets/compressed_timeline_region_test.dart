@@ -86,7 +86,7 @@ void main() {
           matching: find.byType(SizedBox).first,
         ),
       );
-      expect(sizedBox.height, 10 * kCompressedHourHeightDefault);
+      expect(sizedBox.height, 10 * kCompressedHourHeight);
     });
 
     testWidgets('has expand icon', (tester) async {
@@ -213,7 +213,7 @@ void main() {
           matching: find.byType(SizedBox),
         ),
       );
-      expect(sizedBox.height, 8 * kCompressedHourHeightDefault);
+      expect(sizedBox.height, 8 * kCompressedHourHeight);
     });
 
     testWidgets('renders with correct height when expanded', (tester) async {
@@ -245,7 +245,7 @@ void main() {
 
     testWidgets('animates height when expanding', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 8);
-      const collapsedHeight = 8 * kCompressedHourHeightDefault; // 64px
+      const collapsedHeight = 8 * kCompressedHourHeight; // 64px
       const expandedHeight = 8 * 40.0; // 320px
 
       var isExpanded = false;
@@ -316,7 +316,7 @@ void main() {
 
     testWidgets('animates height when collapsing', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 8);
-      const collapsedHeight = 8 * kCompressedHourHeightDefault; // 64px
+      const collapsedHeight = 8 * kCompressedHourHeight; // 64px
       const expandedHeight = 8 * 40.0; // 320px
 
       var isExpanded = true;
@@ -447,7 +447,7 @@ void main() {
           matching: find.byType(SizedBox).first,
         ),
       );
-      expect(sizedBox.height, 1 * kCompressedHourHeightDefault);
+      expect(sizedBox.height, 1 * kCompressedHourHeight);
     });
 
     testWidgets('handles full day region (0-24)', (tester) async {
@@ -473,7 +473,7 @@ void main() {
           matching: find.byType(SizedBox).first,
         ),
       );
-      expect(sizedBox.height, 24 * kCompressedHourHeightDefault);
+      expect(sizedBox.height, 24 * kCompressedHourHeight);
     });
 
     testWidgets('respects custom timeAxisWidth', (tester) async {
