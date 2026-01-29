@@ -242,12 +242,22 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
 
   @override
   Widget build(BuildContext context) {
+    // Determine the target height for the child based on current state
+    final targetHeight = widget.isExpanded ? _expandedHeight : _collapsedHeight;
+
     return AnimatedBuilder(
       animation: _heightAnimation,
       builder: (context, child) {
-        return SizedBox(
-          height: _heightAnimation.value,
-          child: child,
+        return ClipRect(
+          child: SizedBox(
+            height: _heightAnimation.value,
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minHeight: targetHeight,
+              maxHeight: targetHeight,
+              child: child,
+            ),
+          ),
         );
       },
       child: widget.child,

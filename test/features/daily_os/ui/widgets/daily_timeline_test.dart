@@ -1943,5 +1943,151 @@ void main() {
       expect(find.text('10:00'), findsOneWidget);
       expect(find.text('11:00'), findsOneWidget);
     });
+
+    testWidgets('tapping compressed region expands it', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 12PM only - should compress morning and evening
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'noon',
+                  dateFrom: testDate.add(const Duration(hours: 12)),
+                  dateTo: testDate.add(const Duration(hours: 13)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 12)),
+                endTime: testDate.add(const Duration(hours: 13)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should have compressed regions
+      final compressedRegions = find.byType(CompressedTimelineRegion);
+      expect(compressedRegions, findsWidgets);
+
+      // Tap the first compressed region to expand it
+      await tester.tap(compressedRegions.first);
+      await tester.pumpAndSettle();
+
+      // After expansion, the tapped region should show hour labels instead
+      // The region 0-11 (before noon entry) should now be expanded
+      // and show a "Fold" button
+      expect(find.text('Fold'), findsOneWidget);
+    });
+
+    testWidgets('expanded region shows fold button that collapses it',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 12PM only - should compress morning and evening
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'noon',
+                  dateFrom: testDate.add(const Duration(hours: 12)),
+                  dateTo: testDate.add(const Duration(hours: 13)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 12)),
+                endTime: testDate.add(const Duration(hours: 13)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Count initial compressed regions
+      final initialCompressedCount =
+          find.byType(CompressedTimelineRegion).evaluate().length;
+      expect(initialCompressedCount, greaterThan(0));
+
+      // Tap a compressed region to expand it
+      await tester.tap(find.byType(CompressedTimelineRegion).first);
+      await tester.pumpAndSettle();
+
+      // Should now have one fewer compressed region
+      expect(
+        find.byType(CompressedTimelineRegion).evaluate().length,
+        lessThan(initialCompressedCount),
+      );
+
+      // Should show fold button
+      expect(find.text('Fold'), findsOneWidget);
+
+      // Tap the fold button to collapse
+      await tester.tap(find.text('Fold'));
+      await tester.pumpAndSettle();
+
+      // Should be back to original state with compressed regions
+      expect(
+        find.byType(CompressedTimelineRegion).evaluate().length,
+        initialCompressedCount,
+      );
+      expect(find.text('Fold'), findsNothing);
+    });
+
+    testWidgets('visible clusters do not show fold button', (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      // Entry at 12PM - this creates a visible cluster, not a compressed region
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: createJournalEntry(
+                  id: 'noon',
+                  dateFrom: testDate.add(const Duration(hours: 12)),
+                  dateTo: testDate.add(const Duration(hours: 13)),
+                  categoryId: 'cat-1',
+                ),
+                startTime: testDate.add(const Duration(hours: 12)),
+                endTime: testDate.add(const Duration(hours: 13)),
+                categoryId: 'cat-1',
+              ),
+            ],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The visible cluster (where the entry is) should NOT have a fold button
+      // Only expanded compressed regions have fold buttons
+      // Initially, no fold button should be visible
+      expect(find.text('Fold'), findsNothing);
+
+      // The hour labels for the visible cluster should be visible
+      expect(find.text('11:00'), findsOneWidget);
+      expect(find.text('12:00'), findsOneWidget);
+      expect(find.text('13:00'), findsOneWidget);
+    });
   });
 }

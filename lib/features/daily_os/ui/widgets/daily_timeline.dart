@@ -338,12 +338,25 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     // Build the list of timeline sections in order
     final sections = _buildOrderedSections();
 
-    return SizedBox(
-      height: totalHeight + 20,
-      child: Column(
-        children: sections.map((section) {
-          return _buildSection(context, ref, section);
-        }).toList(),
+    // Use AnimatedContainer to smoothly transition the height when
+    // expanding/collapsing regions. The combination of ClipRect + OverflowBox
+    // allows the Column to size itself naturally while clipping any overflow
+    // during animation transitions.
+    return ClipRect(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: totalHeight + 20,
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          maxHeight: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: sections.map((section) {
+              return _buildSection(context, ref, section);
+            }).toList(),
+          ),
+        ),
       ),
     );
   }
@@ -353,13 +366,17 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     final sections = <_TimelineSection>[];
 
     // Combine all regions and sort by start hour
-    final allRegions = <({int startHour, int endHour, bool isCompressed})>[];
+    final allRegions = <({
+      int startHour,
+      int endHour,
+      bool isOriginallyCompressed,
+    })>[];
 
     for (final cluster in foldingState.visibleClusters) {
       allRegions.add((
         startHour: cluster.startHour,
         endHour: cluster.endHour,
-        isCompressed: false,
+        isOriginallyCompressed: false,
       ));
     }
 
@@ -367,7 +384,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
       allRegions.add((
         startHour: region.startHour,
         endHour: region.endHour,
-        isCompressed: true,
+        isOriginallyCompressed: true,
       ));
     }
 
@@ -376,23 +393,23 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     for (final region in allRegions) {
       final isExpanded = expandedRegions.contains(region.startHour);
 
-      if (region.isCompressed && !isExpanded) {
-        // Compressed region
+      if (region.isOriginallyCompressed) {
+        // Originally compressed region - use animatable section
         sections.add(
-          _TimelineSection.compressed(
+          _TimelineSection.animatable(
             CompressedRegion(
               startHour: region.startHour,
               endHour: region.endHour,
             ),
+            isExpanded: isExpanded,
           ),
         );
       } else {
-        // Expanded compressed region - can be collapsed
+        // Visible cluster - always visible, cannot collapse
         sections.add(
           _TimelineSection.visible(
             startHour: region.startHour,
             endHour: region.endHour,
-            canCollapse: true,
           ),
         );
       }
@@ -407,29 +424,42 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     _TimelineSection section,
   ) {
     return switch (section) {
-      _VisibleSection(:final startHour, :final endHour, :final canCollapse) =>
+      // Visible clusters cannot collapse - they are always visible
+      _VisibleSection(:final startHour, :final endHour) =>
         _VisibleTimelineSection(
           data: data,
           startHour: startHour,
           endHour: endHour,
           isToday: _isToday(data.date),
-          canCollapse: canCollapse,
-          onCollapse: canCollapse
-              ? () {
-                  ref
-                      .read(dailyOsControllerProvider.notifier)
-                      .toggleFoldRegion(startHour);
-                }
-              : null,
         ),
-      _CompressedSection(:final region) => CompressedTimelineRegion(
+      _AnimatableSection(:final region, :final isExpanded) =>
+        AnimatedTimelineRegion(
+          key: ValueKey('animated-region-${region.startHour}'),
           region: region,
-          timeAxisWidth: DailyTimeline._timeAxisWidth,
-          onTap: () {
-            ref
-                .read(dailyOsControllerProvider.notifier)
-                .toggleFoldRegion(region.startHour);
-          },
+          isExpanded: isExpanded,
+          normalHourHeight: DailyTimeline._hourHeight,
+          child: isExpanded
+              ? _VisibleTimelineSection(
+                  data: data,
+                  startHour: region.startHour,
+                  endHour: region.endHour,
+                  isToday: _isToday(data.date),
+                  canCollapse: true,
+                  onCollapse: () {
+                    ref
+                        .read(dailyOsControllerProvider.notifier)
+                        .toggleFoldRegion(region.startHour);
+                  },
+                )
+              : CompressedTimelineRegion(
+                  region: region,
+                  timeAxisWidth: DailyTimeline._timeAxisWidth,
+                  onTap: () {
+                    ref
+                        .read(dailyOsControllerProvider.notifier)
+                        .toggleFoldRegion(region.startHour);
+                  },
+                ),
         ),
     };
   }
@@ -449,32 +479,30 @@ sealed class _TimelineSection {
   factory _TimelineSection.visible({
     required int startHour,
     required int endHour,
-    bool canCollapse,
   }) = _VisibleSection;
 
-  factory _TimelineSection.compressed(CompressedRegion region) =
-      _CompressedSection;
+  factory _TimelineSection.animatable(
+    CompressedRegion region, {
+    required bool isExpanded,
+  }) = _AnimatableSection;
 }
 
 class _VisibleSection extends _TimelineSection {
   const _VisibleSection({
     required this.startHour,
     required this.endHour,
-    this.canCollapse = false,
   });
 
   final int startHour;
   final int endHour;
-
-  /// If true, this section was expanded from a compressed region and can be
-  /// collapsed back.
-  final bool canCollapse;
 }
 
-class _CompressedSection extends _TimelineSection {
-  const _CompressedSection(this.region);
+/// A section that can animate between compressed and expanded states.
+class _AnimatableSection extends _TimelineSection {
+  const _AnimatableSection(this.region, {required this.isExpanded});
 
   final CompressedRegion region;
+  final bool isExpanded;
 }
 
 /// A visible (unfolded) section of the timeline.
@@ -505,13 +533,15 @@ class _VisibleTimelineSection extends ConsumerWidget {
     final totalHours = endHour - startHour;
     final sectionHeight = totalHours * DailyTimeline._hourHeight;
 
-    // Filter slots to only those in this section
+    // Filter slots to only those that overlap with this section.
+    // A slot overlaps if it starts before the section ends AND ends after the
+    // section starts.
     final sectionPlannedSlots = data.plannedSlots.where((slot) {
-      return slot.startTime.hour >= startHour && slot.startTime.hour < endHour;
+      return _slotOverlapsSection(slot.startTime, slot.endTime);
     }).toList();
 
     final sectionActualSlots = data.actualSlots.where((slot) {
-      return slot.startTime.hour >= startHour && slot.startTime.hour < endHour;
+      return _slotOverlapsSection(slot.startTime, slot.endTime);
     }).toList();
 
     return SizedBox(
@@ -589,7 +619,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        'Fold',
+                        context.messages.dailyOsFold,
                         style: context.textTheme.labelSmall?.copyWith(
                           color: context.colorScheme.onSurfaceVariant,
                         ),
@@ -651,6 +681,19 @@ class _VisibleTimelineSection extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Checks if a slot overlaps with this section's time range.
+  ///
+  /// A slot overlaps if it starts before the section ends AND ends after the
+  /// section starts. This handles slots that span section boundaries.
+  bool _slotOverlapsSection(DateTime slotStart, DateTime slotEnd) {
+    // Convert section boundaries to comparable hour values.
+    // A slot overlaps if: slotStartHour < endHour AND slotEndHour > startHour
+    final slotStartHour = slotStart.hour + slotStart.minute / 60.0;
+    final slotEndHour = slotEnd.hour + slotEnd.minute / 60.0;
+
+    return slotStartHour < endHour && slotEndHour > startHour;
   }
 
   bool _isCurrentTimeInSection() {

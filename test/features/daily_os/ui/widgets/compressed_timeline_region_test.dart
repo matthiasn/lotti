@@ -242,6 +242,149 @@ void main() {
       );
       expect(sizedBox.height, 8 * 40.0);
     });
+
+    testWidgets('animates height when expanding', (tester) async {
+      const region = CompressedRegion(startHour: 0, endHour: 8);
+      const collapsedHeight = 8 * kCompressedHourHeight; // 64px
+      const expandedHeight = 8 * 40.0; // 320px
+
+      var isExpanded = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => setState(() => isExpanded = !isExpanded),
+                      child: const Text('Toggle'),
+                    ),
+                    AnimatedTimelineRegion(
+                      region: region,
+                      isExpanded: isExpanded,
+                      normalHourHeight: 40,
+                      child: Container(color: Colors.blue),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      // Initial collapsed state
+      var sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, collapsedHeight);
+
+      // Trigger expansion
+      await tester.tap(find.text('Toggle'));
+      await tester.pump();
+
+      // Pump partway through animation (150ms of 300ms)
+      await tester.pump(const Duration(milliseconds: 150));
+
+      // Height should be between collapsed and expanded (animation in progress)
+      sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, greaterThan(collapsedHeight));
+      expect(sizedBox.height, lessThan(expandedHeight));
+
+      // Complete the animation
+      await tester.pumpAndSettle();
+
+      // Final expanded state
+      sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, expandedHeight);
+    });
+
+    testWidgets('animates height when collapsing', (tester) async {
+      const region = CompressedRegion(startHour: 0, endHour: 8);
+      const collapsedHeight = 8 * kCompressedHourHeight; // 64px
+      const expandedHeight = 8 * 40.0; // 320px
+
+      var isExpanded = true;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => setState(() => isExpanded = !isExpanded),
+                      child: const Text('Toggle'),
+                    ),
+                    AnimatedTimelineRegion(
+                      region: region,
+                      isExpanded: isExpanded,
+                      normalHourHeight: 40,
+                      child: Container(color: Colors.blue),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initial expanded state
+      var sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, expandedHeight);
+
+      // Trigger collapse
+      await tester.tap(find.text('Toggle'));
+      await tester.pump();
+
+      // Pump partway through animation (150ms of 300ms)
+      await tester.pump(const Duration(milliseconds: 150));
+
+      // Height should be between collapsed and expanded (animation in progress)
+      sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, greaterThan(collapsedHeight));
+      expect(sizedBox.height, lessThan(expandedHeight));
+
+      // Complete the animation
+      await tester.pumpAndSettle();
+
+      // Final collapsed state
+      sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byType(AnimatedTimelineRegion),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.height, collapsedHeight);
+    });
   });
 
   group('CompressedTimelineRegion edge cases', () {

@@ -484,6 +484,7 @@
   "dailyOsDueTodayShort": "Due",
   "dailyOsOverdue": "Overdue",
   "dailyOsOverdueShort": "Late",
+  "dailyOsFold": "Fold",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",

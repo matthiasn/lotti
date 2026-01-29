@@ -88,6 +88,7 @@
   "dailyOsDueTodayShort": "Hoy",
   "dailyOsOverdue": "Vencido",
   "dailyOsOverdueShort": "Tarde",
+  "dailyOsFold": "Contraer",
   "dashboardActiveLabel": "Activo:",
   "dashboardAddChartsTitle": "Añadir gráficos:",
   "dashboardAddHabitButton": "Gráficos de hábitos",
