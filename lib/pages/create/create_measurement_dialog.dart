@@ -348,7 +348,14 @@ class _ValueInputCard extends StatelessWidget {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(),
-              FormBuilderValidators.numeric(),
+              (value) {
+                if (value == null || value.isEmpty) return null;
+                final normalized = value.replaceAll(',', '.');
+                if (num.tryParse(normalized) == null) {
+                  return FormBuilderValidators.numeric<String>().call(value);
+                }
+                return null;
+              },
             ]),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),

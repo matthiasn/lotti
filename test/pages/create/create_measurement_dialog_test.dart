@@ -421,5 +421,43 @@ void main() {
       // FormBuilder should not be present
       expect(find.byType(FormBuilder), findsNothing);
     });
+
+    testWidgets('date time field can be interacted with', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the date time field (it's a TextField inside DateTimeField)
+      // The DateTimeField shows the date/time text
+      final dateTimeFieldFinder = find.byType(TextField).at(1);
+      expect(dateTimeFieldFinder, findsOneWidget);
+
+      // Tap to open the date time picker modal
+      await tester.tap(dateTimeFieldFinder);
+      await tester.pumpAndSettle();
+
+      // The modal should open with "now" button
+      final nowButton = find.textContaining(RegExp(r'now', caseSensitive: false));
+      expect(nowButton, findsOneWidget);
+
+      // Tap "now" to set the date time and close the modal
+      await tester.tap(nowButton);
+      await tester.pumpAndSettle();
+
+      // Modal should be closed, measurement dialog still visible
+      expect(find.byType(FormBuilder), findsOneWidget);
+    });
   });
 }

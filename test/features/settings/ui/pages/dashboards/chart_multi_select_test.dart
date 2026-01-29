@@ -293,6 +293,39 @@ void main() {
       expect(find.text('Second Item'), findsOneWidget);
       expect(find.text('Third Item'), findsOneWidget);
     });
+
+    testWidgets('modal allows deselecting items', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChartMultiSelect<String>(
+            multiSelectItems: testItems,
+            onConfirm: (_) {},
+            title: 'Select Items',
+            buttonText: 'Add Items',
+            semanticsLabel: 'Add items button',
+            iconData: Icons.add,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open modal
+      await tester.tap(find.text('Add Items'));
+      await tester.pumpAndSettle();
+
+      // Select First Item
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add (1)'), findsOneWidget);
+
+      // Deselect First Item
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'First Item'));
+      await tester.pumpAndSettle();
+
+      // Should show "Add" without count
+      expect(find.text('Add'), findsOneWidget);
+      expect(find.text('Add (1)'), findsNothing);
+    });
   });
 
   group('_MultiSelectList', () {
