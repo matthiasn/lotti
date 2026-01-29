@@ -123,6 +123,58 @@ void main() {
       expect(range1, equals(range2));
       expect(range1, isNot(equals(range3)));
     });
+
+    test('hashCode is consistent with equality', () {
+      final range1 = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 12),
+      );
+      final range2 = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 12),
+      );
+      final range3 = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 13),
+      );
+
+      // Equal objects must have equal hash codes
+      expect(range1.hashCode, equals(range2.hashCode));
+      // Different objects should (usually) have different hash codes
+      expect(range1.hashCode, isNot(equals(range3.hashCode)));
+    });
+
+    test('toString returns readable representation', () {
+      final range = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 12),
+      );
+
+      final str = range.toString();
+      expect(str, contains('TimeRange'));
+      expect(str, contains('2024'));
+    });
+
+    test('identical ranges are equal', () {
+      final range = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 12),
+      );
+
+      expect(range == range, isTrue);
+    });
+
+    test('equality with non-TimeRange returns false', () {
+      final range = TimeRange(
+        start: DateTime(2024, 1, 15, 10),
+        end: DateTime(2024, 1, 15, 12),
+      );
+
+      // ignore: unrelated_type_equality_checks
+      expect(range == 'not a range', isFalse);
+      // ignore: unrelated_type_equality_checks
+      expect(range == 42, isFalse);
+    });
   });
 
   group('mergeOverlappingRanges', () {
