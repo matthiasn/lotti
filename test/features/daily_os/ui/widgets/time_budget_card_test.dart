@@ -42,7 +42,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
-      pinnedTasks: const [],
+      taskProgressItems: const [],
       blocks: blocks ??
           [
             PlannedBlock(
@@ -187,7 +187,7 @@ void main() {
             recordedDuration: Duration.zero,
             status: BudgetProgressStatus.underBudget,
             contributingEntries: const [],
-            pinnedTasks: const [],
+            taskProgressItems: const [],
             blocks: [
               PlannedBlock(
                 id: 'block-1',
@@ -343,8 +343,18 @@ void main() {
       );
     }
 
+    TaskDayProgress taskToProgress(Task task) {
+      final isCompleted =
+          task.data.status is TaskDone || task.data.status is TaskRejected;
+      return TaskDayProgress(
+        task: task,
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: isCompleted,
+      );
+    }
+
     TimeBudgetProgress createProgressWithTasks({
-      List<Task> pinnedTasks = const [],
+      List<Task> tasks = const [],
       List<JournalEntity> contributingEntries = const [],
     }) {
       return TimeBudgetProgress(
@@ -354,7 +364,7 @@ void main() {
         recordedDuration: const Duration(hours: 1),
         status: BudgetProgressStatus.underBudget,
         contributingEntries: contributingEntries,
-        pinnedTasks: pinnedTasks,
+        taskProgressItems: tasks.map(taskToProgress).toList(),
         blocks: [
           PlannedBlock(
             id: 'block-1',
@@ -369,7 +379,7 @@ void main() {
     testWidgets('hides pinned tasks section when empty', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: []),
+          progress: createProgressWithTasks(tasks: []),
         ),
       );
       await tester.pumpAndSettle();
@@ -396,7 +406,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
@@ -418,7 +428,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
@@ -426,10 +436,10 @@ void main() {
       expect(find.text('Important Work Item'), findsOneWidget);
     });
 
-    testWidgets('shows chevron icon for pinned tasks', (tester) async {
+    testWidgets('shows status indicator for open tasks', (tester) async {
       final task = createTask(
         id: 'task-1',
-        title: 'Task With Chevron',
+        title: 'Task With Status',
         status: TaskStatus.open(
           id: 'status-1',
           createdAt: testDate,
@@ -439,15 +449,17 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      // Open tasks show a circle border indicator (no check icon)
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.text('Task With Status'), findsOneWidget);
     });
 
-    testWidgets('shows check icon for completed tasks (TaskDone)',
+    testWidgets('shows check_circle icon for completed tasks (TaskDone)',
         (tester) async {
       final task = createTask(
         id: 'task-1',
@@ -461,15 +473,15 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
-    testWidgets('shows check icon for rejected tasks (TaskRejected)',
+    testWidgets('shows check_circle icon for rejected tasks (TaskRejected)',
         (tester) async {
       final task = createTask(
         id: 'task-1',
@@ -483,12 +495,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
     testWidgets('does not show check icon for in-progress tasks',
@@ -505,12 +517,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('does not show check icon for open tasks', (tester) async {
@@ -526,12 +538,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('does not show check icon for blocked tasks', (tester) async {
@@ -548,12 +560,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('does not show check icon for on-hold tasks', (tester) async {
@@ -570,12 +582,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('does not show check icon for groomed tasks', (tester) async {
@@ -591,12 +603,12 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
     testWidgets('displays multiple pinned tasks', (tester) async {
@@ -632,7 +644,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: tasks),
+          progress: createProgressWithTasks(tasks: tasks),
         ),
       );
       await tester.pumpAndSettle();
@@ -640,7 +652,8 @@ void main() {
       expect(find.text('First Task'), findsOneWidget);
       expect(find.text('Second Task'), findsOneWidget);
       expect(find.text('Third Task'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(3));
+      // Third task is done, so it shows check_circle
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
     testWidgets('task row is tappable with GestureDetector', (tester) async {
@@ -656,7 +669,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(pinnedTasks: [task]),
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
@@ -719,7 +732,7 @@ void main() {
         recordedDuration: const Duration(hours: 1),
         status: BudgetProgressStatus.underBudget,
         contributingEntries: contributingEntries,
-        pinnedTasks: const [],
+        taskProgressItems: const [],
         blocks: [
           PlannedBlock(
             id: 'block-1',
@@ -751,11 +764,14 @@ void main() {
       expect(find.byType(Divider), findsNothing);
     });
 
-    testWidgets('shows contributing tasks section when tasks present',
+    testWidgets(
+        'does not display tasks from contributingEntries in task section',
         (tester) async {
+      // Tasks in contributingEntries are NOT displayed in the task section
+      // Only taskProgressItems are shown
       final task = createTask(
         id: 'task-1',
-        title: 'Contributing Task',
+        title: 'Contributing Task In Entries',
         status: TaskStatus.inProgress(
           id: 'status-1',
           createdAt: testDate,
@@ -772,110 +788,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Contributing Task'), findsOneWidget);
-      expect(find.byType(Divider), findsOneWidget);
-    });
-
-    testWidgets('shows only tasks from mixed contributing entries',
-        (tester) async {
-      final task1 = createTask(
-        id: 'task-1',
-        title: 'Task One',
-        status: TaskStatus.inProgress(
-          id: 'status-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-      final task2 = createTask(
-        id: 'task-2',
-        title: 'Task Two',
-        status: TaskStatus.done(
-          id: 'status-2',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithContributing(
-            contributingEntries: [
-              createEntry(id: 'entry-1'),
-              task1,
-              createEntry(id: 'entry-2'),
-              task2,
-            ],
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Task One'), findsOneWidget);
-      expect(find.text('Task Two'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
-    });
-
-    testWidgets('shows both pinned and contributing sections when both have data',
-        (tester) async {
-      final pinnedTask = Task(
-        meta: Metadata(
-          id: 'pinned-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-        ),
-        data: TaskData(
-          title: 'Pinned Task',
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-          statusHistory: const [],
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
-
-      final contributingTask = createTask(
-        id: 'contrib-1',
-        title: 'Contributing Task',
-        status: TaskStatus.done(
-          id: 'status-2',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: [contributingTask],
-        pinnedTasks: [pinnedTask],
-        blocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: testCategory.id,
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 11)),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(progress: progress),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Pinned Task'), findsOneWidget);
-      expect(find.text('Contributing Task'), findsOneWidget);
-      // Two dividers - one for pinned section, one for contributing section
-      expect(find.byType(Divider), findsNWidgets(2));
+      // Task title should NOT appear because it's only in contributingEntries
+      expect(find.text('Contributing Task In Entries'), findsNothing);
+      expect(find.byType(Divider), findsNothing);
     });
   });
 
@@ -986,164 +901,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('P3'), findsOneWidget);
-    });
-
-    testWidgets('shows P0 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P0'), findsOneWidget);
-    });
-
-    testWidgets('shows P1 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p1High),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P1'), findsOneWidget);
-    });
-
-    testWidgets('does not show P2 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // P2 (Medium/default) badge is intentionally hidden
-      expect(find.text('P2'), findsNothing);
-    });
-
-    testWidgets('shows P3 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p3Low),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P3'), findsOneWidget);
-    });
-
-    testWidgets('priority badge stacks below completed checkmark in grid',
-        (tester) async {
-      final completedTask = Task(
-        meta: Metadata(
-          id: 'task-completed',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          categoryId: testCategory.id,
-        ),
-        data: TaskData(
-          title: 'Completed Priority Task',
-          dateFrom: testDate,
-          dateTo: testDate,
-          priority: TaskPriority.p0Urgent,
-          statusHistory: [],
-          status: TaskStatus.done(
-            id: 'status-done',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
-
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: completedTask,
-            timeSpentOnDay: const Duration(hours: 1),
-            wasCompletedOnDay: true,
-          ),
-        ],
-        blocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: testCategory.id,
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 11)),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: progress,
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show both checkmark (Icons.check in grid) and P0 badge
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('P0'), findsOneWidget);
-    });
-
-    testWidgets('priority badge stacks below due badge in grid',
-        (tester) async {
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: createPriorityTask(
-              id: 'task-due',
-              title: 'Due Priority Task',
-              priority: TaskPriority.p1High,
-            ),
-            timeSpentOnDay: const Duration(hours: 1),
-            wasCompletedOnDay: false,
-            dueDateStatus: const DueDateStatus(
-              urgency: DueDateUrgency.dueToday,
-              daysUntilDue: 0,
-            ),
-          ),
-        ],
-        blocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: testCategory.id,
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 11)),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: progress,
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show both due badge and P1 badge
-      expect(find.text('Due'), findsOneWidget);
-      expect(find.text('P1'), findsOneWidget);
     });
   });
 }

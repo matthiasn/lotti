@@ -4026,17 +4026,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get measurableNotFound => 'Measurable not found';
 
   @override
-  String get multiSelectAddButton => 'Add';
-
-  @override
-  String multiSelectAddButtonWithCount(int count) {
-    return 'Add ($count)';
-  }
-
-  @override
-  String get multiSelectNoItemsFound => 'No items found';
-
-  @override
   String get navTabTitleCalendar => 'Calendar';
 
   @override

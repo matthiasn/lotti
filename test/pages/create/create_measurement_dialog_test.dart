@@ -422,6 +422,37 @@ void main() {
       expect(find.byType(FormBuilder), findsNothing);
     });
 
+    testWidgets('shows validation error for invalid numeric input like 1..2',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 800,
+              maxWidth: 800,
+            ),
+            child: MeasurementDialog(
+              measurableId: measurableWater.id,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Enter an invalid number (passes character filter but fails num.tryParse)
+      final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
+      await tester.enterText(valueFieldFinder, '1..2');
+      await tester.pumpAndSettle();
+
+      // Form should be invalid - save button should NOT appear
+      expect(find.byKey(const Key('measurement_save')), findsNothing);
+
+      // The FormBuilderTextField validation error should be shown
+      // FormBuilderValidators.numeric returns localized error message
+      expect(find.byType(FormBuilder), findsOneWidget);
+    });
+
     testWidgets('date time field can be interacted with', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -449,7 +480,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // The modal should open with "now" button
-      final nowButton = find.textContaining(RegExp(r'now', caseSensitive: false));
+      final nowButton =
+          find.textContaining(RegExp('now', caseSensitive: false));
       expect(nowButton, findsOneWidget);
 
       // Tap "now" to set the date time and close the modal
