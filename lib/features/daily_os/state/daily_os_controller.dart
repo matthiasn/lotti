@@ -199,12 +199,11 @@ class DailyOsController extends _$DailyOsController {
     final current = state.value;
     if (current == null) return;
 
-    final currentRegions = current.expandedFoldRegions;
-    final Set<int> updatedRegions;
-    if (currentRegions.contains(startHour)) {
-      updatedRegions = currentRegions.where((r) => r != startHour).toSet();
+    final updatedRegions = {...current.expandedFoldRegions};
+    if (updatedRegions.contains(startHour)) {
+      updatedRegions.remove(startHour);
     } else {
-      updatedRegions = {...currentRegions, startHour};
+      updatedRegions.add(startHour);
     }
 
     state = AsyncData(current.copyWith(expandedFoldRegions: updatedRegions));

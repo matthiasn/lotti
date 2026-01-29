@@ -732,6 +732,72 @@ void main() {
       // And at least one compressed region for the larger gap
       expect(state.compressedRegions.isNotEmpty, isTrue);
     });
+
+    test('entry crossing midnight (overnight) clamps to end of day', () {
+      // Entry from 23:00 to 01:00 next day (2 hour duration crossing midnight)
+      final startTime = testDate.add(const Duration(hours: 23));
+      final endTime = startTime.add(const Duration(hours: 2)); // 01:00 next day
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'overnight-entry',
+          createdAt: startTime,
+          updatedAt: startTime,
+          dateFrom: startTime,
+          dateTo: endTime,
+        ),
+      );
+      final overnightSlot = ActualTimeSlot(
+        startTime: startTime,
+        endTime: endTime,
+        entry: entry,
+      );
+
+      final state = calculateFoldingState(
+        plannedSlots: [],
+        actualSlots: [overnightSlot],
+      );
+
+      // Entry crossing midnight should clamp to 24 for this day
+      // With buffer, cluster should extend to 24 (end of day)
+      expect(state.visibleClusters.last.endHour, 24);
+      // Start should be 22 (23 - 1 buffer)
+      expect(state.visibleClusters.last.startHour, 22);
+    });
+
+    test('multiple entries including overnight do not break clustering', () {
+      // Morning entry at 9:00
+      final morningSlot = createActualSlot(hour: 9, durationMinutes: 60);
+
+      // Overnight entry from 23:00 to 02:00 next day
+      final startTime = testDate.add(const Duration(hours: 23));
+      final endTime = startTime.add(const Duration(hours: 3)); // 02:00 next day
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'overnight-entry',
+          createdAt: startTime,
+          updatedAt: startTime,
+          dateFrom: startTime,
+          dateTo: endTime,
+        ),
+      );
+      final overnightSlot = ActualTimeSlot(
+        startTime: startTime,
+        endTime: endTime,
+        entry: entry,
+      );
+
+      final state = calculateFoldingState(
+        plannedSlots: [],
+        actualSlots: [morningSlot, overnightSlot],
+      );
+
+      // Should have two clusters: morning and evening
+      expect(state.visibleClusters, hasLength(2));
+      // Last cluster should extend to 24
+      expect(state.visibleClusters.last.endHour, 24);
+      // There should be a compressed region between them
+      expect(state.compressedRegions.isNotEmpty, isTrue);
+    });
   });
 
   group('timeToFoldedPosition edge cases', () {

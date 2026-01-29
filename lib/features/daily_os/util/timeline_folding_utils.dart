@@ -129,7 +129,12 @@ TimelineFoldingState calculateFoldingState({
 
   for (final slot in [...plannedSlots, ...actualSlots]) {
     final startHour = slot.startTime.hour;
-    final endHour = slot.endTime.hour + (slot.endTime.minute > 0 ? 1 : 0);
+
+    // Handle entries that cross midnight (endTime is on a different day)
+    // For such entries, clamp to end of day (24) for this day's timeline
+    final crossesMidnight = !_isSameDay(slot.startTime, slot.endTime);
+    final rawEndHour = slot.endTime.hour + (slot.endTime.minute > 0 ? 1 : 0);
+    final endHour = crossesMidnight ? 24 : rawEndHour;
 
     // Add buffer
     final bufferedStart = (startHour - bufferHours).clamp(0, 23);
@@ -343,4 +348,9 @@ bool isHourInCompressedRegion({
     }
   }
   return false;
+}
+
+/// Checks if two DateTimes are on the same calendar day.
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

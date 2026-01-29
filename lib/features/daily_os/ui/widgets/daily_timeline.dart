@@ -337,6 +337,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Build the list of timeline sections in order
     final sections = _buildOrderedSections();
+    final isToday = _isToday(data.date);
 
     // Use AnimatedContainer to smoothly transition the height when
     // expanding/collapsing regions. The combination of ClipRect + OverflowBox
@@ -344,17 +345,29 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     // during animation transitions.
     return ClipRect(
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: AppTheme.animationDuration),
         curve: Curves.easeInOut,
         height: totalHeight + 20,
         child: OverflowBox(
           alignment: Alignment.topCenter,
           maxHeight: double.infinity,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: sections.map((section) {
-              return _buildSection(context, ref, section);
-            }).toList(),
+          child: Stack(
+            children: [
+              // Timeline sections
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: sections.map((section) {
+                  return _buildSection(context, ref, section);
+                }).toList(),
+              ),
+
+              // Current time indicator (single instance, positioned using folding)
+              if (isToday)
+                _CurrentTimeIndicator(
+                  foldingState: foldingState,
+                  expandedRegions: expandedRegions,
+                ),
+            ],
           ),
         ),
       ),
@@ -430,7 +443,6 @@ class _FoldedTimelineGrid extends ConsumerWidget {
           data: data,
           startHour: startHour,
           endHour: endHour,
-          isToday: _isToday(data.date),
         ),
       _AnimatableSection(:final region, :final isExpanded) =>
         AnimatedTimelineRegion(
@@ -443,7 +455,6 @@ class _FoldedTimelineGrid extends ConsumerWidget {
                   data: data,
                   startHour: region.startHour,
                   endHour: region.endHour,
-                  isToday: _isToday(data.date),
                   canCollapse: true,
                   onCollapse: () {
                     ref
@@ -511,7 +522,6 @@ class _VisibleTimelineSection extends ConsumerWidget {
     required this.data,
     required this.startHour,
     required this.endHour,
-    required this.isToday,
     this.canCollapse = false,
     this.onCollapse,
   });
@@ -519,7 +529,6 @@ class _VisibleTimelineSection extends ConsumerWidget {
   final DailyTimelineData data;
   final int startHour;
   final int endHour;
-  final bool isToday;
 
   /// Whether this section can be collapsed (was expanded from a compressed
   /// region).
@@ -674,10 +683,6 @@ class _VisibleTimelineSection extends ConsumerWidget {
               },
             ),
           ),
-
-          // Current time indicator (only if in this section)
-          if (isToday && _isCurrentTimeInSection())
-            _CurrentTimeIndicator(startHour: startHour),
         ],
       ),
     );
@@ -694,11 +699,6 @@ class _VisibleTimelineSection extends ConsumerWidget {
     final slotEndHour = slotEnd.hour + slotEnd.minute / 60.0;
 
     return slotStartHour < endHour && slotEndHour > startHour;
-  }
-
-  bool _isCurrentTimeInSection() {
-    final now = DateTime.now();
-    return now.hour >= startHour && now.hour < endHour;
   }
 }
 
@@ -1104,16 +1104,38 @@ class _NestedChildBlock extends ConsumerWidget {
 }
 
 /// Current time indicator line.
+///
+/// Uses [timeToFoldedPosition] to correctly position the indicator
+/// accounting for compressed/expanded regions in the folded timeline.
 class _CurrentTimeIndicator extends StatelessWidget {
-  const _CurrentTimeIndicator({required this.startHour});
+  const _CurrentTimeIndicator({
+    required this.foldingState,
+    required this.expandedRegions,
+  });
 
-  final int startHour;
+  final TimelineFoldingState foldingState;
+  final Set<int> expandedRegions;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final currentMinutes = (now.hour - startHour) * 60 + now.minute;
-    final top = currentMinutes * DailyTimeline._hourHeight / 60;
+
+    // Hide indicator if current time is in a collapsed compressed region
+    if (isHourInCompressedRegion(
+      hour: now.hour,
+      foldingState: foldingState,
+      expandedRegions: expandedRegions,
+    )) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate position using the folding-aware utility
+    final top = timeToFoldedPosition(
+      hour: now.hour,
+      minute: now.minute,
+      foldingState: foldingState,
+      expandedRegions: expandedRegions,
+    );
 
     if (top < 0) return const SizedBox.shrink();
 

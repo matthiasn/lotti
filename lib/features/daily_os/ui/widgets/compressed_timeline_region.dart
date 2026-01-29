@@ -4,7 +4,8 @@ import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Height per hour in compressed (folded) regions.
-const double kCompressedHourHeight = 8;
+/// Using the constant from timeline_folding_utils.dart as single source of truth.
+const double kCompressedHourHeight = kCompressedHourHeightDefault;
 
 /// Width of the zigzag indicator on the left edge.
 const double kZigzagIndicatorWidth = 10;

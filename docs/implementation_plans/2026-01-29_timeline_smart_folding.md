@@ -541,7 +541,7 @@ class _AnimatedTimelineRegion extends StatelessWidget {
 - [x] Extend `DailyOsController` with fold state
   - [x] Add `expandedFoldRegions` to state
   - [x] Implement `toggleFoldRegion()` method
-  - [ ] Reset fold state on date change (not implemented - fold state persists)
+  - [x] Reset fold state on date change (automatic - `build()` creates fresh state when `selectedDate` changes)
 
 - [x] Modify `_TimelineContent` in `daily_timeline.dart`
   - [x] Integrate folding algorithm
@@ -555,7 +555,8 @@ class _AnimatedTimelineRegion extends StatelessWidget {
   - [x] Smooth 300ms transition with `easeOutCubic` curve
 
 - [x] Update current time indicator
-  - [x] Account for folded regions in position calculation
+  - [x] Account for folded regions in position calculation using `timeToFoldedPosition`
+  - [x] Single indicator at `_FoldedTimelineGrid` level (not per-section)
   - [x] Hide if in collapsed region, show in expanded
 
 - [x] Accessibility
@@ -591,8 +592,9 @@ class _AnimatedTimelineRegion extends StatelessWidget {
 
 ### Remaining Items
 
-1. **Reset fold state on date change**: Currently fold state persists across date changes
-2. **Entries crossing midnight**: Not yet handled (endTime.hour returns 0 for midnight)
+All items completed. Entries crossing midnight are now handled by detecting when
+`endTime` is on a different day than `startTime` and clamping to 24 for the
+current day's timeline calculation.
 
 ---
 
