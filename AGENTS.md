@@ -87,6 +87,7 @@
 - Access localized strings via `context.messages.labelName` (import `app_localizations_context.dart`).
 - After adding labels, run `make l10n` to generate the Dart files.
 - Run `make sort_arb_files` to keep arb files consistently sorted.
+- **NEVER edit the generated `lib/l10n/app_localizations_*.dart` files directly** — always edit the `.arb` source files and regenerate.
 
 ## Implementation discipline
 

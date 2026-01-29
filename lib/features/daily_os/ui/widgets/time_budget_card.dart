@@ -559,6 +559,11 @@ class _TaskProgressRow extends StatelessWidget {
                   border: Border.all(color: statusColor, width: 1.5),
                 ),
               ),
+            // Priority badge (show only for non-default priorities)
+            if (task.data.priority != TaskPriority.p2Medium) ...[
+              const SizedBox(width: 4),
+              _PriorityBadge(priority: task.data.priority),
+            ],
             // Due badge
             if (item.isDueOrOverdue) ...[
               const SizedBox(width: 4),
@@ -629,11 +634,77 @@ class _DueBadge extends StatelessWidget {
   }
 }
 
+/// Compact priority badge styled like Linear.
+class _PriorityBadge extends StatelessWidget {
+  const _PriorityBadge({required this.priority});
+
+  final TaskPriority priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = priority.colorForBrightness(Theme.of(context).brightness);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        priority.short,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact priority badge for grid view.
+class _PriorityGridBadge extends StatelessWidget {
+  const _PriorityGridBadge({required this.priority});
+
+  final TaskPriority priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = priority.colorForBrightness(Theme.of(context).brightness);
+    final textColor =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+            ? Colors.white
+            : Colors.black;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        priority.short,
+        style: context.textTheme.labelSmall?.copyWith(
+          color: textColor,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 /// A grid tile displaying a task with thumbnail and overlay info.
 class _TaskGridTile extends StatelessWidget {
   const _TaskGridTile({required this.item});
 
   final TaskDayProgress item;
+
+  // Badge layout constants
+  static const _badgeInitialTop = 4.0;
+  static const _completedBadgeHeight = 24.0; // 4px padding + 20px icon/badge
+  static const _dueBadgeHeight = 20.0; // 4px padding + 16px badge
 
   @override
   Widget build(BuildContext context) {
@@ -739,6 +810,15 @@ class _TaskGridTile extends StatelessWidget {
                 child: _DueGridBadge(dueDateStatus: item.dueDateStatus),
               ),
 
+            // Priority badge (top left, below due badge if present)
+            if (task.data.priority != TaskPriority.p2Medium)
+              Positioned(
+                top: _calculatePriorityBadgeTop(
+                    isCompleted, item.isDueOrOverdue),
+                left: 4,
+                child: _PriorityGridBadge(priority: task.data.priority),
+              ),
+
             // Title (bottom)
             Positioned(
               left: 6,
@@ -758,6 +838,14 @@ class _TaskGridTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Calculate the top position for the priority badge based on other badges.
+  double _calculatePriorityBadgeTop(bool isCompleted, bool isDueOrOverdue) {
+    var top = _badgeInitialTop;
+    if (isCompleted) top += _completedBadgeHeight;
+    if (isDueOrOverdue) top += _dueBadgeHeight;
+    return top;
   }
 }
 

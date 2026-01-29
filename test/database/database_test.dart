@@ -1027,6 +1027,147 @@ void main() {
           ['newest-high', 'middle-urgent', 'oldest-low'],
         );
       });
+
+      test('getTasksDueOn returns only tasks due on the specified date',
+          () async {
+        final targetDate = DateTime(2024, 8, 15);
+        final base = DateTime(2024, 8, 10);
+
+        // Task due on target date (should be included)
+        final taskDueOnDate = buildTaskEntry(
+          id: 'task-due-on-date',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 8, 15, 14, 30), // Due on target date
+        );
+
+        // Task due the day before (should NOT be included)
+        final taskDueBefore = buildTaskEntry(
+          id: 'task-due-before',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-2',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 8, 14, 12), // Due day before
+        );
+
+        // Task due the day after (should NOT be included)
+        final taskDueAfter = buildTaskEntry(
+          id: 'task-due-after',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-3',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 8, 16, 9), // Due day after
+        );
+
+        // Task with no due date (should NOT be included)
+        final taskNoDue = buildTaskEntry(
+          id: 'task-no-due',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-4',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          // No due date
+        );
+
+        // Completed task due on target date (should NOT be included)
+        final taskDoneOnDate = buildTaskEntry(
+          id: 'task-done-on-date',
+          timestamp: base,
+          status: TaskStatus.done(
+            id: 'status-5',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 8, 15, 10),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(taskDueOnDate));
+        await db!.upsertJournalDbEntity(toDbEntity(taskDueBefore));
+        await db!.upsertJournalDbEntity(toDbEntity(taskDueAfter));
+        await db!.upsertJournalDbEntity(toDbEntity(taskNoDue));
+        await db!.upsertJournalDbEntity(toDbEntity(taskDoneOnDate));
+
+        final results = await db!.getTasksDueOn(targetDate);
+
+        // Only the non-completed task due on the target date should be returned
+        expect(results.map((e) => e.meta.id).toList(), ['task-due-on-date']);
+      });
+
+      test('getTasksDueOn returns multiple tasks due on same date', () async {
+        final targetDate = DateTime(2024, 9, 20);
+        final base = DateTime(2024, 9, 15);
+
+        final task1 = buildTaskEntry(
+          id: 'task-morning',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 9, 20, 9), // 9 AM
+          title: 'Morning task',
+        );
+
+        final task2 = buildTaskEntry(
+          id: 'task-evening',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-2',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 9, 20, 18), // 6 PM
+          title: 'Evening task',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(task1));
+        await db!.upsertJournalDbEntity(toDbEntity(task2));
+
+        final results = await db!.getTasksDueOn(targetDate);
+
+        // Both tasks due on target date should be returned, ordered by due time
+        expect(results.length, 2);
+        expect(
+          results.map((e) => e.meta.id).toList(),
+          ['task-morning', 'task-evening'],
+        );
+      });
+
+      test('getTasksDueOn returns empty list when no tasks due on date',
+          () async {
+        final targetDate = DateTime(2024, 10, 5);
+        final base = DateTime(2024, 10, 1);
+
+        final taskDueDifferentDay = buildTaskEntry(
+          id: 'task-different-day',
+          timestamp: base,
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          due: DateTime(2024, 10, 10), // Due on different date
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(taskDueDifferentDay));
+
+        final results = await db!.getTasksDueOn(targetDate);
+
+        expect(results, isEmpty);
+      });
     });
 
     group('Linked entities -', () {
@@ -2924,6 +3065,7 @@ JournalEntity buildTextEntry({
   required DateTime timestamp,
   required String text,
   DateTime? deletedAt,
+  Duration duration = const Duration(minutes: 1),
 }) {
   return JournalEntity.journalEntry(
     meta: Metadata(
@@ -2931,7 +3073,7 @@ JournalEntity buildTextEntry({
       createdAt: timestamp,
       updatedAt: timestamp,
       dateFrom: timestamp,
-      dateTo: timestamp,
+      dateTo: timestamp.add(duration),
       deletedAt: deletedAt,
       starred: false,
       private: false,
@@ -3177,6 +3319,7 @@ JournalEntity buildTaskEntry({
   bool starred = false,
   bool privateFlag = false,
   String? categoryId,
+  DateTime? due,
 }) {
   return JournalEntity.task(
     meta: Metadata(
@@ -3195,6 +3338,7 @@ JournalEntity buildTaskEntry({
       dateFrom: timestamp,
       dateTo: timestamp,
       title: title,
+      due: due,
     ),
     entryText: const EntryText(plainText: 'Task body'),
   );

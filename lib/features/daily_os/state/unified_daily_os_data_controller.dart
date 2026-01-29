@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/util/task_sort_comparators.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -111,11 +113,22 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final dayStart = _date.dayAtMidnight;
     final dayEnd = dayStart.add(const Duration(days: 1));
 
+    // Determine if selected date is in the future (after today)
+    // Using clock.now() for testability - can be mocked with withClock()
+    // Use dayAtMidnight for both to ensure consistent TZ/DST boundary semantics
+    final todayStart = clock.now().dayAtMidnight;
+    final isFutureDate = dayStart.isAfter(todayStart);
+
     // Fetch day plan, calendar entries, and due tasks in parallel
+    // For future dates: only fetch tasks due ON that specific day (hide overdue)
+    // For today/past: fetch tasks due on/before (includes overdue)
     final results = await Future.wait([
       _dayPlanRepository.getOrCreateDayPlan(_date),
       db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd),
-      db.getTasksDueOnOrBefore(_date),
+      if (isFutureDate)
+        db.getTasksDueOn(_date)
+      else
+        db.getTasksDueOnOrBefore(_date),
     ]);
 
     final dayPlan = results[0] as DayPlanEntry;
@@ -337,23 +350,8 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         }
       }
 
-      // Re-sort: time descending, due tasks without time grouped together
-      mergedTaskItems.sort((a, b) {
-        // Both have time: sort by time descending
-        if (a.timeSpentOnDay > Duration.zero &&
-            b.timeSpentOnDay > Duration.zero) {
-          return b.timeSpentOnDay.compareTo(a.timeSpentOnDay);
-        }
-        // One has time, one doesn't: time first
-        if (a.timeSpentOnDay > Duration.zero) return -1;
-        if (b.timeSpentOnDay > Duration.zero) return 1;
-        // Both zero time: sort by urgency (overdue > dueToday > normal)
-        final urgencyCompare = b.dueDateStatus.urgency.index
-            .compareTo(a.dueDateStatus.urgency.index);
-        if (urgencyCompare != 0) return urgencyCompare;
-        // Same urgency: alphabetical by title
-        return a.task.data.title.compareTo(b.task.data.title);
-      });
+      // Re-sort: time descending, then priority, urgency, alphabetical
+      mergedTaskItems.sort(TaskSortComparators.byTimeSpentThenPriority);
 
       results.add(
         TimeBudgetProgress(
@@ -386,13 +384,8 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
           dueDateStatus: dueStatus,
         );
       }).toList()
-        // Sort by urgency (overdue > dueToday > normal), then alphabetically
-        ..sort((a, b) {
-          final urgencyCompare = b.dueDateStatus.urgency.index
-              .compareTo(a.dueDateStatus.urgency.index);
-          if (urgencyCompare != 0) return urgencyCompare;
-          return a.task.data.title.compareTo(b.task.data.title);
-        });
+        // Sort by priority, then urgency, then alphabetically
+        ..sort(TaskSortComparators.byPriorityUrgencyTitle);
 
       results.add(
         TimeBudgetProgress(

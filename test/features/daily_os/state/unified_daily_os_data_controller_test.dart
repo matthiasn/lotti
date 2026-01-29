@@ -157,6 +157,7 @@ void main() {
     when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getTasksDueOnOrBefore(any())).thenAnswer((_) async => []);
+    when(() => mockDb.getTasksDueOn(any())).thenAnswer((_) async => []);
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
@@ -1723,6 +1724,7 @@ void main() {
       required DateTime? dueDate,
       String title = 'Due Task',
       TaskStatus? status,
+      TaskPriority priority = TaskPriority.p2Medium,
     }) {
       return JournalEntity.task(
         meta: Metadata(
@@ -1738,6 +1740,7 @@ void main() {
           dateFrom: testDate,
           dateTo: testDate,
           due: dueDate,
+          priority: priority,
           statusHistory: [],
           status: status ??
               TaskStatus.open(
@@ -1990,6 +1993,245 @@ void main() {
 
       // No budgets should be created for tasks without category
       expect(result.budgetProgress, isEmpty);
+    });
+
+    test('future dates use getTasksDueOn instead of getTasksDueOnOrBefore',
+        () async {
+      // Use a date that is definitely in the future (1000 days from now)
+      final futureDate = DateTime.now().add(const Duration(days: 1000));
+      final futureDateStart =
+          DateTime(futureDate.year, futureDate.month, futureDate.day);
+
+      final plan = DayPlanEntry(
+        meta: Metadata(
+          id: dayPlanId(futureDateStart),
+          createdAt: futureDateStart,
+          updatedAt: futureDateStart,
+          dateFrom: futureDateStart,
+          dateTo: futureDateStart.add(const Duration(days: 1)),
+        ),
+        data: DayPlanData(
+          planDate: futureDateStart,
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: futureDateStart.add(const Duration(hours: 9)),
+              endTime: futureDateStart.add(const Duration(hours: 12)),
+            ),
+          ],
+        ),
+      );
+
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(futureDateStart))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Task due on the future date
+      final futureDueTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-future',
+          createdAt: futureDateStart,
+          updatedAt: futureDateStart,
+          dateFrom: futureDateStart,
+          dateTo: futureDateStart,
+          categoryId: 'cat-work',
+        ),
+        data: TaskData(
+          title: 'Future Task',
+          dateFrom: futureDateStart,
+          dateTo: futureDateStart,
+          due: futureDateStart,
+          statusHistory: [],
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: futureDateStart,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      // Mock getTasksDueOn (should be called for future dates)
+      when(() => mockDb.getTasksDueOn(futureDateStart))
+          .thenAnswer((_) async => [futureDueTask as Task]);
+
+      // Mock getTasksDueOnOrBefore (should NOT be called for future dates)
+      // If it is called, it would return an overdue task that should not appear
+      final overdueTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-overdue',
+          createdAt: futureDateStart,
+          updatedAt: futureDateStart,
+          dateFrom: futureDateStart,
+          dateTo: futureDateStart,
+          categoryId: 'cat-work',
+        ),
+        data: TaskData(
+          title: 'Overdue Task That Should Not Appear',
+          dateFrom: futureDateStart,
+          dateTo: futureDateStart,
+          due: futureDateStart.subtract(const Duration(days: 5)),
+          statusHistory: [],
+          status: TaskStatus.open(
+            id: 'status-2',
+            createdAt: futureDateStart,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(futureDateStart)).thenAnswer(
+          (_) async => [futureDueTask as Task, overdueTask as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: futureDateStart).future,
+      );
+
+      final items = result.budgetProgress.first.taskProgressItems;
+
+      // Should only have 1 task (the future task), not the overdue task
+      expect(items.length, equals(1));
+      expect(items[0].task.data.title, equals('Future Task'));
+
+      // Verify getTasksDueOn was called (not getTasksDueOnOrBefore)
+      verify(() => mockDb.getTasksDueOn(futureDateStart)).called(1);
+    });
+
+    test('sorts tasks by priority (P0 before P1 before P2 before P3)',
+        () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Create tasks with different priorities
+      final p3Task = createDueTask(
+        id: 'task-p3',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Low Priority',
+        priority: TaskPriority.p3Low,
+      );
+
+      final p0Task = createDueTask(
+        id: 'task-p0',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Urgent Priority',
+        priority: TaskPriority.p0Urgent,
+      );
+
+      final p2Task = createDueTask(
+        id: 'task-p2',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'Medium Priority',
+      );
+
+      final p1Task = createDueTask(
+        id: 'task-p1',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'High Priority',
+        priority: TaskPriority.p1High,
+      );
+
+      // Return in unsorted order
+      when(() => mockDb.getTasksDueOnOrBefore(testDate)).thenAnswer((_) async =>
+          [p3Task as Task, p0Task as Task, p2Task as Task, p1Task as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final items = result.budgetProgress.first.taskProgressItems;
+      expect(items.length, equals(4));
+
+      // Should be sorted P0 -> P1 -> P2 -> P3
+      expect(items[0].task.data.title, equals('Urgent Priority'));
+      expect(items[0].task.data.priority, equals(TaskPriority.p0Urgent));
+
+      expect(items[1].task.data.title, equals('High Priority'));
+      expect(items[1].task.data.priority, equals(TaskPriority.p1High));
+
+      expect(items[2].task.data.title, equals('Medium Priority'));
+      expect(items[2].task.data.priority, equals(TaskPriority.p2Medium));
+
+      expect(items[3].task.data.title, equals('Low Priority'));
+      expect(items[3].task.data.priority, equals(TaskPriority.p3Low));
+    });
+
+    test('sorts by priority before urgency for tasks with no time', () async {
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 12)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // P0 due today vs P3 overdue
+      final p0DueToday = createDueTask(
+        id: 'task-p0-today',
+        categoryId: 'cat-work',
+        dueDate: testDate,
+        title: 'P0 Due Today',
+        priority: TaskPriority.p0Urgent,
+      );
+
+      final p3Overdue = createDueTask(
+        id: 'task-p3-overdue',
+        categoryId: 'cat-work',
+        dueDate: testDate.subtract(const Duration(days: 1)),
+        title: 'P3 Overdue',
+        priority: TaskPriority.p3Low,
+      );
+
+      when(() => mockDb.getTasksDueOnOrBefore(testDate))
+          .thenAnswer((_) async => [p0DueToday as Task, p3Overdue as Task]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final items = result.budgetProgress.first.taskProgressItems;
+      expect(items.length, equals(2));
+
+      // Within same priority tier (both have no time), priority comes first
+      // P0 should come before P3 regardless of urgency
+      expect(items[0].task.data.title, equals('P0 Due Today'));
+      expect(items[1].task.data.title, equals('P3 Overdue'));
     });
   });
 }

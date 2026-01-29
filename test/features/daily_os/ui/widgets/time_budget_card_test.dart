@@ -833,4 +833,272 @@ void main() {
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
     });
   });
+
+  group('TimeBudgetCard - Priority Badges', () {
+    Task createPriorityTask({
+      required String id,
+      required String title,
+      required TaskPriority priority,
+    }) {
+      final now = DateTime(2026, 1, 15);
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+          categoryId: testCategory.id,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: now,
+          dateTo: now,
+          priority: priority,
+          statusHistory: [],
+          status: TaskStatus.inProgress(
+            id: 'status-$id',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+        ),
+      );
+    }
+
+    TimeBudgetProgress createProgressWithPriorityTask(TaskPriority priority) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: createPriorityTask(
+              id: 'task-priority',
+              title: 'Priority Task',
+              priority: priority,
+            ),
+            timeSpentOnDay: const Duration(hours: 1),
+            wasCompletedOnDay: false,
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('shows P0 (Urgent) priority badge in list view',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show P0 badge text
+      expect(find.text('P0'), findsOneWidget);
+    });
+
+    testWidgets('shows P1 (High) priority badge in list view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p1High),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('P1'), findsOneWidget);
+    });
+
+    testWidgets('does not show P2 (Medium) priority badge to reduce noise',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // P2 (Medium/default) badge is intentionally hidden to reduce visual noise
+      expect(find.text('P2'), findsNothing);
+    });
+
+    testWidgets('shows P3 (Low) priority badge in list view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p3Low),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('P3'), findsOneWidget);
+    });
+
+    testWidgets('shows P0 priority badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('P0'), findsOneWidget);
+    });
+
+    testWidgets('shows P1 priority badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p1High),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('P1'), findsOneWidget);
+    });
+
+    testWidgets('does not show P2 priority badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // P2 (Medium/default) badge is intentionally hidden
+      expect(find.text('P2'), findsNothing);
+    });
+
+    testWidgets('shows P3 priority badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p3Low),
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('P3'), findsOneWidget);
+    });
+
+    testWidgets('priority badge stacks below completed checkmark in grid',
+        (tester) async {
+      final completedTask = Task(
+        meta: Metadata(
+          id: 'task-completed',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: testCategory.id,
+        ),
+        data: TaskData(
+          title: 'Completed Priority Task',
+          dateFrom: testDate,
+          dateTo: testDate,
+          priority: TaskPriority.p0Urgent,
+          statusHistory: [],
+          status: TaskStatus.done(
+            id: 'status-done',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: completedTask,
+            timeSpentOnDay: const Duration(hours: 1),
+            wasCompletedOnDay: true,
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: progress,
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both checkmark (Icons.check in grid) and P0 badge
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.text('P0'), findsOneWidget);
+    });
+
+    testWidgets('priority badge stacks below due badge in grid',
+        (tester) async {
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: createPriorityTask(
+              id: 'task-due',
+              title: 'Due Priority Task',
+              priority: TaskPriority.p1High,
+            ),
+            timeSpentOnDay: const Duration(hours: 1),
+            wasCompletedOnDay: false,
+            dueDateStatus: const DueDateStatus(
+              urgency: DueDateUrgency.dueToday,
+              daysUntilDue: 0,
+            ),
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: progress,
+          initialViewMode: TaskViewMode.grid,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both due badge and P1 badge
+      expect(find.text('Due'), findsOneWidget);
+      expect(find.text('P1'), findsOneWidget);
+    });
+  });
 }
