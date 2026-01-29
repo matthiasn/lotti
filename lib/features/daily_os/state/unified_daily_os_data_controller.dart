@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/util/task_sort_comparators.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -112,7 +114,8 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final dayEnd = dayStart.add(const Duration(days: 1));
 
     // Determine if selected date is in the future (after today)
-    final now = DateTime.now();
+    // Using clock.now() for testability - can be mocked with withClock()
+    final now = clock.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final selectedDateStart = DateTime(_date.year, _date.month, _date.day);
     final isFutureDate = selectedDateStart.isAfter(todayStart);
@@ -349,26 +352,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       }
 
       // Re-sort: time descending, then priority, urgency, alphabetical
-      mergedTaskItems.sort((a, b) {
-        // Both have time: sort by time descending
-        if (a.timeSpentOnDay > Duration.zero &&
-            b.timeSpentOnDay > Duration.zero) {
-          return b.timeSpentOnDay.compareTo(a.timeSpentOnDay);
-        }
-        // One has time, one doesn't: time first
-        if (a.timeSpentOnDay > Duration.zero) return -1;
-        if (b.timeSpentOnDay > Duration.zero) return 1;
-        // Both zero time: sort by priority (lower rank = higher priority)
-        final priorityCompare =
-            a.task.data.priority.rank.compareTo(b.task.data.priority.rank);
-        if (priorityCompare != 0) return priorityCompare;
-        // Same priority: sort by urgency (overdue > dueToday > normal)
-        final urgencyCompare = b.dueDateStatus.urgency.index
-            .compareTo(a.dueDateStatus.urgency.index);
-        if (urgencyCompare != 0) return urgencyCompare;
-        // Same urgency: alphabetical by title
-        return a.task.data.title.compareTo(b.task.data.title);
-      });
+      mergedTaskItems.sort(TaskSortComparators.byTimeSpentThenPriority);
 
       results.add(
         TimeBudgetProgress(
@@ -402,18 +386,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         );
       }).toList()
         // Sort by priority, then urgency, then alphabetically
-        ..sort((a, b) {
-          // Sort by priority first (lower rank = higher priority)
-          final priorityCompare =
-              a.task.data.priority.rank.compareTo(b.task.data.priority.rank);
-          if (priorityCompare != 0) return priorityCompare;
-          // Same priority: sort by urgency (overdue > dueToday > normal)
-          final urgencyCompare = b.dueDateStatus.urgency.index
-              .compareTo(a.dueDateStatus.urgency.index);
-          if (urgencyCompare != 0) return urgencyCompare;
-          // Same urgency: alphabetical by title
-          return a.task.data.title.compareTo(b.task.data.title);
-        });
+        ..sort(TaskSortComparators.byPriorityUrgencyTitle);
 
       results.add(
         TimeBudgetProgress(

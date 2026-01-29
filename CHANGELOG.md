@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.829] - 2026-01-29
 ### Added
-- Daily OS Priority Indicators: Tasks now display priority badges (P0, P1, P2, P3) styled like Linear
-  - Compact color-coded badges: red for P0 (Urgent), orange for P1 (High), blue for P2 (Medium), gray for P3 (Low)
+- Daily OS Priority Indicators: Tasks now display priority badges (P0, P1, P3) styled like Linear
+  - Compact color-coded badges: red for P0 (Urgent), orange for P1 (High), gray for P3 (Low)
+  - P2 (Medium) badges are hidden to reduce visual noise since it's the default priority
   - Priority badges appear in both list and grid views
 
 ### Changed
