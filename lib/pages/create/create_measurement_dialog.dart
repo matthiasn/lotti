@@ -215,7 +215,7 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     saveMeasurement: saveMeasurement,
                     measurementTime: measurementTime,
                   )
-                : validate()
+                : (_formKey.currentState?.isValid ?? false)
                     ? SizedBox(
                         key: const ValueKey('save'),
                         width: double.infinity,
