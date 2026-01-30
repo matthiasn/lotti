@@ -25,6 +25,10 @@ class _MockWhatsNewController extends WhatsNewController {
   Future<WhatsNewState> build() async => const WhatsNewState();
 }
 
+/// Helper to get localized strings from the widget tree.
+AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
+    tester.element(find.byType(InferenceProviderEditPage)))!;
+
 void main() {
   late MockAiConfigRepository mockRepository;
   late MockCategoryRepository mockCategoryRepository;
@@ -1207,24 +1211,25 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find AI Setup Wizard section
-      final aiSetupSection = find.text('AI Setup Wizard');
+      final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
       await tester.pumpAndSettle();
 
       // Should show AI Setup Wizard section
-      expect(find.text('AI Setup Wizard'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(
-            'Set up or refresh models, prompts, and test category for Gemini'),
+        find.text(strings.aiSetupWizardDescription('Gemini')),
         findsOneWidget,
       );
-      expect(find.text('Run Setup Wizard'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardRunLabel), findsOneWidget);
       expect(
-        find.text('Safe to run multiple times - existing items will be kept'),
+        find.text(strings.aiSetupWizardSafeToRunMultiple),
         findsOneWidget,
       );
-      expect(find.text('Run Setup'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
     });
 
     testWidgets('shows AI Setup Wizard section for existing OpenAI provider',
@@ -1255,16 +1260,17 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find AI Setup Wizard section
-      final aiSetupSection = find.text('AI Setup Wizard');
+      final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
       await tester.pumpAndSettle();
 
       // Should show AI Setup Wizard section for OpenAI
-      expect(find.text('AI Setup Wizard'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(
-            'Set up or refresh models, prompts, and test category for OpenAI'),
+        find.text(strings.aiSetupWizardDescription('OpenAI')),
         findsOneWidget,
       );
     });
@@ -1297,16 +1303,17 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find AI Setup Wizard section
-      final aiSetupSection = find.text('AI Setup Wizard');
+      final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
       await tester.pumpAndSettle();
 
       // Should show AI Setup Wizard section for Mistral
-      expect(find.text('AI Setup Wizard'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(
-            'Set up or refresh models, prompts, and test category for Mistral'),
+        find.text(strings.aiSetupWizardDescription('Mistral')),
         findsOneWidget,
       );
     });
@@ -1339,8 +1346,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Should NOT show AI Setup Wizard section for Ollama
-      expect(find.text('AI Setup Wizard'), findsNothing);
+      expect(find.text(strings.aiSetupWizardTitle), findsNothing);
     });
 
     testWidgets('does not show AI Setup Wizard for new provider',
@@ -1351,8 +1360,10 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Should NOT show AI Setup Wizard section for new provider
-      expect(find.text('AI Setup Wizard'), findsNothing);
+      expect(find.text(strings.aiSetupWizardTitle), findsNothing);
     });
 
     testWidgets('Run Setup button shows confirmation dialog when tapped',
@@ -1383,8 +1394,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find Run Setup button
-      final runSetupButton = find.text('Run Setup');
+      final runSetupButton = find.text(strings.aiSetupWizardRunButton);
       await tester.ensureVisible(runSetupButton);
       await tester.pumpAndSettle();
 
@@ -1395,7 +1408,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Confirmation dialog should appear
+      // Confirmation dialog should appear (dialog uses hard-coded text currently)
       expect(find.text('Set Up AI Features?'), findsOneWidget);
     });
 
@@ -1427,23 +1440,25 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find AI Setup Wizard section
-      final aiSetupSection = find.text('AI Setup Wizard');
+      final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
       await tester.pumpAndSettle();
 
       // Verify all localized strings are displayed
-      expect(find.text('AI Setup Wizard'), findsOneWidget);
-      expect(find.text('Run Setup Wizard'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardRunLabel), findsOneWidget);
       expect(
-        find.text('Creates optimized models, prompts, and a test category'),
+        find.text(strings.aiSetupWizardCreatesOptimized),
         findsOneWidget,
       );
       expect(
-        find.text('Safe to run multiple times - existing items will be kept'),
+        find.text(strings.aiSetupWizardSafeToRunMultiple),
         findsOneWidget,
       );
-      expect(find.text('Run Setup'), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
     });
 
     testWidgets('shows Running state while setup is in progress',
@@ -1474,14 +1489,16 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      final strings = l10n(tester);
+
       // Scroll to find Run Setup button and verify initial state
-      final runSetupButton = find.text('Run Setup');
+      final runSetupButton = find.text(strings.aiSetupWizardRunButton);
       await tester.ensureVisible(runSetupButton);
       await tester.pumpAndSettle();
 
       // Button should show "Run Setup" initially
-      expect(find.text('Run Setup'), findsOneWidget);
-      expect(find.text('Running...'), findsNothing);
+      expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
+      expect(find.text(strings.aiSetupWizardRunningButton), findsNothing);
     });
   });
 
