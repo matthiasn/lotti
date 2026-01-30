@@ -3423,27 +3423,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get whatsNewDoneButton => 'Fertig';
 
   @override
-  String get aiSetupWizardTitle => 'AI Setup Wizard';
+  String get aiSetupWizardTitle => 'KI-Einrichtungsassistent';
 
   @override
   String aiSetupWizardDescription(String providerName) {
-    return 'Set up or refresh models, prompts, and test category for $providerName';
+    return 'Modelle, Prompts und Testkategorie für $providerName einrichten oder aktualisieren';
   }
 
   @override
-  String get aiSetupWizardRunLabel => 'Run Setup Wizard';
+  String get aiSetupWizardRunLabel => 'Einrichtungsassistent ausführen';
 
   @override
   String get aiSetupWizardCreatesOptimized =>
-      'Creates optimized models, prompts, and a test category';
+      'Erstellt optimierte Modelle, Prompts und eine Testkategorie';
 
   @override
   String get aiSetupWizardSafeToRunMultiple =>
-      'Safe to run multiple times - existing items will be kept';
+      'Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten';
 
   @override
-  String get aiSetupWizardRunButton => 'Run Setup';
+  String get aiSetupWizardRunButton => 'Einrichtung starten';
 
   @override
-  String get aiSetupWizardRunningButton => 'Running...';
+  String get aiSetupWizardRunningButton => 'Wird ausgeführt...';
 }
