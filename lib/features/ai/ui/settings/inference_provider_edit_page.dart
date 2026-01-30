@@ -66,6 +66,45 @@ Future<void> showFtueResultDialog(BuildContext context, Object result) async {
   }
 }
 
+/// Performs the full FTUE setup workflow: confirmation dialog, setup, and result.
+///
+/// This is the common workflow used by both the initial provider setup flow
+/// and the manual "Run Setup Wizard" button.
+///
+/// Returns true if the setup was run, false if cancelled or skipped.
+Future<bool> performFtueSetupWorkflow({
+  required BuildContext context,
+  required WidgetRef ref,
+  required InferenceProviderType providerType,
+  required AiConfigInferenceProvider config,
+  required ProviderPromptSetupService setupService,
+  required String providerName,
+  required bool Function() isMounted,
+}) async {
+  // Show confirmation dialog
+  final confirmed = await FtueSetupDialog.show(
+    context,
+    providerName: providerName,
+  );
+
+  if (!confirmed || !isMounted()) return false;
+
+  // Run the appropriate FTUE setup
+  final result = await runFtueSetupForType(
+    context: context,
+    ref: ref,
+    providerType: providerType,
+    config: config,
+    setupService: setupService,
+  );
+
+  if (result != null && isMounted()) {
+    await showFtueResultDialog(context, result);
+  }
+
+  return true;
+}
+
 class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
     this.configId,
@@ -419,25 +458,15 @@ class _InferenceProviderEditPageState
     final providerName = config.inferenceProviderType.ftueDisplayName;
     if (providerName == null) return;
 
-    final confirmed = await FtueSetupDialog.show(
-      context,
-      providerName: providerName,
-    );
-
-    if (!confirmed || !mounted) return;
-
-    // Perform the appropriate setup and show result
-    final result = await runFtueSetupForType(
+    await performFtueSetupWorkflow(
       context: context,
       ref: ref,
       providerType: config.inferenceProviderType,
       config: config,
       setupService: setupService,
+      providerName: providerName,
+      isMounted: () => mounted,
     );
-
-    if (result != null && mounted) {
-      await showFtueResultDialog(context, result);
-    }
   }
 
   Widget _buildErrorState(BuildContext context) {
@@ -855,26 +884,15 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
 
       if (!mounted) return;
 
-      // Show confirmation dialog
-      final confirmed = await FtueSetupDialog.show(
-        context,
-        providerName: _providerName,
-      );
-
-      if (!confirmed || !mounted) return;
-
-      // Run the appropriate FTUE setup
-      final result = await runFtueSetupForType(
+      await performFtueSetupWorkflow(
         context: context,
         ref: ref,
         providerType: widget.providerType,
         config: config,
         setupService: setupService,
+        providerName: _providerName,
+        isMounted: () => mounted,
       );
-
-      if (result != null && mounted) {
-        await showFtueResultDialog(context, result);
-      }
     } finally {
       if (mounted) {
         setState(() {
