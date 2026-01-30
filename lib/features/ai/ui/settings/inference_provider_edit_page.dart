@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
+import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
@@ -21,6 +22,49 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:uuid/uuid.dart';
+
+/// Runs the FTUE setup for the given provider type.
+///
+/// Returns the provider-specific result type, or null if the provider type
+/// is not supported for FTUE.
+Future<Object?> runFtueSetupForType({
+  required BuildContext context,
+  required WidgetRef ref,
+  required InferenceProviderType providerType,
+  required AiConfigInferenceProvider config,
+  required ProviderPromptSetupService setupService,
+}) async {
+  return switch (providerType) {
+    InferenceProviderType.gemini => setupService.performGeminiFtueSetup(
+        context: context,
+        ref: ref,
+        provider: config,
+      ),
+    InferenceProviderType.openAi => setupService.performOpenAiFtueSetup(
+        context: context,
+        ref: ref,
+        provider: config,
+      ),
+    InferenceProviderType.mistral => setupService.performMistralFtueSetup(
+        context: context,
+        ref: ref,
+        provider: config,
+      ),
+    _ => null,
+  };
+}
+
+/// Shows the appropriate FTUE result dialog based on result type.
+Future<void> showFtueResultDialog(BuildContext context, Object result) async {
+  switch (result) {
+    case GeminiFtueResult():
+      await FtueResultDialog.show(context, result: result);
+    case OpenAiFtueResult():
+      await FtueResultDialog.showOpenAi(context, result: result);
+    case MistralFtueResult():
+      await FtueResultDialog.showMistral(context, result: result);
+  }
+}
 
 class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
@@ -81,73 +125,9 @@ class _InferenceProviderEditPageState
           await controller.addConfig(config);
 
           // Offer to set up default prompts for supported providers
+          // Only show FTUE if this is the first provider of this type
           if (context.mounted && config is AiConfigInferenceProvider) {
-            final setupService = ref.read(providerPromptSetupServiceProvider);
-
-            // Use enhanced FTUE for Gemini providers
-            if (config.inferenceProviderType == InferenceProviderType.gemini) {
-              final confirmed = await FtueSetupDialog.show(
-                context,
-                providerName: 'Gemini',
-              );
-
-              if (confirmed && context.mounted) {
-                final result = await setupService.performGeminiFtueSetup(
-                  context: context,
-                  ref: ref,
-                  provider: config,
-                );
-
-                if (result != null && context.mounted) {
-                  await FtueResultDialog.show(context, result: result);
-                }
-              }
-            } else if (config.inferenceProviderType ==
-                InferenceProviderType.openAi) {
-              // Use enhanced FTUE for OpenAI providers
-              final confirmed = await FtueSetupDialog.show(
-                context,
-                providerName: 'OpenAI',
-              );
-
-              if (confirmed && context.mounted) {
-                final result = await setupService.performOpenAiFtueSetup(
-                  context: context,
-                  ref: ref,
-                  provider: config,
-                );
-
-                if (result != null && context.mounted) {
-                  await FtueResultDialog.showOpenAi(context, result: result);
-                }
-              }
-            } else if (config.inferenceProviderType ==
-                InferenceProviderType.mistral) {
-              // Use enhanced FTUE for Mistral providers
-              final confirmed = await FtueSetupDialog.show(
-                context,
-                providerName: 'Mistral',
-              );
-
-              if (confirmed && context.mounted) {
-                final result = await setupService.performMistralFtueSetup(
-                  context: context,
-                  ref: ref,
-                  provider: config,
-                );
-
-                if (result != null && context.mounted) {
-                  await FtueResultDialog.showMistral(context, result: result);
-                }
-              }
-            } else {
-              // Use standard prompt setup for other providers
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: config,
-              );
-            }
+            await _offerFtueSetupIfFirstProvider(config);
           }
         } else {
           await controller.updateConfig(config);
@@ -358,9 +338,22 @@ class _InferenceProviderEditPageState
               providerId: widget.configId!,
               providerType: formState.inferenceProviderType,
             ),
+
+          // AI Setup Section - Only show for supported providers when editing
+          if (widget.configId != null &&
+              _isFtueSupported(formState.inferenceProviderType))
+            _AiSetupSection(
+              providerId: widget.configId!,
+              providerType: formState.inferenceProviderType,
+            ),
         ],
       ),
     );
+  }
+
+  /// Checks if FTUE setup is supported for this provider type.
+  bool _isFtueSupported(InferenceProviderType type) {
+    return ftueSupportedProviderTypes.contains(type);
   }
 
   void _showProviderTypeModal(BuildContext context) {
@@ -368,6 +361,83 @@ class _InferenceProviderEditPageState
       context: context,
       configId: widget.configId,
     );
+  }
+
+  /// Offers FTUE setup if this is the first provider of the given type.
+  ///
+  /// This ensures users get the full setup experience when adding a new
+  /// provider type (e.g., adding Mistral after already having Gemini),
+  /// but avoids redundant prompts when adding additional providers of
+  /// the same type.
+  Future<void> _offerFtueSetupIfFirstProvider(
+    AiConfigInferenceProvider config,
+  ) async {
+    if (!mounted) return;
+
+    final setupService = ref.read(providerPromptSetupServiceProvider);
+    final ftueTriggerService = ref.read(ftueTriggerServiceProvider.notifier);
+
+    // Check if FTUE should be triggered for this provider
+    final triggerResult = await ftueTriggerService.shouldTriggerFtue(config);
+
+    switch (triggerResult) {
+      case FtueTriggerResult.skipNotFirstProvider:
+      case FtueTriggerResult.skipUnsupportedProvider:
+        // For unsupported providers, offer standard prompt setup
+        if (triggerResult == FtueTriggerResult.skipUnsupportedProvider &&
+            mounted) {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: config,
+          );
+        }
+        return;
+
+      case FtueTriggerResult.shouldShowFtue:
+        // Continue to show FTUE based on provider type
+        break;
+    }
+
+    if (!mounted) return;
+
+    // Perform FTUE setup for supported provider types
+    await _performFtueSetupForProvider(
+      config: config,
+      setupService: setupService,
+    );
+  }
+
+  /// Performs FTUE setup flow for a supported provider.
+  ///
+  /// Shows the confirmation dialog, runs the appropriate setup, and displays
+  /// the result dialog.
+  Future<void> _performFtueSetupForProvider({
+    required AiConfigInferenceProvider config,
+    required ProviderPromptSetupService setupService,
+  }) async {
+    final providerName = config.inferenceProviderType.ftueDisplayName;
+    if (providerName == null) return;
+
+    final confirmed = await FtueSetupDialog.show(
+      context,
+      providerName: providerName,
+    );
+
+    if (!confirmed || !mounted) return;
+
+    // Perform the appropriate setup and show result
+    final result = await runFtueSetupForType(
+      context: context,
+      ref: ref,
+      providerType: config.inferenceProviderType,
+      config: config,
+      setupService: setupService,
+    );
+
+    if (result != null && mounted) {
+      await showFtueResultDialog(context, result);
+    }
   }
 
   Widget _buildErrorState(BuildContext context) {
@@ -743,6 +813,194 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Section for manually triggering AI setup (models, prompts, category).
+class _AiSetupSection extends ConsumerStatefulWidget {
+  const _AiSetupSection({
+    required this.providerId,
+    required this.providerType,
+  });
+
+  final String providerId;
+  final InferenceProviderType providerType;
+
+  @override
+  ConsumerState<_AiSetupSection> createState() => _AiSetupSectionState();
+}
+
+class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
+  bool _isRunning = false;
+
+  String get _providerName => widget.providerType.ftueDisplayName ?? 'AI';
+
+  Future<void> _runFtueSetup() async {
+    if (_isRunning) return;
+
+    setState(() {
+      _isRunning = true;
+    });
+
+    try {
+      final repository = ref.read(aiConfigRepositoryProvider);
+      final setupService = ref.read(providerPromptSetupServiceProvider);
+
+      // Get the provider config
+      final config = await repository.getConfigById(widget.providerId);
+      if (config == null || config is! AiConfigInferenceProvider) {
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Show confirmation dialog
+      final confirmed = await FtueSetupDialog.show(
+        context,
+        providerName: _providerName,
+      );
+
+      if (!confirmed || !mounted) return;
+
+      // Run the appropriate FTUE setup
+      final result = await runFtueSetupForType(
+        context: context,
+        ref: ref,
+        providerType: widget.providerType,
+        config: config,
+        setupService: setupService,
+      );
+
+      if (result != null && mounted) {
+        await showFtueResultDialog(context, result);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRunning = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        AiFormSection(
+          title: 'AI Setup Wizard',
+          icon: Icons.auto_awesome_rounded,
+          description:
+              'Set up or refresh models, prompts, and test category for $_providerName',
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.primary
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.settings_suggest_rounded,
+                          color: context.colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Run Setup Wizard',
+                              style: context.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Creates optimized models, prompts, and a test category',
+                              style: context.textTheme.bodySmall?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Info about idempotency
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primaryContainer
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: context.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Safe to run multiple times - existing items will be kept',
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: context.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Run button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _isRunning ? null : _runFtueSetup,
+                      icon: _isRunning
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: context.colorScheme.onPrimary,
+                              ),
+                            )
+                          : const Icon(Icons.auto_awesome, size: 18),
+                      label: Text(_isRunning ? 'Running...' : 'Run Setup'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
