@@ -110,36 +110,6 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Description (if available)
-          if (dataType.description.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 18,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      dataType.description,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-
           // Value input field
           _ValueInputField(dataType: dataType),
 

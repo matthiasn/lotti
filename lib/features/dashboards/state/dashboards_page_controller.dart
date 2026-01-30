@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 
 /// Stream provider for all active dashboards from database.
 final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
@@ -43,6 +44,14 @@ final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
   final db = getIt<JournalDb>();
   return db.watchCategories();
+});
+
+/// Provider for a single dashboard by ID that reacts to dashboard changes.
+final dashboardByIdProvider =
+    Provider.autoDispose.family<DashboardDefinition?, String>((ref, id) {
+  // Watch the dashboards stream to trigger rebuild when any dashboard changes
+  ref.watch(dashboardsProvider);
+  return getIt<EntitiesCacheService>().getDashboardById(id);
 });
 
 /// Computed provider for dashboards filtered by selected categories and sorted

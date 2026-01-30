@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -470,6 +471,94 @@ void main() {
 
         final state = container.read(dashboardCategoriesProvider);
         expect(state.hasError, isTrue);
+      });
+    });
+
+    group('dashboardByIdProvider', () {
+      late MockEntitiesCacheService mockEntitiesCacheService;
+
+      setUp(() {
+        mockEntitiesCacheService = MockEntitiesCacheService();
+        getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      });
+
+      test('returns dashboard from cache when found', () {
+        fakeAsync((async) {
+          final dashboard = testDashboardConfig;
+
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(dashboard);
+
+          container.listen(
+            dashboardsProvider,
+            (_, __) {},
+            fireImmediately: true,
+          );
+
+          async.flushMicrotasks();
+
+          streamController.add([dashboard]);
+          async.flushMicrotasks();
+
+          final result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result, dashboard);
+        });
+      });
+
+      test('returns null when dashboard not found in cache', () {
+        fakeAsync((async) {
+          when(() => mockEntitiesCacheService.getDashboardById('unknown-id'))
+              .thenReturn(null);
+
+          container.listen(
+            dashboardsProvider,
+            (_, __) {},
+            fireImmediately: true,
+          );
+
+          async.flushMicrotasks();
+
+          streamController.add([testDashboardConfig]);
+          async.flushMicrotasks();
+
+          final result = container.read(dashboardByIdProvider('unknown-id'));
+          expect(result, isNull);
+        });
+      });
+
+      test('rebuilds when dashboards stream updates', () {
+        fakeAsync((async) {
+          final dashboard = testDashboardConfig;
+          final updatedDashboard = dashboard.copyWith(name: 'Updated Name');
+
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(dashboard);
+
+          container.listen(
+            dashboardsProvider,
+            (_, __) {},
+            fireImmediately: true,
+          );
+
+          async.flushMicrotasks();
+
+          streamController.add([dashboard]);
+          async.flushMicrotasks();
+
+          var result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result?.name, dashboard.name);
+
+          // Update cache to return updated dashboard
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(updatedDashboard);
+
+          // Emit updated dashboard list to trigger rebuild
+          streamController.add([updatedDashboard]);
+          async.flushMicrotasks();
+
+          result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result?.name, 'Updated Name');
+        });
       });
     });
   });

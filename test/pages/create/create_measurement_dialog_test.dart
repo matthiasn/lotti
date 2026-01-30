@@ -298,7 +298,9 @@ void main() {
       expect(find.text('ml'), findsOneWidget);
     });
 
-    testWidgets('displays description when available', (tester) async {
+    testWidgets('description is not displayed in dialog body', (tester) async {
+      // Description is now shown in the modal title (provided by the caller),
+      // not in the dialog body itself
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(
@@ -316,9 +318,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // measurableWater has description 'H₂O, with or without bubbles'
-      // Verify description is displayed with info icon
-      expect(find.text('H₂O, with or without bubbles'), findsOneWidget);
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+      // Verify description is NOT displayed in the dialog body
+      // (it's now in the modal title, handled by MeasurablesChartInfoWidget)
+      expect(find.text('H₂O, with or without bubbles'), findsNothing);
+      expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
     });
 
     testWidgets('comment field renders correctly', (tester) async {
