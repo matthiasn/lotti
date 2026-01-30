@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart'
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
+import 'package:lotti/features/ai/functions/task_priority_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -146,15 +147,14 @@ class LottiConversationProcessor {
       hasErrors = strategy.hadErrors;
       responseText = strategy.getResponseSummary();
 
-      // Merge items from both handlers for robustness
-      final mergedItems = <String>{
+      // Merge items from both handlers
+      final allItems = <String>{
         ...checklistHandler.successfulItems,
         ...batchChecklistHandler.successfulItems,
       }.toList();
-      final totalItems = mergedItems.length;
 
       developer.log(
-        'Conversation completed: $totalItems items created '
+        'Conversation completed: ${allItems.length} items created '
         '(checklist: ${checklistHandler.successfulItems.length}, '
         'batch: ${batchChecklistHandler.successfulItems.length}), '
         'errors: $hasErrors',
@@ -163,12 +163,6 @@ class LottiConversationProcessor {
 
       // Store messages before cleanup
       final messages = List<ChatCompletionMessage>.from(manager.messages);
-
-      // Merge items from both handlers
-      final allItems = <String>{
-        ...checklistHandler.successfulItems,
-        ...batchChecklistHandler.successfulItems,
-      }.toList();
 
       return ConversationResult(
         totalCreated: allItems.length,
@@ -271,6 +265,45 @@ class LottiChecklistStrategy extends ConversationStrategy {
   int _rounds = 0;
   bool _hadErrors = false;
   final List<FunctionCallResult> _failedResults = [];
+
+  /// Creates a callback that syncs task state across all handlers.
+  ///
+  /// This callback should be passed to task property handlers (estimate,
+  /// due date, priority) to ensure consistent task state when updates occur.
+  void Function(Task) _createTaskUpdateCallback() {
+    return (Task updatedTask) {
+      checklistHandler.task = updatedTask;
+      batchChecklistHandler.task = updatedTask;
+      checklistHandler.onTaskUpdated?.call(updatedTask);
+    };
+  }
+
+  /// Creates a TaskEstimateHandler with standard configuration.
+  TaskEstimateHandler _createEstimateHandler() {
+    return TaskEstimateHandler(
+      task: checklistHandler.task,
+      journalRepository: ref.read(journalRepositoryProvider),
+      onTaskUpdated: _createTaskUpdateCallback(),
+    );
+  }
+
+  /// Creates a TaskDueDateHandler with standard configuration.
+  TaskDueDateHandler _createDueDateHandler() {
+    return TaskDueDateHandler(
+      task: checklistHandler.task,
+      journalRepository: ref.read(journalRepositoryProvider),
+      onTaskUpdated: _createTaskUpdateCallback(),
+    );
+  }
+
+  /// Creates a TaskPriorityHandler with standard configuration.
+  TaskPriorityHandler _createPriorityHandler() {
+    return TaskPriorityHandler(
+      task: checklistHandler.task,
+      journalRepository: ref.read(journalRepositoryProvider),
+      onTaskUpdated: _createTaskUpdateCallback(),
+    );
+  }
 
   /// Track successfully updated items (separate from created items).
   ///
@@ -476,31 +509,11 @@ class LottiChecklistStrategy extends ConversationStrategy {
           );
         }
       } else if (call.function.name == TaskFunctions.updateTaskEstimate) {
-        // Delegate to TaskEstimateHandler
-        final estimateHandler = TaskEstimateHandler(
-          task: checklistHandler.task,
-          journalRepository: ref.read(journalRepositoryProvider),
-          onTaskUpdated: (updatedTask) {
-            // Sync state across all handlers
-            checklistHandler.task = updatedTask;
-            batchChecklistHandler.task = updatedTask;
-            checklistHandler.onTaskUpdated?.call(updatedTask);
-          },
-        );
-        await estimateHandler.processToolCall(call, manager);
+        await _createEstimateHandler().processToolCall(call, manager);
       } else if (call.function.name == TaskFunctions.updateTaskDueDate) {
-        // Delegate to TaskDueDateHandler
-        final dueDateHandler = TaskDueDateHandler(
-          task: checklistHandler.task,
-          journalRepository: ref.read(journalRepositoryProvider),
-          onTaskUpdated: (updatedTask) {
-            // Sync state across all handlers
-            checklistHandler.task = updatedTask;
-            batchChecklistHandler.task = updatedTask;
-            checklistHandler.onTaskUpdated?.call(updatedTask);
-          },
-        );
-        await dueDateHandler.processToolCall(call, manager);
+        await _createDueDateHandler().processToolCall(call, manager);
+      } else if (call.function.name == TaskFunctions.updateTaskPriority) {
+        await _createPriorityHandler().processToolCall(call, manager);
       } else if (call.function.name == 'assign_task_labels') {
         // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {

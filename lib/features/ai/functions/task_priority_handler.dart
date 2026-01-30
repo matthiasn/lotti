@@ -2,58 +2,28 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-/// Maximum allowed estimate in minutes (24 hours).
-///
-/// Tasks requiring more than a day should be broken into smaller subtasks.
-/// This also prevents overflow issues from untrusted AI input.
-const int maxEstimateMinutes = 1440;
-
-/// Parses a minutes value from potentially untrusted AI input.
-///
-/// Handles int, double (rounded), and numeric strings. Returns null if
-/// parsing fails or the value is out of bounds.
-int? parseMinutes(dynamic value) {
-  if (value == null) return null;
-
-  int? minutes;
-  if (value is int) {
-    minutes = value;
-  } else if (value is double) {
-    minutes = value.round();
-  } else if (value is String) {
-    // Try parsing as int first, then as double
-    minutes = int.tryParse(value) ?? double.tryParse(value)?.round();
-  }
-
-  // Validate bounds
-  if (minutes == null || minutes <= 0 || minutes > maxEstimateMinutes) {
-    return null;
-  }
-
-  return minutes;
-}
-
-/// Result of processing an estimate update tool call.
+/// Result of processing a priority update tool call.
 ///
 /// Contains detailed information about the outcome for testing and logging.
-class TaskEstimateResult {
-  const TaskEstimateResult({
+class TaskPriorityResult {
+  const TaskPriorityResult({
     required this.success,
     required this.message,
     this.updatedTask,
-    this.requestedMinutes,
+    this.requestedPriority,
     this.reason,
     this.confidence,
     this.error,
     this.didWrite = false,
   });
 
-  /// Whether the estimate was successfully updated.
+  /// Whether the priority was successfully updated.
   final bool success;
 
   /// Human-readable message describing the outcome.
@@ -62,10 +32,10 @@ class TaskEstimateResult {
   /// The updated task if successful, null otherwise.
   final Task? updatedTask;
 
-  /// The minutes value requested by the AI.
-  final int? requestedMinutes;
+  /// The priority value requested by the AI.
+  final TaskPriority? requestedPriority;
 
-  /// The AI's explanation for why this estimate was detected.
+  /// The AI's explanation for why this priority was detected.
   final String? reason;
 
   /// The AI's confidence level ('high', 'medium', 'low').
@@ -75,76 +45,83 @@ class TaskEstimateResult {
   final String? error;
 
   /// Whether a database write actually occurred.
+  ///
+  /// False when the operation was a no-op (e.g., setting P2 on a task that
+  /// already has P2 as the default). This allows callers to distinguish
+  /// between "success with actual change" and "success with no change needed".
   final bool didWrite;
 
   /// Whether the update was skipped (not an error, just not applied).
+  ///
+  /// True when the update was not applied because the task already had an
+  /// explicit priority set (non-default value).
   bool get wasSkipped => !success && error == null;
 
   /// Whether this was a no-op (success without DB write).
+  ///
+  /// True when the requested priority equals the current priority,
+  /// so no actual change was needed.
   bool get wasNoOp => success && !didWrite;
 }
 
-/// Handler for updating task time estimates via AI function calls.
+/// Handler for updating task priority via AI function calls.
 ///
-/// This handler processes `update_task_estimate` tool calls from the AI,
-/// converting natural language duration expressions (e.g., "2 hours",
-/// "half a day") into structured task estimates.
+/// This handler processes `update_task_priority` tool calls from the AI,
+/// converting natural language priority expressions (e.g., "urgent",
+/// "high priority") into structured task priority levels.
 ///
 /// ## Behavior
 ///
-/// - **Only sets if not already set**: If the task already has a non-zero
-///   estimate, the update is skipped to preserve manual edits. Zero-duration
-///   estimates are treated as "not set".
+/// - **Only sets if not already set**: If the task has a non-default priority
+///   (anything other than p2Medium), the update is skipped to preserve manual
+///   edits. The default p2Medium is treated as "not explicitly set".
 ///
-/// - **Validates input**: Rejects negative or zero minute values from the AI.
+/// - **Validates input**: Rejects invalid priority values from the AI.
 ///
 /// - **Updates task state**: On success, updates the task in the database and
 ///   notifies listeners via the [onTaskUpdated] callback.
 ///
-/// ## Example
-///
-/// ```dart
-/// final handler = TaskEstimateHandler(
-///   task: myTask,
-///   journalRepository: repo,
-///   onTaskUpdated: (updated) => print('Task updated: ${updated.data.estimate}'),
-/// );
-///
-/// final result = await handler.processToolCall(toolCall, manager);
-/// if (result.success) {
-///   print('Estimate set to ${result.requestedMinutes} minutes');
-/// }
-/// ```
-///
-/// ## Testing
-///
-/// The handler is designed for easy unit testing:
-/// - Constructor injection of all dependencies
-/// - Pure result object with detailed outcome information
-/// - Optional [ConversationManager] for response handling
-///
 /// See also:
+/// - `TaskEstimateHandler` for time estimate updates
 /// - `TaskDueDateHandler` for due date updates
 /// - `TaskFunctions` for function definitions
-class TaskEstimateHandler {
-  /// Creates a handler for processing task estimate updates.
+class TaskPriorityHandler {
+  /// Creates a handler for processing task priority updates.
   ///
   /// Parameters:
   /// - [task]: The task to potentially update. Mutable to track state changes.
   /// - [journalRepository]: Repository for persisting task updates.
   /// - [onTaskUpdated]: Optional callback invoked when the task is updated.
   ///   Use this to sync state across multiple handlers.
-  TaskEstimateHandler({
+  TaskPriorityHandler({
     required this.task,
     required this.journalRepository,
     this.onTaskUpdated,
   });
 
+  /// Parses a priority string from AI input to TaskPriority enum.
+  ///
+  /// Handles P0, P1, P2, P3 strings (case-insensitive). Returns null if
+  /// parsing fails.
+  static TaskPriority? parsePriority(dynamic value) {
+    if (value == null) return null;
+    if (value is! String) return null;
+
+    final normalized = value.trim().toUpperCase();
+    return switch (normalized) {
+      'P0' => TaskPriority.p0Urgent,
+      'P1' => TaskPriority.p1High,
+      'P2' => TaskPriority.p2Medium,
+      'P3' => TaskPriority.p3Low,
+      _ => null,
+    };
+  }
+
   /// The task being processed.
   ///
   /// This field is intentionally mutable (not `final`) because it is updated
   /// after successful operations to reflect the latest state. This ensures
-  /// subsequent operations in the same session see the updated estimate.
+  /// subsequent operations in the same session see the updated priority.
   Task task;
 
   /// Repository for persisting task updates to the database.
@@ -155,87 +132,101 @@ class TaskEstimateHandler {
   /// Use this to synchronize state across multiple handlers or UI components.
   final void Function(Task)? onTaskUpdated;
 
-  /// Processes an `update_task_estimate` tool call from the AI.
+  /// Processes an `update_task_priority` tool call from the AI.
   ///
   /// Parses the tool call arguments, validates the input, and updates the
-  /// task estimate if appropriate.
+  /// task priority if appropriate.
   ///
   /// Parameters:
-  /// - [call]: The tool call containing the estimate data in JSON format.
-  ///   Expected format: `{"minutes": 120, "reason": "...", "confidence": "high"}`
+  /// - [call]: The tool call containing the priority data in JSON format.
+  ///   Expected format: `{"priority": "P1", "reason": "...", "confidence": "high"}`
   /// - [manager]: Optional conversation manager for sending tool responses
   ///   back to the AI. If null, responses are not sent (useful for testing).
   ///
-  /// Returns a [TaskEstimateResult] with detailed outcome information.
+  /// Returns a [TaskPriorityResult] with detailed outcome information.
   ///
   /// The method handles these cases:
   /// 1. **Invalid JSON**: Returns error result
-  /// 2. **Invalid minutes** (null, zero, negative): Returns error result
-  /// 3. **Existing estimate**: Returns skipped result (preserves manual edits)
+  /// 2. **Invalid priority** (null, unknown value): Returns error result
+  /// 3. **Existing non-default priority**: Returns skipped result (preserves manual edits)
   /// 4. **Success**: Updates task and returns success result
   /// 5. **Repository error**: Returns error result, logs exception
-  Future<TaskEstimateResult> processToolCall(
+  Future<TaskPriorityResult> processToolCall(
     ChatCompletionMessageToolCall call, [
     ConversationManager? manager,
   ]) async {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final rawMinutes = args['minutes'];
 
       // Extract and normalize values using shared utility
+      final rawPriority = TaskFunctionArgs.normalizeToString(args['priority']);
       final (:reason, :confidence) =
           TaskFunctionArgs.extractReasonAndConfidence(args);
 
-      // Robustly parse minutes (handles int, double, string)
-      final minutes = parseMinutes(rawMinutes);
+      final priority = TaskPriorityHandler.parsePriority(rawPriority);
 
       developer.log(
-        'Processing update_task_estimate: raw=$rawMinutes, parsed=$minutes min '
+        'Processing update_task_priority: raw=$rawPriority, parsed=$priority '
         '(confidence: $confidence, reason: $reason)',
-        name: 'TaskEstimateHandler',
+        name: 'TaskPriorityHandler',
       );
 
-      // Validate minutes value
-      if (minutes == null) {
-        final message = 'Invalid estimate: minutes must be a positive integer '
-            'between 1 and $maxEstimateMinutes. Received: $rawMinutes';
+      // Validate priority value
+      if (priority == null) {
+        final message = 'Invalid priority: must be P0, P1, P2, or P3. '
+            'Received: $rawPriority';
         _sendResponse(call.id, message, manager);
-        return TaskEstimateResult(
+        return TaskPriorityResult(
           success: false,
           message: message,
-          requestedMinutes: rawMinutes is int ? rawMinutes : null,
           reason: reason,
           confidence: confidence,
           error: message,
         );
       }
 
-      // Check if estimate already exists (treat zero as "not set")
-      final currentEstimate = task.data.estimate;
-      final hasExistingEstimate =
-          currentEstimate != null && currentEstimate.inMinutes > 0;
+      // Check if priority was explicitly set (not default p2Medium)
+      final currentPriority = task.data.priority;
+      final wasExplicitlySet = currentPriority != TaskPriority.p2Medium;
 
-      if (hasExistingEstimate) {
+      if (wasExplicitlySet) {
         final message =
-            'Estimate already set to ${currentEstimate.inMinutes} minutes. Skipped.';
+            'Priority already set to ${currentPriority.short}. Skipped.';
         developer.log(
-          'Task already has estimate: ${currentEstimate.inMinutes} minutes',
-          name: 'TaskEstimateHandler',
+          'Task already has priority: ${currentPriority.short}',
+          name: 'TaskPriorityHandler',
         );
         _sendResponse(call.id, message, manager);
-        return TaskEstimateResult(
+        return TaskPriorityResult(
           success: false,
           message: message,
-          requestedMinutes: minutes,
+          requestedPriority: priority,
+          reason: reason,
+          confidence: confidence,
+        );
+      }
+
+      // Skip DB write if requested priority equals current (no-op optimization)
+      if (priority == currentPriority) {
+        final message = 'Priority already ${priority.short}. No change needed.';
+        developer.log(
+          'Priority unchanged: ${priority.short}',
+          name: 'TaskPriorityHandler',
+        );
+        _sendResponse(call.id, message, manager);
+        return TaskPriorityResult(
+          success: true,
+          message: message,
+          updatedTask: task,
+          requestedPriority: priority,
           reason: reason,
           confidence: confidence,
         );
       }
 
       // Update the task
-      final newEstimate = Duration(minutes: minutes);
       final updatedTask = task.copyWith(
-        data: task.data.copyWith(estimate: newEstimate),
+        data: task.data.copyWith(priority: priority),
       );
 
       try {
@@ -245,51 +236,51 @@ class TaskEstimateHandler {
         task = updatedTask;
         onTaskUpdated?.call(updatedTask);
 
-        final message = 'Task estimate updated to $minutes minutes.';
+        final message = 'Task priority updated to ${priority.short}.';
         developer.log(
-          'Successfully set task estimate to $minutes minutes',
-          name: 'TaskEstimateHandler',
+          'Successfully set task priority to ${priority.short}',
+          name: 'TaskPriorityHandler',
         );
         _sendResponse(call.id, message, manager);
 
-        return TaskEstimateResult(
+        return TaskPriorityResult(
           success: true,
           message: message,
           updatedTask: updatedTask,
-          requestedMinutes: minutes,
+          requestedPriority: priority,
           reason: reason,
           confidence: confidence,
           didWrite: true,
         );
       } catch (e, s) {
         const message =
-            'Failed to set estimate. Continuing without estimate update.';
+            'Failed to set priority. Continuing without priority update.';
         developer.log(
-          'Failed to update task estimate',
-          name: 'TaskEstimateHandler',
+          'Failed to update task priority',
+          name: 'TaskPriorityHandler',
           error: e,
           stackTrace: s,
         );
         _sendResponse(call.id, message, manager);
-        return TaskEstimateResult(
+        return TaskPriorityResult(
           success: false,
           message: message,
-          requestedMinutes: minutes,
+          requestedPriority: priority,
           reason: reason,
           confidence: confidence,
           error: e.toString(),
         );
       }
     } catch (e, s) {
-      const message = 'Error processing task estimate update.';
+      const message = 'Error processing task priority update.';
       developer.log(
-        'Error processing update_task_estimate: $e',
-        name: 'TaskEstimateHandler',
+        'Error processing update_task_priority: $e',
+        name: 'TaskPriorityHandler',
         error: e,
         stackTrace: s,
       );
       _sendResponse(call.id, message, manager);
-      return TaskEstimateResult(
+      return TaskPriorityResult(
         success: false,
         message: message,
         error: e.toString(),

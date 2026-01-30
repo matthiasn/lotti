@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.833] - 2026-01-30
+### Added
+- Voice Task Priority: Set task priority via voice during audio recordings
+  - Say "priority P1", "this is urgent", or "low priority" to set task priority
+  - AI maps spoken terms to priority levels: urgent/critical→P0, high/important→P1, medium/normal→P2, low/minor→P3
+  - Only sets priority when not already explicitly set, preserving manual edits
+  - Follows the same pattern as voice-controlled time estimates and due dates
+
 ## [0.9.832] - 2026-01-30
 ### Added
 - Daily OS Timeline: Double-tap planned blocks to edit start/end times

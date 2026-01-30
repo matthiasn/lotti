@@ -10,6 +10,7 @@ class TaskFunctions {
   static const String setTaskLanguage = 'set_task_language';
   static const String updateTaskEstimate = 'update_task_estimate';
   static const String updateTaskDueDate = 'update_task_due_date';
+  static const String updateTaskPriority = 'update_task_priority';
 
   /// Get all available function definitions for task operations
   static List<ChatCompletionTool> getTools() {
@@ -117,6 +118,43 @@ class TaskFunctions {
           },
         ),
       ),
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: updateTaskPriority,
+          description:
+              'Set the priority for the current task based on voice transcript. '
+              'Call when the user mentions priority or urgency (e.g., "priority P0", '
+              '"high priority", "this is urgent", "low priority task"). '
+              'Only sets priority if not already explicitly set by user.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'priority': {
+                'type': 'string',
+                'enum': ['P0', 'P1', 'P2', 'P3'],
+                'description':
+                    'Priority level. P0=Urgent, P1=High, P2=Medium, P3=Low. '
+                        'Map spoken terms: "urgent/critical"→P0, "high/important"→P1, '
+                        '"medium/normal"→P2, "low/minor"→P3.',
+              },
+              'reason': {
+                'type': 'string',
+                'description':
+                    'Brief explanation of what was said that indicated this priority.',
+              },
+              'confidence': {
+                'type': 'string',
+                'enum': ['high', 'medium', 'low'],
+                'description':
+                    'Confidence level. Use "high" for explicit priority statements, '
+                        '"medium" for implied urgency, "low" for uncertain.',
+              },
+            },
+            'required': ['priority'],
+          },
+        ),
+      ),
     ];
   }
 }
@@ -138,4 +176,47 @@ enum LanguageDetectionConfidence {
   high,
   medium,
   low,
+}
+
+/// Utility class for parsing AI function call arguments.
+///
+/// AI models sometimes return non-string values for fields that should be
+/// strings (e.g., `{"confidence": true}` instead of `{"confidence": "high"}`).
+/// This class provides safe parsing methods that normalize these values.
+class TaskFunctionArgs {
+  const TaskFunctionArgs._();
+
+  /// Normalizes a value to String?, handling non-string types from AI.
+  ///
+  /// - If the value is already a String, returns it as-is
+  /// - If the value is null, returns null
+  /// - Otherwise, converts to string via toString()
+  ///
+  /// This is useful for optional string fields like `reason` and `confidence`
+  /// that the AI might accidentally send as other types.
+  static String? normalizeToString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  /// Extracts and normalizes the common 'reason' and 'confidence' fields
+  /// from AI function call arguments.
+  ///
+  /// Returns a record with the normalized values, handling cases where
+  /// the AI sends non-string types (e.g., `{"confidence": true}`).
+  ///
+  /// Example:
+  /// ```dart
+  /// final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+  /// final (:reason, :confidence) = TaskFunctionArgs.extractReasonAndConfidence(args);
+  /// ```
+  static ({String? reason, String? confidence}) extractReasonAndConfidence(
+    Map<String, dynamic> args,
+  ) {
+    return (
+      reason: normalizeToString(args['reason']),
+      confidence: normalizeToString(args['confidence']),
+    );
+  }
 }

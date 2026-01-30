@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -25,6 +26,7 @@ class TaskDueDateResult {
     this.reason,
     this.confidence,
     this.error,
+    this.didWrite = false,
   });
 
   /// Whether the due date was successfully updated.
@@ -48,8 +50,14 @@ class TaskDueDateResult {
   /// Error message if the operation failed.
   final String? error;
 
+  /// Whether a database write actually occurred.
+  final bool didWrite;
+
   /// Whether the update was skipped (not an error, just not applied).
   bool get wasSkipped => !success && error == null;
+
+  /// Whether this was a no-op (success without DB write).
+  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task due dates via AI function calls.
@@ -160,8 +168,10 @@ class TaskDueDateHandler {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final dueDateStr = args['dueDate'] as String?;
-      final confidence = args['confidence'] as String?;
-      final reason = args['reason'] as String?;
+
+      // Extract and normalize values using shared utility
+      final (:reason, :confidence) =
+          TaskFunctionArgs.extractReasonAndConfidence(args);
 
       developer.log(
         'Processing update_task_due_date: $dueDateStr '
@@ -247,14 +257,16 @@ class TaskDueDateHandler {
           requestedDate: dueDate,
           reason: reason,
           confidence: confidence,
+          didWrite: true,
         );
-      } catch (e) {
+      } catch (e, s) {
         const message =
             'Failed to set due date. Continuing without due date update.';
         developer.log(
           'Failed to update task due date',
           name: 'TaskDueDateHandler',
           error: e,
+          stackTrace: s,
         );
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(
@@ -266,12 +278,13 @@ class TaskDueDateHandler {
           error: e.toString(),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
       const message = 'Error processing task due date update.';
       developer.log(
         'Error processing update_task_due_date: $e',
         name: 'TaskDueDateHandler',
         error: e,
+        stackTrace: s,
       );
       _sendResponse(call.id, message, manager);
       return TaskDueDateResult(

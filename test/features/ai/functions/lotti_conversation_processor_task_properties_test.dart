@@ -118,6 +118,7 @@ class TestDataFactory {
     String? title,
     Duration? estimate,
     DateTime? due,
+    TaskPriority priority = TaskPriority.p2Medium,
     List<String>? checklistIds,
   }) {
     final taskId = id ?? 'test-task-id';
@@ -134,6 +135,7 @@ class TestDataFactory {
         title: title ?? 'Test Task',
         estimate: estimate,
         due: due,
+        priority: priority,
         checklistIds: checklistIds ?? [],
         status: TaskStatus.open(
           id: 'status-1',
@@ -926,6 +928,286 @@ void main() {
     });
   });
 
+  group('update_task_priority', () {
+    test('should update task priority when currently default (p2Medium)',
+        () async {
+      // Arrange
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'This is urgent priority';
+
+      when(() => mockConversationManager.messages).thenReturn([]);
+
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'tool-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_task_priority',
+          arguments:
+              '{"priority": "P0", "reason": "User said urgent", "confidence": "high"}',
+        ),
+      );
+
+      final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((invocation) {
+        final toolCallId = invocation.namedArguments[#toolCallId] as String;
+        final response = invocation.namedArguments[#response] as String;
+        capturedToolResponses[toolCallId] = response;
+      });
+
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
+
+      // Mock journal repo update
+      when(() => mockJournalRepo.updateJournalEntity(any()))
+          .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+
+      // Act
+      await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: TestDataFactory.createProvider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert - capture and verify in one call
+      final captured =
+          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
+              .captured;
+      expect(captured, hasLength(1));
+      final updatedTask = captured.first as Task;
+      expect(updatedTask.data.priority, equals(TaskPriority.p0Urgent));
+
+      // Verify tool response
+      expect(
+          capturedToolResponses['tool-1'], contains('priority updated to P0'));
+    });
+
+    test('should skip update when priority already exists (non-default)',
+        () async {
+      // Arrange - task with P1 priority (not default)
+      final task = TestDataFactory.createTask(priority: TaskPriority.p1High);
+      final model = TestDataFactory.createModel();
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'This is urgent priority';
+
+      when(() => mockConversationManager.messages).thenReturn([]);
+
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'tool-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_task_priority',
+          arguments:
+              '{"priority": "P0", "reason": "User said urgent", "confidence": "high"}',
+        ),
+      );
+
+      final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((invocation) {
+        final toolCallId = invocation.namedArguments[#toolCallId] as String;
+        final response = invocation.namedArguments[#response] as String;
+        capturedToolResponses[toolCallId] = response;
+      });
+
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
+
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+
+      // Act
+      await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: TestDataFactory.createProvider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert - should NOT call updateJournalEntity
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+
+      // Verify tool response indicates skip
+      expect(capturedToolResponses['tool-1'], contains('already set to P1'));
+      expect(capturedToolResponses['tool-1'], contains('Skipped'));
+    });
+
+    test('should reject invalid priority value', () async {
+      // Arrange
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'This is some priority';
+
+      when(() => mockConversationManager.messages).thenReturn([]);
+
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'tool-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_task_priority',
+          arguments:
+              '{"priority": "P5", "reason": "Invalid priority", "confidence": "low"}',
+        ),
+      );
+
+      final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((invocation) {
+        final toolCallId = invocation.namedArguments[#toolCallId] as String;
+        final response = invocation.namedArguments[#response] as String;
+        capturedToolResponses[toolCallId] = response;
+      });
+
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
+
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+
+      // Act
+      await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: TestDataFactory.createProvider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert - should NOT call updateJournalEntity
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+
+      // Verify tool response indicates error
+      expect(capturedToolResponses['tool-1'], contains('Invalid priority'));
+      expect(capturedToolResponses['tool-1'], contains('P0, P1, P2, or P3'));
+    });
+
+    test('should update to P3 (Low) priority', () async {
+      // Arrange - fresh task with default priority
+      final task = TestDataFactory.createTask();
+      final model = TestDataFactory.createModel();
+      final promptConfig = TestDataFactory.createPromptConfig();
+      const prompt = 'Set priority';
+
+      when(() => mockConversationManager.messages).thenReturn([]);
+
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'tool-P3',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'update_task_priority',
+          arguments:
+              '{"priority": "P3", "reason": "Low priority task", "confidence": "high"}',
+        ),
+      );
+
+      final streamController = StreamController<ConversationEvent>();
+      addTearDown(() {
+        unawaited(streamController.close());
+      });
+      when(() => mockConversationManager.events)
+          .thenAnswer((_) => streamController.stream);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((invocation) {
+        final toolCallId = invocation.namedArguments[#toolCallId] as String;
+        final response = invocation.namedArguments[#response] as String;
+        capturedToolResponses[toolCallId] = response;
+      });
+
+      stubSendMessageToInvokeStrategy(
+        repo: mockConversationRepo,
+        manager: mockConversationManager,
+        toolCalls: const [toolCall],
+      );
+
+      when(() => mockJournalRepo.updateJournalEntity(any()))
+          .thenAnswer((_) async => true);
+
+      when(() => mockJournalDb.journalEntityById(task.meta.id))
+          .thenAnswer((_) async => task);
+
+      // Act
+      await processor.processPromptWithConversation(
+        prompt: prompt,
+        entity: task,
+        task: task,
+        model: model,
+        provider: TestDataFactory.createProvider(),
+        promptConfig: promptConfig,
+        systemMessage: checklistUpdatesPrompt.systemMessage,
+        tools: [],
+        inferenceRepo: mockOllamaRepo,
+        autoChecklistService: mockAutoChecklistService,
+      );
+
+      // Assert
+      final captured =
+          verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
+              .captured;
+      final updatedTask = captured.first as Task;
+      expect(updatedTask.data.priority, equals(TaskPriority.p3Low));
+    });
+  });
+
   group('TaskFunctions.getTools', () {
     test('should include update_task_estimate function', () {
       final tools = TaskFunctions.getTools();
@@ -973,6 +1255,39 @@ void main() {
       final description = dueDateTool.function.description!;
       // Should contain a date in YYYY-MM-DD format
       expect(description, matches(RegExp(r'Current date: \d{4}-\d{2}-\d{2}')));
+    });
+
+    test('should include update_task_priority function', () {
+      final tools = TaskFunctions.getTools();
+      final priorityTool = tools.firstWhere(
+        (t) => t.function.name == TaskFunctions.updateTaskPriority,
+        orElse: () => throw Exception('update_task_priority not found'),
+      );
+
+      expect(priorityTool.function.name, equals('update_task_priority'));
+      expect(priorityTool.function.description, contains('priority'));
+      expect(priorityTool.function.description, contains('urgency'));
+      expect(priorityTool.function.parameters, isNotNull);
+      expect(priorityTool.function.parameters!['properties'],
+          contains('priority'));
+      expect(
+          priorityTool.function.parameters!['properties'], contains('reason'));
+      expect(priorityTool.function.parameters!['properties'],
+          contains('confidence'));
+    });
+
+    test('update_task_priority should have valid priority enum values', () {
+      final tools = TaskFunctions.getTools();
+      final priorityTool = tools.firstWhere(
+        (t) => t.function.name == TaskFunctions.updateTaskPriority,
+      );
+
+      final properties = priorityTool.function.parameters!['properties'] as Map;
+      final priorityProp = properties['priority'] as Map;
+      final enumValues = priorityProp['enum'] as List;
+
+      expect(enumValues, containsAll(['P0', 'P1', 'P2', 'P3']));
+      expect(enumValues, hasLength(4));
     });
   });
 }
