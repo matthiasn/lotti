@@ -1354,6 +1354,135 @@ void main() {
       // Should NOT show AI Setup Wizard section for new provider
       expect(find.text('AI Setup Wizard'), findsNothing);
     });
+
+    testWidgets('Run Setup button shows confirmation dialog when tapped',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+      when(() =>
+              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [geminiProvider]);
+
+      await tester.pumpWidget(buildTestWidget(
+        configId: 'gemini-provider-id',
+        existingProviders: [geminiProvider],
+      ));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Run Setup button
+      final runSetupButton = find.text('Run Setup');
+      await tester.ensureVisible(runSetupButton);
+      await tester.pumpAndSettle();
+
+      // Tap the Run Setup button
+      await tester.tap(runSetupButton);
+      // Use pump with duration instead of pumpAndSettle to avoid timeout
+      // The dialog appears after async config fetch completes
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Confirmation dialog should appear
+      expect(find.text('Set Up AI Features?'), findsOneWidget);
+    });
+
+    testWidgets('displays all localized strings correctly',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+      when(() =>
+              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [geminiProvider]);
+
+      await tester.pumpWidget(buildTestWidget(
+        configId: 'gemini-provider-id',
+        existingProviders: [geminiProvider],
+      ));
+      await tester.pumpAndSettle();
+
+      // Scroll to find AI Setup Wizard section
+      final aiSetupSection = find.text('AI Setup Wizard');
+      await tester.ensureVisible(aiSetupSection);
+      await tester.pumpAndSettle();
+
+      // Verify all localized strings are displayed
+      expect(find.text('AI Setup Wizard'), findsOneWidget);
+      expect(find.text('Run Setup Wizard'), findsOneWidget);
+      expect(
+        find.text('Creates optimized models, prompts, and a test category'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Safe to run multiple times - existing items will be kept'),
+        findsOneWidget,
+      );
+      expect(find.text('Run Setup'), findsOneWidget);
+    });
+
+    testWidgets('shows Running state while setup is in progress',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final geminiProvider = AiConfig.inferenceProvider(
+        id: 'gemini-provider-id',
+        name: 'My Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'test-key',
+        createdAt: DateTime.now(),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(() => mockRepository.getConfigById('gemini-provider-id'))
+          .thenAnswer((_) async => geminiProvider);
+      when(() => mockRepository.watchConfigsByType(AiConfigType.model))
+          .thenAnswer((_) => Stream.value([]));
+      when(() =>
+              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [geminiProvider]);
+
+      await tester.pumpWidget(buildTestWidget(
+        configId: 'gemini-provider-id',
+        existingProviders: [geminiProvider],
+      ));
+      await tester.pumpAndSettle();
+
+      // Scroll to find Run Setup button and verify initial state
+      final runSetupButton = find.text('Run Setup');
+      await tester.ensureVisible(runSetupButton);
+      await tester.pumpAndSettle();
+
+      // Button should show "Run Setup" initially
+      expect(find.text('Run Setup'), findsOneWidget);
+      expect(find.text('Running...'), findsNothing);
+    });
   });
 
   group('New Provider FTUE Flow', () {

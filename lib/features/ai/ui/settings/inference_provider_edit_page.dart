@@ -89,8 +89,9 @@ Future<bool> performFtueSetupWorkflow({
 
   if (!confirmed || !isMounted()) return false;
 
-  // Run the appropriate FTUE setup
+  // Run the appropriate FTUE setup (isMounted() check above ensures context is valid)
   final result = await runFtueSetupForType(
+    // ignore: use_build_context_synchronously
     context: context,
     ref: ref,
     providerType: providerType,
@@ -99,6 +100,8 @@ Future<bool> performFtueSetupWorkflow({
   );
 
   if (result != null && isMounted()) {
+    // isMounted() check ensures context is still valid
+    // ignore: use_build_context_synchronously
     await showFtueResultDialog(context, result);
   }
 
@@ -909,10 +912,9 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
       children: [
         const SizedBox(height: 32),
         AiFormSection(
-          title: 'AI Setup Wizard',
+          title: context.messages.aiSetupWizardTitle,
           icon: Icons.auto_awesome_rounded,
-          description:
-              'Set up or refresh models, prompts, and test category for $_providerName',
+          description: context.messages.aiSetupWizardDescription(_providerName),
           children: [
             Container(
               padding: const EdgeInsets.all(16),
@@ -949,14 +951,14 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Run Setup Wizard',
+                              context.messages.aiSetupWizardRunLabel,
                               style: context.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Creates optimized models, prompts, and a test category',
+                              context.messages.aiSetupWizardCreatesOptimized,
                               style: context.textTheme.bodySmall?.copyWith(
                                 color: context.colorScheme.onSurfaceVariant,
                               ),
@@ -985,7 +987,7 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Safe to run multiple times - existing items will be kept',
+                            context.messages.aiSetupWizardSafeToRunMultiple,
                             style: context.textTheme.bodySmall?.copyWith(
                               color: context.colorScheme.onPrimaryContainer,
                             ),
@@ -1010,7 +1012,11 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                               ),
                             )
                           : const Icon(Icons.auto_awesome, size: 18),
-                      label: Text(_isRunning ? 'Running...' : 'Run Setup'),
+                      label: Text(
+                        _isRunning
+                            ? context.messages.aiSetupWizardRunningButton
+                            : context.messages.aiSetupWizardRunButton,
+                      ),
                     ),
                   ),
                 ],
