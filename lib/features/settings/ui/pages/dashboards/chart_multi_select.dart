@@ -98,10 +98,10 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
 
   List<MultiSelectItem<T?>> get _filteredItems {
     if (_searchQuery.isEmpty) return widget.items;
+    final lowerCaseQuery = _searchQuery.toLowerCase();
     return widget.items
         .where(
-          (item) =>
-              item.label.toLowerCase().contains(_searchQuery.toLowerCase()),
+          (item) => item.label.toLowerCase().contains(lowerCaseQuery),
         )
         .toList();
   }
