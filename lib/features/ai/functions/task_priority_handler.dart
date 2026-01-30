@@ -4,26 +4,9 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
-
-/// Parses a priority string from AI input to TaskPriority enum.
-///
-/// Handles P0, P1, P2, P3 strings (case-insensitive). Returns null if
-/// parsing fails.
-TaskPriority? parsePriority(dynamic value) {
-  if (value == null) return null;
-  if (value is! String) return null;
-
-  final normalized = value.trim().toUpperCase();
-  return switch (normalized) {
-    'P0' => TaskPriority.p0Urgent,
-    'P1' => TaskPriority.p1High,
-    'P2' => TaskPriority.p2Medium,
-    'P3' => TaskPriority.p3Low,
-    _ => null,
-  };
-}
 
 /// Result of processing a priority update tool call.
 ///
@@ -37,6 +20,7 @@ class TaskPriorityResult {
     this.reason,
     this.confidence,
     this.error,
+    this.didWrite = false,
   });
 
   /// Whether the priority was successfully updated.
@@ -60,8 +44,24 @@ class TaskPriorityResult {
   /// Error message if the operation failed.
   final String? error;
 
+  /// Whether a database write actually occurred.
+  ///
+  /// False when the operation was a no-op (e.g., setting P2 on a task that
+  /// already has P2 as the default). This allows callers to distinguish
+  /// between "success with actual change" and "success with no change needed".
+  final bool didWrite;
+
   /// Whether the update was skipped (not an error, just not applied).
+  ///
+  /// True when the update was not applied because the task already had an
+  /// explicit priority set (non-default value).
   bool get wasSkipped => !success && error == null;
+
+  /// Whether this was a no-op (success without DB write).
+  ///
+  /// True when the requested priority equals the current priority,
+  /// so no actual change was needed.
+  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task priority via AI function calls.
@@ -98,6 +98,24 @@ class TaskPriorityHandler {
     required this.journalRepository,
     this.onTaskUpdated,
   });
+
+  /// Parses a priority string from AI input to TaskPriority enum.
+  ///
+  /// Handles P0, P1, P2, P3 strings (case-insensitive). Returns null if
+  /// parsing fails.
+  static TaskPriority? parsePriority(dynamic value) {
+    if (value == null) return null;
+    if (value is! String) return null;
+
+    final normalized = value.trim().toUpperCase();
+    return switch (normalized) {
+      'P0' => TaskPriority.p0Urgent,
+      'P1' => TaskPriority.p1High,
+      'P2' => TaskPriority.p2Medium,
+      'P3' => TaskPriority.p3Low,
+      _ => null,
+    };
+  }
 
   /// The task being processed.
   ///
@@ -139,11 +157,13 @@ class TaskPriorityHandler {
   ]) async {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
-      final rawPriority = args['priority'] as String?;
-      final confidence = args['confidence'] as String?;
-      final reason = args['reason'] as String?;
 
-      final priority = parsePriority(rawPriority);
+      // Extract and normalize values using shared utility
+      final rawPriority = TaskFunctionArgs.normalizeToString(args['priority']);
+      final (:reason, :confidence) =
+          TaskFunctionArgs.extractReasonAndConfidence(args);
+
+      final priority = TaskPriorityHandler.parsePriority(rawPriority);
 
       developer.log(
         'Processing update_task_priority: raw=$rawPriority, parsed=$priority '
@@ -186,6 +206,24 @@ class TaskPriorityHandler {
         );
       }
 
+      // Skip DB write if requested priority equals current (no-op optimization)
+      if (priority == currentPriority) {
+        final message = 'Priority already ${priority.short}. No change needed.';
+        developer.log(
+          'Priority unchanged: ${priority.short}',
+          name: 'TaskPriorityHandler',
+        );
+        _sendResponse(call.id, message, manager);
+        return TaskPriorityResult(
+          success: true,
+          message: message,
+          updatedTask: task,
+          requestedPriority: priority,
+          reason: reason,
+          confidence: confidence,
+        );
+      }
+
       // Update the task
       final updatedTask = task.copyWith(
         data: task.data.copyWith(priority: priority),
@@ -212,14 +250,16 @@ class TaskPriorityHandler {
           requestedPriority: priority,
           reason: reason,
           confidence: confidence,
+          didWrite: true,
         );
-      } catch (e) {
+      } catch (e, s) {
         const message =
             'Failed to set priority. Continuing without priority update.';
         developer.log(
           'Failed to update task priority',
           name: 'TaskPriorityHandler',
           error: e,
+          stackTrace: s,
         );
         _sendResponse(call.id, message, manager);
         return TaskPriorityResult(
@@ -231,12 +271,13 @@ class TaskPriorityHandler {
           error: e.toString(),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
       const message = 'Error processing task priority update.';
       developer.log(
         'Error processing update_task_priority: $e',
         name: 'TaskPriorityHandler',
         error: e,
+        stackTrace: s,
       );
       _sendResponse(call.id, message, manager);
       return TaskPriorityResult(

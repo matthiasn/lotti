@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -49,6 +50,7 @@ class TaskEstimateResult {
     this.reason,
     this.confidence,
     this.error,
+    this.didWrite = false,
   });
 
   /// Whether the estimate was successfully updated.
@@ -72,8 +74,14 @@ class TaskEstimateResult {
   /// Error message if the operation failed.
   final String? error;
 
+  /// Whether a database write actually occurred.
+  final bool didWrite;
+
   /// Whether the update was skipped (not an error, just not applied).
   bool get wasSkipped => !success && error == null;
+
+  /// Whether this was a no-op (success without DB write).
+  bool get wasNoOp => success && !didWrite;
 }
 
 /// Handler for updating task time estimates via AI function calls.
@@ -173,8 +181,10 @@ class TaskEstimateHandler {
     try {
       final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
       final rawMinutes = args['minutes'];
-      final confidence = args['confidence'] as String?;
-      final reason = args['reason'] as String?;
+
+      // Extract and normalize values using shared utility
+      final (:reason, :confidence) =
+          TaskFunctionArgs.extractReasonAndConfidence(args);
 
       // Robustly parse minutes (handles int, double, string)
       final minutes = parseMinutes(rawMinutes);
@@ -249,14 +259,16 @@ class TaskEstimateHandler {
           requestedMinutes: minutes,
           reason: reason,
           confidence: confidence,
+          didWrite: true,
         );
-      } catch (e) {
+      } catch (e, s) {
         const message =
             'Failed to set estimate. Continuing without estimate update.';
         developer.log(
           'Failed to update task estimate',
           name: 'TaskEstimateHandler',
           error: e,
+          stackTrace: s,
         );
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(
@@ -268,12 +280,13 @@ class TaskEstimateHandler {
           error: e.toString(),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
       const message = 'Error processing task estimate update.';
       developer.log(
         'Error processing update_task_estimate: $e',
         name: 'TaskEstimateHandler',
         error: e,
+        stackTrace: s,
       );
       _sendResponse(call.id, message, manager);
       return TaskEstimateResult(

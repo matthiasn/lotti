@@ -99,54 +99,55 @@ void main() {
 
   group('parsePriority', () {
     test('should parse P0 to p0Urgent', () {
-      expect(parsePriority('P0'), TaskPriority.p0Urgent);
+      expect(TaskPriorityHandler.parsePriority('P0'), TaskPriority.p0Urgent);
     });
 
     test('should parse P1 to p1High', () {
-      expect(parsePriority('P1'), TaskPriority.p1High);
+      expect(TaskPriorityHandler.parsePriority('P1'), TaskPriority.p1High);
     });
 
     test('should parse P2 to p2Medium', () {
-      expect(parsePriority('P2'), TaskPriority.p2Medium);
+      expect(TaskPriorityHandler.parsePriority('P2'), TaskPriority.p2Medium);
     });
 
     test('should parse P3 to p3Low', () {
-      expect(parsePriority('P3'), TaskPriority.p3Low);
+      expect(TaskPriorityHandler.parsePriority('P3'), TaskPriority.p3Low);
     });
 
     test('should be case-insensitive', () {
-      expect(parsePriority('p0'), TaskPriority.p0Urgent);
-      expect(parsePriority('p1'), TaskPriority.p1High);
-      expect(parsePriority('p2'), TaskPriority.p2Medium);
-      expect(parsePriority('p3'), TaskPriority.p3Low);
+      expect(TaskPriorityHandler.parsePriority('p0'), TaskPriority.p0Urgent);
+      expect(TaskPriorityHandler.parsePriority('p1'), TaskPriority.p1High);
+      expect(TaskPriorityHandler.parsePriority('p2'), TaskPriority.p2Medium);
+      expect(TaskPriorityHandler.parsePriority('p3'), TaskPriority.p3Low);
     });
 
     test('should handle mixed case', () {
-      expect(parsePriority('P0'), TaskPriority.p0Urgent);
-      expect(parsePriority('p0'), TaskPriority.p0Urgent);
+      expect(TaskPriorityHandler.parsePriority('P0'), TaskPriority.p0Urgent);
+      expect(TaskPriorityHandler.parsePriority('p0'), TaskPriority.p0Urgent);
     });
 
     test('should trim whitespace', () {
-      expect(parsePriority('  P0  '), TaskPriority.p0Urgent);
-      expect(parsePriority('\tP1\n'), TaskPriority.p1High);
+      expect(
+          TaskPriorityHandler.parsePriority('  P0  '), TaskPriority.p0Urgent);
+      expect(TaskPriorityHandler.parsePriority('\tP1\n'), TaskPriority.p1High);
     });
 
     test('should return null for invalid values', () {
-      expect(parsePriority(null), isNull);
-      expect(parsePriority(''), isNull);
-      expect(parsePriority('P4'), isNull);
-      expect(parsePriority('P-1'), isNull);
-      expect(parsePriority('urgent'), isNull);
-      expect(parsePriority('high'), isNull);
-      expect(parsePriority('0'), isNull);
-      expect(parsePriority('1'), isNull);
+      expect(TaskPriorityHandler.parsePriority(null), isNull);
+      expect(TaskPriorityHandler.parsePriority(''), isNull);
+      expect(TaskPriorityHandler.parsePriority('P4'), isNull);
+      expect(TaskPriorityHandler.parsePriority('P-1'), isNull);
+      expect(TaskPriorityHandler.parsePriority('urgent'), isNull);
+      expect(TaskPriorityHandler.parsePriority('high'), isNull);
+      expect(TaskPriorityHandler.parsePriority('0'), isNull);
+      expect(TaskPriorityHandler.parsePriority('1'), isNull);
     });
 
     test('should return null for non-string values', () {
-      expect(parsePriority(0), isNull);
-      expect(parsePriority(1), isNull);
-      expect(parsePriority(true), isNull);
-      expect(parsePriority(['P0']), isNull);
+      expect(TaskPriorityHandler.parsePriority(0), isNull);
+      expect(TaskPriorityHandler.parsePriority(1), isNull);
+      expect(TaskPriorityHandler.parsePriority(true), isNull);
+      expect(TaskPriorityHandler.parsePriority(['P0']), isNull);
     });
   });
 
@@ -481,6 +482,67 @@ void main() {
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
+      test('should handle non-string priority type (integer) gracefully',
+          () async {
+        // AI might send {"priority": 1} instead of {"priority": "P1"}
+        final task = createTask();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_priority_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_priority',
+            arguments:
+                '{"priority": 1, "reason": "test", "confidence": "high"}',
+          ),
+        );
+
+        final handler = TaskPriorityHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        // Should fail validation (1 != "P1") but not throw
+        expect(result.success, isFalse);
+        expect(result.wasSkipped, isFalse);
+        expect(result.error, isNotNull);
+        expect(result.error, contains('must be P0, P1, P2, or P3'));
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      });
+
+      test('should handle non-string confidence/reason types gracefully',
+          () async {
+        // AI might send non-string values for optional fields
+        final task = createTask();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call_priority_123',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'update_task_priority',
+            arguments: '{"priority": "P1", "reason": 123, "confidence": true}',
+          ),
+        );
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskPriorityHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        // Should succeed - non-string values are converted via toString()
+        expect(result.success, isTrue);
+        expect(result.reason, '123');
+        expect(result.confidence, 'true');
+
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+      });
+
       test('should handle malformed JSON', () async {
         final task = createTask();
         const toolCall = ChatCompletionMessageToolCall(
@@ -683,16 +745,12 @@ void main() {
       });
 
       test(
-          'should allow setting P2 via voice when already default P2 (no-op but success)',
+          'should skip DB write when setting P2 on default P2 task (no-op optimization)',
           () async {
         // This is an edge case: user says "medium priority" and task is already p2Medium
-        // We treat p2Medium as "not set", so this would technically succeed
-        // but the task wouldn't actually change
+        // We skip the DB write since nothing would actually change
         final task = createTask(); // default is p2Medium
         final toolCall = createPriorityToolCall(priority: 'P2');
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -701,11 +759,14 @@ void main() {
 
         final result = await handler.processToolCall(toolCall, mockManager);
 
-        // This should succeed (it's setting P2 on a P2 task, which is allowed
-        // because P2 is the default and considered "not explicitly set")
+        // Should succeed but NOT call updateJournalEntity (optimization)
         expect(result.success, isTrue);
         expect(result.requestedPriority, TaskPriority.p2Medium);
         expect(result.updatedTask!.data.priority, TaskPriority.p2Medium);
+        expect(result.message, contains('No change needed'));
+
+        // Verify no DB write occurred
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
       test('should handle all valid priority values sequentially', () async {
@@ -726,7 +787,7 @@ void main() {
           expect(result.success, isTrue, reason: 'Failed for $priorityStr');
           expect(
             result.requestedPriority,
-            parsePriority(priorityStr),
+            TaskPriorityHandler.parsePriority(priorityStr),
             reason: 'Failed for $priorityStr',
           );
         }
