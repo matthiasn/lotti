@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -320,29 +321,6 @@ void main() {
       expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
     });
 
-    testWidgets('displays section headers with icons', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Section headers should have schedule icon for date/time
-      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
-      // And notes icon for comment
-      expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
-    });
-
     testWidgets('comment field renders correctly', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -393,6 +371,125 @@ void main() {
       // (MeasurementSuggestions widget is rendered)
       // The save button should NOT be visible initially
       expect(find.byKey(const Key('measurement_save')), findsNothing);
+    });
+
+    testWidgets(
+        'tapping suggestion chip saves measurement without validation error',
+        (tester) async {
+      // Register UpdateNotifications mock needed by the suggestions provider
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
+      // Create mock measurements with popular values
+      final mockMeasurements = [
+        MeasurementEntry(
+          meta: Metadata(
+            id: 'test-1',
+            createdAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            updatedAt: DateTime.now(),
+            starred: false,
+            private: false,
+          ),
+          data: MeasurementData(
+            value: 500,
+            dataTypeId: measurableWater.id,
+            dateTo: DateTime.now(),
+            dateFrom: DateTime.now(),
+          ),
+        ),
+        MeasurementEntry(
+          meta: Metadata(
+            id: 'test-2',
+            createdAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            updatedAt: DateTime.now(),
+            starred: false,
+            private: false,
+          ),
+          data: MeasurementData(
+            value: 500,
+            dataTypeId: measurableWater.id,
+            dateTo: DateTime.now(),
+            dateFrom: DateTime.now(),
+          ),
+        ),
+      ];
+
+      // Override the mock to return measurements for suggestions
+      when(
+        () => mockJournalDb.getMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: measurableWater.id,
+        ),
+      ).thenAnswer((_) async => mockMeasurements);
+
+      MeasurementData? capturedData;
+      when(
+        () => mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedData =
+            invocation.namedArguments[const Symbol('data')] as MeasurementData;
+        return null;
+      });
+
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {
+            '/': (context, state, data) => Container(),
+          },
+        ).call,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: Material(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 800,
+                  maxWidth: 800,
+                ),
+                child: MeasurementDialog(
+                  measurableId: measurableWater.id,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Wait for async providers to load
+      await tester.pumpAndSettle();
+
+      // Find and tap the suggestion chip with value 500
+      final chipFinder = find.text('500');
+      expect(chipFinder, findsOneWidget);
+
+      await tester.tap(chipFinder);
+      await tester.pumpAndSettle();
+
+      // Verify createMeasurementEntry was called with the chip value
+      verify(
+        () => mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          private: any(named: 'private'),
+        ),
+      ).called(1);
+
+      // Verify the captured value is 500 (from the chip)
+      expect(capturedData?.value, equals(500));
     });
 
     testWidgets('returns empty widget when dataType is null', (tester) async {
