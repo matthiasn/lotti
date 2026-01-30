@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.832] - 2026-01-30
+### Added
+- Daily OS Timeline: Double-tap planned blocks to edit start/end times
+  - More intuitive alternative to the existing long-press gesture
+  - Opens the same edit modal for adjusting time range, category, and notes
+
 ## [0.9.831] - 2026-01-29
 ### Added
 - Daily OS Smart Timeline Folding: Timeline now intelligently compresses inactive periods
