@@ -765,6 +765,9 @@ class _PlannedBlockWidget extends ConsumerWidget {
                 .highlightCategory(categoryId);
           }
         },
+        onDoubleTap: () {
+          PlannedBlockEditModal.show(context, slot.block, date);
+        },
         onLongPress: () {
           PlannedBlockEditModal.show(context, slot.block, date);
         },
