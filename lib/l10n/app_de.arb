@@ -568,5 +568,18 @@
         "type": "String"
       }
     }
-  }
+  },
+
+  "aiSetupWizardTitle": "KI-Einrichtungsassistent",
+  "aiSetupWizardDescription": "Modelle, Prompts und Testkategorie für {providerName} einrichten oder aktualisieren",
+  "@aiSetupWizardDescription": {
+    "placeholders": {
+      "providerName": {"type": "String"}
+    }
+  },
+  "aiSetupWizardRunLabel": "Einrichtungsassistent ausführen",
+  "aiSetupWizardCreatesOptimized": "Erstellt optimierte Modelle, Prompts und eine Testkategorie",
+  "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
+  "aiSetupWizardRunButton": "Einrichtung starten",
+  "aiSetupWizardRunningButton": "Wird ausgeführt..."
 }

@@ -101,7 +101,7 @@ final class DailyOsControllerProvider
   DailyOsController create() => DailyOsController();
 }
 
-String _$dailyOsControllerHash() => r'0631647b9a4061ad25159678675e992ba899f714';
+String _$dailyOsControllerHash() => r'4f848e6a6aeab9077b686d327be4adfac4552bcc';
 
 /// Main controller for the Daily OS view.
 ///

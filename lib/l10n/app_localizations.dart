@@ -6333,6 +6333,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get whatsNewDoneButton;
+
+  /// No description provided for @aiSetupWizardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Setup Wizard'**
+  String get aiSetupWizardTitle;
+
+  /// No description provided for @aiSetupWizardDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up or refresh models, prompts, and test category for {providerName}'**
+  String aiSetupWizardDescription(String providerName);
+
+  /// No description provided for @aiSetupWizardRunLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Setup Wizard'**
+  String get aiSetupWizardRunLabel;
+
+  /// No description provided for @aiSetupWizardCreatesOptimized.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates optimized models, prompts, and a test category'**
+  String get aiSetupWizardCreatesOptimized;
+
+  /// No description provided for @aiSetupWizardSafeToRunMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe to run multiple times - existing items will be kept'**
+  String get aiSetupWizardSafeToRunMultiple;
+
+  /// No description provided for @aiSetupWizardRunButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Setup'**
+  String get aiSetupWizardRunButton;
+
+  /// No description provided for @aiSetupWizardRunningButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get aiSetupWizardRunningButton;
 }
 
 class _AppLocalizationsDelegate

@@ -89,7 +89,7 @@ final class UnifiedDailyOsDataControllerProvider
 }
 
 String _$unifiedDailyOsDataControllerHash() =>
-    r'0d09fb4b3497c9da73068dc17bb9cd601c7f017b';
+    r'18da710cfca862f868a1fe5bc23447f176cea49b';
 
 /// Unified data controller for the Daily OS view.
 ///

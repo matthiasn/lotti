@@ -254,4 +254,7 @@ void main() {
       );
     });
   });
+
+  // Note: isFirstProviderOfType and getProviderCountByType are now in
+  // FtueTriggerService and tested in ftue_trigger_service_test.dart
 }

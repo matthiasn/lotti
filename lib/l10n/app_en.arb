@@ -1352,5 +1352,18 @@
   "noTasksFound": "No tasks found",
 
   "whatsNewSkipButton": "Skip",
-  "whatsNewDoneButton": "Done"
+  "whatsNewDoneButton": "Done",
+
+  "aiSetupWizardTitle": "AI Setup Wizard",
+  "aiSetupWizardDescription": "Set up or refresh models, prompts, and test category for {providerName}",
+  "@aiSetupWizardDescription": {
+    "placeholders": {
+      "providerName": {"type": "String"}
+    }
+  },
+  "aiSetupWizardRunLabel": "Run Setup Wizard",
+  "aiSetupWizardCreatesOptimized": "Creates optimized models, prompts, and a test category",
+  "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
+  "aiSetupWizardRunButton": "Run Setup",
+  "aiSetupWizardRunningButton": "Running..."
 }

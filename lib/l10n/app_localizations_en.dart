@@ -3421,6 +3421,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewDoneButton => 'Done';
+
+  @override
+  String get aiSetupWizardTitle => 'AI Setup Wizard';
+
+  @override
+  String aiSetupWizardDescription(String providerName) {
+    return 'Set up or refresh models, prompts, and test category for $providerName';
+  }
+
+  @override
+  String get aiSetupWizardRunLabel => 'Run Setup Wizard';
+
+  @override
+  String get aiSetupWizardCreatesOptimized =>
+      'Creates optimized models, prompts, and a test category';
+
+  @override
+  String get aiSetupWizardSafeToRunMultiple =>
+      'Safe to run multiple times - existing items will be kept';
+
+  @override
+  String get aiSetupWizardRunButton => 'Run Setup';
+
+  @override
+  String get aiSetupWizardRunningButton => 'Running...';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
