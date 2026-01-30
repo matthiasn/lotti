@@ -217,3 +217,65 @@ final class ExpandedFoldRegionsProvider
 
 String _$expandedFoldRegionsHash() =>
     r'18fa6afc4b558bfa56ca2a1415ff9b4d38b5aae9';
+
+/// Provides the active focus category ID based on the current time.
+///
+/// Returns the category ID of the planned block that the current time
+/// falls within, or null if there's no active block.
+/// This is used for the "Focus State" feature where non-active categories
+/// are automatically collapsed.
+
+@ProviderFor(activeFocusCategoryId)
+final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
+
+/// Provides the active focus category ID based on the current time.
+///
+/// Returns the category ID of the planned block that the current time
+/// falls within, or null if there's no active block.
+/// This is used for the "Focus State" feature where non-active categories
+/// are automatically collapsed.
+
+final class ActiveFocusCategoryIdProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// Provides the active focus category ID based on the current time.
+  ///
+  /// Returns the category ID of the planned block that the current time
+  /// falls within, or null if there's no active block.
+  /// This is used for the "Focus State" feature where non-active categories
+  /// are automatically collapsed.
+  ActiveFocusCategoryIdProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'activeFocusCategoryIdProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeFocusCategoryIdHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return activeFocusCategoryId(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$activeFocusCategoryIdHash() =>
+    r'7d3f398ab70591c8222c5b596b274ccc1124d210';

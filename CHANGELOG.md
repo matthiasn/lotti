@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.834] - 2026-01-31
+### Changed
+- Daily OS Time Budgets: Redesigned with slim two-row header for reduced vertical space
+  - Row 1: Category name, task completion indicator (count + circular progress ring), expand/collapse toggle
+  - Row 2: Time recorded/planned, fixed-width progress bar, status text
+  - Progress bar uses consistent green/red coloring (not category colors) and aligns in columns
+  - Simplified typography with fewer font size/weight variants
+- Daily OS Focus Mode: Time budget cards auto-collapse based on active time block
+  - When inside a planned block, the matching category stays expanded while others collapse
+  - Helps focus attention on the current activity without manual toggling
+  - Manual expand/collapse still available for any category
+
 ## [0.9.833] - 2026-01-30
 ### Added
 - Voice Task Priority: Set task priority via voice during audio recordings

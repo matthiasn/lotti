@@ -247,8 +247,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show "1h 15m / 3h 30m"
-      expect(find.text('1h 15m / 3h 30m'), findsOneWidget);
+      // Time format appears in both summary and card
+      expect(find.text('1h 15m / 3h 30m'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows summary chip with minutes only', (tester) async {
@@ -266,8 +266,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show "30m / 45m"
-      expect(find.text('30m / 45m'), findsOneWidget);
+      // Time format appears in both summary and card
+      expect(find.text('30m / 45m'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows add block button', (tester) async {

@@ -84,15 +84,18 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('displays planned duration', (tester) async {
+    testWidgets('displays recorded / planned time', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgress(planned: const Duration(hours: 3)),
+          progress: createProgress(
+            planned: const Duration(hours: 3),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('3 hours planned'), findsOneWidget);
+      // New format shows "recorded / planned" (default recorded is 1h)
+      expect(find.text('1h / 3h'), findsOneWidget);
     });
 
     testWidgets('displays remaining time for under budget', (tester) async {
@@ -210,12 +213,14 @@ void main() {
         createTestWidget(
           progress: createProgress(
             planned: const Duration(hours: 2, minutes: 30),
+            recorded: const Duration(hours: 1, minutes: 15),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('2h 30m planned'), findsOneWidget);
+      // New format shows "recorded / planned"
+      expect(find.text('1h 15m / 2h 30m'), findsOneWidget);
     });
 
     testWidgets('displays minutes only for short planned duration',
@@ -224,12 +229,14 @@ void main() {
         createTestWidget(
           progress: createProgress(
             planned: const Duration(minutes: 45),
+            recorded: const Duration(minutes: 20),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('45 min planned'), findsOneWidget);
+      // New format shows "recorded / planned"
+      expect(find.text('20m / 45m'), findsOneWidget);
     });
 
     testWidgets('shows highlighted border when category is highlighted',

@@ -231,3 +231,43 @@ Set<int> expandedFoldRegions(Ref ref) {
   final controllerAsync = ref.watch(dailyOsControllerProvider);
   return controllerAsync.value?.expandedFoldRegions ?? {};
 }
+
+/// Provides the active focus category ID based on the current time.
+///
+/// Returns the category ID of the planned block that the current time
+/// falls within, or null if there's no active block.
+/// This is used for the "Focus State" feature where non-active categories
+/// are automatically collapsed.
+@riverpod
+String? activeFocusCategoryId(Ref ref) {
+  final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+  final unifiedDataAsync = ref.watch(
+    unifiedDailyOsDataControllerProvider(date: selectedDate),
+  );
+
+  return unifiedDataAsync.when(
+    data: (data) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final planDate = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+      );
+
+      // Only show focus state for today
+      if (planDate != today) return null;
+
+      // Find the planned block that contains the current time
+      for (final slot in data.timelineData.plannedSlots) {
+        if (!now.isBefore(slot.startTime) && now.isBefore(slot.endTime)) {
+          return slot.categoryId;
+        }
+      }
+
+      return null;
+    },
+    loading: () => null,
+    error: (_, __) => null,
+  );
+}

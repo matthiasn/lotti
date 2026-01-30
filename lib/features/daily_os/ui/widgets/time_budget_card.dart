@@ -7,7 +7,6 @@ import 'package:lotti/features/daily_os/state/task_view_preference_controller.da
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
@@ -41,12 +40,15 @@ Color _getTaskStatusColor(BuildContext context, TaskStatus status) {
 }
 
 /// Card displaying a single time budget with progress.
-class TimeBudgetCard extends ConsumerWidget {
+///
+/// Single slim header row with expand/collapse icon. Task list expands below.
+class TimeBudgetCard extends ConsumerStatefulWidget {
   const TimeBudgetCard({
     required this.progress,
     this.onTap,
     this.onLongPress,
     this.isExpanded = false,
+    this.isFocusActive,
     super.key,
   });
 
@@ -55,8 +57,28 @@ class TimeBudgetCard extends ConsumerWidget {
   final VoidCallback? onLongPress;
   final bool isExpanded;
 
+  /// Whether this category is the currently active focus.
+  /// - `true`: This is the active category, task section starts expanded
+  /// - `false`: Another category is active, task section starts collapsed
+  /// - `null`: No focus context, task section starts expanded (default behavior)
+  final bool? isFocusActive;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimeBudgetCard> createState() => _TimeBudgetCardState();
+}
+
+class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.isFocusActive ?? true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = widget.progress;
     final category = progress.category;
     final categoryId = category?.id;
     final categoryColor = category != null
@@ -65,9 +87,10 @@ class TimeBudgetCard extends ConsumerWidget {
 
     final highlightedId = ref.watch(highlightedCategoryIdProvider);
     final isHighlighted = categoryId != null && highlightedId == categoryId;
+    final hasTasks = progress.taskProgressItems.isNotEmpty;
 
     return GestureDetector(
-      onLongPress: onLongPress,
+      onLongPress: widget.onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(
@@ -90,122 +113,338 @@ class TimeBudgetCard extends ConsumerWidget {
         ),
         child: ModernBaseCard(
           onTap: () {
-            // Highlight this category
             if (categoryId != null) {
               ref
                   .read(dailyOsControllerProvider.notifier)
                   .highlightCategory(categoryId);
             }
-            // Also call the original onTap if provided
-            onTap?.call();
+            widget.onTap?.call();
           },
           margin: EdgeInsets.zero,
-          padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingSmall + 2,
+            vertical: AppTheme.spacingSmall,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
+              // Row 1: Category name with task indicator and expand icon
               Row(
                 children: [
                   // Category icon
                   if (category != null) ...[
-                    ColorIcon(categoryColor, size: 24),
-                    const SizedBox(width: AppTheme.spacingMedium),
+                    ColorIcon(categoryColor, size: 16),
+                    const SizedBox(width: 8),
                   ],
 
-                  // Category name and planned duration
+                  // Category name (flexible, can be long)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          category?.name ??
-                              context.messages.dailyOsUncategorized,
-                          style: context.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          _formatPlannedDuration(
-                            progress.plannedDuration,
-                            context.messages,
-                          ),
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      category?.name ?? context.messages.dailyOsUncategorized,
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
 
-                  // Status text
-                  _StatusText(progress: progress),
+                  // Task completion indicator (if has tasks)
+                  if (hasTasks) ...[
+                    const SizedBox(width: 12),
+                    _TaskCompletionIndicator(
+                      tasks: progress.taskProgressItems,
+                    ),
+                  ],
+
+                  // Expand/collapse icon
+                  if (hasTasks) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          _isExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
 
-              const SizedBox(height: AppTheme.spacingMedium),
+              const SizedBox(height: 6),
 
-              // Progress bar
-              _BudgetProgressBar(
-                progress: progress,
-                categoryColor: categoryColor,
+              // Row 2: Time info, progress bar, status
+              Row(
+                children: [
+                  // Time: recorded / planned (fixed width for alignment)
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+
+                  // Progress bar (fixed width)
+                  _MiniProgressBar(progress: progress),
+
+                  const Spacer(),
+
+                  // Status badge
+                  _StatusText(progress: progress),
+                ],
               ),
 
               // Warning banner for categories with due tasks but no budget
               if (progress.hasNoBudgetWarning) ...[
                 const SizedBox(height: AppTheme.spacingSmall),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                    border:
-                        Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        size: 16,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        context.messages.dailyOsNoBudgetWarning,
-                        style: context.textTheme.labelSmall
-                            ?.copyWith(color: Colors.orange),
-                      ),
-                    ],
-                  ),
-                ),
+                _WarningBanner(
+                    message: context.messages.dailyOsNoBudgetWarning),
               ],
 
-              // Task progress section
-              if (progress.taskProgressItems.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingMedium),
-                const Divider(height: 1),
-                _ExpandableTaskSection(
-                  tasks: progress.taskProgressItems,
-                  categoryId: progress.categoryId,
+              // Expandable task list
+              if (hasTasks)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: _isExpanded
+                      ? _TaskListContent(
+                          tasks: progress.taskProgressItems,
+                          categoryId: progress.categoryId,
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ],
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  String _formatPlannedDuration(Duration duration, AppLocalizations messages) {
-    if (duration.inHours > 0) {
-      final hours = duration.inHours;
-      final mins = duration.inMinutes % 60;
-      if (mins == 0) return messages.dailyOsHoursPlanned(hours);
-      return messages.dailyOsHoursMinutesPlanned(hours, mins);
-    }
-    return messages.dailyOsMinutesPlanned(duration.inMinutes);
+/// Mini inline progress bar for the header row.
+class _MiniProgressBar extends StatelessWidget {
+  const _MiniProgressBar({required this.progress});
+
+  final TimeBudgetProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = progress.progressFraction.clamp(0.0, 1.0);
+    final isOver = progress.isOverBudget;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final progressColor = isOver
+        ? context.colorScheme.error
+        : (isLight ? taskStatusDarkGreen : taskStatusGreen);
+
+    return SizedBox(
+      width: 64,
+      height: 3,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(1.5),
+        ),
+        child: FractionallySizedBox(
+          alignment: Alignment.centerLeft,
+          widthFactor: fraction,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: progressColor,
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Circular indicator showing task completion percentage.
+class _TaskCompletionIndicator extends StatelessWidget {
+  const _TaskCompletionIndicator({required this.tasks});
+
+  final List<TaskDayProgress> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tasks.isEmpty) return const SizedBox.shrink();
+
+    final completed = tasks.where((t) => t.wasCompletedOnDay).length;
+    final total = tasks.length;
+    final fraction = total > 0 ? completed / total : 0.0;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final completedColor = isLight ? taskStatusDarkGreen : taskStatusGreen;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Task count text
+        Text(
+          '$completed/$total',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Progress ring
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            value: fraction,
+            strokeWidth: 2,
+            backgroundColor: context.colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation(completedColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Task list content (shown when expanded).
+class _TaskListContent extends ConsumerWidget {
+  const _TaskListContent({
+    required this.tasks,
+    required this.categoryId,
+  });
+
+  final List<TaskDayProgress> tasks;
+  final String categoryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final viewModeAsync = ref.watch(
+      taskViewPreferenceProvider(categoryId: categoryId),
+    );
+    final viewMode = viewModeAsync.value ?? TaskViewMode.list;
+
+    final totalTime = tasks.fold(
+      Duration.zero,
+      (total, item) => total + item.timeSpentOnDay,
+    );
+
+    return Column(
+      children: [
+        const SizedBox(height: AppTheme.spacingSmall),
+        const Divider(height: 1),
+        // Task header row
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Text(
+                '${context.messages.dailyOsTasks} (${tasks.length})',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '• ${_formatCompactDuration(totalTime)}',
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const Spacer(),
+              // View mode toggle
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => ref
+                    .read(taskViewPreferenceProvider(categoryId: categoryId)
+                        .notifier)
+                    .toggle(),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    viewMode == TaskViewMode.list
+                        ? Icons.grid_view_rounded
+                        : Icons.view_list_rounded,
+                    size: 16,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Task content
+        if (viewMode == TaskViewMode.list)
+          Column(
+            children:
+                tasks.map((item) => _TaskProgressRow(item: item)).toList(),
+          )
+        else
+          _buildGrid(context),
+      ],
+    );
+  }
+
+  Widget _buildGrid(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minTileWidth = 100.0;
+        final crossAxisCount =
+            (constraints.maxWidth / minTileWidth).floor().clamp(2, 4);
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemCount: tasks.length,
+          itemBuilder: (context, index) => _TaskGridTile(item: tasks[index]),
+        );
+      },
+    );
+  }
+}
+
+/// Warning banner widget.
+class _WarningBanner extends StatelessWidget {
+  const _WarningBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Colors.orange,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            message,
+            style: context.textTheme.labelSmall?.copyWith(color: Colors.orange),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -273,251 +512,6 @@ class _StatusText extends StatelessWidget {
       return '${isNegative ? '-' : ''}${hours}h ${mins}m';
     }
     return '${isNegative ? '-' : ''}${absDuration.inMinutes}m';
-  }
-}
-
-/// Progress bar showing budget consumption.
-class _BudgetProgressBar extends StatelessWidget {
-  const _BudgetProgressBar({
-    required this.progress,
-    required this.categoryColor,
-  });
-
-  final TimeBudgetProgress progress;
-  final Color categoryColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final fraction = progress.progressFraction.clamp(0.0, 1.5);
-    final isOver = progress.isOverBudget;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final fillWidth =
-            (fraction.clamp(0.0, 1.0) * maxWidth).clamp(0.0, maxWidth);
-        final overWidth = isOver
-            ? ((fraction - 1.0).clamp(0.0, 0.5) * maxWidth)
-                .clamp(0.0, maxWidth * 0.5)
-            : 0.0;
-
-        return SizedBox(
-          height: 8,
-          child: Stack(
-            children: [
-              // Background track
-              Container(
-                decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-
-              // Progress fill
-              Container(
-                width: fillWidth,
-                decoration: BoxDecoration(
-                  color: _getProgressColor(context),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-
-              // Over-budget indicator
-              if (isOver && overWidth > 0)
-                Positioned(
-                  left: fillWidth,
-                  child: Container(
-                    width: overWidth,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.error.withValues(alpha: 0.7),
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(4),
-                        bottomRight: Radius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // 100% marker
-              Positioned(
-                left: maxWidth - 2,
-                child: Container(
-                  width: 2,
-                  height: 8,
-                  color: context.colorScheme.outline.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Color _getProgressColor(BuildContext context) {
-    switch (progress.status) {
-      case BudgetProgressStatus.overBudget:
-        return categoryColor;
-      case BudgetProgressStatus.exhausted:
-        return Colors.orange;
-      case BudgetProgressStatus.nearLimit:
-        return categoryColor.withValues(alpha: 0.9);
-      case BudgetProgressStatus.underBudget:
-        return categoryColor.withValues(alpha: 0.8);
-    }
-  }
-}
-
-/// Expandable section showing tasks with their progress.
-class _ExpandableTaskSection extends ConsumerStatefulWidget {
-  const _ExpandableTaskSection({
-    required this.tasks,
-    required this.categoryId,
-  });
-
-  final List<TaskDayProgress> tasks;
-  final String categoryId;
-
-  @override
-  ConsumerState<_ExpandableTaskSection> createState() =>
-      _ExpandableTaskSectionState();
-}
-
-class _ExpandableTaskSectionState
-    extends ConsumerState<_ExpandableTaskSection> {
-  bool _isExpanded = true;
-
-  Duration get _totalTime => widget.tasks.fold(
-        Duration.zero,
-        (total, item) => total + item.timeSpentOnDay,
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final viewModeAsync = ref.watch(
-      taskViewPreferenceProvider(categoryId: widget.categoryId),
-    );
-    final viewMode = viewModeAsync.value ?? TaskViewMode.list;
-
-    return Column(
-      children: [
-        // Header row
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSmall),
-          child: Row(
-            children: [
-              // Tappable expand/collapse area
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isExpanded = !_isExpanded),
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      Text(
-                        '${context.messages.dailyOsTasks} (${widget.tasks.length})',
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '• ${_formatCompactDuration(_totalTime)}',
-                        style: context.textTheme.labelMedium?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // View mode toggle - larger tap target for mobile
-              if (_isExpanded) ...[
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => ref
-                      .read(
-                        taskViewPreferenceProvider(
-                                categoryId: widget.categoryId)
-                            .notifier,
-                      )
-                      .toggle(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      viewMode == TaskViewMode.list
-                          ? Icons.grid_view_rounded
-                          : Icons.view_list_rounded,
-                      size: 20,
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-              // Expand/collapse icon - larger tap target for mobile
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _isExpanded = !_isExpanded),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    _isExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_right,
-                    size: 20,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Animated task list/grid
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child:
-              _isExpanded ? _buildContent(viewMode) : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent(TaskViewMode viewMode) {
-    if (viewMode == TaskViewMode.list) {
-      return Column(
-        children:
-            widget.tasks.map((item) => _TaskProgressRow(item: item)).toList(),
-      );
-    }
-    return _buildGrid();
-  }
-
-  Widget _buildGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 3 columns on mobile (<400), adaptive on larger screens
-        // Aim for ~100-120px tiles
-        final width = constraints.maxWidth;
-        final crossAxisCount =
-            width < 400 ? 3 : (width / 110).floor().clamp(3, 6);
-        const spacing = 8.0;
-
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-          ),
-          itemCount: widget.tasks.length,
-          itemBuilder: (context, index) =>
-              _TaskGridTile(item: widget.tasks[index]),
-        );
-      },
-    );
   }
 }
 

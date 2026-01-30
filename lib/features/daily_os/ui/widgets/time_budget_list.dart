@@ -23,6 +23,9 @@ class TimeBudgetList extends ConsumerWidget {
       unifiedDailyOsDataControllerProvider(date: selectedDate),
     );
 
+    // Watch the active focus category for auto-expand/collapse behavior
+    final activeFocusCategoryId = ref.watch(activeFocusCategoryIdProvider);
+
     return unifiedDataAsync.when(
       data: (unifiedData) {
         final budgets = unifiedData.budgetProgress;
@@ -73,9 +76,19 @@ class TimeBudgetList extends ConsumerWidget {
               itemCount: budgets.length,
               itemBuilder: (context, index) {
                 final progress = budgets[index];
+
+                // Determine focus state for this category:
+                // - null: No focus context (no active block) -> expanded by default
+                // - true: This is the active category -> expanded
+                // - false: Another category is active -> collapsed
+                final isFocusActive = activeFocusCategoryId == null
+                    ? null
+                    : activeFocusCategoryId == progress.categoryId;
+
                 return TimeBudgetCard(
                   key: ValueKey(progress.categoryId),
                   progress: progress,
+                  isFocusActive: isFocusActive,
                   onTap: () {
                     // Highlight this category in the timeline
                     ref
