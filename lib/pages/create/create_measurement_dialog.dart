@@ -267,7 +267,10 @@ class _ValueInputField extends StatelessWidget {
           vertical: 16,
         ),
       ),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(
+        decimal: true,
+        signed: true,
+      ),
       validator: FormBuilderValidators.compose([
         FormBuilderValidators.required(),
         (value) {
@@ -280,7 +283,7 @@ class _ValueInputField extends StatelessWidget {
         },
       ]),
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+        FilteringTextInputFormatter.allow(RegExp(r'^-?[\d.,]*$')),
       ],
     );
   }
