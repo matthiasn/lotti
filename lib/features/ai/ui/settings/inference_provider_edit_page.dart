@@ -99,7 +99,12 @@ Future<bool> performFtueSetupWorkflow({
     setupService: setupService,
   );
 
-  if (result != null && isMounted()) {
+  // Return false if setup was skipped (unsupported provider type)
+  if (result == null) {
+    return false;
+  }
+
+  if (isMounted()) {
     // isMounted() check ensures context is still valid
     // ignore: use_build_context_synchronously
     await showFtueResultDialog(context, result);
