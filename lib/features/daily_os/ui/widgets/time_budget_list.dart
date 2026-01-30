@@ -24,7 +24,8 @@ class TimeBudgetList extends ConsumerWidget {
     );
 
     // Watch the active focus category for auto-expand/collapse behavior
-    final activeFocusCategoryId = ref.watch(activeFocusCategoryIdProvider);
+    final activeFocusCategoryId =
+        ref.watch(activeFocusCategoryIdProvider).value;
 
     return unifiedDataAsync.when(
       data: (unifiedData) {

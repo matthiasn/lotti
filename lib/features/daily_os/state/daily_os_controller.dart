@@ -238,36 +238,37 @@ Set<int> expandedFoldRegions(Ref ref) {
 /// falls within, or null if there's no active block.
 /// This is used for the "Focus State" feature where non-active categories
 /// are automatically collapsed.
+///
+/// Re-evaluates every 15 seconds to keep the focus state reasonably current
+/// without excessive resource usage.
 @riverpod
-String? activeFocusCategoryId(Ref ref) {
-  final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-  final unifiedDataAsync = ref.watch(
-    unifiedDailyOsDataControllerProvider(date: selectedDate),
-  );
+Stream<String?> activeFocusCategoryId(Ref ref) async* {
+  while (true) {
+    final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    );
 
-  return unifiedDataAsync.when(
-    data: (data) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final planDate = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-      );
+    final result = unifiedDataAsync.whenOrNull(
+      data: (data) {
+        final now = DateTime.now();
 
-      // Only show focus state for today
-      if (planDate != today) return null;
+        // Only show focus state for today
+        if (selectedDate != now.dayAtMidnight) return null;
 
-      // Find the planned block that contains the current time
-      for (final slot in data.timelineData.plannedSlots) {
-        if (!now.isBefore(slot.startTime) && now.isBefore(slot.endTime)) {
-          return slot.categoryId;
+        // Find the planned block that contains the current time
+        for (final slot in data.timelineData.plannedSlots) {
+          if (!now.isBefore(slot.startTime) && now.isBefore(slot.endTime)) {
+            return slot.categoryId;
+          }
         }
-      }
 
-      return null;
-    },
-    loading: () => null,
-    error: (_, __) => null,
-  );
+        return null;
+      },
+    );
+
+    yield result;
+
+    await Future<void>.delayed(const Duration(seconds: 15));
+  }
 }

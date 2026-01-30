@@ -224,6 +224,9 @@ String _$expandedFoldRegionsHash() =>
 /// falls within, or null if there's no active block.
 /// This is used for the "Focus State" feature where non-active categories
 /// are automatically collapsed.
+///
+/// Re-evaluates every 15 seconds to keep the focus state reasonably current
+/// without excessive resource usage.
 
 @ProviderFor(activeFocusCategoryId)
 final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
@@ -234,16 +237,22 @@ final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
 /// falls within, or null if there's no active block.
 /// This is used for the "Focus State" feature where non-active categories
 /// are automatically collapsed.
+///
+/// Re-evaluates every 15 seconds to keep the focus state reasonably current
+/// without excessive resource usage.
 
 final class ActiveFocusCategoryIdProvider
-    extends $FunctionalProvider<String?, String?, String?>
-    with $Provider<String?> {
+    extends $FunctionalProvider<AsyncValue<String?>, String?, Stream<String?>>
+    with $FutureModifier<String?>, $StreamProvider<String?> {
   /// Provides the active focus category ID based on the current time.
   ///
   /// Returns the category ID of the planned block that the current time
   /// falls within, or null if there's no active block.
   /// This is used for the "Focus State" feature where non-active categories
   /// are automatically collapsed.
+  ///
+  /// Re-evaluates every 15 seconds to keep the focus state reasonably current
+  /// without excessive resource usage.
   ActiveFocusCategoryIdProvider._()
       : super(
           from: null,
@@ -260,22 +269,14 @@ final class ActiveFocusCategoryIdProvider
 
   @$internal
   @override
-  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $StreamProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
-  String? create(Ref ref) {
+  Stream<String?> create(Ref ref) {
     return activeFocusCategoryId(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(String? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<String?>(value),
-    );
   }
 }
 
 String _$activeFocusCategoryIdHash() =>
-    r'7d3f398ab70591c8222c5b596b274ccc1124d210';
+    r'00c3da2f652fa33a06886977a1076e878d575bac';

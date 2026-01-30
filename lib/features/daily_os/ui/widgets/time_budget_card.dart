@@ -69,11 +69,23 @@ class TimeBudgetCard extends ConsumerStatefulWidget {
 
 class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
   late bool _isExpanded;
+  bool _userHasToggled = false;
 
   @override
   void initState() {
     super.initState();
     _isExpanded = widget.isFocusActive ?? true;
+  }
+
+  @override
+  void didUpdateWidget(TimeBudgetCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only auto-update if user hasn't manually toggled
+    if (widget.isFocusActive != oldWidget.isFocusActive && !_userHasToggled) {
+      setState(() {
+        _isExpanded = widget.isFocusActive ?? true;
+      });
+    }
   }
 
   @override
@@ -161,7 +173,10 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
                   if (hasTasks) ...[
                     const SizedBox(width: 4),
                     GestureDetector(
-                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      onTap: () => setState(() {
+                        _isExpanded = !_isExpanded;
+                        _userHasToggled = true;
+                      }),
                       behavior: HitTestBehavior.opaque,
                       child: Padding(
                         padding: const EdgeInsets.all(4),
@@ -183,21 +198,23 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
               // Row 2: Time info, progress bar, status
               Row(
                 children: [
-                  // Time: recorded / planned (fixed width for alignment)
-                  SizedBox(
-                    width: 120,
+                  // Time: recorded / planned
+                  Flexible(
                     child: Text(
                       '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
                       style: context.textTheme.bodySmall?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
+                  const SizedBox(width: 8),
 
                   // Progress bar (fixed width)
                   _MiniProgressBar(progress: progress),
 
-                  const Spacer(),
+                  const SizedBox(width: 8),
 
                   // Status badge
                   _StatusText(progress: progress),

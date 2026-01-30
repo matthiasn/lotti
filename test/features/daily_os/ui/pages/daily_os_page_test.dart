@@ -109,6 +109,10 @@ void main() {
         dayBudgetStatsProvider(date: testDate).overrideWith(
           (ref) async => effectiveStats,
         ),
+        // Override stream provider to avoid timer issues in tests
+        activeFocusCategoryIdProvider.overrideWith(
+          (ref) => Stream.value(null),
+        ),
         ...additionalOverrides,
       ],
       child: const DailyOsPage(),

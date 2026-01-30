@@ -118,6 +118,10 @@ void main() {
           () => _TestUnifiedController(unifiedData),
         ),
         highlightedCategoryIdProvider.overrideWith((ref) => null),
+        // Override stream provider to avoid timer issues in tests
+        activeFocusCategoryIdProvider.overrideWith(
+          (ref) => Stream.value(null),
+        ),
         ...additionalOverrides,
       ],
       child: const SingleChildScrollView(
