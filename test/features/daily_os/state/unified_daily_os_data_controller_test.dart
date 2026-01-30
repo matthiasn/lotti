@@ -675,6 +675,48 @@ void main() {
     });
   });
 
+  group('UnifiedDailyOsDataController - Zero Duration Entries', () {
+    test('zero-duration entries count toward budget recorded time', () async {
+      // Note: Zero-duration entries have Duration.zero, so they don't add time
+      // but they should still be tracked in contributingEntries
+      final plan = createTestPlan(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final zeroDurationEntry = createTestEntry(
+        id: 'zero-entry-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate.add(const Duration(hours: 10)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [zeroDurationEntry]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final progress = result.budgetProgress.first;
+      // Zero-duration adds zero time but entry is tracked
+      expect(progress.contributingEntries.length, equals(1));
+      expect(progress.recordedDuration, equals(Duration.zero));
+    });
+  });
+
   group('UnifiedDailyOsDataController - Timeline Data', () {
     test('builds planned time slots from day plan blocks', () async {
       final plan = createTestPlan(

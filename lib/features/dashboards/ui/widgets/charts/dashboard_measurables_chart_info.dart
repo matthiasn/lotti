@@ -20,18 +20,42 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   final AggregationType aggregationType;
   final bool enableCreate;
 
+  Widget _buildModalTitle(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          measurableDataType.displayName,
+          style: context.textTheme.titleMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.2,
+          ),
+        ),
+        if (measurableDataType.description.isNotEmpty)
+          Text(
+            measurableDataType.description,
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Future<void> captureData() async {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
+        titleWidget: _buildModalTitle(context),
         builder: (_) {
           return MeasurementDialog(
             measurableId: measurableDataType.id,
           );
         },
-        padding: EdgeInsets.zero,
-        navBarHeight: 5,
       );
     }
 
@@ -43,17 +67,33 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width / 2,
-              ),
-              child: Text(
-                '${measurableDataType.displayName}'
-                '${aggregationType != AggregationType.none ? ' ' : ''}'
-                '${aggregationLabel(aggregationType)}',
-                style: chartTitleStyle,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${measurableDataType.displayName}'
+                    '${aggregationType != AggregationType.none ? ' ' : ''}'
+                    '${aggregationLabel(aggregationType)}',
+                    style: chartTitleStyle,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                  if (measurableDataType.description.isNotEmpty)
+                    Text(
+                      measurableDataType.description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.8),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                ],
               ),
             ),
             const Spacer(),

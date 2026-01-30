@@ -1703,6 +1703,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get modelsSettingsPageTitle => 'AI Models';
 
   @override
+  String get multiSelectAddButton => 'Ajouter';
+
+  @override
+  String multiSelectAddButtonWithCount(int count) {
+    return 'Ajouter ($count)';
+  }
+
+  @override
+  String get multiSelectNoItemsFound => 'Aucun élément trouvé';
+
+  @override
   String get navTabTitleCalendar => 'Calendrier';
 
   @override

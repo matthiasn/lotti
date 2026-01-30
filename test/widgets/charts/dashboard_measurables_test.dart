@@ -204,5 +204,44 @@ void main() {
       await tester.tap(addIconFinder);
       await tester.pumpAndSettle();
     });
+
+    testWidgets('chart displays description stacked under title',
+        (tester) async {
+      when(
+        () => mockJournalDb.getMeasurementsByType(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+          type: measurableWater.id,
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockJournalDb.getMeasurableDataTypeById(measurableWater.id))
+          .thenAnswer((_) async => measurableWater);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MeasurablesBarChart(
+            dashboardId: 'dashboardId',
+            rangeStart: DateTime(2022),
+            rangeEnd: DateTime(2023),
+            measurableDataTypeId: measurableWater.id,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify title is displayed
+      expect(
+        find.text('${measurableWater.displayName} [dailySum]'),
+        findsOneWidget,
+      );
+
+      // Verify description is displayed stacked under title
+      expect(
+        find.text(measurableWater.description),
+        findsOneWidget,
+      );
+    });
   });
 }

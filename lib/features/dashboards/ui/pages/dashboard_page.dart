@@ -24,7 +24,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  int timeSpanDays = 180;
+  int timeSpanDays = 90;
 
   late TransformationController _transformationController;
 
@@ -73,7 +73,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const SizedBox(height: 15),
           TimeSpanSegmentedControl(
             timeSpanDays: timeSpanDays,
-            segments: const [180, 365],
             onValueChanged: (int value) {
               setState(() {
                 timeSpanDays = value;

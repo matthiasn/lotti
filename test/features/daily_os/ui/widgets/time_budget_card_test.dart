@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -7,32 +6,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
-import 'package:lotti/features/tasks/util/due_date_utils.dart';
 
 import '../../../../test_helper.dart';
-
-/// Fake TaskViewPreference for testing.
-class FakeTaskViewPreference extends TaskViewPreference {
-  FakeTaskViewPreference(this._initialMode);
-
-  final TaskViewMode _initialMode;
-
-  @override
-  Future<TaskViewMode> build({required String categoryId}) async {
-    return _initialMode;
-  }
-
-  @override
-  Future<void> toggle() async {
-    final current = state.value ?? TaskViewMode.list;
-    final newMode =
-        current == TaskViewMode.list ? TaskViewMode.grid : TaskViewMode.list;
-    state = AsyncData(newMode);
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,13 +60,10 @@ void main() {
     VoidCallback? onTap,
     bool isExpanded = false,
     List<Override> overrides = const [],
-    TaskViewMode initialViewMode = TaskViewMode.list,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
         highlightedCategoryIdProvider.overrideWith((ref) => null),
-        taskViewPreferenceProvider(categoryId: progress.categoryId)
-            .overrideWith(() => FakeTaskViewPreference(initialViewMode)),
         ...overrides,
       ],
       child: TimeBudgetCard(
@@ -345,462 +319,419 @@ void main() {
     });
   });
 
-  group('TimeBudgetCard - Task Section', () {
-    Task createTestTask({
+  group('TimeBudgetCard - Pinned Tasks Section', () {
+    Task createTask({
       required String id,
       required String title,
-      String? categoryId,
-      TaskStatus? status,
+      required TaskStatus status,
     }) {
-      final now = DateTime(2026, 1, 15);
       return Task(
         meta: Metadata(
           id: id,
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-          categoryId: categoryId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
         ),
         data: TaskData(
           title: title,
-          dateFrom: now,
-          dateTo: now,
-          statusHistory: [],
-          status: status ??
-              TaskStatus.inProgress(
-                id: 'status-$id',
-                createdAt: now,
-                utcOffset: 0,
-              ),
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: status,
         ),
       );
     }
 
-    TimeBudgetProgress createProgressWithTasks(List<TaskDayProgress> tasks) {
+    TaskDayProgress taskToProgress(Task task) {
+      final isCompleted =
+          task.data.status is TaskDone || task.data.status is TaskRejected;
+      return TaskDayProgress(
+        task: task,
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: isCompleted,
+      );
+    }
+
+    TimeBudgetProgress createProgressWithTasks({
+      List<Task> tasks = const [],
+      List<JournalEntity> contributingEntries = const [],
+    }) {
       return TimeBudgetProgress(
         categoryId: testCategory.id,
         category: testCategory,
-        plannedDuration: const Duration(hours: 4),
-        recordedDuration: const Duration(hours: 2),
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
         status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: tasks,
+        contributingEntries: contributingEntries,
+        taskProgressItems: tasks.map(taskToProgress).toList(),
         blocks: [
           PlannedBlock(
             id: 'block-1',
             categoryId: testCategory.id,
             startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 13)),
+            endTime: testDate.add(const Duration(hours: 11)),
           ),
         ],
       );
     }
 
-    testWidgets('shows task section header with count and total time',
+    testWidgets('hides pinned tasks section when empty', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: []),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show task title text when no tasks
+      expect(find.text('Test Task'), findsNothing);
+      // Only one divider (not the task section divider)
+      // Actually, when both sections are empty, there should be no dividers
+      // from task sections. Let's just verify the card renders
+      expect(find.byType(TimeBudgetCard), findsOneWidget);
+    });
+
+    testWidgets('shows pinned tasks section with divider when populated',
         (tester) async {
-      final tasks = [
-        TaskDayProgress(
-          task: createTestTask(id: 'task-1', title: 'Task One'),
-          timeSpentOnDay: const Duration(hours: 1, minutes: 30),
-          wasCompletedOnDay: false,
+      final task = createTask(
+        id: 'task-1',
+        title: 'My Pinned Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
         ),
-        TaskDayProgress(
-          task: createTestTask(id: 'task-2', title: 'Task Two'),
-          timeSpentOnDay: const Duration(hours: 1),
-          wasCompletedOnDay: false,
-        ),
-      ];
+      );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks(tasks)),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Should show "Tasks (2)" and total time "• 2h 30m"
-      expect(find.textContaining('Tasks (2)'), findsOneWidget);
-      expect(find.textContaining('2h 30m'), findsOneWidget);
+      expect(find.text('My Pinned Task'), findsOneWidget);
+      expect(find.byType(Divider), findsOneWidget);
     });
 
-    testWidgets('hides task section when no tasks', (tester) async {
+    testWidgets('displays task title in pinned task row', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Important Work Item',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([])),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Should not show tasks header
-      expect(find.textContaining('Tasks'), findsNothing);
+      expect(find.text('Important Work Item'), findsOneWidget);
     });
 
-    testWidgets('shows task titles in list view', (tester) async {
-      final tasks = [
-        TaskDayProgress(
-          task: createTestTask(id: 'task-1', title: 'Build Feature'),
-          timeSpentOnDay: const Duration(hours: 2),
-          wasCompletedOnDay: false,
+    testWidgets('shows status indicator for open tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Task With Status',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
         ),
-        TaskDayProgress(
-          task: createTestTask(id: 'task-2', title: 'Fix Bug'),
-          timeSpentOnDay: const Duration(hours: 1),
-          wasCompletedOnDay: true,
-        ),
-      ];
+      );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks(tasks)),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Default is list view, task titles should be visible
-      expect(find.text('Build Feature'), findsOneWidget);
-      expect(find.text('Fix Bug'), findsOneWidget);
+      // Open tasks show a circle border indicator (no check icon)
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.text('Task With Status'), findsOneWidget);
     });
 
-    testWidgets('shows checkmark for completed tasks in list view',
+    testWidgets('shows check_circle icon for completed tasks (TaskDone)',
         (tester) async {
-      final completedTask = TaskDayProgress(
-        task: createTestTask(
-          id: 'task-1',
-          title: 'Completed Task',
-          status: TaskStatus.done(
-            id: 'status-done',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
+      final task = createTask(
+        id: 'task-1',
+        title: 'Completed Task',
+        status: TaskStatus.done(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
         ),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: true,
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([completedTask])),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Default is list view, should show checkmark icon for completed task
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
-    testWidgets('shows time spent in list view', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'My Task'),
-        timeSpentOnDay: const Duration(hours: 2, minutes: 15),
-        wasCompletedOnDay: false,
+    testWidgets('shows check_circle icon for rejected tasks (TaskRejected)',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Rejected Task',
+        status: TaskStatus.rejected(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Default is list view, should show formatted time
-      expect(find.text('2h 15m'), findsWidgets);
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
-    testWidgets('toggles between list and grid view', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'My Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
+    testWidgets('does not show check icon for in-progress tasks',
+        (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'In Progress Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Initially in list mode (default), should show grid toggle icon
-      expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
-
-      // Tap to switch to grid view
-      await tester.tap(find.byIcon(Icons.grid_view_rounded));
-      await tester.pumpAndSettle();
-
-      // Now should show list toggle icon
-      expect(find.byIcon(Icons.view_list_rounded), findsOneWidget);
-
-      // Tap to switch back to list view
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-
-      // Should show grid toggle icon again
-      expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('collapses and expands task section', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Visible Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
+    testWidgets('does not show check icon for open tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Open Task',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Initially expanded - task should be visible in some form
-      expect(find.textContaining('Tasks (1)'), findsOneWidget);
-
-      // Collapse the section
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
-      await tester.pumpAndSettle();
-
-      // Should show expand icon
-      expect(find.byIcon(Icons.keyboard_arrow_right), findsOneWidget);
-
-      // View toggle should be hidden when collapsed
-      expect(find.byIcon(Icons.view_list_rounded), findsNothing);
-      expect(find.byIcon(Icons.grid_view_rounded), findsNothing);
-
-      // Expand again
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_right));
-      await tester.pumpAndSettle();
-
-      // Should show collapse icon
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('grid view shows tasks in grid layout', (tester) async {
+    testWidgets('does not show check icon for blocked tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Blocked Task',
+        status: TaskStatus.blocked(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'Waiting for dependency',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+    });
+
+    testWidgets('does not show check icon for on-hold tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'On Hold Task',
+        status: TaskStatus.onHold(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'Paused',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+    });
+
+    testWidgets('does not show check icon for groomed tasks', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Groomed Task',
+        status: TaskStatus.groomed(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(tasks: [task]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+    });
+
+    testWidgets('displays multiple pinned tasks', (tester) async {
       final tasks = [
-        TaskDayProgress(
-          task: createTestTask(id: 'task-1', title: 'Task A'),
-          timeSpentOnDay: const Duration(hours: 2),
-          wasCompletedOnDay: false,
+        createTask(
+          id: 'task-1',
+          title: 'First Task',
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
         ),
-        TaskDayProgress(
-          task: createTestTask(id: 'task-2', title: 'Task B'),
-          timeSpentOnDay: const Duration(hours: 1),
-          wasCompletedOnDay: false,
+        createTask(
+          id: 'task-2',
+          title: 'Second Task',
+          status: TaskStatus.open(
+            id: 'status-2',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
         ),
-        TaskDayProgress(
-          task: createTestTask(id: 'task-3', title: 'Task C'),
-          timeSpentOnDay: const Duration(minutes: 30),
-          wasCompletedOnDay: true,
+        createTask(
+          id: 'task-3',
+          title: 'Third Task',
+          status: TaskStatus.done(
+            id: 'status-3',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
         ),
       ];
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks(tasks),
-          initialViewMode: TaskViewMode.grid,
+          progress: createProgressWithTasks(tasks: tasks),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Should be in grid view
-      expect(find.byType(GridView), findsOneWidget);
-      // Task titles should be visible in grid tiles
-      expect(find.text('Task A'), findsOneWidget);
-      expect(find.text('Task B'), findsOneWidget);
-      expect(find.text('Task C'), findsOneWidget);
+      expect(find.text('First Task'), findsOneWidget);
+      expect(find.text('Second Task'), findsOneWidget);
+      expect(find.text('Third Task'), findsOneWidget);
+      // Third task is done, so it shows check_circle
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
-    testWidgets('shows zero time as 0m', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(
-          id: 'task-1',
-          title: 'Just Completed',
-          status: TaskStatus.done(
-            id: 'status-done',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-        timeSpentOnDay: Duration.zero,
-        wasCompletedOnDay: true,
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
-      );
-      await tester.pumpAndSettle();
-
-      // Default is list view, should show 0m for zero duration
-      expect(find.text('0m'), findsWidgets);
-    });
-
-    testWidgets('shows due today badge in list view', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Due Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
-        dueDateStatus: const DueDateStatus(
-          urgency: DueDateUrgency.dueToday,
-          daysUntilDue: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show "Due today" badge
-      expect(find.text('Due today'), findsOneWidget);
-    });
-
-    testWidgets('shows overdue badge in list view', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Overdue Task'),
-        timeSpentOnDay: const Duration(minutes: 30),
-        wasCompletedOnDay: false,
-        dueDateStatus: const DueDateStatus(
-          urgency: DueDateUrgency.overdue,
-          daysUntilDue: -2,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show "Overdue" badge
-      expect(find.text('Overdue'), findsOneWidget);
-    });
-
-    testWidgets('shows due badge in grid view', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Grid Due Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
-        dueDateStatus: const DueDateStatus(
-          urgency: DueDateUrgency.dueToday,
-          daysUntilDue: 0,
+    testWidgets('task row is tappable with GestureDetector', (tester) async {
+      final task = createTask(
+        id: 'task-1',
+        title: 'Tappable Task',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
         ),
       );
 
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgressWithTasks([task]),
-          initialViewMode: TaskViewMode.grid,
+          progress: createProgressWithTasks(tasks: [task]),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Should show short "Due" badge in grid
-      expect(find.text('Due'), findsOneWidget);
-    });
+      // Find the task text and verify it has a GestureDetector ancestor
+      final taskTextFinder = find.text('Tappable Task');
+      expect(taskTextFinder, findsOneWidget);
 
-    testWidgets('shows late badge in grid view for overdue', (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Grid Overdue Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
-        dueDateStatus: const DueDateStatus(
-          urgency: DueDateUrgency.overdue,
-          daysUntilDue: -1,
-        ),
+      final gestureDetector = find.ancestor(
+        of: taskTextFinder,
+        matching: find.byType(GestureDetector),
       );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks([task]),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show short "Late" badge in grid
-      expect(find.text('Late'), findsOneWidget);
-    });
-
-    testWidgets('does not show badge for tasks without due date',
-        (tester) async {
-      final task = TaskDayProgress(
-        task: createTestTask(id: 'task-1', title: 'Regular Task'),
-        timeSpentOnDay: const Duration(hours: 1),
-        wasCompletedOnDay: false,
-        // No dueDateStatus specified, defaults to none
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithTasks([task])),
-      );
-      await tester.pumpAndSettle();
-
-      // Should not show any due badges
-      expect(find.text('Due today'), findsNothing);
-      expect(find.text('Overdue'), findsNothing);
+      expect(gestureDetector, findsWidgets);
     });
   });
 
-  group('TimeBudgetCard - Warning Banner', () {
-    testWidgets('shows warning banner when hasNoBudgetWarning is true',
-        (tester) async {
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: Duration.zero,
-        recordedDuration: Duration.zero,
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: Task(
-              meta: Metadata(
-                id: 'task-1',
-                createdAt: testDate,
-                updatedAt: testDate,
-                dateFrom: testDate,
-                dateTo: testDate,
-                categoryId: testCategory.id,
-              ),
-              data: TaskData(
-                title: 'Due Task',
-                dateFrom: testDate,
-                dateTo: testDate,
-                due: testDate,
-                statusHistory: [],
-                status: TaskStatus.open(
-                  id: 'status-1',
-                  createdAt: testDate,
-                  utcOffset: 0,
-                ),
-              ),
-            ),
-            timeSpentOnDay: Duration.zero,
-            wasCompletedOnDay: false,
-            dueDateStatus: const DueDateStatus(
-              urgency: DueDateUrgency.dueToday,
-              daysUntilDue: 0,
-            ),
-          ),
-        ],
-        blocks: const [],
-        hasNoBudgetWarning: true,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            highlightedCategoryIdProvider.overrideWith((ref) => null),
-            taskViewPreferenceProvider(categoryId: progress.categoryId)
-                .overrideWith(() => FakeTaskViewPreference(TaskViewMode.list)),
-          ],
-          child: TimeBudgetCard(
-            progress: progress,
-            onTap: () {},
-          ),
+  group('TimeBudgetCard - Contributing Tasks Section', () {
+    Task createTask({
+      required String id,
+      required String title,
+      required TaskStatus status,
+    }) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          statusHistory: const [],
+          status: status,
         ),
       );
-      await tester.pumpAndSettle();
+    }
 
-      // Should show warning banner
-      expect(find.text('No time budgeted'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-    });
+    JournalEntity createEntry({required String id}) {
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+        ),
+      );
+    }
 
-    testWidgets('does not show warning banner when hasNoBudgetWarning is false',
-        (tester) async {
-      final progress = TimeBudgetProgress(
+    TimeBudgetProgress createProgressWithContributing({
+      List<JournalEntity> contributingEntries = const [],
+    }) {
+      return TimeBudgetProgress(
         categoryId: testCategory.id,
         category: testCategory,
         plannedDuration: const Duration(hours: 2),
-        recordedDuration: Duration.zero,
+        recordedDuration: const Duration(hours: 1),
         status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
+        contributingEntries: contributingEntries,
         taskProgressItems: const [],
         blocks: [
           PlannedBlock(
@@ -810,27 +741,56 @@ void main() {
             endTime: testDate.add(const Duration(hours: 11)),
           ),
         ],
-        // hasNoBudgetWarning defaults to false
       );
+    }
 
+    testWidgets('hides contributing tasks section when no tasks in entries',
+        (tester) async {
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            highlightedCategoryIdProvider.overrideWith((ref) => null),
-            taskViewPreferenceProvider(categoryId: progress.categoryId)
-                .overrideWith(() => FakeTaskViewPreference(TaskViewMode.list)),
-          ],
-          child: TimeBudgetCard(
-            progress: progress,
-            onTap: () {},
+        createTestWidget(
+          progress: createProgressWithContributing(
+            contributingEntries: [
+              createEntry(id: 'entry-1'),
+              createEntry(id: 'entry-2'),
+            ],
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Should NOT show warning banner
-      expect(find.text('No time budgeted'), findsNothing);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      // No tasks means no task section (only JournalEntries in contributingEntries)
+      expect(find.byType(TimeBudgetCard), findsOneWidget);
+      // No divider from task section since contributingTasks is empty
+      expect(find.byType(Divider), findsNothing);
+    });
+
+    testWidgets(
+        'does not display tasks from contributingEntries in task section',
+        (tester) async {
+      // Tasks in contributingEntries are NOT displayed in the task section
+      // Only taskProgressItems are shown
+      final task = createTask(
+        id: 'task-1',
+        title: 'Contributing Task In Entries',
+        status: TaskStatus.inProgress(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithContributing(
+            contributingEntries: [task],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Task title should NOT appear because it's only in contributingEntries
+      expect(find.text('Contributing Task In Entries'), findsNothing);
+      expect(find.byType(Divider), findsNothing);
     });
   });
 
@@ -941,164 +901,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('P3'), findsOneWidget);
-    });
-
-    testWidgets('shows P0 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P0'), findsOneWidget);
-    });
-
-    testWidgets('shows P1 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p1High),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P1'), findsOneWidget);
-    });
-
-    testWidgets('does not show P2 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // P2 (Medium/default) badge is intentionally hidden
-      expect(find.text('P2'), findsNothing);
-    });
-
-    testWidgets('shows P3 priority badge in grid view', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithPriorityTask(TaskPriority.p3Low),
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('P3'), findsOneWidget);
-    });
-
-    testWidgets('priority badge stacks below completed checkmark in grid',
-        (tester) async {
-      final completedTask = Task(
-        meta: Metadata(
-          id: 'task-completed',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          categoryId: testCategory.id,
-        ),
-        data: TaskData(
-          title: 'Completed Priority Task',
-          dateFrom: testDate,
-          dateTo: testDate,
-          priority: TaskPriority.p0Urgent,
-          statusHistory: [],
-          status: TaskStatus.done(
-            id: 'status-done',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
-
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: completedTask,
-            timeSpentOnDay: const Duration(hours: 1),
-            wasCompletedOnDay: true,
-          ),
-        ],
-        blocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: testCategory.id,
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 11)),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: progress,
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show both checkmark (Icons.check in grid) and P0 badge
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('P0'), findsOneWidget);
-    });
-
-    testWidgets('priority badge stacks below due badge in grid',
-        (tester) async {
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: createPriorityTask(
-              id: 'task-due',
-              title: 'Due Priority Task',
-              priority: TaskPriority.p1High,
-            ),
-            timeSpentOnDay: const Duration(hours: 1),
-            wasCompletedOnDay: false,
-            dueDateStatus: const DueDateStatus(
-              urgency: DueDateUrgency.dueToday,
-              daysUntilDue: 0,
-            ),
-          ),
-        ],
-        blocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: testCategory.id,
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 11)),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: progress,
-          initialViewMode: TaskViewMode.grid,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show both due badge and P1 badge
-      expect(find.text('Due'), findsOneWidget);
-      expect(find.text('P1'), findsOneWidget);
     });
   });
 }

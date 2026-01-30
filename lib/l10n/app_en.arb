@@ -704,6 +704,16 @@
     }
   },
   "modelsSettingsPageTitle": "AI Models",
+  "multiSelectAddButton": "Add",
+  "multiSelectAddButtonWithCount": "Add ({count})",
+  "@multiSelectAddButtonWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "multiSelectNoItemsFound": "No items found",
   "navTabTitleCalendar": "Calendar",
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Dashboards",
