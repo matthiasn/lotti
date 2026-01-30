@@ -10,6 +10,7 @@ class TaskFunctions {
   static const String setTaskLanguage = 'set_task_language';
   static const String updateTaskEstimate = 'update_task_estimate';
   static const String updateTaskDueDate = 'update_task_due_date';
+  static const String updateTaskPriority = 'update_task_priority';
 
   /// Get all available function definitions for task operations
   static List<ChatCompletionTool> getTools() {
@@ -114,6 +115,43 @@ class TaskFunctions {
               },
             },
             'required': ['dueDate', 'reason', 'confidence'],
+          },
+        ),
+      ),
+      const ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: updateTaskPriority,
+          description:
+              'Set the priority for the current task based on voice transcript. '
+              'Call when the user mentions priority or urgency (e.g., "priority P0", '
+              '"high priority", "this is urgent", "low priority task"). '
+              'Only sets priority if not already explicitly set by user.',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'priority': {
+                'type': 'string',
+                'enum': ['P0', 'P1', 'P2', 'P3'],
+                'description':
+                    'Priority level. P0=Urgent, P1=High, P2=Medium, P3=Low. '
+                        'Map spoken terms: "urgent/critical"→P0, "high/important"→P1, '
+                        '"medium/normal"→P2, "low/minor"→P3.',
+              },
+              'reason': {
+                'type': 'string',
+                'description':
+                    'Brief explanation of what was said that indicated this priority.',
+              },
+              'confidence': {
+                'type': 'string',
+                'enum': ['high', 'medium', 'low'],
+                'description':
+                    'Confidence level. Use "high" for explicit priority statements, '
+                        '"medium" for implied urgency, "low" for uncertain.',
+              },
+            },
+            'required': ['priority', 'reason', 'confidence'],
           },
         ),
       ),

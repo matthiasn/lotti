@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.833" date="2026-01-30">
+      <description>
+        <p>Voice Task Priority: Set task priority via voice during audio recordings. Say things like "priority P1", "this is urgent", or "low priority task" and the AI updates your task priority automatically. Maps spoken terms to priority levels (urgent/critical→P0, high/important→P1, medium/normal→P2, low/minor→P3). Only sets priority when not already explicitly set, preserving your manual edits.</p>
+      </description>
+    </release>
     <release version="0.9.832" date="2026-01-30">
       <description>
         <p>Daily OS Timeline: Double-tap planned blocks to edit start/end times. This provides a more intuitive alternative to the existing long-press gesture, opening the same edit modal for adjusting time range, category, and notes.</p>

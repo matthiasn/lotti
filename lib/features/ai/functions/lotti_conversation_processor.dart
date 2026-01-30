@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart'
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
+import 'package:lotti/features/ai/functions/task_priority_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -501,6 +502,19 @@ class LottiChecklistStrategy extends ConversationStrategy {
           },
         );
         await dueDateHandler.processToolCall(call, manager);
+      } else if (call.function.name == TaskFunctions.updateTaskPriority) {
+        // Delegate to TaskPriorityHandler
+        final priorityHandler = TaskPriorityHandler(
+          task: checklistHandler.task,
+          journalRepository: ref.read(journalRepositoryProvider),
+          onTaskUpdated: (updatedTask) {
+            // Sync state across all handlers
+            checklistHandler.task = updatedTask;
+            batchChecklistHandler.task = updatedTask;
+            checklistHandler.onTaskUpdated?.call(updatedTask);
+          },
+        );
+        await priorityHandler.processToolCall(call, manager);
       } else if (call.function.name == 'assign_task_labels') {
         // Assign labels to task (add-only) with rate limiting (handled upstream if needed)
         try {
