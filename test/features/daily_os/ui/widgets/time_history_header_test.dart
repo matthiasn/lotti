@@ -528,6 +528,296 @@ void main() {
       // Should have triggered loadMoreDays at least once
       expect(trackingController.loadMoreDaysCallCount, greaterThan(0));
     });
+
+    testWidgets('displays near limit indicator when close to budget',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 2),
+            totalRecorded: Duration(hours: 1, minutes: 50),
+            budgetCount: 1,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Near limit" indicator (10 mins remaining < 15)
+      expect(find.text('Near limit'), findsOneWidget);
+      expect(find.byIcon(MdiIcons.clockAlert), findsOneWidget);
+    });
+
+    testWidgets('displays on track indicator when progress is high',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 4),
+            totalRecorded: Duration(hours: 3, minutes: 30),
+            budgetCount: 2,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 3h30m / 4h = 87.5% progress, should show "On track"
+      expect(find.text('On track'), findsOneWidget);
+      expect(find.byIcon(MdiIcons.checkCircle), findsOneWidget);
+    });
+
+    testWidgets('displays hours in time remaining', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 4),
+            totalRecorded: Duration(hours: 1),
+            budgetCount: 1,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 3 hours remaining (exact hours, no minutes)
+      expect(find.text('3 hours left'), findsOneWidget);
+    });
+
+    testWidgets('displays hours with minutes in time remaining',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 3, minutes: 30),
+            totalRecorded: Duration(hours: 1),
+            budgetCount: 1,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 2h 30m remaining (hours and minutes)
+      expect(find.text('2h 30m left'), findsOneWidget);
+    });
+
+    testWidgets('displays minutes only when less than an hour remaining',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(minutes: 60),
+            totalRecorded: Duration(minutes: 25),
+            budgetCount: 1,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 35 minutes remaining
+      expect(find.text('35 minutes left'), findsOneWidget);
+    });
+
+    testWidgets('shows multi-month label spanning different years',
+        (tester) async {
+      // Create days spanning Dec 2025 and Jan 2026
+      final days = [
+        DayTimeSummary(
+          day: DateTime(2026, 1, 2, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2026, 1, 1, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2025, 12, 31, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2025, 12, 30, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          selectedDate: DateTime(2026, 1, 2),
+          historyData: createTestHistoryData(days: days),
+          plan: createTestPlan(date: DateTime(2026, 1, 2)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both months with years since they span different years
+      // Format: "Dec 2025 | Jan 2026"
+      expect(find.text('Dec 2025 | Jan 2026'), findsOneWidget);
+    });
+
+    testWidgets('shows multi-month label within same year', (tester) async {
+      // Create days spanning Nov and Dec 2025
+      final days = [
+        DayTimeSummary(
+          day: DateTime(2025, 12, 2, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2025, 12, 1, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2025, 11, 30, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+        DayTimeSummary(
+          day: DateTime(2025, 11, 29, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          selectedDate: DateTime(2025, 12, 2),
+          historyData: createTestHistoryData(days: days),
+          plan: createTestPlan(date: DateTime(2025, 12, 2)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both months but only year on second: "Nov | Dec 2025"
+      expect(find.text('Nov | Dec 2025'), findsOneWidget);
+    });
+
+    testWidgets('Today button is tappable and triggers navigation',
+        (tester) async {
+      final fixedToday = DateTime(2026, 1, 15, 12);
+      final yesterday = DateTime(2026, 1, 14);
+      final todayMidnight = DateTime(2026, 1, 15);
+
+      final historyData = createTestHistoryData(
+        days: [
+          DayTimeSummary(
+            day: DateTime(2026, 1, 15, 12),
+            durationByCategoryId: const {},
+            total: Duration.zero,
+          ),
+          DayTimeSummary(
+            day: DateTime(2026, 1, 14, 12),
+            durationByCategoryId: const {},
+            total: Duration.zero,
+          ),
+        ],
+      );
+
+      await withClock(Clock.fixed(fixedToday), () async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWith(
+                () => _TestDailyOsSelectedDate(yesterday, today: todayMidnight),
+              ),
+              timeHistoryHeaderControllerProvider.overrideWith(
+                () => _TestTimeHistoryController(historyData),
+              ),
+              unifiedDailyOsDataControllerProvider(date: yesterday)
+                  .overrideWith(
+                () =>
+                    _TestUnifiedController(createUnifiedData(date: yesterday)),
+              ),
+              unifiedDailyOsDataControllerProvider(date: todayMidnight)
+                  .overrideWith(
+                () => _TestUnifiedController(
+                    createUnifiedData(date: todayMidnight)),
+              ),
+              dayBudgetStatsProvider(date: yesterday).overrideWith(
+                (ref) async => const DayBudgetStats(
+                  totalPlanned: Duration.zero,
+                  totalRecorded: Duration.zero,
+                  budgetCount: 0,
+                  overBudgetCount: 0,
+                ),
+              ),
+              dayBudgetStatsProvider(date: todayMidnight).overrideWith(
+                (ref) async => const DayBudgetStats(
+                  totalPlanned: Duration.zero,
+                  totalRecorded: Duration.zero,
+                  budgetCount: 0,
+                  overBudgetCount: 0,
+                ),
+              ),
+            ],
+            child: const TimeHistoryHeader(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially showing yesterday - Today button should be visible
+        expect(find.textContaining('Jan 14'), findsOneWidget);
+        final todayButton = find.byIcon(MdiIcons.calendarToday);
+        expect(todayButton, findsOneWidget);
+
+        // Tap the Today button
+        await tester.tap(todayButton);
+        await tester.pumpAndSettle();
+
+        // After tapping, should navigate to today (Jan 15)
+        expect(find.textContaining('Jan 15'), findsOneWidget);
+      });
+    });
+
+    testWidgets('date picker cancellation keeps original date', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap the date text to open picker
+      final dateFinder = find.textContaining('Thursday');
+      await tester.tap(dateFinder);
+      await tester.pumpAndSettle();
+
+      // Date picker should be open
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+
+      // Tap Cancel to dismiss without selecting
+      final cancelButton = find.text('Cancel');
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+
+      // Original date should still be displayed
+      expect(find.textContaining('Jan 15'), findsOneWidget);
+    });
+
+    testWidgets('hides day label chip when label is empty', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(plan: createTestPlan(dayLabel: '')),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not find any chip with empty label
+      // The chip should be SizedBox.shrink
+      expect(find.text(''), findsNothing);
+    });
+
+    testWidgets('renders unselected day segment correctly', (tester) async {
+      final days = createTestDays(count: 3);
+      await tester.pumpWidget(
+        createTestWidget(historyData: createTestHistoryData(days: days)),
+      );
+      await tester.pumpAndSettle();
+
+      // Day 14 should be visible but not selected (day 15 is selected)
+      expect(find.text('14'), findsOneWidget);
+      expect(find.text('13'), findsOneWidget);
+    });
   });
 }
 
