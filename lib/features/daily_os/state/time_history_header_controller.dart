@@ -117,9 +117,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     final current = state.value;
     if (current == null) return;
 
+    // Use midnight boundaries for refresh query
     final refreshed = await _fetchDataForRange(
-      current.earliestDay,
-      current.latestDay,
+      current.earliestDay.dayAtMidnight,
+      current.latestDay.dayAtMidnight,
     );
 
     if (ref.mounted) {
@@ -133,7 +134,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     return _fetchDataForRange(startDate, today);
   }
 
-  /// Load more days of history.
+  /// Load more days of history (backward scrolling).
+  ///
+  /// Uses a sliding window: when cap is hit, drops newest days to make room
+  /// for older history, preserving backward scroll position.
   Future<void> loadMoreDays() async {
     final current = state.value;
     if (current == null || current.isLoadingMore || !current.canLoadMore) {
@@ -143,48 +147,59 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     state = AsyncData(current.copyWith(isLoadingMore: true));
 
     try {
-      final newEarliest = current.earliestDay.subtract(
-        const Duration(days: _loadMoreDays),
-      );
+      // Compute range for new data: from (earliest - loadMoreDays) to (earliest - 1 day)
+      // Use dayAtMidnight for DB query boundaries
+      final currentEarliestMidnight = current.earliestDay.dayAtMidnight;
+      final newRangeEnd =
+          currentEarliestMidnight.subtract(const Duration(days: 1));
+      final newRangeStart =
+          currentEarliestMidnight.subtract(const Duration(days: _loadMoreDays));
+
       final additionalData = await _fetchDataForRange(
-        newEarliest,
-        current.earliestDay.subtract(const Duration(days: 1)),
+        newRangeStart,
+        newRangeEnd,
       );
 
       if (!ref.mounted) return;
 
-      // Merge with existing data
+      // Check if we got any actual entries (not just empty day buckets)
+      final hasMoreData = additionalData.days.any((d) => d.total > Duration.zero);
+
+      // Merge: append older days to end of list (list is newest-to-oldest)
       final mergedDays = [...current.days, ...additionalData.days];
+
+      // Sliding window: drop NEWEST days (front of list) when over cap
+      // This preserves backward scroll position
       final prunedDays = mergedDays.length > _maxLoadedDays
-          ? mergedDays.sublist(0, _maxLoadedDays)
+          ? mergedDays.sublist(mergedDays.length - _maxLoadedDays)
           : mergedDays;
-
-      // Merge stacked heights
-      final mergedHeights = {
-        ...current.stackedHeights,
-        ...additionalData.stackedHeights,
-      };
-
-      // Prune stacked heights if days were pruned
-      if (prunedDays.length < mergedDays.length) {
-        final prunedDaySet = prunedDays.map((d) => d.day).toSet();
-        mergedHeights.removeWhere((day, _) => !prunedDaySet.contains(day));
-      }
 
       final newMax = _maxDuration(
         current.maxDailyTotal,
         additionalData.maxDailyTotal,
       );
 
+      // Recompute ALL stacked heights if max changed (scale consistency)
+      final categoryOrder = current.categoryOrder;
+      final stackedHeights = newMax != current.maxDailyTotal
+          ? _computeStackedHeights(prunedDays, categoryOrder, newMax)
+          : _mergeStackedHeights(
+              current.stackedHeights,
+              additionalData.stackedHeights,
+              prunedDays,
+            );
+
       state = AsyncData(
         current.copyWith(
           days: prunedDays,
           earliestDay:
               prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay,
+          latestDay:
+              prunedDays.isNotEmpty ? prunedDays.first.day : current.latestDay,
           maxDailyTotal: newMax,
           isLoadingMore: false,
-          canLoadMore: additionalData.days.isNotEmpty,
-          stackedHeights: mergedHeights,
+          canLoadMore: hasMoreData,
+          stackedHeights: stackedHeights,
         ),
       );
     } catch (e) {
@@ -193,16 +208,43 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     }
   }
 
+  /// Merge stacked heights, pruning any days not in the final list.
+  StackedHeights _mergeStackedHeights(
+    StackedHeights existing,
+    StackedHeights additional,
+    List<DayTimeSummary> prunedDays,
+  ) {
+    final prunedDaySet = prunedDays.map((d) => d.day).toSet();
+    final merged = <DateTime, Map<String?, double>>{};
+
+    for (final entry in existing.entries) {
+      if (prunedDaySet.contains(entry.key)) {
+        merged[entry.key] = entry.value;
+      }
+    }
+    for (final entry in additional.entries) {
+      if (prunedDaySet.contains(entry.key)) {
+        merged[entry.key] = entry.value;
+      }
+    }
+
+    return merged;
+  }
+
   Future<TimeHistoryData> _fetchDataForRange(
     DateTime start,
     DateTime end,
   ) async {
     final db = getIt<JournalDb>();
 
+    // Normalize to calendar day boundaries for DB query
+    final rangeStartMidnight = start.dayAtMidnight;
+    final rangeEndMidnight = end.dayAtMidnight.add(const Duration(days: 1));
+
     // Query calendar entries for the range
     final entries = await db.sortedCalendarEntries(
-      rangeStart: start,
-      rangeEnd: end.add(const Duration(days: 1)).dayAtMidnight,
+      rangeStart: rangeStartMidnight,
+      rangeEnd: rangeEndMidnight,
     );
 
     // Resolve category links using batched queries
@@ -290,13 +332,19 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     DateTime start,
     DateTime end,
   ) {
-    // Initialize day buckets
-    final dayCount = end.difference(start).inDays + 1;
+    // Normalize to midnight for consistent day counting
+    final startMidnight = start.dayAtMidnight;
+    final endMidnight = end.dayAtMidnight;
+
+    // Initialize day buckets using noon representation
+    final dayCount = endMidnight.difference(startMidnight).inDays + 1;
     final data = <DateTime, Map<String?, Duration>>{};
 
     for (var i = 0; i < dayCount; i++) {
-      final day = DateTime(end.year, end.month, end.day - i, 12);
-      data[day] = <String?, Duration>{};
+      // Generate each day at noon, going backwards from end date
+      final dayMidnight = endMidnight.subtract(Duration(days: i));
+      final dayNoon = dayMidnight.dayAtNoon;
+      data[dayNoon] = <String?, Duration>{};
     }
 
     // Aggregate entries

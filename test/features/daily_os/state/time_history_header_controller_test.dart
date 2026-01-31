@@ -501,5 +501,199 @@ void main() {
       final notFound = result.dayAt(DateTime(2025));
       expect(notFound, isNull);
     });
+
+    test('captures entries at start of day (midnight boundary)', () async {
+      // Entry at 00:30 on Jan 15 should be captured when querying Jan 15
+      final jan15Early = DateTime(2026, 1, 15, 0, 30);
+
+      final entry = createJournalEntry(
+        id: 'entry-early',
+        categoryId: null,
+        dateFrom: jan15Early,
+        dateTo: jan15Early.add(const Duration(hours: 1)),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry]);
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+
+      final result =
+          await container.read(timeHistoryHeaderControllerProvider.future);
+
+      final daySummary = result.days.firstWhere(
+        (d) => d.day.day == 15 && d.day.month == 1,
+      );
+
+      // Should have captured the early morning entry
+      expect(daySummary.total, equals(const Duration(hours: 1)));
+    });
+
+    test('recomputes stacked heights when maxDailyTotal increases on merge',
+        () async {
+      // Initial load has low max
+      final jan15 = DateTime(2026, 1, 15, 10);
+      final entry1 = createJournalEntry(
+        id: 'entry-1',
+        categoryId: null,
+        dateFrom: jan15,
+        dateTo: jan15.add(const Duration(hours: 1)),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry1]);
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+
+      // Initial load
+      await container.read(timeHistoryHeaderControllerProvider.future);
+
+      final initialResult =
+          container.read(timeHistoryHeaderControllerProvider).value!;
+      expect(initialResult.maxDailyTotal, equals(const Duration(hours: 1)));
+
+      // Now load more with higher max
+      final olderDate = DateTime(2025, 12, 20, 10);
+      final bigEntry = createJournalEntry(
+        id: 'entry-big',
+        categoryId: null,
+        dateFrom: olderDate,
+        dateTo: olderDate.add(const Duration(hours: 5)),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [bigEntry]);
+
+      final notifier =
+          container.read(timeHistoryHeaderControllerProvider.notifier);
+      await notifier.loadMoreDays();
+
+      final afterMerge =
+          container.read(timeHistoryHeaderControllerProvider).value!;
+
+      // Max should have increased
+      expect(afterMerge.maxDailyTotal, equals(const Duration(hours: 5)));
+
+      // Stacked heights for Jan 15 should be rescaled
+      // With 1 hour out of 5 hours max, the uncategorized height should be ~0.2
+      final jan15Noon = DateTime(2026, 1, 15, 12);
+      final heights = afterMerge.stackedHeights[jan15Noon];
+      expect(heights, isNotNull);
+
+      // The null (uncategorized) category should have a height based on new max
+      // 60 minutes / 300 minutes = 0.2
+      expect(heights![null], closeTo(0.0, 0.01));
+    });
+
+    test('sliding window drops newest days when cap is reached', () async {
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+
+      // Initial load
+      final initialResult =
+          await container.read(timeHistoryHeaderControllerProvider.future);
+      final initialLatest = initialResult.latestDay;
+
+      final notifier =
+          container.read(timeHistoryHeaderControllerProvider.notifier);
+
+      // Load enough to exceed cap (180 days)
+      // Initial: 30, then 14 per load, need ~11 loads to exceed
+      for (var i = 0; i < 15; i++) {
+        await notifier.loadMoreDays();
+      }
+
+      final afterCap =
+          container.read(timeHistoryHeaderControllerProvider).value!;
+
+      // Should be capped at 180 days
+      expect(afterCap.days.length, lessThanOrEqualTo(180));
+
+      // Latest day should have moved back (newest dropped)
+      // The newest days are at the front, so latestDay (first in list) changes
+      expect(
+        afterCap.latestDay.isBefore(initialLatest) ||
+            afterCap.latestDay.isAtSameMomentAs(initialLatest),
+        isTrue,
+        reason: 'Sliding window should drop newest days',
+      );
+
+      // Earliest day should have moved further back (we loaded more history)
+      expect(
+        afterCap.earliestDay.isBefore(initialResult.earliestDay),
+        isTrue,
+        reason: 'Should have loaded older history',
+      );
+    });
+
+    test('canLoadMore becomes false when no entries found', () async {
+      // First call returns entries
+      var callCount = 0;
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) {
+          // Initial load has data
+          return [
+            createJournalEntry(
+              id: 'entry-1',
+              categoryId: null,
+              dateFrom: DateTime(2026, 1, 15, 10),
+              dateTo: DateTime(2026, 1, 15, 11),
+            ),
+          ];
+        }
+        // Subsequent loads have no data
+        return [];
+      });
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+
+      // Initial load
+      await container.read(timeHistoryHeaderControllerProvider.future);
+
+      final notifier =
+          container.read(timeHistoryHeaderControllerProvider.notifier);
+      await notifier.loadMoreDays();
+
+      final result = container.read(timeHistoryHeaderControllerProvider).value!;
+
+      // canLoadMore should be false since no entries were found
+      expect(result.canLoadMore, isFalse);
+    });
   });
 }
