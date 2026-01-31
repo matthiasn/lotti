@@ -218,14 +218,15 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
 ```dart
 class TimeHistoryChartPainter extends CustomPainter {
-  const TimeHistoryChartPainter({
+  TimeHistoryChartPainter({
     required this.data,
     required this.selectedDate,
     required this.categoryColors,
     required this.dayWidth,
     required this.visibleDayCount,
     required this.scrollOffset,
-  }) : super(repaint: repaint);
+    required Listenable scrollController,
+  }) : super(repaint: scrollController);
 
   final TimeHistoryData data;
   final DateTime selectedDate;
@@ -270,7 +271,7 @@ class TimeHistoryChartPainter extends CustomPainter {
   ) {
     final color = categoryColors[categoryId] ?? Colors.grey;
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.7)
+      ..color = color.withOpacity(0.7)
       ..style = PaintingStyle.fill;
 
     final path = Path();

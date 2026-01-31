@@ -9,6 +9,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:rxdart/rxdart.dart';
@@ -117,15 +118,32 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     final current = state.value;
     if (current == null) return;
 
-    // Use midnight boundaries for refresh query
-    final refreshed = await _fetchDataForRange(
-      current.earliestDay.dayAtMidnight,
-      current.latestDay.dayAtMidnight,
-    );
+    // Skip refresh while a load is in progress to avoid state conflicts
+    if (current.isLoadingMore) return;
 
-    if (ref.mounted) {
-      // Preserve canLoadMore state from before refresh
-      state = AsyncData(refreshed.copyWith(canLoadMore: current.canLoadMore));
+    try {
+      // Use midnight boundaries for refresh query
+      final refreshed = await _fetchDataForRange(
+        current.earliestDay.dayAtMidnight,
+        current.latestDay.dayAtMidnight,
+      );
+
+      if (ref.mounted) {
+        // Preserve isLoadingMore and canLoadMore state from before refresh
+        state = AsyncData(
+          refreshed.copyWith(
+            isLoadingMore: current.isLoadingMore,
+            canLoadMore: current.canLoadMore,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'TimeHistoryHeaderController._refresh',
+        stackTrace: stackTrace,
+      );
+      // Keep current state on error - don't disrupt the UI
     }
   }
 
@@ -204,7 +222,12 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
           stackedHeights: stackedHeights,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'TimeHistoryHeaderController.loadMoreDays',
+        stackTrace: stackTrace,
+      );
       if (!ref.mounted) return;
       state = AsyncData(current.copyWith(isLoadingMore: false));
     }
@@ -215,10 +238,26 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   /// Use this when the user wants to return to the current day after
   /// scrolling far into history (which may have dropped today from the window).
   Future<void> resetToToday() async {
+    final previousState = state;
     state = const AsyncLoading();
-    final data = await _fetchInitialData();
-    if (ref.mounted) {
-      state = AsyncData(data);
+
+    try {
+      final data = await _fetchInitialData();
+      if (ref.mounted) {
+        state = AsyncData(data);
+      }
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'TimeHistoryHeaderController.resetToToday',
+        stackTrace: stackTrace,
+      );
+      if (ref.mounted) {
+        // Restore previous state on error to avoid stuck loading
+        state = previousState.hasValue
+            ? previousState
+            : AsyncError(e, stackTrace);
+      }
     }
   }
 
