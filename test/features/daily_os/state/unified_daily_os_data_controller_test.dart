@@ -15,6 +15,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -29,6 +30,8 @@ class MockLoggingService extends Mock implements LoggingService {}
 
 class MockDayPlanRepository extends Mock implements DayPlanRepository {}
 
+class MockTimeService extends Mock implements TimeService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,7 +42,9 @@ void main() {
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockLoggingService mockLoggingService;
   late MockDayPlanRepository mockDayPlanRepository;
+  late MockTimeService mockTimeService;
   late StreamController<Set<String>> updateStreamController;
+  late StreamController<JournalEntity?> timerStreamController;
 
   final testDate = DateTime(2026, 1, 15);
   final planId = dayPlanId(testDate);
@@ -140,10 +145,15 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockLoggingService = MockLoggingService();
     mockDayPlanRepository = MockDayPlanRepository();
+    mockTimeService = MockTimeService();
     updateStreamController = StreamController<Set<String>>.broadcast();
+    timerStreamController = StreamController<JournalEntity?>.broadcast();
 
     when(() => mockUpdateNotifications.updateStream)
         .thenAnswer((_) => updateStreamController.stream);
+
+    when(() => mockTimeService.getStream())
+        .thenAnswer((_) => timerStreamController.stream);
 
     when(() => mockPersistenceLogic.createDbEntity(any()))
         .thenAnswer((_) async => true);
@@ -164,7 +174,8 @@ void main() {
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<LoggingService>(mockLoggingService);
+      ..registerSingleton<LoggingService>(mockLoggingService)
+      ..registerSingleton<TimeService>(mockTimeService);
 
     container = ProviderContainer(
       overrides: [
@@ -176,6 +187,7 @@ void main() {
   tearDown(() {
     container.dispose();
     updateStreamController.close();
+    timerStreamController.close();
     getIt.reset();
   });
 

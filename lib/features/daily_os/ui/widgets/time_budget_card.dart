@@ -101,6 +101,11 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
     final isHighlighted = categoryId != null && highlightedId == categoryId;
     final hasTasks = progress.taskProgressItems.isNotEmpty;
 
+    // Check if a timer is running for this category (for visual indicator)
+    final runningTimerCategoryId = ref.watch(runningTimerCategoryIdProvider);
+    final isTimerRunningForCategory =
+        runningTimerCategoryId == progress.categoryId;
+
     return GestureDetector(
       onLongPress: widget.onLongPress,
       child: AnimatedContainer(
@@ -198,12 +203,25 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
               // Row 2: Time info, progress bar, status
               Row(
                 children: [
+                  // Timer indicator when running
+                  if (isTimerRunningForCategory) ...[
+                    Icon(
+                      Icons.timer,
+                      size: 14,
+                      color: context.colorScheme.error,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   // Time: recorded / planned
                   Flexible(
                     child: Text(
                       '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
                       style: context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
+                        color: isTimerRunningForCategory
+                            ? context.colorScheme.error
+                            : context.colorScheme.onSurfaceVariant,
+                        fontWeight:
+                            isTimerRunningForCategory ? FontWeight.w600 : null,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

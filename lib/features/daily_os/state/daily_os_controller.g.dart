@@ -280,3 +280,72 @@ final class ActiveFocusCategoryIdProvider
 
 String _$activeFocusCategoryIdHash() =>
     r'00c3da2f652fa33a06886977a1076e878d575bac';
+
+/// Provides the category ID of the currently running timer.
+///
+/// Returns the category ID (from linkedFrom or the entry itself) when a timer
+/// is actively running, or null when no timer is running.
+/// Used for visual indicators in the UI (e.g., showing a timer icon).
+
+@ProviderFor(RunningTimerCategoryId)
+final runningTimerCategoryIdProvider = RunningTimerCategoryIdProvider._();
+
+/// Provides the category ID of the currently running timer.
+///
+/// Returns the category ID (from linkedFrom or the entry itself) when a timer
+/// is actively running, or null when no timer is running.
+/// Used for visual indicators in the UI (e.g., showing a timer icon).
+final class RunningTimerCategoryIdProvider
+    extends $NotifierProvider<RunningTimerCategoryId, String?> {
+  /// Provides the category ID of the currently running timer.
+  ///
+  /// Returns the category ID (from linkedFrom or the entry itself) when a timer
+  /// is actively running, or null when no timer is running.
+  /// Used for visual indicators in the UI (e.g., showing a timer icon).
+  RunningTimerCategoryIdProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'runningTimerCategoryIdProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$runningTimerCategoryIdHash();
+
+  @$internal
+  @override
+  RunningTimerCategoryId create() => RunningTimerCategoryId();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$runningTimerCategoryIdHash() =>
+    r'd12f9077c982d459cb07c68106bb57798d08158b';
+
+/// Provides the category ID of the currently running timer.
+///
+/// Returns the category ID (from linkedFrom or the entry itself) when a timer
+/// is actively running, or null when no timer is running.
+/// Used for visual indicators in the UI (e.g., showing a timer icon).
+
+abstract class _$RunningTimerCategoryId extends $Notifier<String?> {
+  String? build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<String?, String?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<String?, String?>, String?, Object?, Object?>;
+    element.handleCreate(ref, build);
+  }
+}

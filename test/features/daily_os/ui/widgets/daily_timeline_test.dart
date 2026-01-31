@@ -106,6 +106,8 @@ void main() {
         ),
         highlightedCategoryIdProvider
             .overrideWith((ref) => highlightedCategoryId),
+        // Override to avoid TimeService dependency in tests
+        runningTimerCategoryIdProvider.overrideWithValue(null),
         ...additionalOverrides,
       ],
       child: const SingleChildScrollView(

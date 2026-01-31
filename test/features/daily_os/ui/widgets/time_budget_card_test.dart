@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,6 +35,7 @@ void main() {
     BudgetProgressStatus status = BudgetProgressStatus.underBudget,
     CategoryDefinition? category,
     List<PlannedBlock>? blocks,
+    List<TaskDayProgress>? taskProgressItems,
   }) {
     final effectiveCategory = category ?? testCategory;
     return TimeBudgetProgress(
@@ -42,7 +45,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
-      taskProgressItems: const [],
+      taskProgressItems: taskProgressItems ?? const [],
       blocks: blocks ??
           [
             PlannedBlock(
@@ -55,6 +58,61 @@ void main() {
     );
   }
 
+  TimeBudgetProgress createProgressWithTasks() {
+    return createProgress(
+      taskProgressItems: [
+        TaskDayProgress(
+          task: Task(
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Test Task 1',
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+            ),
+          ),
+          timeSpentOnDay: const Duration(minutes: 30),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: Task(
+            meta: Metadata(
+              id: 'task-2',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Test Task 2',
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              status: TaskStatus.inProgress(
+                id: 'progress-1',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+            ),
+          ),
+          timeSpentOnDay: const Duration(minutes: 45),
+          wasCompletedOnDay: false,
+        ),
+      ],
+    );
+  }
+
   Widget createTestWidget({
     required TimeBudgetProgress progress,
     VoidCallback? onTap,
@@ -64,6 +122,8 @@ void main() {
     return RiverpodWidgetTestBench(
       overrides: [
         highlightedCategoryIdProvider.overrideWith((ref) => null),
+        // Override to avoid TimeService dependency in tests
+        runningTimerCategoryIdProvider.overrideWithValue(null),
         ...overrides,
       ],
       child: TimeBudgetCard(
@@ -245,6 +305,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -264,6 +325,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -908,6 +970,188 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('P3'), findsOneWidget);
+    });
+  });
+
+  group('TimeBudgetCard - Running Timer Indicator', () {
+    testWidgets('shows timer icon when timer is running for category',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            // Timer is running for this category
+            runningTimerCategoryIdProvider.overrideWithValue('cat-1'),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show timer icon
+      expect(find.byIcon(Icons.timer), findsOneWidget);
+    });
+
+    testWidgets('does not show timer icon when no timer is running',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show timer icon
+      expect(find.byIcon(Icons.timer), findsNothing);
+    });
+
+    testWidgets('does not show timer icon when timer is for different category',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            // Timer is running for a different category
+            runningTimerCategoryIdProvider.overrideWithValue('other-category'),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show timer icon for this category
+      expect(find.byIcon(Icons.timer), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Focus State and User Toggle', () {
+    testWidgets('respects isFocusActive for initial expansion state',
+        (tester) async {
+      // When isFocusActive is true, card should be expanded
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(),
+          overrides: [
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => Stream.value('cat-1'),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tasks should be visible when expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+    });
+
+    testWidgets('collapses when isFocusActive becomes false', (tester) async {
+      final focusController = StreamController<String?>.broadcast();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => focusController.stream,
+            ),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+
+      // Simulate focus changing to a different category
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => focusController.stream,
+            ),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should be collapsed now - tasks hidden
+      expect(find.text('Test Task 1'), findsNothing);
+
+      await focusController.close();
+    });
+
+    testWidgets('preserves user toggle when focus changes', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+
+      // User manually collapses by tapping expand/collapse icon
+      final expandIcon = find.byIcon(Icons.keyboard_arrow_up);
+      expect(expandIcon, findsOneWidget);
+      await tester.tap(expandIcon);
+      await tester.pumpAndSettle();
+
+      // Should be collapsed after user toggle
+      expect(find.text('Test Task 1'), findsNothing);
+
+      // Now simulate focus changing (isFocusActive becomes false then true again)
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Bring focus back
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should still be collapsed because user manually toggled
+      expect(find.text('Test Task 1'), findsNothing);
     });
   });
 }

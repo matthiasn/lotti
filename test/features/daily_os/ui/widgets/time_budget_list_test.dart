@@ -122,6 +122,8 @@ void main() {
         activeFocusCategoryIdProvider.overrideWith(
           (ref) => Stream.value(null),
         ),
+        // Override to avoid TimeService dependency in tests
+        runningTimerCategoryIdProvider.overrideWithValue(null),
         ...additionalOverrides,
       ],
       child: const SingleChildScrollView(

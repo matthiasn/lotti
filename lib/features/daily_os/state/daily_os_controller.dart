@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -270,5 +274,38 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
     yield result;
 
     await Future<void>.delayed(const Duration(seconds: 15));
+  }
+}
+
+/// Provides the category ID of the currently running timer.
+///
+/// Returns the category ID (from linkedFrom or the entry itself) when a timer
+/// is actively running, or null when no timer is running.
+/// Used for visual indicators in the UI (e.g., showing a timer icon).
+@riverpod
+class RunningTimerCategoryId extends _$RunningTimerCategoryId {
+  late TimeService _timeService;
+  StreamSubscription<JournalEntity?>? _subscription;
+
+  @override
+  String? build() {
+    _timeService = getIt<TimeService>();
+    ref.onDispose(() => _subscription?.cancel());
+    _listen();
+    return _getCurrentCategoryId();
+  }
+
+  void _listen() {
+    _subscription = _timeService.getStream().listen((_) {
+      state = _getCurrentCategoryId();
+    });
+  }
+
+  String? _getCurrentCategoryId() {
+    final current = _timeService.getCurrent();
+    if (current == null) return null;
+
+    final linkedFrom = _timeService.linkedFrom;
+    return linkedFrom?.meta.categoryId ?? current.meta.categoryId;
   }
 }
