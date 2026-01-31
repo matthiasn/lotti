@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -98,7 +99,12 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   }
 
   void _listenToUpdates() {
-    const subscribedIds = {textEntryNotification, audioNotification};
+    // Include taskNotification since categories come from linked tasks
+    const subscribedIds = {
+      textEntryNotification,
+      audioNotification,
+      taskNotification,
+    };
 
     _updateSubscription = getIt<UpdateNotifications>()
         .updateStream
@@ -148,7 +154,8 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   }
 
   Future<TimeHistoryData> _fetchInitialData() async {
-    final today = DateTime.now().dayAtMidnight;
+    // Using clock.now() for testability - can be mocked with withClock()
+    final today = clock.now().dayAtMidnight;
     final startDate = today.subtract(const Duration(days: _initialDays - 1));
     return _fetchDataForRange(startDate, today);
   }
@@ -193,20 +200,19 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       final newEarliestDay =
           prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay;
 
-      final newMax = _maxDuration(
-        current.maxDailyTotal,
-        additionalData.maxDailyTotal,
-      );
+      // Recompute maxDailyTotal from pruned days to handle:
+      // 1. Dropped days that had the previous max
+      // 2. Additional data computed with different max scale
+      final newMax = _computeMaxFromDays(prunedDays);
 
-      // Recompute ALL stacked heights if max changed (scale consistency)
+      // Always recompute stacked heights for scale consistency.
+      // This is necessary because:
+      // - additionalData.stackedHeights was computed with additionalData.maxDailyTotal
+      // - After pruning, the max may have changed
+      // - Merging heights from different scales would cause rendering bugs
       final categoryOrder = current.categoryOrder;
-      final stackedHeights = newMax != current.maxDailyTotal
-          ? _computeStackedHeights(prunedDays, categoryOrder, newMax)
-          : _mergeStackedHeights(
-              current.stackedHeights,
-              additionalData.stackedHeights,
-              prunedDays,
-            );
+      final stackedHeights =
+          _computeStackedHeights(prunedDays, categoryOrder, newMax);
 
       state = AsyncData(
         current.copyWith(
@@ -254,34 +260,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       );
       if (ref.mounted) {
         // Restore previous state on error to avoid stuck loading
-        state = previousState.hasValue
-            ? previousState
-            : AsyncError(e, stackTrace);
+        state =
+            previousState.hasValue ? previousState : AsyncError(e, stackTrace);
       }
     }
-  }
-
-  /// Merge stacked heights, pruning any days not in the final list.
-  StackedHeights _mergeStackedHeights(
-    StackedHeights existing,
-    StackedHeights additional,
-    List<DayTimeSummary> prunedDays,
-  ) {
-    final prunedDaySet = prunedDays.map((d) => d.day).toSet();
-    final merged = <DateTime, Map<String?, double>>{};
-
-    for (final entry in existing.entries) {
-      if (prunedDaySet.contains(entry.key)) {
-        merged[entry.key] = entry.value;
-      }
-    }
-    for (final entry in additional.entries) {
-      if (prunedDaySet.contains(entry.key)) {
-        merged[entry.key] = entry.value;
-      }
-    }
-
-    return merged;
   }
 
   Future<TimeHistoryData> _fetchDataForRange(
@@ -334,49 +316,41 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     );
   }
 
-  /// Batch query links to avoid SQLite variable limits.
-  Future<List<EntryLink>> _batchedLinksForEntryIds(
-    JournalDb db,
+  /// Generic utility to run a batched query over a set of IDs.
+  Future<List<T>> _runBatchedQuery<T>(
     Set<String> ids,
+    Future<List<T>> Function(Set<String> batchIds) query,
   ) async {
     if (ids.isEmpty) return [];
 
     final idList = ids.toList();
-    final results = <EntryLink>[];
+    final results = <T>[];
 
     for (var i = 0; i < idList.length; i += _batchSize) {
       final batch = idList.sublist(
         i,
         (i + _batchSize).clamp(0, idList.length),
       );
-      final batchLinks = await db.linksForEntryIds(batch.toSet());
-      results.addAll(batchLinks);
+      final batchResults = await query(batch.toSet());
+      results.addAll(batchResults);
     }
 
     return results;
   }
+
+  /// Batch query links to avoid SQLite variable limits.
+  Future<List<EntryLink>> _batchedLinksForEntryIds(
+    JournalDb db,
+    Set<String> ids,
+  ) =>
+      _runBatchedQuery(ids, db.linksForEntryIds);
 
   /// Batch fetch entities to avoid SQLite variable limits.
   Future<List<JournalEntity>> _batchedGetEntitiesForIds(
     JournalDb db,
     Set<String> ids,
-  ) async {
-    if (ids.isEmpty) return [];
-
-    final idList = ids.toList();
-    final results = <JournalEntity>[];
-
-    for (var i = 0; i < idList.length; i += _batchSize) {
-      final batch = idList.sublist(
-        i,
-        (i + _batchSize).clamp(0, idList.length),
-      );
-      final batchEntities = await db.getJournalEntitiesForIds(batch.toSet());
-      results.addAll(batchEntities);
-    }
-
-    return results;
-  }
+  ) =>
+      _runBatchedQuery(ids, db.getJournalEntitiesForIds);
 
   TimeHistoryData _aggregateEntries(
     List<JournalEntity> entries,
@@ -509,7 +483,14 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     return result;
   }
 
-  Duration _maxDuration(Duration a, Duration b) {
-    return a > b ? a : b;
+  /// Compute max daily total from a list of day summaries.
+  Duration _computeMaxFromDays(List<DayTimeSummary> days) {
+    var max = Duration.zero;
+    for (final day in days) {
+      if (day.total > max) {
+        max = day.total;
+      }
+    }
+    return max;
   }
 }
