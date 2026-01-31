@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,9 +60,11 @@ class _TrackingTimeHistoryController extends TimeHistoryHeaderController {
 
 /// Mock notifier for date selection that tracks selected date.
 class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
-  _TestDailyOsSelectedDate(this._initialDate);
+  _TestDailyOsSelectedDate(this._initialDate, {DateTime? today})
+      : _today = today ?? _initialDate;
 
   final DateTime _initialDate;
+  final DateTime _today;
 
   @override
   DateTime build() => _initialDate;
@@ -73,7 +76,8 @@ class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
 
   @override
   void goToToday() {
-    state = DateTime.now();
+    // Use injected "today" instead of DateTime.now() for deterministic tests
+    state = _today;
   }
 }
 
@@ -326,56 +330,63 @@ void main() {
 
     testWidgets('shows/hides Today button based on selected date',
         (tester) async {
-      // When viewing today - no Today button
-      final today = DateTime.now();
-      final todayMidnight = DateTime(today.year, today.month, today.day);
+      // Use fixed date to avoid flakiness around midnight
+      final fixedToday = DateTime(2024, 1, 2, 12); // noon to avoid edge cases
+      final todayMidnight = DateTime(2024, 1, 2);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          selectedDate: todayMidnight,
-          historyData: createTestHistoryData(
-            days: [
-              DayTimeSummary(
-                day: DateTime(todayMidnight.year, todayMidnight.month,
-                    todayMidnight.day, 12),
-                durationByCategoryId: const {},
-                total: Duration.zero,
-              ),
-            ],
+      // Mock the clock so _isToday uses our fixed "today"
+      await withClock(Clock.fixed(fixedToday), () async {
+        await tester.pumpWidget(
+          createTestWidget(
+            selectedDate: todayMidnight,
+            historyData: createTestHistoryData(
+              days: [
+                DayTimeSummary(
+                  day: DateTime(todayMidnight.year, todayMidnight.month,
+                      todayMidnight.day, 12),
+                  durationByCategoryId: const {},
+                  total: Duration.zero,
+                ),
+              ],
+            ),
+            plan: createTestPlan(date: todayMidnight),
           ),
-          plan: createTestPlan(date: todayMidnight),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(MdiIcons.calendarToday), findsNothing);
+        // When viewing today - no Today button
+        expect(find.byIcon(MdiIcons.calendarToday), findsNothing);
+      });
     });
 
     testWidgets('shows Today button when not viewing today', (tester) async {
-      // When viewing yesterday - Today button should appear
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayMidnight =
-          DateTime(yesterday.year, yesterday.month, yesterday.day);
+      // Use fixed date to avoid flakiness around midnight
+      final fixedToday = DateTime(2024, 1, 2, 12); // noon to avoid edge cases
+      final yesterdayMidnight = DateTime(2024, 1, 1); // day before fixedToday
 
-      await tester.pumpWidget(
-        createTestWidget(
-          selectedDate: yesterdayMidnight,
-          historyData: createTestHistoryData(
-            days: [
-              DayTimeSummary(
-                day: DateTime(yesterdayMidnight.year, yesterdayMidnight.month,
-                    yesterdayMidnight.day, 12),
-                durationByCategoryId: const {},
-                total: Duration.zero,
-              ),
-            ],
+      // Mock the clock so _isToday uses our fixed "today"
+      await withClock(Clock.fixed(fixedToday), () async {
+        await tester.pumpWidget(
+          createTestWidget(
+            selectedDate: yesterdayMidnight,
+            historyData: createTestHistoryData(
+              days: [
+                DayTimeSummary(
+                  day: DateTime(yesterdayMidnight.year, yesterdayMidnight.month,
+                      yesterdayMidnight.day, 12),
+                  durationByCategoryId: const {},
+                  total: Duration.zero,
+                ),
+              ],
+            ),
+            plan: createTestPlan(date: yesterdayMidnight),
           ),
-          plan: createTestPlan(date: yesterdayMidnight),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(MdiIcons.calendarToday), findsOneWidget);
+        // When viewing yesterday - Today button should appear
+        expect(find.byIcon(MdiIcons.calendarToday), findsOneWidget);
+      });
     });
 
     testWidgets('displays day label chip when present', (tester) async {

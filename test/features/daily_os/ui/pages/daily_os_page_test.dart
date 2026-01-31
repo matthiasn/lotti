@@ -55,9 +55,11 @@ class _TestTimeHistoryController extends TimeHistoryHeaderController {
 
 /// Mock notifier for date selection that tracks selected date.
 class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
-  _TestDailyOsSelectedDate(this._initialDate);
+  _TestDailyOsSelectedDate(this._initialDate, {DateTime? today})
+      : _today = today ?? _initialDate;
 
   final DateTime _initialDate;
+  final DateTime _today;
 
   @override
   DateTime build() => _initialDate;
@@ -69,7 +71,8 @@ class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
 
   @override
   void goToToday() {
-    state = DateTime.now();
+    // Use injected "today" instead of DateTime.now() for deterministic tests
+    state = _today;
   }
 }
 

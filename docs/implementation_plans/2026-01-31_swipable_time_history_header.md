@@ -693,7 +693,7 @@ fvm flutter analyze
 | `lib/features/daily_os/ui/pages/daily_os_page.dart`   | Replace `DayHeader` with `TimeHistoryHeader` |
 
 **Widget Structure**:
-```
+```text
 TimeHistoryHeader (ConsumerStatefulWidget, 120px height)
 ├── Container (surfaceContainerHighest background, outlineVariant border)
 │   └── Column
