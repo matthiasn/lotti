@@ -62,14 +62,14 @@ Create a header that:
 
 ### Component Anatomy
 
-| Section | Description |
-|---------|-------------|
-| **Day Segments** | Fixed-width columns (56px), showing day number, optional month indicator on 1st |
-| **Stream Chart** | Stacked area chart flowing across segments, categories colored by definition |
-| **Selection Highlight** | Current day has border/glow effect |
-| **Date Label** | Full date text below the strip (e.g., "Saturday, January 31, 2026") |
-| **Status Indicator** | Budget health chip (on track / near limit / over budget) |
-| **Today Button** | Appears when scrolled away from today |
+| Section                  | Description                                                                       |
+|--------------------------|-----------------------------------------------------------------------------------|
+| **Day Segments**         | Fixed-width columns (56px), showing day number, optional month indicator on 1st   |
+| **Stream Chart**         | Stacked area chart flowing across segments, categories colored by definition      |
+| **Selection Highlight**  | Current day has border/glow effect                                                |
+| **Date Label**           | Full date text below the strip (e.g., "Saturday, January 31, 2026")               |
+| **Status Indicator**     | Budget health chip (on track / near limit / over budget)                          |
+| **Today Button**         | Appears when scrolled away from today                                             |
 
 ---
 
@@ -540,7 +540,8 @@ class _DaySegment extends StatelessWidget {
 
 ## Performance Budget & Smoothness Guarantees
 
-**Hard requirements**
+### Hard requirements
+
 - **No DB work on scroll**: all queries happen off the scroll path.
 - **Paint only visible days**: O(V * C) per frame, V = visible segments.
 - **Precompute geometry**: stack heights per day when data changes, not per frame.
@@ -549,12 +550,14 @@ class _DaySegment extends StatelessWidget {
 - **Bounded memory**: cap loaded history window (e.g., 180 days).
 - **Throttle update stream**: avoid frequent rebuilds from notifications.
 
-**Big-O targets**
+### Big-O targets
+
 - Initial/LoadMore aggregation: **O(E + L + D)** time, **O(D * C_nonzero)** memory
 - Scroll paint: **O(V * C)** per frame (constant in practice)
 - UI interactions: **O(1)** per event
 
-**DB load strategy**
+### DB load strategy
+
 - Batch `linksForEntryIds` and linked entity lookups to avoid SQLite variable limits.
 - Keep ranges small (initial 30 days, increment 14 days).
 - Consider `Isolate.run` for aggregation if entry count spikes.
@@ -568,8 +571,9 @@ class _DaySegment extends StatelessWidget {
 **Goal**: Build the data infrastructure for loading and aggregating multi-day time data.
 
 **Files to Create**:
-| File | Purpose |
-|------|---------|
+
+| File                                                              | Purpose                    |
+|-------------------------------------------------------------------|----------------------------|
 | `lib/features/daily_os/state/time_history_header_controller.dart` | Controller with data models |
 
 **Tasks**:
@@ -597,14 +601,16 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 **Goal**: Implement the swipable header UI skeleton without chart rendering.
 
 **Files to Create**:
-| File | Purpose |
-|------|---------|
+
+| File                                                       | Purpose            |
+|------------------------------------------------------------|--------------------|
 | `lib/features/daily_os/ui/widgets/time_history_header.dart` | Main header widget |
 
 **Files to Modify**:
-| File | Changes |
-|------|---------|
-| `lib/features/daily_os/ui/pages/daily_os_page.dart` | Replace `DayHeader` with `TimeHistoryHeader` |
+
+| File                                                  | Changes                                    |
+|-------------------------------------------------------|--------------------------------------------|
+| `lib/features/daily_os/ui/pages/daily_os_page.dart`   | Replace `DayHeader` with `TimeHistoryHeader` |
 
 **Tasks**:
 - [ ] Create `TimeHistoryHeader` widget with `ListView.builder`
@@ -632,11 +638,13 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 **Goal**: Implement custom canvas rendering for the stream chart visualization.
 
 **Files to Create**:
-| File | Purpose |
-|------|---------|
+
+| File                                                               | Purpose                       |
+|--------------------------------------------------------------------|-------------------------------|
 | `lib/features/daily_os/ui/widgets/time_history_chart_painter.dart` | CustomPainter for stream chart |
 
 **Tasks**:
+
 - [ ] Create `TimeHistoryChartPainter` extending `CustomPainter`
 - [ ] Implement Y-axis normalization based on `maxDailyTotal`
 - [ ] Paint stacked areas with category colors from `EntitiesCacheService`
@@ -688,16 +696,16 @@ fvm flutter test
 
 ## Technical Decisions
 
-| Question | Decision | Rationale |
-|----------|----------|-----------|
-| **Scrolling approach** | `ListView.builder` with `reverse: true` | Positions today at right edge; efficient memory usage |
-| **Segment width** | 56 logical pixels | Adequate tap target (>48px Material guideline); shows ~6-7 days on phone |
-| **Chart library** | Custom `CustomPainter` | Full control, no Graphic library dependency, better performance |
-| **Initial buffer** | 30 days | Matches existing chart default; sufficient for typical use |
-| **Load increment** | 14 days | Balances UX smoothness against database queries |
-| **Load threshold** | 80% scroll position | Provides buffer for smooth infinite scroll |
-| **Y-axis normalization** | Max daily total across loaded range | Consistent scale for comparison |
-| **History cap** | 180 days (configurable) | Keeps paint + memory bounded |
+| Question                 | Decision                               | Rationale                                                           |
+|--------------------------|----------------------------------------|---------------------------------------------------------------------|
+| **Scrolling approach**   | `ListView.builder` with `reverse: true` | Positions today at right edge; efficient memory usage               |
+| **Segment width**        | 56 logical pixels                      | Adequate tap target (>48px Material guideline); shows ~6-7 days on phone |
+| **Chart library**        | Custom `CustomPainter`                 | Full control, no Graphic library dependency, better performance     |
+| **Initial buffer**       | 30 days                                | Matches existing chart default; sufficient for typical use          |
+| **Load increment**       | 14 days                                | Balances UX smoothness against database queries                     |
+| **Load threshold**       | 80% scroll position                    | Provides buffer for smooth infinite scroll                          |
+| **Y-axis normalization** | Max daily total across loaded range    | Consistent scale for comparison                                     |
+| **History cap**          | 180 days (configurable)                | Keeps paint + memory bounded                                        |
 
 ---
 
@@ -741,13 +749,13 @@ group('TimeHistoryChartPainter', () {
 
 ## Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Scroll position jump when loading more | Medium | Medium | Calculate offset adjustment after insert |
-| Performance with large date ranges | Medium | Medium | Cap history window; precompute geometry; isolate if needed |
-| Category color inconsistency | Low | Low | Use `EntitiesCacheService` consistently |
-| Complex position calculations | Medium | Medium | Thorough unit tests for coordinate math |
-| Animation jank during scroll | Medium | High | Paint-only scroll invalidation; avoid rebuilds; RepaintBoundary |
+| Risk                                   | Likelihood | Impact | Mitigation                                                       |
+|----------------------------------------|------------|--------|------------------------------------------------------------------|
+| Scroll position jump when loading more | Medium     | Medium | Calculate offset adjustment after insert                         |
+| Performance with large date ranges     | Medium     | Medium | Cap history window; precompute geometry; isolate if needed       |
+| Category color inconsistency           | Low        | Low    | Use `EntitiesCacheService` consistently                          |
+| Complex position calculations          | Medium     | Medium | Thorough unit tests for coordinate math                          |
+| Animation jank during scroll           | Medium     | High   | Paint-only scroll invalidation; avoid rebuilds; RepaintBoundary  |
 
 ---
 
@@ -765,17 +773,17 @@ group('TimeHistoryChartPainter', () {
 
 ## Appendix: Related Code Locations
 
-| Purpose | Path |
-|---------|------|
-| **Current Day Header** | `lib/features/daily_os/ui/widgets/day_header.dart` |
-| **Date Selection Provider** | `lib/features/daily_os/state/daily_os_controller.dart` |
-| **Existing Stream Chart** | `lib/features/calendar/ui/widgets/time_by_category_chart.dart` |
-| **Existing Chart Controller** | `lib/features/calendar/state/time_by_category_controller.dart` |
-| **Database Queries** | `lib/database/database.dart` (`sortedCalendarEntries`) |
-| **Category Colors** | `lib/services/entities_cache_service.dart` |
-| **Entry Duration Utility** | `lib/features/journal/util/entry_tools.dart` (`entryDuration`) |
-| **CustomPainter Pattern** | `lib/features/daily_os/ui/widgets/zigzag_fold_indicator.dart` |
-| **Daily OS Page** | `lib/features/daily_os/ui/pages/daily_os_page.dart` |
+| Purpose                        | Path                                                              |
+|--------------------------------|-------------------------------------------------------------------|
+| **Current Day Header**         | `lib/features/daily_os/ui/widgets/day_header.dart`                |
+| **Date Selection Provider**    | `lib/features/daily_os/state/daily_os_controller.dart`            |
+| **Existing Stream Chart**      | `lib/features/calendar/ui/widgets/time_by_category_chart.dart`    |
+| **Existing Chart Controller**  | `lib/features/calendar/state/time_by_category_controller.dart`    |
+| **Database Queries**           | `lib/database/database.dart` (`sortedCalendarEntries`)            |
+| **Category Colors**            | `lib/services/entities_cache_service.dart`                        |
+| **Entry Duration Utility**     | `lib/features/journal/util/entry_tools.dart` (`entryDuration`)    |
+| **CustomPainter Pattern**      | `lib/features/daily_os/ui/widgets/zigzag_fold_indicator.dart`     |
+| **Daily OS Page**              | `lib/features/daily_os/ui/pages/daily_os_page.dart`               |
 
 ---
 
