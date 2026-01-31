@@ -14,6 +14,8 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -907,16 +909,10 @@ void main() {
   // and UTC-based day counting are inherently DST-safe because they operate on
   // date components, not durations.
   //
-  // NOTE: These tests verify algorithmic correctness, not that DST transitions
-  // actually occur in the test environment. They will pass in UTC or non-DST
-  // timezones, which is intentional - the algorithm should produce correct
-  // calendar days regardless of the system timezone. The EU DST test (March 29)
-  // caught a real bug where difference().inDays on local times gave wrong results
-  // when DST was observed, proving the tests' value even if DST isn't active
-  // in every CI environment.
-  //
-  // To test with DST active: TZ=America/New_York flutter test <this_file>
-  // To test with EU DST active: TZ=Europe/Berlin flutter test <this_file>
+  // These tests verify the controller produces correct calendar days. The separate
+  // "Timezone-explicit DST verification" group below uses the timezone package
+  // to prove that Duration-based math fails across DST transitions while our
+  // calendar arithmetic and UTC-based approaches succeed.
   group('DST boundary tests', () {
     late ProviderContainer container;
     late MockJournalDb mockDb;
@@ -1226,6 +1222,143 @@ void main() {
               reason: 'All days should be at noon');
         }
       });
+    });
+  });
+
+  // Timezone-explicit tests that don't depend on system TZ environment variable.
+  // These use the timezone package to verify DST behavior directly.
+  group('Timezone-explicit DST verification', () {
+    setUpAll(tz.initializeTimeZones);
+
+    test(
+        'Duration subtraction gives wrong day count across US DST spring forward',
+        () {
+      // US Eastern: March 8, 2026 springs forward (loses 1 hour)
+      final eastern = tz.getLocation('America/New_York');
+
+      // March 10 at noon Eastern
+      final march10 = tz.TZDateTime(eastern, 2026, 3, 10, 12);
+      // March 2 at noon Eastern (8 days earlier, crossing DST)
+      final march2 = tz.TZDateTime(eastern, 2026, 3, 2, 12);
+
+      // Duration between them: should be 8 calendar days
+      final duration = march10.difference(march2);
+
+      // Because March 8 only has 23 hours, Duration gives < 8 days worth of hours
+      // 8 days = 192 hours normally, but with DST it's 191 hours
+      expect(duration.inHours, equals(191)); // Not 192!
+      expect(duration.inDays, equals(7)); // Wrong! Should be 8 calendar days
+
+      // Calendar arithmetic gives correct answer
+      final calendarDays = march10.day -
+          march2.day +
+          (march10.month - march2.month) * 31; // Simplified for same month
+      expect(calendarDays, equals(8)); // Correct!
+
+      // UTC-based calculation also gives correct answer
+      final march10Utc = DateTime.utc(2026, 3, 10);
+      final march2Utc = DateTime.utc(2026, 3, 2);
+      expect(march10Utc.difference(march2Utc).inDays, equals(8)); // Correct!
+    });
+
+    test(
+        'Duration subtraction gives wrong day count across EU DST spring forward',
+        () {
+      // EU Berlin: March 29, 2026 springs forward (loses 1 hour)
+      final berlin = tz.getLocation('Europe/Berlin');
+
+      // March 31 at noon Berlin
+      final march31 = tz.TZDateTime(berlin, 2026, 3, 31, 12);
+      // March 27 at noon Berlin (4 days earlier, crossing DST)
+      final march27 = tz.TZDateTime(berlin, 2026, 3, 27, 12);
+
+      // Duration between them: should be 4 calendar days
+      final duration = march31.difference(march27);
+
+      // Because March 29 only has 23 hours, Duration gives < 4 days worth of hours
+      // 4 days = 96 hours normally, but with DST it's 95 hours
+      expect(duration.inHours, equals(95)); // Not 96!
+      expect(duration.inDays, equals(3)); // Wrong! Should be 4 calendar days
+
+      // UTC-based calculation gives correct answer
+      final march31Utc = DateTime.utc(2026, 3, 31);
+      final march27Utc = DateTime.utc(2026, 3, 27);
+      expect(march31Utc.difference(march27Utc).inDays, equals(4)); // Correct!
+    });
+
+    test('Duration subtraction gives wrong day count across US DST fall back',
+        () {
+      // US Eastern: November 1, 2026 falls back (gains 1 hour)
+      final eastern = tz.getLocation('America/New_York');
+
+      // November 3 at noon Eastern
+      final nov3 = tz.TZDateTime(eastern, 2026, 11, 3, 12);
+      // October 31 at noon Eastern (3 days earlier, crossing DST)
+      final oct31 = tz.TZDateTime(eastern, 2026, 10, 31, 12);
+
+      // Duration between them: should be 3 calendar days
+      final duration = nov3.difference(oct31);
+
+      // Because November 1 has 25 hours, Duration gives > 3 days worth of hours
+      // 3 days = 72 hours normally, but with DST it's 73 hours
+      expect(duration.inHours, equals(73)); // Not 72!
+      // inDays truncates, so this still gives 3, but the hours are wrong
+      expect(duration.inDays,
+          equals(3)); // Happens to be correct due to truncation
+
+      // UTC-based calculation is always correct
+      final nov3Utc = DateTime.utc(2026, 11, 3);
+      final oct31Utc = DateTime.utc(2026, 10, 31);
+      expect(nov3Utc.difference(oct31Utc).inDays, equals(3)); // Correct!
+    });
+
+    test('Calendar arithmetic generates correct days regardless of DST', () {
+      // This is the pattern used in the controller
+      // DateTime(year, month, day - n, 12) uses calendar arithmetic
+
+      // Generate 10 days back from March 31, 2026 (crossing EU DST on March 29)
+      final days = List<DateTime>.generate(
+        10,
+        (i) => DateTime(2026, 3, 31 - i, 12),
+      );
+
+      // Should get exactly 10 unique calendar dates
+      expect(days.length, equals(10));
+
+      // Verify all dates are unique and at noon
+      final uniqueDates =
+          days.map((d) => '${d.year}-${d.month}-${d.day}').toSet();
+      expect(uniqueDates.length, equals(10));
+
+      // Verify March 29 (EU DST) is present exactly once
+      final march29Count =
+          days.where((d) => d.month == 3 && d.day == 29).length;
+      expect(march29Count, equals(1));
+
+      // Verify all are at noon
+      for (final day in days) {
+        expect(day.hour, equals(12));
+      }
+    });
+
+    test('UTC day count calculation is DST-safe', () {
+      // This is the pattern used in _aggregateEntries for dayCount
+
+      // Count days from March 2 to March 31, 2026 (crossing both US and EU DST)
+      final startUtc = DateTime.utc(2026, 3, 2);
+      final endUtc = DateTime.utc(2026, 3, 31);
+
+      final dayCount = endUtc.difference(startUtc).inDays + 1;
+
+      // Should be exactly 30 days (March 2-31 inclusive)
+      expect(dayCount, equals(30));
+
+      // Verify by counting manually
+      var manualCount = 0;
+      for (var d = 2; d <= 31; d++) {
+        manualCount++;
+      }
+      expect(dayCount, equals(manualCount));
     });
   });
 }
