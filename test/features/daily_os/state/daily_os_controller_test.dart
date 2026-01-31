@@ -1,10 +1,20 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockTimeService extends Mock implements TimeService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -691,4 +701,454 @@ void main() {
       expect(toggled.expandedFoldRegions, contains(6));
     });
   });
+
+  group('RunningTimerCategoryId', () {
+    late MockTimeService mockTimeService;
+    late StreamController<JournalEntity?> timerStreamController;
+    late ProviderContainer container;
+
+    setUp(() {
+      mockTimeService = MockTimeService();
+      timerStreamController = StreamController<JournalEntity?>.broadcast();
+
+      when(() => mockTimeService.getStream())
+          .thenAnswer((_) => timerStreamController.stream);
+
+      getIt.allowReassignment = true;
+      getIt.registerSingleton<TimeService>(mockTimeService);
+
+      container = ProviderContainer();
+    });
+
+    tearDown(() {
+      container.dispose();
+      timerStreamController.close();
+      getIt.reset();
+    });
+
+    test('returns null when no timer is running', () {
+      when(() => mockTimeService.getCurrent()).thenReturn(null);
+      when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+      final result = container.read(runningTimerCategoryIdProvider);
+
+      expect(result, isNull);
+    });
+
+    test('returns category ID from linkedFrom when available', () {
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 30)),
+          categoryId: 'entry-category',
+        ),
+      );
+
+      final linkedTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'task-category',
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: const [],
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      when(() => mockTimeService.getCurrent()).thenReturn(entry);
+      when(() => mockTimeService.linkedFrom).thenReturn(linkedTask);
+
+      final result = container.read(runningTimerCategoryIdProvider);
+
+      expect(result, equals('task-category'));
+    });
+
+    test('returns category ID from entry when linkedFrom is null', () {
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 30)),
+          categoryId: 'entry-category',
+        ),
+      );
+
+      when(() => mockTimeService.getCurrent()).thenReturn(entry);
+      when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+      final result = container.read(runningTimerCategoryIdProvider);
+
+      expect(result, equals('entry-category'));
+    });
+
+    test('returns null when entry has no category', () {
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 30)),
+        ),
+      );
+
+      when(() => mockTimeService.getCurrent()).thenReturn(entry);
+      when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+      final result = container.read(runningTimerCategoryIdProvider);
+
+      expect(result, isNull);
+    });
+
+    test('updates when timer stream emits', () async {
+      when(() => mockTimeService.getCurrent()).thenReturn(null);
+      when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+      // Initial state - no timer
+      expect(container.read(runningTimerCategoryIdProvider), isNull);
+
+      // Start a timer
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 30)),
+          categoryId: 'work',
+        ),
+      );
+
+      when(() => mockTimeService.getCurrent()).thenReturn(entry);
+      timerStreamController.add(entry);
+
+      // Allow stream to process
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(runningTimerCategoryIdProvider), equals('work'));
+    });
+  });
+
+  group('activeFocusCategoryId', () {
+    late ProviderContainer container;
+
+    final testDateToday = DateTime.now().dayAtMidnight;
+
+    setUp(() {
+      container = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(testDateToday),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('returns null when selected date is not today', () async {
+      final yesterday = testDateToday.subtract(const Duration(days: 1));
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(yesterday),
+          unifiedDailyOsDataControllerProvider(date: yesterday).overrideWith(
+            () => _TestUnifiedController(
+              DailyOsData(
+                date: yesterday,
+                dayPlan: createTestPlan(),
+                timelineData: createTestTimelineData(),
+                budgetProgress: [],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, isNull);
+
+      testContainer.dispose();
+    });
+
+    test('returns category ID when current time is within a planned block',
+        () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      // Create a planned block that contains the current time
+      final blockStart = now.subtract(const Duration(minutes: 30));
+      final blockEnd = now.add(const Duration(minutes: 30));
+
+      final plannedSlots = [
+        PlannedTimeSlot(
+          startTime: blockStart,
+          endTime: blockEnd,
+          block: PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: blockStart,
+            endTime: blockEnd,
+          ),
+          categoryId: 'cat-work',
+        ),
+      ];
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: plannedSlots,
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: blockStart,
+              endTime: blockEnd,
+            ),
+          ],
+        ),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, equals('cat-work'));
+
+      testContainer.dispose();
+    });
+
+    test('returns null when no planned block contains current time', () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      // Create planned blocks that do NOT contain the current time
+      final pastBlockEnd = now.subtract(const Duration(hours: 2));
+      final pastBlockStart = now.subtract(const Duration(hours: 3));
+      final futureBlockStart = now.add(const Duration(hours: 1));
+      final futureBlockEnd = now.add(const Duration(hours: 2));
+
+      final plannedSlots = [
+        PlannedTimeSlot(
+          startTime: pastBlockStart,
+          endTime: pastBlockEnd,
+          block: PlannedBlock(
+            id: 'block-past',
+            categoryId: 'cat-past',
+            startTime: pastBlockStart,
+            endTime: pastBlockEnd,
+          ),
+          categoryId: 'cat-past',
+        ),
+        PlannedTimeSlot(
+          startTime: futureBlockStart,
+          endTime: futureBlockEnd,
+          block: PlannedBlock(
+            id: 'block-future',
+            categoryId: 'cat-future',
+            startTime: futureBlockStart,
+            endTime: futureBlockEnd,
+          ),
+          categoryId: 'cat-future',
+        ),
+      ];
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: plannedSlots,
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-past',
+              categoryId: 'cat-past',
+              startTime: pastBlockStart,
+              endTime: pastBlockEnd,
+            ),
+            PlannedBlock(
+              id: 'block-future',
+              categoryId: 'cat-future',
+              startTime: futureBlockStart,
+              endTime: futureBlockEnd,
+            ),
+          ],
+        ),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, isNull);
+
+      testContainer.dispose();
+    });
+
+    test('returns null when no planned slots exist', () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: [], // No planned slots
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, isNull);
+
+      testContainer.dispose();
+    });
+  });
+}
+
+/// Mock controller that returns fixed unified data for testing.
+class _TestUnifiedController extends UnifiedDailyOsDataController {
+  _TestUnifiedController(this._data);
+
+  final DailyOsData _data;
+
+  @override
+  Future<DailyOsData> build({required DateTime date}) async {
+    return _data;
+  }
 }

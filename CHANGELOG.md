@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.834] - 2026-01-31
+### Changed
+- Daily OS Time Budgets: Redesigned with slim two-row header for reduced vertical space
+  - Row 1: Category name, task completion indicator (count + circular progress ring), expand/collapse toggle
+  - Row 2: Time recorded/planned, fixed-width progress bar, status text
+  - Progress bar uses consistent green/red coloring (not category colors) and aligns in columns
+  - Simplified typography with fewer font size/weight variants
+- Daily OS Focus Mode: Time budget cards auto-collapse based on active time block
+  - When inside a planned block, the matching category stays expanded while others collapse
+  - Helps focus attention on the current activity without manual toggling
+  - Manual expand/collapse still available for any category
+
+### Fixed
+- Daily OS Focus Provider: Fixed Riverpod violation where ref.watch was called inside async loop
+  - Moved dependency watches before async operations to comply with Riverpod rules
+  - Stream properly recreates when selected date or unified data changes
+- Daily OS Timer Updates: Added error handling when refetching data after timer stops
+  - Errors during refetch are now logged instead of being silently swallowed
+  - Matches error handling pattern used elsewhere in the controller
+
 ## [0.9.833] - 2026-01-30
 ### Added
 - Voice Task Priority: Set task priority via voice during audio recordings

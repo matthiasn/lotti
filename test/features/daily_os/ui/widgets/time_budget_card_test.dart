@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,8 +8,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 
 import '../../../../test_helper.dart';
 
@@ -33,6 +37,7 @@ void main() {
     BudgetProgressStatus status = BudgetProgressStatus.underBudget,
     CategoryDefinition? category,
     List<PlannedBlock>? blocks,
+    List<TaskDayProgress>? taskProgressItems,
   }) {
     final effectiveCategory = category ?? testCategory;
     return TimeBudgetProgress(
@@ -42,7 +47,7 @@ void main() {
       recordedDuration: recorded,
       status: status,
       contributingEntries: const [],
-      taskProgressItems: const [],
+      taskProgressItems: taskProgressItems ?? const [],
       blocks: blocks ??
           [
             PlannedBlock(
@@ -55,6 +60,61 @@ void main() {
     );
   }
 
+  TimeBudgetProgress createProgressWithTasks() {
+    return createProgress(
+      taskProgressItems: [
+        TaskDayProgress(
+          task: Task(
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Test Task 1',
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+            ),
+          ),
+          timeSpentOnDay: const Duration(minutes: 30),
+          wasCompletedOnDay: false,
+        ),
+        TaskDayProgress(
+          task: Task(
+            meta: Metadata(
+              id: 'task-2',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Test Task 2',
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              status: TaskStatus.inProgress(
+                id: 'progress-1',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+            ),
+          ),
+          timeSpentOnDay: const Duration(minutes: 45),
+          wasCompletedOnDay: false,
+        ),
+      ],
+    );
+  }
+
   Widget createTestWidget({
     required TimeBudgetProgress progress,
     VoidCallback? onTap,
@@ -64,6 +124,8 @@ void main() {
     return RiverpodWidgetTestBench(
       overrides: [
         highlightedCategoryIdProvider.overrideWith((ref) => null),
+        // Override to avoid TimeService dependency in tests
+        runningTimerCategoryIdProvider.overrideWithValue(null),
         ...overrides,
       ],
       child: TimeBudgetCard(
@@ -84,15 +146,18 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('displays planned duration', (tester) async {
+    testWidgets('displays recorded / planned time', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          progress: createProgress(planned: const Duration(hours: 3)),
+          progress: createProgress(
+            planned: const Duration(hours: 3),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('3 hours planned'), findsOneWidget);
+      // New format shows "recorded / planned" (default recorded is 1h)
+      expect(find.text('1h / 3h'), findsOneWidget);
     });
 
     testWidgets('displays remaining time for under budget', (tester) async {
@@ -210,12 +275,14 @@ void main() {
         createTestWidget(
           progress: createProgress(
             planned: const Duration(hours: 2, minutes: 30),
+            recorded: const Duration(hours: 1, minutes: 15),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('2h 30m planned'), findsOneWidget);
+      // New format shows "recorded / planned"
+      expect(find.text('1h 15m / 2h 30m'), findsOneWidget);
     });
 
     testWidgets('displays minutes only for short planned duration',
@@ -224,12 +291,14 @@ void main() {
         createTestWidget(
           progress: createProgress(
             planned: const Duration(minutes: 45),
+            recorded: const Duration(minutes: 20),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('45 min planned'), findsOneWidget);
+      // New format shows "recorded / planned"
+      expect(find.text('20m / 45m'), findsOneWidget);
     });
 
     testWidgets('shows highlighted border when category is highlighted',
@@ -238,6 +307,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => 'cat-1'),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -257,6 +327,7 @@ void main() {
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
@@ -903,4 +974,684 @@ void main() {
       expect(find.text('P3'), findsOneWidget);
     });
   });
+
+  group('TimeBudgetCard - Running Timer Indicator', () {
+    testWidgets('shows timer icon when timer is running for category',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            // Timer is running for this category
+            runningTimerCategoryIdProvider.overrideWithValue('cat-1'),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show timer icon
+      expect(find.byIcon(Icons.timer), findsOneWidget);
+    });
+
+    testWidgets('does not show timer icon when no timer is running',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show timer icon
+      expect(find.byIcon(Icons.timer), findsNothing);
+    });
+
+    testWidgets('does not show timer icon when timer is for different category',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            // Timer is running for a different category
+            runningTimerCategoryIdProvider.overrideWithValue('other-category'),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgress(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show timer icon for this category
+      expect(find.byIcon(Icons.timer), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Focus State and User Toggle', () {
+    testWidgets('respects isFocusActive for initial expansion state',
+        (tester) async {
+      // When isFocusActive is true, card should be expanded
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithTasks(),
+          overrides: [
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => Stream.value('cat-1'),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tasks should be visible when expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+    });
+
+    testWidgets('collapses when isFocusActive becomes false', (tester) async {
+      final focusController = StreamController<String?>.broadcast();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => focusController.stream,
+            ),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+
+      // Simulate focus changing to a different category
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            activeFocusCategoryIdProvider.overrideWith(
+              (ref) => focusController.stream,
+            ),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should be collapsed now - tasks hidden
+      expect(find.text('Test Task 1'), findsNothing);
+
+      await focusController.close();
+    });
+
+    testWidgets('preserves user toggle when focus changes', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded
+      expect(find.text('Test Task 1'), findsWidgets);
+
+      // User manually collapses by tapping expand/collapse icon
+      final expandIcon = find.byIcon(Icons.keyboard_arrow_up);
+      expect(expandIcon, findsOneWidget);
+      await tester.tap(expandIcon);
+      await tester.pumpAndSettle();
+
+      // Should be collapsed after user toggle
+      expect(find.text('Test Task 1'), findsNothing);
+
+      // Now simulate focus changing (isFocusActive becomes false then true again)
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Bring focus back
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasks(),
+            isFocusActive: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should still be collapsed because user manually toggled
+      expect(find.text('Test Task 1'), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Grid View Mode', () {
+    Task createTaskWithCoverArt({
+      required String id,
+      required String title,
+      String? coverArtId,
+    }) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          categoryId: testCategory.id,
+        ),
+        data: TaskData(
+          title: title,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          coverArtId: coverArtId,
+          statusHistory: const [],
+          status: TaskStatus.inProgress(
+            id: 'status-$id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+    }
+
+    TimeBudgetProgress createProgressWithTasksForGrid({
+      List<TaskDayProgress>? taskItems,
+    }) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: taskItems ??
+            [
+              TaskDayProgress(
+                task: createTaskWithCoverArt(
+                  id: 'task-grid-1',
+                  title: 'Grid Task 1',
+                ),
+                timeSpentOnDay: const Duration(minutes: 30),
+                wasCompletedOnDay: false,
+              ),
+              TaskDayProgress(
+                task: createTaskWithCoverArt(
+                  id: 'task-grid-2',
+                  title: 'Grid Task 2',
+                ),
+                timeSpentOnDay: const Duration(minutes: 45),
+                wasCompletedOnDay: true,
+              ),
+            ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('displays tasks in grid view when view mode is grid',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            // Override view preference to grid mode
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasksForGrid(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Grid view should show GridView widget
+      expect(find.byType(GridView), findsOneWidget);
+      // Task titles should still be visible
+      expect(find.text('Grid Task 1'), findsOneWidget);
+      expect(find.text('Grid Task 2'), findsOneWidget);
+    });
+
+    testWidgets('shows completed checkmark in grid tile', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasksForGrid(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The completed task should show a check icon
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('displays view toggle icon in list mode', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            // Start with list view
+          ],
+          child: TimeBudgetCard(
+            progress: createProgressWithTasksForGrid(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially in list view - should show grid toggle icon
+      expect(find.byType(GridView), findsNothing);
+
+      // Find the view toggle icon (grid_view_rounded in list mode)
+      final toggleIcon = find.byIcon(Icons.grid_view_rounded);
+      expect(toggleIcon, findsOneWidget);
+    });
+  });
+
+  group('TimeBudgetCard - Due Badge Display', () {
+    TaskDayProgress createTaskProgressWithDueStatus({
+      required String id,
+      required String title,
+      required DueDateUrgency urgency,
+    }) {
+      final dueStatus = DueDateStatus(
+        urgency: urgency,
+        daysUntilDue: urgency == DueDateUrgency.overdue ? -1 : 0,
+      );
+      return TaskDayProgress(
+        task: Task(
+          meta: Metadata(
+            id: id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            categoryId: testCategory.id,
+          ),
+          data: TaskData(
+            title: title,
+            dateFrom: testDate,
+            dateTo: testDate,
+            due: testDate,
+            statusHistory: const [],
+            status: TaskStatus.inProgress(
+              id: 'status-$id',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+          ),
+        ),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: false,
+        dueDateStatus: dueStatus,
+      );
+    }
+
+    TimeBudgetProgress createProgressWithDueTasks(DueDateUrgency urgency) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          createTaskProgressWithDueStatus(
+            id: 'task-due',
+            title: 'Due Task',
+            urgency: urgency,
+          ),
+        ],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('shows Due Today badge for due today tasks', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithDueTasks(DueDateUrgency.dueToday),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show the "Due today" badge text (list view)
+      expect(find.text('Due today'), findsOneWidget);
+    });
+
+    testWidgets('shows Overdue badge for overdue tasks', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithDueTasks(DueDateUrgency.overdue),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show the "Overdue" badge text
+      expect(find.text('Overdue'), findsOneWidget);
+    });
+
+    testWidgets('does not show due badge for normal tasks', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithDueTasks(DueDateUrgency.normal),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show any due badge
+      expect(find.text('Due today'), findsNothing);
+      expect(find.text('Overdue'), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Warning Banner', () {
+    TimeBudgetProgress createProgressWithWarning() {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: Duration.zero,
+        recordedDuration: Duration.zero,
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: Task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: testDate,
+                updatedAt: testDate,
+                dateFrom: testDate,
+                dateTo: testDate,
+                categoryId: testCategory.id,
+              ),
+              data: TaskData(
+                title: 'Due Task No Budget',
+                dateFrom: testDate,
+                dateTo: testDate,
+                due: testDate,
+                statusHistory: const [],
+                status: TaskStatus.open(
+                  id: 'status-1',
+                  createdAt: testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            ),
+            timeSpentOnDay: Duration.zero,
+            wasCompletedOnDay: false,
+          ),
+        ],
+        blocks: [],
+        hasNoBudgetWarning: true,
+      );
+    }
+
+    testWidgets('shows warning banner when hasNoBudgetWarning is true',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressWithWarning()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show warning icon
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      // Should show warning message
+      expect(find.text('No time budgeted'), findsOneWidget);
+    });
+
+    testWidgets('does not show warning banner when hasNoBudgetWarning is false',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should not show warning icon
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+    });
+  });
+
+  group('TimeBudgetCard - Grid View with Badges', () {
+    TaskDayProgress createGridTaskProgress({
+      required String id,
+      required String title,
+      TaskPriority priority = TaskPriority.p2Medium,
+      bool isCompleted = false,
+      DueDateUrgency? dueUrgency,
+    }) {
+      final dueStatus = dueUrgency != null
+          ? DueDateStatus(
+              urgency: dueUrgency,
+              daysUntilDue: dueUrgency == DueDateUrgency.overdue ? -1 : 0,
+            )
+          : const DueDateStatus.none();
+      return TaskDayProgress(
+        task: Task(
+          meta: Metadata(
+            id: id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            categoryId: testCategory.id,
+          ),
+          data: TaskData(
+            title: title,
+            dateFrom: testDate,
+            dateTo: testDate,
+            due: dueUrgency != null ? testDate : null,
+            priority: priority,
+            statusHistory: const [],
+            status: isCompleted
+                ? TaskStatus.done(
+                    id: 'status-done-$id',
+                    createdAt: testDate,
+                    utcOffset: 0,
+                  )
+                : TaskStatus.inProgress(
+                    id: 'status-$id',
+                    createdAt: testDate,
+                    utcOffset: 0,
+                  ),
+          ),
+        ),
+        timeSpentOnDay: const Duration(hours: 1),
+        wasCompletedOnDay: isCompleted,
+        dueDateStatus: dueStatus,
+      );
+    }
+
+    TimeBudgetProgress createGridProgress(List<TaskDayProgress> items) {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: items,
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: testCategory.id,
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 11)),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('shows priority badge in grid view for P0 tasks',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createGridProgress([
+              createGridTaskProgress(
+                id: 'task-p0',
+                title: 'P0 Task',
+                priority: TaskPriority.p0Urgent,
+              ),
+            ]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show P0 badge in grid
+      expect(find.text('P0'), findsOneWidget);
+    });
+
+    testWidgets('shows due badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createGridProgress([
+              createGridTaskProgress(
+                id: 'task-due',
+                title: 'Due Task',
+                dueUrgency: DueDateUrgency.dueToday,
+              ),
+            ]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Due" badge in grid (short form)
+      expect(find.text('Due'), findsOneWidget);
+    });
+
+    testWidgets('shows overdue badge in grid view', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createGridProgress([
+              createGridTaskProgress(
+                id: 'task-overdue',
+                title: 'Overdue Task',
+                dueUrgency: DueDateUrgency.overdue,
+              ),
+            ]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Late" badge in grid (short form)
+      expect(find.text('Late'), findsOneWidget);
+    });
+
+    testWidgets('shows all badges stacked for completed overdue P1 task',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            highlightedCategoryIdProvider.overrideWith((ref) => null),
+            runningTimerCategoryIdProvider.overrideWithValue(null),
+            taskViewPreferenceProvider(categoryId: testCategory.id)
+                .overrideWith(_TestTaskViewPreferenceController.new),
+          ],
+          child: TimeBudgetCard(
+            progress: createGridProgress([
+              createGridTaskProgress(
+                id: 'task-complex',
+                title: 'Complex Task',
+                priority: TaskPriority.p1High,
+                isCompleted: true,
+                dueUrgency: DueDateUrgency.overdue,
+              ),
+            ]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show all badges
+      expect(find.byIcon(Icons.check), findsOneWidget); // Completed checkmark
+      expect(find.text('P1'), findsOneWidget); // Priority badge
+      expect(find.text('Late'), findsOneWidget); // Overdue badge
+    });
+  });
+}
+
+/// Test controller that returns grid mode.
+class _TestTaskViewPreferenceController extends TaskViewPreference {
+  @override
+  Future<TaskViewMode> build({required String categoryId}) async {
+    return TaskViewMode.grid;
+  }
 }

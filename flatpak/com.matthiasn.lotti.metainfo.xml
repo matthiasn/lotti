@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.834" date="2026-01-31">
+      <description>
+        <p>Daily OS Time Budgets UI Redesign: Slim two-row header design takes up significantly less vertical space. The first row shows category name with a circular task completion indicator and expand/collapse toggle. The second row displays time recorded vs planned, a fixed-width progress bar (now using consistent green/red colors instead of category colors), and status text. Progress bars align in columns for a cleaner table-like appearance.</p>
+        <p>Focus Mode Auto-Collapse: When you're inside a planned time block, the matching category's budget card stays expanded while other categories automatically collapse. This helps you focus on the current activity without manual toggling. You can still manually expand or collapse any category as needed.</p>
+        <p>Bug Fixes: Fixed a Riverpod state management issue in the focus mode provider that could cause stale data. Added proper error handling when refreshing budget data after a timer stops.</p>
+      </description>
+    </release>
     <release version="0.9.833" date="2026-01-30">
       <description>
         <p>Voice Task Priority: Set task priority via voice during audio recordings. Say things like "priority P1", "this is urgent", or "low priority task" and the AI updates your task priority automatically. Maps spoken terms to priority levels (urgent/critical→P0, high/important→P1, medium/normal→P2, low/minor→P3). Only sets priority when not already explicitly set, preserving your manual edits.</p>

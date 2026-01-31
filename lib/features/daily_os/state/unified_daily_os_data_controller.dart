@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -55,7 +56,18 @@ class DailyOsData {
 class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
   late DateTime _date;
   late DayPlanRepository _dayPlanRepository;
+  late TimeService _timeService;
   StreamSubscription<Set<String>>? _updateSubscription;
+  StreamSubscription<JournalEntity?>? _timerSubscription;
+
+  /// The currently running timer entry with live duration.
+  /// Used to replace stale DB entries when calculating budget progress.
+  JournalEntity? _runningEntry;
+
+  /// Last displayed minute for the running timer (for throttling).
+  /// We only update UI when the minute changes, not every second.
+  int? _lastDisplayedMinute;
+
   bool _isDisposed = false;
 
   @override
@@ -63,6 +75,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     _date = date;
     _isDisposed = false;
     _dayPlanRepository = ref.read(dayPlanRepositoryProvider);
+    _timeService = getIt<TimeService>();
 
     // CRITICAL: Keep alive to prevent disposal when navigating away.
     // This ensures data is fresh when the user returns to the page.
@@ -71,6 +84,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       ..onDispose(() {
         _isDisposed = true;
         _updateSubscription?.cancel();
+        _timerSubscription?.cancel();
       });
 
     // Start listening BEFORE fetch to avoid missing updates during initial load.
@@ -98,6 +112,120 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         );
       }
     });
+
+    // Subscribe to timer updates for live duration tracking.
+    // Throttled to only update when the displayed minute changes.
+    _timerSubscription = _timeService.getStream().listen((entry) {
+      if (_isDisposed) return;
+
+      final previousEntry = _runningEntry;
+      _runningEntry = entry;
+
+      // Timer stopped - always update
+      if (entry == null) {
+        _lastDisplayedMinute = null;
+        _updateWithRunningTimer();
+        return;
+      }
+
+      // Timer just started - always update
+      if (previousEntry == null) {
+        _lastDisplayedMinute = entryDuration(entry).inMinutes;
+        _updateWithRunningTimer();
+        return;
+      }
+
+      // Only update when the minute changes (throttle per-second updates)
+      final currentMinute = entryDuration(entry).inMinutes;
+      if (currentMinute != _lastDisplayedMinute) {
+        _lastDisplayedMinute = currentMinute;
+        _updateWithRunningTimer();
+      }
+    });
+  }
+
+  /// Updates state with the running timer's live duration.
+  ///
+  /// This avoids a full refetch - it just recalculates budget progress
+  /// using the stored running entry's live duration.
+  void _updateWithRunningTimer() {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    // Check if the running entry belongs to this day
+    final runningEntry = _runningEntry;
+    if (runningEntry == null) {
+      // Timer stopped - refetch to get final saved duration
+      _fetchAllData().then((data) {
+        if (_isDisposed) return;
+        // Only update if timer is still stopped (no new timer started during refetch)
+        if (_runningEntry == null) {
+          state = AsyncData(data);
+        }
+      }).catchError((Object e, StackTrace stackTrace) {
+        if (_isDisposed) return;
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'unified_daily_os_data_controller',
+          subDomain: '_updateWithRunningTimer',
+          stackTrace: stackTrace,
+        );
+      });
+      return;
+    }
+
+    // Check if the running entry is for the current day
+    final entryDate = runningEntry.meta.dateFrom.dayAtMidnight;
+    if (entryDate != _date) return;
+
+    // Get the category for this entry (from linkedFrom or entry itself)
+    final linkedFrom = _timeService.linkedFrom;
+    final categoryId =
+        linkedFrom?.meta.categoryId ?? runningEntry.meta.categoryId;
+    if (categoryId == null) return;
+
+    // Find and update the affected budget
+    final updatedBudgets = currentState.budgetProgress.map((budget) {
+      if (budget.categoryId != categoryId) return budget;
+
+      // Recalculate recorded duration with the live entry
+      final updatedEntries = budget.contributingEntries.map((e) {
+        if (e.meta.id == runningEntry.meta.id) {
+          return runningEntry;
+        }
+        return e;
+      }).toList();
+
+      // Check if the running entry is new (not in contributingEntries)
+      final hasRunningEntry = budget.contributingEntries
+          .any((e) => e.meta.id == runningEntry.meta.id);
+      if (!hasRunningEntry) {
+        updatedEntries.add(runningEntry);
+      }
+
+      final recordedDuration = _sumDurations(updatedEntries);
+
+      return TimeBudgetProgress(
+        categoryId: budget.categoryId,
+        category: budget.category,
+        plannedDuration: budget.plannedDuration,
+        recordedDuration: recordedDuration,
+        status: _calculateStatus(budget.plannedDuration, recordedDuration),
+        contributingEntries: updatedEntries,
+        taskProgressItems: budget.taskProgressItems,
+        blocks: budget.blocks,
+        hasNoBudgetWarning: budget.hasNoBudgetWarning,
+      );
+    }).toList();
+
+    state = AsyncData(
+      DailyOsData(
+        date: currentState.date,
+        dayPlan: currentState.dayPlan,
+        timelineData: currentState.timelineData,
+        budgetProgress: updatedBudgets,
+      ),
+    );
   }
 
   Future<DailyOsData> _fetchAllData() async {

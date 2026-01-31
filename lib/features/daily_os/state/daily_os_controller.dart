@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -230,4 +234,86 @@ String? highlightedCategoryId(Ref ref) {
 Set<int> expandedFoldRegions(Ref ref) {
   final controllerAsync = ref.watch(dailyOsControllerProvider);
   return controllerAsync.value?.expandedFoldRegions ?? {};
+}
+
+/// Provides the active focus category ID based on the current time.
+///
+/// Returns the category ID of the planned block that the current time
+/// falls within, or null if there's no active block.
+/// This is used for the "Focus State" feature where non-active categories
+/// are automatically collapsed.
+///
+/// Re-evaluates every 15 seconds to keep the focus state reasonably current
+/// without excessive resource usage.
+@riverpod
+Stream<String?> activeFocusCategoryId(Ref ref) async* {
+  // Watch dependencies at the top (before any yield/await) to comply with
+  // Riverpod's rule that ref.watch must be called synchronously.
+  // When these dependencies change, Riverpod will recreate the stream.
+  final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+
+  // Establish dependency on unified data - when it changes, stream is recreated
+  ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
+
+  while (true) {
+    // Use ref.read inside the loop for fresh data reads
+    final currentUnifiedData = ref.read(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    );
+
+    final result = currentUnifiedData.whenOrNull(
+      data: (data) {
+        final now = DateTime.now();
+
+        // Only show focus state for today
+        if (selectedDate != now.dayAtMidnight) return null;
+
+        // Find the planned block that contains the current time
+        for (final slot in data.timelineData.plannedSlots) {
+          if (!now.isBefore(slot.startTime) && now.isBefore(slot.endTime)) {
+            return slot.categoryId;
+          }
+        }
+
+        return null;
+      },
+    );
+
+    yield result;
+
+    await Future<void>.delayed(const Duration(seconds: 15));
+  }
+}
+
+/// Provides the category ID of the currently running timer.
+///
+/// Returns the category ID (from linkedFrom or the entry itself) when a timer
+/// is actively running, or null when no timer is running.
+/// Used for visual indicators in the UI (e.g., showing a timer icon).
+@riverpod
+class RunningTimerCategoryId extends _$RunningTimerCategoryId {
+  late TimeService _timeService;
+  StreamSubscription<JournalEntity?>? _subscription;
+
+  @override
+  String? build() {
+    _timeService = getIt<TimeService>();
+    ref.onDispose(() => _subscription?.cancel());
+    _listen();
+    return _getCurrentCategoryId();
+  }
+
+  void _listen() {
+    _subscription = _timeService.getStream().listen((_) {
+      state = _getCurrentCategoryId();
+    });
+  }
+
+  String? _getCurrentCategoryId() {
+    final current = _timeService.getCurrent();
+    if (current == null) return null;
+
+    final linkedFrom = _timeService.linkedFrom;
+    return linkedFrom?.meta.categoryId ?? current.meta.categoryId;
+  }
 }
