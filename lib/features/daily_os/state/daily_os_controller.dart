@@ -247,13 +247,21 @@ Set<int> expandedFoldRegions(Ref ref) {
 /// without excessive resource usage.
 @riverpod
 Stream<String?> activeFocusCategoryId(Ref ref) async* {
+  // Watch dependencies at the top (before any yield/await) to comply with
+  // Riverpod's rule that ref.watch must be called synchronously.
+  // When these dependencies change, Riverpod will recreate the stream.
+  final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+
+  // Establish dependency on unified data - when it changes, stream is recreated
+  ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
+
   while (true) {
-    final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final unifiedDataAsync = ref.watch(
+    // Use ref.read inside the loop for fresh data reads
+    final currentUnifiedData = ref.read(
       unifiedDailyOsDataControllerProvider(date: selectedDate),
     );
 
-    final result = unifiedDataAsync.whenOrNull(
+    final result = currentUnifiedData.whenOrNull(
       data: (data) {
         final now = DateTime.now();
 

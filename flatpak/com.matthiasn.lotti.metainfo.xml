@@ -35,6 +35,7 @@
       <description>
         <p>Daily OS Time Budgets UI Redesign: Slim two-row header design takes up significantly less vertical space. The first row shows category name with a circular task completion indicator and expand/collapse toggle. The second row displays time recorded vs planned, a fixed-width progress bar (now using consistent green/red colors instead of category colors), and status text. Progress bars align in columns for a cleaner table-like appearance.</p>
         <p>Focus Mode Auto-Collapse: When you're inside a planned time block, the matching category's budget card stays expanded while other categories automatically collapse. This helps you focus on the current activity without manual toggling. You can still manually expand or collapse any category as needed.</p>
+        <p>Bug Fixes: Fixed a Riverpod state management issue in the focus mode provider that could cause stale data. Added proper error handling when refreshing budget data after a timer stops.</p>
       </description>
     </release>
     <release version="0.9.833" date="2026-01-30">

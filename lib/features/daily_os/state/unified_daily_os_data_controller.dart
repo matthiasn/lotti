@@ -160,6 +160,14 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         if (!_isDisposed) {
           state = AsyncData(data);
         }
+      }).catchError((Object e, StackTrace stackTrace) {
+        if (_isDisposed) return;
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'unified_daily_os_data_controller',
+          subDomain: '_updateWithRunningTimer',
+          stackTrace: stackTrace,
+        );
       });
       return;
     }
