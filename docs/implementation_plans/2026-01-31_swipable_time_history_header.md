@@ -380,8 +380,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           Expanded(
             child: Stack(
               children: [
-                // Stream chart background
+                // Stream chart background - repaint on scroll for smooth animation
                 CustomPaint(
+                  repaint: _scrollController,
                   painter: TimeHistoryChartPainter(
                     data: data,
                     selectedDate: selectedDate,
