@@ -6,13 +6,14 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
-import 'package:lotti/features/daily_os/ui/widgets/day_header.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header.dart';
 
 import '../../../../test_helper.dart';
 
@@ -37,6 +38,38 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
   @override
   Future<DailyOsData> build({required DateTime date}) async {
     return _data;
+  }
+}
+
+/// Mock controller for time history header data.
+class _TestTimeHistoryController extends TimeHistoryHeaderController {
+  _TestTimeHistoryController(this._data);
+
+  final TimeHistoryData _data;
+
+  @override
+  Future<TimeHistoryData> build() async {
+    return _data;
+  }
+}
+
+/// Mock notifier for date selection that tracks selected date.
+class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
+  _TestDailyOsSelectedDate(this._initialDate);
+
+  final DateTime _initialDate;
+
+  @override
+  DateTime build() => _initialDate;
+
+  @override
+  void selectDate(DateTime date) {
+    state = date;
+  }
+
+  @override
+  void goToToday() {
+    state = DateTime.now();
   }
 }
 
@@ -97,9 +130,32 @@ void main() {
       budgetProgress: budgetProgress,
     );
 
+    // Create test history data for the header
+    final historyData = TimeHistoryData(
+      days: [
+        DayTimeSummary(
+          day: DateTime(testDate.year, testDate.month, testDate.day, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+      ],
+      earliestDay: testDate,
+      latestDay: testDate,
+      maxDailyTotal: Duration.zero,
+      categoryOrder: const [],
+      isLoadingMore: false,
+      canLoadMore: true,
+      stackedHeights: const {},
+    );
+
     return RiverpodWidgetTestBench(
       overrides: [
-        dailyOsSelectedDateProvider.overrideWithValue(testDate),
+        dailyOsSelectedDateProvider.overrideWith(
+          () => _TestDailyOsSelectedDate(testDate),
+        ),
+        timeHistoryHeaderControllerProvider.overrideWith(
+          () => _TestTimeHistoryController(historyData),
+        ),
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
@@ -130,11 +186,11 @@ void main() {
       expect(find.byType(Scaffold), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('contains DayHeader', (tester) async {
+    testWidgets('contains TimeHistoryHeader', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(DayHeader), findsOneWidget);
+      expect(find.byType(TimeHistoryHeader), findsOneWidget);
     });
 
     testWidgets('contains DailyTimeline', (tester) async {
