@@ -212,12 +212,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on a day segment (14th)
-      await tester.tap(find.text('14'));
-      await tester.pump();
+      // Initially, day 15 should be selected (has selection border)
+      // Verify day 15 text exists and is styled as selected
+      expect(find.text('15'), findsOneWidget);
 
-      // The tap should trigger the notifier - we verify the interaction
-      // works by checking no errors are thrown
+      // Tap on day 14
+      await tester.tap(find.text('14'));
+      await tester.pumpAndSettle();
+
+      // After tapping, the date label should show January 14
+      // (the _TestDailyOsSelectedDate mock updates state on selectDate)
+      expect(find.textContaining('14'), findsWidgets);
     });
 
     testWidgets('shows selection highlight on selected day', (tester) async {
