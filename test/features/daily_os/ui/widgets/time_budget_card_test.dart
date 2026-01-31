@@ -574,6 +574,46 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
+    testWidgets(
+        'shows faded check_circle for tasks completed on a different day',
+        (tester) async {
+      // Task is done but wasCompletedOnDay is false (completed elsewhere)
+      final task = createTask(
+        id: 'task-1',
+        title: 'Completed Elsewhere Task',
+        status: TaskStatus.done(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      );
+
+      final progress = TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: task,
+            timeSpentOnDay: const Duration(hours: 1),
+            wasCompletedOnDay: false, // Completed on a different day
+          ),
+        ],
+        blocks: const [],
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: progress),
+      );
+      await tester.pumpAndSettle();
+
+      // Should still show check_circle icon (faded)
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    });
+
     testWidgets('does not show check icon for in-progress tasks',
         (tester) async {
       final task = createTask(
@@ -950,7 +990,7 @@ void main() {
       expect(find.text('P1'), findsOneWidget);
     });
 
-    testWidgets('does not show P2 (Medium) priority badge to reduce noise',
+    testWidgets('shows P2 (Medium) priority badge in list view',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -959,8 +999,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // P2 (Medium/default) badge is intentionally hidden to reduce visual noise
-      expect(find.text('P2'), findsNothing);
+      expect(find.text('P2'), findsOneWidget);
     });
 
     testWidgets('shows P3 (Low) priority badge in list view', (tester) async {
