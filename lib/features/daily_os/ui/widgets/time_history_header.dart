@@ -606,22 +606,30 @@ class _DayLabelChip extends StatelessWidget {
 
   final String label;
 
+  // Maximum width to prevent overflow on smaller screens
+  static const double maxWidth = 120;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingMedium,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: context.colorScheme.primaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: context.textTheme.labelMedium?.copyWith(
-          color: context.colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w500,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: maxWidth),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingMedium,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: context.colorScheme.primaryContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: context.textTheme.labelMedium?.copyWith(
+            color: context.colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.w500,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ),
     );

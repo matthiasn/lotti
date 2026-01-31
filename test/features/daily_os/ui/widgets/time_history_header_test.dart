@@ -363,7 +363,7 @@ void main() {
     testWidgets('shows Today button when not viewing today', (tester) async {
       // Use fixed date to avoid flakiness around midnight
       final fixedToday = DateTime(2024, 1, 2, 12); // noon to avoid edge cases
-      final yesterdayMidnight = DateTime(2024, 1, 1); // day before fixedToday
+      final yesterdayMidnight = DateTime(2024); // day before fixedToday
 
       // Mock the clock so _isToday uses our fixed "today"
       await withClock(Clock.fixed(fixedToday), () async {
