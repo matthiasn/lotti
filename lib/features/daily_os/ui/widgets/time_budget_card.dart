@@ -554,14 +554,17 @@ class _StatusText extends StatelessWidget {
 class _TaskProgressRow extends StatelessWidget {
   const _TaskProgressRow({required this.item});
 
+  static const _fadedCheckmarkOpacity = 0.45;
+
   final TaskDayProgress item;
 
   @override
   Widget build(BuildContext context) {
     final task = item.task;
     final isCompletedOnDay = item.wasCompletedOnDay;
-    final isCompletedElsewhere = !isCompletedOnDay &&
-        (task.data.status is TaskDone || task.data.status is TaskRejected);
+    final isTaskDoneOrRejected =
+        task.data.status is TaskDone || task.data.status is TaskRejected;
+    final isCompletedElsewhere = !isCompletedOnDay && isTaskDoneOrRejected;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final statusColor = _getTaskStatusColor(context, task.data.status);
     final checkColor = isLight ? taskStatusDarkGreen : taskStatusGreen;
@@ -585,7 +588,7 @@ class _TaskProgressRow extends StatelessWidget {
               Icon(
                 Icons.check_circle,
                 size: 18,
-                color: checkColor.withValues(alpha: 0.45),
+                color: checkColor.withValues(alpha: _fadedCheckmarkOpacity),
               )
             else
               Container(
