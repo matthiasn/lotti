@@ -1,7 +1,7 @@
 # Swipable Time History Header — Implementation Plan
 
 **Created**: 2026-01-31
-**Status**: Planning
+**Status**: In Progress (Phase 1 Complete)
 **Epic**: Daily Operating System
 **Related Plans**:
 - `2026-01-14_daily_os_implementation_plan.md` — Core Daily OS architecture (DayHeader, providers)
@@ -160,12 +160,12 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
         ? mergedDays.sublist(mergedDays.length - _maxLoadedDays)
         : mergedDays;
 
-    final newMax = _maxDuration(current.maxDailyTotal, additionalData.maxDailyTotal);
+    // Recompute maxDailyTotal from pruned days (handles dropped days)
+    final newMax = _computeMaxFromDays(prunedDays);
 
-    // Recompute ALL stacked heights if max changed (scale consistency)
-    final stackedHeights = newMax != current.maxDailyTotal
-        ? _computeStackedHeights(prunedDays, current.categoryOrder, newMax)
-        : _mergeStackedHeights(current.stackedHeights, additionalData.stackedHeights, prunedDays);
+    // Always recompute stacked heights for scale consistency.
+    // Merging heights from different scales would cause rendering bugs.
+    final stackedHeights = _computeStackedHeights(prunedDays, current.categoryOrder, newMax);
 
     state = AsyncData(current.copyWith(
       days: prunedDays,
@@ -577,23 +577,26 @@ class _DaySegment extends StatelessWidget {
 | `lib/features/daily_os/state/time_history_header_controller.dart` | Controller with data models |
 
 **Tasks**:
-- [ ] Define `DayTimeSummary` and `TimeHistoryData` freezed classes
-- [ ] Implement `TimeHistoryHeaderController` Riverpod provider
-- [ ] Port aggregation logic from `TimeByCategoryController._fetch()` using
+- [x] Define `DayTimeSummary` and `TimeHistoryData` freezed classes
+- [x] Implement `TimeHistoryHeaderController` Riverpod provider
+- [x] Port aggregation logic from `TimeByCategoryController._fetch()` using
       `dayAtNoon` (DST safe) and sparse category maps
-- [ ] Implement batched `linksForEntryIds` and linked-entity lookups
-- [ ] Implement `loadMoreDays()` for incremental backward loading with
-      history window cap (e.g., 180 days)
-- [ ] Subscribe to `UpdateNotifications` via `getIt<UpdateNotifications>()`
-      with throttling
-- [ ] Precompute per-day stacked heights on data changes
-- [ ] Write unit tests for data aggregation
-- [ ] Test incremental loading produces correct date ranges
-- [ ] Test category resolution through entry links
+- [x] Implement batched `linksForEntryIds` and linked-entity lookups
+- [x] Implement `loadMoreDays()` for incremental backward loading with
+      history window cap (180 days)
+- [x] Subscribe to `UpdateNotifications` via `getIt<UpdateNotifications>()`
+      with throttling (5 seconds)
+- [x] Precompute per-day stacked heights on data changes
+- [x] Write unit tests for data aggregation (16 tests)
+- [x] Test incremental loading produces correct date ranges
+- [x] Test category resolution through entry links
+- [x] Add `resetToToday()` for returning to initial view after scrolling far
+- [x] Add sliding window that drops **newest** days when cap is exceeded
 
 **Verification**:
 ```bash
 fvm flutter test test/features/daily_os/state/time_history_header_controller_test.dart
+# All 16 tests pass ✓
 ```
 
 ### Phase 2: Basic UI & Navigation

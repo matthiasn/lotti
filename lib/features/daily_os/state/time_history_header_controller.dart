@@ -497,6 +497,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   }
 
   /// Compute max daily total from a list of day summaries.
+  ///
+  /// Returns [Duration.zero] for empty lists, which is handled downstream
+  /// by `_computeStackedHeights` returning an empty map.
   Duration _computeMaxFromDays(List<DayTimeSummary> days) {
     var max = Duration.zero;
     for (final day in days) {
