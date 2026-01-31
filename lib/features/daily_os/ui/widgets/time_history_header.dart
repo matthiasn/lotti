@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -38,6 +39,10 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   // Track the current prefetch window to avoid redundant work
   int _lastPrefetchStart = -1;
   int _lastPrefetchEnd = -1;
+
+  // Track visible indices for throttling month label updates
+  int _lastVisibleStart = -1;
+  int _lastVisibleEnd = -1;
 
   // Number of days to prefetch in each direction beyond visible
   static const int _prefetchBuffer = 5;
@@ -103,12 +108,21 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Update the visible month label based on scroll position.
+  ///
+  /// Throttled to only recompute when visible indices change.
   void _updateVisibleMonth() {
     final historyData = ref.read(timeHistoryHeaderControllerProvider).value;
     if (historyData == null || historyData.days.isEmpty) return;
     if (!_scrollController.hasClients) return;
 
     final (startIdx, endIdx) = _getVisibleIndices(historyData);
+
+    // Throttle: skip if visible indices haven't changed
+    if (startIdx == _lastVisibleStart && endIdx == _lastVisibleEnd) {
+      return;
+    }
+    _lastVisibleStart = startIdx;
+    _lastVisibleEnd = endIdx;
 
     // Collect unique month/year combinations in visible range
     // Using a map to preserve order and track year
@@ -216,6 +230,36 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     ref.read(dailyOsSelectedDateProvider.notifier).selectDate(date);
   }
 
+  /// Navigate back to today with scroll animation.
+  void _onTodayPressed() {
+    final today = clock.now().dayAtMidnight;
+
+    // Navigate to today immediately
+    ref.read(dailyOsSelectedDateProvider.notifier).goToToday();
+
+    // Animate scroll to today's position (offset 0, since reverse: true)
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+
+    // Check if today is in the data window, if not reset
+    final data = ref.read(timeHistoryHeaderControllerProvider).value;
+    if (data != null) {
+      final todayInWindow =
+          data.days.any((day) => day.day.dayAtMidnight == today);
+      if (!todayInWindow) {
+        ref.read(timeHistoryHeaderControllerProvider.notifier).resetToToday();
+      }
+    }
+
+    // Prefetch today's data in background (fire-and-forget)
+    ref.read(unifiedDailyOsDataControllerProvider(date: today));
+  }
+
   @override
   Widget build(BuildContext context) {
     final historyDataAsync = ref.watch(timeHistoryHeaderControllerProvider);
@@ -256,7 +300,10 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           // Date label row
           SizedBox(
             height: TimeHistoryHeader.dateLabelRowHeight,
-            child: _DateLabelRow(selectedDate: selectedDate),
+            child: _DateLabelRow(
+              selectedDate: selectedDate,
+              onTodayPressed: _onTodayPressed,
+            ),
           ),
         ],
       ),
@@ -442,9 +489,13 @@ class _DaySegment extends StatelessWidget {
 
 /// Date label row at the bottom of the header.
 class _DateLabelRow extends ConsumerWidget {
-  const _DateLabelRow({required this.selectedDate});
+  const _DateLabelRow({
+    required this.selectedDate,
+    required this.onTodayPressed,
+  });
 
   final DateTime selectedDate;
+  final VoidCallback onTodayPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -509,7 +560,7 @@ class _DateLabelRow extends ConsumerWidget {
           if (!_isToday(selectedDate))
             Padding(
               padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
-              child: _TodayButton(selectedDate: selectedDate),
+              child: _TodayButton(onPressed: onTodayPressed),
             ),
         ],
       ),
@@ -622,7 +673,7 @@ class _StatusIndicator extends StatelessWidget {
     if (remaining.inMinutes <= 15 && remaining.inMinutes > 0) {
       return (
         MdiIcons.clockAlert,
-        Colors.orange,
+        syncPendingAccentColor,
         context.messages.dailyOsNearLimit,
       );
     }
@@ -630,7 +681,7 @@ class _StatusIndicator extends StatelessWidget {
     if (stats.progressFraction >= 0.8) {
       return (
         MdiIcons.checkCircle,
-        Colors.green,
+        successColor,
         context.messages.dailyOsOnTrack,
       );
     }
@@ -655,35 +706,15 @@ class _StatusIndicator extends StatelessWidget {
 }
 
 /// Button to navigate back to today.
-class _TodayButton extends ConsumerWidget {
-  const _TodayButton({required this.selectedDate});
+class _TodayButton extends StatelessWidget {
+  const _TodayButton({required this.onPressed});
 
-  final DateTime selectedDate;
+  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return TextButton.icon(
-      onPressed: () {
-        final today = clock.now().dayAtMidnight;
-
-        // Navigate to today immediately (don't wait for prefetch)
-        ref.read(dailyOsSelectedDateProvider.notifier).goToToday();
-
-        // Check if today is in the data window, if not reset
-        ref.read(timeHistoryHeaderControllerProvider).whenData((data) {
-          final todayInWindow = data.days
-              .any((day) => day.day.dayAtMidnight == today.dayAtMidnight);
-          if (!todayInWindow) {
-            ref
-                .read(timeHistoryHeaderControllerProvider.notifier)
-                .resetToToday();
-          }
-        });
-
-        // Prefetch today's data in background (fire-and-forget)
-        // This warms the cache but doesn't block navigation
-        ref.read(unifiedDailyOsDataControllerProvider(date: today));
-      },
+      onPressed: onPressed,
       icon: Icon(
         MdiIcons.calendarToday,
         size: 16,
