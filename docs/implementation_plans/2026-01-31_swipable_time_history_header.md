@@ -13,7 +13,7 @@
 
 ## Executive Summary
 
-Replace the current static `DayHeader` widget with a **swipable time history header** containing horizontally scrollable day segments with an integrated **stream chart visualization**. This provides an immediate visual "DNA" of time allocation across days, enabling intuitive navigation through time while showing category distribution patterns at a glance.
+Replace the current static `DayHeader` widget with a **swipable time history header** containing horizontally scrollable day segments with an integrated **stream chart visualization**. This provides an immediate visual "DNA" of time allocation across days, enabling intuitive navigation through time while showing category distribution patterns at a glance, with a hard requirement of **silky-smooth scrolling**.
 
 **Key Innovation**: The stream chart flows continuously across day boundaries as a background layer, while each day segment remains clickable for selection. This transforms navigation from discrete arrow-taps to fluid exploration.
 
@@ -87,28 +87,27 @@ Create a header that:
 @freezed
 class DayTimeSummary with _$DayTimeSummary {
   const factory DayTimeSummary({
-    required DateTime date,
-    required Map<String, Duration> durationByCategory,  // categoryId -> duration
+    required DateTime day, // date at local noon, avoids DST artifacts
+    required Map<String?, Duration> durationByCategoryId, // categoryId -> duration
+    required Duration total,
   }) = _DayTimeSummary;
 
   const DayTimeSummary._();
 
-  Duration get totalDuration => durationByCategory.values.fold(
-    Duration.zero,
-    (sum, d) => sum + d,
-  );
+  Duration get totalDuration => total;
 }
 
 /// Aggregated data for the time history header visualization.
 @freezed
 class TimeHistoryData with _$TimeHistoryData {
   const factory TimeHistoryData({
-    required List<DayTimeSummary> days,        // Ordered newest to oldest
-    required DateTime earliestDate,
-    required DateTime latestDate,
-    required Duration maxDailyTotal,           // For Y-axis normalization
-    required List<String> categoryOrder,       // Consistent stacking order
+    required List<DayTimeSummary> days,  // Ordered newest to oldest
+    required DateTime earliestDay,
+    required DateTime latestDay,
+    required Duration maxDailyTotal,     // For Y-axis normalization
+    required List<String> categoryOrder, // Consistent stacking order
     required bool isLoadingMore,
+    required bool canLoadMore,
   }) = _TimeHistoryData;
 }
 ```
@@ -123,12 +122,13 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   static const int _initialDays = 30;
   static const int _loadMoreDays = 14;
   static const double _loadThreshold = 0.8;  // 80% scroll position triggers load
+  static const int _maxLoadedDays = 180;     // Cap to keep memory/paint bounded
 
   @override
   Future<TimeHistoryData> build() async {
-    // Subscribe to database updates for live refresh
-    final updateNotifications = ref.watch(updateNotificationsProvider);
-    ref.listen(updateNotifications, (_, __) => _invalidateIfNeeded());
+    // Subscribe to database updates for live refresh.
+    // Use UpdateNotifications directly (no provider in codebase).
+    _listenToUpdates();
 
     return _fetchInitialData();
   }
@@ -146,23 +146,34 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
 
-    final newEarliest = current.earliestDate.subtract(Duration(days: _loadMoreDays));
+    final newEarliest =
+        current.earliestDay.subtract(const Duration(days: _loadMoreDays));
     final additionalData = await _fetchDataForRange(
       newEarliest,
-      current.earliestDate.subtract(const Duration(days: 1)),
+      current.earliestDay.subtract(const Duration(days: 1)),
     );
 
     // Merge with existing data
-    state = AsyncData(current.copyWith(
-      days: [...current.days, ...additionalData.days],
-      earliestDate: newEarliest,
-      maxDailyTotal: _max(current.maxDailyTotal, additionalData.maxDailyTotal),
-      isLoadingMore: false,
-    ));
+    final mergedDays = [...current.days, ...additionalData.days];
+    final prunedDays = mergedDays.length > _maxLoadedDays
+        ? mergedDays.sublist(0, _maxLoadedDays)
+        : mergedDays;
+    state = AsyncData(
+      current.copyWith(
+        days: prunedDays,
+        earliestDay: newEarliest,
+        maxDailyTotal: _max(
+          current.maxDailyTotal,
+          additionalData.maxDailyTotal,
+        ),
+        isLoadingMore: false,
+        canLoadMore: additionalData.days.isNotEmpty,
+      ),
+    );
   }
 
   Future<TimeHistoryData> _fetchDataForRange(DateTime start, DateTime end) async {
-    final db = ref.read(journalDbProvider);
+    final db = getIt<JournalDb>();
 
     // Query calendar entries for the range
     final entries = await db.sortedCalendarEntries(
@@ -172,7 +183,7 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
     // Resolve category links
     final entryIds = entries.map((e) => e.meta.id).toSet();
-    final links = await db.linksForEntryIds(entryIds);
+    final links = await _batchedLinksForEntryIds(entryIds);
 
     // Aggregate by day and category (adapted from TimeByCategoryController)
     return _aggregateEntries(entries, links, start, end);
@@ -189,6 +200,8 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 - Paint stacked areas with smooth curves between days using quadratic Bezier
 - Stack categories symmetrically around center baseline (mirrored stream chart effect)
 - Normalize Y-axis based on `maxDailyTotal` across visible range
+- Precompute stacked heights per day on data changes; avoid per-frame recompute
+- Repaint on scroll with a `Listenable` (`repaint: _scrollController`)
 
 ```dart
 class TimeHistoryChartPainter extends CustomPainter {
@@ -199,7 +212,7 @@ class TimeHistoryChartPainter extends CustomPainter {
     required this.dayWidth,
     required this.visibleDayCount,
     required this.scrollOffset,
-  });
+  }) : super(repaint: repaint);
 
   final TimeHistoryData data;
   final DateTime selectedDate;
@@ -510,6 +523,29 @@ class _DaySegment extends StatelessWidget {
 
 ---
 
+## Performance Budget & Smoothness Guarantees
+
+**Hard requirements**
+- **No DB work on scroll**: all queries happen off the scroll path.
+- **Paint only visible days**: O(V * C) per frame, V = visible segments.
+- **Precompute geometry**: stack heights per day when data changes, not per frame.
+- **Repaint without rebuild**: use `CustomPaint(repaint: _scrollController)` or
+  `ListenableBuilder` so scroll updates invalidate paint only.
+- **Bounded memory**: cap loaded history window (e.g., 180 days).
+- **Throttle update stream**: avoid frequent rebuilds from notifications.
+
+**Big-O targets**
+- Initial/LoadMore aggregation: **O(E + L + D)** time, **O(D * C_nonzero)** memory
+- Scroll paint: **O(V * C)** per frame (constant in practice)
+- UI interactions: **O(1)** per event
+
+**DB load strategy**
+- Batch `linksForEntryIds` and linked entity lookups to avoid SQLite variable limits.
+- Keep ranges small (initial 30 days, increment 14 days).
+- Consider `Isolate.run` for aggregation if entry count spikes.
+
+---
+
 ## Implementation Phases
 
 ### Phase 1: Data Layer & Logic
@@ -524,9 +560,14 @@ class _DaySegment extends StatelessWidget {
 **Tasks**:
 - [ ] Define `DayTimeSummary` and `TimeHistoryData` freezed classes
 - [ ] Implement `TimeHistoryHeaderController` Riverpod provider
-- [ ] Port aggregation logic from `TimeByCategoryController._fetch()`
-- [ ] Implement `loadMoreDays()` for incremental backward loading
-- [ ] Subscribe to `UpdateNotifications` for live updates
+- [ ] Port aggregation logic from `TimeByCategoryController._fetch()` using
+      `dayAtNoon` (DST safe) and sparse category maps
+- [ ] Implement batched `linksForEntryIds` and linked-entity lookups
+- [ ] Implement `loadMoreDays()` for incremental backward loading with
+      history window cap (e.g., 180 days)
+- [ ] Subscribe to `UpdateNotifications` via `getIt<UpdateNotifications>()`
+      with throttling
+- [ ] Precompute per-day stacked heights on data changes
 - [ ] Write unit tests for data aggregation
 - [ ] Test incremental loading produces correct date ranges
 - [ ] Test category resolution through entry links
@@ -559,6 +600,7 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 - [ ] Add day segment tap handling → update `dailyOsSelectedDateProvider`
 - [ ] Add date label row with full date text
 - [ ] Add "Today" button with scroll-to-today animation
+- [ ] Preserve existing day label chip, status indicator, and date picker tap
 - [ ] Add loading skeleton for initial data fetch
 - [ ] Preserve existing status indicator (on track / near limit / over budget)
 - [ ] Write widget tests for scroll behavior and day selection
@@ -591,6 +633,7 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 - [ ] Add subtle day boundary separators
 - [ ] Write golden tests comparing rendered output
 - [ ] Test with varying data densities (empty days, heavy days)
+- [ ] Ensure scroll-driven repaint is paint-only (no rebuilds)
 
 **Verification**:
 - Run app, navigate to Daily OS tab
@@ -610,18 +653,15 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 - [ ] Ensure accessibility: semantic labels, adequate tap targets (≥48px)
 - [ ] Add haptic feedback on day selection (iOS)
 - [ ] Performance optimization: cache category colors lookup
-- [ ] Remove or deprecate `TimeByCategoryChart` and `TimeByCategoryController`
-- [ ] Update any remaining references to the old chart
+- [ ] Confirm no UI thread work on scroll; move heavy aggregation to isolate if needed
+- [ ] Calendar chart removal is a separate feature-level change (dependency);
+      do not delete `time_by_category_*` until Calendar is redesigned
 - [ ] Full test suite verification
 - [ ] Manual testing on multiple screen sizes
+- [ ] Update `CHANGELOG.md` and `flatpak/com.matthiasn.lotti.metainfo.xml`
 
 **Files to Remove (after verification)**:
-| File | Reason |
-|------|--------|
-| `lib/features/calendar/ui/widgets/time_by_category_chart.dart` | Replaced by new header |
-| `lib/features/calendar/state/time_by_category_controller.dart` | Logic moved to new controller |
-| `lib/features/calendar/ui/widgets/time_by_category_chart_card.dart` | Dashboard wrapper no longer needed |
-| `lib/features/calendar/ui/widgets/time_by_category_chart_legend.dart` | Legend integrated differently |
+- None in this phase. Calendar chart removal needs a separate plan.
 
 **Verification**:
 ```bash
@@ -642,6 +682,7 @@ fvm flutter test
 | **Load increment** | 14 days | Balances UX smoothness against database queries |
 | **Load threshold** | 80% scroll position | Provides buffer for smooth infinite scroll |
 | **Y-axis normalization** | Max daily total across loaded range | Consistent scale for comparison |
+| **History cap** | 180 days (configurable) | Keeps paint + memory bounded |
 
 ---
 
@@ -688,10 +729,10 @@ group('TimeHistoryChartPainter', () {
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
 | Scroll position jump when loading more | Medium | Medium | Calculate offset adjustment after insert |
-| Performance with large date ranges | Low | Medium | Limit loaded range; implement cache eviction |
+| Performance with large date ranges | Medium | Medium | Cap history window; precompute geometry; isolate if needed |
 | Category color inconsistency | Low | Low | Use `EntitiesCacheService` consistently |
 | Complex position calculations | Medium | Medium | Thorough unit tests for coordinate math |
-| Animation jank during scroll | Low | Low | Use hardware-accelerated painting |
+| Animation jank during scroll | Medium | High | Paint-only scroll invalidation; avoid rebuilds; RepaintBoundary |
 
 ---
 
@@ -702,7 +743,7 @@ group('TimeHistoryChartPainter', () {
 3. **Visual**: Stream chart renders with category colors flowing across days
 4. **Selection**: Tapping a day segment selects it and updates the main view
 5. **Performance**: 60fps maintained during scrolling
-6. **Cleanup**: Old `TimeByCategoryChart` removed; no dead code
+6. **Cleanup**: Daily OS header fully replaced; no dead code in Daily OS
 7. **Tests**: All new code covered by unit and widget tests
 
 ---
