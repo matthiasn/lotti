@@ -452,6 +452,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   ///
   /// For each day and category, computes the cumulative height of all
   /// categories below it in the stack order.
+  ///
+  /// Uses microseconds for precision - inMinutes truncates durations < 60s to 0,
+  /// which would cause divide-by-zero or incorrect scaling.
   StackedHeights _computeStackedHeights(
     List<DayTimeSummary> days,
     List<String> categoryOrder,
@@ -461,7 +464,14 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       return {};
     }
 
-    final maxMinutes = maxTotal.inMinutes.toDouble();
+    final maxMicroseconds = maxTotal.inMicroseconds.toDouble();
+
+    // Guard against zero after conversion (shouldn't happen if maxTotal > zero,
+    // but defensive against edge cases)
+    if (maxMicroseconds == 0) {
+      return {};
+    }
+
     final result = <DateTime, Map<String?, double>>{};
 
     for (final day in days) {
@@ -471,9 +481,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       // Stack in category order
       for (final categoryId in categoryOrder) {
         heights[categoryId] = cumulative;
-        final minutes =
-            (day.durationByCategoryId[categoryId]?.inMinutes ?? 0).toDouble();
-        cumulative += minutes / maxMinutes;
+        final microseconds =
+            (day.durationByCategoryId[categoryId]?.inMicroseconds ?? 0)
+                .toDouble();
+        cumulative += microseconds / maxMicroseconds;
       }
 
       // Handle uncategorized (null key) at the top
