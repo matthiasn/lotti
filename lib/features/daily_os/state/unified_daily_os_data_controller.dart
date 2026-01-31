@@ -157,7 +157,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     if (runningEntry == null) {
       // Timer stopped - refetch to get final saved duration
       _fetchAllData().then((data) {
-        if (!_isDisposed) {
+        if (_isDisposed) return;
+        // Only update if timer is still stopped (no new timer started during refetch)
+        if (_runningEntry == null) {
           state = AsyncData(data);
         }
       }).catchError((Object e, StackTrace stackTrace) {
