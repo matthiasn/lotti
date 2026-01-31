@@ -902,6 +902,242 @@ void main() {
 
       testContainer.dispose();
     });
+
+    test('returns category ID when current time is within a planned block',
+        () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      // Create a planned block that contains the current time
+      final blockStart = now.subtract(const Duration(minutes: 30));
+      final blockEnd = now.add(const Duration(minutes: 30));
+
+      final plannedSlots = [
+        PlannedTimeSlot(
+          startTime: blockStart,
+          endTime: blockEnd,
+          block: PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-work',
+            startTime: blockStart,
+            endTime: blockEnd,
+          ),
+          categoryId: 'cat-work',
+        ),
+      ];
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: plannedSlots,
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: blockStart,
+              endTime: blockEnd,
+            ),
+          ],
+        ),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, equals('cat-work'));
+
+      testContainer.dispose();
+    });
+
+    test('returns null when no planned block contains current time', () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      // Create planned blocks that do NOT contain the current time
+      final pastBlockEnd = now.subtract(const Duration(hours: 2));
+      final pastBlockStart = now.subtract(const Duration(hours: 3));
+      final futureBlockStart = now.add(const Duration(hours: 1));
+      final futureBlockEnd = now.add(const Duration(hours: 2));
+
+      final plannedSlots = [
+        PlannedTimeSlot(
+          startTime: pastBlockStart,
+          endTime: pastBlockEnd,
+          block: PlannedBlock(
+            id: 'block-past',
+            categoryId: 'cat-past',
+            startTime: pastBlockStart,
+            endTime: pastBlockEnd,
+          ),
+          categoryId: 'cat-past',
+        ),
+        PlannedTimeSlot(
+          startTime: futureBlockStart,
+          endTime: futureBlockEnd,
+          block: PlannedBlock(
+            id: 'block-future',
+            categoryId: 'cat-future',
+            startTime: futureBlockStart,
+            endTime: futureBlockEnd,
+          ),
+          categoryId: 'cat-future',
+        ),
+      ];
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: plannedSlots,
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-past',
+              categoryId: 'cat-past',
+              startTime: pastBlockStart,
+              endTime: pastBlockEnd,
+            ),
+            PlannedBlock(
+              id: 'block-future',
+              categoryId: 'cat-future',
+              startTime: futureBlockStart,
+              endTime: futureBlockEnd,
+            ),
+          ],
+        ),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, isNull);
+
+      testContainer.dispose();
+    });
+
+    test('returns null when no planned slots exist', () async {
+      final now = DateTime.now();
+      final today = now.dayAtMidnight;
+
+      final timelineData = DailyTimelineData(
+        date: today,
+        plannedSlots: [], // No planned slots
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      final testData = DailyOsData(
+        date: today,
+        dayPlan: createTestPlan(),
+        timelineData: timelineData,
+        budgetProgress: [],
+      );
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(today),
+          unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+            () => _TestUnifiedController(testData),
+          ),
+        ],
+      );
+
+      // Wait for the unified data to be loaded first
+      await testContainer
+          .read(unifiedDailyOsDataControllerProvider(date: today).future);
+
+      // Use a completer to wait for the first data emission
+      final completer = Completer<String?>();
+      testContainer.listen<AsyncValue<String?>>(
+        activeFocusCategoryIdProvider,
+        (previous, next) {
+          if (next.hasValue && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        },
+        fireImmediately: true,
+      );
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+
+      expect(result, isNull);
+
+      testContainer.dispose();
+    });
   });
 }
 
