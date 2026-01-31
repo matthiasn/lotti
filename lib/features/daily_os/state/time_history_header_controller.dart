@@ -156,7 +156,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   Future<TimeHistoryData> _fetchInitialData() async {
     // Using clock.now() for testability - can be mocked with withClock()
     final today = clock.now().dayAtMidnight;
-    final startDate = today.subtract(const Duration(days: _initialDays - 1));
+    // Use calendar arithmetic (day - n) instead of Duration subtraction
+    // to avoid DST artifacts when crossing daylight saving transitions.
+    final startDate =
+        DateTime(today.year, today.month, today.day - (_initialDays - 1));
     return _fetchDataForRange(startDate, today);
   }
 
@@ -174,12 +177,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
     try {
       // Compute range for new data: from (earliest - loadMoreDays) to (earliest - 1 day)
-      // Use dayAtMidnight for DB query boundaries
-      final currentEarliestMidnight = current.earliestDay.dayAtMidnight;
-      final newRangeEnd =
-          currentEarliestMidnight.subtract(const Duration(days: 1));
-      final newRangeStart =
-          currentEarliestMidnight.subtract(const Duration(days: _loadMoreDays));
+      // Use calendar arithmetic (day - n) instead of Duration subtraction
+      // to avoid DST artifacts when crossing daylight saving transitions.
+      final e = current.earliestDay;
+      final newRangeEnd = DateTime(e.year, e.month, e.day - 1);
+      final newRangeStart = DateTime(e.year, e.month, e.day - _loadMoreDays);
 
       final additionalData = await _fetchDataForRange(
         newRangeStart,
@@ -361,18 +363,20 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     DateTime start,
     DateTime end,
   ) {
-    // Normalize to midnight for consistent day counting
-    final startMidnight = start.dayAtMidnight;
-    final endMidnight = end.dayAtMidnight;
-
-    // Initialize day buckets using noon representation
-    final dayCount = endMidnight.difference(startMidnight).inDays + 1;
+    // Calculate day count using UTC dates to avoid DST artifacts.
+    // Local DateTime.difference().inDays is unreliable across DST boundaries
+    // because days can be 23 or 25 hours. UTC dates have consistent 24-hour days.
+    final startUtc = DateTime.utc(start.year, start.month, start.day);
+    final endUtc = DateTime.utc(end.year, end.month, end.day);
+    final dayCount = endUtc.difference(startUtc).inDays + 1;
     final data = <DateTime, Map<String?, Duration>>{};
 
+    // Use calendar arithmetic (day - i) at noon to avoid DST artifacts.
+    // This is the proven pattern from time_by_category_controller.dart:getDaysAtNoon()
+    final endNoon = end.dayAtNoon;
     for (var i = 0; i < dayCount; i++) {
-      // Generate each day at noon, going backwards from end date
-      final dayMidnight = endMidnight.subtract(Duration(days: i));
-      final dayNoon = dayMidnight.dayAtNoon;
+      final dayNoon =
+          DateTime(endNoon.year, endNoon.month, endNoon.day - i, 12);
       data[dayNoon] = <String?, Duration>{};
     }
 

@@ -901,4 +901,331 @@ void main() {
       });
     });
   });
+
+  // DST boundary tests verify that calendar arithmetic produces correct unique days
+  // regardless of timezone. The calendar arithmetic approach (DateTime(y, m, d - n))
+  // and UTC-based day counting are inherently DST-safe because they operate on
+  // date components, not durations.
+  //
+  // NOTE: These tests verify algorithmic correctness, not that DST transitions
+  // actually occur in the test environment. They will pass in UTC or non-DST
+  // timezones, which is intentional - the algorithm should produce correct
+  // calendar days regardless of the system timezone. The EU DST test (March 29)
+  // caught a real bug where difference().inDays on local times gave wrong results
+  // when DST was observed, proving the tests' value even if DST isn't active
+  // in every CI environment.
+  //
+  // To test with DST active: TZ=America/New_York flutter test <this_file>
+  // To test with EU DST active: TZ=Europe/Berlin flutter test <this_file>
+  group('DST boundary tests', () {
+    late ProviderContainer container;
+    late MockJournalDb mockDb;
+    late MockUpdateNotifications mockUpdateNotifications;
+    late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockLoggingService mockLoggingService;
+    late StreamController<Set<String>> updateStreamController;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+      mockUpdateNotifications = MockUpdateNotifications();
+      mockEntitiesCacheService = MockEntitiesCacheService();
+      mockLoggingService = MockLoggingService();
+      updateStreamController = StreamController<Set<String>>.broadcast();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => updateStreamController.stream);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+
+      getIt
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LoggingService>(mockLoggingService);
+
+      container = ProviderContainer();
+    });
+
+    tearDown(() {
+      container.dispose();
+      updateStreamController.close();
+      getIt.reset();
+    });
+
+    test('generates correct days across US DST spring forward (March 8, 2026)',
+        () async {
+      // US DST spring forward: clocks jump 2:00 AM -> 3:00 AM on March 8, 2026
+      // Testing from March 10 to ensure the DST day (March 8) is within range.
+      // With 30 days back from March 10, we cover Feb 9 - March 10, including
+      // the March 8 DST transition.
+      final dstDay = DateTime(2026, 3, 10, 12);
+      final fixedClock = Clock.fixed(dstDay);
+
+      await withClock(fixedClock, () async {
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        final result =
+            await container.read(timeHistoryHeaderControllerProvider.future);
+
+        // Should have exactly 30 unique days
+        expect(result.days.length, equals(30));
+
+        // Extract day numbers to verify uniqueness
+        final dayDates = result.days
+            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
+        final uniqueDates = dayDates.toSet();
+        expect(
+          uniqueDates.length,
+          equals(30),
+          reason: 'All 30 days should be unique (no duplicates from DST)',
+        );
+
+        // Verify March 8 (DST day) is present exactly once
+        final march8Count =
+            result.days.where((d) => d.day.month == 3 && d.day.day == 8).length;
+        expect(
+          march8Count,
+          equals(1),
+          reason: 'March 8 (DST spring forward day) should appear exactly once',
+        );
+
+        // Verify all days are at noon
+        for (final day in result.days) {
+          expect(day.day.hour, equals(12),
+              reason: 'All days should be at noon');
+        }
+      });
+    });
+
+    test('generates correct days across US DST fall back (November 1, 2026)',
+        () async {
+      // US DST fall back: clocks fall 2:00 AM -> 1:00 AM on November 1, 2026
+      // Testing from November 3 to ensure the DST day (November 1) is within range.
+      final dstDay = DateTime(2026, 11, 3, 12);
+      final fixedClock = Clock.fixed(dstDay);
+
+      await withClock(fixedClock, () async {
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        final result =
+            await container.read(timeHistoryHeaderControllerProvider.future);
+
+        // Should have exactly 30 unique days
+        expect(result.days.length, equals(30));
+
+        // Extract day numbers to verify uniqueness
+        final dayDates = result.days
+            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
+        final uniqueDates = dayDates.toSet();
+        expect(
+          uniqueDates.length,
+          equals(30),
+          reason: 'All 30 days should be unique (no duplicates from DST)',
+        );
+
+        // Verify November 1 (DST day) is present exactly once
+        final nov1Count = result.days
+            .where((d) => d.day.month == 11 && d.day.day == 1)
+            .length;
+        expect(
+          nov1Count,
+          equals(1),
+          reason: 'November 1 (DST fall back day) should appear exactly once',
+        );
+
+        // Verify all days are at noon
+        for (final day in result.days) {
+          expect(day.day.hour, equals(12),
+              reason: 'All days should be at noon');
+        }
+      });
+    });
+
+    test('loadMoreDays produces exact day count near US DST transition',
+        () async {
+      // Test that loadMoreDays produces exactly 44 days (30 initial + 14 more)
+      // even when crossing US DST boundary.
+      final dstDay = DateTime(2026, 3, 10, 12);
+      final fixedClock = Clock.fixed(dstDay);
+
+      await withClock(fixedClock, () async {
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        // Initial load
+        await container.read(timeHistoryHeaderControllerProvider.future);
+
+        // Load more days
+        final notifier =
+            container.read(timeHistoryHeaderControllerProvider.notifier);
+        await notifier.loadMoreDays();
+
+        final result =
+            container.read(timeHistoryHeaderControllerProvider).value!;
+
+        // Should have exactly 44 unique days (30 + 14)
+        expect(result.days.length, equals(44));
+
+        // Verify all days are unique
+        final dayDates = result.days
+            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
+        final uniqueDates = dayDates.toSet();
+        expect(
+          uniqueDates.length,
+          equals(44),
+          reason: 'All 44 days should be unique after loadMoreDays',
+        );
+
+        // Verify days are properly ordered (newest to oldest)
+        for (var i = 0; i < result.days.length - 1; i++) {
+          expect(
+            result.days[i].day.isAfter(result.days[i + 1].day),
+            isTrue,
+            reason: 'Days should be sorted newest to oldest',
+          );
+        }
+      });
+    });
+
+    test('generates correct days across EU DST spring forward (March 29, 2026)',
+        () async {
+      // EU DST spring forward: clocks jump 2:00 AM -> 3:00 AM on last Sunday
+      // in March (March 29, 2026).
+      // Testing from March 31 to ensure the DST day is within range.
+      final dstDay = DateTime(2026, 3, 31, 12);
+      final fixedClock = Clock.fixed(dstDay);
+
+      await withClock(fixedClock, () async {
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        final result =
+            await container.read(timeHistoryHeaderControllerProvider.future);
+
+        // Should have exactly 30 unique days
+        expect(result.days.length, equals(30));
+
+        // Extract day numbers to verify uniqueness
+        final dayDates = result.days
+            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
+        final uniqueDates = dayDates.toSet();
+        expect(
+          uniqueDates.length,
+          equals(30),
+          reason: 'All 30 days should be unique (no duplicates from EU DST)',
+        );
+
+        // Verify March 29 (EU DST day) is present exactly once
+        final march29Count = result.days
+            .where((d) => d.day.month == 3 && d.day.day == 29)
+            .length;
+        expect(
+          march29Count,
+          equals(1),
+          reason:
+              'March 29 (EU DST spring forward day) should appear exactly once',
+        );
+
+        // Verify all days are at noon
+        for (final day in result.days) {
+          expect(day.day.hour, equals(12),
+              reason: 'All days should be at noon');
+        }
+      });
+    });
+
+    test('generates correct days across EU DST fall back (October 25, 2026)',
+        () async {
+      // EU DST fall back: clocks fall 3:00 AM -> 2:00 AM on last Sunday
+      // in October (October 25, 2026).
+      // Testing from October 27 to ensure the DST day is within range.
+      final dstDay = DateTime(2026, 10, 27, 12);
+      final fixedClock = Clock.fixed(dstDay);
+
+      await withClock(fixedClock, () async {
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        final result =
+            await container.read(timeHistoryHeaderControllerProvider.future);
+
+        // Should have exactly 30 unique days
+        expect(result.days.length, equals(30));
+
+        // Extract day numbers to verify uniqueness
+        final dayDates = result.days
+            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
+        final uniqueDates = dayDates.toSet();
+        expect(
+          uniqueDates.length,
+          equals(30),
+          reason: 'All 30 days should be unique (no duplicates from EU DST)',
+        );
+
+        // Verify October 25 (EU DST day) is present exactly once
+        final oct25Count = result.days
+            .where((d) => d.day.month == 10 && d.day.day == 25)
+            .length;
+        expect(
+          oct25Count,
+          equals(1),
+          reason:
+              'October 25 (EU DST fall back day) should appear exactly once',
+        );
+
+        // Verify all days are at noon
+        for (final day in result.days) {
+          expect(day.day.hour, equals(12),
+              reason: 'All days should be at noon');
+        }
+      });
+    });
+  });
 }

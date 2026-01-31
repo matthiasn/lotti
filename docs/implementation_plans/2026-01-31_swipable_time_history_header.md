@@ -1,7 +1,7 @@
 # Swipable Time History Header — Implementation Plan
 
 **Created**: 2026-01-31
-**Status**: In Progress (Phase 1 Complete)
+**Status**: In Progress (Phase 1 Complete, Phase 1b Complete)
 **Epic**: Daily Operating System
 **Related Plans**:
 - `2026-01-14_daily_os_implementation_plan.md` — Core Daily OS architecture (DayHeader, providers)
@@ -97,6 +97,10 @@ class DayTimeSummary with _$DayTimeSummary {
   Duration get totalDuration => total;
 }
 
+/// Precomputed stacked heights for efficient painting.
+/// Maps category ID to its cumulative height (sum of lower categories).
+typedef StackedHeights = Map<DateTime, Map<String?, double>>;
+
 /// Aggregated data for the time history header visualization.
 @freezed
 class TimeHistoryData with _$TimeHistoryData {
@@ -108,6 +112,7 @@ class TimeHistoryData with _$TimeHistoryData {
     required List<String> categoryOrder, // Consistent stacking order
     required bool isLoadingMore,
     required bool canLoadMore,
+    required StackedHeights stackedHeights, // Precomputed heights for rendering
   }) = _TimeHistoryData;
 }
 ```
@@ -599,6 +604,77 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 # All 16 tests pass ✓
 ```
 
+### Phase 1b: DST-Safe Calendar Arithmetic
+
+**Goal**: Fix Duration-based date arithmetic that's unsafe across DST transitions.
+
+**Problem**: The current implementation uses `Duration` subtraction which can skip/duplicate days around DST transitions:
+- `today.subtract(Duration(days: n))` - subtracts 24h durations, not calendar days
+- `difference.inDays` followed by `Duration(days: i)` loop - same issue
+
+**Proven Pattern**: `getDaysAtNoon()` in `time_by_category_controller.dart:205-217` uses calendar arithmetic:
+```dart
+DateTime(rangeEnd.year, rangeEnd.month, rangeEnd.day - i, 12)
+```
+
+**Files to Modify**:
+
+| File | Location | Change |
+|------|----------|--------|
+| `lib/features/daily_os/state/time_history_header_controller.dart` | Line 159 | Fix initial date range |
+| `lib/features/daily_os/state/time_history_header_controller.dart` | Lines 179-182 | Fix loadMoreDays range |
+| `lib/features/daily_os/state/time_history_header_controller.dart` | Lines 372-377 | Fix day bucket generation |
+
+**Tasks**:
+- [x] Fix `_fetchInitialData` start date calculation (line 159)
+  - Before: `today.subtract(const Duration(days: _initialDays - 1))`
+  - After: `DateTime(today.year, today.month, today.day - (_initialDays - 1))`
+- [x] Fix `loadMoreDays` range math (lines 179-182)
+  - Before: `currentEarliestMidnight.subtract(const Duration(days: n))`
+  - After: `DateTime(e.year, e.month, e.day - n)` where `e = current.earliestDay`
+- [x] Fix `_aggregateEntries` day generation loop (lines 372-377)
+  - Before: `endMidnight.subtract(Duration(days: i))`
+  - After: `DateTime(endNoon.year, endNoon.month, endNoon.day - i, 12)`
+- [x] Fix `_aggregateEntries` day count calculation (discovered during EU DST testing)
+  - Before: `endMidnight.difference(startMidnight).inDays + 1` (DST-unsafe)
+  - After: Use UTC dates for difference: `DateTime.utc(end...).difference(DateTime.utc(start...)).inDays + 1`
+- [x] Add DST boundary regression tests (5 tests: US spring/fall, EU spring/fall, loadMoreDays)
+
+**New Tests**:
+```dart
+test('generates correct days across US DST spring forward (March 8, 2026)', () async {
+  // Clocks spring forward 2:00 AM -> 3:00 AM
+  final dstDay = DateTime(2026, 3, 10, 12);
+  final fixedClock = Clock.fixed(dstDay);
+  await withClock(fixedClock, () async {
+    // ... verify 30 unique days with March 8 present exactly once
+  });
+});
+
+test('generates correct days across US DST fall back (November 1, 2026)', () async {
+  // Clocks fall back 2:00 AM -> 1:00 AM
+  final dstDay = DateTime(2026, 11, 3, 12);
+  // ... verify 30 unique days with November 1 present exactly once
+});
+
+test('loadMoreDays produces exact day count near DST transition', () async {
+  // Verify 44 unique days after loadMore near March DST
+});
+```
+
+**Verification**:
+```bash
+fvm flutter test test/features/daily_os/state/time_history_header_controller_test.dart
+# All 23 tests pass ✓ (18 original + 5 DST boundary tests)
+
+fvm flutter analyze
+# No issues found ✓
+```
+
+**Design Note**: Entries spanning midnight are attributed to the start day (`dateFrom.dayAtNoon`). This is intentional for header visualization - splitting entries across days would add complexity without improving UX.
+
+---
+
 ### Phase 2: Basic UI & Navigation
 
 **Goal**: Implement the swipable header UI skeleton without chart rendering.
@@ -709,6 +785,8 @@ fvm flutter test
 | **Load threshold**       | 80% scroll position                    | Provides buffer for smooth infinite scroll                          |
 | **Y-axis normalization** | Max daily total across loaded range    | Consistent scale for comparison                                     |
 | **History cap**          | 180 days (configurable)                | Keeps paint + memory bounded                                        |
+| **Date arithmetic**      | Calendar arithmetic (day - n), not Duration | Avoids DST artifacts; proven in `getDaysAtNoon()`             |
+| **Midnight attribution** | Entry attributed to `dateFrom.dayAtNoon` | Simple, avoids splitting complexity; acceptable for header viz    |
 
 ---
 
@@ -759,6 +837,7 @@ group('TimeHistoryChartPainter', () {
 | Category color inconsistency           | Low        | Low    | Use `EntitiesCacheService` consistently                          |
 | Complex position calculations          | Medium     | Medium | Thorough unit tests for coordinate math                          |
 | Animation jank during scroll           | Medium     | High   | Paint-only scroll invalidation; avoid rebuilds; RepaintBoundary  |
+| DST boundary day count errors          | Medium     | High   | Use calendar arithmetic, not Duration math; add DST tests        |
 
 ---
 
