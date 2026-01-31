@@ -950,7 +950,7 @@ void main() {
       expect(find.text('P1'), findsOneWidget);
     });
 
-    testWidgets('does not show P2 (Medium) priority badge to reduce noise',
+    testWidgets('shows P2 (Medium) priority badge in list view',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -959,8 +959,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // P2 (Medium/default) badge is intentionally hidden to reduce visual noise
-      expect(find.text('P2'), findsNothing);
+      expect(find.text('P2'), findsOneWidget);
     });
 
     testWidgets('shows P3 (Low) priority badge in list view', (tester) async {

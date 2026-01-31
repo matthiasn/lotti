@@ -559,13 +559,15 @@ class _TaskProgressRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final task = item.task;
-    final isCompleted = item.wasCompletedOnDay;
+    final isCompletedOnDay = item.wasCompletedOnDay;
+    final isCompletedElsewhere = !isCompletedOnDay &&
+        (task.data.status is TaskDone || task.data.status is TaskRejected);
     final isLight = Theme.of(context).brightness == Brightness.light;
     final statusColor = _getTaskStatusColor(context, task.data.status);
     final checkColor = isLight ? taskStatusDarkGreen : taskStatusGreen;
 
     // Text color - slightly muted for completed tasks
-    final textColor = isCompleted
+    final textColor = (isCompletedOnDay || isCompletedElsewhere)
         ? context.colorScheme.onSurface.withValues(alpha: 0.5)
         : context.colorScheme.onSurface.withValues(alpha: 0.85);
 
@@ -577,8 +579,14 @@ class _TaskProgressRow extends StatelessWidget {
         child: Row(
           children: [
             // Status indicator
-            if (isCompleted)
+            if (isCompletedOnDay)
               Icon(Icons.check_circle, size: 18, color: checkColor)
+            else if (isCompletedElsewhere)
+              Icon(
+                Icons.check_circle,
+                size: 18,
+                color: checkColor.withValues(alpha: 0.45),
+              )
             else
               Container(
                 width: 18,
@@ -588,11 +596,9 @@ class _TaskProgressRow extends StatelessWidget {
                   border: Border.all(color: statusColor, width: 1.5),
                 ),
               ),
-            // Priority badge (show only for non-default priorities)
-            if (task.data.priority != TaskPriority.p2Medium) ...[
-              const SizedBox(width: 4),
-              _PriorityBadge(priority: task.data.priority),
-            ],
+            // Priority badge
+            const SizedBox(width: 4),
+            _PriorityBadge(priority: task.data.priority),
             // Due badge
             if (item.isDueOrOverdue) ...[
               const SizedBox(width: 4),
@@ -605,7 +611,6 @@ class _TaskProgressRow extends StatelessWidget {
                 task.data.title,
                 style: context.textTheme.bodySmall?.copyWith(
                   color: textColor,
-                  fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

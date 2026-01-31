@@ -72,7 +72,6 @@ class LinkedTaskCard extends StatelessWidget {
                 task.data.title,
                 style: context.textTheme.bodyMedium?.copyWith(
                   color: textColor,
-                  fontStyle: isCompleted ? FontStyle.italic : FontStyle.normal,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

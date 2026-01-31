@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.835" date="2026-01-31">
+      <description>
+        <p>Daily OS Timeline Past Task Indicators: Tasks completed on a different day than the one you're viewing now show a faded checkmark (45% opacity) instead of a hollow circle. This makes it clear at a glance whether a task was completed on the viewed day (full checkmark) or later (faded checkmark). Also removes the italic text styling for completed tasks and now shows P2 (Medium) priority badges alongside all other priorities.</p>
+      </description>
+    </release>
     <release version="0.9.834" date="2026-01-31">
       <description>
         <p>Daily OS Time Budgets UI Redesign: Slim two-row header design takes up significantly less vertical space. The first row shows category name with a circular task completion indicator and expand/collapse toggle. The second row displays time recorded vs planned, a fixed-width progress bar (now using consistent green/red colors instead of category colors), and status text. Progress bars align in columns for a cleaner table-like appearance.</p>

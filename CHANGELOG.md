@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.835] - 2026-01-31
+### Changed
+- Daily OS Time Budgets: Tasks completed on a different day now show a faded checkmark (45% opacity)
+  - When viewing a past date where a task was scheduled but completed later, shows faded checkmark instead of hollow circle
+  - Tasks completed on the viewed day still show full-opacity checkmark
+  - Removes italic text styling for completed tasks for cleaner appearance
+- Daily OS Time Budgets: P2 (Medium) priority badges now visible alongside other priorities
+  - Previously only P0, P1, P3 badges were shown; P2 was hidden as the default
+
 ## [0.9.834] - 2026-01-31
 ### Changed
 - Daily OS Time Budgets: Redesigned with slim two-row header for reduced vertical space
