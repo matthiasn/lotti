@@ -234,17 +234,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initially, day 15 should be selected (has selection border)
-      // Verify day 15 text exists and is styled as selected
-      expect(find.text('15'), findsOneWidget);
+      // Initially, day 15 should be selected - date label shows "January 15"
+      // The date label format is "DayName, Mon DD, YYYY" e.g. "Wednesday, Jan 15, 2026"
+      expect(find.textContaining('Jan 15'), findsOneWidget);
+      expect(find.textContaining('Jan 14'), findsNothing);
 
-      // Tap on day 14
+      // Tap on day 14 segment
       await tester.tap(find.text('14'));
       await tester.pumpAndSettle();
 
-      // After tapping, the date label should show January 14
+      // After tapping, the date label should now show "January 14"
       // (the _TestDailyOsSelectedDate mock updates state on selectDate)
-      expect(find.textContaining('14'), findsWidgets);
+      expect(find.textContaining('Jan 14'), findsOneWidget);
     });
 
     testWidgets('shows selection highlight on selected day', (tester) async {

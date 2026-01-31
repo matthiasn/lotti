@@ -40,9 +40,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   // Track visible month(s) for the sticky header
   String _visibleMonthLabel = '';
 
-  // Track the current prefetch window to avoid redundant work
-  int _lastPrefetchStart = -1;
-  int _lastPrefetchEnd = -1;
+  // Track prefetched dates (date-based instead of index-based to handle list changes)
+  final Set<DateTime> _prefetchedDates = {};
 
   // Track visible indices for throttling month label updates
   int _lastVisibleStart = -1;
@@ -50,6 +49,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
   // Number of days to prefetch in each direction beyond visible
   static const int _prefetchBuffer = 5;
+
+  // Margin for invalidation (2x buffer to avoid thrashing)
+  static const int _invalidateMargin = _prefetchBuffer * 2;
 
   @override
   void didChangeDependencies() {
@@ -175,6 +177,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   ///
   /// Only prefetches visible days + buffer in each direction.
   /// Invalidates providers that have scrolled far out of view to free memory.
+  /// Uses date-based tracking instead of index-based to handle list changes safely.
   void _updatePrefetchWindow() {
     final historyData = ref.read(timeHistoryHeaderControllerProvider).value;
     if (historyData == null || historyData.days.isEmpty) return;
@@ -187,43 +190,40 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     final prefetchEnd =
         (visibleEnd + _prefetchBuffer).clamp(0, historyData.days.length - 1);
 
-    // Skip if window hasn't changed significantly
-    if (prefetchStart == _lastPrefetchStart &&
-        prefetchEnd == _lastPrefetchEnd) {
-      return;
-    }
-
-    // Invalidate providers that are now outside the extended window
-    // Use a larger margin (2x buffer) before invalidating to avoid thrashing
-    const invalidateMargin = _prefetchBuffer * 2;
-    if (_lastPrefetchStart >= 0 && _lastPrefetchEnd >= 0) {
-      for (var i = _lastPrefetchStart; i <= _lastPrefetchEnd; i++) {
-        // Skip if still within extended window
-        if (i >= prefetchStart - invalidateMargin &&
-            i <= prefetchEnd + invalidateMargin) {
-          continue;
-        }
-        // Invalidate this provider to free memory
-        final day = historyData.days[i].day.dayAtMidnight;
-        ref
-          ..invalidate(unifiedDailyOsDataControllerProvider(date: day))
-          ..invalidate(dayBudgetStatsProvider(date: day));
-      }
-    }
-
-    // Prefetch new days in the window (fire-and-forget)
+    // Collect dates in the current prefetch window
+    final currentWindowDates = <DateTime>{};
     for (var i = prefetchStart; i <= prefetchEnd; i++) {
-      // Skip if was in previous window
-      if (i >= _lastPrefetchStart && i <= _lastPrefetchEnd) {
-        continue;
-      }
-      final day = historyData.days[i].day.dayAtMidnight;
-      // Fire-and-forget: just trigger the provider, don't await
-      ref.read(unifiedDailyOsDataControllerProvider(date: day));
+      currentWindowDates.add(historyData.days[i].day.dayAtMidnight);
     }
 
-    _lastPrefetchStart = prefetchStart;
-    _lastPrefetchEnd = prefetchEnd;
+    // Collect dates in the extended window (for invalidation check)
+    final extendedStart = (visibleStart - _invalidateMargin)
+        .clamp(0, historyData.days.length - 1);
+    final extendedEnd =
+        (visibleEnd + _invalidateMargin).clamp(0, historyData.days.length - 1);
+    final extendedWindowDates = <DateTime>{};
+    for (var i = extendedStart; i <= extendedEnd; i++) {
+      extendedWindowDates.add(historyData.days[i].day.dayAtMidnight);
+    }
+
+    // Invalidate providers for dates that are no longer in the extended window
+    final datesToInvalidate =
+        _prefetchedDates.difference(extendedWindowDates).toList();
+    for (final date in datesToInvalidate) {
+      ref
+        ..invalidate(unifiedDailyOsDataControllerProvider(date: date))
+        ..invalidate(dayBudgetStatsProvider(date: date));
+      _prefetchedDates.remove(date);
+    }
+
+    // Prefetch new days in the window that haven't been prefetched yet
+    for (final date in currentWindowDates) {
+      if (!_prefetchedDates.contains(date)) {
+        _prefetchedDates.add(date);
+        // Fire-and-forget: just trigger the provider, don't await
+        ref.read(unifiedDailyOsDataControllerProvider(date: date));
+      }
+    }
   }
 
   /// Select a date immediately (no waiting for prefetch).
