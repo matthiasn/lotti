@@ -116,60 +116,73 @@ class TimeHistoryData with _$TimeHistoryData {
 
 **Location**: `lib/features/daily_os/state/time_history_header_controller.dart`
 
+**Key behaviors:**
+- **Infinite scroll**: `canLoadMore` is always `true` - the sliding window handles memory,
+  and we don't stop on gaps (periods with no entries)
+- **Sliding window**: When cap (180 days) is reached, drops **newest** days (front of list)
+  to preserve backward scroll position
+- **Rescale on merge**: If `maxDailyTotal` changes after loading more, all stacked heights
+  are recomputed for scale consistency
+- **Refresh preserves state**: `_refresh()` preserves `canLoadMore` to avoid repeated loads
+- **resetToToday()**: API to restore the initial view after scrolling far into history
+
 ```dart
 @riverpod
 class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   static const int _initialDays = 30;
   static const int _loadMoreDays = 14;
-  static const double _loadThreshold = 0.8;  // 80% scroll position triggers load
-  static const int _maxLoadedDays = 180;     // Cap to keep memory/paint bounded
+  static const int _maxLoadedDays = 180;     // Sliding window cap
 
   @override
   Future<TimeHistoryData> build() async {
-    // Subscribe to database updates for live refresh.
-    // Use UpdateNotifications directly (no provider in codebase).
     _listenToUpdates();
-
     return _fetchInitialData();
   }
 
-  Future<TimeHistoryData> _fetchInitialData() async {
-    final today = DateTime.now().dayAtMidnight;
-    final startDate = today.subtract(Duration(days: _initialDays - 1));
-
-    return _fetchDataForRange(startDate, today);
-  }
-
   Future<void> loadMoreDays() async {
-    final current = state.valueOrNull;
-    if (current == null || current.isLoadingMore) return;
+    final current = state.value;
+    if (current == null || current.isLoadingMore || !current.canLoadMore) return;
 
     state = AsyncData(current.copyWith(isLoadingMore: true));
 
-    final newEarliest =
-        current.earliestDay.subtract(const Duration(days: _loadMoreDays));
-    final additionalData = await _fetchDataForRange(
-      newEarliest,
-      current.earliestDay.subtract(const Duration(days: 1)),
-    );
+    // Use dayAtMidnight for DB query boundaries
+    final currentEarliestMidnight = current.earliestDay.dayAtMidnight;
+    final newRangeEnd = currentEarliestMidnight.subtract(const Duration(days: 1));
+    final newRangeStart = currentEarliestMidnight.subtract(const Duration(days: _loadMoreDays));
 
-    // Merge with existing data
+    final additionalData = await _fetchDataForRange(newRangeStart, newRangeEnd);
+
+    // Merge: append older days to end (list is newest-to-oldest)
     final mergedDays = [...current.days, ...additionalData.days];
+
+    // Sliding window: drop NEWEST days (front) when over cap
     final prunedDays = mergedDays.length > _maxLoadedDays
-        ? mergedDays.sublist(0, _maxLoadedDays)
+        ? mergedDays.sublist(mergedDays.length - _maxLoadedDays)
         : mergedDays;
-    state = AsyncData(
-      current.copyWith(
-        days: prunedDays,
-        earliestDay: newEarliest,
-        maxDailyTotal: _max(
-          current.maxDailyTotal,
-          additionalData.maxDailyTotal,
-        ),
-        isLoadingMore: false,
-        canLoadMore: additionalData.days.isNotEmpty,
-      ),
-    );
+
+    final newMax = _maxDuration(current.maxDailyTotal, additionalData.maxDailyTotal);
+
+    // Recompute ALL stacked heights if max changed (scale consistency)
+    final stackedHeights = newMax != current.maxDailyTotal
+        ? _computeStackedHeights(prunedDays, current.categoryOrder, newMax)
+        : _mergeStackedHeights(current.stackedHeights, additionalData.stackedHeights, prunedDays);
+
+    state = AsyncData(current.copyWith(
+      days: prunedDays,
+      earliestDay: prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay,
+      latestDay: prunedDays.isNotEmpty ? prunedDays.first.day : current.latestDay,
+      maxDailyTotal: newMax,
+      isLoadingMore: false,
+      canLoadMore: true,  // Always allow more loading for infinite scroll
+      stackedHeights: stackedHeights,
+    ));
+  }
+
+  /// Reset to today's view after scrolling far into history
+  Future<void> resetToToday() async {
+    state = const AsyncLoading();
+    final data = await _fetchInitialData();
+    if (ref.mounted) state = AsyncData(data);
   }
 
   Future<TimeHistoryData> _fetchDataForRange(DateTime start, DateTime end) async {

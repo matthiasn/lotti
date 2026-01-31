@@ -124,7 +124,8 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     );
 
     if (ref.mounted) {
-      state = AsyncData(refreshed);
+      // Preserve canLoadMore state from before refresh
+      state = AsyncData(refreshed.copyWith(canLoadMore: current.canLoadMore));
     }
   }
 
@@ -162,9 +163,6 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
       if (!ref.mounted) return;
 
-      // Check if we got any actual entries (not just empty day buckets)
-      final hasMoreData = additionalData.days.any((d) => d.total > Duration.zero);
-
       // Merge: append older days to end of list (list is newest-to-oldest)
       final mergedDays = [...current.days, ...additionalData.days];
 
@@ -173,6 +171,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       final prunedDays = mergedDays.length > _maxLoadedDays
           ? mergedDays.sublist(mergedDays.length - _maxLoadedDays)
           : mergedDays;
+
+      final newEarliestDay =
+          prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay;
 
       final newMax = _maxDuration(
         current.maxDailyTotal,
@@ -192,19 +193,32 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       state = AsyncData(
         current.copyWith(
           days: prunedDays,
-          earliestDay:
-              prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay,
+          earliestDay: newEarliestDay,
           latestDay:
               prunedDays.isNotEmpty ? prunedDays.first.day : current.latestDay,
           maxDailyTotal: newMax,
           isLoadingMore: false,
-          canLoadMore: hasMoreData,
+          // Always allow more loading - the sliding window handles memory,
+          // and stopping on gaps would break infinite scroll
+          canLoadMore: true,
           stackedHeights: stackedHeights,
         ),
       );
     } catch (e) {
       if (!ref.mounted) return;
       state = AsyncData(current.copyWith(isLoadingMore: false));
+    }
+  }
+
+  /// Reset to today's view, reloading the initial date range.
+  ///
+  /// Use this when the user wants to return to the current day after
+  /// scrolling far into history (which may have dropped today from the window).
+  Future<void> resetToToday() async {
+    state = const AsyncLoading();
+    final data = await _fetchInitialData();
+    if (ref.mounted) {
+      state = AsyncData(data);
     }
   }
 

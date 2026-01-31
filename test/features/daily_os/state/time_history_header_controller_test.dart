@@ -538,14 +538,23 @@ void main() {
 
     test('recomputes stacked heights when maxDailyTotal increases on merge',
         () async {
-      // Initial load has low max
+      // Initial load has 1 hour in cat-work (max = 1 hour)
       final jan15 = DateTime(2026, 1, 15, 10);
+
+      final task1 = createTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: jan15,
+      );
+
       final entry1 = createJournalEntry(
         id: 'entry-1',
         categoryId: null,
         dateFrom: jan15,
         dateTo: jan15.add(const Duration(hours: 1)),
       );
+
+      final link1 = createLink(fromId: 'task-1', toId: 'entry-1');
 
       when(
         () => mockDb.sortedCalendarEntries(
@@ -554,10 +563,11 @@ void main() {
         ),
       ).thenAnswer((_) async => [entry1]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.linksForEntryIds(any()))
+          .thenAnswer((_) async => [link1]);
 
       when(() => mockDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => []);
+          .thenAnswer((_) async => [task1]);
 
       // Initial load
       await container.read(timeHistoryHeaderControllerProvider.future);
@@ -566,8 +576,23 @@ void main() {
           container.read(timeHistoryHeaderControllerProvider).value!;
       expect(initialResult.maxDailyTotal, equals(const Duration(hours: 1)));
 
-      // Now load more with higher max
+      // Initial heights: cat-work starts at 0, goes to 1.0 (60/60 = 1.0)
+      final jan15Noon = DateTime(2026, 1, 15, 12);
+      final initialHeights = initialResult.stackedHeights[jan15Noon];
+      expect(initialHeights, isNotNull);
+      expect(initialHeights!['cat-work'], equals(0.0));
+      // cat-personal starts after cat-work: 60/60 = 1.0
+      expect(initialHeights['cat-personal'], closeTo(1.0, 0.01));
+
+      // Now load more with higher max (5 hours in cat-work)
       final olderDate = DateTime(2025, 12, 20, 10);
+
+      final task2 = createTask(
+        id: 'task-2',
+        categoryId: 'cat-work',
+        dateFrom: olderDate,
+      );
+
       final bigEntry = createJournalEntry(
         id: 'entry-big',
         categoryId: null,
@@ -575,12 +600,20 @@ void main() {
         dateTo: olderDate.add(const Duration(hours: 5)),
       );
 
+      final link2 = createLink(fromId: 'task-2', toId: 'entry-big');
+
       when(
         () => mockDb.sortedCalendarEntries(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
         ),
       ).thenAnswer((_) async => [bigEntry]);
+
+      when(() => mockDb.linksForEntryIds(any()))
+          .thenAnswer((_) async => [link2]);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => [task2]);
 
       final notifier =
           container.read(timeHistoryHeaderControllerProvider.notifier);
@@ -593,14 +626,12 @@ void main() {
       expect(afterMerge.maxDailyTotal, equals(const Duration(hours: 5)));
 
       // Stacked heights for Jan 15 should be rescaled
-      // With 1 hour out of 5 hours max, the uncategorized height should be ~0.2
-      final jan15Noon = DateTime(2026, 1, 15, 12);
-      final heights = afterMerge.stackedHeights[jan15Noon];
-      expect(heights, isNotNull);
-
-      // The null (uncategorized) category should have a height based on new max
-      // 60 minutes / 300 minutes = 0.2
-      expect(heights![null], closeTo(0.0, 0.01));
+      // With 1 hour out of 5 hours max, cat-personal now starts at 60/300 = 0.2
+      final rescaledHeights = afterMerge.stackedHeights[jan15Noon];
+      expect(rescaledHeights, isNotNull);
+      expect(rescaledHeights!['cat-work'], equals(0.0)); // Still starts at 0
+      // cat-personal now starts at 60/300 = 0.2 (was 1.0 before rescale)
+      expect(rescaledHeights['cat-personal'], closeTo(0.2, 0.01));
     });
 
     test('sliding window drops newest days when cap is reached', () async {
@@ -653,30 +684,14 @@ void main() {
       );
     });
 
-    test('canLoadMore becomes false when no entries found', () async {
-      // First call returns entries
-      var callCount = 0;
+    test('canLoadMore stays true for infinite scroll (gaps allowed)', () async {
+      // Infinite scroll should not stop on gaps - the sliding window handles memory
       when(
         () => mockDb.sortedCalendarEntries(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
         ),
-      ).thenAnswer((_) async {
-        callCount++;
-        if (callCount == 1) {
-          // Initial load has data
-          return [
-            createJournalEntry(
-              id: 'entry-1',
-              categoryId: null,
-              dateFrom: DateTime(2026, 1, 15, 10),
-              dateTo: DateTime(2026, 1, 15, 11),
-            ),
-          ];
-        }
-        // Subsequent loads have no data
-        return [];
-      });
+      ).thenAnswer((_) async => []); // No entries, but days still generated
 
       when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
@@ -688,12 +703,55 @@ void main() {
 
       final notifier =
           container.read(timeHistoryHeaderControllerProvider.notifier);
-      await notifier.loadMoreDays();
+
+      // Load more several times
+      for (var i = 0; i < 5; i++) {
+        await notifier.loadMoreDays();
+      }
 
       final result = container.read(timeHistoryHeaderControllerProvider).value!;
 
-      // canLoadMore should be false since no entries were found
-      expect(result.canLoadMore, isFalse);
+      // canLoadMore should stay true for infinite scroll
+      expect(result.canLoadMore, isTrue);
+    });
+
+    test('resetToToday restores initial view after scrolling far back',
+        () async {
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+      when(() => mockDb.getJournalEntitiesForIds(any()))
+          .thenAnswer((_) async => []);
+
+      // Initial load
+      final initialResult =
+          await container.read(timeHistoryHeaderControllerProvider.future);
+      final initialLatest = initialResult.latestDay;
+
+      final notifier =
+          container.read(timeHistoryHeaderControllerProvider.notifier);
+
+      // Load more several times
+      for (var i = 0; i < 5; i++) {
+        await notifier.loadMoreDays();
+      }
+
+      // Now reset to today
+      await notifier.resetToToday();
+
+      final afterReset =
+          container.read(timeHistoryHeaderControllerProvider).value!;
+
+      // Should have same latest day as initial (today)
+      expect(afterReset.latestDay, equals(initialLatest));
+      expect(afterReset.days.length, equals(30));
+      expect(afterReset.canLoadMore, isTrue);
     });
   });
 }
