@@ -405,8 +405,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                   itemExtent: TimeHistoryHeader.dayWidth,
                   itemBuilder: (context, index) => _DaySegment(
                     day: data.days[index],
-                    isSelected: data.days[index].date == selectedDate,
-                    onTap: () => _selectDay(data.days[index].date),
+                    isSelected: data.days[index].day == selectedDate,
+                    onTap: () => _selectDay(data.days[index].day),
                   ),
                 ),
               ],
@@ -468,7 +468,7 @@ class _DaySegment extends StatelessWidget {
           children: [
             // Day number
             Text(
-              '${day.date.day}',
+              '${day.day.day}',
               style: context.textTheme.labelMedium?.copyWith(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected
@@ -477,9 +477,9 @@ class _DaySegment extends StatelessWidget {
               ),
             ),
             // Month indicator on 1st
-            if (day.date.day == 1)
+            if (day.day.day == 1)
               Text(
-                DateFormat('MMM').format(day.date),
+                DateFormat('MMM').format(day.day),
                 style: context.textTheme.labelSmall,
               ),
           ],

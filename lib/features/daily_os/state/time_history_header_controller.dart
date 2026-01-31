@@ -286,16 +286,18 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     final entryIds = entries.map((e) => e.meta.id).toSet();
     final links = await _batchedLinksForEntryIds(db, entryIds);
 
-    // Build entry ID -> linked entry IDs map
+    // Build entry ID -> linked entry IDs map.
+    // Links are directional: tasks link TO entries (task.fromId -> entry.toId).
+    // linksForEntryIds queries WHERE to_id IN ids, returning tasks that link
+    // to our entries. We map entry (toId) -> task IDs (fromId) to resolve
+    // each entry's category from its parent task.
     final entryIdFromLinkedIds = <String, Set<String>>{};
     final linkedIds = <String>{};
 
     for (final link in links) {
-      final fromId = link.fromId;
-      final toId = link.toId;
-      final prev = entryIdFromLinkedIds[toId] ?? <String>{}
-        ..add(fromId);
-      entryIdFromLinkedIds[toId] = prev;
+      entryIdFromLinkedIds
+          .putIfAbsent(link.toId, () => <String>{})
+          .add(link.fromId);
     }
 
     entryIdFromLinkedIds.values.forEach(linkedIds.addAll);
