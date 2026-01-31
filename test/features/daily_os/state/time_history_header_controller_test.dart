@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os/state/time_history_header_controller.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -20,6 +21,8 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
+class MockLoggingService extends Mock implements LoggingService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -27,6 +30,7 @@ void main() {
   late MockJournalDb mockDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockLoggingService mockLoggingService;
   late StreamController<Set<String>> updateStreamController;
 
   // Use a fixed date to avoid test flakiness
@@ -109,6 +113,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(<String>{});
+    registerFallbackValue(StackTrace.current);
     getIt.allowReassignment = true;
   });
 
@@ -116,6 +121,7 @@ void main() {
     mockDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockEntitiesCacheService = MockEntitiesCacheService();
+    mockLoggingService = MockLoggingService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(() => mockUpdateNotifications.updateStream)
@@ -129,7 +135,8 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+      ..registerSingleton<LoggingService>(mockLoggingService);
 
     container = ProviderContainer();
   });
@@ -792,6 +799,105 @@ void main() {
         expect(afterReset.latestDay, equals(initialLatest));
         expect(afterReset.days.length, equals(30));
         expect(afterReset.canLoadMore, isTrue);
+      });
+    });
+
+    test('loadMoreDays handles errors gracefully', () async {
+      await withClock(fixedClock, () async {
+        var callCount = 0;
+
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount > 1) {
+            throw Exception('Database error');
+          }
+          return [];
+        });
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        // Initial load succeeds
+        await container.read(timeHistoryHeaderControllerProvider.future);
+
+        final notifier =
+            container.read(timeHistoryHeaderControllerProvider.notifier);
+
+        // Load more should fail but not crash
+        await notifier.loadMoreDays();
+
+        final result =
+            container.read(timeHistoryHeaderControllerProvider).value!;
+
+        // Should still have initial data and isLoadingMore reset to false
+        expect(result.days.length, equals(30));
+        expect(result.isLoadingMore, isFalse);
+
+        // Error should have been logged
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'TimeHistoryHeaderController.loadMoreDays',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('resetToToday handles errors gracefully', () async {
+      await withClock(fixedClock, () async {
+        var callCount = 0;
+
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount > 1) {
+            throw Exception('Database error');
+          }
+          return [];
+        });
+
+        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+
+        when(() => mockDb.getJournalEntitiesForIds(any()))
+            .thenAnswer((_) async => []);
+
+        // Initial load succeeds
+        final initialResult =
+            await container.read(timeHistoryHeaderControllerProvider.future);
+
+        final notifier =
+            container.read(timeHistoryHeaderControllerProvider.notifier);
+
+        // Reset should fail but restore previous state
+        await notifier.resetToToday();
+
+        final result =
+            container.read(timeHistoryHeaderControllerProvider).value;
+
+        // Should have restored the previous state
+        expect(result, isNotNull);
+        expect(result!.days.length, equals(initialResult.days.length));
+
+        // Error should have been logged
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'TimeHistoryHeaderController.resetToToday',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
     });
   });

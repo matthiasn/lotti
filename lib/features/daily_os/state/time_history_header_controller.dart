@@ -377,8 +377,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     }
 
     // Aggregate entries
+    // Note: JournalAudio is excluded to avoid double-counting when audio
+    // is recorded during an active timer. Proper overlap detection for
+    // standalone audio entries is a future enhancement.
     for (final journalEntity in entries) {
-      if (journalEntity is! JournalEntry && journalEntity is! JournalAudio) {
+      if (journalEntity is! JournalEntry) {
         continue;
       }
 

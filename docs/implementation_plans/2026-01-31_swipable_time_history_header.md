@@ -774,6 +774,27 @@ group('TimeHistoryChartPainter', () {
 
 ---
 
+## Future Considerations
+
+### Audio Entry Aggregation
+
+Currently, `JournalAudio` entries are **excluded** from time aggregation to avoid double-counting. The issue is:
+
+1. **Audio during timer**: When a user records audio while a timer is running, both the timer (JournalEntry) and the audio entry have duration. Counting both would inflate the time.
+
+2. **Standalone audio**: Audio recorded without an active timer should probably be counted.
+
+3. **Partial overlap**: An audio entry might partially overlap with a timer entry.
+
+**Future enhancement**: Implement proper overlap detection:
+- Check if audio entry's time range overlaps with any JournalEntry linked to the same task
+- Only count audio duration for non-overlapping portions
+- Consider whether the existing `TimeByCategoryController` also needs this fix
+
+**Note**: The existing `TimeByCategoryController` includes `JournalAudio` (line 113), which may also be incorrect. This should be reviewed as part of a broader fix.
+
+---
+
 ## Appendix: Related Code Locations
 
 | Purpose                        | Path                                                              |
