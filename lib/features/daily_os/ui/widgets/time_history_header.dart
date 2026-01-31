@@ -14,9 +14,13 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 /// Header widget for the Daily OS view with horizontal day navigation.
 ///
-/// Shows a horizontally scrollable list of days with time history data,
-/// optional day label, and status indicator. Supports swipe gestures
-/// for day navigation and infinite scroll for loading more history.
+/// Displays a horizontally scrollable list of day segments with:
+/// - Tap-to-select navigation between days
+/// - Sticky month label showing the currently visible month(s)
+/// - Selected day highlighting with primary color border
+/// - Infinite scroll to load more history (older days)
+/// - Today button for quick navigation back to current day
+/// - Day label chip and budget status indicator for the selected day
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 

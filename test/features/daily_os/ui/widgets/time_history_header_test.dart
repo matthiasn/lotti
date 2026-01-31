@@ -39,6 +39,24 @@ class _TestTimeHistoryController extends TimeHistoryHeaderController {
   }
 }
 
+/// Mock controller that tracks loadMoreDays calls.
+class _TrackingTimeHistoryController extends TimeHistoryHeaderController {
+  _TrackingTimeHistoryController(this._data);
+
+  final TimeHistoryData _data;
+  int loadMoreDaysCallCount = 0;
+
+  @override
+  Future<TimeHistoryData> build() async {
+    return _data;
+  }
+
+  @override
+  Future<void> loadMoreDays() async {
+    loadMoreDaysCallCount++;
+  }
+}
+
 /// Mock notifier for date selection that tracks selected date.
 class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
   _TestDailyOsSelectedDate(this._initialDate);
@@ -440,6 +458,63 @@ void main() {
 
       // January 15, 2026 is a Thursday
       expect(find.textContaining('Thursday'), findsOneWidget);
+    });
+
+    testWidgets('triggers loadMoreDays when scrolling near end',
+        (tester) async {
+      // Create enough days to allow scrolling beyond 80% threshold
+      final days = createTestDays(count: 50);
+      final historyData = createTestHistoryData(days: days);
+      final trackingController = _TrackingTimeHistoryController(historyData);
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            dailyOsSelectedDateProvider.overrideWith(
+              () => _TestDailyOsSelectedDate(testDate),
+            ),
+            timeHistoryHeaderControllerProvider.overrideWith(
+              () => trackingController,
+            ),
+            unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+              () => _TestUnifiedController(createUnifiedData()),
+            ),
+            dayBudgetStatsProvider(date: testDate).overrideWith(
+              (ref) async => const DayBudgetStats(
+                totalPlanned: Duration.zero,
+                totalRecorded: Duration.zero,
+                budgetCount: 0,
+                overBudgetCount: 0,
+              ),
+            ),
+          ],
+          child: const TimeHistoryHeader(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially no calls
+      expect(trackingController.loadMoreDaysCallCount, 0);
+
+      // Find the scrollable ListView.builder that has the day segments
+      // It's inside the Expanded widget in the Column
+      final scrollableFinder = find.byType(Scrollable);
+      expect(scrollableFinder, findsWidgets);
+
+      // Get the first horizontal Scrollable (the day list, not skeleton)
+      final scrollable = tester.widget<Scrollable>(scrollableFinder.first);
+
+      // Scroll using the scroll controller directly via the scrollable
+      final scrollController = scrollable.controller;
+      if (scrollController != null && scrollController.hasClients) {
+        // Jump to 85% of max scroll extent to trigger the 80% threshold
+        final maxExtent = scrollController.position.maxScrollExtent;
+        scrollController.jumpTo(maxExtent * 0.85);
+        await tester.pump();
+      }
+
+      // Should have triggered loadMoreDays at least once
+      expect(trackingController.loadMoreDaysCallCount, greaterThan(0));
     });
   });
 }
