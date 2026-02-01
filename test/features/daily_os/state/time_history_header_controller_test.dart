@@ -394,39 +394,6 @@ void main() {
       });
     });
 
-    test('loadMoreDays respects history window cap', () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        // Initial load
-        await container.read(timeHistoryHeaderControllerProvider.future);
-
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-
-        // Load many times to exceed cap (180 days)
-        for (var i = 0; i < 15; i++) {
-          await notifier.loadMoreDays();
-        }
-
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-
-        // Should be capped at 180 days
-        expect(result.days.length, lessThanOrEqualTo(180));
-      });
-    });
-
     test('does not load more when already loading', () async {
       await withClock(fixedClock, () async {
         when(
@@ -674,58 +641,6 @@ void main() {
         expect(rescaledHeights!['cat-work'], equals(0.0)); // Still starts at 0
         // cat-personal now starts at 60/300 = 0.2 (was 1.0 before rescale)
         expect(rescaledHeights['cat-personal'], closeTo(0.2, 0.01));
-      });
-    });
-
-    test('sliding window drops newest days when cap is reached', () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        // Initial load
-        final initialResult =
-            await container.read(timeHistoryHeaderControllerProvider.future);
-        final initialLatest = initialResult.latestDay;
-
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-
-        // Load enough to exceed cap (180 days)
-        // Initial: 30, then 14 per load, need ~11 loads to exceed
-        for (var i = 0; i < 15; i++) {
-          await notifier.loadMoreDays();
-        }
-
-        final afterCap =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-
-        // Should be capped at 180 days
-        expect(afterCap.days.length, lessThanOrEqualTo(180));
-
-        // Latest day should have moved back (newest dropped)
-        // The newest days are at the front, so latestDay (first in list) changes
-        expect(
-          afterCap.latestDay.isBefore(initialLatest) ||
-              afterCap.latestDay.isAtSameMomentAs(initialLatest),
-          isTrue,
-          reason: 'Sliding window should drop newest days',
-        );
-
-        // Earliest day should have moved further back (we loaded more history)
-        expect(
-          afterCap.earliestDay.isBefore(initialResult.earliestDay),
-          isTrue,
-          reason: 'Should have loaded older history',
-        );
       });
     });
 

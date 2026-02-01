@@ -13,6 +13,9 @@ import 'test_helpers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(setUpEntitiesCacheService);
+  tearDown(tearDownEntitiesCacheService);
+
   group('TimeHistoryHeader', () {
     testWidgets('renders the widget', (tester) async {
       await tester.pumpWidget(createTestWidget());
@@ -147,6 +150,28 @@ void main() {
 
       // Should show a loading indicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('aligns stream chart to day segment centers', (tester) async {
+      final days = createTestDays(count: 3);
+      await tester.pumpWidget(
+        createTestWidget(historyData: createTestHistoryData(days: days)),
+      );
+      await tester.pumpAndSettle();
+
+      final headerWidth = tester.getSize(find.byType(TimeHistoryHeader)).width;
+      final chartWidth = days.length * daySegmentWidth;
+      final expectedLeft = headerWidth - chartWidth;
+
+      final transformFinder = find.ancestor(
+        of: find.byType(TimeHistoryStreamChart),
+        matching: find.byType(Transform),
+      );
+
+      final transformWidget = tester.widget<Transform>(transformFinder.first);
+      final actualLeft = transformWidget.transform.getTranslation().x;
+
+      expect(actualLeft, closeTo(expectedLeft, 0.01));
     });
 
     testWidgets('displays formatted date with day name', (tester) async {

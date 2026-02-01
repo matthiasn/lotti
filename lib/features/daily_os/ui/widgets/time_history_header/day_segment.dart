@@ -6,18 +6,23 @@ import 'package:lotti/themes/theme.dart';
 /// Fixed width for each day segment in the horizontal list.
 const double daySegmentWidth = 56;
 
+/// Width of the day divider (left/right border).
+const double dayDividerWidth = 2;
+
 /// Individual day segment in the horizontal list.
 class DaySegment extends StatelessWidget {
   const DaySegment({
     required this.daySummary,
     required this.isSelected,
     required this.onTap,
+    this.showRightBorder = false,
     super.key,
   });
 
   final DayTimeSummary daySummary;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool showRightBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +42,15 @@ class DaySegment extends StatelessWidget {
               left: BorderSide(
                 color:
                     context.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                width: 2,
+                width: dayDividerWidth,
               ),
+              right: showRightBorder
+                  ? BorderSide(
+                      color: context.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                      width: dayDividerWidth,
+                    )
+                  : BorderSide.none,
             ),
           ),
           child: Container(

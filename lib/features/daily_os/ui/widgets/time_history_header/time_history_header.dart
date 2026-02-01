@@ -9,4 +9,5 @@ export 'day_label_chip.dart';
 export 'day_segment.dart';
 export 'status_indicator.dart';
 export 'time_history_header_widget.dart';
+export 'time_history_stream_chart.dart';
 export 'today_button.dart';
