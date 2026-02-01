@@ -6,8 +6,9 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
 /// Data item for the stream chart, representing one category's time for one day.
+@immutable
 class StreamChartItem {
-  StreamChartItem({
+  const StreamChartItem({
     required this.x,
     required this.categoryId,
     required this.minutes,
@@ -18,6 +19,22 @@ class StreamChartItem {
   final double x;
   final String categoryId;
   final int minutes;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StreamChartItem &&
+          runtimeType == other.runtimeType &&
+          x == other.x &&
+          categoryId == other.categoryId &&
+          minutes == other.minutes;
+
+  @override
+  int get hashCode => Object.hash(x, categoryId, minutes);
+
+  @override
+  String toString() =>
+      'StreamChartItem(x: $x, categoryId: $categoryId, minutes: $minutes)';
 }
 
 /// Stream chart widget using the graphic library.
@@ -130,7 +147,22 @@ class TimeHistoryStreamChart extends StatelessWidget {
     );
   }
 
-  double get _effectiveScaleMinutes {
+  double get _effectiveScaleMinutes =>
+      computeEffectiveScaleMinutes(maxDailyTotal);
+
+  List<StreamChartItem> _buildChartData() => buildChartData(
+        days: days,
+        categoryOrder:
+            getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id),
+      );
+
+  /// Computes the effective Y-axis scale in minutes.
+  ///
+  /// Clamps [maxDailyTotal] to a minimum of 6 hours and maximum of 24 hours.
+  /// This ensures the chart has meaningful scale even with little data,
+  /// while preventing excessive compression with large values.
+  @visibleForTesting
+  static double computeEffectiveScaleMinutes(Duration maxDailyTotal) {
     const minScaleMinutes = 6 * 60;
     const maxScaleMinutes = 24 * 60;
     final minutes = maxDailyTotal.inMinutes;
@@ -144,10 +176,17 @@ class TimeHistoryStreamChart extends StatelessWidget {
   /// Creates a consistent data structure where every day has the same
   /// categories in the same order. This is required for SymmetricModifier
   /// to work correctly.
-  List<StreamChartItem> _buildChartData() {
+  ///
+  /// Parameters:
+  /// - [days]: List of day summaries, newest to oldest
+  /// - [categoryOrder]: Ordered list of category IDs for consistent stacking
+  @visibleForTesting
+  static List<StreamChartItem> buildChartData({
+    required List<DayTimeSummary> days,
+    required Iterable<String> categoryOrder,
+  }) {
     final items = <StreamChartItem>[];
-    final cache = getIt<EntitiesCacheService>();
-    final categoryOrder = cache.sortedCategories.map((c) => c.id).toList();
+    final categoryList = categoryOrder.toList();
 
     // Check if any day has uncategorized time - if so, include it for all days
     final hasUncategorized = days.any(
@@ -162,7 +201,7 @@ class TimeHistoryStreamChart extends StatelessWidget {
       final x = dayIndex + 0.5; // Noon between dividers.
 
       // Add an item for each category (even if 0 minutes, for continuity)
-      for (final categoryId in categoryOrder) {
+      for (final categoryId in categoryList) {
         final duration = day.durationByCategoryId[categoryId] ?? Duration.zero;
         items.add(
           StreamChartItem(
