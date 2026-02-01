@@ -1,7 +1,7 @@
 # Swipable Time History Header — Implementation Plan
 
 **Created**: 2026-01-31
-**Status**: In Progress (Phase 1 Complete, Phase 1b Complete)
+**Status**: In Progress (Phase 1, 1b, 2 Complete — Phase 3 In Progress)
 **Epic**: Daily Operating System
 **Related Plans**:
 - `2026-01-14_daily_os_implementation_plan.md` — Core Daily OS architecture (DayHeader, providers)
@@ -211,115 +211,132 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
 ### 2. Custom Stream Chart Painter
 
-**Location**: `lib/features/daily_os/ui/widgets/time_history_chart_painter.dart`
+**Location**: `lib/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter.dart`
 
 **Key Design Decisions**:
 - Use `CustomPainter` instead of Graphic library for full control and performance
-- Paint stacked areas with smooth curves between days using quadratic Bezier
-- Stack categories symmetrically around center baseline (mirrored stream chart effect)
+- **Bottom-aligned stacking**: Categories stack from bottom upward (not mirrored)
+- **Visual style**: Opaque top stroke (1.0 alpha) + transparent fill (0.3 alpha)
+- Paint stacked areas with smooth quadratic Bezier curves between days
 - Normalize Y-axis based on `maxDailyTotal` across visible range
 - Precompute stacked heights per day on data changes; avoid per-frame recompute
-- Repaint on scroll with a `Listenable` (`repaint: _scrollController`)
+- Use `AnimatedBuilder` with scroll controller for efficient repaint
 
 ```dart
 class TimeHistoryChartPainter extends CustomPainter {
-  TimeHistoryChartPainter({
-    required this.data,
-    required this.selectedDate,
+  const TimeHistoryChartPainter({
+    required this.days,
+    required this.categoryOrder,
+    required this.stackedHeights,
+    required this.maxDailyTotal,
     required this.categoryColors,
-    required this.dayWidth,
-    required this.visibleDayCount,
+    required this.selectedDayIndex,
     required this.scrollOffset,
-    required Listenable scrollController,
-  }) : super(repaint: scrollController);
+    required this.daySegmentWidth,
+    required this.selectionColor,
+    required this.defaultCategoryColor,
+  });
 
-  final TimeHistoryData data;
-  final DateTime selectedDate;
-  final Map<String, Color> categoryColors;
-  final double dayWidth;
-  final int visibleDayCount;
+  final List<DayTimeSummary> days;
+  final List<String> categoryOrder;
+  final StackedHeights stackedHeights;
+  final Duration maxDailyTotal;
+  final Map<String?, Color> categoryColors;
+  final int selectedDayIndex;
   final double scrollOffset;
+  final double daySegmentWidth;
+  final Color selectionColor;
+  final Color defaultCategoryColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.days.isEmpty) return;
+    if (days.isEmpty || maxDailyTotal == Duration.zero) return;
 
-    final chartHeight = size.height * 0.7;  // Leave room for date labels
-    final centerY = chartHeight / 2;
-    final maxMinutes = data.maxDailyTotal.inMinutes.toDouble();
+    final chartHeight = size.height * 0.85;
+    final baselineY = size.height;
 
-    if (maxMinutes == 0) return;
+    // Calculate visible range
+    final (startIdx, endIdx) = _calculateVisibleRange(size);
 
-    // Draw stacked areas for each category
-    for (final categoryId in data.categoryOrder) {
-      _paintCategoryArea(
-        canvas,
-        size,
-        categoryId,
-        centerY,
-        chartHeight,
-        maxMinutes,
-      );
-    }
+    // Draw stacked areas (bottom to top)
+    _drawStackedAreas(canvas, size, startIdx, endIdx, baselineY, chartHeight);
 
     // Draw selection highlight
-    _paintSelectionHighlight(canvas, size);
+    if (selectedDayIndex >= startIdx && selectedDayIndex <= endIdx) {
+      _drawSelectionHighlight(canvas, size);
+    }
   }
 
-  void _paintCategoryArea(
-    Canvas canvas,
-    Size size,
-    String categoryId,
-    double centerY,
-    double chartHeight,
-    double maxMinutes,
-  ) {
-    final color = categoryColors[categoryId] ?? Colors.grey;
-    final paint = Paint()
-      ..color = color.withOpacity(0.7)
-      ..style = PaintingStyle.fill;
+  void _drawStackedAreas(Canvas canvas, Size size, int startIdx, int endIdx,
+      double baselineY, double chartHeight) {
+    final maxMicros = maxDailyTotal.inMicroseconds.toDouble();
 
-    final path = Path();
-    var started = false;
+    for (final categoryId in [...categoryOrder, null]) {
+      final upperPoints = <Offset>[];
+      final lowerPoints = <Offset>[];
 
-    // Calculate cumulative heights for stacking
-    for (var i = 0; i < data.days.length; i++) {
-      final day = data.days[i];
-      final x = _dayIndexToX(i);
+      for (var i = endIdx; i >= startIdx; i--) {
+        final day = days[i];
+        final x = _dayXCenter(i, size.width);
+        final heights = stackedHeights[day.day];
+        if (heights == null) continue;
 
-      // Skip if not visible
-      if (x < -dayWidth || x > size.width + dayWidth) continue;
+        final baseHeight = heights[categoryId] ?? 0.0;
+        final catDuration = day.durationByCategoryId[categoryId] ?? Duration.zero;
+        final catHeight = catDuration.inMicroseconds / maxMicros;
+        final topHeight = baseHeight + catHeight;
 
-      final categoryMinutes = day.durationByCategory[categoryId]?.inMinutes ?? 0;
-      final lowerCategories = _sumLowerCategories(day, categoryId);
-
-      final lowerHeight = (lowerCategories / maxMinutes) * (chartHeight / 2);
-      final categoryHeight = (categoryMinutes / maxMinutes) * (chartHeight / 2);
-
-      final topY = centerY - lowerHeight - categoryHeight;
-      final bottomY = centerY + lowerHeight + categoryHeight;
-
-      if (!started) {
-        path.moveTo(x, centerY);
-        started = true;
+        upperPoints.add(Offset(x, baselineY - topHeight * chartHeight));
+        lowerPoints.add(Offset(x, baselineY - baseHeight * chartHeight));
       }
 
-      // Use quadratic bezier for smooth curves
-      path.lineTo(x, topY);
+      if (upperPoints.isEmpty) continue;
+
+      final color = categoryColors[categoryId] ?? defaultCategoryColor;
+      final upperPath = _buildSmoothPath(upperPoints);
+      final lowerPath = _buildSmoothPath(lowerPoints.reversed.toList());
+
+      // 1. Draw transparent fill
+      final areaPath = Path()
+        ..addPath(upperPath, Offset.zero)
+        ..lineTo(lowerPoints.first.dx, lowerPoints.first.dy)
+        ..addPath(lowerPath, Offset.zero)
+        ..close();
+      canvas.drawPath(areaPath, Paint()
+        ..color = color.withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill);
+
+      // 2. Draw opaque top stroke
+      canvas.drawPath(upperPath, Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round);
     }
+  }
 
-    // Close path back through bottom edge
-    // ... (mirror for symmetric stream chart)
+  Path _buildSmoothPath(List<Offset> points) {
+    if (points.isEmpty) return Path();
+    if (points.length == 1) return Path()..moveTo(points[0].dx, points[0].dy);
 
-    canvas.drawPath(path, paint);
+    final path = Path()..moveTo(points[0].dx, points[0].dy);
+    for (var i = 0; i < points.length - 1; i++) {
+      final p0 = points[i];
+      final p1 = points[i + 1];
+      final midX = (p0.dx + p1.dx) / 2;
+      path.quadraticBezierTo(midX, p0.dy, midX, (p0.dy + p1.dy) / 2);
+      path.quadraticBezierTo(midX, p1.dy, p1.dx, p1.dy);
+    }
+    return path;
   }
 
   @override
-  bool shouldRepaint(TimeHistoryChartPainter oldDelegate) {
-    return data != oldDelegate.data ||
-        selectedDate != oldDelegate.selectedDate ||
-        scrollOffset != oldDelegate.scrollOffset;
-  }
+  bool shouldRepaint(TimeHistoryChartPainter oldDelegate) =>
+      !identical(days, oldDelegate.days) ||
+      !identical(stackedHeights, oldDelegate.stackedHeights) ||
+      scrollOffset != oldDelegate.scrollOffset ||
+      selectedDayIndex != oldDelegate.selectedDayIndex;
 }
 ```
 
@@ -571,15 +588,16 @@ class _DaySegment extends StatelessWidget {
 
 ## Implementation Phases
 
-### Phase 1: Data Layer & Logic
+### Phase 1: Data Layer & Logic ✓
 
 **Goal**: Build the data infrastructure for loading and aggregating multi-day time data.
 
-**Files to Create**:
+**Implemented in commit d8aefef06** (#2625):
 
 | File                                                              | Purpose                    |
 |-------------------------------------------------------------------|----------------------------|
-| `lib/features/daily_os/state/time_history_header_controller.dart` | Controller with data models |
+| `lib/features/daily_os/state/time_history_header_controller.dart` | Controller with data models (519 lines) |
+| `test/features/daily_os/state/time_history_header_controller_test.dart` | Unit tests (1364 lines, 23 tests) |
 
 **Tasks**:
 - [x] Define `DayTimeSummary` and `TimeHistoryData` freezed classes
@@ -604,7 +622,7 @@ fvm flutter test test/features/daily_os/state/time_history_header_controller_tes
 # All 16 tests pass ✓
 ```
 
-### Phase 1b: DST-Safe Calendar Arithmetic
+### Phase 1b: DST-Safe Calendar Arithmetic ✓
 
 **Goal**: Fix Duration-based date arithmetic that's unsafe across DST transitions.
 
@@ -675,22 +693,29 @@ fvm flutter analyze
 
 ---
 
-### Phase 2: Basic UI & Navigation
+### Phase 2: Basic UI & Navigation ✓
 
 **Goal**: Implement the swipable header UI skeleton without chart rendering.
 
-**Files to Create**:
+**Files Created** (commit ca73238d6):
 
-| File                                                       | Purpose            |
-|------------------------------------------------------------|--------------------|
-| `lib/features/daily_os/ui/widgets/time_history_header.dart` | Main header widget |
-| `test/features/daily_os/ui/widgets/time_history_header_test.dart` | Widget tests |
+| File                                                                              | Purpose                |
+|-----------------------------------------------------------------------------------|------------------------|
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header.dart`   | Library export         |
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header_widget.dart` | Main header widget |
+| `lib/features/daily_os/ui/widgets/time_history_header/date_label_row.dart`        | Bottom info bar        |
+| `lib/features/daily_os/ui/widgets/time_history_header/day_segment.dart`           | Individual day item    |
+| `lib/features/daily_os/ui/widgets/time_history_header/day_label_chip.dart`        | Day label chip         |
+| `lib/features/daily_os/ui/widgets/time_history_header/status_indicator.dart`      | Budget status indicator|
+| `lib/features/daily_os/ui/widgets/time_history_header/today_button.dart`          | "Go to today" button   |
+| `test/features/daily_os/ui/widgets/time_history_header/test_helpers.dart`         | Test utilities         |
+| `test/features/daily_os/ui/widgets/time_history_header/*_test.dart`               | Widget tests           |
 
-**Files to Modify**:
+**Files Modified**:
 
 | File                                                  | Changes                                    |
 |-------------------------------------------------------|--------------------------------------------|
-| `lib/features/daily_os/ui/pages/daily_os_page.dart`   | Replace `DayHeader` with `TimeHistoryHeader` |
+| `lib/features/daily_os/ui/pages/daily_os_page.dart`   | Replaced `DayHeader` with `TimeHistoryHeader` |
 
 **Widget Structure**:
 ```text
@@ -716,47 +741,36 @@ TimeHistoryHeader (ConsumerStatefulWidget, 120px height)
 - `dayBudgetStatsProvider(date:)` → status indicator data
 
 **Tasks**:
-- [ ] Create `TimeHistoryHeader` ConsumerStatefulWidget with ScrollController
-- [ ] Configure `ListView.builder` with `reverse: true`, `scrollDirection: Axis.horizontal`, `itemExtent: 56.0`
-- [ ] Implement `_DaySegment` widget:
+- [x] Create `TimeHistoryHeader` ConsumerStatefulWidget with ScrollController
+- [x] Configure `ListView.builder` with `reverse: true`, `scrollDirection: Axis.horizontal`, `itemExtent: 56.0`
+- [x] Implement `DaySegment` widget:
   - Day number text at bottom
   - Month indicator ("Jan", "Feb") when `day.day == 1`
   - Selection border highlight (primary color, 2px)
   - Semantic label for accessibility
-- [ ] Implement scroll listener for load-more at 80% threshold:
-  ```dart
-  if (position.pixels > position.maxScrollExtent * 0.8) {
-    ref.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
-  }
-  ```
-- [ ] Add day segment tap handling → `ref.read(dailyOsSelectedDateProvider.notifier).selectDate(day.day)`
-- [ ] Implement `_DateLabelRow` ConsumerWidget:
-  - Date text tappable for date picker (reuse `_showDatePicker` from DayHeader)
-  - Day name formatting (reuse `_formatDayName` from DayHeader)
-  - Date formatting (reuse `_formatDate` from DayHeader)
-- [ ] Copy `_DayLabelChip` widget from DayHeader (lines 221-246)
-- [ ] Copy `_StatusIndicator` widget from DayHeader (lines 249-327)
-- [ ] Implement `_TodayButton`:
-  - Visible only when `!_isToday(selectedDate)`
-  - Calls `goToToday()` and `_scrollController.animateTo(0, ...)`
-- [ ] Implement loading skeleton with 7 placeholder day segments
-- [ ] Implement `_LoadingMoreIndicator` (small spinner at left edge when `isLoadingMore`)
-- [ ] Update `daily_os_page.dart`:
-  - Change import from `day_header.dart` to `time_history_header.dart`
-  - Replace `const DayHeader()` with `const TimeHistoryHeader()` (line 38)
-- [ ] Write widget tests for:
-  - Day segments render for loaded data
-  - Day segment tap updates selected date
-  - Selection highlight on selected day
-  - Month indicator on first of month
-  - Loading skeleton during initial load
-  - Today button visibility based on selected date
-  - Today button scrolls to today
-  - Day label chip when present
-  - Budget status indicator
-  - Date picker opens on date text tap
-  - Load-more triggers at 80% scroll threshold
-  - Loading indicator when isLoadingMore is true
+- [x] Implement scroll listener for load-more at 80% threshold
+- [x] Add day segment tap handling → `dailyOsSelectedDateProvider.notifier.selectDate()`
+- [x] Implement `DateLabelRow` ConsumerWidget:
+  - Date text tappable for date picker
+  - Day name and date formatting
+- [x] Implement `DayLabelChip` widget
+- [x] Implement `StatusIndicator` widget
+- [x] Implement `TodayButton`:
+  - Visible only when not viewing today
+  - Scrolls back to today on tap
+- [x] Implement loading skeleton with placeholder day segments
+- [x] Implement loading indicator when `isLoadingMore`
+- [x] Update `daily_os_page.dart` to use `TimeHistoryHeader`
+- [x] Write widget tests (381+ tests added in commit ca73238d6)
+
+**Implemented in commit ca73238d6** (#2626):
+- `time_history_header_widget.dart` - Main header widget (420 lines)
+- `date_label_row.dart` - Bottom info bar (122 lines)
+- `day_segment.dart` - Individual day item (76 lines)
+- `day_label_chip.dart` - Day label display (41 lines)
+- `status_indicator.dart` - Budget status (90 lines)
+- `today_button.dart` - "Go to today" button (40 lines)
+- Full test coverage for all components
 
 **Reference Files**:
 - `lib/features/daily_os/ui/widgets/day_header.dart` — widgets to reuse
@@ -779,28 +793,41 @@ fvm flutter test test/features/daily_os/
 
 **Files to Create**:
 
-| File                                                               | Purpose                       |
-|--------------------------------------------------------------------|-------------------------------|
-| `lib/features/daily_os/ui/widgets/time_history_chart_painter.dart` | CustomPainter for stream chart |
+| File                                                                                      | Purpose                        |
+|-------------------------------------------------------------------------------------------|--------------------------------|
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter.dart`    | CustomPainter for stream chart |
+| `test/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter_test.dart` | Unit tests for painter      |
+
+**Files to Modify**:
+
+| File                                                                                      | Change                                |
+|-------------------------------------------------------------------------------------------|---------------------------------------|
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header_widget.dart`    | Add CustomPaint to Stack, color resolution |
+
+**Visual Design**:
+- **Bottom-aligned stacking**: Categories stack from bottom upward (like reference chart)
+- **Opaque top stroke** (1.0 alpha, 1.5px) - provides clean definition at category edges
+- **Transparent fill** (0.3 alpha) - subtle layered effect, not visually overwhelming
+- **Smooth Bezier curves** between day centers for flowing transitions
 
 **Tasks**:
 
 - [ ] Create `TimeHistoryChartPainter` extending `CustomPainter`
-- [ ] Implement Y-axis normalization based on `maxDailyTotal`
-- [ ] Paint stacked areas with category colors from `EntitiesCacheService`
-- [ ] Use quadratic Bezier curves for smooth flow between days
-- [ ] Implement symmetric stacking around center baseline
+- [ ] Implement bottom-aligned Y-axis with normalization from `maxDailyTotal`
+- [ ] Paint stacked areas: transparent fill + opaque top stroke per category
+- [ ] Use quadratic Bezier curves (`_buildSmoothPath`) for smooth flow between days
+- [ ] Implement coordinate system: reverse layout with today at right edge
 - [ ] Add selection highlight effect for current day column
-- [ ] Implement `shouldRepaint` for efficient updates
-- [ ] Handle edge cases: empty days, single category, no data
-- [ ] Add subtle day boundary separators
-- [ ] Write golden tests comparing rendered output
-- [ ] Test with varying data densities (empty days, heavy days)
-- [ ] Ensure scroll-driven repaint is paint-only (no rebuilds)
+- [ ] Implement efficient `shouldRepaint` with identity checks
+- [ ] Handle edge cases: empty days, single category, zero maxDailyTotal
+- [ ] Resolve category colors in widget (not painter) using `EntitiesCacheService`
+- [ ] Integrate into `time_history_header_widget.dart` Stack with `AnimatedBuilder`
+- [ ] Write unit tests for coordinate calculations, path building, shouldRepaint
+- [ ] Write widget tests for chart rendering in scroll context
 
 **Verification**:
 - Run app, navigate to Daily OS tab
-- Verify stream chart renders with category colors
+- Verify stream chart renders with category colors (opaque stroke + transparent fill)
 - Verify chart flows smoothly across day boundaries
 - Verify selected day has visual highlight
 - Profile performance during rapid scrolling (target: 60fps)
