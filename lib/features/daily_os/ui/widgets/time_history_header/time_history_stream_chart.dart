@@ -8,12 +8,14 @@ import 'package:lotti/utils/color.dart';
 /// Data item for the stream chart, representing one category's time for one day.
 class StreamChartItem {
   StreamChartItem({
-    required this.date,
+    required this.x,
     required this.categoryId,
     required this.minutes,
   });
 
-  final DateTime date;
+  /// X-position in days, where each whole number is a midnight divider.
+  /// Noon for a day should be at index + 0.5.
+  final double x;
   final String categoryId;
   final int minutes;
 }
@@ -25,10 +27,9 @@ class StreamChartItem {
 class TimeHistoryStreamChart extends StatelessWidget {
   const TimeHistoryStreamChart({
     required this.days,
-    required this.visibleStartDate,
-    required this.visibleEndDate,
     this.height = 60,
     this.width,
+    this.verticalScale = 1.0,
     super.key,
   });
 
@@ -39,17 +40,14 @@ class TimeHistoryStreamChart extends StatelessWidget {
   /// All available day summaries (may be more than visible range).
   final List<DayTimeSummary> days;
 
-  /// Start of the visible date range (oldest visible day).
-  final DateTime visibleStartDate;
-
-  /// End of the visible date range (newest visible day, usually today or selected).
-  final DateTime visibleEndDate;
-
   /// Chart height in pixels.
   final double height;
 
   /// Chart width in pixels. If null, uses available width.
   final double? width;
+
+  /// Vertical scale factor for visual emphasis (layout height is unchanged).
+  final double verticalScale;
 
   @override
   Widget build(BuildContext context) {
@@ -72,62 +70,58 @@ class TimeHistoryStreamChart extends StatelessWidget {
     return SizedBox(
       height: height,
       width: width,
-      child: Chart(
-        data: chartData,
-        variables: {
-          'date': Variable(
-            accessor: (StreamChartItem item) => item.date,
-            scale: TimeScale(
-              tickCount: 0, // No axis labels
-              // Normalize to midnight boundaries so noon sits between dividers.
-              min: DateTime(
-                visibleStartDate.year,
-                visibleStartDate.month,
-                visibleStartDate.day,
+      child: ClipRect(
+        child: Transform.scale(
+          scaleY: verticalScale,
+          child: Chart(
+            data: chartData,
+            variables: {
+              'x': Variable(
+                accessor: (StreamChartItem item) => item.x,
+                scale: LinearScale(
+                  min: 0,
+                  max: days.length.toDouble(),
+                ),
               ),
-              max: DateTime(
-                visibleEndDate.year,
-                visibleEndDate.month,
-                visibleEndDate.day,
-              ).add(const Duration(days: 1)),
-            ),
-          ),
-          'value': Variable(
-            accessor: (StreamChartItem item) => item.minutes,
-            scale: LinearScale(
-              // Fixed +/- 24 hours to keep visual scale comparable over time.
-              min: -1440,
-              max: 1440,
-            ),
-          ),
-          'categoryId': Variable(
-            accessor: (StreamChartItem item) => item.categoryId,
-          ),
-        },
-        marks: [
-          AreaMark(
-            position: Varset('date') * Varset('value') / Varset('categoryId'),
-            shape: ShapeEncode(
-              value: BasicAreaShape(smooth: true),
-            ),
-            color: ColorEncode(
-              encoder: (data) {
-                final categoryId = data['categoryId'] as String;
-                final categoryDefinition =
-                    getIt<EntitiesCacheService>().getCategoryById(categoryId);
-                return colorFromCssHex(
-                  categoryDefinition?.color,
-                  substitute: Colors.grey,
-                );
-              },
-            ),
-            modifiers: [
-              StackModifier(),
-              SymmetricModifier(),
+              'value': Variable(
+                accessor: (StreamChartItem item) => item.minutes,
+                scale: LinearScale(
+                  // Fixed +/- 24 hours to keep visual scale comparable over time.
+                  min: -1440,
+                  max: 1440,
+                ),
+              ),
+              'categoryId': Variable(
+                accessor: (StreamChartItem item) => item.categoryId,
+              ),
+            },
+            marks: [
+              AreaMark(
+                position: Varset('x') * Varset('value') / Varset('categoryId'),
+                shape: ShapeEncode(
+                  value: BasicAreaShape(smooth: true),
+                ),
+                color: ColorEncode(
+                  encoder: (data) {
+                    final categoryId = data['categoryId'] as String;
+                    final categoryDefinition = getIt<EntitiesCacheService>()
+                        .getCategoryById(categoryId);
+                    return colorFromCssHex(
+                      categoryDefinition?.color,
+                      substitute: Colors.grey,
+                    );
+                  },
+                ),
+                modifiers: [
+                  StackModifier(),
+                  SymmetricModifier(),
+                ],
+              ),
             ],
+            axes: const [],
+            padding: (_) => EdgeInsets.zero,
           ),
-        ],
-        axes: const [],
+        ),
       ),
     );
   }
@@ -148,17 +142,18 @@ class TimeHistoryStreamChart extends StatelessWidget {
           (day.durationByCategoryId[null] ?? Duration.zero) > Duration.zero,
     );
 
-    for (final day in days) {
-      // Normalize date to noon to align with day segment centers.
-      final normalizedDate =
-          DateTime(day.day.year, day.day.month, day.day.day, 12);
+    for (var i = 0; i < days.length; i++) {
+      final day = days[i];
+      // Map newest->oldest list to oldest->newest x axis.
+      final dayIndex = (days.length - 1 - i).toDouble();
+      final x = dayIndex + 0.5; // Noon between dividers.
 
       // Add an item for each category (even if 0 minutes, for continuity)
       for (final categoryId in categoryOrder) {
         final duration = day.durationByCategoryId[categoryId] ?? Duration.zero;
         items.add(
           StreamChartItem(
-            date: normalizedDate,
+            x: x,
             categoryId: categoryId,
             minutes: duration.inMinutes,
           ),
@@ -171,7 +166,7 @@ class TimeHistoryStreamChart extends StatelessWidget {
             day.durationByCategoryId[null] ?? Duration.zero;
         items.add(
           StreamChartItem(
-            date: normalizedDate,
+            x: x,
             categoryId: '__uncategorized__',
             minutes: uncategorizedDuration.inMinutes,
           ),

@@ -164,8 +164,7 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
   /// Load more days of history (backward scrolling).
   ///
-  /// Uses a sliding window: when cap is hit, drops newest days to make room
-  /// for older history, preserving backward scroll position.
+  /// Appends older days to the history to avoid scroll jumps.
   Future<void> loadMoreDays() async {
     final current = state.value;
     if (current == null || current.isLoadingMore || !current.canLoadMore) {
@@ -195,13 +194,23 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       final newEarliestDay =
           mergedDays.isNotEmpty ? mergedDays.last.day : current.earliestDay;
 
-      // Recompute maxDailyTotal from merged days
-      final newMax = _computeMaxFromDays(mergedDays);
+      // Update maxDailyTotal incrementally; only recompute all heights if scale
+      // changes (new max is higher).
+      final newMax = current.maxDailyTotal > additionalData.maxDailyTotal
+          ? current.maxDailyTotal
+          : additionalData.maxDailyTotal;
 
-      // Recompute stacked heights for scale consistency
       final categoryOrder = current.categoryOrder;
-      final stackedHeights =
-          _computeStackedHeights(mergedDays, categoryOrder, newMax);
+      final stackedHeights = newMax > current.maxDailyTotal
+          ? _computeStackedHeights(mergedDays, categoryOrder, newMax)
+          : {
+              ...current.stackedHeights,
+              ..._computeStackedHeights(
+                additionalData.days,
+                categoryOrder,
+                newMax,
+              ),
+            };
 
       state = AsyncData(
         current.copyWith(
@@ -486,19 +495,5 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     }
 
     return result;
-  }
-
-  /// Compute max daily total from a list of day summaries.
-  ///
-  /// Returns [Duration.zero] for empty lists, which is handled downstream
-  /// by `_computeStackedHeights` returning an empty map.
-  Duration _computeMaxFromDays(List<DayTimeSummary> days) {
-    var max = Duration.zero;
-    for (final day in days) {
-      if (day.total > max) {
-        max = day.total;
-      }
-    }
-    return max;
   }
 }

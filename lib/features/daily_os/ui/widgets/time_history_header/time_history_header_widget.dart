@@ -24,7 +24,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
-  static const double monthLabelHeight = 18;
+  static const double monthLabelHeight = 16;
   static const double chartHeight = 96;
   static const double chartAreaHeight = monthLabelHeight + chartHeight;
   static const double dateLabelRowHeight = 44;
@@ -50,6 +50,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
   // Number of days to prefetch in each direction beyond visible
   static const int _prefetchBuffer = 5;
+
+  // Number of days to render beyond visible range for smoother transitions
+  static const int _chartBuffer = 2;
 
   // Margin for invalidation (2x buffer to avoid thrashing)
   static const int _invalidateMargin = _prefetchBuffer * 2;
@@ -89,14 +92,15 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     _updatePrefetchWindow();
   }
 
-  /// Calculate visible day indices from scroll position.
-  (int startIdx, int endIdx) _getVisibleIndices(TimeHistoryData data) {
-    if (!_scrollController.hasClients || data.days.isEmpty) {
+  /// Calculate visible day indices from scroll metrics.
+  (int startIdx, int endIdx) _getVisibleIndicesForMetrics(
+    TimeHistoryData data,
+    double scrollOffset,
+    double viewportWidth,
+  ) {
+    if (data.days.isEmpty) {
       return (0, 0);
     }
-
-    final scrollOffset = _scrollController.offset;
-    final viewportWidth = _scrollController.position.viewportDimension;
 
     // Calculate which day indices are visible
     // Since reverse: true, index 0 is at the right edge
@@ -110,6 +114,18 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     final endIdx = (lastVisibleIndex - 1).clamp(0, data.days.length - 1);
 
     return (startIdx, endIdx);
+  }
+
+  /// Calculate visible day indices from scroll position.
+  (int startIdx, int endIdx) _getVisibleIndices(TimeHistoryData data) {
+    if (!_scrollController.hasClients || data.days.isEmpty) {
+      return (0, 0);
+    }
+
+    final scrollOffset = _scrollController.offset;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    return _getVisibleIndicesForMetrics(data, scrollOffset, viewportWidth);
   }
 
   /// Update the visible month label based on scroll position.
@@ -325,7 +341,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.only(
-                top: TimeHistoryHeader.monthLabelHeight,
+                top: TimeHistoryHeader.monthLabelHeight - 10,
               ), // Below month label
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -335,10 +351,40 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                       final scrollOffset = _scrollController.hasClients
                           ? _scrollController.offset
                           : 0.0;
+                      final viewportWidth = _scrollController.hasClients
+                          ? _scrollController.position.viewportDimension
+                          : constraints.maxWidth;
+
+                      final (visibleStart, visibleEnd) =
+                          _getVisibleIndicesForMetrics(
+                        data,
+                        scrollOffset,
+                        viewportWidth,
+                      );
+
+                      final chartStart = (visibleStart - _chartBuffer).clamp(
+                        0,
+                        data.days.length - 1,
+                      );
+                      final chartEnd = (visibleEnd + _chartBuffer).clamp(
+                        0,
+                        data.days.length - 1,
+                      );
+
+                      if (chartEnd < chartStart) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final chartDays =
+                          data.days.sublist(chartStart, chartEnd + 1);
+
+                      if (chartDays.length < 2) {
+                        return const SizedBox.shrink();
+                      }
 
                       // Calculate chart positioning to align with day boundaries.
                       // There are N day segments between N+1 midnights.
-                      final chartWidth = data.days.length * daySegmentWidth;
+                      final chartWidth = chartDays.length * daySegmentWidth;
 
                       // Guard against zero width
                       if (chartWidth <= 0) {
@@ -348,15 +394,17 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                       // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge.
                       // Chart x=0 should align with the oldest day midnight,
                       // and x=max with the newest day midnight + 1 day.
-                      // So we position the chart right edge at the list's right edge.
-                      final chartRightEdge =
-                          constraints.maxWidth + scrollOffset;
-                      final chartLeftEdge = chartRightEdge - chartWidth;
+                      // So we position the chart right edge at the right border of
+                      // the newest day in the chart window.
+                      final chartRightEdge = constraints.maxWidth +
+                          scrollOffset -
+                          (chartStart * daySegmentWidth);
                       final devicePixelRatio =
                           MediaQuery.devicePixelRatioOf(context);
-                      final alignedLeft =
-                          (chartLeftEdge * devicePixelRatio).roundToDouble() /
+                      final alignedRight =
+                          (chartRightEdge * devicePixelRatio).roundToDouble() /
                               devicePixelRatio;
+                      final alignedLeft = alignedRight - chartWidth;
 
                       return ClipRect(
                         child: OverflowBox(
@@ -366,10 +414,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                           child: Transform.translate(
                             offset: Offset(alignedLeft, 0),
                             child: TimeHistoryStreamChart(
-                              days: data.days,
-                              visibleStartDate: data.earliestDay,
-                              visibleEndDate: data.latestDay,
+                              days: chartDays,
                               height: TimeHistoryHeader.chartHeight,
+                              verticalScale: 1.2,
                               width: chartWidth,
                             ),
                           ),
