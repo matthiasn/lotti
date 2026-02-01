@@ -86,10 +86,12 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    // Trigger load-more at 80% scroll threshold
+
+    // Trigger load-more-past at 80% scroll threshold (scrolling left/older)
     if (position.pixels > position.maxScrollExtent * 0.8) {
       ref.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
     }
+
     // Update visible month label and prefetch window
     _updateVisibleMonth();
     _updatePrefetchWindow();
@@ -303,7 +305,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Calculate scroll offset to center today in the viewport
     final viewportWidth = _scrollController.position.viewportDimension;
     final viewportDays = viewportWidth / daySegmentWidth;
-    final targetOffset = (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
+    final targetOffset =
+        (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
 
     // Jump immediately (no animation for initial positioning)
     _scrollController.jumpTo(targetOffset.clamp(0, double.infinity));

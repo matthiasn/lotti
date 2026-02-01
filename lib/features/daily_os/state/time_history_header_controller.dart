@@ -84,8 +84,8 @@ extension TimeHistoryDataX on TimeHistoryData {
 /// supporting incremental loading for infinite scroll.
 @riverpod
 class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
-  static const int _initialPastDays = 16;
-  static const int _initialFutureDays = 14;
+  static const int _initialPastDays = 30;
+  static const int _initialFutureDays = 30;
   static const int _loadMoreDays = 14;
   static const int _batchSize = 500;
 
