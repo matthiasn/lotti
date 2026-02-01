@@ -16,6 +16,7 @@ import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header.dart';
 
 import '../../../../test_helper.dart';
+import '../widgets/time_history_header/test_helpers.dart';
 
 /// Mock controller that returns a fixed DayPlanEntry.
 class _TestDayPlanController extends DayPlanController {
@@ -181,6 +182,9 @@ void main() {
   }
 
   group('DailyOsPage', () {
+    setUp(setUpEntitiesCacheService);
+    tearDown(tearDownEntitiesCacheService);
+
     testWidgets('renders main structure', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();

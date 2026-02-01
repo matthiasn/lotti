@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Infinite scroll loads more history (14 days at a time)
   - Today button appears when not viewing current day
   - Displays day label chip and budget status indicator
+- Daily OS Time History Header: Stream chart visualization showing time-by-category
+  distribution across days with symmetric stacked areas using the graphic library
+### Changed
+- Daily OS Time History Header: Avoid full stacked-height recomputation when loading
+  more history unless the scale changes
+- Daily OS Time History Header: Scale the stream chart to the maximum daily total
+  with a 6-hour minimum
+- Daily OS Time History Header: Removed 180-day history cap for continuous exploration;
+  users can scroll through unbounded history while memory remains efficient through
+  lazy loading and viewport-based chart rendering
 
 ## [0.9.835] - 2026-01-31
 ### Changed

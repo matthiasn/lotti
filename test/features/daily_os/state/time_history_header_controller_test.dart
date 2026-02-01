@@ -167,7 +167,7 @@ void main() {
         final result =
             await container.read(timeHistoryHeaderControllerProvider.future);
 
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
         expect(result.isLoadingMore, isFalse);
         expect(result.canLoadMore, isTrue);
       });
@@ -389,41 +389,8 @@ void main() {
         final result =
             container.read(timeHistoryHeaderControllerProvider).value!;
 
-        // Should have 30 + 14 = 44 days
-        expect(result.days.length, equals(44));
-      });
-    });
-
-    test('loadMoreDays respects history window cap', () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        // Initial load
-        await container.read(timeHistoryHeaderControllerProvider.future);
-
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-
-        // Load many times to exceed cap (180 days)
-        for (var i = 0; i < 15; i++) {
-          await notifier.loadMoreDays();
-        }
-
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-
-        // Should be capped at 180 days
-        expect(result.days.length, lessThanOrEqualTo(180));
+        // Initial: 30 past + 30 future = 60 days, plus 14 more = 74 days
+        expect(result.days.length, equals(74));
       });
     });
 
@@ -626,7 +593,7 @@ void main() {
         expect(initialHeights['cat-personal'], closeTo(1.0, 0.01));
 
         // Now load more with higher max (5 hours in cat-work)
-        // With clock at Jan 15, loadMore fetches Dec 3-16, so use Dec 10
+        // With clock at Jan 15 and 30 past days, loadMore fetches Dec 3-16
         final olderDate = DateTime(2025, 12, 10, 10);
 
         final task2 = createTask(
@@ -674,58 +641,6 @@ void main() {
         expect(rescaledHeights!['cat-work'], equals(0.0)); // Still starts at 0
         // cat-personal now starts at 60/300 = 0.2 (was 1.0 before rescale)
         expect(rescaledHeights['cat-personal'], closeTo(0.2, 0.01));
-      });
-    });
-
-    test('sliding window drops newest days when cap is reached', () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        // Initial load
-        final initialResult =
-            await container.read(timeHistoryHeaderControllerProvider.future);
-        final initialLatest = initialResult.latestDay;
-
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-
-        // Load enough to exceed cap (180 days)
-        // Initial: 30, then 14 per load, need ~11 loads to exceed
-        for (var i = 0; i < 15; i++) {
-          await notifier.loadMoreDays();
-        }
-
-        final afterCap =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-
-        // Should be capped at 180 days
-        expect(afterCap.days.length, lessThanOrEqualTo(180));
-
-        // Latest day should have moved back (newest dropped)
-        // The newest days are at the front, so latestDay (first in list) changes
-        expect(
-          afterCap.latestDay.isBefore(initialLatest) ||
-              afterCap.latestDay.isAtSameMomentAs(initialLatest),
-          isTrue,
-          reason: 'Sliding window should drop newest days',
-        );
-
-        // Earliest day should have moved further back (we loaded more history)
-        expect(
-          afterCap.earliestDay.isBefore(initialResult.earliestDay),
-          isTrue,
-          reason: 'Should have loaded older history',
-        );
       });
     });
 
@@ -799,7 +714,7 @@ void main() {
 
         // Should have same latest day as initial (today)
         expect(afterReset.latestDay, equals(initialLatest));
-        expect(afterReset.days.length, equals(30));
+        expect(afterReset.days.length, equals(60));
         expect(afterReset.canLoadMore, isTrue);
       });
     });
@@ -839,7 +754,7 @@ void main() {
             container.read(timeHistoryHeaderControllerProvider).value!;
 
         // Should still have initial data and isLoadingMore reset to false
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
         expect(result.isLoadingMore, isFalse);
 
         // Error should have been logged
@@ -974,7 +889,7 @@ void main() {
             await container.read(timeHistoryHeaderControllerProvider.future);
 
         // Should have exactly 30 unique days
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
 
         // Extract day numbers to verify uniqueness
         final dayDates = result.days
@@ -982,8 +897,8 @@ void main() {
         final uniqueDates = dayDates.toSet();
         expect(
           uniqueDates.length,
-          equals(30),
-          reason: 'All 30 days should be unique (no duplicates from DST)',
+          equals(60),
+          reason: 'All 60 days should be unique (no duplicates from DST)',
         );
 
         // Verify March 8 (DST day) is present exactly once
@@ -1027,7 +942,7 @@ void main() {
             await container.read(timeHistoryHeaderControllerProvider.future);
 
         // Should have exactly 30 unique days
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
 
         // Extract day numbers to verify uniqueness
         final dayDates = result.days
@@ -1035,8 +950,8 @@ void main() {
         final uniqueDates = dayDates.toSet();
         expect(
           uniqueDates.length,
-          equals(30),
-          reason: 'All 30 days should be unique (no duplicates from DST)',
+          equals(60),
+          reason: 'All 60 days should be unique (no duplicates from DST)',
         );
 
         // Verify November 1 (DST day) is present exactly once
@@ -1088,8 +1003,8 @@ void main() {
         final result =
             container.read(timeHistoryHeaderControllerProvider).value!;
 
-        // Should have exactly 44 unique days (30 + 14)
-        expect(result.days.length, equals(44));
+        // Should have exactly 74 unique days (60 initial + 14 more)
+        expect(result.days.length, equals(74));
 
         // Verify all days are unique
         final dayDates = result.days
@@ -1097,8 +1012,8 @@ void main() {
         final uniqueDates = dayDates.toSet();
         expect(
           uniqueDates.length,
-          equals(44),
-          reason: 'All 44 days should be unique after loadMoreDays',
+          equals(74),
+          reason: 'All 74 days should be unique after loadMoreDays',
         );
 
         // Verify days are properly ordered (newest to oldest)
@@ -1137,7 +1052,7 @@ void main() {
             await container.read(timeHistoryHeaderControllerProvider.future);
 
         // Should have exactly 30 unique days
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
 
         // Extract day numbers to verify uniqueness
         final dayDates = result.days
@@ -1145,8 +1060,8 @@ void main() {
         final uniqueDates = dayDates.toSet();
         expect(
           uniqueDates.length,
-          equals(30),
-          reason: 'All 30 days should be unique (no duplicates from EU DST)',
+          equals(60),
+          reason: 'All 60 days should be unique (no duplicates from EU DST)',
         );
 
         // Verify March 29 (EU DST day) is present exactly once
@@ -1193,7 +1108,7 @@ void main() {
             await container.read(timeHistoryHeaderControllerProvider.future);
 
         // Should have exactly 30 unique days
-        expect(result.days.length, equals(30));
+        expect(result.days.length, equals(60));
 
         // Extract day numbers to verify uniqueness
         final dayDates = result.days
@@ -1201,8 +1116,8 @@ void main() {
         final uniqueDates = dayDates.toSet();
         expect(
           uniqueDates.length,
-          equals(30),
-          reason: 'All 30 days should be unique (no duplicates from EU DST)',
+          equals(60),
+          reason: 'All 60 days should be unique (no duplicates from EU DST)',
         );
 
         // Verify October 25 (EU DST day) is present exactly once

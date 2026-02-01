@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os/state/time_history_header_controller.dar
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_segment.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
@@ -23,10 +24,12 @@ import 'package:lotti/utils/date_utils_extension.dart';
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
-  static const double headerHeight = 120;
-  static const double chartAreaHeight = 76;
-  // 44 - 1 to account for 1px bottom border
-  static const double dateLabelRowHeight = 43;
+  static const double monthLabelHeight = 16;
+  static const double chartHeight = 72;
+  static const double chartAreaHeight = monthLabelHeight + chartHeight;
+  static const double dateLabelRowHeight = 44;
+  // +1 to account for bottom border consuming layout space.
+  static const double headerHeight = chartAreaHeight + dateLabelRowHeight + 1;
 
   @override
   ConsumerState<TimeHistoryHeader> createState() => _TimeHistoryHeaderState();
@@ -45,8 +48,14 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   int _lastVisibleStart = -1;
   int _lastVisibleEnd = -1;
 
+  // Whether we've set the initial scroll position to center on today
+  bool _hasSetInitialScroll = false;
+
   // Number of days to prefetch in each direction beyond visible
   static const int _prefetchBuffer = 5;
+
+  // Number of days to render beyond visible range for smoother transitions
+  static const int _chartBuffer = 2;
 
   // Margin for invalidation (2x buffer to avoid thrashing)
   static const int _invalidateMargin = _prefetchBuffer * 2;
@@ -77,23 +86,26 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    // Trigger load-more at 80% scroll threshold
+
+    // Trigger load-more-past at 80% scroll threshold (scrolling left/older)
     if (position.pixels > position.maxScrollExtent * 0.8) {
       ref.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
     }
+
     // Update visible month label and prefetch window
     _updateVisibleMonth();
     _updatePrefetchWindow();
   }
 
-  /// Calculate visible day indices from scroll position.
-  (int startIdx, int endIdx) _getVisibleIndices(TimeHistoryData data) {
-    if (!_scrollController.hasClients || data.days.isEmpty) {
+  /// Calculate visible day indices from scroll metrics.
+  (int startIdx, int endIdx) _getVisibleIndicesForMetrics(
+    TimeHistoryData data,
+    double scrollOffset,
+    double viewportWidth,
+  ) {
+    if (data.days.isEmpty) {
       return (0, 0);
     }
-
-    final scrollOffset = _scrollController.offset;
-    final viewportWidth = _scrollController.position.viewportDimension;
 
     // Calculate which day indices are visible
     // Since reverse: true, index 0 is at the right edge
@@ -107,6 +119,18 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     final endIdx = (lastVisibleIndex - 1).clamp(0, data.days.length - 1);
 
     return (startIdx, endIdx);
+  }
+
+  /// Calculate visible day indices from scroll position.
+  (int startIdx, int endIdx) _getVisibleIndices(TimeHistoryData data) {
+    if (!_scrollController.hasClients || data.days.isEmpty) {
+      return (0, 0);
+    }
+
+    final scrollOffset = _scrollController.offset;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    return _getVisibleIndicesForMetrics(data, scrollOffset, viewportWidth);
   }
 
   /// Update the visible month label based on scroll position.
@@ -237,15 +261,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Navigate to today immediately
     ref.read(dailyOsSelectedDateProvider.notifier).goToToday();
 
-    // Animate scroll to today's position (offset 0, since reverse: true)
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-
     // Check if today is in the data window, if not reset
     final data = ref.read(timeHistoryHeaderControllerProvider).value;
     if (data != null) {
@@ -253,11 +268,52 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           data.days.any((day) => day.day.dayAtMidnight == today);
       if (!todayInWindow) {
         ref.read(timeHistoryHeaderControllerProvider.notifier).resetToToday();
+      } else if (_scrollController.hasClients) {
+        // Animate scroll to center today in the viewport
+        final todayNoon = clock.now().dayAtNoon;
+        final todayIndex = data.days.indexWhere((d) => d.day == todayNoon);
+        if (todayIndex >= 0) {
+          final viewportWidth = _scrollController.position.viewportDimension;
+          final viewportDays = viewportWidth / daySegmentWidth;
+          final targetOffset =
+              (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
+          _scrollController.animateTo(
+            targetOffset.clamp(0, double.infinity),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       }
     }
 
     // Prefetch today's data in background (fire-and-forget)
     ref.read(unifiedDailyOsDataControllerProvider(date: today));
+  }
+
+  /// Center the scroll view on today when data first loads.
+  ///
+  /// Only sets [_hasSetInitialScroll] after a successful centering, allowing
+  /// retries if today isn't present in the initial data load.
+  void _centerOnTodayIfNeeded(TimeHistoryData data) {
+    if (_hasSetInitialScroll) return;
+    if (!_scrollController.hasClients) return;
+
+    // Find today's index in the days list (newest-to-oldest order)
+    final todayNoon = clock.now().dayAtNoon;
+    final todayIndex = data.days.indexWhere((d) => d.day == todayNoon);
+    if (todayIndex < 0) return;
+
+    // Calculate scroll offset to center today in the viewport
+    final viewportWidth = _scrollController.position.viewportDimension;
+    final viewportDays = viewportWidth / daySegmentWidth;
+    final targetOffset =
+        (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
+
+    // Jump immediately (no animation for initial positioning)
+    _scrollController.jumpTo(targetOffset.clamp(0, double.infinity));
+
+    // Only mark as done after successful centering
+    _hasSetInitialScroll = true;
   }
 
   @override
@@ -269,6 +325,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     historyDataAsync.whenData((data) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          _centerOnTodayIfNeeded(data);
           _updatePrefetchWindow();
           _updateVisibleMonth();
         }
@@ -315,15 +372,136 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
     return Stack(
       children: [
-        // Placeholder for CustomPaint (Phase 3)
-        // Future: Time history chart will be drawn here
+        // Stream chart background using graphic library
+        // Only render chart if we have at least 2 days
+        // (SymmetricModifier in graphic library requires >= 2 data points)
+        if (data.days.length >= 2)
+          Positioned.fill(
+            child: Padding(
+              // Chart top padding: monthLabelHeight (16) - 15 = 1px.
+              // This positions the chart's vertical center slightly above
+              // the day segments, allowing the symmetric chart to grow
+              // both upward (into the month label area) and downward.
+              padding: const EdgeInsets.only(
+                top: TimeHistoryHeader.monthLabelHeight - 15,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AnimatedBuilder(
+                    animation: _scrollController,
+                    builder: (context, _) {
+                      final scrollOffset = _scrollController.hasClients
+                          ? _scrollController.offset
+                          : 0.0;
+                      final viewportWidth = _scrollController.hasClients
+                          ? _scrollController.position.viewportDimension
+                          : constraints.maxWidth;
+
+                      final (visibleStart, visibleEnd) =
+                          _getVisibleIndicesForMetrics(
+                        data,
+                        scrollOffset,
+                        viewportWidth,
+                      );
+
+                      final chartStart = (visibleStart - _chartBuffer).clamp(
+                        0,
+                        data.days.length - 1,
+                      );
+                      final chartEnd = (visibleEnd + _chartBuffer).clamp(
+                        0,
+                        data.days.length - 1,
+                      );
+
+                      if (chartEnd < chartStart) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final chartDays =
+                          data.days.sublist(chartStart, chartEnd + 1);
+
+                      if (chartDays.length < 2) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // Calculate chart positioning to align with day boundaries.
+                      // There are N day segments between N+1 midnights.
+                      final chartWidth = chartDays.length * daySegmentWidth;
+
+                      // Guard against zero width
+                      if (chartWidth <= 0) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge.
+                      // Chart x=0 should align with the oldest day midnight,
+                      // and x=max with the newest day midnight + 1 day.
+                      // So we position the chart right edge at the right border of
+                      // the newest day in the chart window.
+                      final chartRightEdge = constraints.maxWidth +
+                          scrollOffset -
+                          (chartStart * daySegmentWidth);
+
+                      // Calculate clip boundary at tomorrow noon.
+                      // Find tomorrow's index in data.days (newest-to-oldest order).
+                      final tomorrow = clock.now().dayAtNoon.add(
+                            const Duration(days: 1),
+                          );
+                      final tomorrowIndex = data.days.indexWhere(
+                        (d) => d.day == tomorrow,
+                      );
+                      // Clip right edge: tomorrow noon position in viewport coords
+                      // tomorrowIndex * daySegmentWidth gives tomorrow's left edge,
+                      // add half segment for noon
+                      final clipRightX = tomorrowIndex >= 0
+                          ? constraints.maxWidth +
+                              scrollOffset -
+                              (tomorrowIndex * daySegmentWidth) -
+                              (daySegmentWidth / 2)
+                          : double.infinity;
+                      final devicePixelRatio =
+                          MediaQuery.devicePixelRatioOf(context);
+                      final alignedRight =
+                          (chartRightEdge * devicePixelRatio).roundToDouble() /
+                              devicePixelRatio;
+                      final alignedLeft = alignedRight - chartWidth;
+
+                      return ClipRect(
+                        // Clip chart at tomorrow noon to prevent
+                        // rendering into future days
+                        clipper: _TomorrowNoonClipper(
+                          clipRightX: clipRightX,
+                          viewportWidth: constraints.maxWidth,
+                        ),
+                        child: OverflowBox(
+                          alignment: Alignment.centerLeft,
+                          maxWidth: chartWidth,
+                          minWidth: chartWidth,
+                          child: Transform.translate(
+                            offset: Offset(alignedLeft, 0),
+                            child: TimeHistoryStreamChart(
+                              days: chartDays,
+                              height: TimeHistoryHeader.chartHeight,
+                              maxDailyTotal: data.maxDailyTotal,
+                              verticalScale: 0.9,
+                              width: chartWidth,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
 
         // Day segments list with month labels
         Column(
           children: [
             // Sticky month label row
             SizedBox(
-              height: 16,
+              height: TimeHistoryHeader.monthLabelHeight,
               child: Center(
                 child: Text(
                   _visibleMonthLabel,
@@ -355,6 +533,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                     daySummary: daySummary,
                     isSelected: isSelected,
                     onTap: () => _selectDate(daySummary.day),
+                    showRightBorder: index == 0,
                   );
                 },
               ),
@@ -369,7 +548,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     return Column(
       children: [
         // Placeholder for month label
-        const SizedBox(height: 16),
+        const SizedBox(height: TimeHistoryHeader.monthLabelHeight),
         // Skeleton day segments
         Expanded(
           child: ListView.builder(
@@ -416,5 +595,34 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         ),
       ),
     );
+  }
+}
+
+/// Custom clipper that clips the chart at tomorrow noon.
+///
+/// This prevents the stream chart from rendering into future days
+/// while still allowing the day segments to be scrollable.
+class _TomorrowNoonClipper extends CustomClipper<Rect> {
+  _TomorrowNoonClipper({
+    required this.clipRightX,
+    required this.viewportWidth,
+  });
+
+  final double clipRightX;
+  final double viewportWidth;
+
+  @override
+  Rect getClip(Size size) {
+    // Clip from left edge to tomorrow noon (or full width if no clip needed)
+    final rightEdge = clipRightX.isFinite
+        ? clipRightX.clamp(0.0, viewportWidth)
+        : viewportWidth;
+    return Rect.fromLTRB(0, 0, rightEdge, size.height);
+  }
+
+  @override
+  bool shouldReclip(_TomorrowNoonClipper oldClipper) {
+    return oldClipper.clipRightX != clipRightX ||
+        oldClipper.viewportWidth != viewportWidth;
   }
 }

@@ -47,7 +47,7 @@ final class TimeHistoryHeaderControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$timeHistoryHeaderControllerHash() =>
-    r'c8a5de2e32112ec23d2a7a39f827a8061b697706';
+    r'6812baa3b50f4b62212591b178c431326ca1852c';
 
 /// Controller for the time history header data layer.
 ///
