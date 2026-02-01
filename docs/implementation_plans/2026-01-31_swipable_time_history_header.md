@@ -684,6 +684,7 @@ fvm flutter analyze
 | File                                                       | Purpose            |
 |------------------------------------------------------------|--------------------|
 | `lib/features/daily_os/ui/widgets/time_history_header.dart` | Main header widget |
+| `test/features/daily_os/ui/widgets/time_history_header_test.dart` | Widget tests |
 
 **Files to Modify**:
 
@@ -691,21 +692,81 @@ fvm flutter analyze
 |-------------------------------------------------------|--------------------------------------------|
 | `lib/features/daily_os/ui/pages/daily_os_page.dart`   | Replace `DayHeader` with `TimeHistoryHeader` |
 
+**Widget Structure**:
+```text
+TimeHistoryHeader (ConsumerStatefulWidget, 120px height)
+├── Container (surfaceContainerHighest background, outlineVariant border)
+│   └── Column
+│       ├── SizedBox (76px - chart area)
+│       │   └── Stack
+│       │       ├── Placeholder for CustomPaint (Phase 3)
+│       │       └── ListView.builder (reverse: true, horizontal)
+│       │           └── _DaySegment (56px width each)
+│       └── _DateLabelRow (44px)
+│           ├── Date text (tappable → date picker)
+│           ├── _DayLabelChip (if present)
+│           ├── _StatusIndicator (if budgets exist)
+│           └── _TodayButton (if not viewing today)
+```
+
+**Providers to Watch**:
+- `timeHistoryHeaderControllerProvider` → `TimeHistoryData` (from Phase 1)
+- `dailyOsSelectedDateProvider` → selected date for highlighting
+- `unifiedDailyOsDataControllerProvider(date:)` → day label for chip
+- `dayBudgetStatsProvider(date:)` → status indicator data
+
 **Tasks**:
-- [ ] Create `TimeHistoryHeader` widget with `ListView.builder`
-- [ ] Configure `reverse: true` and `scrollDirection: Axis.horizontal`
-- [ ] Set `itemExtent: 56.0` for fixed-width day segments
-- [ ] Implement `_DaySegment` widget with day number and selection state
-- [ ] Implement scroll listener for load-more triggering (80% threshold)
-- [ ] Add day segment tap handling → update `dailyOsSelectedDateProvider`
-- [ ] Add date label row with full date text
-- [ ] Add "Today" button with scroll-to-today animation
-- [ ] Preserve existing day label chip, status indicator, and date picker tap
-- [ ] Add loading skeleton for initial data fetch
-- [ ] Preserve existing status indicator (on track / near limit / over budget)
-- [ ] Write widget tests for scroll behavior and day selection
+- [ ] Create `TimeHistoryHeader` ConsumerStatefulWidget with ScrollController
+- [ ] Configure `ListView.builder` with `reverse: true`, `scrollDirection: Axis.horizontal`, `itemExtent: 56.0`
+- [ ] Implement `_DaySegment` widget:
+  - Day number text at bottom
+  - Month indicator ("Jan", "Feb") when `day.day == 1`
+  - Selection border highlight (primary color, 2px)
+  - Semantic label for accessibility
+- [ ] Implement scroll listener for load-more at 80% threshold:
+  ```dart
+  if (position.pixels > position.maxScrollExtent * 0.8) {
+    ref.read(timeHistoryHeaderControllerProvider.notifier).loadMoreDays();
+  }
+  ```
+- [ ] Add day segment tap handling → `ref.read(dailyOsSelectedDateProvider.notifier).selectDate(day.day)`
+- [ ] Implement `_DateLabelRow` ConsumerWidget:
+  - Date text tappable for date picker (reuse `_showDatePicker` from DayHeader)
+  - Day name formatting (reuse `_formatDayName` from DayHeader)
+  - Date formatting (reuse `_formatDate` from DayHeader)
+- [ ] Copy `_DayLabelChip` widget from DayHeader (lines 221-246)
+- [ ] Copy `_StatusIndicator` widget from DayHeader (lines 249-327)
+- [ ] Implement `_TodayButton`:
+  - Visible only when `!_isToday(selectedDate)`
+  - Calls `goToToday()` and `_scrollController.animateTo(0, ...)`
+- [ ] Implement loading skeleton with 7 placeholder day segments
+- [ ] Implement `_LoadingMoreIndicator` (small spinner at left edge when `isLoadingMore`)
+- [ ] Update `daily_os_page.dart`:
+  - Change import from `day_header.dart` to `time_history_header.dart`
+  - Replace `const DayHeader()` with `const TimeHistoryHeader()` (line 38)
+- [ ] Write widget tests for:
+  - Day segments render for loaded data
+  - Day segment tap updates selected date
+  - Selection highlight on selected day
+  - Month indicator on first of month
+  - Loading skeleton during initial load
+  - Today button visibility based on selected date
+  - Today button scrolls to today
+  - Day label chip when present
+  - Budget status indicator
+  - Date picker opens on date text tap
+  - Load-more triggers at 80% scroll threshold
+  - Loading indicator when isLoadingMore is true
+
+**Reference Files**:
+- `lib/features/daily_os/ui/widgets/day_header.dart` — widgets to reuse
+- `test/features/daily_os/ui/widgets/day_header_test.dart` — test patterns
 
 **Verification**:
+```bash
+fvm flutter analyze
+fvm flutter test test/features/daily_os/
+```
 - Run app, navigate to Daily OS tab
 - Verify horizontal scrolling with multiple day segments
 - Verify tapping a day updates the selected date

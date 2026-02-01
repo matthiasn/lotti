@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.836] - 2026-01-31
+### Added
+- Daily OS Time History Header: New horizontally scrollable day navigation header
+  - Replaces arrow-based navigation with tap-to-select day segments
+  - Sticky month label shows the currently visible month(s)
+  - Selected day highlighted with primary color border
+  - Infinite scroll loads more history (14 days at a time)
+  - Today button appears when not viewing current day
+  - Displays day label chip and budget status indicator
+
 ## [0.9.835] - 2026-01-31
 ### Changed
 - Daily OS Time Budgets: Tasks completed on a different day now show a faded checkmark (45% opacity)
