@@ -389,7 +389,7 @@ void main() {
         final result =
             container.read(timeHistoryHeaderControllerProvider).value!;
 
-        // Should have 30 + 14 = 44 days
+        // Initial: 30 past + 30 future = 60 days, plus 14 more = 74 days
         expect(result.days.length, equals(74));
       });
     });
@@ -1003,7 +1003,7 @@ void main() {
         final result =
             container.read(timeHistoryHeaderControllerProvider).value!;
 
-        // Should have exactly 44 unique days (30 + 14)
+        // Should have exactly 74 unique days (60 initial + 14 more)
         expect(result.days.length, equals(74));
 
         // Verify all days are unique

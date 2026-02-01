@@ -291,11 +291,12 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Center the scroll view on today when data first loads.
+  ///
+  /// Only sets [_hasSetInitialScroll] after a successful centering, allowing
+  /// retries if today isn't present in the initial data load.
   void _centerOnTodayIfNeeded(TimeHistoryData data) {
     if (_hasSetInitialScroll) return;
     if (!_scrollController.hasClients) return;
-
-    _hasSetInitialScroll = true;
 
     // Find today's index in the days list (newest-to-oldest order)
     final todayNoon = clock.now().dayAtNoon;
@@ -310,6 +311,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
     // Jump immediately (no animation for initial positioning)
     _scrollController.jumpTo(targetOffset.clamp(0, double.infinity));
+
+    // Only mark as done after successful centering
+    _hasSetInitialScroll = true;
   }
 
   @override
@@ -374,9 +378,13 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         if (data.days.length >= 2)
           Positioned.fill(
             child: Padding(
+              // Chart top padding: monthLabelHeight (16) - 15 = 1px.
+              // This positions the chart's vertical center slightly above
+              // the day segments, allowing the symmetric chart to grow
+              // both upward (into the month label area) and downward.
               padding: const EdgeInsets.only(
                 top: TimeHistoryHeader.monthLabelHeight - 15,
-              ), // Below month label
+              ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return AnimatedBuilder(

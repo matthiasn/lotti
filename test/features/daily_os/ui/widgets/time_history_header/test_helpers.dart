@@ -63,13 +63,16 @@ MockEntitiesCacheService setUpEntitiesCacheService() {
   TimeHistoryStreamChart.testMode = true;
   final mockCacheService = MockEntitiesCacheService();
 
-  // Set up category lookups
+  // Return null for unknown categories (register first as fallback).
+  // mocktail uses LIFO matching, so specific stubs registered after this
+  // will take precedence for their exact arguments.
+  when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+
+  // Set up specific category lookups (registered after fallback to take precedence)
   for (final entry in testCategories.entries) {
     when(() => mockCacheService.getCategoryById(entry.key))
         .thenReturn(entry.value);
   }
-  // Return null for unknown categories
-  when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
   // Set up sortedCategories for the stream chart
   when(() => mockCacheService.sortedCategories)

@@ -540,7 +540,11 @@ class _DaySegment extends StatelessWidget {
 
 - **No DB work on scroll**: all queries happen off the scroll path.
 - **Filter to visible days**: Chart only includes days in visible date range.
-- **Bounded memory**: cap loaded history window (e.g., 180 days).
+- **Efficient memory**: no hard cap on history; memory stays bounded via lazy loading
+  (14 days at a time) and viewport-based chart rendering (only visible days + buffer).
+  - ⚠️ **Monitor in production**: Observe memory usage when users scroll extensively
+    through history. If issues arise, consider reinstating a configurable cap or
+    implementing LRU eviction for oldest loaded days.
 - **Throttle update stream**: avoid frequent rebuilds from notifications.
 - **Scroll-driven updates**: use `AnimatedBuilder` with scroll controller for chart updates.
 
@@ -577,8 +581,8 @@ class _DaySegment extends StatelessWidget {
 - [x] Port aggregation logic from `TimeByCategoryController._fetch()` using
       `dayAtNoon` (DST safe) and sparse category maps
 - [x] Implement batched `linksForEntryIds` and linked-entity lookups
-- [x] Implement `loadMoreDays()` for incremental backward loading with
-      history window cap (180 days)
+- [x] Implement `loadMoreDays()` for incremental backward loading
+      (14 days at a time, no hard cap)
 - [x] Subscribe to `UpdateNotifications` via `getIt<UpdateNotifications>()`
       with throttling (5 seconds)
 - [x] Precompute per-day stacked heights on data changes
@@ -586,7 +590,7 @@ class _DaySegment extends StatelessWidget {
 - [x] Test incremental loading produces correct date ranges
 - [x] Test category resolution through entry links
 - [x] Add `resetToToday()` for returning to initial view after scrolling far
-- [x] Add sliding window that drops **newest** days when cap is exceeded
+- [x] ~~Add sliding window that drops newest days when cap is exceeded~~ (removed: continuous exploration preferred)
 
 **Verification**:
 ```bash
@@ -880,7 +884,7 @@ fvm flutter test
 | **Load increment**       | 14 days                                | Balances UX smoothness against database queries                     |
 | **Load threshold**       | 80% scroll position                    | Provides buffer for smooth infinite scroll                          |
 | **Y-axis normalization** | Max daily total across loaded range    | Consistent scale for comparison                                     |
-| **History cap**          | 180 days (configurable)                | Keeps paint + memory bounded                                        |
+| **Memory strategy**      | Lazy loading + viewport rendering      | No hard cap; memory bounded via 14-day incremental loads and chart buffer |
 | **Date arithmetic**      | Calendar arithmetic (day - n), not Duration | Avoids DST artifacts; proven in `getDaysAtNoon()`             |
 | **Midnight attribution** | Entry attributed to `dateFrom.dayAtNoon` | Simple, avoids splitting complexity; acceptable for header viz    |
 
