@@ -48,6 +48,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   int _lastVisibleStart = -1;
   int _lastVisibleEnd = -1;
 
+  // Whether we've set the initial scroll position to center on today
+  bool _hasSetInitialScroll = false;
+
   // Number of days to prefetch in each direction beyond visible
   static const int _prefetchBuffer = 5;
 
@@ -256,15 +259,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Navigate to today immediately
     ref.read(dailyOsSelectedDateProvider.notifier).goToToday();
 
-    // Animate scroll to today's position (offset 0, since reverse: true)
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-
     // Check if today is in the data window, if not reset
     final data = ref.read(timeHistoryHeaderControllerProvider).value;
     if (data != null) {
@@ -272,11 +266,47 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           data.days.any((day) => day.day.dayAtMidnight == today);
       if (!todayInWindow) {
         ref.read(timeHistoryHeaderControllerProvider.notifier).resetToToday();
+      } else if (_scrollController.hasClients) {
+        // Animate scroll to center today in the viewport
+        final todayNoon = clock.now().dayAtNoon;
+        final todayIndex = data.days.indexWhere((d) => d.day == todayNoon);
+        if (todayIndex >= 0) {
+          final viewportWidth = _scrollController.position.viewportDimension;
+          final viewportDays = viewportWidth / daySegmentWidth;
+          final targetOffset =
+              (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
+          _scrollController.animateTo(
+            targetOffset.clamp(0, double.infinity),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
       }
     }
 
     // Prefetch today's data in background (fire-and-forget)
     ref.read(unifiedDailyOsDataControllerProvider(date: today));
+  }
+
+  /// Center the scroll view on today when data first loads.
+  void _centerOnTodayIfNeeded(TimeHistoryData data) {
+    if (_hasSetInitialScroll) return;
+    if (!_scrollController.hasClients) return;
+
+    _hasSetInitialScroll = true;
+
+    // Find today's index in the days list (newest-to-oldest order)
+    final todayNoon = clock.now().dayAtNoon;
+    final todayIndex = data.days.indexWhere((d) => d.day == todayNoon);
+    if (todayIndex < 0) return;
+
+    // Calculate scroll offset to center today in the viewport
+    final viewportWidth = _scrollController.position.viewportDimension;
+    final viewportDays = viewportWidth / daySegmentWidth;
+    final targetOffset = (todayIndex - viewportDays / 2 + 0.5) * daySegmentWidth;
+
+    // Jump immediately (no animation for initial positioning)
+    _scrollController.jumpTo(targetOffset.clamp(0, double.infinity));
   }
 
   @override
@@ -288,6 +318,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     historyDataAsync.whenData((data) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          _centerOnTodayIfNeeded(data);
           _updatePrefetchWindow();
           _updateVisibleMonth();
         }
@@ -399,6 +430,24 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                       final chartRightEdge = constraints.maxWidth +
                           scrollOffset -
                           (chartStart * daySegmentWidth);
+
+                      // Calculate clip boundary at tomorrow noon.
+                      // Find tomorrow's index in data.days (newest-to-oldest order).
+                      final tomorrow = clock.now().dayAtNoon.add(
+                            const Duration(days: 1),
+                          );
+                      final tomorrowIndex = data.days.indexWhere(
+                        (d) => d.day == tomorrow,
+                      );
+                      // Clip right edge: tomorrow noon position in viewport coords
+                      // tomorrowIndex * daySegmentWidth gives tomorrow's left edge,
+                      // add half segment for noon
+                      final clipRightX = tomorrowIndex >= 0
+                          ? constraints.maxWidth +
+                              scrollOffset -
+                              (tomorrowIndex * daySegmentWidth) -
+                              (daySegmentWidth / 2)
+                          : double.infinity;
                       final devicePixelRatio =
                           MediaQuery.devicePixelRatioOf(context);
                       final alignedRight =
@@ -407,6 +456,12 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                       final alignedLeft = alignedRight - chartWidth;
 
                       return ClipRect(
+                        // Clip chart at tomorrow noon to prevent
+                        // rendering into future days
+                        clipper: _TomorrowNoonClipper(
+                          clipRightX: clipRightX,
+                          viewportWidth: constraints.maxWidth,
+                        ),
                         child: OverflowBox(
                           alignment: Alignment.centerLeft,
                           maxWidth: chartWidth,
@@ -529,5 +584,34 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         ),
       ),
     );
+  }
+}
+
+/// Custom clipper that clips the chart at tomorrow noon.
+///
+/// This prevents the stream chart from rendering into future days
+/// while still allowing the day segments to be scrollable.
+class _TomorrowNoonClipper extends CustomClipper<Rect> {
+  _TomorrowNoonClipper({
+    required this.clipRightX,
+    required this.viewportWidth,
+  });
+
+  final double clipRightX;
+  final double viewportWidth;
+
+  @override
+  Rect getClip(Size size) {
+    // Clip from left edge to tomorrow noon (or full width if no clip needed)
+    final rightEdge = clipRightX.isFinite
+        ? clipRightX.clamp(0.0, viewportWidth)
+        : viewportWidth;
+    return Rect.fromLTRB(0, 0, rightEdge, size.height);
+  }
+
+  @override
+  bool shouldReclip(_TomorrowNoonClipper oldClipper) {
+    return oldClipper.clipRightX != clipRightX ||
+        oldClipper.viewportWidth != viewportWidth;
   }
 }

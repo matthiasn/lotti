@@ -84,7 +84,8 @@ extension TimeHistoryDataX on TimeHistoryData {
 /// supporting incremental loading for infinite scroll.
 @riverpod
 class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
-  static const int _initialDays = 30;
+  static const int _initialPastDays = 16;
+  static const int _initialFutureDays = 14;
   static const int _loadMoreDays = 14;
   static const int _batchSize = 500;
 
@@ -155,11 +156,13 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   Future<TimeHistoryData> _fetchInitialData() async {
     // Using clock.now() for testability - can be mocked with withClock()
     final today = clock.now().dayAtMidnight;
-    // Use calendar arithmetic (day - n) instead of Duration subtraction
+    // Use calendar arithmetic (day +/- n) instead of Duration subtraction
     // to avoid DST artifacts when crossing daylight saving transitions.
     final startDate =
-        DateTime(today.year, today.month, today.day - (_initialDays - 1));
-    return _fetchDataForRange(startDate, today);
+        DateTime(today.year, today.month, today.day - (_initialPastDays - 1));
+    final endDate =
+        DateTime(today.year, today.month, today.day + _initialFutureDays);
+    return _fetchDataForRange(startDate, endDate);
   }
 
   /// Load more days of history (backward scrolling).

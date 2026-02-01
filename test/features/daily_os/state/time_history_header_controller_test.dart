@@ -593,8 +593,8 @@ void main() {
         expect(initialHeights['cat-personal'], closeTo(1.0, 0.01));
 
         // Now load more with higher max (5 hours in cat-work)
-        // With clock at Jan 15, loadMore fetches Dec 3-16, so use Dec 10
-        final olderDate = DateTime(2025, 12, 10, 10);
+        // With clock at Jan 15 and 16 past days, loadMore fetches Dec 17-30
+        final olderDate = DateTime(2025, 12, 25, 10);
 
         final task2 = createTask(
           id: 'task-2',

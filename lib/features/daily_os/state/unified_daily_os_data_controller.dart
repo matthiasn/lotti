@@ -416,10 +416,17 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       }
     }
 
-    // Find categories with due tasks but no budget
-    final categoriesNeedingSyntheticBudget = dueTasksByCategory.keys
-        .where((catId) => !budgetCategoryIds.contains(catId))
-        .toSet();
+    // Find categories needing synthetic budgets:
+    // 1. Categories with due tasks but no budget
+    // 2. Categories with time entries but no budget (for viewing past work)
+    final categoriesNeedingSyntheticBudget = <String>{
+      ...dueTasksByCategory.keys.where(
+        (catId) => !budgetCategoryIds.contains(catId),
+      ),
+      ...entriesByCategory.keys.where(
+        (catId) => !budgetCategoryIds.contains(catId),
+      ),
+    };
 
     final cacheService = getIt<EntitiesCacheService>();
     final results = <TimeBudgetProgress>[];
@@ -496,35 +503,72 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       );
     }
 
-    // Create synthetic budgets for categories with due tasks but no planned time
+    // Create synthetic budgets for categories with due tasks or time entries
+    // but no planned time budget
     for (final categoryId in categoriesNeedingSyntheticBudget) {
       final category = cacheService.getCategoryById(categoryId);
-      final categoryDueTasks = dueTasksByCategory[categoryId]!;
+      final categoryDueTasks = dueTasksByCategory[categoryId] ?? [];
+      final categoryEntries = entriesByCategory[categoryId] ?? [];
+      final recordedDuration = _sumDurations(categoryEntries);
 
-      final taskProgressItems = categoryDueTasks.map((task) {
-        final dueStatus = getDueDateStatus(
-          dueDate: task.data.due,
-          referenceDate: _date,
-        );
-        return TaskDayProgress(
-          task: task,
-          timeSpentOnDay: Duration.zero,
-          wasCompletedOnDay: false,
-          dueDateStatus: dueStatus,
-        );
-      }).toList()
-        // Sort by priority, then urgency, then alphabetically
-        ..sort(TaskSortComparators.byPriorityUrgencyTitle);
+      // Build task progress items from time entries (tracked work)
+      final trackedTaskItems = _buildTaskProgressItems(
+        categoryEntries: categoryEntries,
+        entryIdToLinkedFromIds: entryIdToLinkedFromIds,
+        linkedFromMap: linkedFromMap,
+      );
+      final trackedTaskIds =
+          trackedTaskItems.map((i) => i.task.meta.id).toSet();
+      final categoryDueTaskIds = categoryDueTasks.map((t) => t.meta.id).toSet();
+
+      // Merge tracked tasks with due status if applicable
+      final mergedTaskItems = trackedTaskItems.map((item) {
+        final taskId = item.task.meta.id;
+        if (categoryDueTaskIds.contains(taskId)) {
+          final dueStatus = getDueDateStatus(
+            dueDate: item.task.data.due,
+            referenceDate: _date,
+          );
+          return TaskDayProgress(
+            task: item.task,
+            timeSpentOnDay: item.timeSpentOnDay,
+            wasCompletedOnDay: item.wasCompletedOnDay,
+            dueDateStatus: dueStatus,
+          );
+        }
+        return item;
+      }).toList();
+
+      // Add due tasks that have no tracked time
+      for (final dueTask in categoryDueTasks) {
+        if (!trackedTaskIds.contains(dueTask.meta.id)) {
+          final dueStatus = getDueDateStatus(
+            dueDate: dueTask.data.due,
+            referenceDate: _date,
+          );
+          mergedTaskItems.add(
+            TaskDayProgress(
+              task: dueTask,
+              timeSpentOnDay: Duration.zero,
+              wasCompletedOnDay: false,
+              dueDateStatus: dueStatus,
+            ),
+          );
+        }
+      }
+
+      // Sort: time descending, then priority, urgency, alphabetical
+      mergedTaskItems.sort(TaskSortComparators.byTimeSpentThenPriority);
 
       results.add(
         TimeBudgetProgress(
           categoryId: categoryId,
           category: category,
           plannedDuration: Duration.zero,
-          recordedDuration: Duration.zero,
+          recordedDuration: recordedDuration,
           status: BudgetProgressStatus.underBudget,
-          contributingEntries: [],
-          taskProgressItems: taskProgressItems,
+          contributingEntries: categoryEntries,
+          taskProgressItems: mergedTaskItems,
           blocks: [],
           hasNoBudgetWarning: true,
         ),
