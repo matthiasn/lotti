@@ -12,12 +12,14 @@ class DaySegment extends StatelessWidget {
     required this.daySummary,
     required this.isSelected,
     required this.onTap,
+    this.showRightBorder = false,
     super.key,
   });
 
   final DayTimeSummary daySummary;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool showRightBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,13 @@ class DaySegment extends StatelessWidget {
                     context.colorScheme.outlineVariant.withValues(alpha: 0.5),
                 width: 2,
               ),
+              right: showRightBorder
+                  ? BorderSide(
+                      color: context.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                      width: 2,
+                    )
+                  : BorderSide.none,
             ),
           ),
           child: Container(

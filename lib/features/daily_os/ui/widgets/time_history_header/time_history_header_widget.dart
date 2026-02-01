@@ -24,10 +24,12 @@ import 'package:lotti/utils/date_utils_extension.dart';
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
-  static const double headerHeight = 120;
-  static const double chartAreaHeight = 76;
-  // 44 - 1 to account for 1px bottom border
-  static const double dateLabelRowHeight = 43;
+  static const double monthLabelHeight = 18;
+  static const double chartHeight = 96;
+  static const double chartAreaHeight = monthLabelHeight + chartHeight;
+  static const double dateLabelRowHeight = 44;
+  // +1 to account for bottom border consuming layout space.
+  static const double headerHeight = chartAreaHeight + dateLabelRowHeight + 1;
 
   @override
   ConsumerState<TimeHistoryHeader> createState() => _TimeHistoryHeaderState();
@@ -322,7 +324,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
         if (data.days.length >= 2)
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.only(top: 16), // Below month label
+              padding: const EdgeInsets.only(
+                top: TimeHistoryHeader.monthLabelHeight,
+              ), // Below month label
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return AnimatedBuilder(
@@ -332,9 +336,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                           ? _scrollController.offset
                           : 0.0;
 
-                      // Calculate chart positioning to align with day segments
-                      // The chart needs to be sized based on number of days
-                      // and positioned to align with the ListView
+                      // Calculate chart positioning to align with day boundaries.
+                      // There are N day segments between N+1 midnights.
                       final chartWidth = data.days.length * daySegmentWidth;
 
                       // Guard against zero width
@@ -342,11 +345,18 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                         return const SizedBox.shrink();
                       }
 
-                      // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge
-                      // Chart x=0 should be at oldest day (highest index), x=max at newest (index 0)
-                      // So we need to position chart right edge at (viewportWidth + scrollOffset)
-                      final chartRightEdge = constraints.maxWidth + scrollOffset;
+                      // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge.
+                      // Chart x=0 should align with the oldest day midnight,
+                      // and x=max with the newest day midnight + 1 day.
+                      // So we position the chart right edge at the list's right edge.
+                      final chartRightEdge =
+                          constraints.maxWidth + scrollOffset;
                       final chartLeftEdge = chartRightEdge - chartWidth;
+                      final devicePixelRatio =
+                          MediaQuery.devicePixelRatioOf(context);
+                      final alignedLeft =
+                          (chartLeftEdge * devicePixelRatio).roundToDouble() /
+                              devicePixelRatio;
 
                       return ClipRect(
                         child: OverflowBox(
@@ -354,11 +364,12 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                           maxWidth: chartWidth,
                           minWidth: chartWidth,
                           child: Transform.translate(
-                            offset: Offset(chartLeftEdge, 0),
+                            offset: Offset(alignedLeft, 0),
                             child: TimeHistoryStreamChart(
                               days: data.days,
                               visibleStartDate: data.earliestDay,
                               visibleEndDate: data.latestDay,
+                              height: TimeHistoryHeader.chartHeight,
                               width: chartWidth,
                             ),
                           ),
@@ -376,7 +387,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           children: [
             // Sticky month label row
             SizedBox(
-              height: 16,
+              height: TimeHistoryHeader.monthLabelHeight,
               child: Center(
                 child: Text(
                   _visibleMonthLabel,
@@ -408,6 +419,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                     daySummary: daySummary,
                     isSelected: isSelected,
                     onTap: () => _selectDate(daySummary.day),
+                    showRightBorder: index == 0,
                   );
                 },
               ),
@@ -422,7 +434,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     return Column(
       children: [
         // Placeholder for month label
-        const SizedBox(height: 16),
+        const SizedBox(height: TimeHistoryHeader.monthLabelHeight),
         // Skeleton day segments
         Expanded(
           child: ListView.builder(

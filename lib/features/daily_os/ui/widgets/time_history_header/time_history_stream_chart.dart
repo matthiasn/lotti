@@ -79,7 +79,7 @@ class TimeHistoryStreamChart extends StatelessWidget {
             accessor: (StreamChartItem item) => item.date,
             scale: TimeScale(
               tickCount: 0, // No axis labels
-              // Normalize to midnight to match chart data
+              // Normalize to midnight boundaries so noon sits between dividers.
               min: DateTime(
                 visibleStartDate.year,
                 visibleStartDate.month,
@@ -89,14 +89,15 @@ class TimeHistoryStreamChart extends StatelessWidget {
                 visibleEndDate.year,
                 visibleEndDate.month,
                 visibleEndDate.day,
-              ),
+              ).add(const Duration(days: 1)),
             ),
           ),
           'value': Variable(
             accessor: (StreamChartItem item) => item.minutes,
             scale: LinearScale(
-              min: -600,
-              max: 600,
+              // Fixed +/- 24 hours to keep visual scale comparable over time.
+              min: -1440,
+              max: 1440,
             ),
           ),
           'categoryId': Variable(
@@ -143,12 +144,14 @@ class TimeHistoryStreamChart extends StatelessWidget {
 
     // Check if any day has uncategorized time - if so, include it for all days
     final hasUncategorized = days.any(
-      (day) => (day.durationByCategoryId[null] ?? Duration.zero) > Duration.zero,
+      (day) =>
+          (day.durationByCategoryId[null] ?? Duration.zero) > Duration.zero,
     );
 
     for (final day in days) {
-      // Normalize date to midnight for consistent time axis positioning
-      final normalizedDate = DateTime(day.day.year, day.day.month, day.day.day);
+      // Normalize date to noon to align with day segment centers.
+      final normalizedDate =
+          DateTime(day.day.year, day.day.month, day.day.day, 12);
 
       // Add an item for each category (even if 0 minutes, for continuity)
       for (final categoryId in categoryOrder) {
