@@ -6,11 +6,10 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_segment.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Header widget for the Daily OS view with horizontal day navigation.
 ///
@@ -28,7 +27,6 @@ class TimeHistoryHeader extends ConsumerStatefulWidget {
   static const double chartAreaHeight = 76;
   // 44 - 1 to account for 1px bottom border
   static const double dateLabelRowHeight = 43;
-  static const double daySegmentWidth = 56;
 
   @override
   ConsumerState<TimeHistoryHeader> createState() => _TimeHistoryHeaderState();
@@ -100,11 +98,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     // Calculate which day indices are visible
     // Since reverse: true, index 0 is at the right edge
     // scrollOffset increases as we scroll left (toward older days)
-    final firstVisibleIndex =
-        (scrollOffset / TimeHistoryHeader.daySegmentWidth).floor();
+    final firstVisibleIndex = (scrollOffset / daySegmentWidth).floor();
     final lastVisibleIndex =
-        ((scrollOffset + viewportWidth) / TimeHistoryHeader.daySegmentWidth)
-            .ceil();
+        ((scrollOffset + viewportWidth) / daySegmentWidth).ceil();
 
     // Clamp to valid range
     final startIdx = firstVisibleIndex.clamp(0, data.days.length - 1);
@@ -304,7 +300,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           // Date label row
           SizedBox(
             height: TimeHistoryHeader.dateLabelRowHeight,
-            child: _DateLabelRow(
+            child: DateLabelRow(
               selectedDate: selectedDate,
               onTodayPressed: _onTodayPressed,
             ),
@@ -345,7 +341,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                 scrollDirection: Axis.horizontal,
                 reverse: true, // Today at right edge
                 itemCount: itemCount,
-                itemExtent: TimeHistoryHeader.daySegmentWidth, // Fixed width
+                itemExtent: daySegmentWidth, // Fixed width
                 itemBuilder: (context, index) {
                   if (data.isLoadingMore && index == data.days.length) {
                     return _buildLoadingIndicator();
@@ -355,7 +351,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                   final isSelected = daySummary.day.dayAtMidnight ==
                       selectedDate.dayAtMidnight;
 
-                  return _DaySegment(
+                  return DaySegment(
                     daySummary: daySummary,
                     isSelected: isSelected,
                     onTap: () => _selectDate(daySummary.day),
@@ -380,10 +376,10 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
             scrollDirection: Axis.horizontal,
             reverse: true,
             itemCount: 7,
-            itemExtent: TimeHistoryHeader.daySegmentWidth,
+            itemExtent: daySegmentWidth,
             itemBuilder: (context, index) {
               return Container(
-                width: TimeHistoryHeader.daySegmentWidth,
+                width: daySegmentWidth,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -408,7 +404,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
   Widget _buildLoadingIndicator() {
     return SizedBox(
-      width: TimeHistoryHeader.daySegmentWidth,
+      width: daySegmentWidth,
       child: Center(
         child: SizedBox(
           width: 16,
@@ -418,333 +414,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
             color: context.colorScheme.primary,
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Individual day segment in the horizontal list.
-class _DaySegment extends StatelessWidget {
-  const _DaySegment({
-    required this.daySummary,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final DayTimeSummary daySummary;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final day = daySummary.day;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Semantics(
-        label: DateFormat.yMMMMd().format(day),
-        button: true,
-        selected: isSelected,
-        child: Container(
-          width: TimeHistoryHeader.daySegmentWidth,
-          decoration: BoxDecoration(
-            // Left border as day separator (midnight divider)
-            border: Border(
-              left: BorderSide(
-                color:
-                    context.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                width: 2,
-              ),
-            ),
-          ),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            decoration: BoxDecoration(
-              border: isSelected
-                  ? Border.all(
-                      color: context.colorScheme.primary,
-                      width: 2,
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // Day number
-                Text(
-                  day.day.toString(),
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: isSelected
-                        ? context.colorScheme.primary
-                        : context.colorScheme.onSurface,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Date label row at the bottom of the header.
-class _DateLabelRow extends ConsumerWidget {
-  const _DateLabelRow({
-    required this.selectedDate,
-    required this.onTodayPressed,
-  });
-
-  final DateTime selectedDate;
-  final VoidCallback onTodayPressed;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unifiedDataAsync =
-        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
-    final budgetStatsAsync =
-        ref.watch(dayBudgetStatsProvider(date: selectedDate));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingSmall,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Tappable date text (flexible to prevent overflow)
-          Flexible(
-            child: GestureDetector(
-              onTap: () => _showDatePicker(context, ref, selectedDate),
-              child: Text(
-                _formatDate(context, selectedDate),
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-
-          // Day label chip
-          unifiedDataAsync.when(
-            data: (unifiedData) {
-              final dayPlan = unifiedData.dayPlan;
-              final label = dayPlan.data.dayLabel;
-              if (label == null || label.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
-                child: _DayLabelChip(label: label),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-
-          // Status indicator
-          budgetStatsAsync.when(
-            data: (stats) {
-              if (stats.budgetCount == 0) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
-                child: _StatusIndicator(stats: stats),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-
-          // Today button (if not viewing today)
-          if (!_isToday(selectedDate))
-            Padding(
-              padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
-              child: _TodayButton(onPressed: onTodayPressed),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(BuildContext context, DateTime date) {
-    final locale = Localizations.localeOf(context).toString();
-    final dayName = DateFormat('EEEE', locale).format(date);
-    final formattedDate = DateFormat.yMMMd(locale).format(date);
-    return '$dayName, $formattedDate';
-  }
-
-  bool _isToday(DateTime date) {
-    return date.dayAtMidnight == clock.now().dayAtMidnight;
-  }
-
-  Future<void> _showDatePicker(
-    BuildContext context,
-    WidgetRef ref,
-    DateTime currentDate,
-  ) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null) {
-      ref.read(dailyOsSelectedDateProvider.notifier).selectDate(picked);
-    }
-  }
-}
-
-/// Chip showing the day's label/intent.
-class _DayLabelChip extends StatelessWidget {
-  const _DayLabelChip({required this.label});
-
-  final String label;
-
-  // Maximum width to prevent overflow on smaller screens
-  static const double maxWidth = 120;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: maxWidth),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingMedium,
-          vertical: 4,
-        ),
-        decoration: BoxDecoration(
-          color: context.colorScheme.primaryContainer.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: context.textTheme.labelMedium?.copyWith(
-            color: context.colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.w500,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-    );
-  }
-}
-
-/// Status indicator showing budget health.
-class _StatusIndicator extends StatelessWidget {
-  const _StatusIndicator({required this.stats});
-
-  final DayBudgetStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, color, label) = _getStatusDetails(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingMedium,
-        vertical: 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  (IconData, Color, String) _getStatusDetails(BuildContext context) {
-    if (stats.isOverBudget) {
-      return (
-        MdiIcons.alertCircle,
-        context.colorScheme.error,
-        context.messages.dailyOsOverBudget,
-      );
-    }
-
-    final remaining = stats.totalRemaining;
-    if (remaining.inMinutes <= 15 && remaining.inMinutes > 0) {
-      return (
-        MdiIcons.clockAlert,
-        syncPendingAccentColor,
-        context.messages.dailyOsNearLimit,
-      );
-    }
-
-    if (stats.progressFraction >= 0.8) {
-      return (
-        MdiIcons.checkCircle,
-        successColor,
-        context.messages.dailyOsOnTrack,
-      );
-    }
-
-    return (
-      MdiIcons.clockOutline,
-      context.colorScheme.onSurfaceVariant,
-      context.messages
-          .dailyOsTimeLeft(_formatDuration(context, stats.totalRemaining)),
-    );
-  }
-
-  String _formatDuration(BuildContext context, Duration duration) {
-    if (duration.inHours > 0) {
-      final hours = duration.inHours;
-      final mins = duration.inMinutes % 60;
-      if (mins == 0) return context.messages.dailyOsDurationHours(hours);
-      return context.messages.dailyOsDurationHoursMinutes(hours, mins);
-    }
-    return context.messages.dailyOsDurationMinutes(duration.inMinutes);
-  }
-}
-
-/// Button to navigate back to today.
-class _TodayButton extends StatelessWidget {
-  const _TodayButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: Icon(
-        MdiIcons.calendarToday,
-        size: 16,
-        color: context.colorScheme.primary,
-      ),
-      label: Text(
-        context.messages.dailyOsTodayButton,
-        style: context.textTheme.labelMedium?.copyWith(
-          color: context.colorScheme.primary,
-        ),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingSmall,
-          vertical: 4,
-        ),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

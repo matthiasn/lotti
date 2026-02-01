@@ -9,7 +9,7 @@ import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
-import 'package:lotti/features/daily_os/ui/widgets/time_history_header.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
