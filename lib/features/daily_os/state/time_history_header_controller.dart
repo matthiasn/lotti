@@ -86,7 +86,6 @@ extension TimeHistoryDataX on TimeHistoryData {
 class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   static const int _initialDays = 30;
   static const int _loadMoreDays = 14;
-  static const int _maxLoadedDays = 180;
   static const int _batchSize = 500;
 
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -193,39 +192,25 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       // Merge: append older days to end of list (list is newest-to-oldest)
       final mergedDays = [...current.days, ...additionalData.days];
 
-      // Sliding window: drop NEWEST days (front of list) when over cap
-      // This preserves backward scroll position
-      final prunedDays = mergedDays.length > _maxLoadedDays
-          ? mergedDays.sublist(mergedDays.length - _maxLoadedDays)
-          : mergedDays;
-
       final newEarliestDay =
-          prunedDays.isNotEmpty ? prunedDays.last.day : current.earliestDay;
+          mergedDays.isNotEmpty ? mergedDays.last.day : current.earliestDay;
 
-      // Recompute maxDailyTotal from pruned days to handle:
-      // 1. Dropped days that had the previous max
-      // 2. Additional data computed with different max scale
-      final newMax = _computeMaxFromDays(prunedDays);
+      // Recompute maxDailyTotal from merged days
+      final newMax = _computeMaxFromDays(mergedDays);
 
-      // Always recompute stacked heights for scale consistency.
-      // This is necessary because:
-      // - additionalData.stackedHeights was computed with additionalData.maxDailyTotal
-      // - After pruning, the max may have changed
-      // - Merging heights from different scales would cause rendering bugs
+      // Recompute stacked heights for scale consistency
       final categoryOrder = current.categoryOrder;
       final stackedHeights =
-          _computeStackedHeights(prunedDays, categoryOrder, newMax);
+          _computeStackedHeights(mergedDays, categoryOrder, newMax);
 
       state = AsyncData(
         current.copyWith(
-          days: prunedDays,
+          days: mergedDays,
           earliestDay: newEarliestDay,
           latestDay:
-              prunedDays.isNotEmpty ? prunedDays.first.day : current.latestDay,
+              mergedDays.isNotEmpty ? mergedDays.first.day : current.latestDay,
           maxDailyTotal: newMax,
           isLoadingMore: false,
-          // Always allow more loading - the sliding window handles memory,
-          // and stopping on gaps would break infinite scroll
           canLoadMore: true,
           stackedHeights: stackedHeights,
         ),

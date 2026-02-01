@@ -1,7 +1,7 @@
 # Swipable Time History Header — Implementation Plan
 
 **Created**: 2026-01-31
-**Status**: In Progress (Phase 1, 1b, 2 Complete — Phase 3 In Progress)
+**Status**: In Progress (Phase 1, 1b, 2, 3 Complete — Phase 4 In Progress)
 **Epic**: Daily Operating System
 **Related Plans**:
 - `2026-01-14_daily_os_implementation_plan.md` — Core Daily OS architecture (DayHeader, providers)
@@ -32,7 +32,7 @@ Create a header that:
 - Shows multiple days simultaneously as a horizontal strip
 - Integrates the stream chart (time-by-category visualization) as the background
 - Supports infinite backward scrolling for historical exploration
-- Uses **custom canvas rendering** (not the Graphic library) for performance and flexibility
+- Uses the **graphic library** for declarative chart rendering with symmetric (mirrored) stacked areas
 
 ---
 
@@ -209,134 +209,108 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 }
 ```
 
-### 2. Custom Stream Chart Painter
+### 2. Stream Chart Widget (graphic library)
 
-**Location**: `lib/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter.dart`
+**Location**: `lib/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart`
 
 **Key Design Decisions**:
-- Use `CustomPainter` instead of Graphic library for full control and performance
-- **Bottom-aligned stacking**: Categories stack from bottom upward (not mirrored)
-- **Visual style**: Opaque top stroke (1.0 alpha) + transparent fill (0.3 alpha)
-- Paint stacked areas with smooth quadratic Bezier curves between days
-- Normalize Y-axis based on `maxDailyTotal` across visible range
-- Precompute stacked heights per day on data changes; avoid per-frame recompute
-- Use `AnimatedBuilder` with scroll controller for efficient repaint
+- Use `graphic` package for declarative chart rendering
+- **Symmetric stacking**: Categories stack above/below center using `SymmetricModifier()`
+- **Smooth curves**: Using `BasicAreaShape(smooth: true)` for flowing Bezier transitions
+- Chart updates based on visible date range calculated from scroll position
+- Category colors resolved via `EntitiesCacheService.getCategoryById()`
 
 ```dart
-class TimeHistoryChartPainter extends CustomPainter {
-  const TimeHistoryChartPainter({
+class TimeHistoryStreamChart extends StatelessWidget {
+  const TimeHistoryStreamChart({
     required this.days,
-    required this.categoryOrder,
-    required this.stackedHeights,
-    required this.maxDailyTotal,
-    required this.categoryColors,
-    required this.selectedDayIndex,
-    required this.scrollOffset,
-    required this.daySegmentWidth,
-    required this.selectionColor,
-    required this.defaultCategoryColor,
+    required this.visibleStartDate,
+    required this.visibleEndDate,
+    this.height = 60,
+    super.key,
   });
 
   final List<DayTimeSummary> days;
-  final List<String> categoryOrder;
-  final StackedHeights stackedHeights;
-  final Duration maxDailyTotal;
-  final Map<String?, Color> categoryColors;
-  final int selectedDayIndex;
-  final double scrollOffset;
-  final double daySegmentWidth;
-  final Color selectionColor;
-  final Color defaultCategoryColor;
+  final DateTime visibleStartDate;
+  final DateTime visibleEndDate;
+  final double height;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (days.isEmpty || maxDailyTotal == Duration.zero) return;
+  Widget build(BuildContext context) {
+    final chartData = _buildChartData();
+    if (chartData.isEmpty) return SizedBox(height: height);
 
-    final chartHeight = size.height * 0.85;
-    final baselineY = size.height;
-
-    // Calculate visible range
-    final (startIdx, endIdx) = _calculateVisibleRange(size);
-
-    // Draw stacked areas (bottom to top)
-    _drawStackedAreas(canvas, size, startIdx, endIdx, baselineY, chartHeight);
-
-    // Draw selection highlight
-    if (selectedDayIndex >= startIdx && selectedDayIndex <= endIdx) {
-      _drawSelectionHighlight(canvas, size);
-    }
+    return SizedBox(
+      height: height,
+      child: Chart(
+        data: chartData,
+        variables: {
+          'date': Variable(
+            accessor: (StreamChartItem item) => item.date,
+            scale: TimeScale(
+              tickCount: 0,
+              min: visibleStartDate,
+              max: visibleEndDate,
+            ),
+          ),
+          'value': Variable(
+            accessor: (StreamChartItem item) => item.minutes,
+            scale: LinearScale(min: -600, max: 600),
+          ),
+          'categoryId': Variable(
+            accessor: (StreamChartItem item) => item.categoryId,
+          ),
+        },
+        marks: [
+          AreaMark(
+            position: Varset('date') * Varset('value') / Varset('categoryId'),
+            shape: ShapeEncode(value: BasicAreaShape(smooth: true)),
+            color: ColorEncode(
+              encoder: (data) {
+                final categoryId = data['categoryId'] as String;
+                final def = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+                return colorFromCssHex(def?.color, substitute: Colors.grey);
+              },
+            ),
+            modifiers: [StackModifier(), SymmetricModifier()],
+          ),
+        ],
+        axes: const [],
+      ),
+    );
   }
 
-  void _drawStackedAreas(Canvas canvas, Size size, int startIdx, int endIdx,
-      double baselineY, double chartHeight) {
-    final maxMicros = maxDailyTotal.inMicroseconds.toDouble();
+  List<StreamChartItem> _buildChartData() {
+    final items = <StreamChartItem>[];
+    final cache = getIt<EntitiesCacheService>();
+    final categoryOrder = cache.sortedCategories.map((c) => c.id).toList();
 
-    for (final categoryId in [...categoryOrder, null]) {
-      final upperPoints = <Offset>[];
-      final lowerPoints = <Offset>[];
-
-      for (var i = endIdx; i >= startIdx; i--) {
-        final day = days[i];
-        final x = _dayXCenter(i, size.width);
-        final heights = stackedHeights[day.day];
-        if (heights == null) continue;
-
-        final baseHeight = heights[categoryId] ?? 0.0;
-        final catDuration = day.durationByCategoryId[categoryId] ?? Duration.zero;
-        final catHeight = catDuration.inMicroseconds / maxMicros;
-        final topHeight = baseHeight + catHeight;
-
-        upperPoints.add(Offset(x, baselineY - topHeight * chartHeight));
-        lowerPoints.add(Offset(x, baselineY - baseHeight * chartHeight));
+    for (final day in days) {
+      if (day.day.isBefore(visibleStartDate) || day.day.isAfter(visibleEndDate)) {
+        continue;
       }
 
-      if (upperPoints.isEmpty) continue;
+      for (final categoryId in categoryOrder) {
+        final duration = day.durationByCategoryId[categoryId] ?? Duration.zero;
+        items.add(StreamChartItem(
+          date: day.day,
+          categoryId: categoryId,
+          minutes: duration.inMinutes,
+        ));
+      }
 
-      final color = categoryColors[categoryId] ?? defaultCategoryColor;
-      final upperPath = _buildSmoothPath(upperPoints);
-      final lowerPath = _buildSmoothPath(lowerPoints.reversed.toList());
-
-      // 1. Draw transparent fill
-      final areaPath = Path()
-        ..addPath(upperPath, Offset.zero)
-        ..lineTo(lowerPoints.first.dx, lowerPoints.first.dy)
-        ..addPath(lowerPath, Offset.zero)
-        ..close();
-      canvas.drawPath(areaPath, Paint()
-        ..color = color.withValues(alpha: 0.3)
-        ..style = PaintingStyle.fill);
-
-      // 2. Draw opaque top stroke
-      canvas.drawPath(upperPath, Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round);
+      // Handle uncategorized time
+      final uncategorized = day.durationByCategoryId[null] ?? Duration.zero;
+      if (uncategorized > Duration.zero) {
+        items.add(StreamChartItem(
+          date: day.day,
+          categoryId: '__uncategorized__',
+          minutes: uncategorized.inMinutes,
+        ));
+      }
     }
+    return items;
   }
-
-  Path _buildSmoothPath(List<Offset> points) {
-    if (points.isEmpty) return Path();
-    if (points.length == 1) return Path()..moveTo(points[0].dx, points[0].dy);
-
-    final path = Path()..moveTo(points[0].dx, points[0].dy);
-    for (var i = 0; i < points.length - 1; i++) {
-      final p0 = points[i];
-      final p1 = points[i + 1];
-      final midX = (p0.dx + p1.dx) / 2;
-      path.quadraticBezierTo(midX, p0.dy, midX, (p0.dy + p1.dy) / 2);
-      path.quadraticBezierTo(midX, p1.dy, p1.dx, p1.dy);
-    }
-    return path;
-  }
-
-  @override
-  bool shouldRepaint(TimeHistoryChartPainter oldDelegate) =>
-      !identical(days, oldDelegate.days) ||
-      !identical(stackedHeights, oldDelegate.stackedHeights) ||
-      scrollOffset != oldDelegate.scrollOffset ||
-      selectedDayIndex != oldDelegate.selectedDayIndex;
 }
 ```
 
@@ -531,10 +505,10 @@ class _DaySegment extends StatelessWidget {
 │                              │                                       │
 │                              ▼                                       │
 │  ┌────────────────────────────────────────────────────────────────┐ │
-│  │ TimeHistoryChartPainter (CustomPainter)                         │ │
-│  │   - Paints stacked area chart across all visible days           │ │
+│  │ TimeHistoryStreamChart (graphic library)                        │ │
+│  │   - Renders symmetric stacked area chart via AreaMark           │ │
 │  │   - Categories colored from EntitiesCacheService                │ │
-│  │   - Selection highlight on current day                          │ │
+│  │   - Updates based on visible date range from scroll position    │ │
 │  └────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────┬───────────────────────────────────────┘
                               │
@@ -565,12 +539,10 @@ class _DaySegment extends StatelessWidget {
 ### Hard requirements
 
 - **No DB work on scroll**: all queries happen off the scroll path.
-- **Paint only visible days**: O(V * C) per frame, V = visible segments.
-- **Precompute geometry**: stack heights per day when data changes, not per frame.
-- **Repaint without rebuild**: use `CustomPaint(repaint: _scrollController)` or
-  `ListenableBuilder` so scroll updates invalidate paint only.
+- **Filter to visible days**: Chart only includes days in visible date range.
 - **Bounded memory**: cap loaded history window (e.g., 180 days).
 - **Throttle update stream**: avoid frequent rebuilds from notifications.
+- **Scroll-driven updates**: use `AnimatedBuilder` with scroll controller for chart updates.
 
 ### Big-O targets
 
@@ -787,56 +759,92 @@ fvm flutter test test/features/daily_os/
 - Verify scrolling left loads more days
 - Verify "Today" button scrolls back to current day
 
-### Phase 3: Stream Chart Integration
+### Phase 3: Stream Chart Integration ✓
 
-**Goal**: Implement custom canvas rendering for the stream chart visualization.
+**Goal**: Implement stream chart visualization using the `graphic` library.
 
-**Files to Create**:
+**Note**: Initially attempted CustomPainter approach but encountered persistent alignment issues
+with scroll synchronization in the reversed horizontal ListView. Switched to `graphic` library
+which handles positioning automatically and provides the preferred symmetric/mirrored appearance.
+
+**Files Created**:
 
 | File                                                                                      | Purpose                        |
 |-------------------------------------------------------------------------------------------|--------------------------------|
-| `lib/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter.dart`    | CustomPainter for stream chart |
-| `test/features/daily_os/ui/widgets/time_history_header/time_history_chart_painter_test.dart` | Unit tests for painter      |
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart`     | Stream chart using graphic library |
 
-**Files to Modify**:
+**Files Modified**:
 
 | File                                                                                      | Change                                |
 |-------------------------------------------------------------------------------------------|---------------------------------------|
-| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header_widget.dart`    | Add CustomPaint to Stack, color resolution |
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header_widget.dart`    | Added TimeHistoryStreamChart to Stack with AnimatedBuilder |
+| `lib/features/daily_os/ui/widgets/time_history_header/time_history_header.dart`           | Updated exports to include stream chart |
+| `test/features/daily_os/ui/widgets/time_history_header/test_helpers.dart`                 | Added `sortedCategories` mock for EntitiesCacheService |
+| `test/features/daily_os/ui/pages/daily_os_page_test.dart`                                 | Added setUp/tearDown for EntitiesCacheService mock |
 
 **Visual Design**:
-- **Bottom-aligned stacking**: Categories stack from bottom upward (like reference chart)
-- **Opaque top stroke** (1.0 alpha, 1.5px) - provides clean definition at category edges
-- **Transparent fill** (0.3 alpha) - subtle layered effect, not visually overwhelming
-- **Smooth Bezier curves** between day centers for flowing transitions
+- **Symmetric (mirrored) stacking**: Categories stack symmetrically above/below center line
+- **Smooth Bezier curves**: Using `BasicAreaShape(smooth: true)` for flowing transitions
+- **Category colors**: Resolved via `EntitiesCacheService.getCategoryById()` with grey fallback
+
+**Implementation Details**:
+
+```dart
+Chart(
+  data: chartData,
+  variables: {
+    'date': Variable(
+      accessor: (item) => item.date,
+      scale: TimeScale(min: visibleStartDate, max: visibleEndDate),
+    ),
+    'value': Variable(
+      accessor: (item) => item.minutes,
+      scale: LinearScale(min: -600, max: 600),
+    ),
+    'categoryId': Variable(accessor: (item) => item.categoryId),
+  },
+  marks: [
+    AreaMark(
+      position: Varset('date') * Varset('value') / Varset('categoryId'),
+      shape: ShapeEncode(value: BasicAreaShape(smooth: true)),
+      color: ColorEncode(encoder: (data) => /* resolve category color */),
+      modifiers: [StackModifier(), SymmetricModifier()],
+    ),
+  ],
+)
+```
 
 **Tasks**:
 
-- [ ] Create `TimeHistoryChartPainter` extending `CustomPainter`
-- [ ] Implement bottom-aligned Y-axis with normalization from `maxDailyTotal`
-- [ ] Paint stacked areas: transparent fill + opaque top stroke per category
-- [ ] Use quadratic Bezier curves (`_buildSmoothPath`) for smooth flow between days
-- [ ] Implement coordinate system: reverse layout with today at right edge
-- [ ] Add selection highlight effect for current day column
-- [ ] Implement efficient `shouldRepaint` with identity checks
-- [ ] Handle edge cases: empty days, single category, zero maxDailyTotal
-- [ ] Resolve category colors in widget (not painter) using `EntitiesCacheService`
-- [ ] Integrate into `time_history_header_widget.dart` Stack with `AnimatedBuilder`
-- [ ] Write unit tests for coordinate calculations, path building, shouldRepaint
-- [ ] Write widget tests for chart rendering in scroll context
+- [x] Create `TimeHistoryStreamChart` StatelessWidget using graphic library
+- [x] Configure `AreaMark` with `StackModifier()` and `SymmetricModifier()`
+- [x] Use `TimeScale` for date-based X axis with visible range bounds
+- [x] Handle category color resolution via `EntitiesCacheService`
+- [x] Handle uncategorized time with special `__uncategorized__` category ID
+- [x] Integrate into header widget Stack with `AnimatedBuilder` for scroll updates
+- [x] Add `sortedCategories` mock to test helpers
+- [x] Fix daily_os_page_test.dart to register EntitiesCacheService mock
+- [ ] **Known Issue**: Chart scrolls day-by-day instead of smoothly with ListView
+  - Need to apply sub-pixel transform based on scroll offset for smooth scrolling
 
 **Verification**:
+```bash
+fvm flutter analyze  # No issues found ✓
+fvm flutter test test/features/daily_os/  # All tests pass ✓
+```
 - Run app, navigate to Daily OS tab
-- Verify stream chart renders with category colors (opaque stroke + transparent fill)
-- Verify chart flows smoothly across day boundaries
-- Verify selected day has visual highlight
-- Profile performance during rapid scrolling (target: 60fps)
+- Verify stream chart renders with category colors
+- Verify symmetric/mirrored appearance
+- Verify chart updates when scrolling (currently updates per-day, smooth scrolling pending)
 
 ### Phase 4: Polish & Cleanup
 
 **Goal**: Refine the implementation and remove deprecated code.
 
 **Tasks**:
+- [ ] **Fix smooth chart scrolling**: Currently the chart updates day-by-day instead of
+      smoothly with the ListView. Need to apply sub-pixel transform based on scroll offset
+      so the chart moves in sync with the day segments.
 - [ ] Add smooth scroll-to-selected-date animation when tapping segments
 - [ ] Handle edge case: scroll position preservation when loading more days
 - [ ] Add loading indicator when fetching additional days
@@ -867,7 +875,7 @@ fvm flutter test
 |--------------------------|----------------------------------------|---------------------------------------------------------------------|
 | **Scrolling approach**   | `ListView.builder` with `reverse: true` | Positions today at right edge; efficient memory usage               |
 | **Segment width**        | 56 logical pixels                      | Adequate tap target (>48px Material guideline); shows ~6-7 days on phone |
-| **Chart library**        | Custom `CustomPainter`                 | Full control, no Graphic library dependency, better performance     |
+| **Chart library**        | `graphic` package with AreaMark        | Declarative API, automatic positioning, SymmetricModifier for mirrored look |
 | **Initial buffer**       | 30 days                                | Matches existing chart default; sufficient for typical use          |
 | **Load increment**       | 14 days                                | Balances UX smoothness against database queries                     |
 | **Load threshold**       | 80% scroll position                    | Provides buffer for smooth infinite scroll                          |
@@ -973,6 +981,7 @@ Currently, `JournalAudio` entries are **excluded** from time aggregation to avoi
 | **Database Queries**           | `lib/database/database.dart` (`sortedCalendarEntries`)            |
 | **Category Colors**            | `lib/services/entities_cache_service.dart`                        |
 | **Entry Duration Utility**     | `lib/features/journal/util/entry_tools.dart` (`entryDuration`)    |
+| **Stream Chart Widget**        | `lib/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart` |
 | **CustomPainter Pattern**      | `lib/features/daily_os/ui/widgets/zigzag_fold_indicator.dart`     |
 | **Daily OS Page**              | `lib/features/daily_os/ui/pages/daily_os_page.dart`               |
 

@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os/state/time_history_header_controller.dar
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_segment.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
@@ -315,8 +316,60 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 
     return Stack(
       children: [
-        // Placeholder for CustomPaint (Phase 3)
-        // Future: Time history chart will be drawn here
+        // Stream chart background using graphic library
+        // Only render chart if we have at least 2 days
+        // (SymmetricModifier in graphic library requires >= 2 data points)
+        if (data.days.length >= 2)
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16), // Below month label
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AnimatedBuilder(
+                    animation: _scrollController,
+                    builder: (context, _) {
+                      final scrollOffset = _scrollController.hasClients
+                          ? _scrollController.offset
+                          : 0.0;
+
+                      // Calculate chart positioning to align with day segments
+                      // The chart needs to be sized based on number of days
+                      // and positioned to align with the ListView
+                      final chartWidth = data.days.length * daySegmentWidth;
+
+                      // Guard against zero width
+                      if (chartWidth <= 0) {
+                        return const SizedBox.shrink();
+                      }
+
+                      // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge
+                      // Chart x=0 should be at oldest day (highest index), x=max at newest (index 0)
+                      // So we need to position chart right edge at (viewportWidth + scrollOffset)
+                      final chartRightEdge = constraints.maxWidth + scrollOffset;
+                      final chartLeftEdge = chartRightEdge - chartWidth;
+
+                      return ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.centerLeft,
+                          maxWidth: chartWidth,
+                          minWidth: chartWidth,
+                          child: Transform.translate(
+                            offset: Offset(chartLeftEdge, 0),
+                            child: TimeHistoryStreamChart(
+                              days: data.days,
+                              visibleStartDate: data.earliestDay,
+                              visibleEndDate: data.latestDay,
+                              width: chartWidth,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
 
         // Day segments list with month labels
         Column(

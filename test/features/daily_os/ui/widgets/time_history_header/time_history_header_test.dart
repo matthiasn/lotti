@@ -13,6 +13,9 @@ import 'test_helpers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(setUpEntitiesCacheService);
+  tearDown(tearDownEntitiesCacheService);
+
   group('TimeHistoryHeader', () {
     testWidgets('renders the widget', (tester) async {
       await tester.pumpWidget(createTestWidget());

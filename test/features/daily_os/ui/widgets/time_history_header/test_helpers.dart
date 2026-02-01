@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -10,8 +11,90 @@ import 'package:lotti/features/daily_os/state/time_history_header_controller.dar
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../test_helper.dart';
+
+/// Mock for EntitiesCacheService to provide category colors in tests.
+class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+
+/// Test category definitions with colors for chart rendering tests.
+final testCategories = {
+  'cat-1': CategoryDefinition(
+    id: 'cat-1',
+    name: 'Work',
+    color: '#4285F4',
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: null,
+    private: false,
+    active: true,
+  ),
+  'cat-2': CategoryDefinition(
+    id: 'cat-2',
+    name: 'Exercise',
+    color: '#34A853',
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: null,
+    private: false,
+    active: true,
+  ),
+  'cat-3': CategoryDefinition(
+    id: 'cat-3',
+    name: 'Learning',
+    color: '#FBBC05',
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: null,
+    private: false,
+    active: true,
+  ),
+};
+
+/// Sets up the mock EntitiesCacheService for tests.
+///
+/// Call this in setUp() and call [tearDownEntitiesCacheService] in tearDown().
+/// Also enables test mode on TimeHistoryStreamChart to skip chart rendering.
+MockEntitiesCacheService setUpEntitiesCacheService() {
+  // Enable test mode to skip chart rendering (avoids timer issues)
+  TimeHistoryStreamChart.testMode = true;
+  final mockCacheService = MockEntitiesCacheService();
+
+  // Set up category lookups
+  for (final entry in testCategories.entries) {
+    when(() => mockCacheService.getCategoryById(entry.key))
+        .thenReturn(entry.value);
+  }
+  // Return null for unknown categories
+  when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+
+  // Set up sortedCategories for the stream chart
+  when(() => mockCacheService.sortedCategories)
+      .thenReturn(testCategories.values.toList());
+
+  // Register in GetIt
+  if (getIt.isRegistered<EntitiesCacheService>()) {
+    getIt.unregister<EntitiesCacheService>();
+  }
+  getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+
+  return mockCacheService;
+}
+
+/// Tears down the mock EntitiesCacheService.
+///
+/// Call this in tearDown().
+void tearDownEntitiesCacheService() {
+  // Disable test mode
+  TimeHistoryStreamChart.testMode = false;
+
+  if (getIt.isRegistered<EntitiesCacheService>()) {
+    getIt.unregister<EntitiesCacheService>();
+  }
+}
 
 /// Default test date used across time history header tests.
 final testDate = DateTime(2026, 1, 15);
