@@ -25,7 +25,7 @@ class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
   static const double monthLabelHeight = 16;
-  static const double chartHeight = 96;
+  static const double chartHeight = 72;
   static const double chartAreaHeight = monthLabelHeight + chartHeight;
   static const double dateLabelRowHeight = 44;
   // +1 to account for bottom border consuming layout space.
@@ -341,7 +341,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.only(
-                top: TimeHistoryHeader.monthLabelHeight - 10,
+                top: TimeHistoryHeader.monthLabelHeight - 15,
               ), // Below month label
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -416,7 +416,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                             child: TimeHistoryStreamChart(
                               days: chartDays,
                               height: TimeHistoryHeader.chartHeight,
-                              verticalScale: 1.2,
+                              maxDailyTotal: data.maxDailyTotal,
+                              verticalScale: 0.9,
                               width: chartWidth,
                             ),
                           ),

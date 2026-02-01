@@ -27,6 +27,7 @@ class StreamChartItem {
 class TimeHistoryStreamChart extends StatelessWidget {
   const TimeHistoryStreamChart({
     required this.days,
+    required this.maxDailyTotal,
     this.height = 60,
     this.width,
     this.verticalScale = 1.0,
@@ -39,6 +40,9 @@ class TimeHistoryStreamChart extends StatelessWidget {
 
   /// All available day summaries (may be more than visible range).
   final List<DayTimeSummary> days;
+
+  /// Maximum daily total across the loaded range (used for scaling).
+  final Duration maxDailyTotal;
 
   /// Chart height in pixels.
   final double height;
@@ -86,9 +90,9 @@ class TimeHistoryStreamChart extends StatelessWidget {
               'value': Variable(
                 accessor: (StreamChartItem item) => item.minutes,
                 scale: LinearScale(
-                  // Fixed +/- 24 hours to keep visual scale comparable over time.
-                  min: -1440,
-                  max: 1440,
+                  // Scale to max known daily total with a 6h minimum.
+                  min: -_effectiveScaleMinutes,
+                  max: _effectiveScaleMinutes,
                 ),
               ),
               'categoryId': Variable(
@@ -124,6 +128,15 @@ class TimeHistoryStreamChart extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double get _effectiveScaleMinutes {
+    const minScaleMinutes = 6 * 60;
+    const maxScaleMinutes = 24 * 60;
+    final minutes = maxDailyTotal.inMinutes;
+    final floored = minutes < minScaleMinutes ? minScaleMinutes : minutes;
+    final clamped = floored > maxScaleMinutes ? maxScaleMinutes : floored;
+    return clamped.toDouble();
   }
 
   /// Build chart data from day summaries.
