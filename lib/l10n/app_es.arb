@@ -89,6 +89,7 @@
   "dailyOsOverdue": "Vencido",
   "dailyOsOverdueShort": "Tarde",
   "dailyOsFold": "Contraer",
+  "dailyOsQuickCreateTask": "Crear tarea para este presupuesto",
   "dashboardActiveLabel": "Activo:",
   "dashboardAddChartsTitle": "Añadir gráficos:",
   "dashboardAddHabitButton": "Gráficos de hábitos",

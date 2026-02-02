@@ -1089,7 +1089,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsAddBlock => 'Add Block';
 
   @override
-  String get dailyOsQuickCreateTask => 'Create task for this budget';
+  String get dailyOsQuickCreateTask => 'Creează sarcină pentru acest buget';
 
   @override
   String get dailyOsTasks => 'Tasks';
