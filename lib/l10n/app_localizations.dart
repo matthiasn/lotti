@@ -2001,6 +2001,12 @@ abstract class AppLocalizations {
   /// **'Add Block'**
   String get dailyOsAddBlock;
 
+  /// No description provided for @dailyOsQuickCreateTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Create task for this budget'**
+  String get dailyOsQuickCreateTask;
+
   /// No description provided for @dailyOsTasks.
   ///
   /// In en, this message translates to:

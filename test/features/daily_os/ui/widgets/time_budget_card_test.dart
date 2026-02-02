@@ -120,6 +120,7 @@ void main() {
     VoidCallback? onTap,
     bool isExpanded = false,
     List<Override> overrides = const [],
+    DateTime? selectedDate,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -130,6 +131,7 @@ void main() {
       ],
       child: TimeBudgetCard(
         progress: progress,
+        selectedDate: selectedDate ?? testDate,
         onTap: onTap,
         isExpanded: isExpanded,
       ),
@@ -311,6 +313,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -331,6 +334,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
             onLongPress: () => longPressed = true,
           ),
         ),
@@ -1026,6 +1030,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1057,6 +1062,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1101,6 +1107,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1122,6 +1129,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: false,
           ),
         ),
@@ -1143,6 +1151,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1170,6 +1179,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: false,
           ),
         ),
@@ -1185,6 +1195,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1279,6 +1290,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1302,6 +1314,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1321,6 +1334,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1593,6 +1607,7 @@ void main() {
                 priority: TaskPriority.p0Urgent,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1619,6 +1634,7 @@ void main() {
                 dueUrgency: DueDateUrgency.dueToday,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1645,6 +1661,7 @@ void main() {
                 dueUrgency: DueDateUrgency.overdue,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1674,6 +1691,7 @@ void main() {
                 dueUrgency: DueDateUrgency.overdue,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );

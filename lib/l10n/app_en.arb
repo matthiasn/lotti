@@ -478,6 +478,7 @@
   "dailyOsDuration3h": "3h",
   "dailyOsDuration4h": "4h",
   "dailyOsAddBlock": "Add Block",
+  "dailyOsQuickCreateTask": "Create task for this budget",
   "dailyOsTasks": "Tasks",
   "dailyOsNoBudgetWarning": "No time budgeted",
   "dailyOsDueToday": "Due today",

@@ -8,6 +8,7 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -45,6 +46,7 @@ Color _getTaskStatusColor(BuildContext context, TaskStatus status) {
 class TimeBudgetCard extends ConsumerStatefulWidget {
   const TimeBudgetCard({
     required this.progress,
+    required this.selectedDate,
     this.onTap,
     this.onLongPress,
     this.isExpanded = false,
@@ -53,6 +55,10 @@ class TimeBudgetCard extends ConsumerStatefulWidget {
   });
 
   final TimeBudgetProgress progress;
+
+  /// The currently selected date, used for task creation due date.
+  final DateTime selectedDate;
+
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final bool isExpanded;
@@ -166,9 +172,26 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
                     ),
                   ),
 
+                  // Quick create task button
+                  Tooltip(
+                    message: context.messages.dailyOsQuickCreateTask,
+                    child: GestureDetector(
+                      onTap: () => _quickCreateTask(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.add_circle_outline,
+                          size: 20,
+                          color: context.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+
                   // Task completion indicator (if has tasks)
                   if (hasTasks) ...[
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _TaskCompletionIndicator(
                       tasks: progress.taskProgressItems,
                     ),
@@ -264,6 +287,21 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _quickCreateTask(BuildContext context) async {
+    final categoryId = widget.progress.category?.id;
+
+    // Create task with category and due date pre-assigned
+    final task = await createTask(
+      categoryId: categoryId,
+      due: widget.selectedDate,
+    );
+
+    // Navigate to the newly created task
+    if (task != null && context.mounted) {
+      beamToNamed('/tasks/${task.meta.id}');
+    }
   }
 }
 
