@@ -14,6 +14,7 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1758,12 +1759,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
       // Verify the quick create button is present
       expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
-      expect(
-        find.byTooltip('Create task for this budget'),
-        findsOneWidget,
-      );
+      expect(find.byTooltip(tooltipText), findsOneWidget);
     });
 
     testWidgets('tapping quick create button creates task with correct params',
@@ -1806,8 +1808,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
       // Tap the quick create button
-      await tester.tap(find.byTooltip('Create task for this budget'));
+      await tester.tap(find.byTooltip(tooltipText));
       await tester.pumpAndSettle();
 
       // Verify task creation was called with correct category
@@ -1867,8 +1873,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
       // Tap the quick create button
-      await tester.tap(find.byTooltip('Create task for this budget'));
+      await tester.tap(find.byTooltip(tooltipText));
       await tester.pumpAndSettle();
 
       // Verify the due date was passed correctly
@@ -1890,8 +1900,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
       // Tap the quick create button
-      await tester.tap(find.byTooltip('Create task for this budget'));
+      await tester.tap(find.byTooltip(tooltipText));
       await tester.pumpAndSettle();
 
       // Verify navigation was not called
@@ -1952,8 +1966,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
       // Tap the quick create button
-      await tester.tap(find.byTooltip('Create task for this budget'));
+      await tester.tap(find.byTooltip(tooltipText));
       await tester.pumpAndSettle();
 
       // Verify task creation was called with null category
