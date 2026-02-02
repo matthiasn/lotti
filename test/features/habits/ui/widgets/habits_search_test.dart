@@ -9,9 +9,11 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -53,92 +55,76 @@ void main() {
   group('HabitsSearchWidget', () {
     testWidgets('renders search bar', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: HabitsSearchWidget(),
-            ),
-          ),
+        const RiverpodWidgetTestBench(
+          child: HabitsSearchWidget(),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SearchBar), findsOneWidget);
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byType(LottiSearchBar), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
     testWidgets('updates state when text is entered', (tester) async {
       late WidgetRef capturedRef;
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) {
-                  capturedRef = ref;
-                  return const HabitsSearchWidget();
-                },
-              ),
-            ),
+        RiverpodWidgetTestBench(
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return const HabitsSearchWidget();
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Enter search text
-      await tester.enterText(find.byType(SearchBar), 'test query');
+      await tester.enterText(find.byType(TextField), 'test query');
       await tester.pumpAndSettle();
 
-      // Verify state was updated (lowercase)
+      // Verify state was updated
       final state = capturedRef.read(habitsControllerProvider);
       expect(state.searchString, 'test query');
     });
 
     testWidgets('shows clear button when search has text', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: HabitsSearchWidget(),
-            ),
-          ),
+        const RiverpodWidgetTestBench(
+          child: HabitsSearchWidget(),
         ),
       );
       await tester.pumpAndSettle();
 
       // Initially no clear button visible
-      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(Icons.clear_rounded), findsNothing);
 
       // Enter search text
-      await tester.enterText(find.byType(SearchBar), 'test');
+      await tester.enterText(find.byType(TextField), 'test');
       await tester.pumpAndSettle();
 
       // Clear button should now be visible
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
     testWidgets('clear button clears search text and state', (tester) async {
       late WidgetRef capturedRef;
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) {
-                  capturedRef = ref;
-                  return const HabitsSearchWidget();
-                },
-              ),
-            ),
+        RiverpodWidgetTestBench(
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return const HabitsSearchWidget();
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Enter search text
-      await tester.enterText(find.byType(SearchBar), 'test query');
+      await tester.enterText(find.byType(TextField), 'test query');
       await tester.pumpAndSettle();
 
       // Verify text was entered
@@ -146,7 +132,7 @@ void main() {
           'test query');
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pumpAndSettle();
 
       // Verify state was cleared
@@ -155,26 +141,22 @@ void main() {
 
     testWidgets('search text persists across rebuilds', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: HabitsSearchWidget(),
-            ),
-          ),
+        const RiverpodWidgetTestBench(
+          child: HabitsSearchWidget(),
         ),
       );
       await tester.pumpAndSettle();
 
       // Enter search text
-      await tester.enterText(find.byType(SearchBar), 'persistent text');
+      await tester.enterText(find.byType(TextField), 'persistent text');
       await tester.pumpAndSettle();
 
       // Trigger a rebuild by pumping with a new frame
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify text is still in the SearchBar
-      final searchBar = tester.widget<SearchBar>(find.byType(SearchBar));
-      expect(searchBar.controller?.text, 'persistent text');
+      // Verify text is still in the TextField
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, 'persistent text');
     });
 
     testWidgets('syncs controller text when state changes externally',
@@ -182,23 +164,19 @@ void main() {
       late WidgetRef capturedRef;
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) {
-                  capturedRef = ref;
-                  return const HabitsSearchWidget();
-                },
-              ),
-            ),
+        RiverpodWidgetTestBench(
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return const HabitsSearchWidget();
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Enter some text
-      await tester.enterText(find.byType(SearchBar), 'initial text');
+      await tester.enterText(find.byType(TextField), 'initial text');
       await tester.pumpAndSettle();
 
       // Change state externally (e.g., via another widget)
@@ -206,34 +184,30 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the text field was cleared
-      final searchBar = tester.widget<SearchBar>(find.byType(SearchBar));
-      expect(searchBar.controller?.text, isEmpty);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, isEmpty);
     });
 
-    testWidgets('converts input to lowercase', (tester) async {
+    testWidgets('converts input to lowercase for state', (tester) async {
       late WidgetRef capturedRef;
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) {
-                  capturedRef = ref;
-                  return const HabitsSearchWidget();
-                },
-              ),
-            ),
+        RiverpodWidgetTestBench(
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return const HabitsSearchWidget();
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       // Enter mixed case text
-      await tester.enterText(find.byType(SearchBar), 'TEST Query');
+      await tester.enterText(find.byType(TextField), 'TEST Query');
       await tester.pumpAndSettle();
 
-      // Verify state is lowercase
+      // The habits controller converts to lowercase for filtering
       expect(
         capturedRef.read(habitsControllerProvider).searchString,
         'test query',

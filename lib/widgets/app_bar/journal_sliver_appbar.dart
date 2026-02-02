@@ -10,16 +10,36 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
-import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class JournalSliverAppBar extends ConsumerWidget {
+class JournalSliverAppBar extends ConsumerStatefulWidget {
   const JournalSliverAppBar({
     super.key,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JournalSliverAppBar> createState() =>
+      _JournalSliverAppBarState();
+}
+
+class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
     final controller =
@@ -34,12 +54,17 @@ class JournalSliverAppBar extends ConsumerWidget {
           Row(
             children: [
               Flexible(
-                child: SearchWidget(
-                  margin: const EdgeInsets.symmetric(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
                     vertical: AppTheme.spacingMedium,
                     horizontal: AppTheme.spacingSmall,
                   ),
-                  onChanged: controller.setSearchString,
+                  child: LottiSearchBar(
+                    controller: _searchController,
+                    hintText: context.messages.searchHint,
+                    onChanged: controller.setSearchString,
+                    onClear: () => controller.setSearchString(''),
+                  ),
                 ),
               ),
               if (state.showTasks) ...[

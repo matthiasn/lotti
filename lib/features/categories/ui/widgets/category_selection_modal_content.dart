@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 class CategorySelectionModalContent extends ConsumerStatefulWidget {
   const CategorySelectionModalContent({
@@ -102,12 +103,9 @@ class CategorySelectionModalContentState
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: TextField(
+              child: LottiSearchBar(
                 controller: searchController,
-                decoration: InputDecoration(
-                  hintText: context.messages.categorySearchPlaceholder,
-                  prefixIcon: const Icon(Icons.search),
-                ),
+                hintText: context.messages.categorySearchPlaceholder,
                 onChanged: (value) {
                   setState(() {
                     searchQuery = value;
@@ -117,6 +115,11 @@ class CategorySelectionModalContentState
                   if (filteredCategories.isEmpty && value.isNotEmpty) {
                     _showColorPicker(value);
                   }
+                },
+                onClear: () {
+                  setState(() {
+                    searchQuery = '';
+                  });
                 },
               ),
             ),

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
@@ -521,6 +522,164 @@ void main() {
         expect(decoration.color, isNotNull);
         expect(decoration.gradient, isNull);
         expect(decoration.boxShadow, isEmpty);
+      });
+    });
+
+    group('Hover Effect', () {
+      testWidgets('uses AnimatedContainer for smooth hover transitions',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(controller: controller),
+          ),
+        );
+
+        // Verify AnimatedContainer is used
+        expect(find.byType(AnimatedContainer), findsOneWidget);
+
+        final animatedContainer = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+
+        // Verify animation duration is 150ms for hover transitions
+        expect(
+          animatedContainer.duration,
+          equals(const Duration(milliseconds: 150)),
+        );
+      });
+
+      testWidgets('decoration includes border and shadow styling',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(controller: controller),
+          ),
+        );
+
+        final container = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        final decoration = container.decoration! as BoxDecoration;
+
+        // Should have styling elements for hover effect
+        expect(decoration.boxShadow, isNotNull);
+        expect(decoration.border, isNotNull);
+        expect(decoration.borderRadius, isNotNull);
+      });
+
+      testWidgets('hover adds additional shadow for glow effect',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(controller: controller),
+          ),
+        );
+
+        // Get initial shadow count
+        final containerBefore = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        final decorationBefore = containerBefore.decoration! as BoxDecoration;
+        final initialShadowCount = decorationBefore.boxShadow?.length ?? 0;
+
+        // Simulate mouse enter
+        final gesture =
+            await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await tester.pump();
+
+        await gesture.moveTo(tester.getCenter(find.byType(LottiSearchBar)));
+        await tester.pumpAndSettle();
+
+        // Get shadows after hover
+        final containerAfter = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        final decorationAfter = containerAfter.decoration! as BoxDecoration;
+        final hoverShadowCount = decorationAfter.boxShadow?.length ?? 0;
+
+        // Should have more shadows when hovering (adds glow)
+        expect(hoverShadowCount, greaterThan(initialShadowCount));
+      });
+    });
+
+    group('FocusNode', () {
+      testWidgets('accepts optional focusNode parameter', (tester) async {
+        final focusNode = FocusNode();
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(
+              controller: controller,
+              focusNode: focusNode,
+            ),
+          ),
+        );
+
+        expect(find.byType(LottiSearchBar), findsOneWidget);
+
+        focusNode.dispose();
+      });
+
+      testWidgets('focusNode can request focus', (tester) async {
+        final focusNode = FocusNode();
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(
+              controller: controller,
+              focusNode: focusNode,
+            ),
+          ),
+        );
+
+        // Initially not focused
+        expect(focusNode.hasFocus, isFalse);
+
+        // Request focus
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        // Should now have focus
+        expect(focusNode.hasFocus, isTrue);
+
+        focusNode.dispose();
+      });
+
+      testWidgets('TextField receives the focusNode', (tester) async {
+        final focusNode = FocusNode();
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(
+              controller: controller,
+              focusNode: focusNode,
+            ),
+          ),
+        );
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.focusNode, equals(focusNode));
+
+        focusNode.dispose();
+      });
+
+      testWidgets('works without focusNode (null)', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(controller: controller),
+          ),
+        );
+
+        // Should render fine without focusNode
+        expect(find.byType(LottiSearchBar), findsOneWidget);
+        expect(find.byType(TextField), findsOneWidget);
+
+        // Can still enter text
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump();
+        expect(controller.text, equals('test'));
       });
     });
   });

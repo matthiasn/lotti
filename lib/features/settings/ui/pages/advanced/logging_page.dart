@@ -12,6 +12,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -388,108 +389,13 @@ class _LoggingPageState extends State<LoggingPage> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 10),
-                        child: Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).brightness ==
-                                    Brightness.light
-                                ? context.colorScheme.surfaceContainerHighest
-                                : null,
-                            gradient: Theme.of(context).brightness ==
-                                    Brightness.light
-                                ? null
-                                : LinearGradient(
-                                    colors: [
-                                      context.colorScheme.surfaceContainer,
-                                      context.colorScheme.surfaceContainerHigh
-                                          .withValues(alpha: 0.8),
-                                    ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.light
-                                  ? context.colorScheme.outline
-                                      .withValues(alpha: 0.2)
-                                  : context.colorScheme.primaryContainer
-                                      .withValues(alpha: 0.2),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.colorScheme.shadow
-                                    .withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            style: TextStyle(
-                              color: context.colorScheme.onSurface,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search all logs...',
-                              hintStyle: TextStyle(
-                                color: context.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.5),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 0.3,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: context.colorScheme.primary
-                                    .withValues(alpha: 0.8),
-                                size: 22,
-                                semanticLabel: 'Search icon',
-                              ),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                  ? Material(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(20),
-                                        onTap: _searchController.clear,
-                                        child: Container(
-                                          width: 36,
-                                          height: 36,
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.clear_rounded,
-                                            color: context
-                                                .colorScheme.onSurfaceVariant
-                                                .withValues(alpha: 0.6),
-                                            size: 20,
-                                            semanticLabel: 'Clear search',
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              filled: false,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                            ),
-                            textInputAction: TextInputAction.search,
-                            keyboardType: TextInputType.text,
-                            maxLength: _maxSearchLength,
-                            buildCounter: (context,
-                                    {required currentLength,
-                                    required isFocused,
-                                    maxLength}) =>
-                                null,
-                          ),
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: LottiSearchBar(
+                          controller: _searchController,
+                          hintText: 'Search all logs...',
+                          onClear: _searchController.clear,
                         ),
                       ),
                     ),

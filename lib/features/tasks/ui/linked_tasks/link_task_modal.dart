@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 /// Modal for searching and selecting a task to link to the current task.
 ///
@@ -205,30 +206,12 @@ class _LinkTaskModalState extends ConsumerState<LinkTaskModal> {
             // Search field
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
+              child: LottiSearchBar(
                 controller: _searchController,
                 focusNode: _focusNode,
-                decoration: InputDecoration(
-                  hintText: context.messages.searchTasksHint,
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            _onSearchChanged('');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
+                hintText: context.messages.searchTasksHint,
                 onChanged: _onSearchChanged,
+                onClear: () => _onSearchChanged(''),
               ),
             ),
             const SizedBox(height: 8),
