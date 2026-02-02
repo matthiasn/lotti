@@ -284,7 +284,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+      // Header has an add block button, each card has a quick create task button
+      expect(find.byIcon(Icons.add_circle_outline), findsAtLeast(2));
+      // Verify the header add button specifically by tooltip
+      expect(find.byTooltip('Add Block'), findsOneWidget);
     });
 
     testWidgets('tapping add button shows sheet', (tester) async {
@@ -295,8 +298,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap the add button
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      // Tap the add block button in the header (by tooltip)
+      await tester.tap(find.byTooltip('Add Block'));
       await tester.pumpAndSettle();
 
       // The sheet should appear (or try to)

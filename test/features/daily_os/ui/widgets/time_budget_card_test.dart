@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
@@ -12,8 +13,24 @@ import 'package:lotti/features/daily_os/state/task_view_preference_controller.da
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
+
+class MockNavService extends Mock implements NavService {
+  final List<String> navigationHistory = [];
+
+  @override
+  void beamToNamed(String path, {Object? data}) {
+    navigationHistory.add(path);
+  }
+}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,6 +137,7 @@ void main() {
     VoidCallback? onTap,
     bool isExpanded = false,
     List<Override> overrides = const [],
+    DateTime? selectedDate,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -130,6 +148,7 @@ void main() {
       ],
       child: TimeBudgetCard(
         progress: progress,
+        selectedDate: selectedDate ?? testDate,
         onTap: onTap,
         isExpanded: isExpanded,
       ),
@@ -311,6 +330,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -331,6 +351,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
             onLongPress: () => longPressed = true,
           ),
         ),
@@ -1026,6 +1047,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1057,6 +1079,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgress(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1101,6 +1124,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1122,6 +1146,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: false,
           ),
         ),
@@ -1143,6 +1168,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1170,6 +1196,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: false,
           ),
         ),
@@ -1185,6 +1212,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasks(),
+            selectedDate: testDate,
             isFocusActive: true,
           ),
         ),
@@ -1279,6 +1307,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1302,6 +1331,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1321,6 +1351,7 @@ void main() {
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1593,6 +1624,7 @@ void main() {
                 priority: TaskPriority.p0Urgent,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1619,6 +1651,7 @@ void main() {
                 dueUrgency: DueDateUrgency.dueToday,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1645,6 +1678,7 @@ void main() {
                 dueUrgency: DueDateUrgency.overdue,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1674,6 +1708,7 @@ void main() {
                 dueUrgency: DueDateUrgency.overdue,
               ),
             ]),
+            selectedDate: testDate,
           ),
         ),
       );
@@ -1683,6 +1718,273 @@ void main() {
       expect(find.byIcon(Icons.check), findsOneWidget); // Completed checkmark
       expect(find.text('P1'), findsOneWidget); // Priority badge
       expect(find.text('Late'), findsOneWidget); // Overdue badge
+    });
+  });
+  group('TimeBudgetCard - Quick Create Task Button', () {
+    late MockNavService mockNavService;
+    late MockPersistenceLogic mockPersistenceLogic;
+
+    setUpAll(() {
+      registerFallbackValue(TaskData(
+        title: '',
+        status: TaskStatus.open(
+          id: 'test-id',
+          createdAt: DateTime(2026),
+          utcOffset: 0,
+        ),
+        dateFrom: DateTime(2026),
+        dateTo: DateTime(2026),
+        statusHistory: [],
+      ));
+      registerFallbackValue(const EntryText(plainText: ''));
+    });
+
+    setUp(() async {
+      await getIt.reset();
+      mockNavService = MockNavService();
+      mockPersistenceLogic = MockPersistenceLogic();
+
+      getIt
+        ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    testWidgets('shows quick create button with tooltip', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pumpAndSettle();
+
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
+      // Verify the quick create button is present
+      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
+      expect(find.byTooltip(tooltipText), findsOneWidget);
+    });
+
+    testWidgets('tapping quick create button creates task with correct params',
+        (tester) async {
+      const testTaskId = 'test-task-id';
+      final testTask = Task(
+        meta: Metadata(
+          id: testTaskId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: TaskData(
+          title: '',
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+        ),
+      );
+
+      // Mock the persistence logic to return our test task
+      when(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => testTask);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(),
+          selectedDate: testDate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
+      // Tap the quick create button
+      await tester.tap(find.byTooltip(tooltipText));
+      await tester.pumpAndSettle();
+
+      // Verify task creation was called with correct category
+      verify(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: 'cat-1', // testCategory.id
+          )).called(1);
+
+      // Verify navigation was called with the correct path
+      expect(mockNavService.navigationHistory, contains('/tasks/$testTaskId'));
+    });
+
+    testWidgets('quick create button passes due date from selectedDate',
+        (tester) async {
+      const testTaskId = 'test-task-id';
+      final selectedDate = DateTime(2026, 2, 15);
+      TaskData? capturedData;
+
+      final testTask = Task(
+        meta: Metadata(
+          id: testTaskId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: TaskData(
+          title: '',
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+          due: selectedDate,
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((invocation) async {
+        capturedData = invocation.namedArguments[#data] as TaskData;
+        return testTask;
+      });
+
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgress(),
+          selectedDate: selectedDate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
+      // Tap the quick create button
+      await tester.tap(find.byTooltip(tooltipText));
+      await tester.pumpAndSettle();
+
+      // Verify the due date was passed correctly
+      expect(capturedData, isNotNull);
+      expect(capturedData!.due, selectedDate);
+    });
+
+    testWidgets('does not navigate when task creation fails', (tester) async {
+      // Mock the persistence logic to return null (failure)
+      when(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pumpAndSettle();
+
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
+      // Tap the quick create button
+      await tester.tap(find.byTooltip(tooltipText));
+      await tester.pumpAndSettle();
+
+      // Verify navigation was not called
+      expect(mockNavService.navigationHistory, isEmpty);
+    });
+
+    testWidgets('works with null category', (tester) async {
+      const testTaskId = 'test-task-id';
+      final testTask = Task(
+        meta: Metadata(
+          id: testTaskId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: TaskData(
+          title: '',
+          status: TaskStatus.open(
+            id: 'status-id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+        ),
+      );
+
+      when(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          )).thenAnswer((_) async => testTask);
+
+      // Create progress without a category
+      final progressWithoutCategory = TimeBudgetProgress(
+        categoryId: 'missing',
+        category: null,
+        plannedDuration: const Duration(hours: 1),
+        recordedDuration: Duration.zero,
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: const [],
+        taskProgressItems: const [],
+        blocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'missing',
+            startTime: testDate.add(const Duration(hours: 9)),
+            endTime: testDate.add(const Duration(hours: 10)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(progress: progressWithoutCategory),
+      );
+      await tester.pumpAndSettle();
+
+      // Get localized string from context
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final tooltipText = context.messages.dailyOsQuickCreateTask;
+
+      // Tap the quick create button
+      await tester.tap(find.byTooltip(tooltipText));
+      await tester.pumpAndSettle();
+
+      // Verify task creation was called with null category
+      // Note: Using captureAny to verify categoryId was explicitly passed as null
+      final captured = verify(() => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: captureAny(named: 'categoryId'),
+          )).captured;
+      expect(captured.first, isNull);
+
+      // Verify navigation still occurred
+      expect(mockNavService.navigationHistory, contains('/tasks/$testTaskId'));
     });
   });
 }

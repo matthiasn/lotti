@@ -89,6 +89,7 @@ class TimeBudgetList extends ConsumerWidget {
                 return TimeBudgetCard(
                   key: ValueKey(progress.categoryId),
                   progress: progress,
+                  selectedDate: selectedDate,
                   isFocusActive: isFocusActive,
                   onTap: () {
                     // Highlight this category in the timeline

@@ -89,6 +89,7 @@
   "dailyOsOverdue": "Überfällig",
   "dailyOsOverdueShort": "Spät",
   "dailyOsFold": "Einklappen",
+  "dailyOsQuickCreateTask": "Aufgabe für dieses Budget erstellen",
   "dashboardActiveLabel": "Aktiv:",
   "dashboardAddChartsTitle": "Diagramme hinzufügen:",
   "dashboardAddHabitButton": "Gewohnheitsdiagramme",

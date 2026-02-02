@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.837] - 2026-02-02
+### Added
+- Daily OS Time Budgets: Quick task creation button on each budget row
+  - Tap the "+" button to instantly create a task with the category pre-assigned
+  - Due date automatically set to the selected day
+  - Navigates directly to task detail screen for immediate editing
+  - Reduces friction when planning tasks during daily review
+
 ## [0.9.836] - 2026-01-31
 ### Added
 - Daily OS Time History Header: New horizontally scrollable day navigation header

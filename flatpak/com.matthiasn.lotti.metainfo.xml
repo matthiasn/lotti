@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.837" date="2026-02-02">
+      <description>
+        <p>Daily OS Quick Task Creation: Each time budget row now has a "+" button that instantly creates a task with the category pre-assigned and due date set to the selected day. Tap the button and you're taken directly to the task detail screen for immediate editing. This reduces friction when planning tasks during your daily review - no need to navigate to the tasks screen, create a task, then assign a category and due date separately.</p>
+      </description>
+    </release>
     <release version="0.9.836" date="2026-01-31">
       <description>
         <p>Daily OS Time History Header: A new horizontally scrollable header replaces the arrow-based day navigation. Tap through days to see a timeline of your productivity, with a sticky month label showing the visible months and selectable day segments with visual selection highlighting. The header supports infinite scroll to load more history (14 days at a time) and includes a Today button for quick navigation back to the current day. Day labels and budget status indicators are visible at a glance. Performance improvements avoid full stacked-height recomputation on each history load unless the scale changes. The stream chart now scales to the maximum daily total with a 6-hour minimum.</p>

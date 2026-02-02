@@ -89,6 +89,7 @@
   "dailyOsOverdue": "En retard",
   "dailyOsOverdueShort": "Retard",
   "dailyOsFold": "Réduire",
+  "dailyOsQuickCreateTask": "Créer une tâche pour ce budget",
   "dashboardActiveLabel": "Actif :",
   "dashboardAddChartsTitle": "Ajouter des graphiques :",
   "dashboardAddHabitButton": "Tableaux des habitudes",

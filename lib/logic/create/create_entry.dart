@@ -41,7 +41,11 @@ Future<JournalEntity?> createChecklist({
   return result.checklist;
 }
 
-Future<Task?> createTask({String? linkedId, String? categoryId}) async {
+Future<Task?> createTask({
+  String? linkedId,
+  String? categoryId,
+  DateTime? due,
+}) async {
   final now = DateTime.now();
 
   final task = await getIt<PersistenceLogic>().createTaskEntry(
@@ -52,6 +56,7 @@ Future<Task?> createTask({String? linkedId, String? categoryId}) async {
       dateTo: now,
       dateFrom: now,
       estimate: Duration.zero,
+      due: due,
     ),
     entryText: const EntryText(plainText: ''),
     linkedId: linkedId,

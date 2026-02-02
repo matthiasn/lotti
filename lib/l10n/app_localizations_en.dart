@@ -1083,6 +1083,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsAddBlock => 'Add Block';
 
   @override
+  String get dailyOsQuickCreateTask => 'Create task for this budget';
+
+  @override
   String get dailyOsTasks => 'Tasks';
 
   @override
