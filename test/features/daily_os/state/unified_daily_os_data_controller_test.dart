@@ -134,6 +134,21 @@ void main() {
         ),
       ),
     );
+    registerFallbackValue(
+      DayPlanEntry(
+        meta: Metadata(
+          id: 'fallback-plan',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(days: 1)),
+        ),
+        data: DayPlanData(
+          planDate: testDate,
+          status: const DayPlanStatus.draft(),
+        ),
+      ),
+    );
 
     getIt.allowReassignment = true;
   });
@@ -2733,6 +2748,448 @@ void main() {
         unifiedDailyOsDataControllerProvider(date: testDate),
       );
       expect(result.hasValue, isTrue);
+    });
+  });
+
+  group('UnifiedDailyOsDataController - Mutation Methods', () {
+    DayPlanEntry createPlanWithStatus({
+      DayPlanStatus status = const DayPlanStatus.draft(),
+      List<PlannedBlock> plannedBlocks = const [],
+      List<PinnedTaskRef> pinnedTasks = const [],
+    }) {
+      return DayPlanEntry(
+        meta: Metadata(
+          id: planId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(days: 1)),
+        ),
+        data: DayPlanData(
+          planDate: testDate,
+          status: status,
+          plannedBlocks: plannedBlocks,
+          pinnedTasks: pinnedTasks,
+        ),
+      );
+    }
+
+    void setupBasicMocks(DayPlanEntry plan) {
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        return invocation.positionalArguments.first as DayPlanEntry;
+      });
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+    }
+
+    test('agreeToPlan updates status to agreed', () async {
+      final plan = createPlanWithStatus();
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .agreeToPlan();
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      expect(captured.length, greaterThan(0));
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.isAgreed, isTrue);
+    });
+
+    test('markComplete sets completedAt timestamp', () async {
+      final plan = createPlanWithStatus(
+        status: DayPlanStatus.agreed(agreedAt: testDate),
+      );
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .markComplete();
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.completedAt, isNotNull);
+    });
+
+    test('addPlannedBlock adds a block to the plan', () async {
+      final plan = createPlanWithStatus();
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final newBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .addPlannedBlock(newBlock);
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(savedPlan.data.plannedBlocks.first.categoryId, equals('cat-work'));
+    });
+
+    test('updatePlannedBlock updates an existing block', () async {
+      final existingBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-1',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 10),
+      );
+      final plan = createPlanWithStatus(plannedBlocks: [existingBlock]);
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final updatedBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-1',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 12), // Extended end time
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .updatePlannedBlock(updatedBlock);
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(
+        savedPlan.data.plannedBlocks.first.endTime,
+        equals(DateTime(2026, 1, 15, 12)),
+      );
+    });
+
+    test('removePlannedBlock removes a block', () async {
+      final plan = createPlanWithStatus(
+        plannedBlocks: [
+          PlannedBlock(
+            id: 'block-1',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 1, 15, 9),
+            endTime: DateTime(2026, 1, 15, 10),
+          ),
+          PlannedBlock(
+            id: 'block-2',
+            categoryId: 'cat-2',
+            startTime: DateTime(2026, 1, 15, 14),
+            endTime: DateTime(2026, 1, 15, 15),
+          ),
+        ],
+      );
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .removePlannedBlock('block-1');
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.plannedBlocks.length, equals(1));
+      expect(savedPlan.data.plannedBlocks.first.id, equals('block-2'));
+    });
+
+    test('pinTask adds a pinned task', () async {
+      final plan = createPlanWithStatus();
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      const taskRef = PinnedTaskRef(
+        taskId: 'task-123',
+        categoryId: 'cat-1',
+        sortOrder: 1,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .pinTask(taskRef);
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.pinnedTasks.length, equals(1));
+      expect(savedPlan.data.pinnedTasks.first.taskId, equals('task-123'));
+    });
+
+    test('unpinTask removes a pinned task', () async {
+      final plan = createPlanWithStatus(
+        pinnedTasks: const [
+          PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
+          PinnedTaskRef(taskId: 'task-2', categoryId: 'cat-1'),
+        ],
+      );
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .unpinTask('task-1');
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.pinnedTasks.length, equals(1));
+      expect(savedPlan.data.pinnedTasks.first.taskId, equals('task-2'));
+    });
+
+    test('setDayLabel updates the label', () async {
+      final plan = createPlanWithStatus();
+      setupBasicMocks(plan);
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .setDayLabel('Deep Work Day');
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      final savedPlan = captured.last as DayPlanEntry;
+      expect(savedPlan.data.dayLabel, equals('Deep Work Day'));
+    });
+
+    group('Status transitions to needsReview', () {
+      test('addPlannedBlock transitions agreed plan to needsReview', () async {
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        final newBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 11),
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .addPlannedBlock(newBlock);
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.needsReview, isTrue);
+        expect(
+          (savedPlan.data.status as DayPlanStatusNeedsReview).reason,
+          equals(DayPlanReviewReason.blockModified),
+        );
+      });
+
+      test('updatePlannedBlock transitions agreed plan to needsReview',
+          () async {
+        final existingBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-1',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 10),
+        );
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+          plannedBlocks: [existingBlock],
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        final updatedBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-1',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 12),
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .updatePlannedBlock(updatedBlock);
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.needsReview, isTrue);
+      });
+
+      test('removePlannedBlock transitions agreed plan to needsReview',
+          () async {
+        final existingBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-1',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 10),
+        );
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+          plannedBlocks: [existingBlock],
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .removePlannedBlock('block-1');
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.needsReview, isTrue);
+      });
+
+      test('pinTask transitions agreed plan to needsReview', () async {
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        const taskRef = PinnedTaskRef(
+          taskId: 'task-123',
+          categoryId: 'cat-1',
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .pinTask(taskRef);
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.needsReview, isTrue);
+        expect(
+          (savedPlan.data.status as DayPlanStatusNeedsReview).reason,
+          equals(DayPlanReviewReason.taskRescheduled),
+        );
+      });
+
+      test('unpinTask transitions agreed plan to needsReview', () async {
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 15, 8)),
+          pinnedTasks: const [
+            PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
+          ],
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .unpinTask('task-1');
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.needsReview, isTrue);
+      });
+
+      test('edits on draft plan do not change status', () async {
+        final draftPlan = createPlanWithStatus();
+        setupBasicMocks(draftPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        final newBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 11),
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .addPlannedBlock(newBlock);
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        expect(savedPlan.data.isDraft, isTrue);
+      });
+
+      test('needsReview status preserves previouslyAgreedAt', () async {
+        final agreedAt = DateTime(2026, 1, 15, 8);
+        final agreedPlan = createPlanWithStatus(
+          status: DayPlanStatus.agreed(agreedAt: agreedAt),
+        );
+        setupBasicMocks(agreedPlan);
+
+        await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        final newBlock = PlannedBlock(
+          id: 'block-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 1, 15, 9),
+          endTime: DateTime(2026, 1, 15, 11),
+        );
+
+        await container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+            .addPlannedBlock(newBlock);
+
+        final captured =
+            verify(() => mockDayPlanRepository.save(captureAny())).captured;
+        final savedPlan = captured.last as DayPlanEntry;
+        final status = savedPlan.data.status as DayPlanStatusNeedsReview;
+        expect(status.previouslyAgreedAt, equals(agreedAt));
+      });
     });
   });
 }

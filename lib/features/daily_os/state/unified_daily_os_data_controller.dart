@@ -760,4 +760,145 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       dayEndHour: 18,
     );
   }
+
+  // =========================================================================
+  // Day Plan Mutation Methods
+  // =========================================================================
+
+  /// Saves a day plan and updates the local state with fresh derived values.
+  ///
+  /// After saving, this refetches all data to ensure timelineData and
+  /// budgetProgress are recomputed from the updated plan. This ensures
+  /// the UI immediately reflects mutations (e.g., new planned blocks
+  /// appear in the timeline).
+  Future<void> _saveDayPlan(DayPlanEntry updatedPlan) async {
+    await _dayPlanRepository.save(updatedPlan);
+
+    // Refetch all data to recompute derived values (timelineData, budgetProgress)
+    if (!_isDisposed) {
+      final freshData = await _fetchAllData();
+      if (!_isDisposed) {
+        state = AsyncData(freshData);
+      }
+    }
+  }
+
+  /// Transitions an agreed plan to needsReview status.
+  /// Returns the updated data if transition occurred, or original data if not.
+  DayPlanData _transitionToNeedsReviewIfAgreed(
+    DayPlanData data,
+    DayPlanReviewReason reason,
+  ) {
+    if (data.status is! DayPlanStatusAgreed) return data;
+
+    final agreed = data.status as DayPlanStatusAgreed;
+    return data.copyWith(
+      status: DayPlanStatus.needsReview(
+        triggeredAt: clock.now(),
+        reason: reason,
+        previouslyAgreedAt: agreed.agreedAt,
+      ),
+    );
+  }
+
+  /// Helper to mutate the day plan with reduced boilerplate.
+  ///
+  /// Takes a [mutator] function that transforms the plan data, and an
+  /// optional [reviewReason] to trigger needsReview transition for agreed plans.
+  Future<void> _mutateDayPlan(
+    DayPlanData Function(DayPlanData) mutator, {
+    DayPlanReviewReason? reviewReason,
+  }) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    var updatedData = mutator(dayPlan.data);
+
+    if (reviewReason != null) {
+      updatedData = _transitionToNeedsReviewIfAgreed(updatedData, reviewReason);
+    }
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Agrees to the current plan.
+  Future<void> agreeToPlan() async {
+    final now = clock.now();
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        status: DayPlanStatus.agreed(agreedAt: now),
+        agreedAt: now,
+      ),
+    );
+  }
+
+  /// Marks the day as complete.
+  Future<void> markComplete() async {
+    final now = clock.now();
+    await _mutateDayPlan(
+      (data) => data.copyWith(completedAt: now),
+    );
+  }
+
+  /// Adds a planned block to the timeline.
+  Future<void> addPlannedBlock(PlannedBlock block) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        plannedBlocks: [...data.plannedBlocks, block],
+      ),
+      reviewReason: DayPlanReviewReason.blockModified,
+    );
+  }
+
+  /// Updates an existing planned block.
+  Future<void> updatePlannedBlock(PlannedBlock block) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        plannedBlocks: data.plannedBlocks
+            .map((b) => b.id == block.id ? block : b)
+            .toList(),
+      ),
+      reviewReason: DayPlanReviewReason.blockModified,
+    );
+  }
+
+  /// Removes a planned block.
+  Future<void> removePlannedBlock(String blockId) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        plannedBlocks:
+            data.plannedBlocks.where((b) => b.id != blockId).toList(),
+      ),
+      reviewReason: DayPlanReviewReason.blockModified,
+    );
+  }
+
+  /// Pins a task to a category.
+  Future<void> pinTask(PinnedTaskRef taskRef) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        pinnedTasks: [...data.pinnedTasks, taskRef],
+      ),
+      reviewReason: DayPlanReviewReason.taskRescheduled,
+    );
+  }
+
+  /// Unpins a task.
+  Future<void> unpinTask(String taskId) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(
+        pinnedTasks: data.pinnedTasks.where((t) => t.taskId != taskId).toList(),
+      ),
+      reviewReason: DayPlanReviewReason.taskRescheduled,
+    );
+  }
+
+  /// Sets the day label.
+  Future<void> setDayLabel(String? label) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(dayLabel: label),
+    );
+  }
 }

@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -117,14 +116,6 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
     // Validate time range before saving
     if (!_isValidTimeRange) return;
 
-    final dayPlanEntity = await ref.read(
-      dayPlanControllerProvider(date: widget.date).future,
-    );
-
-    if (dayPlanEntity is! DayPlanEntry) {
-      return;
-    }
-
     final planDate = widget.date.dayAtMidnight;
     final startTime = planDate.add(
       Duration(hours: _startTime.hour, minutes: _startTime.minute),
@@ -141,7 +132,7 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
     );
 
     await ref
-        .read(dayPlanControllerProvider(date: widget.date).notifier)
+        .read(unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
         .addPlannedBlock(block);
 
     if (mounted) {

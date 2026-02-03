@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -297,7 +297,7 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
     );
 
     await ref
-        .read(dayPlanControllerProvider(date: widget.date).notifier)
+        .read(unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
         .updatePlannedBlock(updatedBlock);
 
     if (mounted) {
@@ -329,7 +329,8 @@ class _PlannedBlockEditModalState extends ConsumerState<PlannedBlockEditModal> {
 
     if ((confirmed ?? false) && mounted) {
       await ref
-          .read(dayPlanControllerProvider(date: widget.date).notifier)
+          .read(
+              unifiedDailyOsDataControllerProvider(date: widget.date).notifier)
           .removePlannedBlock(widget.block.id);
       if (mounted) {
         Navigator.pop(context);
