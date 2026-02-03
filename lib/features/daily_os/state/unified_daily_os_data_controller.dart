@@ -797,7 +797,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final agreed = data.status as DayPlanStatusAgreed;
     return data.copyWith(
       status: DayPlanStatus.needsReview(
-        triggeredAt: DateTime.now(),
+        triggeredAt: clock.now(),
         reason: reason,
         previouslyAgreedAt: agreed.agreedAt,
       ),
@@ -810,7 +810,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     if (currentState == null) return;
 
     final dayPlan = currentState.dayPlan;
-    final now = DateTime.now();
+    final now = clock.now();
     final updated = dayPlan.copyWith(
       data: dayPlan.data.copyWith(
         status: DayPlanStatus.agreed(agreedAt: now),
@@ -826,7 +826,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     if (currentState == null) return;
 
     final dayPlan = currentState.dayPlan;
-    final now = DateTime.now();
+    final now = clock.now();
     final updated = dayPlan.copyWith(
       data: dayPlan.data.copyWith(completedAt: now),
     );
