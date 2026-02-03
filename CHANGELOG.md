@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.839] - 2026-02-03
+### Fixed
+- Audio Transcription: Prevent speaker name hallucinations in multi-speaker recordings
+  - AI prompts now explicitly require "Speaker 1:", "Speaker 2:", etc. labels
+  - Prohibits guessing speaker identities from voice characteristics or context
+  - Speech dictionary terms are now only used for spelling corrections, not speaker identification
+
 ## [0.9.838] - 2026-02-03
 ### Changed
 - Daily OS Time History Header: Refined visual design for a cleaner, more polished look

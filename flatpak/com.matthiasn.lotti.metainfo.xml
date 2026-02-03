@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.839" date="2026-02-03">
+      <description>
+        <p>Audio Transcription Speaker Fix: When transcribing recordings with multiple speakers, the AI no longer hallucinates speaker names. Previously, the model might guess identities like "John:" or "Sarah:" based on voice characteristics or training data. Now speakers are correctly labeled as "Speaker 1:", "Speaker 2:", etc. The speech dictionary is used strictly for spelling corrections of domain-specific terms, not for identifying who is speaking.</p>
+      </description>
+    </release>
     <release version="0.9.838" date="2026-02-03">
       <description>
         <p>Daily OS Header Visual Refinements: The time history header now has a cleaner, more polished design. The selected day indicator compactly wraps just the weekday abbreviation and day number instead of extending down over the stream chart. Weekend days use the same compact styling for visual consistency. Vertical dividers between days have been removed for a cleaner look, and the chart is better positioned below the day labels. Selection boxes are wider for improved touch targets and visual balance.</p>
