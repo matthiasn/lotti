@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.838" date="2026-02-03">
+      <description>
+        <p>Daily OS Header Visual Refinements: The time history header now has a cleaner, more polished design. The selected day indicator compactly wraps just the weekday abbreviation and day number instead of extending down over the stream chart. Weekend days use the same compact styling for visual consistency. Vertical dividers between days have been removed for a cleaner look, and the chart is better positioned below the day labels. Selection boxes are wider for improved touch targets and visual balance.</p>
+      </description>
+    </release>
     <release version="0.9.837" date="2026-02-02">
       <description>
         <p>Daily OS Quick Task Creation: Each time budget row now has a "+" button that instantly creates a task with the category pre-assigned and due date set to the selected day. Tap the button and you're taken directly to the task detail screen for immediate editing. This reduces friction when planning tasks during your daily review - no need to navigate to the tasks screen, create a task, then assign a category and due date separately.</p>

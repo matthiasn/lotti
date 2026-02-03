@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.838] - 2026-02-03
+### Changed
+- Daily OS Time History Header: Refined visual design for a cleaner, more polished look
+  - Selected day indicator now compactly wraps weekday and day number instead of extending over chart
+  - Weekend days also use compact indicator styling for visual consistency
+  - Removed vertical dividers between days for a cleaner appearance
+  - Repositioned chart to sit below day labels with better visual separation
+  - Wider selection boxes for improved touch targets and visual balance
+
 ## [0.9.837] - 2026-02-02
 ### Added
 - Daily OS Time Budgets: Quick task creation button on each budget row
