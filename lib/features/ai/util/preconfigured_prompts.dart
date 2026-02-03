@@ -444,7 +444,7 @@ SPEAKER IDENTIFICATION RULES (CRITICAL):
 - NEVER assume or guess speaker identities or names.
 - NEVER use names from the dictionary or context to identify speakers.
 - You do NOT know who is speaking - only that different voices exist.
-- Use ONLY generic numbered labels (Speaker 1, Speaker 2, etc.) for speaker changes.
+- Use ONLY generic numbered labels (e.g., "Speaker 1:", "Speaker 2:", etc.) for speaker changes.
 
 {{speech_dictionary}}
 ''',
@@ -472,7 +472,7 @@ SPEAKER IDENTIFICATION RULES (CRITICAL):
 - NEVER assume or guess speaker identities or names.
 - NEVER use names from the dictionary or task context to identify speakers.
 - You do NOT know who is speaking - only that different voices exist.
-- Use ONLY generic numbered labels for speaker changes.
+- Use ONLY generic numbered labels (e.g., "Speaker 1:", "Speaker 2:", etc.) for speaker changes.
 
 {{speech_dictionary}}
 
