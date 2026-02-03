@@ -33,6 +33,7 @@ library;
 
 export 'celebration_overlay.dart';
 export 'gamey_card.dart';
+export 'gamey_fab.dart';
 export 'gamey_icon_badge.dart';
 export 'gamey_journal_card.dart';
 export 'gamey_progress_bar.dart';

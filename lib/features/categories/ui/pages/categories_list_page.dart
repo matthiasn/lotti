@@ -7,6 +7,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 /// Categories list page using Riverpod for state management
@@ -57,9 +58,9 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GameyFab(
         onPressed: () => beamToNamed('/settings/categories/create'),
-        tooltip: context.messages.settingsCategoriesAddTooltip,
+        semanticLabel: context.messages.settingsCategoriesAddTooltip,
         child: const Icon(Icons.add),
       ),
     );

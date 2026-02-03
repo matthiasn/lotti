@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Main page for the Daily Operating System view.
@@ -142,7 +143,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GameyFab(
         onPressed: () {
           add_block.AddBlockSheet.show(context, selectedDate);
         },

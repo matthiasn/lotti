@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:radial_button/widget/circle_floating_button.dart';
 
-class RadialAddTagButtons extends StatefulWidget {
+class RadialAddTagButtons extends ConsumerStatefulWidget {
   const RadialAddTagButtons({
     super.key,
     this.radius = 120,
@@ -12,17 +14,16 @@ class RadialAddTagButtons extends StatefulWidget {
   final double radius;
 
   @override
-  State<RadialAddTagButtons> createState() => _RadialAddTagButtonsState();
+  ConsumerState<RadialAddTagButtons> createState() =>
+      _RadialAddTagButtonsState();
 }
 
-class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
+class _RadialAddTagButtonsState extends ConsumerState<RadialAddTagButtons> {
   @override
   Widget build(BuildContext context) {
+    final themingState = ref.watch(themingControllerProvider);
+    final isGamey = themingState.isUsingGameyTheme;
+
     void createTag(String tagType) =>
         beamToNamed('/settings/tags/create/$tagType');
 
@@ -62,6 +63,14 @@ class _RadialAddTagButtonsState extends State<RadialAddTagButtons> {
       icon: Icons.add_rounded,
       duration: const Duration(milliseconds: 500),
       curveAnim: Curves.ease,
+      child: isGamey
+          ? Image.asset(
+              'assets/images/gamey/add_button.png',
+              width: 64,
+              height: 64,
+              fit: BoxFit.contain,
+            )
+          : null,
     );
   }
 }

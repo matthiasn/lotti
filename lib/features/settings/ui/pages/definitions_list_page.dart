@@ -1,7 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 class DefinitionsListPage<T> extends StatefulWidget {
@@ -117,7 +119,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   }
 }
 
-class FloatingAddIcon extends StatelessWidget {
+class FloatingAddIcon extends ConsumerWidget {
   const FloatingAddIcon({
     required this.createFn,
     this.semanticLabel,
@@ -128,11 +130,12 @@ class FloatingAddIcon extends StatelessWidget {
   final String? semanticLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(5),
-      child: FloatingActionButton(
+      child: GameyFab(
         onPressed: createFn,
+        semanticLabel: semanticLabel,
         child: Icon(
           Icons.add_rounded,
           semanticLabel: semanticLabel,
