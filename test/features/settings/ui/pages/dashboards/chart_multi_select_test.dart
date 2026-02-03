@@ -99,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Modal should be open - verify by checking for modal content
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
       expect(find.byType(CheckboxListTile), findsWidgets);
     });
 
@@ -123,7 +123,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Search field should be visible
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
 
       // Items should be displayed
       expect(find.text('First Item'), findsOneWidget);
@@ -285,7 +285,7 @@ void main() {
       expect(find.text('Second Item'), findsNothing);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pumpAndSettle();
 
       // All items should be visible again

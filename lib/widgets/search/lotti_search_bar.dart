@@ -25,7 +25,9 @@ import 'package:lotti/themes/theme.dart';
 class LottiSearchBar extends StatefulWidget {
   const LottiSearchBar({
     required this.controller,
+    this.focusNode,
     this.onChanged,
+    this.onSubmitted,
     this.onClear,
     this.hintText = 'Search...',
     this.isCompact = false,
@@ -37,8 +39,14 @@ class LottiSearchBar extends StatefulWidget {
   /// Controller for the search text field
   final TextEditingController controller;
 
+  /// Optional focus node for the search text field
+  final FocusNode? focusNode;
+
   /// Callback invoked when search text changes
   final ValueChanged<String>? onChanged;
+
+  /// Callback invoked when user submits the search (presses enter)
+  final ValueChanged<String>? onSubmitted;
 
   /// Callback invoked when clear button is pressed
   final VoidCallback? onClear;
@@ -63,6 +71,7 @@ class LottiSearchBar extends StatefulWidget {
 
 class _LottiSearchBarState extends State<LottiSearchBar> {
   late final VoidCallback _listener;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -93,101 +102,119 @@ class _LottiSearchBarState extends State<LottiSearchBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      height: widget.isCompact ? 36 : 48,
-      decoration: BoxDecoration(
-        color: !isDark
-            ? context.colorScheme.surfaceContainerHighest
-            : widget.isCompact || !widget.useGradientInDark
-                ? context.colorScheme.surfaceContainerHighest
-                : null,
-        gradient: (!isDark || widget.isCompact || !widget.useGradientInDark)
-            ? null
-            : LinearGradient(
-                colors: [
-                  context.colorScheme.surfaceContainer,
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.8),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-        borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.light
-              ? context.colorScheme.outline.withValues(alpha: 0.2)
-              : context.colorScheme.primaryContainer
-                  .withValues(alpha: widget.isCompact ? 0.1 : 0.2),
-        ),
-        boxShadow: widget.isCompact
-            ? []
-            : [
-                BoxShadow(
-                  color: context.colorScheme.shadow.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+    final hoverAlpha = _isHovered ? 0.08 : 0.0;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: widget.isCompact ? 36 : 48,
+        decoration: BoxDecoration(
+          color: !isDark
+              ? context.colorScheme.surfaceContainerHighest
+              : widget.isCompact || !widget.useGradientInDark
+                  ? context.colorScheme.surfaceContainerHighest
+                  : null,
+          gradient: (!isDark || widget.isCompact || !widget.useGradientInDark)
+              ? null
+              : LinearGradient(
+                  colors: [
+                    context.colorScheme.surfaceContainer,
+                    context.colorScheme.surfaceContainerHigh
+                        .withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-              ],
-      ),
-      child: TextField(
-        controller: widget.controller,
-        onChanged: widget.onChanged,
-        textCapitalization: widget.textCapitalization,
-        style: TextStyle(
-          color: context.colorScheme.onSurface,
-          fontSize: widget.isCompact ? 14 : 15,
-          fontWeight: FontWeight.w500,
+          borderRadius: BorderRadius.circular(widget.isCompact ? 12 : 16),
+          border: Border.all(
+            color: _isHovered
+                ? context.colorScheme.primary.withValues(alpha: 0.4)
+                : isDark
+                    ? context.colorScheme.primaryContainer
+                        .withValues(alpha: widget.isCompact ? 0.1 : 0.2)
+                    : context.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+          boxShadow: [
+            if (!widget.isCompact)
+              BoxShadow(
+                color: context.colorScheme.shadow.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            if (_isHovered)
+              BoxShadow(
+                color:
+                    context.colorScheme.primary.withValues(alpha: hoverAlpha),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+          ],
         ),
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          hintStyle: TextStyle(
-            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        child: TextField(
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          onChanged: widget.onChanged,
+          onSubmitted: widget.onSubmitted,
+          textCapitalization: widget.textCapitalization,
+          style: TextStyle(
+            color: context.colorScheme.onSurface,
             fontSize: widget.isCompact ? 14 : 15,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.3,
+            fontWeight: FontWeight.w500,
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: context.colorScheme.primary.withValues(alpha: 0.8),
-            size: widget.isCompact ? 20 : 22,
-            semanticLabel: 'Search icon',
-          ),
-          suffixIcon: widget.controller.text.isNotEmpty
-              ? Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: TextStyle(
+              color:
+                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              fontSize: widget.isCompact ? 14 : 15,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.3,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: context.colorScheme.primary.withValues(alpha: 0.8),
+              size: widget.isCompact ? 20 : 22,
+              semanticLabel: 'Search icon',
+            ),
+            suffixIcon: widget.controller.text.isNotEmpty
+                ? Material(
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      widget.controller.clear();
-                      widget.onClear?.call();
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.clear_rounded,
-                        color: context.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.6),
-                        size: 20,
-                        semanticLabel: 'Clear search',
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        widget.controller.clear();
+                        widget.onClear?.call();
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.clear_rounded,
+                          color: context.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.6),
+                          size: 20,
+                          semanticLabel: 'Clear search',
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : null,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          filled: false,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+                  )
+                : null,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
+          textInputAction: TextInputAction.search,
+          keyboardType: TextInputType.text,
         ),
-        textInputAction: TextInputAction.search,
-        keyboardType: TextInputType.text,
       ),
     );
   }

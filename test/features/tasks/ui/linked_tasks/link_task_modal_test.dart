@@ -138,7 +138,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Search tasks...'), findsOneWidget);
-      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     });
 
     testWidgets('modal uses DraggableScrollableSheet', (tester) async {
@@ -599,10 +599,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Clear button should appear
-      expect(find.byIcon(Icons.clear), findsOneWidget);
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
       await tester.pumpAndSettle();
 
       // Search field should be empty

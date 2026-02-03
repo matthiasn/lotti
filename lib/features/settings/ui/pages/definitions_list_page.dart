@@ -1,7 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
-import 'package:lotti/widgets/search/search_widget.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 class DefinitionsListPage<T> extends StatefulWidget {
   const DefinitionsListPage({
@@ -29,19 +30,25 @@ class DefinitionsListPage<T> extends StatefulWidget {
 
 class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   String match = '';
+  late final TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController(text: widget.initialSearchTerm);
 
-    setState(() {
-      if (widget.initialSearchTerm != null) {
-        match = '${widget.initialSearchTerm}';
-      }
-    });
+    if (widget.initialSearchTerm != null) {
+      match = '${widget.initialSearchTerm}'.toLowerCase();
+    }
   }
 
-  Future<void> onQueryChanged(String query) async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void onQueryChanged(String query) {
     setState(() {
       widget.searchCallback?.call(query);
       match = query.toLowerCase();
@@ -73,7 +80,18 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 showBackButton: true,
               ),
               SliverToBoxAdapter(
-                child: SearchWidget(onChanged: onQueryChanged),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: LottiSearchBar(
+                    controller: _searchController,
+                    hintText: context.messages.searchHint,
+                    onChanged: onQueryChanged,
+                    onClear: () => onQueryChanged(''),
+                  ),
+                ),
               ),
               SliverToBoxAdapter(
                 child: Padding(

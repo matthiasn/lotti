@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class ChartMultiSelect<T> extends StatelessWidget {
@@ -122,32 +123,11 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Search field
-        TextField(
+        LottiSearchBar(
           controller: _searchController,
-          decoration: InputDecoration(
-            hintText: context.messages.searchHint,
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
-            filled: true,
-            fillColor: colorScheme.surfaceContainerLow,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
+          hintText: context.messages.searchHint,
           onChanged: (value) => setState(() => _searchQuery = value),
+          onClear: () => setState(() => _searchQuery = ''),
         ),
 
         const SizedBox(height: 16),
