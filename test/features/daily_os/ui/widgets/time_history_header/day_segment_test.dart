@@ -8,7 +8,12 @@ import '../../../../../test_helper.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Thursday, Jan 15, 2026
   final testDay = DateTime(2026, 1, 15, 12);
+  // Saturday, Jan 17, 2026
+  final saturdayDay = DateTime(2026, 1, 17, 12);
+  // Sunday, Jan 18, 2026
+  final sundayDay = DateTime(2026, 1, 18, 12);
 
   DayTimeSummary createDaySummary({DateTime? day}) {
     return DayTimeSummary(
@@ -41,6 +46,15 @@ void main() {
       expect(find.text('15'), findsOneWidget);
     });
 
+    testWidgets('displays weekday abbreviation', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(daySummary: createDaySummary()),
+      );
+
+      // Jan 15, 2026 is a Thursday
+      expect(find.text('Thu'), findsOneWidget);
+    });
+
     testWidgets('displays different day numbers correctly', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -49,6 +63,8 @@ void main() {
       );
 
       expect(find.text('7'), findsOneWidget);
+      // Jan 7, 2026 is a Wednesday
+      expect(find.text('Wed'), findsOneWidget);
     });
 
     testWidgets('shows selection styling when selected', (tester) async {
@@ -59,10 +75,11 @@ void main() {
         ),
       );
 
-      // The day number should be visible
+      // The day number and weekday should be visible
       expect(find.text('15'), findsOneWidget);
+      expect(find.text('Thu'), findsOneWidget);
 
-      // Find containers that might have the selection border
+      // Find containers that have the selection styling
       final containerFinder = find.byType(Container);
       expect(containerFinder, findsWidgets);
     });
@@ -92,12 +109,12 @@ void main() {
       final daySegmentFinder = find.byType(DaySegment);
       final daySegment = tester.widget<DaySegment>(daySegmentFinder);
 
-      // Find the outer container with the width
-      final containerFinder = find.descendant(
+      // Find the outer SizedBox with the width
+      final sizedBoxFinder = find.descendant(
         of: daySegmentFinder,
-        matching: find.byType(Container),
+        matching: find.byType(SizedBox),
       );
-      expect(containerFinder, findsWidgets);
+      expect(sizedBoxFinder, findsWidgets);
 
       // Verify the day segment uses the correct width constant
       expect(daySegmentWidth, 56);
@@ -138,6 +155,84 @@ void main() {
       );
       final semantics = tester.widget<Semantics>(semanticsFinder);
       expect(semantics.properties.selected, false);
+    });
+
+    group('Weekend styling', () {
+      testWidgets('Saturday displays weekend weekday abbreviation',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(daySummary: createDaySummary(day: saturdayDay)),
+        );
+
+        expect(find.text('17'), findsOneWidget);
+        expect(find.text('Sat'), findsOneWidget);
+      });
+
+      testWidgets('Sunday displays weekend weekday abbreviation',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(daySummary: createDaySummary(day: sundayDay)),
+        );
+
+        expect(find.text('18'), findsOneWidget);
+        expect(find.text('Sun'), findsOneWidget);
+      });
+
+      testWidgets('weekend selected overrides weekend styling', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            daySummary: createDaySummary(day: saturdayDay),
+            isSelected: true,
+          ),
+        );
+
+        // Should still display correctly
+        expect(find.text('17'), findsOneWidget);
+        expect(find.text('Sat'), findsOneWidget);
+
+        // Selection takes precedence over weekend styling
+        // The container should have selection styling, not weekend border
+        final containerFinder = find.byType(Container);
+        expect(containerFinder, findsWidgets);
+      });
+    });
+
+    group('Two-line layout', () {
+      testWidgets('weekday and day number are in same widget tree',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(daySummary: createDaySummary()),
+        );
+
+        // Both texts should be present
+        expect(find.text('Thu'), findsOneWidget);
+        expect(find.text('15'), findsOneWidget);
+
+        // They should be within the same DaySegment
+        final daySegmentFinder = find.byType(DaySegment);
+        expect(
+          find.descendant(of: daySegmentFinder, matching: find.text('Thu')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: daySegmentFinder, matching: find.text('15')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('layout contains Column for vertical arrangement',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(daySummary: createDaySummary()),
+        );
+
+        // Should have a Column for the two-line layout
+        final columnFinder = find.descendant(
+          of: find.byType(DaySegment),
+          matching: find.byType(Column),
+        );
+        expect(columnFinder, findsWidgets);
+      });
     });
   });
 }

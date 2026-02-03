@@ -14,22 +14,19 @@ import 'package:lotti/utils/date_utils_extension.dart';
 
 /// Header widget for the Daily OS view with horizontal day navigation.
 ///
-/// Displays a horizontally scrollable list of day segments with:
-/// - Tap-to-select navigation between days
-/// - Sticky month label showing the currently visible month(s)
-/// - Selected day highlighting with primary color border
-/// - Infinite scroll to load more history (older days)
-/// - Today button for quick navigation back to current day
-/// - Day label chip and budget status indicator for the selected day
+/// Premium layout structure (top to bottom):
+/// 1. Month label row (16px) - sticky month indicator
+/// 2. Day selector row (56px) - weekday abbreviation + day number
+/// 3. Stream chart row (40px) - time distribution visualization
+/// 4. Date label row (44px) - full date, status, actions
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
   static const double monthLabelHeight = 16;
-  static const double chartHeight = 72;
-  static const double chartAreaHeight = monthLabelHeight + chartHeight;
-  static const double dateLabelRowHeight = 44;
-  // +1 to account for bottom border consuming layout space.
-  static const double headerHeight = chartAreaHeight + dateLabelRowHeight + 1;
+  static const double daySelectorWithChartHeight = 90;
+  static const double dateLabelRowHeight = 26;
+  static const double headerHeight =
+      monthLabelHeight + daySelectorWithChartHeight + dateLabelRowHeight;
 
   @override
   ConsumerState<TimeHistoryHeader> createState() => _TimeHistoryHeaderState();
@@ -194,10 +191,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Update the prefetch window based on visible indices.
-  ///
-  /// Only prefetches visible days + buffer in each direction.
-  /// Invalidates providers that have scrolled far out of view to free memory.
-  /// Uses date-based tracking instead of index-based to handle list changes safely.
   void _updatePrefetchWindow() {
     final historyData = ref.read(timeHistoryHeaderControllerProvider).value;
     if (historyData == null || historyData.days.isEmpty) return;
@@ -247,9 +240,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Select a date immediately (no waiting for prefetch).
-  ///
-  /// The provider will show loading state if data isn't cached yet,
-  /// but this avoids race conditions and failures blocking selection.
   void _selectDate(DateTime date) {
     ref.read(dailyOsSelectedDateProvider.notifier).selectDate(date);
   }
@@ -291,9 +281,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Center the scroll view on today when data first loads.
-  ///
-  /// Only sets [_hasSetInitialScroll] after a successful centering, allowing
-  /// retries if today isn't present in the initial data load.
   void _centerOnTodayIfNeeded(TimeHistoryData data) {
     if (_hasSetInitialScroll) return;
     if (!_scrollController.hasClients) return;
@@ -320,6 +307,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   Widget build(BuildContext context) {
     final historyDataAsync = ref.watch(timeHistoryHeaderControllerProvider);
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Update prefetch window and month label after data loads
     historyDataAsync.whenData((data) {
@@ -332,25 +320,28 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
       });
     });
 
+    // Premium dark header background
+    final headerBackground = isDark
+        ? const Color(0xFF1A1A1A) // Deep charcoal for dark mode
+        : context.colorScheme.surfaceContainerHighest;
+
     return Container(
       height: TimeHistoryHeader.headerHeight,
       decoration: BoxDecoration(
-        color: context.colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(
-            color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
-          ),
-        ),
+        color: headerBackground,
       ),
       child: Column(
         children: [
-          // Chart area with day segments
+          // Month label row
+          _buildMonthLabelRow(context),
+
+          // Day selector + chart (stacked, chart behind)
           SizedBox(
-            height: TimeHistoryHeader.chartAreaHeight,
+            height: TimeHistoryHeader.daySelectorWithChartHeight,
             child: historyDataAsync.when(
-              data: (data) => _buildDayList(data, selectedDate),
-              loading: _buildLoadingSkeleton,
-              error: (_, __) => _buildLoadingSkeleton(),
+              data: (data) => _buildDaySelectorWithChart(data, selectedDate),
+              loading: _buildDaySelectorSkeleton,
+              error: (_, __) => _buildDaySelectorSkeleton(),
             ),
           ),
 
@@ -367,217 +358,204 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
     );
   }
 
-  Widget _buildDayList(TimeHistoryData data, DateTime selectedDate) {
-    final itemCount = data.days.length + (data.isLoadingMore ? 1 : 0);
-
-    return Stack(
-      children: [
-        // Stream chart background using graphic library
-        // Only render chart if we have at least 2 days
-        // (SymmetricModifier in graphic library requires >= 2 data points)
-        if (data.days.length >= 2)
-          Positioned.fill(
-            child: Padding(
-              // Chart top padding: monthLabelHeight (16) - 15 = 1px.
-              // This positions the chart's vertical center slightly above
-              // the day segments, allowing the symmetric chart to grow
-              // both upward (into the month label area) and downward.
-              padding: const EdgeInsets.only(
-                top: TimeHistoryHeader.monthLabelHeight - 15,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return AnimatedBuilder(
-                    animation: _scrollController,
-                    builder: (context, _) {
-                      final scrollOffset = _scrollController.hasClients
-                          ? _scrollController.offset
-                          : 0.0;
-                      final viewportWidth = _scrollController.hasClients
-                          ? _scrollController.position.viewportDimension
-                          : constraints.maxWidth;
-
-                      final (visibleStart, visibleEnd) =
-                          _getVisibleIndicesForMetrics(
-                        data,
-                        scrollOffset,
-                        viewportWidth,
-                      );
-
-                      final chartStart = (visibleStart - _chartBuffer).clamp(
-                        0,
-                        data.days.length - 1,
-                      );
-                      final chartEnd = (visibleEnd + _chartBuffer).clamp(
-                        0,
-                        data.days.length - 1,
-                      );
-
-                      if (chartEnd < chartStart) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final chartDays =
-                          data.days.sublist(chartStart, chartEnd + 1);
-
-                      if (chartDays.length < 2) {
-                        return const SizedBox.shrink();
-                      }
-
-                      // Calculate chart positioning to align with day boundaries.
-                      // There are N day segments between N+1 midnights.
-                      final chartWidth = chartDays.length * daySegmentWidth;
-
-                      // Guard against zero width
-                      if (chartWidth <= 0) {
-                        return const SizedBox.shrink();
-                      }
-
-                      // In reversed ListView: scrollOffset=0 shows today (index 0) at RIGHT edge.
-                      // Chart x=0 should align with the oldest day midnight,
-                      // and x=max with the newest day midnight + 1 day.
-                      // So we position the chart right edge at the right border of
-                      // the newest day in the chart window.
-                      final chartRightEdge = constraints.maxWidth +
-                          scrollOffset -
-                          (chartStart * daySegmentWidth);
-
-                      // Calculate clip boundary at tomorrow noon.
-                      // Find tomorrow's index in data.days (newest-to-oldest order).
-                      final tomorrow = clock.now().dayAtNoon.add(
-                            const Duration(days: 1),
-                          );
-                      final tomorrowIndex = data.days.indexWhere(
-                        (d) => d.day == tomorrow,
-                      );
-                      // Clip right edge: tomorrow noon position in viewport coords
-                      // tomorrowIndex * daySegmentWidth gives tomorrow's left edge,
-                      // add half segment for noon
-                      final clipRightX = tomorrowIndex >= 0
-                          ? constraints.maxWidth +
-                              scrollOffset -
-                              (tomorrowIndex * daySegmentWidth) -
-                              (daySegmentWidth / 2)
-                          : double.infinity;
-                      final devicePixelRatio =
-                          MediaQuery.devicePixelRatioOf(context);
-                      final alignedRight =
-                          (chartRightEdge * devicePixelRatio).roundToDouble() /
-                              devicePixelRatio;
-                      final alignedLeft = alignedRight - chartWidth;
-
-                      return ClipRect(
-                        // Clip chart at tomorrow noon to prevent
-                        // rendering into future days
-                        clipper: _TomorrowNoonClipper(
-                          clipRightX: clipRightX,
-                          viewportWidth: constraints.maxWidth,
-                        ),
-                        child: OverflowBox(
-                          alignment: Alignment.centerLeft,
-                          maxWidth: chartWidth,
-                          minWidth: chartWidth,
-                          child: Transform.translate(
-                            offset: Offset(alignedLeft, 0),
-                            child: TimeHistoryStreamChart(
-                              days: chartDays,
-                              height: TimeHistoryHeader.chartHeight,
-                              maxDailyTotal: data.maxDailyTotal,
-                              verticalScale: 0.9,
-                              width: chartWidth,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+  Widget _buildMonthLabelRow(BuildContext context) {
+    return SizedBox(
+      height: TimeHistoryHeader.monthLabelHeight,
+      child: Center(
+        child: Text(
+          _visibleMonthLabel,
+          style: context.textTheme.labelSmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
           ),
-
-        // Day segments list with month labels
-        Column(
-          children: [
-            // Sticky month label row
-            SizedBox(
-              height: TimeHistoryHeader.monthLabelHeight,
-              child: Center(
-                child: Text(
-                  _visibleMonthLabel,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-            // Day segments
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                reverse: true, // Today at right edge
-                itemCount: itemCount,
-                itemExtent: daySegmentWidth, // Fixed width
-                itemBuilder: (context, index) {
-                  if (data.isLoadingMore && index == data.days.length) {
-                    return _buildLoadingIndicator();
-                  }
-
-                  final daySummary = data.days[index];
-                  final isSelected = daySummary.day.dayAtMidnight ==
-                      selectedDate.dayAtMidnight;
-
-                  return DaySegment(
-                    daySummary: daySummary,
-                    isSelected: isSelected,
-                    onTap: () => _selectDate(daySummary.day),
-                    showRightBorder: index == 0,
-                  );
-                },
-              ),
-            ),
-          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildLoadingSkeleton() {
-    return Column(
+  Widget _buildDaySelectorWithChart(
+      TimeHistoryData data, DateTime selectedDate) {
+    final itemCount = data.days.length + (data.isLoadingMore ? 1 : 0);
+
+    // Chart height within the combined area
+    const chartHeight = 54.0;
+    // How far down from top the chart starts (day labels take ~38px)
+    const chartTopOffset = 42.0;
+
+    return Stack(
       children: [
-        // Placeholder for month label
-        const SizedBox(height: TimeHistoryHeader.monthLabelHeight),
-        // Skeleton day segments
-        Expanded(
+        // Chart layer (behind day selector, positioned lower)
+        if (data.days.length >= 2)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: chartTopOffset,
+            height: chartHeight,
+            child: _buildChartLayer(data, chartHeight),
+          ),
+
+        // Day selector layer (on top)
+        Positioned.fill(
           child: ListView.builder(
+            controller: _scrollController,
             scrollDirection: Axis.horizontal,
             reverse: true,
-            itemCount: 7,
+            itemCount: itemCount,
             itemExtent: daySegmentWidth,
             itemBuilder: (context, index) {
-              return Container(
-                width: daySegmentWidth,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
+              if (data.isLoadingMore && index == data.days.length) {
+                return _buildLoadingIndicator();
+              }
+
+              final daySummary = data.days[index];
+              final isSelected =
+                  daySummary.day.dayAtMidnight == selectedDate.dayAtMidnight;
+
+              return DaySegment(
+                daySummary: daySummary,
+                isSelected: isSelected,
+                onTap: () => _selectDate(daySummary.day),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildChartLayer(TimeHistoryData data, double chartHeight) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return AnimatedBuilder(
+          animation: _scrollController,
+          builder: (context, _) {
+            final scrollOffset =
+                _scrollController.hasClients ? _scrollController.offset : 0.0;
+            final hasViewport = _scrollController.hasClients &&
+                _scrollController.position.hasViewportDimension;
+            final viewportWidth = hasViewport
+                ? _scrollController.position.viewportDimension
+                : constraints.maxWidth;
+
+            final (visibleStart, visibleEnd) = _getVisibleIndicesForMetrics(
+              data,
+              scrollOffset,
+              viewportWidth,
+            );
+
+            final chartStart = (visibleStart - _chartBuffer).clamp(
+              0,
+              data.days.length - 1,
+            );
+            final chartEnd = (visibleEnd + _chartBuffer).clamp(
+              0,
+              data.days.length - 1,
+            );
+
+            if (chartEnd < chartStart) {
+              return const SizedBox.shrink();
+            }
+
+            final chartDays = data.days.sublist(chartStart, chartEnd + 1);
+
+            if (chartDays.length < 2) {
+              return const SizedBox.shrink();
+            }
+
+            final chartWidth = chartDays.length * daySegmentWidth;
+
+            if (chartWidth <= 0) {
+              return const SizedBox.shrink();
+            }
+
+            final chartRightEdge = constraints.maxWidth +
+                scrollOffset -
+                (chartStart * daySegmentWidth);
+
+            // Calculate clip boundary at tomorrow noon
+            final tomorrow = clock.now().dayAtNoon.add(
+                  const Duration(days: 1),
+                );
+            final tomorrowIndex = data.days.indexWhere(
+              (d) => d.day == tomorrow,
+            );
+            final clipRightX = tomorrowIndex >= 0
+                ? constraints.maxWidth +
+                    scrollOffset -
+                    (tomorrowIndex * daySegmentWidth) -
+                    (daySegmentWidth / 2)
+                : double.infinity;
+
+            final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+            final alignedRight =
+                (chartRightEdge * devicePixelRatio).roundToDouble() /
+                    devicePixelRatio;
+            final alignedLeft = alignedRight - chartWidth;
+
+            return ClipRect(
+              clipper: _TomorrowNoonClipper(
+                clipRightX: clipRightX,
+                viewportWidth: constraints.maxWidth,
+              ),
+              child: OverflowBox(
+                alignment: Alignment.centerLeft,
+                maxWidth: chartWidth,
+                minWidth: chartWidth,
+                child: Transform.translate(
+                  offset: Offset(alignedLeft, 0),
+                  child: Opacity(
+                    opacity: 0.9,
+                    child: TimeHistoryStreamChart(
+                      days: chartDays,
+                      height: chartHeight,
+                      maxDailyTotal: data.maxDailyTotal,
+                      width: chartWidth,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDaySelectorSkeleton() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      itemCount: 7,
+      itemExtent: daySegmentWidth,
+      itemBuilder: (context, index) {
+        return Container(
+          width: daySegmentWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 28,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: 24,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -599,9 +577,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
 }
 
 /// Custom clipper that clips the chart at tomorrow noon.
-///
-/// This prevents the stream chart from rendering into future days
-/// while still allowing the day segments to be scrollable.
 class _TomorrowNoonClipper extends CustomClipper<Rect> {
   _TomorrowNoonClipper({
     required this.clipRightX,
@@ -613,7 +588,6 @@ class _TomorrowNoonClipper extends CustomClipper<Rect> {
 
   @override
   Rect getClip(Size size) {
-    // Clip from left edge to tomorrow noon (or full width if no clip needed)
     final rightEdge = clipRightX.isFinite
         ? clipRightX.clamp(0.0, viewportWidth)
         : viewportWidth;
