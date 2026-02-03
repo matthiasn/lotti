@@ -437,8 +437,14 @@ IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
 Transcribe the provided audio file(s). Do NOT translate - keep the original language.
 Format the transcription clearly with proper punctuation.
 Start a new paragraph when there are small pauses or topic changes in the speech.
-If there are multiple speakers, try to indicate speaker changes.
 Remove filler words.
+
+SPEAKER IDENTIFICATION RULES (CRITICAL):
+- If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
+- NEVER assume or guess speaker identities or names.
+- NEVER use names from the dictionary or context to identify speakers.
+- You do NOT know who is speaking - only that different voices exist.
+- Use ONLY generic numbered labels (e.g., "Speaker 1:", "Speaker 2:", etc.) for speaker changes.
 
 {{speech_dictionary}}
 ''',
@@ -459,7 +465,14 @@ IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
   userMessage: '''
 Transcribe the provided audio with proper punctuation and paragraph breaks.
 Do NOT translate - keep the original language.
-Remove filler words. If multiple speakers, indicate speaker changes.
+Remove filler words.
+
+SPEAKER IDENTIFICATION RULES (CRITICAL):
+- If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
+- NEVER assume or guess speaker identities or names.
+- NEVER use names from the dictionary or task context to identify speakers.
+- You do NOT know who is speaking - only that different voices exist.
+- Use ONLY generic numbered labels (e.g., "Speaker 1:", "Speaker 2:", etc.) for speaker changes.
 
 {{speech_dictionary}}
 
