@@ -5,7 +5,8 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
+import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -16,15 +17,15 @@ import '../../../../test_helper.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
-/// Mock controller that returns a fixed DayPlanEntry.
-class _TestDayPlanController extends DayPlanController {
-  _TestDayPlanController(this._entry);
+/// Mock controller that returns fixed unified data.
+class _TestUnifiedController extends UnifiedDailyOsDataController {
+  _TestUnifiedController(this._data);
 
-  final DayPlanEntry? _entry;
+  final DailyOsData _data;
 
   @override
-  Future<JournalEntity?> build({required DateTime date}) async {
-    return _entry;
+  Future<DailyOsData> build({required DateTime date}) async {
+    return _data;
   }
 }
 
@@ -98,6 +99,16 @@ void main() {
     );
   }
 
+  DailyTimelineData createTestTimelineData() {
+    return DailyTimelineData(
+      date: testDate,
+      plannedSlots: [],
+      actualSlots: [],
+      dayStartHour: 8,
+      dayEndHour: 18,
+    );
+  }
+
   Widget createTestWidget({
     required PlannedBlock block,
     DayPlanEntry? plan,
@@ -105,11 +116,18 @@ void main() {
   }) {
     final effectivePlan = plan ?? createTestPlan();
 
+    final unifiedData = DailyOsData(
+      date: testDate,
+      dayPlan: effectivePlan,
+      timelineData: createTestTimelineData(),
+      budgetProgress: [],
+    );
+
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        dayPlanControllerProvider(date: testDate).overrideWith(
-          () => _TestDayPlanController(effectivePlan),
+        unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
+          () => _TestUnifiedController(unifiedData),
         ),
         ...additionalOverrides,
       ],

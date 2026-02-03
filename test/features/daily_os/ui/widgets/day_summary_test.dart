@@ -1,54 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 
-/// Mock controller that returns a fixed DayPlanEntry.
-class _TestDayPlanController extends DayPlanController {
-  _TestDayPlanController(this._entry);
-
-  final DayPlanEntry? _entry;
-
-  @override
-  Future<JournalEntity?> build({required DateTime date}) async {
-    return _entry;
-  }
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final testDate = DateTime(2026, 1, 15);
 
-  DayPlanEntry createTestPlan({
-    bool isComplete = false,
-  }) {
-    return DayPlanEntry(
-      meta: Metadata(
-        id: dayPlanId(testDate),
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: testDate,
-        dateTo: testDate.add(const Duration(days: 1)),
-      ),
-      data: DayPlanData(
-        planDate: testDate,
-        status: DayPlanStatus.agreed(agreedAt: testDate),
-        completedAt: isComplete ? testDate : null,
-      ),
-    );
-  }
-
   Widget createTestWidget({
-    DayPlanEntry? plan,
     DayBudgetStats? stats,
     List<Override> additionalOverrides = const [],
   }) {
@@ -59,14 +24,10 @@ void main() {
           budgetCount: 2,
           overBudgetCount: 0,
         );
-    final effectivePlan = plan ?? createTestPlan();
 
     return RiverpodWidgetTestBench(
       overrides: [
         dailyOsSelectedDateProvider.overrideWithValue(testDate),
-        dayPlanControllerProvider(date: testDate).overrideWith(
-          () => _TestDayPlanController(effectivePlan),
-        ),
         dayBudgetStatsProvider(date: testDate).overrideWith(
           (ref) async => effectiveStats,
         ),

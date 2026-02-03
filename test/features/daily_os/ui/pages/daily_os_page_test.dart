@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/day_plan_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
@@ -17,18 +16,6 @@ import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_hist
 
 import '../../../../test_helper.dart';
 import '../widgets/time_history_header/test_helpers.dart';
-
-/// Mock controller that returns a fixed DayPlanEntry.
-class _TestDayPlanController extends DayPlanController {
-  _TestDayPlanController(this._entry);
-
-  final DayPlanEntry? _entry;
-
-  @override
-  Future<JournalEntity?> build({required DateTime date}) async {
-    return _entry;
-  }
-}
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {
@@ -162,9 +149,6 @@ void main() {
         ),
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
-        ),
-        dayPlanControllerProvider(date: testDate).overrideWith(
-          () => _TestDayPlanController(effectivePlan),
         ),
         dayBudgetStatsProvider(date: testDate).overrideWith(
           (ref) async => effectiveStats,

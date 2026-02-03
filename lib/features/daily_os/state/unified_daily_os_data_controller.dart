@@ -760,4 +760,182 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       dayEndHour: 18,
     );
   }
+
+  // =========================================================================
+  // Day Plan Mutation Methods
+  // =========================================================================
+
+  /// Saves a day plan and updates the local state atomically.
+  ///
+  /// This ensures the UI immediately reflects the change without waiting
+  /// for a notification round-trip.
+  Future<void> _saveDayPlan(DayPlanEntry updatedPlan) async {
+    final savedPlan = await _dayPlanRepository.save(updatedPlan);
+
+    // Update local state immediately with the saved plan
+    final currentState = state.value;
+    if (currentState != null && !_isDisposed) {
+      state = AsyncData(
+        DailyOsData(
+          date: currentState.date,
+          dayPlan: savedPlan,
+          timelineData: currentState.timelineData,
+          budgetProgress: currentState.budgetProgress,
+        ),
+      );
+    }
+  }
+
+  /// Transitions an agreed plan to needsReview status.
+  /// Returns the updated data if transition occurred, or original data if not.
+  DayPlanData _transitionToNeedsReviewIfAgreed(
+    DayPlanData data,
+    DayPlanReviewReason reason,
+  ) {
+    if (data.status is! DayPlanStatusAgreed) return data;
+
+    final agreed = data.status as DayPlanStatusAgreed;
+    return data.copyWith(
+      status: DayPlanStatus.needsReview(
+        triggeredAt: DateTime.now(),
+        reason: reason,
+        previouslyAgreedAt: agreed.agreedAt,
+      ),
+    );
+  }
+
+  /// Agrees to the current plan.
+  Future<void> agreeToPlan() async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    final now = DateTime.now();
+    final updated = dayPlan.copyWith(
+      data: dayPlan.data.copyWith(
+        status: DayPlanStatus.agreed(agreedAt: now),
+        agreedAt: now,
+      ),
+    );
+    await _saveDayPlan(updated);
+  }
+
+  /// Marks the day as complete.
+  Future<void> markComplete() async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    final now = DateTime.now();
+    final updated = dayPlan.copyWith(
+      data: dayPlan.data.copyWith(completedAt: now),
+    );
+    await _saveDayPlan(updated);
+  }
+
+  /// Adds a planned block to the timeline.
+  Future<void> addPlannedBlock(PlannedBlock block) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    var updatedData = dayPlan.data.copyWith(
+      plannedBlocks: [...dayPlan.data.plannedBlocks, block],
+    );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
+    );
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Updates an existing planned block.
+  Future<void> updatePlannedBlock(PlannedBlock block) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    final updatedBlocks = dayPlan.data.plannedBlocks.map((b) {
+      return b.id == block.id ? block : b;
+    }).toList();
+
+    var updatedData = dayPlan.data.copyWith(plannedBlocks: updatedBlocks);
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
+    );
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Removes a planned block.
+  Future<void> removePlannedBlock(String blockId) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    var updatedData = dayPlan.data.copyWith(
+      plannedBlocks:
+          dayPlan.data.plannedBlocks.where((b) => b.id != blockId).toList(),
+    );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.blockModified,
+    );
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Pins a task to a category.
+  Future<void> pinTask(PinnedTaskRef taskRef) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    var updatedData = dayPlan.data.copyWith(
+      pinnedTasks: [...dayPlan.data.pinnedTasks, taskRef],
+    );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.taskRescheduled,
+    );
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Unpins a task.
+  Future<void> unpinTask(String taskId) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    var updatedData = dayPlan.data.copyWith(
+      pinnedTasks:
+          dayPlan.data.pinnedTasks.where((t) => t.taskId != taskId).toList(),
+    );
+    updatedData = _transitionToNeedsReviewIfAgreed(
+      updatedData,
+      DayPlanReviewReason.taskRescheduled,
+    );
+
+    final updated = dayPlan.copyWith(data: updatedData);
+    await _saveDayPlan(updated);
+  }
+
+  /// Sets the day label.
+  Future<void> setDayLabel(String? label) async {
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    final dayPlan = currentState.dayPlan;
+    final updated = dayPlan.copyWith(
+      data: dayPlan.data.copyWith(dayLabel: label),
+    );
+    await _saveDayPlan(updated);
+  }
 }
