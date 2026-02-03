@@ -221,9 +221,12 @@ String _$expandedFoldRegionsHash() =>
 /// Provides the active focus category ID based on the current time.
 ///
 /// Returns the category ID of the planned block that the current time
-/// falls within, or null if there's no active block.
-/// This is used for the "Focus State" feature where non-active categories
-/// are automatically collapsed.
+/// falls within on TODAY's schedule, or null if there's no active block.
+/// This is used for the "Focus First" UX where only the currently active
+/// category is expanded and all others are collapsed.
+///
+/// The active category persists even when viewing historical or future dates,
+/// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
 /// without excessive resource usage.
@@ -234,9 +237,12 @@ final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
 /// Provides the active focus category ID based on the current time.
 ///
 /// Returns the category ID of the planned block that the current time
-/// falls within, or null if there's no active block.
-/// This is used for the "Focus State" feature where non-active categories
-/// are automatically collapsed.
+/// falls within on TODAY's schedule, or null if there's no active block.
+/// This is used for the "Focus First" UX where only the currently active
+/// category is expanded and all others are collapsed.
+///
+/// The active category persists even when viewing historical or future dates,
+/// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
 /// without excessive resource usage.
@@ -247,9 +253,12 @@ final class ActiveFocusCategoryIdProvider
   /// Provides the active focus category ID based on the current time.
   ///
   /// Returns the category ID of the planned block that the current time
-  /// falls within, or null if there's no active block.
-  /// This is used for the "Focus State" feature where non-active categories
-  /// are automatically collapsed.
+  /// falls within on TODAY's schedule, or null if there's no active block.
+  /// This is used for the "Focus First" UX where only the currently active
+  /// category is expanded and all others are collapsed.
+  ///
+  /// The active category persists even when viewing historical or future dates,
+  /// since it always checks TODAY's schedule regardless of the selected date.
   ///
   /// Re-evaluates every 15 seconds to keep the focus state reasonably current
   /// without excessive resource usage.
@@ -279,7 +288,7 @@ final class ActiveFocusCategoryIdProvider
 }
 
 String _$activeFocusCategoryIdHash() =>
-    r'a38a6013898307bd4d2a9263330b1d1da85c4678';
+    r'21abf5fb583709b6a214ed61bd08a50681a6ce8e';
 
 /// Provides the category ID of the currently running timer.
 ///

@@ -66,7 +66,7 @@ class TimeBudgetCard extends ConsumerStatefulWidget {
   /// Whether this category is the currently active focus.
   /// - `true`: This is the active category, task section starts expanded
   /// - `false`: Another category is active, task section starts collapsed
-  /// - `null`: No focus context, task section starts expanded (default behavior)
+  /// - `null`: No active focus (no block covering current time), collapsed
   final bool? isFocusActive;
 
   @override
@@ -80,7 +80,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
   @override
   void initState() {
     super.initState();
-    _isExpanded = widget.isFocusActive ?? true;
+    // Default to collapsed. Only expand if this is the active focus category.
+    _isExpanded = widget.isFocusActive ?? false;
   }
 
   @override
@@ -89,7 +90,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
     // Only auto-update if user hasn't manually toggled
     if (widget.isFocusActive != oldWidget.isFocusActive && !_userHasToggled) {
       setState(() {
-        _isExpanded = widget.isFocusActive ?? true;
+        // Default to collapsed. Only expand if this is the active focus category.
+        _isExpanded = widget.isFocusActive ?? false;
       });
     }
   }

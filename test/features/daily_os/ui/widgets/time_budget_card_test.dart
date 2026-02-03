@@ -136,6 +136,7 @@ void main() {
     required TimeBudgetProgress progress,
     VoidCallback? onTap,
     bool isExpanded = false,
+    bool? isFocusActive,
     List<Override> overrides = const [],
     DateTime? selectedDate,
   }) {
@@ -151,6 +152,7 @@ void main() {
         selectedDate: selectedDate ?? testDate,
         onTap: onTap,
         isExpanded: isExpanded,
+        isFocusActive: isFocusActive,
       ),
     );
   }
@@ -499,6 +501,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -521,6 +524,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -542,6 +546,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -566,6 +571,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -588,6 +594,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -627,7 +634,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: progress),
+        createTestWidget(progress: progress, isFocusActive: true),
       );
       await tester.pumpAndSettle();
 
@@ -650,6 +657,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -671,6 +679,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -693,6 +702,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -715,6 +725,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -736,6 +747,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -777,6 +789,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: tasks),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -802,6 +815,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(tasks: [task]),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -992,6 +1006,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1004,6 +1019,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p1High),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1016,6 +1032,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1027,6 +1044,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p3Low),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1097,11 +1115,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithTasks(),
-          overrides: [
-            activeFocusCategoryIdProvider.overrideWith(
-              (ref) => Stream.value('cat-1'),
-            ),
-          ],
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1308,6 +1322,7 @@ void main() {
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1332,6 +1347,7 @@ void main() {
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1352,6 +1368,7 @@ void main() {
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1435,6 +1452,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithDueTasks(DueDateUrgency.dueToday),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1447,6 +1465,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithDueTasks(DueDateUrgency.overdue),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1459,6 +1478,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithDueTasks(DueDateUrgency.normal),
+          isFocusActive: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1625,6 +1645,7 @@ void main() {
               ),
             ]),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1652,6 +1673,7 @@ void main() {
               ),
             ]),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1679,6 +1701,7 @@ void main() {
               ),
             ]),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );
@@ -1709,6 +1732,7 @@ void main() {
               ),
             ]),
             selectedDate: testDate,
+            isFocusActive: true,
           ),
         ),
       );

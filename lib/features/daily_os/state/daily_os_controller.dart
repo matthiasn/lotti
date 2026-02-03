@@ -239,34 +239,35 @@ Set<int> expandedFoldRegions(Ref ref) {
 /// Provides the active focus category ID based on the current time.
 ///
 /// Returns the category ID of the planned block that the current time
-/// falls within, or null if there's no active block.
-/// This is used for the "Focus State" feature where non-active categories
-/// are automatically collapsed.
+/// falls within on TODAY's schedule, or null if there's no active block.
+/// This is used for the "Focus First" UX where only the currently active
+/// category is expanded and all others are collapsed.
+///
+/// The active category persists even when viewing historical or future dates,
+/// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
 /// without excessive resource usage.
 @riverpod
 Stream<String?> activeFocusCategoryId(Ref ref) async* {
-  // Watch dependencies at the top (before any yield/await) to comply with
-  // Riverpod's rule that ref.watch must be called synchronously.
-  // When these dependencies change, Riverpod will recreate the stream.
-  final selectedDate = ref.watch(dailyOsSelectedDateProvider);
+  // Always check TODAY's schedule for the active block, regardless of
+  // which date is being viewed. This ensures the active category persists
+  // across date navigation.
+  final today = DateTime.now().dayAtMidnight;
 
-  // Establish dependency on unified data - when it changes, stream is recreated
-  ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
+  // Establish dependency on today's unified data - when it changes, stream
+  // is recreated.
+  ref.watch(unifiedDailyOsDataControllerProvider(date: today));
 
   while (true) {
     // Use ref.read inside the loop for fresh data reads
-    final currentUnifiedData = ref.read(
-      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    final todayData = ref.read(
+      unifiedDailyOsDataControllerProvider(date: today),
     );
 
-    final result = currentUnifiedData.whenOrNull(
+    final result = todayData.whenOrNull(
       data: (data) {
         final now = DateTime.now();
-
-        // Only show focus state for today
-        if (selectedDate != now.dayAtMidnight) return null;
 
         // Find the planned block that contains the current time
         for (final slot in data.timelineData.plannedSlots) {
