@@ -28,6 +28,18 @@ class TimeHistoryHeader extends ConsumerStatefulWidget {
   static const double headerHeight =
       monthLabelHeight + daySelectorWithChartHeight + dateLabelRowHeight;
 
+  /// Chart height within the combined day selector area.
+  static const double chartHeight = 70;
+
+  /// Offset from top where chart starts (below day labels).
+  static const double chartTopOffset = 32;
+
+  /// Chart opacity to reduce visual dominance behind day selectors.
+  static const double chartOpacity = 0.9;
+
+  /// Dark mode header background color.
+  static const Color darkHeaderBackground = Color(0xFF1A1A1A);
+
   @override
   ConsumerState<TimeHistoryHeader> createState() => _TimeHistoryHeaderState();
 }
@@ -320,9 +332,8 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
       });
     });
 
-    // Premium dark header background
     final headerBackground = isDark
-        ? const Color(0xFF1A1A1A) // Deep charcoal for dark mode
+        ? TimeHistoryHeader.darkHeaderBackground
         : context.colorScheme.surfaceContainerHighest;
 
     return Container(
@@ -378,11 +389,6 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
       TimeHistoryData data, DateTime selectedDate) {
     final itemCount = data.days.length + (data.isLoadingMore ? 1 : 0);
 
-    // Chart height within the combined area
-    const chartHeight = 54.0;
-    // How far down from top the chart starts (day labels take ~38px)
-    const chartTopOffset = 42.0;
-
     return Stack(
       children: [
         // Chart layer (behind day selector, positioned lower)
@@ -390,9 +396,9 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
           Positioned(
             left: 0,
             right: 0,
-            top: chartTopOffset,
-            height: chartHeight,
-            child: _buildChartLayer(data, chartHeight),
+            top: TimeHistoryHeader.chartTopOffset,
+            height: TimeHistoryHeader.chartHeight,
+            child: _buildChartLayer(data, TimeHistoryHeader.chartHeight),
           ),
 
         // Day selector layer (on top)
@@ -473,7 +479,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                 scrollOffset -
                 (chartStart * daySegmentWidth);
 
-            // Calculate clip boundary at tomorrow noon
+            // Calculate clip boundary at tomorrow noon (horizontal only)
             final tomorrow = clock.now().dayAtNoon.add(
                   const Duration(days: 1),
                 );
@@ -494,10 +500,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
             final alignedLeft = alignedRight - chartWidth;
 
             return ClipRect(
-              clipper: _TomorrowNoonClipper(
-                clipRightX: clipRightX,
-                viewportWidth: constraints.maxWidth,
-              ),
+              clipper: _HorizontalClipper(clipRightX: clipRightX),
               child: OverflowBox(
                 alignment: Alignment.centerLeft,
                 maxWidth: chartWidth,
@@ -505,7 +508,7 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
                 child: Transform.translate(
                   offset: Offset(alignedLeft, 0),
                   child: Opacity(
-                    opacity: 0.9,
+                    opacity: TimeHistoryHeader.chartOpacity,
                     child: TimeHistoryStreamChart(
                       days: chartDays,
                       height: chartHeight,
@@ -576,27 +579,28 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 }
 
-/// Custom clipper that clips the chart at tomorrow noon.
-class _TomorrowNoonClipper extends CustomClipper<Rect> {
-  _TomorrowNoonClipper({
-    required this.clipRightX,
-    required this.viewportWidth,
-  });
+/// Horizontal-only clipper that clips at tomorrow noon on the right.
+/// Allows unlimited vertical overflow (no top/bottom clipping).
+class _HorizontalClipper extends CustomClipper<Rect> {
+  _HorizontalClipper({required this.clipRightX});
 
   final double clipRightX;
-  final double viewportWidth;
 
   @override
   Rect getClip(Size size) {
-    final rightEdge = clipRightX.isFinite
-        ? clipRightX.clamp(0.0, viewportWidth)
-        : viewportWidth;
-    return Rect.fromLTRB(0, 0, rightEdge, size.height);
+    // Use large vertical extent to allow overflow; only clip horizontally
+    const verticalExtent = 10000.0;
+    final rightEdge = clipRightX.isFinite ? clipRightX : double.infinity;
+    return Rect.fromLTRB(
+      -verticalExtent,
+      -verticalExtent,
+      rightEdge,
+      verticalExtent,
+    );
   }
 
   @override
-  bool shouldReclip(_TomorrowNoonClipper oldClipper) {
-    return oldClipper.clipRightX != clipRightX ||
-        oldClipper.viewportWidth != viewportWidth;
+  bool shouldReclip(_HorizontalClipper oldClipper) {
+    return oldClipper.clipRightX != clipRightX;
   }
 }
