@@ -3454,4 +3454,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSetupWizardRunningButton => 'Running...';
+
+  @override
+  String get logsSearchHint => 'Caută în toate jurnalele...';
 }

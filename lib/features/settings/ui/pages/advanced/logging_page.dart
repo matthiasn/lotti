@@ -394,7 +394,7 @@ class _LoggingPageState extends State<LoggingPage> {
                         ),
                         child: LottiSearchBar(
                           controller: _searchController,
-                          hintText: 'Search all logs...',
+                          hintText: context.messages.logsSearchHint,
                           onClear: _searchController.clear,
                         ),
                       ),

@@ -582,5 +582,6 @@
   "aiSetupWizardCreatesOptimized": "Erstellt optimierte Modelle, Prompts und eine Testkategorie",
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardRunButton": "Einrichtung starten",
-  "aiSetupWizardRunningButton": "Wird ausgeführt..."
+  "aiSetupWizardRunningButton": "Wird ausgeführt...",
+  "logsSearchHint": "Alle Logs durchsuchen..."
 }
