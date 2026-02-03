@@ -91,12 +91,15 @@ class _GameyStreakBadgeState extends State<GameyStreakBadge>
   @override
   void didUpdateWidget(GameyStreakBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isPulsing && widget.streakCount > 0 && !_pulseController.isAnimating) {
+    if (widget.isPulsing &&
+        widget.streakCount > 0 &&
+        !_pulseController.isAnimating) {
       _pulseController.repeat(reverse: true);
     } else if ((!widget.isPulsing || widget.streakCount == 0) &&
         _pulseController.isAnimating) {
-      _pulseController..stop()
-      ..value = 0;
+      _pulseController
+        ..stop()
+        ..value = 0;
     }
   }
 

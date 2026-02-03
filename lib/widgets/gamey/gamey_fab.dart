@@ -19,7 +19,8 @@ class GameyFab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themingState = ref.watch(themingControllerProvider);
-    final isGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final isGamey = themingState.isGameyThemeForBrightness(brightness);
 
     if (isGamey) {
       return _GameyFabImage(
@@ -64,7 +65,7 @@ class _GameyFabImageState extends State<_GameyFabImage>
     );
 
     _scaleAnimation = Tween<double>(
-      begin: 1.0,
+      begin: 1,
       end: 0.9,
     ).animate(
       CurvedAnimation(

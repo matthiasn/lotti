@@ -1387,5 +1387,7 @@
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardRunButton": "Run Setup",
   "aiSetupWizardRunningButton": "Running...",
-  "logsSearchHint": "Search all logs..."
+  "logsSearchHint": "Search all logs...",
+
+  "celebrationTapToContinue": "Tap to continue"
 }

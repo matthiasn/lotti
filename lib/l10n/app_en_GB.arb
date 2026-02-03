@@ -455,5 +455,7 @@
   "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
   "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
   "syncInviteErrorUnknown": "Failed to send invite. Please try again later.",
-  "logsSearchHint": "Search all logs…"
+  "logsSearchHint": "Search all logs…",
+
+  "celebrationTapToContinue": "Tap to continue"
 }

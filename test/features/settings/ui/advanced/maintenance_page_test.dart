@@ -8,6 +8,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   final getIt = GetIt.instance;
@@ -25,6 +26,9 @@ void main() {
     getIt.registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true));
     // ignore: cascade_invocations
     getIt.registerSingleton<Maintenance>(Maintenance());
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
   tearDown(() async {

@@ -603,5 +603,7 @@
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardRunButton": "Einrichtung starten",
   "aiSetupWizardRunningButton": "Wird ausgeführt...",
-  "logsSearchHint": "Alle Logs durchsuchen..."
+  "logsSearchHint": "Alle Logs durchsuchen...",
+
+  "celebrationTapToContinue": "Tippen zum Fortfahren"
 }

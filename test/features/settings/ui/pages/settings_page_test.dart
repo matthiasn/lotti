@@ -31,6 +31,9 @@ void main() {
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService());
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 

@@ -50,7 +50,8 @@ class _AboutPageState extends ConsumerState<AboutPage> {
     const halfSmallSpacer = SpacingConstants.inputSpacerSmallHeight / 2;
 
     final themingState = ref.watch(themingControllerProvider);
-    final useGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
 
     Widget buildCard({required Widget child}) {
       if (useGamey) {

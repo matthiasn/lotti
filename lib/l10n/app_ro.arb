@@ -545,5 +545,7 @@
       }
     }
   },
-  "logsSearchHint": "Caută în toate jurnalele..."
+  "logsSearchHint": "Caută în toate jurnalele...",
+
+  "celebrationTapToContinue": "Atingeți pentru a continua"
 }

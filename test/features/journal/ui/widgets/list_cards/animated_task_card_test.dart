@@ -17,6 +17,7 @@ import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../test_helper.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
@@ -124,6 +125,9 @@ void main() {
       data: taskData,
       entryText: entryText,
     );
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
   tearDown(() {

@@ -20,23 +20,25 @@ class WidgetTestBench extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
 
-    return MediaQuery(
-      data: mediaQuery,
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: 800,
-              minWidth: 800,
+    return ProviderScope(
+      child: MediaQuery(
+        data: mediaQuery,
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 800,
+                minWidth: 800,
+              ),
+              child: child,
             ),
-            child: child,
           ),
         ),
       ),
@@ -58,24 +60,26 @@ class DarkWidgetTestBench extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
 
-    return MediaQuery(
-      data: mediaQuery,
-      child: MaterialApp(
-        theme: ThemeData.dark(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: 800,
-              minWidth: 800,
+    return ProviderScope(
+      child: MediaQuery(
+        data: mediaQuery,
+        child: MaterialApp(
+          theme: ThemeData.dark(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 800,
+                minWidth: 800,
+              ),
+              child: child,
             ),
-            child: child,
           ),
         ),
       ),
@@ -97,11 +101,30 @@ class RiverpodWidgetTestBench extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
+
     return ProviderScope(
       overrides: overrides,
-      child: WidgetTestBench(
-        mediaQueryData: mediaQueryData,
-        child: child,
+      child: MediaQuery(
+        data: mediaQuery,
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 800,
+                minWidth: 800,
+              ),
+              child: child,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -121,11 +144,31 @@ class DarkRiverpodWidgetTestBench extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
+
     return ProviderScope(
       overrides: overrides,
-      child: DarkWidgetTestBench(
-        mediaQueryData: mediaQueryData,
-        child: child,
+      child: MediaQuery(
+        data: mediaQuery,
+        child: MaterialApp(
+          theme: ThemeData.dark(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 800,
+                minWidth: 800,
+              ),
+              child: child,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../../test_helper.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
@@ -223,6 +224,9 @@ void main() {
     final filePath =
         p.join(mockDirectory.path, 'images', '2023-01-01', 'test-image.jpg');
     File(filePath).createSync();
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
   tearDown(() {

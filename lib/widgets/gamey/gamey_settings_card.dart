@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/themes/gamey/gamey_theme.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/gamey/gamey_card.dart';
@@ -314,6 +317,55 @@ class GameyListTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// An adaptive settings card that automatically uses gamey styling when
+/// the gamey theme is active, otherwise uses the standard animated card.
+///
+/// This eliminates duplicated theme-detection logic across settings pages.
+class AdaptiveSettingsCard extends ConsumerWidget {
+  const AdaptiveSettingsCard({
+    required this.title,
+    required this.icon,
+    this.subtitle,
+    this.onTap,
+    this.trailing,
+    this.showChevron = true,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+  final bool showChevron;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themingState = ref.watch(themingControllerProvider);
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
+
+    if (useGamey) {
+      return GameySettingsCard(
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        onTap: onTap,
+        trailing: trailing,
+      );
+    }
+
+    return AnimatedModernSettingsCardWithIcon(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onTap: onTap,
+      trailing: trailing,
+      showChevron: showChevron,
     );
   }
 }

@@ -54,6 +54,9 @@ class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   setUp(() {
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
+
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       getIt
           .registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());

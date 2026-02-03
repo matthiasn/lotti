@@ -23,7 +23,8 @@ class SettingsPage extends ConsumerWidget {
     final enableDashboards =
         ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
     final themingState = ref.watch(themingControllerProvider);
-    final useGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
 
     Widget settingsCard({
       required String title,

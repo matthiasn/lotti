@@ -71,32 +71,32 @@ class GameyGlows {
   // CARD GLOW SHADOWS (multiple layers for depth)
   // ============================================================================
 
-  /// Creates a subtle glow effect for cards
+  /// Creates a visible but subtle glow effect for cards
   static List<BoxShadow> cardGlow(
     Color primaryColor, {
     bool isDark = false,
   }) {
     return [
-      // Subtle outer glow only
+      // Tight colored glow close to the card
       BoxShadow(
-        color: primaryColor.withValues(alpha: isDark ? 0.08 : 0.06),
-        blurRadius: 8,
+        color: primaryColor.withValues(alpha: isDark ? 0.10 : 0.12),
+        blurRadius: isDark ? 8 : 10,
         offset: const Offset(0, 2),
       ),
     ];
   }
 
-  /// Creates a slightly enhanced glow for highlighted cards
+  /// Creates an enhanced glow for highlighted/active cards
   static List<BoxShadow> cardGlowHighlighted(
     Color primaryColor, {
     bool isDark = false,
   }) {
     return [
-      // Subtle highlighted outer glow
+      // Slightly stronger glow for highlighted state
       BoxShadow(
-        color: primaryColor.withValues(alpha: isDark ? 0.12 : 0.08),
-        blurRadius: 12,
-        offset: const Offset(0, 4),
+        color: primaryColor.withValues(alpha: isDark ? 0.15 : 0.18),
+        blurRadius: isDark ? 12 : 14,
+        offset: const Offset(0, 3),
       ),
     ];
   }
@@ -228,7 +228,8 @@ class GameyGlows {
   // ============================================================================
 
   /// Get glow for a feature type
-  static List<BoxShadow> forFeature(String feature, {bool highlighted = false}) {
+  static List<BoxShadow> forFeature(String feature,
+      {bool highlighted = false}) {
     switch (feature.toLowerCase()) {
       case 'journal':
       case 'entry':

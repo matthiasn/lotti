@@ -22,7 +22,8 @@ class _RadialAddTagButtonsState extends ConsumerState<RadialAddTagButtons> {
   @override
   Widget build(BuildContext context) {
     final themingState = ref.watch(themingControllerProvider);
-    final isGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final isGamey = themingState.isGameyThemeForBrightness(brightness);
 
     void createTag(String tagType) =>
         beamToNamed('/settings/tags/create/$tagType');

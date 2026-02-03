@@ -30,6 +30,9 @@ void main() {
       ..registerSingleton<SyncDatabase>(mockSyncDatabase)
       ..registerSingleton<UserActivityService>(UserActivityService())
       ..registerSingleton<JournalDb>(mockJournalDb);
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
   tearDown(getIt.reset);

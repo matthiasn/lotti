@@ -45,9 +45,27 @@ class ThemingState {
   final String? lightThemeName;
   final ThemeMode themeMode;
 
-  /// Check if either light or dark theme is using the gamey theme
-  bool get isUsingGameyTheme =>
-      isGameyTheme(lightThemeName) || isGameyTheme(darkThemeName);
+  /// Check if the currently active theme is using the gamey theme.
+  /// This considers the current theme mode to determine which theme is active.
+  bool get isUsingGameyTheme {
+    switch (themeMode) {
+      case ThemeMode.light:
+        return isGameyTheme(lightThemeName);
+      case ThemeMode.dark:
+        return isGameyTheme(darkThemeName);
+      case ThemeMode.system:
+        // For system mode, check both since we don't know the system preference here.
+        // Widgets should use isCurrentlyUsingGameyTheme with BuildContext instead.
+        return isGameyTheme(lightThemeName) || isGameyTheme(darkThemeName);
+    }
+  }
+
+  /// Check if the gamey theme is active for a specific brightness.
+  bool isGameyThemeForBrightness(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? isGameyTheme(darkThemeName)
+        : isGameyTheme(lightThemeName);
+  }
 
   ThemingState copyWith({
     ThemeData? darkTheme,
@@ -176,10 +194,9 @@ class ThemingController extends _$ThemingController {
     // Check if this is the gamey theme
     final isGamey = isGameyTheme(themeName);
 
-    // For gamey theme, use blueWhale as the base; otherwise use selected scheme
-    final scheme = isGamey
-        ? FlexScheme.blueWhale
-        : (themes[themeName] ?? FlexScheme.greyLaw);
+    // For gamey theme, use the designated base scheme; otherwise use selected scheme
+    final scheme =
+        isGamey ? gameyBaseScheme : (themes[themeName] ?? FlexScheme.greyLaw);
 
     var themeData = isDark
         ? FlexThemeData.dark(
@@ -241,8 +258,7 @@ class ThemingController extends _$ThemingController {
 
   /// Sets the light theme to the specified theme name.
   void setLightTheme(String themeName) {
-    // Check theme exists in themes map (gamey theme has null value but key exists)
-    if (!themes.containsKey(themeName)) return;
+    if (!isValidThemeName(themeName)) return;
 
     state = state.copyWith(
       lightTheme: _buildTheme(themeName, isDark: false),
@@ -255,8 +271,7 @@ class ThemingController extends _$ThemingController {
 
   /// Sets the dark theme to the specified theme name.
   void setDarkTheme(String themeName) {
-    // Check theme exists in themes map (gamey theme has null value but key exists)
-    if (!themes.containsKey(themeName)) return;
+    if (!isValidThemeName(themeName)) return;
 
     state = state.copyWith(
       darkTheme: _buildTheme(themeName, isDark: true),

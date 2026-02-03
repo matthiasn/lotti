@@ -23,9 +23,10 @@ class CardWrapperWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check if gamey theme is selected (for either light or dark)
+    // Check if gamey theme is selected for current brightness
     final themingState = ref.watch(themingControllerProvider);
-    final useGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
 
     // RepaintBoundary isolates repaints to individual cards,
     // preventing cascading rebuilds during scroll

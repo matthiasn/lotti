@@ -3500,4 +3500,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Caută în toate jurnalele...';
+
+  @override
+  String get celebrationTapToContinue => 'Atingeți pentru a continua';
 }

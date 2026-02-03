@@ -45,9 +45,8 @@ class GameyThemeBuilder {
       surface: isDark ? GameyColors.surfaceDark : GameyColors.surfaceLight,
       surfaceContainerLowest:
           isDark ? GameyColors.surfaceDarkLow : GameyColors.surfaceLight,
-      surfaceContainerLow: isDark
-          ? GameyColors.surfaceDark
-          : GameyColors.surfaceLightElevated,
+      surfaceContainerLow:
+          isDark ? GameyColors.surfaceDark : GameyColors.surfaceLightElevated,
       surfaceContainer: isDark
           ? GameyColors.surfaceDarkElevated
           : GameyColors.surfaceLightElevated,

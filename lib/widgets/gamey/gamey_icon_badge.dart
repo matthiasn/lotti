@@ -93,8 +93,9 @@ class _GameyIconBadgeState extends State<GameyIconBadge>
     if (widget.isPulsing && !oldWidget.isPulsing) {
       _pulseController.repeat(reverse: true);
     } else if (!widget.isPulsing && oldWidget.isPulsing) {
-      _pulseController..stop()
-      ..value = 0;
+      _pulseController
+        ..stop()
+        ..value = 0;
     }
   }
 

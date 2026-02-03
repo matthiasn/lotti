@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
-import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -137,9 +135,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themingState = ref.watch(themingControllerProvider);
-    final useGamey = themingState.isUsingGameyTheme;
-
     return StreamBuilder<Set<ConfigFlag>>(
       stream: getIt<JournalDb>().watchConfigFlags(),
       builder: (
@@ -159,32 +154,19 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
           child: Column(
             children: [
               ...orderedFlags.map(
-                (flag) {
-                  final switchWidget = Switch.adaptive(
+                (flag) => AdaptiveSettingsCard(
+                  title: _titleForFlag(context, flag),
+                  subtitle: _subtitleForFlag(context, flag),
+                  icon: _iconForFlag(flag.name),
+                  showChevron: false,
+                  trailing: Switch.adaptive(
                     value: flag.status,
                     onChanged: (bool status) {
                       getIt<JournalDb>()
                           .upsertConfigFlag(flag.copyWith(status: status));
                     },
-                  );
-
-                  if (useGamey) {
-                    return GameySettingsCard(
-                      title: _titleForFlag(context, flag),
-                      subtitle: _subtitleForFlag(context, flag),
-                      icon: _iconForFlag(flag.name),
-                      trailing: switchWidget,
-                    );
-                  }
-
-                  return AnimatedModernSettingsCardWithIcon(
-                    title: _titleForFlag(context, flag),
-                    showChevron: false,
-                    subtitle: _subtitleForFlag(context, flag),
-                    icon: _iconForFlag(flag.name),
-                    trailing: switchWidget,
-                  );
-                },
+                  ),
+                ),
               ),
             ],
           ),

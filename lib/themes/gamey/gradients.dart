@@ -185,14 +185,14 @@ class GameyGradients {
   // CARD GRADIENTS
   // ============================================================================
 
-  /// Subtle card gradient for light mode
+  /// Vibrant card gradient for light mode
   /// Can accept an optional surface color, otherwise uses white
   static LinearGradient cardLight(Color accentColor, [Color? surfaceColor]) {
     final baseSurface = surfaceColor ?? Colors.white;
     return LinearGradient(
       colors: [
-        baseSurface,
-        Color.lerp(baseSurface, accentColor, 0.03) ?? baseSurface,
+        Color.lerp(baseSurface, accentColor, 0.06) ?? baseSurface,
+        Color.lerp(baseSurface, accentColor, 0.12) ?? baseSurface,
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,

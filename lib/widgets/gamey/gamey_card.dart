@@ -159,8 +159,8 @@ class _GameyCardState extends State<GameyCard>
         borderRadius: BorderRadius.circular(widget.borderRadius),
         border: widget.border ??
             Border.all(
-              color: glowColor.withValues(alpha: isDark ? 0.08 : 0.04),
-              width: 1,
+              color: glowColor.withValues(alpha: isDark ? 0.12 : 0.15),
+              width: isDark ? 1 : 1.5,
             ),
         boxShadow: shadows,
       ),

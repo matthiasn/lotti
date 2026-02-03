@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/gamey/gamey_theme.dart';
 
@@ -42,6 +44,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _delayComplete = false;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -63,7 +66,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
 
     if (widget.isActive) {
       if (widget.delay > Duration.zero) {
-        Future.delayed(widget.delay, () {
+        _delayTimer = Timer(widget.delay, () {
           if (mounted) {
             setState(() => _delayComplete = true);
             _controller.repeat();
@@ -88,6 +91,7 @@ class _ShimmerEffectState extends State<ShimmerEffect>
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -181,8 +185,8 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor =
-        widget.baseColor ?? (isDark ? Colors.grey.shade800 : Colors.grey.shade300);
+    final baseColor = widget.baseColor ??
+        (isDark ? Colors.grey.shade800 : Colors.grey.shade300);
     final highlightColor = widget.highlightColor ??
         (isDark ? Colors.grey.shade700 : Colors.grey.shade100);
 
@@ -358,8 +362,9 @@ class _PulseEffectState extends State<PulseEffect>
     if (widget.isActive && !oldWidget.isActive) {
       _controller.repeat(reverse: true);
     } else if (!widget.isActive && oldWidget.isActive) {
-      _controller..stop()
-      ..value = 0;
+      _controller
+        ..stop()
+        ..value = 0;
     }
   }
 

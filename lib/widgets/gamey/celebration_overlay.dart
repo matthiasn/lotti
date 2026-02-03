@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/gamey_theme.dart';
 
 /// A full-screen celebration overlay with confetti and trophy animation.
@@ -90,6 +92,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
 
   final List<_ConfettiParticle> _confetti = [];
   late AnimationController _confettiController;
+  Timer? _autoDismissTimer;
 
   @override
   void initState() {
@@ -153,9 +156,9 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
       _confettiController.forward();
     }
 
-    // Auto-dismiss
+    // Auto-dismiss with cancellable timer
     if (widget.autoDismissAfter != null) {
-      Future.delayed(widget.autoDismissAfter!, () {
+      _autoDismissTimer = Timer(widget.autoDismissAfter!, () {
         if (mounted) {
           widget.onDismiss?.call();
         }
@@ -168,8 +171,8 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
     for (var i = 0; i < 50; i++) {
       _confetti.add(
         _ConfettiParticle(
-          color: GameyColors
-              .confettiColors[random.nextInt(GameyColors.confettiColors.length)],
+          color: GameyColors.confettiColors[
+              random.nextInt(GameyColors.confettiColors.length)],
           startX: random.nextDouble(),
           startY: -0.1 - random.nextDouble() * 0.3,
           endY: 1.2,
@@ -185,6 +188,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
 
   @override
   void dispose() {
+    _autoDismissTimer?.cancel();
     _iconController.dispose();
     _contentController.dispose();
     _confettiController.dispose();
@@ -351,7 +355,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                   FadeTransition(
                     opacity: _contentFadeAnimation,
                     child: Text(
-                      'Tap to continue',
+                      context.messages.celebrationTapToContinue,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 14,
@@ -425,6 +429,9 @@ class _ConfettiPainter extends CustomPainter {
   final List<_ConfettiParticle> confetti;
   final double progress;
 
+  // Reusable paint object to reduce allocations
+  static final Paint _paint = Paint()..style = PaintingStyle.fill;
+
   @override
   void paint(Canvas canvas, Size size) {
     for (final particle in confetti) {
@@ -441,24 +448,23 @@ class _ConfettiPainter extends CustomPainter {
           particle.rotation + particle.rotationSpeed * adjustedProgress;
       final opacity = (1 - adjustedProgress * 0.5).clamp(0.0, 1.0);
 
-      canvas..save()
-      ..translate(x, y)
-      ..rotate(rotation);
+      canvas
+        ..save()
+        ..translate(x, y)
+        ..rotate(rotation);
 
-      final paint = Paint()
-        ..color = particle.color.withValues(alpha: opacity)
-        ..style = PaintingStyle.fill;
+      _paint.color = particle.color.withValues(alpha: opacity);
 
-      canvas..drawRect(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: particle.size,
-          height: particle.size * 0.6,
-        ),
-        paint,
-      )
-
-      ..restore();
+      canvas
+        ..drawRect(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: particle.size,
+            height: particle.size * 0.6,
+          ),
+          _paint,
+        )
+        ..restore();
     }
   }
 
@@ -562,34 +568,36 @@ class _BurstPainter extends CustomPainter {
   final List<_ConfettiParticle> confetti;
   final double progress;
 
+  // Reusable paint object to reduce allocations
+  static final Paint _paint = Paint()..style = PaintingStyle.fill;
+
   @override
   void paint(Canvas canvas, Size size) {
     for (final particle in confetti) {
-      final x = size.width *
-          (particle.startX + particle.horizontalDrift * progress);
+      final x =
+          size.width * (particle.startX + particle.horizontalDrift * progress);
       final y = size.height *
           (particle.startY + (particle.endY - particle.startY) * progress);
       final rotation = particle.rotation + particle.rotationSpeed * progress;
       final opacity = (1 - progress).clamp(0.0, 1.0);
 
-      canvas..save()
-      ..translate(x, y)
-      ..rotate(rotation);
+      canvas
+        ..save()
+        ..translate(x, y)
+        ..rotate(rotation);
 
-      final paint = Paint()
-        ..color = particle.color.withValues(alpha: opacity)
-        ..style = PaintingStyle.fill;
+      _paint.color = particle.color.withValues(alpha: opacity);
 
-      canvas..drawRect(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: particle.size,
-          height: particle.size * 0.6,
-        ),
-        paint,
-      )
-
-      ..restore();
+      canvas
+        ..drawRect(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: particle.size,
+            height: particle.size * 0.6,
+          ),
+          _paint,
+        )
+        ..restore();
     }
   }
 

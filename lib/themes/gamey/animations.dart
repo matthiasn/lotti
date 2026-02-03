@@ -252,7 +252,8 @@ mixin GameyWiggleAnimationMixin<T extends StatefulWidget>
 
     _wiggleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0, end: rotation), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: rotation, end: -rotation), weight: 2),
+      TweenSequenceItem(
+          tween: Tween(begin: rotation, end: -rotation), weight: 2),
       TweenSequenceItem(tween: Tween(begin: -rotation, end: 0), weight: 1),
     ]).animate(
       CurvedAnimation(

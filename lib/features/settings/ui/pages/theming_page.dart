@@ -44,7 +44,8 @@ class ThemingPage extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final useGamey = themingState.isUsingGameyTheme;
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
 
     // Build the content that goes inside the card
     Widget buildCardContent() {
@@ -164,7 +165,7 @@ class SelectTheme extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ...themes.keys.map(
+                  ...allThemeNames.map(
                     (key) => SettingsCard(
                       onTap: () {
                         setTheme(key);

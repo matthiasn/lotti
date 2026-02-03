@@ -16,6 +16,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../test_helper.dart';
+import '../../../../../widget_test_utils.dart';
 
 /// Mock for EntitiesCacheService to provide category colors in tests.
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
@@ -83,6 +84,9 @@ MockEntitiesCacheService setUpEntitiesCacheService() {
     getIt.unregister<EntitiesCacheService>();
   }
   getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+
+  // Ensure ThemingController dependencies are registered
+  ensureThemingServicesRegistered();
 
   return mockCacheService;
 }

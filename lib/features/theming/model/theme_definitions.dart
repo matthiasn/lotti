@@ -17,12 +17,15 @@ class LightModeSurfaces {
 /// This applies vibrant gradients, glowing shadows, and playful styling.
 const String gameyThemeName = '🎮 Gamey';
 
+/// Set of special theme names that require custom handling.
+/// These themes are not direct FlexScheme mappings.
+const Set<String> specialThemes = {gameyThemeName};
+
+/// Base FlexScheme to use for special themes (gamey uses blueWhale as base).
+const FlexScheme gameyBaseScheme = FlexScheme.blueWhale;
+
 /// Standard FlexScheme themes available for selection.
-/// The 'Gamey' theme is special and handled separately in the controller.
-final Map<String, FlexScheme?> themes = {
-  // Special gamey theme (uses FlexScheme.blueWhale as base)
-  gameyThemeName: null, // null signals special handling
-  // Standard themes
+final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
   'Deep Blue': FlexScheme.deepBlue,
@@ -45,6 +48,14 @@ final Map<String, FlexScheme?> themes = {
   'Hippie Blue': FlexScheme.hippieBlue,
   'Money': FlexScheme.money,
 };
+
+/// All available theme names (special + standard).
+List<String> get allThemeNames => [...specialThemes, ...themes.keys];
+
+/// Check if a theme name is valid (either special or standard).
+bool isValidThemeName(String? themeName) =>
+    themeName != null &&
+    (specialThemes.contains(themeName) || themes.containsKey(themeName));
 
 /// Default theme name used when no theme is configured.
 const String defaultThemeName = 'Grey Law';

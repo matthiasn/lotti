@@ -72,6 +72,9 @@ void main() {
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UserActivityService>(mockUserActivityService)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
   tearDown(() async {

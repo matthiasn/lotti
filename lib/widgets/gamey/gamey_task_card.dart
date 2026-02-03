@@ -38,7 +38,12 @@ class GameyTaskCard extends StatelessWidget {
   final bool showDueDate;
   final bool showCoverArt;
 
+  // Layout constants
   static const double _thumbnailSize = 120;
+  static const double _contentGap = 12;
+  static const double _sectionSpacing = 8;
+  static const double _wrapSpacing = 6;
+  static const double _bottomPadding = 10;
 
   /// Unified gamey gradient for all cards
   static const Gradient _gameyGradient = LinearGradient(
@@ -67,7 +72,7 @@ class GameyTaskCard extends StatelessWidget {
               left: AppTheme.cardPadding,
               top: AppTheme.cardPadding,
               right: AppTheme.cardPadding,
-              bottom: 10,
+              bottom: _bottomPadding,
             ),
       child: hasCoverArt
           ? _buildWithCoverArt(context, coverArtId)
@@ -92,13 +97,13 @@ class GameyTaskCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: _contentGap),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(
               top: AppTheme.cardPadding,
               right: AppTheme.cardPadding,
-              bottom: 10,
+              bottom: _bottomPadding,
             ),
             child: _buildStandardContent(context),
           ),
@@ -130,7 +135,7 @@ class GameyTaskCard extends StatelessWidget {
           size: 40,
           iconSize: 20,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: _contentGap),
         // Title and time recording
         Expanded(
           child: Column(
@@ -160,28 +165,34 @@ class GameyTaskCard extends StatelessWidget {
   }
 
   Widget _buildSubtitleWidget(BuildContext context) {
-
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: _sectionSpacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Status row with unified gamey chips
           Row(
             children: [
-              _GameyStatusChip(
-                label: task.data.priority.short,
-                color: GameyColors.gameyAccent,
+              Flexible(
+                child: Wrap(
+                  spacing: _wrapSpacing,
+                  runSpacing: _wrapSpacing,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _GameyStatusChip(
+                      label: task.data.priority.short,
+                      color: GameyColors.gameyAccent,
+                    ),
+                    _GameyStatusChip(
+                      label: _getStatusLabel(context, task.data.status),
+                      color: GameyColors.gameyAccent,
+                      icon: _getStatusIcon(task.data.status),
+                    ),
+                    CategoryIconCompact(task.meta.categoryId),
+                  ],
+                ),
               ),
-              const SizedBox(width: 6),
-              _GameyStatusChip(
-                label: _getStatusLabel(context, task.data.status),
-                color: GameyColors.gameyAccent,
-                icon: _getStatusIcon(task.data.status),
-              ),
-              const SizedBox(width: 6),
-              CategoryIconCompact(task.meta.categoryId),
-              const Spacer(),
+              const SizedBox(width: 8),
               CompactTaskProgress(taskId: task.id),
             ],
           ),
@@ -211,10 +222,10 @@ class GameyTaskCard extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: _wrapSpacing),
       child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
+        spacing: _wrapSpacing,
+        runSpacing: _wrapSpacing,
         children: labels.map((label) => LabelChip(label: label)).toList(),
       ),
     );
@@ -231,7 +242,7 @@ class GameyTaskCard extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: _sectionSpacing),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -297,33 +308,43 @@ class _GameyStatusChip extends StatelessWidget {
     this.icon,
   });
 
+  // Chip layout constants
+  static const double _chipBorderRadius = 12;
+  static const double _chipPaddingH = 8;
+  static const double _chipPaddingV = 4;
+  static const double _chipIconSize = 12;
+  static const double _chipFontSize = 11;
+  static const double _chipGlowBlur = 8;
+  static const double _chipGlowAlpha = 0.3;
+  static const double _chipGradientEndAlpha = 0.8;
+
   final String label;
   final Color color;
   final IconData? icon;
 
-  /// Get contrasting text color based on background luminance
-  Color _getTextColor() {
-    final luminance = color.computeLuminance();
-    return luminance > 0.5 ? Colors.black : Colors.white;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final textColor = _getTextColor();
+    // Use Flutter's built-in brightness estimation for text contrast
+    final brightness = ThemeData.estimateBrightnessForColor(color);
+    final textColor =
+        brightness == Brightness.light ? Colors.black : Colors.white;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: _chipPaddingH,
+        vertical: _chipPaddingV,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color, color.withValues(alpha: 0.8)],
+          colors: [color, color.withValues(alpha: _chipGradientEndAlpha)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_chipBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 8,
+            color: color.withValues(alpha: _chipGlowAlpha),
+            blurRadius: _chipGlowBlur,
             offset: const Offset(0, 2),
           ),
         ],
@@ -332,14 +353,14 @@ class _GameyStatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: textColor),
-            const SizedBox(width: 4),
+            Icon(icon, size: _chipIconSize, color: textColor),
+            const SizedBox(width: AppTheme.spacingXSmall),
           ],
           Text(
             label,
             style: TextStyle(
               color: textColor,
-              fontSize: 11,
+              fontSize: _chipFontSize,
               fontWeight: FontWeight.w600,
             ),
           ),

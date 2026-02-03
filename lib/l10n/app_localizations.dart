@@ -6441,6 +6441,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search all logs...'**
   String get logsSearchHint;
+
+  /// No description provided for @celebrationTapToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to continue'**
+  String get celebrationTapToContinue;
 }
 
 class _AppLocalizationsDelegate

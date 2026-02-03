@@ -36,6 +36,10 @@ void main() {
         .physicalSize = const Size(1024, 1400);
     TestWidgetsFlutterBinding
         .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
+
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       final mock = MockEntitiesCacheService();
       // No categories needed for this suite; return empty list
