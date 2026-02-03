@@ -229,7 +229,8 @@ String _$expandedFoldRegionsHash() =>
 /// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
-/// without excessive resource usage.
+/// without excessive resource usage. Handles midnight crossings by
+/// recalculating "today" on each iteration.
 
 @ProviderFor(activeFocusCategoryId)
 final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
@@ -245,7 +246,8 @@ final activeFocusCategoryIdProvider = ActiveFocusCategoryIdProvider._();
 /// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
-/// without excessive resource usage.
+/// without excessive resource usage. Handles midnight crossings by
+/// recalculating "today" on each iteration.
 
 final class ActiveFocusCategoryIdProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, Stream<String?>>
@@ -261,7 +263,8 @@ final class ActiveFocusCategoryIdProvider
   /// since it always checks TODAY's schedule regardless of the selected date.
   ///
   /// Re-evaluates every 15 seconds to keep the focus state reasonably current
-  /// without excessive resource usage.
+  /// without excessive resource usage. Handles midnight crossings by
+  /// recalculating "today" on each iteration.
   ActiveFocusCategoryIdProvider._()
       : super(
           from: null,
@@ -288,7 +291,7 @@ final class ActiveFocusCategoryIdProvider
 }
 
 String _$activeFocusCategoryIdHash() =>
-    r'21abf5fb583709b6a214ed61bd08a50681a6ce8e';
+    r'a70fbe0ff9900730bab64356d5793e06b4e76d40';
 
 /// Provides the category ID of the currently running timer.
 ///
