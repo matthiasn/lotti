@@ -348,6 +348,9 @@ class _GameyCircularProgressState extends State<GameyCircularProgress>
         _controller
           ..reset()
           ..forward();
+      } else {
+        // Skip animation, jump to completed state
+        _controller.value = 1.0;
       }
     }
   }
