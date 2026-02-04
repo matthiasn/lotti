@@ -342,6 +342,7 @@ class GameyJournalCard extends StatelessWidget {
             // DayPlanEntry is not yet supported in GameyJournalCard
             getIt<LoggingService>().captureException(
               'DayPlanEntry not implemented in GameyJournalCard',
+              domain: 'GameyJournalCard',
               stackTrace: StackTrace.current,
             );
             return Text(

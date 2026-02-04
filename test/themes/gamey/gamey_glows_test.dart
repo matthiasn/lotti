@@ -184,5 +184,173 @@ void main() {
         }
       });
     });
+
+    group('Single glow shadows', () {
+      test('colorGlow creates shadow with custom parameters', () {
+        final shadow = GameyGlows.colorGlow(
+          Colors.blue,
+          blur: 20,
+          spread: 5,
+          opacity: 0.5,
+          offset: const Offset(2, 4),
+        );
+
+        expect(shadow, isA<BoxShadow>());
+        expect(shadow.blurRadius, equals(20));
+        expect(shadow.spreadRadius, equals(5));
+        expect(shadow.color.a, closeTo(0.5, 0.01));
+        expect(shadow.offset, equals(const Offset(2, 4)));
+      });
+
+      test('colorGlow uses default values', () {
+        final shadow = GameyGlows.colorGlow(Colors.red);
+
+        expect(shadow.blurRadius, equals(GameyGlows.glowBlurMedium));
+        expect(shadow.spreadRadius, equals(0));
+        expect(shadow.color.a, closeTo(GameyGlows.glowOpacityMedium, 0.01));
+        expect(shadow.offset, equals(Offset.zero));
+      });
+
+      test('subtleGlow creates subtle shadow', () {
+        final shadow = GameyGlows.subtleGlow(Colors.green);
+
+        expect(shadow, isA<BoxShadow>());
+        expect(shadow.blurRadius, equals(GameyGlows.glowBlurSubtle));
+        expect(shadow.color.a, closeTo(GameyGlows.glowOpacitySubtle, 0.01));
+      });
+
+      test('strongGlow creates strong shadow', () {
+        final shadow = GameyGlows.strongGlow(Colors.purple);
+
+        expect(shadow, isA<BoxShadow>());
+        expect(shadow.blurRadius, equals(GameyGlows.glowBlurStrong));
+        expect(shadow.color.a, closeTo(GameyGlows.glowOpacityStrong, 0.01));
+      });
+
+      test('intenseGlow creates intense shadow', () {
+        final shadow = GameyGlows.intenseGlow(Colors.orange);
+
+        expect(shadow, isA<BoxShadow>());
+        expect(shadow.blurRadius, equals(GameyGlows.glowBlurIntense));
+        expect(shadow.color.a, closeTo(GameyGlows.glowOpacityIntense, 0.01));
+      });
+    });
+
+    group('Feature-specific glow methods', () {
+      test('journalGlow returns shadows', () {
+        expect(GameyGlows.journalGlow(), isA<List<BoxShadow>>());
+        expect(
+            GameyGlows.journalGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('habitGlow returns shadows', () {
+        expect(GameyGlows.habitGlow(), isA<List<BoxShadow>>());
+        expect(GameyGlows.habitGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('taskGlow returns shadows', () {
+        expect(GameyGlows.taskGlow(), isA<List<BoxShadow>>());
+        expect(GameyGlows.taskGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('moodGlow returns shadows', () {
+        expect(GameyGlows.moodGlow(), isA<List<BoxShadow>>());
+        expect(GameyGlows.moodGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('achievementGlow returns shadows', () {
+        expect(GameyGlows.achievementGlow(), isA<List<BoxShadow>>());
+        expect(GameyGlows.achievementGlow(highlighted: true),
+            isA<List<BoxShadow>>());
+      });
+
+      test('streakGlow returns shadows', () {
+        expect(GameyGlows.streakGlow(), isA<List<BoxShadow>>());
+        expect(
+            GameyGlows.streakGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('levelGlow returns shadows', () {
+        expect(GameyGlows.levelGlow(), isA<List<BoxShadow>>());
+        expect(GameyGlows.levelGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('successGlow returns shadows', () {
+        expect(GameyGlows.successGlow(), isA<List<BoxShadow>>());
+        expect(
+            GameyGlows.successGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+
+      test('warningGlow returns shadows', () {
+        expect(GameyGlows.warningGlow(), isA<List<BoxShadow>>());
+        expect(
+            GameyGlows.warningGlow(highlighted: true), isA<List<BoxShadow>>());
+      });
+    });
+
+    group('forFeature additional aliases', () {
+      test('returns journal glow for entry alias', () {
+        expect(
+          GameyGlows.forFeature('entry'),
+          equals(GameyGlows.journalGlow()),
+        );
+      });
+
+      test('returns journal glow for text alias', () {
+        expect(
+          GameyGlows.forFeature('text'),
+          equals(GameyGlows.journalGlow()),
+        );
+      });
+
+      test('returns habit glow for habits alias', () {
+        expect(
+          GameyGlows.forFeature('habits'),
+          equals(GameyGlows.habitGlow()),
+        );
+      });
+
+      test('returns task glow for tasks alias', () {
+        expect(
+          GameyGlows.forFeature('tasks'),
+          equals(GameyGlows.taskGlow()),
+        );
+      });
+
+      test('returns mood glow for moods alias', () {
+        expect(
+          GameyGlows.forFeature('moods'),
+          equals(GameyGlows.moodGlow()),
+        );
+      });
+
+      test('returns achievement glow for reward alias', () {
+        expect(
+          GameyGlows.forFeature('reward'),
+          equals(GameyGlows.achievementGlow()),
+        );
+      });
+
+      test('returns streak glow', () {
+        expect(
+          GameyGlows.forFeature('streak'),
+          equals(GameyGlows.streakGlow()),
+        );
+      });
+
+      test('returns level glow', () {
+        expect(
+          GameyGlows.forFeature('level'),
+          equals(GameyGlows.levelGlow()),
+        );
+      });
+    });
+
+    group('none constant', () {
+      test('none is empty list', () {
+        expect(GameyGlows.none, isEmpty);
+        expect(GameyGlows.none, isA<List<BoxShadow>>());
+      });
+    });
   });
 }

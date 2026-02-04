@@ -229,15 +229,11 @@ void main() {
     ensureThemingServicesRegistered();
   });
 
-  tearDown(() {
-    // Clean up registered services
-    getIt
-      ..unregister<EntitiesCacheService>()
-      ..unregister<TimeService>()
-      ..unregister<NavService>()
-      ..unregister<TagsService>()
-      ..unregister<Directory>();
+  tearDown(() async {
+    // Reset all registered services
+    await getIt.reset();
 
+    // Clean up temporary filesystem
     try {
       mockDirectory.deleteSync(recursive: true);
     } catch (_) {}

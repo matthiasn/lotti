@@ -76,7 +76,7 @@ class GameyTaskCard extends StatelessWidget {
               bottom: _bottomPadding,
             ),
       child: hasCoverArt
-          ? _buildWithCoverArt(context, coverArtId!)
+          ? _buildWithCoverArt(context, coverArtId)
           : _buildStandardContent(context),
     );
   }

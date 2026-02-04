@@ -190,5 +190,116 @@ void main() {
         );
       });
     });
+
+    group('Settings gradient', () {
+      test('settings gradient is defined', () {
+        expect(GameyGradients.settings, isA<LinearGradient>());
+        expect(GameyGradients.settings.colors, isNotEmpty);
+      });
+    });
+
+    group('Neon gradients', () {
+      test('neonCelebration gradient is defined', () {
+        expect(GameyGradients.neonCelebration, isA<LinearGradient>());
+        expect(GameyGradients.neonCelebration.colors.length, equals(3));
+      });
+
+      test('rainbow gradient is defined', () {
+        expect(GameyGradients.rainbow, isA<LinearGradient>());
+        expect(GameyGradients.rainbow.colors.length, equals(6));
+      });
+    });
+
+    group('forFeature additional aliases', () {
+      test('returns journal gradient for entry alias', () {
+        expect(
+            GameyGradients.forFeature('entry'), equals(GameyGradients.journal));
+      });
+
+      test('returns journal gradient for text alias', () {
+        expect(
+            GameyGradients.forFeature('text'), equals(GameyGradients.journal));
+      });
+
+      test('returns habit gradient for habits alias', () {
+        expect(
+            GameyGradients.forFeature('habits'), equals(GameyGradients.habit));
+      });
+
+      test('returns task gradient for tasks alias', () {
+        expect(GameyGradients.forFeature('tasks'), equals(GameyGradients.task));
+      });
+
+      test('returns mood gradient for moods alias', () {
+        expect(GameyGradients.forFeature('moods'), equals(GameyGradients.mood));
+      });
+
+      test('returns health gradient for measurement alias', () {
+        expect(GameyGradients.forFeature('measurement'),
+            equals(GameyGradients.health));
+      });
+
+      test('returns ai gradient for speech alias', () {
+        expect(GameyGradients.forFeature('speech'), equals(GameyGradients.ai));
+      });
+
+      test('returns ai gradient for transcription alias', () {
+        expect(GameyGradients.forFeature('transcription'),
+            equals(GameyGradients.ai));
+      });
+
+      test('returns gold gradient for achievement alias', () {
+        expect(GameyGradients.forFeature('achievement'),
+            equals(GameyGradients.gold));
+      });
+
+      test('returns gold gradient for reward alias', () {
+        expect(
+            GameyGradients.forFeature('reward'), equals(GameyGradients.gold));
+      });
+
+      test('returns streak gradient', () {
+        expect(
+            GameyGradients.forFeature('streak'), equals(GameyGradients.streak));
+      });
+
+      test('returns level gradient', () {
+        expect(
+            GameyGradients.forFeature('level'), equals(GameyGradients.level));
+      });
+
+      test('returns settings gradient for settings alias', () {
+        expect(GameyGradients.forFeature('settings'),
+            equals(GameyGradients.settings));
+      });
+
+      test('returns settings gradient for config alias', () {
+        expect(GameyGradients.forFeature('config'),
+            equals(GameyGradients.settings));
+      });
+    });
+
+    group('custom helper', () {
+      test('custom creates gradient from two colors', () {
+        final gradient = GameyGradients.custom(Colors.red, Colors.blue);
+
+        expect(gradient, isA<LinearGradient>());
+        expect(gradient.colors, equals([Colors.red, Colors.blue]));
+        expect(gradient.begin, equals(Alignment.topLeft));
+        expect(gradient.end, equals(Alignment.bottomRight));
+      });
+
+      test('custom respects alignment parameters', () {
+        final gradient = GameyGradients.custom(
+          Colors.green,
+          Colors.yellow,
+          begin: Alignment.topCenter,
+          endAlign: Alignment.bottomCenter,
+        );
+
+        expect(gradient.begin, equals(Alignment.topCenter));
+        expect(gradient.end, equals(Alignment.bottomCenter));
+      });
+    });
   });
 }
