@@ -19,6 +19,7 @@ class GameySettingsCard extends StatelessWidget {
     this.onTap,
     this.trailing,
     this.accentColor,
+    this.showChevron = true,
     super.key,
   });
 
@@ -29,6 +30,7 @@ class GameySettingsCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   final Color? accentColor;
+  final bool showChevron;
 
   /// Unified gamey gradient for all cards
   static const Gradient _gameyGradient = LinearGradient(
@@ -92,7 +94,7 @@ class GameySettingsCard extends StatelessWidget {
             ),
           ),
           if (trailing != null) trailing!,
-          if (trailing == null && onTap != null)
+          if (trailing == null && onTap != null && showChevron)
             Icon(
               Icons.chevron_right,
               color: effectiveAccent.withValues(alpha: 0.6),
@@ -356,6 +358,7 @@ class AdaptiveSettingsCard extends ConsumerWidget {
         icon: icon,
         onTap: onTap,
         trailing: trailing,
+        showChevron: showChevron,
       );
     }
 
