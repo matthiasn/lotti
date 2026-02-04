@@ -47,6 +47,8 @@ class LottiPrimaryButton extends StatelessWidget {
     final labelWidget = Text(
       label,
       semanticsLabel: semanticsLabel,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
     );
 
     Widget? iconWidget;
@@ -54,19 +56,26 @@ class LottiPrimaryButton extends StatelessWidget {
       iconWidget = Icon(icon, size: 20);
     }
 
-    final button = iconWidget != null
-        ? FilledButton.icon(
-            onPressed: onPressed,
-            icon: iconWidget,
-            label: labelWidget,
-            style: effectiveStyle,
-          )
-        : FilledButton(
-            onPressed: onPressed,
-            style: effectiveStyle,
-            child: labelWidget,
-          );
+    // FilledButton.icon doesn't support text overflow well, so build custom
+    if (iconWidget != null) {
+      return FilledButton(
+        onPressed: onPressed,
+        style: effectiveStyle,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            iconWidget,
+            const SizedBox(width: 8),
+            Flexible(child: labelWidget),
+          ],
+        ),
+      );
+    }
 
-    return button;
+    return FilledButton(
+      onPressed: onPressed,
+      style: effectiveStyle,
+      child: labelWidget,
+    );
   }
 }

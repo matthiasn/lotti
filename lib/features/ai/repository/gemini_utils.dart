@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Utilities for building Gemini HTTP requests and decoding stream framing.
@@ -217,24 +218,44 @@ class GeminiUtils {
     return request;
   }
 
-  /// Builds a Gemini request body for image generation.
+  /// Builds a Gemini request body for image generation with optional reference images.
   ///
   /// The Gemini image generation API (Nano Banana Pro) requires specific
   /// response modalities and generation config to output images.
   ///
+  /// Reference images provide visual context to guide the generated output.
+  /// Each image is included as an inline_data part before the text prompt.
+  ///
   /// Parameters:
   /// - [prompt]: The text prompt describing the image to generate.
   /// - [systemMessage]: Optional system instruction for guiding generation.
+  /// - [referenceImages]: Optional list of processed reference images for visual context.
   static Map<String, dynamic> buildImageGenerationRequestBody({
     required String prompt,
     String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
   }) {
+    final parts = <Map<String, dynamic>>[];
+
+    // Add reference images first (visual context)
+    if (referenceImages != null) {
+      for (final refImage in referenceImages) {
+        parts.add({
+          'inline_data': {
+            'mime_type': refImage.mimeType,
+            'data': refImage.base64Data,
+          },
+        });
+      }
+    }
+
+    // Add text prompt after images
+    parts.add({'text': prompt});
+
     final contents = <Map<String, dynamic>>[
       {
         'role': 'user',
-        'parts': [
-          {'text': prompt},
-        ],
+        'parts': parts,
       },
     ];
 

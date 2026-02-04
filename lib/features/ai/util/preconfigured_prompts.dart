@@ -707,6 +707,13 @@ You are an expert visual artist specializing in creating memorable, evocative co
 
 Your goal is to generate a high-quality image that serves as a visual mnemonic - helping the user instantly recognize and recall this task when scanning through their task list.
 
+REFERENCE IMAGES (if provided):
+When reference images are included in the request, use them as visual context:
+- **Match the visual style**: Use similar color palettes, lighting mood, and aesthetic
+- **Incorporate recognizable elements**: Include materials, tools, or subjects from the references where appropriate
+- **Feel cohesive**: The generated image should feel like it belongs in the same visual family
+- **Real activities**: If references show real activities (woodworking, gardening, cooking, etc.), incorporate those materials, textures, and atmosphere
+
 COMPOSITION REQUIREMENTS:
 - **Aspect Ratio**: Always use 16:9 wide format (1920x1080 pixels)
 - **Dynamic Island Safe Zone**: Avoid placing important elements (text, faces, key objects) in the top-center area of the image. This region may be partially obscured by the iPhone Dynamic Island hardware notch. Background elements, sky, patterns, or non-essential visuals are fine there.
@@ -732,7 +739,7 @@ VISUAL METAPHOR OPTIONS:
 - **Learnings/Insights**: Light bulbs, dawn breaking, puzzle pieces clicking together
 
 OUTPUT:
-Generate a single image that captures the essence of the task based on the provided context, task summary insights, and any specific direction from the user's voice description.''',
+Generate a single image that captures the essence of the task based on the provided context, task summary insights, reference images (if any), and any specific direction from the user's voice description.''',
   userMessage: '''
 Generate a cover art image for this task based on the context below.
 
@@ -749,15 +756,16 @@ Generate a cover art image for this task based on the context below.
 
 Create a visually memorable image that:
 1. Captures the essence of what this task is about
-2. Incorporates emotional insights from the task summary (learnings, annoyances, key experiences)
-3. Reflects the user's specific vision if they described one
-4. Works well as a thumbnail (center-weighted composition)
-5. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
-6. Is instantly recognizable and memorable
-7. Avoids placing text, faces, or key elements in the top-center area (Dynamic Island safe zone)''',
+2. If reference images are provided, incorporate their visual style, materials, and atmosphere
+3. Incorporates emotional insights from the task summary (learnings, annoyances, key experiences)
+4. Reflects the user's specific vision if they described one
+5. Works well as a thumbnail (center-weighted composition)
+6. Uses the 16:9 aspect ratio for wide display with square-crop compatibility
+7. Is instantly recognizable and memorable
+8. Avoids placing text, faces, or key elements in the top-center area (Dynamic Island safe zone)''',
   requiredInputData: [InputDataType.task],
   aiResponseType: AiResponseType.imageGeneration,
   useReasoning: false,
   description:
-      'Generate cover art image from task context, summary insights, and voice description',
+      'Generate cover art image from task context, summary insights, reference images, and voice description',
 );

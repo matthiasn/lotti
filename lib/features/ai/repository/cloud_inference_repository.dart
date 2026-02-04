@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/openai_transcription_repository.dar
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -535,6 +536,7 @@ class CloudInferenceRepository {
   /// - [model]: The model ID (e.g., 'models/gemini-3-pro-image-preview').
   /// - [provider]: The inference provider configuration (must be Gemini).
   /// - [systemMessage]: Optional system instruction for guiding generation.
+  /// - [referenceImages]: Optional list of reference images for visual context.
   ///
   /// Returns a [GeneratedImage] containing the image bytes and MIME type.
   /// Throws an exception if the provider doesn't support image generation.
@@ -543,6 +545,7 @@ class CloudInferenceRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
   }) async {
     if (provider.inferenceProviderType != InferenceProviderType.gemini) {
       throw UnsupportedError(
@@ -554,7 +557,8 @@ class CloudInferenceRepository {
       'CloudInferenceRepository.generateImage called with:\n'
       '  model: $model\n'
       '  provider: ${provider.inferenceProviderType}\n'
-      '  promptLength: ${prompt.length}',
+      '  promptLength: ${prompt.length}\n'
+      '  referenceImages: ${referenceImages?.length ?? 0}',
       name: 'CloudInferenceRepository',
     );
 
@@ -563,6 +567,7 @@ class CloudInferenceRepository {
       model: model,
       provider: provider,
       systemMessage: systemMessage,
+      referenceImages: referenceImages,
     );
   }
 }

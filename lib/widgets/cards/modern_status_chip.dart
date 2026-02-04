@@ -66,12 +66,16 @@ class ModernStatusChip extends StatelessWidget {
             ),
             const SizedBox(width: 4),
           ],
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: AppTheme.statusIndicatorFontSize,
-              fontWeight: FontWeight.w600,
-              color: contentColor,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: AppTheme.statusIndicatorFontSize,
+                fontWeight: FontWeight.w600,
+                color: contentColor,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

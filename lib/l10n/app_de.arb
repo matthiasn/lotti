@@ -539,8 +539,15 @@
     }
   },
   "imageGenerationRetry": "Wiederholen",
+  "imageGenerationWithReferences": "Mit {count} Referenzbild(ern)",
   "generateCoverArt": "Cover generieren",
   "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen",
+
+  "referenceImageSelectionTitle": "Referenzbilder auswählen",
+  "referenceImageSelectionSubtitle": "Wähle bis zu 3 Bilder, um den visuellen Stil der KI zu leiten",
+  "referenceImageSkip": "Überspringen",
+  "referenceImageContinue": "Weiter",
+  "referenceImageContinueWithCount": "Weiter ({count})",
 
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkedFromLabel": "VERKNÜPFT VON",

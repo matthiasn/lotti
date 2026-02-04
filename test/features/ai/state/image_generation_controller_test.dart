@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -41,6 +42,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(AiConfigType.inferenceProvider);
+    registerFallbackValue(<ProcessedReferenceImage>[]);
   });
   group('ImageGenerationState', () {
     test('initial state has correct type', () {
@@ -423,6 +425,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -472,6 +475,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenThrow(Exception('API error'));
 
@@ -648,6 +652,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -693,6 +698,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -738,6 +744,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -756,6 +763,7 @@ void main() {
           model: any(named: 'model'),
           provider: any(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).called(1);
     });
@@ -913,6 +921,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -952,6 +961,7 @@ void main() {
           model: any(named: 'model'),
           provider: any(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).called(1);
     });
@@ -998,6 +1008,7 @@ void main() {
           model: any(named: 'model'),
           provider: any<AiConfigInferenceProvider>(named: 'provider'),
           systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
         ),
       ).thenAnswer(
         (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
@@ -1014,6 +1025,133 @@ void main() {
         imageGenerationControllerProvider(entityId: audioEntityId),
       );
       expect(finalState, isA<ImageGenerationSuccess>());
+    });
+
+    test('generateImage passes reference images to cloud repository', () async {
+      const entityId = 'test-entity';
+      const prompt = 'Generate with references';
+      final imageBytes = [1, 2, 3, 4, 5];
+      final refImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'abc123',
+          mimeType: 'image/png',
+          originalId: 'ref-1',
+        ),
+        const ProcessedReferenceImage(
+          base64Data: 'def456',
+          mimeType: 'image/jpeg',
+          originalId: 'ref-2',
+        ),
+      ];
+
+      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
+          .thenAnswer((_) async => [testGeminiProvider]);
+
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      await notifier.generateImage(
+        prompt: prompt,
+        referenceImages: refImages,
+      );
+
+      // Verify final state is success
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: entityId),
+      );
+      expect(finalState, isA<ImageGenerationSuccess>());
+
+      // Verify reference images were passed to the repository
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: prompt,
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: refImages,
+        ),
+      ).called(1);
+    });
+
+    test('generateImageFromEntity passes reference images', () async {
+      const audioEntityId = 'audio-entity-id';
+      const taskId = 'task-id';
+      final audioEntity = buildAudioEntity(
+        id: audioEntityId,
+        transcript: 'Create art with style',
+      );
+      final linkedTask = buildTask(id: taskId);
+      final imageBytes = [1, 2, 3, 4, 5];
+      final refImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'styledata',
+          mimeType: 'image/png',
+          originalId: 'style-ref',
+        ),
+      ];
+
+      when(() => mockJournalRepo.getJournalEntityById(audioEntityId))
+          .thenAnswer((_) async => audioEntity);
+
+      when(() => mockJournalRepo.getLinkedEntities(linkedTo: audioEntityId))
+          .thenAnswer((_) async => [linkedTask]);
+
+      when(() => mockJournalRepo.getLinkedToEntities(linkedTo: taskId))
+          .thenAnswer((_) async => []);
+
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskId))
+          .thenAnswer((_) async => '{"title": "Test Task"}');
+
+      when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
+          .thenAnswer((_) async => '{}');
+
+      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
+          .thenAnswer((_) async => [testGeminiProvider]);
+
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: audioEntityId).notifier,
+      );
+
+      await notifier.generateImageFromEntity(
+        audioEntityId: audioEntityId,
+        referenceImages: refImages,
+      );
+
+      // Verify reference images were passed
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: refImages,
+        ),
+      ).called(1);
     });
   });
 }

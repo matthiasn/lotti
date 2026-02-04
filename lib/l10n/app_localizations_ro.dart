@@ -3383,11 +3383,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageGenerationRetry => 'Reîncearcă';
 
   @override
+  String imageGenerationWithReferences(int count) {
+    return 'Using $count reference image(s)';
+  }
+
+  @override
   String get generateCoverArt => 'Generează copertă';
 
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String get referenceImageSelectionTitle => 'Select Reference Images';
+
+  @override
+  String get referenceImageSelectionSubtitle =>
+      'Choose up to 3 images to guide the AI\'s visual style';
+
+  @override
+  String get referenceImageSkip => 'Skip';
+
+  @override
+  String get referenceImageContinue => 'Continue';
+
+  @override
+  String referenceImageContinueWithCount(int count) {
+    return 'Continue ($count)';
+  }
 
   @override
   String get linkedTasksTitle => 'Sarcini legate';

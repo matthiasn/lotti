@@ -291,7 +291,7 @@ final class ActiveFocusCategoryIdProvider
 }
 
 String _$activeFocusCategoryIdHash() =>
-    r'a70fbe0ff9900730bab64356d5793e06b4e76d40';
+    r'e362bbab83c33ba3968e50d145ae255738d444d7';
 
 /// Provides the category ID of the currently running timer.
 ///

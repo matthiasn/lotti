@@ -1789,5 +1789,147 @@ void main() {
         verify(mockSelectableJournalDbEntities.get).called(1);
       });
     });
+
+    group('getLinkedImagesForTask', () {
+      test('returns only JournalImage entities from linked entities', () async {
+        // Arrange
+        const taskId = 'task-id';
+        final dateTime2023 = DateTime(2023);
+
+        // Create a mix of entity types
+        final journalEntry = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
+          ),
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+        );
+
+        final journalImage1 = JournalEntity.journalImage(
+          meta: Metadata(
+            id: 'image-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: ImageData(
+            capturedAt: dateTime2023,
+            imageId: 'img-1',
+            imageFile: 'image1.jpg',
+            imageDirectory: '/path/to/images',
+          ),
+        );
+
+        final journalImage2 = JournalEntity.journalImage(
+          meta: Metadata(
+            id: 'image-2',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: ImageData(
+            capturedAt: dateTime2023,
+            imageId: 'img-2',
+            imageFile: 'image2.jpg',
+            imageDirectory: '/path/to/images',
+          ),
+        );
+
+        final linkedEntities = [journalEntry, journalImage1, journalImage2];
+
+        // Mock JournalDb
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => linkedEntities);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, hasLength(2));
+        expect(result[0], isA<JournalImage>());
+        expect(result[1], isA<JournalImage>());
+        expect(result[0].meta.id, equals('image-1'));
+        expect(result[1].meta.id, equals('image-2'));
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns empty list when no images are linked', () async {
+        // Arrange
+        const taskId = 'task-id';
+        final dateTime2023 = DateTime(2023);
+
+        // Create only non-image entities
+        final journalEntry = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
+          ),
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+        );
+
+        final audioEntry = JournalEntity.journalAudio(
+          meta: Metadata(
+            id: 'audio-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: AudioData(
+            audioFile: 'audio.m4a',
+            audioDirectory: '/path/to/audio',
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+            duration: const Duration(minutes: 2),
+          ),
+        );
+
+        final linkedEntities = [journalEntry, audioEntry];
+
+        // Mock JournalDb
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => linkedEntities);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, isEmpty);
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns empty list when no linked entities exist', () async {
+        // Arrange
+        const taskId = 'task-id';
+
+        // Mock JournalDb to return empty list
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, isEmpty);
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+    });
   });
 }

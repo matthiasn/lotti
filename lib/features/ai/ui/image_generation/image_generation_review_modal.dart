@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
+import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -14,9 +16,19 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// The steps in the image generation flow.
+enum _ModalStep {
+  /// User selects reference images (optional).
+  selectImages,
+
+  /// Image is being generated.
+  generating,
+}
+
 /// A modal widget for reviewing generated cover art images.
 ///
 /// This modal displays the generated image and provides actions to:
+/// - Select reference images to guide the AI (optional)
 /// - Accept the image as cover art for the task
 /// - Edit the prompt and regenerate
 /// - Cancel and close the modal
@@ -64,16 +76,8 @@ class _ImageGenerationReviewModalState
     extends ConsumerState<ImageGenerationReviewModal> {
   TextEditingController? _promptController;
   bool _isEditingPrompt = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Start generation on mount using full entity context
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startGeneration();
-    });
-  }
+  _ModalStep _currentStep = _ModalStep.selectImages;
+  List<ProcessedReferenceImage> _selectedReferenceImages = [];
 
   @override
   void dispose() {
@@ -81,12 +85,44 @@ class _ImageGenerationReviewModalState
     super.dispose();
   }
 
-  void _startGeneration() {
+  void _handleImageSelectionContinue(List<ProcessedReferenceImage> images) {
+    setState(() {
+      _selectedReferenceImages = images;
+      _currentStep = _ModalStep.generating;
+    });
+    // Schedule generation after the widget rebuild completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _startGenerationWithReferences();
+      }
+    });
+  }
+
+  void _handleSkipImageSelection() {
+    setState(() {
+      _selectedReferenceImages = [];
+      _currentStep = _ModalStep.generating;
+    });
+    // Schedule generation after the widget rebuild completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _startGenerationWithReferences();
+      }
+    });
+  }
+
+  void _startGenerationWithReferences() {
+    if (!mounted) return;
     ref
         .read(
           imageGenerationControllerProvider(entityId: widget.entityId).notifier,
         )
-        .generateImageFromEntity(audioEntityId: widget.entityId);
+        .generateImageFromEntity(
+          audioEntityId: widget.entityId,
+          referenceImages: _selectedReferenceImages.isNotEmpty
+              ? _selectedReferenceImages
+              : null,
+        );
   }
 
   /// Gets the current prompt from the controller state.
@@ -101,6 +137,14 @@ class _ImageGenerationReviewModalState
       success: (s) => s.prompt,
       error: (s) => s.prompt,
     );
+  }
+
+  /// Returns true if the current prompt is valid for retry.
+  bool _canRetryWithCurrentPrompt() {
+    final prompt = _getCurrentPrompt();
+    return prompt != null &&
+        prompt.isNotEmpty &&
+        prompt != kFailedPromptPlaceholder;
   }
 
   Future<void> _handleAccept(Uint8List imageBytes, String mimeType) async {
@@ -167,20 +211,43 @@ class _ImageGenerationReviewModalState
             imageGenerationControllerProvider(entityId: widget.entityId)
                 .notifier,
           )
-          .generateImage(prompt: newPrompt);
+          .generateImage(
+            prompt: newPrompt,
+            referenceImages: _selectedReferenceImages.isNotEmpty
+                ? _selectedReferenceImages
+                : null,
+          );
     }
   }
 
   void _handleRetry() {
+    if (!_canRetryWithCurrentPrompt()) return;
+
+    final currentPrompt = _getCurrentPrompt()!;
     ref
         .read(
           imageGenerationControllerProvider(entityId: widget.entityId).notifier,
         )
-        .retryGeneration();
+        .generateImage(
+          prompt: currentPrompt,
+          referenceImages: _selectedReferenceImages.isNotEmpty
+              ? _selectedReferenceImages
+              : null,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show reference image selection step first
+    if (_currentStep == _ModalStep.selectImages) {
+      return ReferenceImageSelectionWidget(
+        taskId: widget.linkedTaskId,
+        onContinue: _handleImageSelectionContinue,
+        onSkip: _handleSkipImageSelection,
+      );
+    }
+
+    // Show generation/review UI
     final state = ref.watch(
       imageGenerationControllerProvider(entityId: widget.entityId),
     );
@@ -231,6 +298,18 @@ class _ImageGenerationReviewModalState
             ),
             textAlign: TextAlign.center,
           ),
+          if (_selectedReferenceImages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              context.messages.imageGenerationWithReferences(
+                _selectedReferenceImages.length,
+              ),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: 32),
         ],
       ),
@@ -256,13 +335,15 @@ class _ImageGenerationReviewModalState
         // Action buttons
         Row(
           children: [
-            LottiSecondaryButton(
-              label: context.messages.imageGenerationEditPromptButton,
-              icon: Icons.edit_outlined,
-              onPressed: _handleEditPrompt,
+            Flexible(
+              child: LottiSecondaryButton(
+                label: context.messages.imageGenerationEditPromptButton,
+                icon: Icons.edit_outlined,
+                onPressed: _handleEditPrompt,
+              ),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            Flexible(
               child: LottiPrimaryButton(
                 label: context.messages.imageGenerationAcceptButton,
                 icon: Icons.check_rounded,
@@ -309,17 +390,19 @@ class _ImageGenerationReviewModalState
           const SizedBox(height: 24),
           Row(
             children: [
-              LottiSecondaryButton(
-                label: context.messages.imageGenerationEditPromptButton,
-                icon: Icons.edit_outlined,
-                onPressed: _handleEditPrompt,
+              Flexible(
+                child: LottiSecondaryButton(
+                  label: context.messages.imageGenerationEditPromptButton,
+                  icon: Icons.edit_outlined,
+                  onPressed: _handleEditPrompt,
+                ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: LottiPrimaryButton(
                   label: context.messages.imageGenerationRetry,
                   icon: Icons.refresh_rounded,
-                  onPressed: _handleRetry,
+                  onPressed: _canRetryWithCurrentPrompt() ? _handleRetry : null,
                 ),
               ),
             ],
@@ -362,13 +445,15 @@ class _ImageGenerationReviewModalState
           const SizedBox(height: 24),
           Row(
             children: [
-              LottiSecondaryButton(
-                label: context.messages.imageGenerationCancelEdit,
-                icon: Icons.close_rounded,
-                onPressed: _handleCancelEdit,
+              Flexible(
+                child: LottiSecondaryButton(
+                  label: context.messages.imageGenerationCancelEdit,
+                  icon: Icons.close_rounded,
+                  onPressed: _handleCancelEdit,
+                ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: LottiPrimaryButton(
                   label: context.messages.generateCoverArt,
                   icon: Icons.auto_awesome_outlined,

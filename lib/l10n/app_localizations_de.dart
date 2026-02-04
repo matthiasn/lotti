@@ -3389,11 +3389,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get imageGenerationRetry => 'Wiederholen';
 
   @override
+  String imageGenerationWithReferences(int count) {
+    return 'Mit $count Referenzbild(ern)';
+  }
+
+  @override
   String get generateCoverArt => 'Cover generieren';
 
   @override
   String get generateCoverArtSubtitle =>
       'Bild aus Sprachbeschreibung erstellen';
+
+  @override
+  String get referenceImageSelectionTitle => 'Referenzbilder auswählen';
+
+  @override
+  String get referenceImageSelectionSubtitle =>
+      'Wähle bis zu 3 Bilder, um den visuellen Stil der KI zu leiten';
+
+  @override
+  String get referenceImageSkip => 'Überspringen';
+
+  @override
+  String get referenceImageContinue => 'Weiter';
+
+  @override
+  String referenceImageContinueWithCount(int count) {
+    return 'Weiter ($count)';
+  }
 
   @override
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';

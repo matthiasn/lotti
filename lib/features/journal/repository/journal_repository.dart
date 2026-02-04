@@ -35,6 +35,27 @@ class JournalRepository {
         );
   }
 
+  /// Clears coverArtId from any tasks that reference the deleted image
+  Future<void> _clearCoverArtReferences(
+    String imageId,
+    PersistenceLogic persistenceLogic,
+  ) async {
+    final db = getIt<JournalDb>();
+    // Find all entities that link TO this image (i.e., tasks that have this image linked)
+    final linkedFromEntities = await db.linkedToJournalEntities(imageId).get();
+
+    for (final dbEntity in linkedFromEntities) {
+      final entity = fromDbEntity(dbEntity);
+      if (entity is Task && entity.data.coverArtId == imageId) {
+        // Clear the coverArtId
+        await persistenceLogic.updateTask(
+          journalEntityId: entity.id,
+          taskData: entity.data.copyWith(coverArtId: null),
+        );
+      }
+    }
+  }
+
   Future<JournalEntity?> getJournalEntityById(String id) async {
     return getIt<JournalDb>().journalEntityById(id);
   }
@@ -91,6 +112,11 @@ class JournalRepository {
         for (final checklistId in journalEntity.data.linkedChecklists) {
           await _triggerTaskSummaryRefreshForChecklist(checklistId);
         }
+      }
+
+      // If deleting an image that is used as cover art, clear the coverArtId
+      if (journalEntity is JournalImage) {
+        await _clearCoverArtReferences(journalEntityId, persistenceLogic);
       }
 
       await persistenceLogic.updateDbEntity(
@@ -313,6 +339,15 @@ class JournalRepository {
   }) async {
     final items = await getIt<JournalDb>().getLinkedEntities(linkedTo);
     return items;
+  }
+
+  /// Returns all JournalImage entries linked to the given task.
+  ///
+  /// This is a convenience method that filters the linked entities
+  /// to only include images, useful for reference image selection.
+  Future<List<JournalImage>> getLinkedImagesForTask(String taskId) async {
+    final linkedEntities = await getLinkedEntities(linkedTo: taskId);
+    return linkedEntities.whereType<JournalImage>().toList();
   }
 
   Future<List<EntryLink>> getLinksFromId(
