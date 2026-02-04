@@ -22,6 +22,7 @@ import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/gamey/gamey_theme.dart';
@@ -337,9 +338,16 @@ class GameyJournalCard extends StatelessWidget {
                     ci.data.isChecked ? TextDecoration.lineThrough : null,
               ),
             );
-          case DayPlanEntry():
-            // TODO: Handle this case.
-            throw UnimplementedError();
+          case final DayPlanEntry entry:
+            // DayPlanEntry is not yet supported in GameyJournalCard
+            getIt<LoggingService>().captureException(
+              'DayPlanEntry not implemented in GameyJournalCard',
+              stackTrace: StackTrace.current,
+            );
+            return Text(
+              entry.meta.id,
+              style: context.textTheme.bodyMedium,
+            );
         }
       }(),
     );
