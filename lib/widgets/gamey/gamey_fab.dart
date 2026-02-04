@@ -31,6 +31,7 @@ class GameyFab extends ConsumerWidget {
 
     return FloatingActionButton(
       onPressed: onPressed,
+      tooltip: semanticLabel,
       child: child ?? const Icon(Icons.add),
     );
   }
