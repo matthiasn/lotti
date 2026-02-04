@@ -90,7 +90,6 @@ class _GameyFabImageState extends State<_GameyFabImage>
   void _handleTapUp(TapUpDetails details) {
     setState(() => _isPressed = false);
     _controller.reverse();
-    widget.onPressed();
   }
 
   void _handleTapCancel() {

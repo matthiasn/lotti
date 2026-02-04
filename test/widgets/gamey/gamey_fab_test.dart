@@ -167,7 +167,7 @@ void main() {
       );
     });
 
-    testWidgets('calls onPressed when tapped', (tester) async {
+    testWidgets('calls onPressed exactly once when tapped', (tester) async {
       var tapCount = 0;
 
       await tester.pumpWidget(
@@ -184,9 +184,7 @@ void main() {
       await tester.tap(find.byType(GestureDetector));
       await tester.pump();
 
-      // The widget calls onPressed on both onTap and onTapUp for accessibility
-      // but tester.tap() triggers both handlers, resulting in 2 calls
-      expect(tapCount, greaterThan(0));
+      expect(tapCount, equals(1));
     });
 
     testWidgets('handles tap down and up states', (tester) async {
