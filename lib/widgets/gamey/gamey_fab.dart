@@ -98,12 +98,20 @@ class _GameyFabImageState extends State<_GameyFabImage>
     _controller.reverse();
   }
 
+  void _handleTap() {
+    // For accessibility: ensure animation plays and action fires
+    setState(() => _isPressed = false);
+    _controller.reverse();
+    widget.onPressed();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
       label: widget.semanticLabel,
       button: true,
       child: GestureDetector(
+        onTap: _handleTap,
         onTapDown: _handleTapDown,
         onTapUp: _handleTapUp,
         onTapCancel: _handleTapCancel,
