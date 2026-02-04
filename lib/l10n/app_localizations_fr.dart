@@ -3479,4 +3479,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiSetupWizardRunningButton => 'Running...';
+
+  @override
+  String get logsSearchHint => 'Rechercher tous les logs...';
 }

@@ -54,7 +54,7 @@ class _HabitsSearchWidgetState extends ConsumerState<HabitsSearchWidget> {
         onChanged: habitsController.setSearchString,
         onClear: () {
           habitsController.setSearchString('');
-          FocusScope.of(context).requestFocus(FocusNode());
+          FocusScope.of(context).unfocus();
         },
       ),
     );

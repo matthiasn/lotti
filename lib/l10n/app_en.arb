@@ -1366,5 +1366,6 @@
   "aiSetupWizardCreatesOptimized": "Creates optimized models, prompts, and a test category",
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardRunButton": "Run Setup",
-  "aiSetupWizardRunningButton": "Running..."
+  "aiSetupWizardRunningButton": "Running...",
+  "logsSearchHint": "Search all logs..."
 }

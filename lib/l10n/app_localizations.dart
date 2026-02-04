@@ -6381,6 +6381,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Running...'**
   String get aiSetupWizardRunningButton;
+
+  /// No description provided for @logsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search all logs...'**
+  String get logsSearchHint;
 }
 
 class _AppLocalizationsDelegate

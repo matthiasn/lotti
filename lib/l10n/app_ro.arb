@@ -524,5 +524,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "logsSearchHint": "Caută în toate jurnalele..."
 }

@@ -3460,4 +3460,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiSetupWizardRunningButton => 'Wird ausgeführt...';
+
+  @override
+  String get logsSearchHint => 'Alle Logs durchsuchen...';
 }
