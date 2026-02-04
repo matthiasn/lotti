@@ -10,7 +10,8 @@ import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
-import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
+import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
+import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -161,7 +162,14 @@ int _getLaneCount(List<_LaneAssignment> assignments) {
 
 /// Timeline showing plan vs actual time blocks.
 class DailyTimeline extends ConsumerWidget {
-  const DailyTimeline({super.key});
+  const DailyTimeline({
+    super.key,
+    this.onDragActiveChanged,
+  });
+
+  /// Callback when a drag operation starts or ends.
+  /// Used by parent to lock scroll during drag.
+  final DragActiveChangedCallback? onDragActiveChanged;
 
   static const double _hourHeight = 40;
   static const double _timeAxisWidth = 50;
@@ -184,7 +192,10 @@ class DailyTimeline extends ConsumerWidget {
           return const TimelineEmptyState();
         }
 
-        return _TimelineContent(data: data);
+        return _TimelineContent(
+          data: data,
+          onDragActiveChanged: onDragActiveChanged,
+        );
       },
       loading: () => const _LoadingState(),
       error: (error, stack) => _ErrorState(error: error),
@@ -194,9 +205,13 @@ class DailyTimeline extends ConsumerWidget {
 
 /// Main timeline content with scrollable time axis and smart folding.
 class _TimelineContent extends ConsumerWidget {
-  const _TimelineContent({required this.data});
+  const _TimelineContent({
+    required this.data,
+    this.onDragActiveChanged,
+  });
 
   final DailyTimelineData data;
+  final DragActiveChangedCallback? onDragActiveChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -237,6 +252,7 @@ class _TimelineContent extends ConsumerWidget {
               foldingState: foldingState,
               expandedRegions: expandedRegions,
               totalHeight: totalHeight,
+              onDragActiveChanged: onDragActiveChanged,
             ),
           ),
         ),
@@ -329,12 +345,14 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     required this.foldingState,
     required this.expandedRegions,
     required this.totalHeight,
+    this.onDragActiveChanged,
   });
 
   final DailyTimelineData data;
   final TimelineFoldingState foldingState;
   final Set<int> expandedRegions;
   final double totalHeight;
+  final DragActiveChangedCallback? onDragActiveChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -446,6 +464,9 @@ class _FoldedTimelineGrid extends ConsumerWidget {
           data: data,
           startHour: startHour,
           endHour: endHour,
+          foldingState: foldingState,
+          expandedRegions: expandedRegions,
+          onDragActiveChanged: onDragActiveChanged,
         ),
       _AnimatableSection(:final region, :final isExpanded) =>
         AnimatedTimelineRegion(
@@ -458,6 +479,9 @@ class _FoldedTimelineGrid extends ConsumerWidget {
                   data: data,
                   startHour: region.startHour,
                   endHour: region.endHour,
+                  foldingState: foldingState,
+                  expandedRegions: expandedRegions,
+                  onDragActiveChanged: onDragActiveChanged,
                   canCollapse: true,
                   onCollapse: () {
                     ref
@@ -525,6 +549,9 @@ class _VisibleTimelineSection extends ConsumerWidget {
     required this.data,
     required this.startHour,
     required this.endHour,
+    required this.foldingState,
+    required this.expandedRegions,
+    this.onDragActiveChanged,
     this.canCollapse = false,
     this.onCollapse,
   });
@@ -532,6 +559,9 @@ class _VisibleTimelineSection extends ConsumerWidget {
   final DailyTimelineData data;
   final int startHour;
   final int endHour;
+  final TimelineFoldingState foldingState;
+  final Set<int> expandedRegions;
+  final DragActiveChangedCallback? onDragActiveChanged;
 
   /// Whether this section can be collapsed (was expanded from a compressed
   /// region).
@@ -559,6 +589,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
     return SizedBox(
       height: sectionHeight,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           // Hour grid lines
           ...List.generate(totalHours + 1, (i) {
@@ -649,11 +680,17 @@ class _VisibleTimelineSection extends ConsumerWidget {
             left: DailyTimeline._timeAxisWidth,
             width: DailyTimeline._laneWidth,
             child: Stack(
+              clipBehavior: Clip.none,
               children: sectionPlannedSlots.map((slot) {
-                return _PlannedBlockWidget(
+                return DraggablePlannedBlock(
+                  key: ValueKey('planned-block-${slot.block.id}'),
                   slot: slot,
-                  startHour: startHour,
+                  sectionStartHour: startHour,
+                  sectionEndHour: endHour,
                   date: data.date,
+                  foldingState: foldingState,
+                  expandedRegions: expandedRegions,
+                  onDragActiveChanged: onDragActiveChanged,
                 );
               }).toList(),
             ),
@@ -675,6 +712,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
                   children: assignments.map((assignment) {
                     return _ActualBlockWidget(
                       slot: assignment.slot,
+                      date: data.date,
                       startHour: startHour,
                       laneIndex: assignment.laneIndex,
                       laneCount: laneCount,
@@ -696,12 +734,14 @@ class _VisibleTimelineSection extends ConsumerWidget {
   /// A slot overlaps if it starts before the section ends AND ends after the
   /// section starts. This handles slots that span section boundaries.
   bool _slotOverlapsSection(DateTime slotStart, DateTime slotEnd) {
-    // Convert section boundaries to comparable hour values.
-    // A slot overlaps if: slotStartHour < endHour AND slotEndHour > startHour
-    final slotStartHour = slotStart.hour + slotStart.minute / 60.0;
-    final slotEndHour = slotEnd.hour + slotEnd.minute / 60.0;
+    final slotStartMinutes = minutesFromDate(data.date, slotStart);
+    final slotEndMinutes = minutesFromDate(data.date, slotEnd);
 
-    return slotStartHour < endHour && slotEndHour > startHour;
+    final sectionStartMinutes = startHour * 60;
+    final sectionEndMinutes = endHour * 60;
+
+    return slotStartMinutes < sectionEndMinutes &&
+        slotEndMinutes > sectionStartMinutes;
   }
 }
 
@@ -723,80 +763,6 @@ class _HourGridLine extends StatelessWidget {
   }
 }
 
-/// Widget for a planned time block.
-class _PlannedBlockWidget extends ConsumerWidget {
-  const _PlannedBlockWidget({
-    required this.slot,
-    required this.startHour,
-    required this.date,
-  });
-
-  final PlannedTimeSlot slot;
-  final int startHour;
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final startMinutes =
-        (slot.startTime.hour - startHour) * 60 + slot.startTime.minute;
-    final durationMinutes = slot.duration.inMinutes;
-    final top = startMinutes * DailyTimeline._hourHeight / 60;
-    final height = durationMinutes * DailyTimeline._hourHeight / 60;
-
-    final category = slot.category;
-    final categoryId = category?.id;
-    final categoryColor = category != null
-        ? colorFromCssHex(category.color)
-        : context.colorScheme.primary;
-
-    final highlightedId = ref.watch(highlightedCategoryIdProvider);
-    final isHighlighted = categoryId != null && highlightedId == categoryId;
-
-    return Positioned(
-      top: top,
-      left: 4,
-      right: 4,
-      height: height,
-      child: GestureDetector(
-        onTap: () {
-          if (categoryId != null) {
-            ref
-                .read(dailyOsControllerProvider.notifier)
-                .highlightCategory(categoryId);
-          }
-        },
-        onDoubleTap: () {
-          PlannedBlockEditModal.show(context, slot.block, date);
-        },
-        onLongPress: () {
-          PlannedBlockEditModal.show(context, slot.block, date);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: categoryColor.withValues(alpha: isHighlighted ? 0.4 : 0.2),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: categoryColor.withValues(alpha: isHighlighted ? 0.9 : 0.4),
-              width: isHighlighted ? 2 : 1,
-            ),
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Text(
-            category?.name ?? context.messages.dailyOsPlanned,
-            style: context.textTheme.labelSmall?.copyWith(
-              color: categoryColor.withValues(alpha: 0.9),
-              fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Visual inset in pixels for each nesting level.
 const double _nestedInset = 4;
 
@@ -804,6 +770,7 @@ const double _nestedInset = 4;
 class _ActualBlockWidget extends ConsumerWidget {
   const _ActualBlockWidget({
     required this.slot,
+    required this.date,
     required this.startHour,
     required this.laneIndex,
     required this.laneCount,
@@ -812,6 +779,7 @@ class _ActualBlockWidget extends ConsumerWidget {
   });
 
   final ActualTimeSlot slot;
+  final DateTime date;
   final int startHour;
   final int laneIndex;
   final int laneCount;
@@ -822,9 +790,11 @@ class _ActualBlockWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final startMinutes =
-        (slot.startTime.hour - startHour) * 60 + slot.startTime.minute;
-    final durationMinutes = slot.duration.inMinutes;
+    final slotStartMinutes = minutesFromDate(date, slot.startTime);
+    final slotEndMinutes = minutesFromDate(date, slot.endTime);
+    final startMinutes = slotStartMinutes - (startHour * 60);
+    final durationMinutes =
+        (slotEndMinutes - slotStartMinutes).clamp(0, kMaxMinutesInDay);
     final top = startMinutes * DailyTimeline._hourHeight / 60;
     final height = durationMinutes * DailyTimeline._hourHeight / 60;
 
@@ -850,6 +820,7 @@ class _ActualBlockWidget extends ConsumerWidget {
       height: height,
       child: _ActualBlockContent(
         slot: slot,
+        date: date,
         categoryColor: categoryColor,
         isHighlighted: isHighlighted,
         nestedChildren: nestedChildren,
@@ -865,6 +836,7 @@ class _ActualBlockWidget extends ConsumerWidget {
 class _ActualBlockContent extends ConsumerWidget {
   const _ActualBlockContent({
     required this.slot,
+    required this.date,
     required this.categoryColor,
     required this.isHighlighted,
     required this.nestedChildren,
@@ -875,6 +847,7 @@ class _ActualBlockContent extends ConsumerWidget {
   });
 
   final ActualTimeSlot slot;
+  final DateTime date;
   final Color categoryColor;
   final bool isHighlighted;
   final List<ActualTimeSlot> nestedChildren;
@@ -966,6 +939,7 @@ class _ActualBlockContent extends ConsumerWidget {
               parentWidth: parentWidth,
               nestingDepth: nestingDepth + 1,
               startHour: startHour,
+              date: date,
             ),
           ],
         ),
@@ -984,6 +958,7 @@ List<Widget> _buildNestedChildWidgets({
   required double parentWidth,
   required int nestingDepth,
   required int startHour,
+  required DateTime date,
 }) {
   if (nestedChildren.isEmpty) return [];
 
@@ -1000,6 +975,7 @@ List<Widget> _buildNestedChildWidgets({
       parentWidth: parentWidth,
       nestingDepth: nestingDepth,
       startHour: startHour,
+      date: date,
       laneIndex: assignment.laneIndex,
       laneCount: laneCount,
     );
@@ -1047,6 +1023,7 @@ class _NestedChildBlock extends ConsumerWidget {
     required this.parentWidth,
     required this.nestingDepth,
     required this.startHour,
+    required this.date,
     required this.laneIndex,
     required this.laneCount,
   });
@@ -1056,22 +1033,24 @@ class _NestedChildBlock extends ConsumerWidget {
   final double parentWidth;
   final int nestingDepth;
   final int startHour;
+  final DateTime date;
   final int laneIndex;
   final int laneCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Calculate position relative to parent
-    final parentStartMinutes =
-        (parent.startTime.hour - startHour) * 60 + parent.startTime.minute;
-    final childStartMinutes =
-        (child.startTime.hour - startHour) * 60 + child.startTime.minute;
+    final parentStartMinutes = minutesFromDate(date, parent.startTime);
+    final childStartMinutes = minutesFromDate(date, child.startTime);
 
     // Offset from parent's top edge
     final relativeTopMinutes = childStartMinutes - parentStartMinutes;
     final relativeTop = relativeTopMinutes * DailyTimeline._hourHeight / 60;
 
-    final childDurationMinutes = child.duration.inMinutes;
+    final childStart = minutesFromDate(date, child.startTime);
+    final childEnd = minutesFromDate(date, child.endTime);
+    final childDurationMinutes =
+        (childEnd - childStart).clamp(0, kMaxMinutesInDay);
     final childHeight = childDurationMinutes * DailyTimeline._hourHeight / 60;
 
     // Inset from edges based on nesting depth
@@ -1097,6 +1076,7 @@ class _NestedChildBlock extends ConsumerWidget {
       height: math.max(childHeight - (inset * 2), 8),
       child: _ActualBlockContent(
         slot: child,
+        date: date,
         categoryColor: categoryColor,
         isHighlighted: isHighlighted,
         nestedChildren: const [], // Children don't have further nesting for now

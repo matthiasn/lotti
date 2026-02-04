@@ -1115,6 +1115,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsFold => 'Contraer';
 
   @override
+  String get dailyOsExpandToMove =>
+      'Expandir línea de tiempo para arrastrar este bloque';
+
+  @override
+  String get dailyOsExpandToMoveMore =>
+      'Expandir línea de tiempo para mover más';
+
+  @override
   String get dashboardActiveLabel => 'Activo:';
 
   @override

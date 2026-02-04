@@ -1116,6 +1116,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsFold => 'Réduire';
 
   @override
+  String get dailyOsExpandToMove =>
+      'Développer la chronologie pour déplacer ce bloc';
+
+  @override
+  String get dailyOsExpandToMoveMore =>
+      'Développer la chronologie pour déplacer plus loin';
+
+  @override
   String get dashboardActiveLabel => 'Actif :';
 
   @override

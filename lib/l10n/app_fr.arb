@@ -88,6 +88,8 @@
   "dailyOsDueTodayShort": "Dû",
   "dailyOsOverdue": "En retard",
   "dailyOsOverdueShort": "Retard",
+  "dailyOsExpandToMove": "Développer la chronologie pour déplacer ce bloc",
+  "dailyOsExpandToMoveMore": "Développer la chronologie pour déplacer plus loin",
   "dailyOsFold": "Réduire",
   "dailyOsQuickCreateTask": "Créer une tâche pour ce budget",
   "dashboardActiveLabel": "Actif :",

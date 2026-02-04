@@ -2049,6 +2049,18 @@ abstract class AppLocalizations {
   /// **'Fold'**
   String get dailyOsFold;
 
+  /// No description provided for @dailyOsExpandToMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand timeline to drag this block'**
+  String get dailyOsExpandToMove;
+
+  /// No description provided for @dailyOsExpandToMoveMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand timeline to move further'**
+  String get dailyOsExpandToMoveMore;
+
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:

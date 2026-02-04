@@ -20,11 +20,29 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 /// - Timeline (plan vs actual)
 /// - Time Budgets
 /// - Day Summary
-class DailyOsPage extends ConsumerWidget {
+class DailyOsPage extends ConsumerStatefulWidget {
   const DailyOsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DailyOsPage> createState() => _DailyOsPageState();
+}
+
+class _DailyOsPageState extends ConsumerState<DailyOsPage> {
+  final _scrollController = ScrollController();
+  bool _isDragActive = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onDragActiveChanged({required bool isDragging}) {
+    setState(() => _isDragActive = isDragging);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
     final unifiedDataAsync =
         ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
@@ -50,7 +68,10 @@ class DailyOsPage extends ConsumerWidget {
                   );
                 },
                 child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
+                  controller: _scrollController,
+                  physics: _isDragActive
+                      ? const NeverScrollableScrollPhysics()
+                      : const AlwaysScrollableScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -97,7 +118,9 @@ class DailyOsPage extends ConsumerWidget {
                       ),
 
                       // Timeline section
-                      const DailyTimeline(),
+                      DailyTimeline(
+                        onDragActiveChanged: _onDragActiveChanged,
+                      ),
 
                       const SizedBox(height: AppTheme.spacingMedium),
 

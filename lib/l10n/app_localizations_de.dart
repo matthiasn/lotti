@@ -1113,6 +1113,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsFold => 'Einklappen';
 
   @override
+  String get dailyOsExpandToMove =>
+      'Zeitleiste erweitern, um diesen Block zu verschieben';
+
+  @override
+  String get dailyOsExpandToMoveMore =>
+      'Zeitleiste erweitern, um weiter zu verschieben';
+
+  @override
   String get dashboardActiveLabel => 'Aktiv:';
 
   @override

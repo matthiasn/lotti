@@ -88,6 +88,8 @@
   "dailyOsDueTodayShort": "Hoy",
   "dailyOsOverdue": "Vencido",
   "dailyOsOverdueShort": "Tarde",
+  "dailyOsExpandToMove": "Expandir línea de tiempo para arrastrar este bloque",
+  "dailyOsExpandToMoveMore": "Expandir línea de tiempo para mover más",
   "dailyOsFold": "Contraer",
   "dailyOsQuickCreateTask": "Crear tarea para este presupuesto",
   "dashboardActiveLabel": "Activo:",

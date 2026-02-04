@@ -16,7 +16,7 @@ The screenshot shows the Timeline view with:
 
 ### Hit Zones (Platform-Adaptive)
 
-```
+```text
 +-------------------+
 |  [Top Edge]       |  <- Resize top (change start time)
 |                   |
@@ -36,13 +36,13 @@ The screenshot shows the Timeline view with:
 
 ### Gesture Disambiguation
 
-Uses `RawGestureDetector` with custom recognizers for precise control over gesture conflicts:
+Uses standard `GestureDetector` with long-press handlers, which provides sufficient control for our needs:
 
 | Gesture | Zone | Action |
 |---------|------|--------|
 | Tap | Any | Highlight category |
 | Double-tap | Any | Open edit modal |
-| Long-press (300ms) | Any | Begin drag operation (prevents accidental drags) |
+| Long-press (500ms) | Any | Begin drag operation (prevents accidental drags) |
 | Vertical drag (after long-press) | Top edge | Resize top (change start time) |
 | Vertical drag (after long-press) | Body | Move entire block |
 | Vertical drag (after long-press) | Bottom edge | Resize bottom (change end time) |

@@ -486,6 +486,8 @@
   "dailyOsOverdue": "Overdue",
   "dailyOsOverdueShort": "Late",
   "dailyOsFold": "Fold",
+  "dailyOsExpandToMove": "Expand timeline to drag this block",
+  "dailyOsExpandToMoveMore": "Expand timeline to move further",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",
