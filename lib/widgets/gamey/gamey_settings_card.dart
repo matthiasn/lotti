@@ -58,7 +58,7 @@ class GameySettingsCard extends StatelessWidget {
           if (icon != null) ...[
             GameyIconBadge(
               icon: icon!,
-              gradient: _gameyGradient,
+              gradient: iconGradient ?? _gameyGradient,
               size: 48,
               iconSize: 24,
             ),
