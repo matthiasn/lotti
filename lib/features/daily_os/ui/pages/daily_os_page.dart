@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
-import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
-    as add_block;
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
 import 'package:lotti/features/daily_os/ui/widgets/day_summary.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_header.dart';
+import 'package:lotti/features/daily_os/ui/widgets/voice_day_plan_fab.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -142,12 +141,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          add_block.AddBlockSheet.show(context, selectedDate);
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: const VoiceDayPlanFab(),
     );
   }
 }

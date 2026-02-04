@@ -3465,4 +3465,56 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Caută în toate jurnalele...';
+
+  @override
+  String voicePlanActionsCompleted(int count) {
+    return '$count acțiuni finalizate';
+  }
+
+  @override
+  String voicePlanActionsWithErrors(int success, int failed) {
+    return '$success acțiuni finalizate, $failed eșuate';
+  }
+
+  @override
+  String get voicePlanError =>
+      'Planificarea vocală a eșuat. Te rugăm să încerci din nou.';
+
+  @override
+  String get voicePlanErrorNoModels =>
+      'Nu există modele AI disponibile pentru planificarea vocală. Te rugăm să configurezi un furnizor AI.';
+
+  @override
+  String get voicePlanErrorNetwork =>
+      'Eroare de rețea. Te rugăm să verifici conexiunea.';
+
+  @override
+  String get recorderErrorPermissionDenied =>
+      'Permisiunea microfonului refuzată. Te rugăm să o activezi din Setări.';
+
+  @override
+  String get recorderErrorStartFailed =>
+      'Nu s-a putut începe înregistrarea. Te rugăm să încerci din nou.';
+
+  @override
+  String get recorderErrorNoAudioFile =>
+      'Nu s-a înregistrat audio. Te rugăm să încerci din nou.';
+
+  @override
+  String get recorderErrorTranscriptionFailed =>
+      'Transcrierea a eșuat. Te rugăm să încerci din nou.';
+
+  @override
+  String get recorderErrorConcurrentOperation => 'Înregistrare deja în curs.';
+
+  @override
+  String get recorderErrorStorageFull =>
+      'Spațiul de stocare este plin. Te rugăm să eliberezi spațiu.';
+
+  @override
+  String get recorderErrorFileCorruption =>
+      'Fișierul audio a fost corupt. Te rugăm să încerci din nou.';
+
+  @override
+  String get recorderErrorUnknown => 'A apărut o eroare neașteptată.';
 }

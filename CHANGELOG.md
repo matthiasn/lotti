@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.843] - 2026-02-04
+### Added
+- Daily OS Voice Planning: Plan your day using voice commands
+  - Long-press the FAB to record voice instructions for day planning
+  - Supports adding, moving, resizing, and deleting time blocks via natural language
+  - Pin tasks to your day plan by mentioning them
+  - Uses LLM function calling to interpret commands and execute actions
+  - Visual feedback during recording, transcription, and processing
+  - Localized snackbar messages for completion and errors
+
 ## [0.9.842] - 2026-02-04
 ### Added
 - Daily OS Timeline: Drag-and-drop support for planned time blocks

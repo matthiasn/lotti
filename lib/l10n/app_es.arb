@@ -527,5 +527,31 @@
       }
     }
   },
-  "logsSearchHint": "Buscar todos los logs..."
+  "logsSearchHint": "Buscar todos los logs...",
+
+  "voicePlanActionsCompleted": "{count} acciones completadas",
+  "@voicePlanActionsCompleted": {
+    "placeholders": {
+      "count": {"type": "int", "example": "3"}
+    }
+  },
+  "voicePlanActionsWithErrors": "{success} acciones completadas, {failed} fallaron",
+  "@voicePlanActionsWithErrors": {
+    "placeholders": {
+      "success": {"type": "int", "example": "2"},
+      "failed": {"type": "int", "example": "1"}
+    }
+  },
+  "voicePlanError": "La planificación por voz falló. Por favor, inténtalo de nuevo.",
+  "voicePlanErrorNoModels": "No hay modelos de IA disponibles para planificación por voz. Por favor, configura un proveedor de IA.",
+  "voicePlanErrorNetwork": "Error de red. Por favor, verifica tu conexión.",
+
+  "recorderErrorPermissionDenied": "Permiso de micrófono denegado. Por favor, habilítalo en Configuración.",
+  "recorderErrorStartFailed": "No se pudo iniciar la grabación. Por favor, inténtalo de nuevo.",
+  "recorderErrorNoAudioFile": "No se grabó audio. Por favor, inténtalo de nuevo.",
+  "recorderErrorTranscriptionFailed": "La transcripción falló. Por favor, inténtalo de nuevo.",
+  "recorderErrorConcurrentOperation": "Grabación ya en progreso.",
+  "recorderErrorStorageFull": "Almacenamiento lleno. Por favor, libera espacio.",
+  "recorderErrorFileCorruption": "El archivo de audio está corrupto. Por favor, inténtalo de nuevo.",
+  "recorderErrorUnknown": "Ocurrió un error inesperado."
 }

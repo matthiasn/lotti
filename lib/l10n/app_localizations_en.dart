@@ -3458,6 +3458,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Search all logs...';
+
+  @override
+  String voicePlanActionsCompleted(int count) {
+    return '$count actions completed';
+  }
+
+  @override
+  String voicePlanActionsWithErrors(int success, int failed) {
+    return '$success actions completed, $failed failed';
+  }
+
+  @override
+  String get voicePlanError => 'Voice planning failed. Please try again.';
+
+  @override
+  String get voicePlanErrorNoModels =>
+      'No AI models available for voice planning. Please configure an AI provider.';
+
+  @override
+  String get voicePlanErrorNetwork =>
+      'Network error. Please check your connection.';
+
+  @override
+  String get recorderErrorPermissionDenied =>
+      'Microphone permission denied. Please enable it in Settings.';
+
+  @override
+  String get recorderErrorStartFailed =>
+      'Failed to start recording. Please try again.';
+
+  @override
+  String get recorderErrorNoAudioFile =>
+      'No audio was recorded. Please try again.';
+
+  @override
+  String get recorderErrorTranscriptionFailed =>
+      'Transcription failed. Please try again.';
+
+  @override
+  String get recorderErrorConcurrentOperation =>
+      'Recording already in progress.';
+
+  @override
+  String get recorderErrorStorageFull =>
+      'Storage is full. Please free up space.';
+
+  @override
+  String get recorderErrorFileCorruption =>
+      'Audio file was corrupted. Please try again.';
+
+  @override
+  String get recorderErrorUnknown => 'An unexpected error occurred.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -4842,4 +4894,56 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get logsSearchHint => 'Search all logs…';
+
+  @override
+  String voicePlanActionsCompleted(int count) {
+    return '$count actions completed';
+  }
+
+  @override
+  String voicePlanActionsWithErrors(int success, int failed) {
+    return '$success actions completed, $failed failed';
+  }
+
+  @override
+  String get voicePlanError => 'Voice planning failed. Please try again.';
+
+  @override
+  String get voicePlanErrorNoModels =>
+      'No AI models available for voice planning. Please configure an AI provider.';
+
+  @override
+  String get voicePlanErrorNetwork =>
+      'Network error. Please check your connection.';
+
+  @override
+  String get recorderErrorPermissionDenied =>
+      'Microphone permission denied. Please enable it in Settings.';
+
+  @override
+  String get recorderErrorStartFailed =>
+      'Failed to start recording. Please try again.';
+
+  @override
+  String get recorderErrorNoAudioFile =>
+      'No audio was recorded. Please try again.';
+
+  @override
+  String get recorderErrorTranscriptionFailed =>
+      'Transcription failed. Please try again.';
+
+  @override
+  String get recorderErrorConcurrentOperation =>
+      'Recording already in progress.';
+
+  @override
+  String get recorderErrorStorageFull =>
+      'Storage is full. Please free up space.';
+
+  @override
+  String get recorderErrorFileCorruption =>
+      'Audio file was corrupted. Please try again.';
+
+  @override
+  String get recorderErrorUnknown => 'An unexpected error occurred.';
 }

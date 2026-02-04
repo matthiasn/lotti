@@ -206,30 +206,56 @@ class TaskSearcher {
 ### File: `lib/features/daily_os/voice/day_plan_voice_service.dart`
 
 ```dart
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/tasks/ui/utils.dart' show openTaskStatuses;
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+
 @riverpod
 class DayPlanVoiceService extends _$DayPlanVoiceService {
+  @override
+  void build() {} // No state, just methods
 
   Future<DayPlanVoiceResult> processTranscript({
     required String transcript,
     required DateTime date,
   }) async {
+    // Concrete provider sources
+    final cacheService = ref.read(entitiesCacheServiceProvider);
+    final db = ref.read(journalDbProvider);
+    final fts5Db = ref.read(fts5DbProvider);
+    final aiConfigRepo = ref.read(aiConfigRepositoryProvider);
+    final cloudInferenceRepo = ref.read(cloudInferenceRepositoryProvider);
+
     // 1. Get current day plan state
     final unifiedData = await ref.read(
       unifiedDailyOsDataControllerProvider(date: date).future,
     );
 
-    // 2. Build system prompt with context
+    // 2. Fetch open tasks for context
+    final taskEntities = await db.getTasks(
+      starredStatuses: [false, true],
+      taskStatuses: openTaskStatuses,
+      categoryIds: [],
+      limit: 50,
+    );
+    final openTasks = taskEntities.whereType<Task>().toList();
+
+    // 3. Build system prompt with context
+    final categories = cacheService.sortedCategories;
     final systemPrompt = _buildSystemPrompt(
       date: date,
       currentPlan: unifiedData.dayPlan.data,
-      categories: cacheService.sortedCategories,
-      openTasks: await _fetchOpenTasks(),
+      categories: categories,
+      openTasks: openTasks,
     );
 
-    // 3. Get inference provider (prefer Mistral or Gemini)
-    final (model, provider, inferenceRepo) = await _getInferenceSetup();
+    // 4. Get inference model/provider (prefer function-calling capable)
+    final (model, provider) = await _selectFunctionCallingModel(aiConfigRepo);
 
-    // 4. Create conversation and process
+    // 5. Create conversation and process
     final conversationRepo = ref.read(conversationRepositoryProvider.notifier);
     final conversationId = conversationRepo.createConversation(
       systemMessage: systemPrompt,
@@ -250,7 +276,7 @@ class DayPlanVoiceService extends _$DayPlanVoiceService {
       message: transcript,
       model: model.providerModelId,
       provider: provider,
-      inferenceRepo: inferenceRepo,
+      inferenceRepo: cloudInferenceRepo,
       tools: DayPlanFunctions.getTools(),
       temperature: 0.1,
       strategy: strategy,
@@ -262,6 +288,41 @@ class DayPlanVoiceService extends _$DayPlanVoiceService {
       actions: strategy.results,
       hadErrors: strategy.results.any((r) => !r.success),
     );
+  }
+
+  /// Selects a model with function calling capability.
+  /// Prefers Mistral small, falls back to Gemini flash.
+  Future<(AiConfigModel, AiConfigInferenceProvider)> _selectFunctionCallingModel(
+    AiConfigRepository aiConfigRepo,
+  ) async {
+    final models = await aiConfigRepo.getConfigsByType(AiConfigType.model);
+    final providers = await aiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider);
+
+    // Filter to models that support function calling
+    final functionModels = models
+        .whereType<AiConfigModel>()
+        .where((m) => m.supportsFunctionCalling)
+        .toList();
+
+    if (functionModels.isEmpty) {
+      throw Exception('No function-calling capable models configured');
+    }
+
+    // Prefer mistral-small or gemini-flash
+    final preferredIds = ['mistral-small', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+    final model = functionModels.firstWhere(
+      (m) => preferredIds.any((id) => m.providerModelId.contains(id)),
+      orElse: () => functionModels.first,
+    );
+
+    final provider = providers
+        .whereType<AiConfigInferenceProvider>()
+        .firstWhere(
+          (p) => p.id == model.inferenceProviderId,
+          orElse: () => throw Exception('Provider not found for model'),
+        );
+
+    return (model, provider);
   }
 }
 ```

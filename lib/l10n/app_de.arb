@@ -585,5 +585,31 @@
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardRunButton": "Einrichtung starten",
   "aiSetupWizardRunningButton": "Wird ausgeführt...",
-  "logsSearchHint": "Alle Logs durchsuchen..."
+  "logsSearchHint": "Alle Logs durchsuchen...",
+
+  "voicePlanActionsCompleted": "{count} Aktionen abgeschlossen",
+  "@voicePlanActionsCompleted": {
+    "placeholders": {
+      "count": {"type": "int", "example": "3"}
+    }
+  },
+  "voicePlanActionsWithErrors": "{success} Aktionen abgeschlossen, {failed} fehlgeschlagen",
+  "@voicePlanActionsWithErrors": {
+    "placeholders": {
+      "success": {"type": "int", "example": "2"},
+      "failed": {"type": "int", "example": "1"}
+    }
+  },
+  "voicePlanError": "Sprachplanung fehlgeschlagen. Bitte erneut versuchen.",
+  "voicePlanErrorNoModels": "Keine KI-Modelle für Sprachplanung verfügbar. Bitte einen KI-Anbieter konfigurieren.",
+  "voicePlanErrorNetwork": "Netzwerkfehler. Bitte Verbindung überprüfen.",
+
+  "recorderErrorPermissionDenied": "Mikrofonberechtigung verweigert. Bitte in den Einstellungen aktivieren.",
+  "recorderErrorStartFailed": "Aufnahme konnte nicht gestartet werden. Bitte erneut versuchen.",
+  "recorderErrorNoAudioFile": "Keine Audioaufnahme vorhanden. Bitte erneut versuchen.",
+  "recorderErrorTranscriptionFailed": "Transkription fehlgeschlagen. Bitte erneut versuchen.",
+  "recorderErrorConcurrentOperation": "Aufnahme läuft bereits.",
+  "recorderErrorStorageFull": "Speicher voll. Bitte Speicherplatz freigeben.",
+  "recorderErrorFileCorruption": "Audiodatei ist beschädigt. Bitte erneut versuchen.",
+  "recorderErrorUnknown": "Ein unerwarteter Fehler ist aufgetreten."
 }

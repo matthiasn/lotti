@@ -3490,4 +3490,57 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Rechercher tous les logs...';
+
+  @override
+  String voicePlanActionsCompleted(int count) {
+    return '$count actions terminées';
+  }
+
+  @override
+  String voicePlanActionsWithErrors(int success, int failed) {
+    return '$success actions terminées, $failed échouées';
+  }
+
+  @override
+  String get voicePlanError =>
+      'La planification vocale a échoué. Veuillez réessayer.';
+
+  @override
+  String get voicePlanErrorNoModels =>
+      'Aucun modèle IA disponible pour la planification vocale. Veuillez configurer un fournisseur IA.';
+
+  @override
+  String get voicePlanErrorNetwork =>
+      'Erreur réseau. Veuillez vérifier votre connexion.';
+
+  @override
+  String get recorderErrorPermissionDenied =>
+      'Permission du microphone refusée. Veuillez l\'activer dans les Paramètres.';
+
+  @override
+  String get recorderErrorStartFailed =>
+      'Impossible de démarrer l\'enregistrement. Veuillez réessayer.';
+
+  @override
+  String get recorderErrorNoAudioFile =>
+      'Aucun audio n\'a été enregistré. Veuillez réessayer.';
+
+  @override
+  String get recorderErrorTranscriptionFailed =>
+      'La transcription a échoué. Veuillez réessayer.';
+
+  @override
+  String get recorderErrorConcurrentOperation =>
+      'Enregistrement déjà en cours.';
+
+  @override
+  String get recorderErrorStorageFull =>
+      'Stockage plein. Veuillez libérer de l\'espace.';
+
+  @override
+  String get recorderErrorFileCorruption =>
+      'Le fichier audio est corrompu. Veuillez réessayer.';
+
+  @override
+  String get recorderErrorUnknown => 'Une erreur inattendue s\'est produite.';
 }

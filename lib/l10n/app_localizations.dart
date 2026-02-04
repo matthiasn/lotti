@@ -6399,6 +6399,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search all logs...'**
   String get logsSearchHint;
+
+  /// No description provided for @voicePlanActionsCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} actions completed'**
+  String voicePlanActionsCompleted(int count);
+
+  /// No description provided for @voicePlanActionsWithErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'{success} actions completed, {failed} failed'**
+  String voicePlanActionsWithErrors(int success, int failed);
+
+  /// No description provided for @voicePlanError.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice planning failed. Please try again.'**
+  String get voicePlanError;
+
+  /// No description provided for @voicePlanErrorNoModels.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI models available for voice planning. Please configure an AI provider.'**
+  String get voicePlanErrorNoModels;
+
+  /// No description provided for @voicePlanErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection.'**
+  String get voicePlanErrorNetwork;
+
+  /// No description provided for @recorderErrorPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied. Please enable it in Settings.'**
+  String get recorderErrorPermissionDenied;
+
+  /// No description provided for @recorderErrorStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start recording. Please try again.'**
+  String get recorderErrorStartFailed;
+
+  /// No description provided for @recorderErrorNoAudioFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No audio was recorded. Please try again.'**
+  String get recorderErrorNoAudioFile;
+
+  /// No description provided for @recorderErrorTranscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription failed. Please try again.'**
+  String get recorderErrorTranscriptionFailed;
+
+  /// No description provided for @recorderErrorConcurrentOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording already in progress.'**
+  String get recorderErrorConcurrentOperation;
+
+  /// No description provided for @recorderErrorStorageFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage is full. Please free up space.'**
+  String get recorderErrorStorageFull;
+
+  /// No description provided for @recorderErrorFileCorruption.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio file was corrupted. Please try again.'**
+  String get recorderErrorFileCorruption;
+
+  /// No description provided for @recorderErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred.'**
+  String get recorderErrorUnknown;
 }
 
 class _AppLocalizationsDelegate

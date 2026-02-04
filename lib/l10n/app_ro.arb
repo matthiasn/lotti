@@ -527,5 +527,31 @@
       }
     }
   },
-  "logsSearchHint": "Caută în toate jurnalele..."
+  "logsSearchHint": "Caută în toate jurnalele...",
+
+  "voicePlanActionsCompleted": "{count} acțiuni finalizate",
+  "@voicePlanActionsCompleted": {
+    "placeholders": {
+      "count": {"type": "int", "example": "3"}
+    }
+  },
+  "voicePlanActionsWithErrors": "{success} acțiuni finalizate, {failed} eșuate",
+  "@voicePlanActionsWithErrors": {
+    "placeholders": {
+      "success": {"type": "int", "example": "2"},
+      "failed": {"type": "int", "example": "1"}
+    }
+  },
+  "voicePlanError": "Planificarea vocală a eșuat. Te rugăm să încerci din nou.",
+  "voicePlanErrorNoModels": "Nu există modele AI disponibile pentru planificarea vocală. Te rugăm să configurezi un furnizor AI.",
+  "voicePlanErrorNetwork": "Eroare de rețea. Te rugăm să verifici conexiunea.",
+
+  "recorderErrorPermissionDenied": "Permisiunea microfonului refuzată. Te rugăm să o activezi din Setări.",
+  "recorderErrorStartFailed": "Nu s-a putut începe înregistrarea. Te rugăm să încerci din nou.",
+  "recorderErrorNoAudioFile": "Nu s-a înregistrat audio. Te rugăm să încerci din nou.",
+  "recorderErrorTranscriptionFailed": "Transcrierea a eșuat. Te rugăm să încerci din nou.",
+  "recorderErrorConcurrentOperation": "Înregistrare deja în curs.",
+  "recorderErrorStorageFull": "Spațiul de stocare este plin. Te rugăm să eliberezi spațiu.",
+  "recorderErrorFileCorruption": "Fișierul audio a fost corupt. Te rugăm să încerci din nou.",
+  "recorderErrorUnknown": "A apărut o eroare neașteptată."
 }

@@ -23,6 +23,17 @@ enum ChatRecorderErrorType {
   fileCorruption,
 }
 
+/// Identifies the purpose/consumer of a recording session.
+/// This allows multiple features to use the shared recorder
+/// while only consuming transcripts intended for them.
+enum ChatRecorderPurpose {
+  /// Recording for AI chat input
+  aiChat,
+
+  /// Recording for voice-based day planning
+  dayPlanVoice,
+}
+
 class ChatRecorderState {
   // Constructors first per lint
   const ChatRecorderState({
@@ -32,6 +43,7 @@ class ChatRecorderState {
     this.partialTranscript,
     this.error,
     this.errorType,
+    this.purpose,
   });
 
   const ChatRecorderState.initial()
@@ -40,7 +52,8 @@ class ChatRecorderState {
         transcript = null,
         partialTranscript = null,
         error = null,
-        errorType = null;
+        errorType = null,
+        purpose = null;
 
   // Fields
   final ChatRecorderStatus status;
@@ -50,6 +63,10 @@ class ChatRecorderState {
   final String? error;
   final ChatRecorderErrorType? errorType;
 
+  /// Identifies who initiated this recording session.
+  /// Consumers should check this before consuming the transcript.
+  final ChatRecorderPurpose? purpose;
+
   // Methods
   ChatRecorderState copyWith({
     ChatRecorderStatus? status,
@@ -58,6 +75,7 @@ class ChatRecorderState {
     String? partialTranscript,
     String? error,
     ChatRecorderErrorType? errorType,
+    ChatRecorderPurpose? purpose,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
@@ -66,6 +84,7 @@ class ChatRecorderState {
       partialTranscript: partialTranscript,
       error: error,
       errorType: errorType,
+      purpose: purpose,
     );
   }
 }
@@ -139,12 +158,15 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   String? _filePath;
   bool _isStarting = false;
   int _operationId = 0; // Incremented for each new operation to prevent races
+  ChatRecorderPurpose? _currentPurpose;
 
   static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
 
-  Future<void> start() async {
+  Future<void> start({
+    ChatRecorderPurpose purpose = ChatRecorderPurpose.aiChat,
+  }) async {
     if (!ref.mounted) return;
     if (_isStarting) {
       state = state.copyWith(
@@ -154,6 +176,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       return;
     }
     if (state.status != ChatRecorderStatus.idle) return;
+
+    _currentPurpose = purpose;
 
     _isStarting = true;
     final recorder = _recorderFactory();
@@ -209,6 +233,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       state = state.copyWith(
         status: ChatRecorderStatus.recording,
         amplitudeHistory: [], // Clear old history
+        purpose: _currentPurpose,
       );
 
       // Amplitude stream (throttled)
@@ -298,9 +323,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       // Only update state if this operation is still current and ref is valid
       if (currentOpId == _operationId && ref.mounted) {
         // partialTranscript cleared automatically (defaults to null)
+        // purpose is preserved so consumers can check it
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           transcript: transcript,
+          purpose: _currentPurpose,
         );
       }
     } catch (e) {
@@ -311,10 +338,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
           status: ChatRecorderStatus.idle,
           error: 'Transcription failed: $e',
           errorType: ChatRecorderErrorType.transcriptionFailed,
+          purpose: _currentPurpose,
         );
       }
     } finally {
       await _cleanupInternal();
+      _currentPurpose = null;
     }
   }
 

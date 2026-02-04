@@ -3471,4 +3471,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Alle Logs durchsuchen...';
+
+  @override
+  String voicePlanActionsCompleted(int count) {
+    return '$count Aktionen abgeschlossen';
+  }
+
+  @override
+  String voicePlanActionsWithErrors(int success, int failed) {
+    return '$success Aktionen abgeschlossen, $failed fehlgeschlagen';
+  }
+
+  @override
+  String get voicePlanError =>
+      'Sprachplanung fehlgeschlagen. Bitte erneut versuchen.';
+
+  @override
+  String get voicePlanErrorNoModels =>
+      'Keine KI-Modelle für Sprachplanung verfügbar. Bitte einen KI-Anbieter konfigurieren.';
+
+  @override
+  String get voicePlanErrorNetwork =>
+      'Netzwerkfehler. Bitte Verbindung überprüfen.';
+
+  @override
+  String get recorderErrorPermissionDenied =>
+      'Mikrofonberechtigung verweigert. Bitte in den Einstellungen aktivieren.';
+
+  @override
+  String get recorderErrorStartFailed =>
+      'Aufnahme konnte nicht gestartet werden. Bitte erneut versuchen.';
+
+  @override
+  String get recorderErrorNoAudioFile =>
+      'Keine Audioaufnahme vorhanden. Bitte erneut versuchen.';
+
+  @override
+  String get recorderErrorTranscriptionFailed =>
+      'Transkription fehlgeschlagen. Bitte erneut versuchen.';
+
+  @override
+  String get recorderErrorConcurrentOperation => 'Aufnahme läuft bereits.';
+
+  @override
+  String get recorderErrorStorageFull =>
+      'Speicher voll. Bitte Speicherplatz freigeben.';
+
+  @override
+  String get recorderErrorFileCorruption =>
+      'Audiodatei ist beschädigt. Bitte erneut versuchen.';
+
+  @override
+  String get recorderErrorUnknown => 'Ein unerwarteter Fehler ist aufgetreten.';
 }

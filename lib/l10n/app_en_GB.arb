@@ -455,5 +455,31 @@
   "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
   "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
   "syncInviteErrorUnknown": "Failed to send invite. Please try again later.",
-  "logsSearchHint": "Search all logs…"
+  "logsSearchHint": "Search all logs…",
+
+  "voicePlanActionsCompleted": "{count} actions completed",
+  "@voicePlanActionsCompleted": {
+    "placeholders": {
+      "count": {"type": "int", "example": "3"}
+    }
+  },
+  "voicePlanActionsWithErrors": "{success} actions completed, {failed} failed",
+  "@voicePlanActionsWithErrors": {
+    "placeholders": {
+      "success": {"type": "int", "example": "2"},
+      "failed": {"type": "int", "example": "1"}
+    }
+  },
+  "voicePlanError": "Voice planning failed. Please try again.",
+  "voicePlanErrorNoModels": "No AI models available for voice planning. Please configure an AI provider.",
+  "voicePlanErrorNetwork": "Network error. Please check your connection.",
+
+  "recorderErrorPermissionDenied": "Microphone permission denied. Please enable it in Settings.",
+  "recorderErrorStartFailed": "Failed to start recording. Please try again.",
+  "recorderErrorNoAudioFile": "No audio was recorded. Please try again.",
+  "recorderErrorTranscriptionFailed": "Transcription failed. Please try again.",
+  "recorderErrorConcurrentOperation": "Recording already in progress.",
+  "recorderErrorStorageFull": "Storage is full. Please free up space.",
+  "recorderErrorFileCorruption": "Audio file was corrupted. Please try again.",
+  "recorderErrorUnknown": "An unexpected error occurred."
 }

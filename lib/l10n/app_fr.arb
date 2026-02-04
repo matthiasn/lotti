@@ -528,5 +528,31 @@
       }
     }
   },
-  "logsSearchHint": "Rechercher tous les logs..."
+  "logsSearchHint": "Rechercher tous les logs...",
+
+  "voicePlanActionsCompleted": "{count} actions terminées",
+  "@voicePlanActionsCompleted": {
+    "placeholders": {
+      "count": {"type": "int", "example": "3"}
+    }
+  },
+  "voicePlanActionsWithErrors": "{success} actions terminées, {failed} échouées",
+  "@voicePlanActionsWithErrors": {
+    "placeholders": {
+      "success": {"type": "int", "example": "2"},
+      "failed": {"type": "int", "example": "1"}
+    }
+  },
+  "voicePlanError": "La planification vocale a échoué. Veuillez réessayer.",
+  "voicePlanErrorNoModels": "Aucun modèle IA disponible pour la planification vocale. Veuillez configurer un fournisseur IA.",
+  "voicePlanErrorNetwork": "Erreur réseau. Veuillez vérifier votre connexion.",
+
+  "recorderErrorPermissionDenied": "Permission du microphone refusée. Veuillez l'activer dans les Paramètres.",
+  "recorderErrorStartFailed": "Impossible de démarrer l'enregistrement. Veuillez réessayer.",
+  "recorderErrorNoAudioFile": "Aucun audio n'a été enregistré. Veuillez réessayer.",
+  "recorderErrorTranscriptionFailed": "La transcription a échoué. Veuillez réessayer.",
+  "recorderErrorConcurrentOperation": "Enregistrement déjà en cours.",
+  "recorderErrorStorageFull": "Stockage plein. Veuillez libérer de l'espace.",
+  "recorderErrorFileCorruption": "Le fichier audio est corrompu. Veuillez réessayer.",
+  "recorderErrorUnknown": "Une erreur inattendue s'est produite."
 }

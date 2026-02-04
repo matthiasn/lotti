@@ -307,7 +307,9 @@ class _FakeChatRecorderController extends ChatRecorderController {
   _FakeChatRecorderController();
 
   @override
-  Future<void> start() async {
+  Future<void> start({
+    ChatRecorderPurpose purpose = ChatRecorderPurpose.aiChat,
+  }) async {
     state = state.copyWith(status: ChatRecorderStatus.recording);
   }
 
@@ -380,7 +382,9 @@ class _ProcessingChatRecorderController extends ChatRecorderController {
   _ProcessingChatRecorderController();
 
   @override
-  Future<void> start() async {
+  Future<void> start({
+    ChatRecorderPurpose purpose = ChatRecorderPurpose.aiChat,
+  }) async {
     state = state.copyWith(status: ChatRecorderStatus.recording);
   }
 
