@@ -149,17 +149,17 @@ void main() {
       expect(state.compressedRegions[1].endHour, 24);
     });
 
-    test('entry at 1AM creates morning cluster with buffer', () {
+    test('entry at 1AM creates morning cluster', () {
       final slots = [createActualSlot(hour: 1, durationMinutes: 30)];
       final state = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
       );
 
-      // Should have cluster 0-3 (1AM with ±1 hour buffer)
+      // Should have cluster 0-2 (1AM entry, small gap to 0 extends to start)
       expect(state.visibleClusters.first.startHour, 0);
-      // End hour: 1 + ceil(30/60) = 2, plus buffer = 3
-      expect(state.visibleClusters.first.endHour, 3);
+      // End hour: 1 + ceil(30/60) = 2
+      expect(state.visibleClusters.first.endHour, 2);
     });
 
     test('entries at 1AM and 2PM create two clusters with compressed gap', () {
@@ -174,18 +174,26 @@ void main() {
 
       expect(state.visibleClusters, hasLength(2));
 
-      // First cluster: 0-3 (1AM entry with buffer)
+      // First cluster: 0-2 (1AM entry, small gap to 0 extends to start)
       expect(state.visibleClusters[0].startHour, 0);
-      expect(state.visibleClusters[0].endHour, 3);
+      expect(state.visibleClusters[0].endHour, 2);
 
-      // Second cluster: 13-16 (14:00 entry with buffer)
-      expect(state.visibleClusters[1].startHour, 13);
-      expect(state.visibleClusters[1].endHour, 16);
+      // Second cluster: 14-15 (14:00-15:00 entry)
+      expect(state.visibleClusters[1].startHour, 14);
+      expect(state.visibleClusters[1].endHour, 15);
 
-      // Compressed region between: 3-13 (10 hours)
+      // Compressed region between: 2-14 (12 hours)
       expect(
         state.compressedRegions.any(
-          (r) => r.startHour == 3 && r.endHour == 13,
+          (r) => r.startHour == 2 && r.endHour == 14,
+        ),
+        isTrue,
+      );
+
+      // Compressed region after: 15-24 (9 hours)
+      expect(
+        state.compressedRegions.any(
+          (r) => r.startHour == 15 && r.endHour == 24,
         ),
         isTrue,
       );
@@ -194,7 +202,8 @@ void main() {
     test('adjacent entries within 4 hours merge into single cluster', () {
       final slots = [
         createActualSlot(hour: 9, durationMinutes: 60),
-        createActualSlot(hour: 12, durationMinutes: 60), // 3 hour gap, < 4
+        createActualSlot(
+            hour: 12, durationMinutes: 60), // 2 hour gap (10-12), < 4
       ];
       final state = calculateFoldingState(
         plannedSlots: [],
@@ -202,8 +211,8 @@ void main() {
       );
 
       expect(state.visibleClusters, hasLength(1)); // Merged
-      expect(state.visibleClusters.first.startHour, 8); // 9 - 1 buffer
-      expect(state.visibleClusters.first.endHour, 14); // 13 + 1 buffer
+      expect(state.visibleClusters.first.startHour, 9); // No buffer
+      expect(state.visibleClusters.first.endHour, 13); // No buffer
     });
 
     test('planned slots are also considered for clustering', () {
@@ -215,8 +224,8 @@ void main() {
         actualSlots: actualSlots,
       );
 
-      // Should have 2 clusters: 9AM actual (8-11 with buffer) and 6PM planned
-      // Gap between 11 and 17 is 6 hours, > 4 threshold
+      // Should have 2 clusters: 9AM actual (9-10) and 6PM planned (18-19)
+      // Gap between 10 and 18 is 8 hours, > 4 threshold
       expect(state.visibleClusters, hasLength(2));
     });
 
@@ -230,7 +239,22 @@ void main() {
         actualSlots: slots,
       );
 
-      // With buffer: 21-24, and small gap at end extends to 24
+      // Without buffer: cluster is 22-23, small gap (1 hour) to 24 extends to end
+      expect(state.visibleClusters.last.endHour, 24);
+    });
+
+    test('late night entries with buffer extend cluster to end of day', () {
+      // Entry from 22:00 to 23:00 with buffer=1
+      final slots = [
+        createActualSlot(hour: 22, durationMinutes: 60),
+      ];
+      final state = calculateFoldingState(
+        plannedSlots: [],
+        actualSlots: slots,
+        bufferHours: 1,
+      );
+
+      // With buffer: 21-24, naturally extends to 24
       expect(state.visibleClusters.last.endHour, 24);
     });
 
@@ -244,43 +268,52 @@ void main() {
         actualSlots: slots,
       );
 
-      // With buffer: 9-13 (10-11 plus ±1 buffer)
-      expect(state.visibleClusters.first.startHour, 9);
-      expect(state.visibleClusters.first.endHour, 13);
+      // No buffer: cluster is 10-12 (hours 10 and 11, endHour 12 is exclusive)
+      expect(state.visibleClusters.first.startHour, 10);
+      expect(state.visibleClusters.first.endHour, 12);
     });
 
     test('custom gap threshold works', () {
-      // Entry at 8: with buffer becomes 7-10
-      // Entry at 18: with buffer becomes 17-20
-      // Gap between 10 and 17 is 7 hours
+      // Entry at 8: occupies hour 8 (8-9)
+      // Entry at 18: occupies hour 18 (18-19)
+      // Gap between 9 and 18 is 9 hours
       final slots = [
         createActualSlot(hour: 8, durationMinutes: 60),
         createActualSlot(hour: 18, durationMinutes: 60),
       ];
 
-      // With default threshold of 4, gap of 7 hours creates 2 clusters
+      // With default threshold of 4, gap of 9 hours creates 2 clusters
       final state4 = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
       );
       expect(state4.visibleClusters, hasLength(2));
 
-      // With threshold of 8, gap of 7 hours merges into 1 cluster
-      final state8 = calculateFoldingState(
+      // With threshold of 10, gap of 9 hours merges into 1 cluster
+      final state10 = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
-        gapThreshold: 8,
+        gapThreshold: 10,
       );
-      expect(state8.visibleClusters, hasLength(1));
+      expect(state10.visibleClusters, hasLength(1));
     });
 
     test('custom buffer hours work', () {
       final slots = [createActualSlot(hour: 12, durationMinutes: 60)];
 
-      // With default buffer of 1
+      // With default buffer of 0
+      final state0 = calculateFoldingState(
+        plannedSlots: [],
+        actualSlots: slots,
+      );
+      expect(state0.visibleClusters.first.startHour, 12); // No buffer
+      expect(state0.visibleClusters.first.endHour, 13); // No buffer
+
+      // With buffer of 1
       final state1 = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
+        bufferHours: 1,
       );
       expect(state1.visibleClusters.first.startHour, 11); // 12 - 1
       expect(state1.visibleClusters.first.endHour, 14); // 13 + 1
@@ -296,8 +329,8 @@ void main() {
     });
 
     test('small gaps at start of day extend cluster to start', () {
-      // Entry at 2AM with buffer creates cluster 1-4
-      // Gap from 0-1 is only 1 hour, less than threshold
+      // Entry at 2AM creates cluster 2-3
+      // Gap from 0-2 is only 2 hours, less than threshold
       // Should extend cluster to include 0
       final slots = [createActualSlot(hour: 2, durationMinutes: 60)];
       final state = calculateFoldingState(
@@ -305,8 +338,8 @@ void main() {
         actualSlots: slots,
       );
 
-      // First cluster should start at 0 or 1 (small gap extended)
-      expect(state.visibleClusters.first.startHour, lessThanOrEqualTo(1));
+      // First cluster should start at 0 (small gap extended)
+      expect(state.visibleClusters.first.startHour, 0);
     });
 
     test('small gaps at end of day extend cluster to end', () {
@@ -628,9 +661,9 @@ void main() {
         actualSlots: slots,
       );
 
-      // Even 5-minute entry should create cluster with buffer
+      // Even 5-minute entry should create valid cluster
       expect(state.visibleClusters.isNotEmpty, isTrue);
-      expect(state.visibleClusters.first.startHour, 11); // 12 - 1 buffer
+      expect(state.visibleClusters.first.startHour, 12); // No buffer
     });
 
     test('entry with 59 minutes does not extend to next hour', () {
@@ -639,22 +672,20 @@ void main() {
       final state = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
-        bufferHours: 0, // No buffer to test exact hour boundaries
       );
 
-      // With no buffer, cluster should be 10-11 (hour 10 only)
+      // With no buffer (default), cluster should be 10-11 (hour 10 only)
       expect(state.visibleClusters.first.startHour, lessThanOrEqualTo(10));
     });
 
     test('entry crossing exactly 1 hour boundary', () {
       // Entry 10:30-11:30 crosses hour boundary
       final slots = [
-        createActualSlot(hour: 10, durationMinutes: 60, minute: 30)
+        createActualSlot(hour: 10, durationMinutes: 60, minute: 30),
       ];
       final state = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
-        bufferHours: 0,
       );
 
       // Should occupy hours 10 and 11 (11:30 rounds up)
@@ -670,12 +701,11 @@ void main() {
       final state = calculateFoldingState(
         plannedSlots: [],
         actualSlots: slots,
-        bufferHours: 0, // No buffer to test exact gap
       );
 
       // Gap of exactly 4 hours should trigger compression
       // First entry: hour 4-5, Second entry: hour 8-9, gap: 5-8 = 3 hours
-      // But with buffer=0 and exact boundaries, we need to check actual behavior
+      // With default buffer=0, we verify actual behavior
       expect(state.visibleClusters.isNotEmpty, isTrue);
     });
 
@@ -758,10 +788,10 @@ void main() {
       );
 
       // Entry crossing midnight should clamp to 24 for this day
-      // With buffer, cluster should extend to 24 (end of day)
+      // Without buffer, cluster is 23-24 (ends at midnight)
       expect(state.visibleClusters.last.endHour, 24);
-      // Start should be 22 (23 - 1 buffer)
-      expect(state.visibleClusters.last.startHour, 22);
+      // Start should be 23 (no buffer)
+      expect(state.visibleClusters.last.startHour, 23);
     });
 
     test('multiple entries including overnight do not break clustering', () {
@@ -880,7 +910,7 @@ void main() {
   group('Named constants', () {
     test('default constants have expected values', () {
       expect(kDefaultGapThreshold, equals(4));
-      expect(kDefaultBufferHours, equals(1));
+      expect(kDefaultBufferHours, equals(0));
       expect(kDefaultDayStart, equals(6));
       expect(kDefaultDayEnd, equals(22));
       expect(kNormalHourHeight, equals(40.0));

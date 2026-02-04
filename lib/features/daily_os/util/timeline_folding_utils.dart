@@ -5,7 +5,7 @@ import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 const int kDefaultGapThreshold = 4;
 
 /// Hours of padding around each entry to keep visible.
-const int kDefaultBufferHours = 1;
+const int kDefaultBufferHours = 0;
 
 /// Default start hour when no entries exist (6 AM).
 const int kDefaultDayStart = 6;
