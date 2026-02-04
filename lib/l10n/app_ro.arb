@@ -88,6 +88,8 @@
   "dailyOsDueTodayShort": "Azi",
   "dailyOsOverdue": "Întârziat",
   "dailyOsOverdueShort": "Târziu",
+  "dailyOsExpandToMove": "Extinde cronologia pentru a trage acest bloc",
+  "dailyOsExpandToMoveMore": "Extinde cronologia pentru a muta mai departe",
   "dailyOsFold": "Restrânge",
   "dailyOsQuickCreateTask": "Creează sarcină pentru acest buget",
   "dashboardActiveLabel": "Activ:",

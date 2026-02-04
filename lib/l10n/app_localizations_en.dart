@@ -1107,6 +1107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsFold => 'Fold';
 
   @override
+  String get dailyOsExpandToMove => 'Expand timeline to drag this block';
+
+  @override
+  String get dailyOsExpandToMoveMore => 'Expand timeline to move further';
+
+  @override
   String get dashboardActiveLabel => 'Active:';
 
   @override

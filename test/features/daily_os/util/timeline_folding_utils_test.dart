@@ -929,4 +929,584 @@ void main() {
       expect(state.visibleClusters.first.endHour, equals(kDefaultDayEnd));
     });
   });
+
+  group('blockOverlapsCompressedRegion', () {
+    PlannedBlock createBlock({
+      required int startHour,
+      required int startMinute,
+      required int endHour,
+      required int endMinute,
+    }) {
+      return PlannedBlock(
+        id: 'test-block',
+        categoryId: 'test-category',
+        startTime: testDate.add(
+          Duration(hours: startHour, minutes: startMinute),
+        ),
+        endTime: testDate.add(
+          Duration(hours: endHour, minutes: endMinute),
+        ),
+      );
+    }
+
+    test('block entirely in visible cluster returns false', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      final block = createBlock(
+        startHour: 10,
+        startMinute: 0,
+        endHour: 12,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isFalse,
+      );
+    });
+
+    test('block entirely in compressed region returns true', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      final block = createBlock(
+        startHour: 2,
+        startMinute: 0,
+        endHour: 4,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('block starting in visible and ending in compressed returns true', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      final block = createBlock(
+        startHour: 16,
+        startMinute: 0,
+        endHour: 18,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('block starting in compressed and ending in visible returns true', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      final block = createBlock(
+        startHour: 8,
+        startMinute: 0,
+        endHour: 10,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('minute-accurate: block ending exactly at boundary returns false', () {
+      // Block from 8:00-9:00, compressed region 0:00-9:00
+      // Block ends exactly at compressed boundary, should NOT overlap
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+        ],
+      );
+
+      // But wait - this block is entirely within compressed region!
+      // Let's test boundary case differently:
+      // Block from 9:00-10:00 with compressed region 0:00-9:00
+      final block = createBlock(
+        startHour: 9,
+        startMinute: 0,
+        endHour: 10,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isFalse,
+      );
+    });
+
+    test('minute-accurate: block with 1 minute overlap returns true', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+        ],
+      );
+
+      // Block 8:59-10:00 overlaps compressed region by 1 minute
+      final block = createBlock(
+        startHour: 8,
+        startMinute: 59,
+        endHour: 10,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('minute-accurate: block ending 1 minute into compressed returns true',
+        () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      // Block 16:00-17:01 overlaps compressed region by 1 minute
+      final block = createBlock(
+        startHour: 16,
+        startMinute: 0,
+        endHour: 17,
+        endMinute: 1,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('expanded region does not count as compressed', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      // Block entirely in early morning compressed region
+      final block = createBlock(
+        startHour: 2,
+        startMinute: 0,
+        endHour: 4,
+        endMinute: 0,
+      );
+
+      // But region is expanded
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {0}, // startHour of early morning region
+        ),
+        isFalse,
+      );
+    });
+
+    test('block overlapping two compressed regions returns true', () {
+      // Scenario: visible 6-10, compressed 0-6, visible 10-14, compressed 14-24
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [
+          VisibleCluster(startHour: 6, endHour: 10),
+          VisibleCluster(startHour: 14, endHour: 18),
+        ],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 10, endHour: 14),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      // Block spanning compressed middle region
+      final block = createBlock(
+        startHour: 11,
+        startMinute: 0,
+        endHour: 13,
+        endMinute: 0,
+      );
+
+      expect(
+        blockOverlapsCompressedRegion(
+          block: block,
+          foldingState: foldingState,
+          expandedRegions: {},
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('findContainingSection', () {
+    test('returns visible cluster containing the time', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [
+          VisibleCluster(startHour: 9, endHour: 12),
+          VisibleCluster(startHour: 14, endHour: 18),
+        ],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 12, endHour: 14),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      final section = findContainingSection(
+        hour: 10,
+        minute: 30,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      expect(section, isNotNull);
+      expect(section!.startHour, 9);
+      expect(section.endHour, 12);
+    });
+
+    test('returns expanded region containing the time', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      // Time at 5:30 in compressed region that is expanded
+      final section = findContainingSection(
+        hour: 5,
+        minute: 30,
+        foldingState: foldingState,
+        expandedRegions: {0}, // Early morning region is expanded
+      );
+
+      expect(section, isNotNull);
+      expect(section!.startHour, 0);
+      expect(section.endHour, 9);
+    });
+
+    test('returns null for time in non-expanded compressed region', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 9),
+          CompressedRegion(startHour: 17, endHour: 24),
+        ],
+      );
+
+      final section = findContainingSection(
+        hour: 5,
+        minute: 30,
+        foldingState: foldingState,
+        expandedRegions: {}, // No regions expanded
+      );
+
+      expect(section, isNull);
+    });
+
+    test('boundary: time at start of cluster returns that cluster', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [],
+      );
+
+      final section = findContainingSection(
+        hour: 9,
+        minute: 0,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      expect(section, isNotNull);
+      expect(section!.startHour, 9);
+      expect(section.endHour, 17);
+    });
+
+    test('boundary: time at end of cluster (exclusive) returns null', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [CompressedRegion(startHour: 17, endHour: 24)],
+      );
+
+      // 17:00 is at the boundary - endHour is exclusive
+      final section = findContainingSection(
+        hour: 17,
+        minute: 0,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      // 17:00 falls into compressed region (not expanded), so null
+      expect(section, isNull);
+    });
+
+    test('minute-accurate: 16:59 vs 17:00 boundary', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 9, endHour: 17)],
+        compressedRegions: [CompressedRegion(startHour: 17, endHour: 24)],
+      );
+
+      // 16:59 should be in visible cluster
+      final section1659 = findContainingSection(
+        hour: 16,
+        minute: 59,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+      expect(section1659, isNotNull);
+      expect(section1659!.startHour, 9);
+
+      // 17:00 should be in compressed region (null when not expanded)
+      final section1700 = findContainingSection(
+        hour: 17,
+        minute: 0,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+      expect(section1700, isNull);
+    });
+
+    test('returns second cluster for time in second cluster', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [
+          VisibleCluster(startHour: 6, endHour: 10),
+          VisibleCluster(startHour: 14, endHour: 18),
+        ],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 10, endHour: 14),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      final section = findContainingSection(
+        hour: 15,
+        minute: 30,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      expect(section, isNotNull);
+      expect(section!.startHour, 14);
+      expect(section.endHour, 18);
+    });
+  });
+
+  group('calculateContiguousDragBounds', () {
+    test('returns section bounds when no adjacent expanded regions', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 8, endHour: 12)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 8),
+          CompressedRegion(startHour: 12, endHour: 24),
+        ],
+      );
+
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 8,
+        sectionEndHour: 12,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      expect(bounds.startHour, 8);
+      expect(bounds.endHour, 12);
+    });
+
+    test('expands bounds to include adjacent expanded region after', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 8, endHour: 12)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 8),
+          CompressedRegion(startHour: 12, endHour: 18),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      // Expand the 12-18 region
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 8,
+        sectionEndHour: 12,
+        foldingState: foldingState,
+        expandedRegions: {12},
+      );
+
+      expect(bounds.startHour, 8);
+      expect(bounds.endHour, 18); // Extended to include expanded region
+    });
+
+    test('expands bounds to include adjacent expanded region before', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 12, endHour: 18)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 6, endHour: 12),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      // Expand the 6-12 region
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 12,
+        sectionEndHour: 18,
+        foldingState: foldingState,
+        expandedRegions: {6},
+      );
+
+      expect(bounds.startHour, 6); // Extended to include expanded region
+      expect(bounds.endHour, 18);
+    });
+
+    test('expands bounds in both directions with multiple expanded regions',
+        () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 10, endHour: 14)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 6, endHour: 10),
+          CompressedRegion(startHour: 14, endHour: 20),
+          CompressedRegion(startHour: 20, endHour: 24),
+        ],
+      );
+
+      // Expand regions on both sides
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 10,
+        sectionEndHour: 14,
+        foldingState: foldingState,
+        expandedRegions: {6, 14},
+      );
+
+      expect(bounds.startHour, 6); // Extended backward
+      expect(bounds.endHour, 20); // Extended forward
+    });
+
+    test('stops at collapsed region even with expanded region beyond', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 10, endHour: 14)],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 6, endHour: 10),
+          CompressedRegion(startHour: 14, endHour: 18),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      // Only expand the 0-6 region (not adjacent)
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 10,
+        sectionEndHour: 14,
+        foldingState: foldingState,
+        expandedRegions: {0}, // Not adjacent to 10-14
+      );
+
+      // Should not expand because 6-10 is collapsed (blocks 0-6)
+      expect(bounds.startHour, 10);
+      expect(bounds.endHour, 14);
+    });
+
+    test('handles multiple visible clusters with expanded region between', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [
+          VisibleCluster(startHour: 6, endHour: 10),
+          VisibleCluster(startHour: 14, endHour: 18),
+        ],
+        compressedRegions: [
+          CompressedRegion(startHour: 0, endHour: 6),
+          CompressedRegion(startHour: 10, endHour: 14),
+          CompressedRegion(startHour: 18, endHour: 24),
+        ],
+      );
+
+      // Expand the middle region
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 6,
+        sectionEndHour: 10,
+        foldingState: foldingState,
+        expandedRegions: {10},
+      );
+
+      // Should extend through expanded region to next visible cluster
+      expect(bounds.startHour, 6);
+      expect(bounds.endHour, 18);
+    });
+
+    test('returns original bounds when section not found', () {
+      const foldingState = TimelineFoldingState(
+        visibleClusters: [VisibleCluster(startHour: 8, endHour: 12)],
+        compressedRegions: [],
+      );
+
+      // Section that doesn't exist in foldingState
+      final bounds = calculateContiguousDragBounds(
+        sectionStartHour: 20,
+        sectionEndHour: 22,
+        foldingState: foldingState,
+        expandedRegions: {},
+      );
+
+      expect(bounds.startHour, 20);
+      expect(bounds.endHour, 22);
+    });
+  });
 }

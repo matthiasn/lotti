@@ -1113,6 +1113,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsFold => 'Restrânge';
 
   @override
+  String get dailyOsExpandToMove =>
+      'Extinde cronologia pentru a trage acest bloc';
+
+  @override
+  String get dailyOsExpandToMoveMore =>
+      'Extinde cronologia pentru a muta mai departe';
+
+  @override
   String get dashboardActiveLabel => 'Activ:';
 
   @override

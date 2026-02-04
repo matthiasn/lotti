@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.842" date="2026-02-04">
+      <description>
+        <p>Daily OS Timeline Drag-and-Drop: Planned time blocks can now be moved and resized with intuitive touch gestures. Long-press a block to enter drag mode - drag the body to reschedule the entire block, or drag the top/bottom edges to adjust start/end times. Blocks stay within their visible timeline section and snap to a 5-minute grid. Small blocks use move-only mode to avoid cramped resize handles. Visual feedback includes elevated styling, real-time time labels, and duration indicators. Blocks overlapping compressed regions must be expanded first before dragging.</p>
+      </description>
+    </release>
     <release version="0.9.839" date="2026-02-03">
       <description>
         <p>Audio Transcription Speaker Fix: When transcribing recordings with multiple speakers, the AI no longer hallucinates speaker names. Previously, the model might guess identities like "John:" or "Sarah:" based on voice characteristics or training data. Now speakers are correctly labeled as "Speaker 1:", "Speaker 2:", etc. The speech dictionary is used strictly for spelling corrections of domain-specific terms, not for identifying who is speaking.</p>

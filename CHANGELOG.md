@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.842] - 2026-02-04
+### Added
+- Daily OS Timeline: Drag-and-drop support for planned time blocks
+  - Long-press a block to initiate drag mode with haptic feedback
+  - Move mode: drag the block body to reschedule the entire block
+  - Resize mode: drag top/bottom edges to adjust start/end times
+  - Section-bounded: blocks stay within their visible timeline section
+  - Visual feedback: elevated styling, time labels, and duration indicator during drag
+  - Small blocks (under 48px) use move-only mode to avoid cramped resize handles
+  - 5-minute snap grid for precise scheduling
+  - Disabled for blocks overlapping compressed timeline regions (expand first)
+
 ## [0.9.839] - 2026-02-03
 ### Fixed
 - Audio Transcription: Prevent speaker name hallucinations in multi-speaker recordings

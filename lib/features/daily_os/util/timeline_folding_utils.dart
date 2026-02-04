@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
 
 /// Minimum gap (in hours) between entry clusters to trigger compression.
 const int kDefaultGapThreshold = 4;
@@ -353,4 +355,161 @@ bool isHourInCompressedRegion({
 /// Checks if two DateTimes are on the same calendar day.
 bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+/// Checks if a planned block overlaps with any compressed (non-expanded) region.
+///
+/// Uses minute-accurate detection to handle boundary cases correctly
+/// (e.g., a block from 9:45-10:15 where a compressed region starts at 10:00).
+///
+/// Parameters:
+/// - [block]: The planned block to check.
+/// - [foldingState]: The calculated folding state.
+/// - [expandedRegions]: Set of startHour values for regions that are expanded.
+///
+/// Returns true if the block overlaps any compressed region, false otherwise.
+bool blockOverlapsCompressedRegion({
+  required PlannedBlock block,
+  required TimelineFoldingState foldingState,
+  required Set<int> expandedRegions,
+}) {
+  final blockStartMinutes = minutesFromDate(block.startTime, block.startTime);
+  final blockEndMinutes = minutesFromDate(block.startTime, block.endTime);
+
+  for (final region in foldingState.compressedRegions) {
+    // Skip if this region is expanded
+    if (expandedRegions.contains(region.startHour)) continue;
+
+    final regionStartMinutes = region.startHour * 60;
+    final regionEndMinutes = region.endHour * 60;
+
+    // Block overlaps if: blockStart < regionEnd AND blockEnd > regionStart
+    if (blockStartMinutes < regionEndMinutes &&
+        blockEndMinutes > regionStartMinutes) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Finds the visible section (cluster or expanded region) that contains a time.
+///
+/// Parameters:
+/// - [hour]: The hour to find.
+/// - [minute]: The minute within the hour.
+/// - [foldingState]: The calculated folding state.
+/// - [expandedRegions]: Set of startHour values for regions that are expanded.
+///
+/// Returns a record with the section's start and end hours, or null if in a
+/// compressed (non-expanded) region.
+({int startHour, int endHour})? findContainingSection({
+  required int hour,
+  required int minute,
+  required TimelineFoldingState foldingState,
+  required Set<int> expandedRegions,
+}) {
+  final timeMinutes = hour * 60 + minute;
+
+  // Check visible clusters first
+  for (final cluster in foldingState.visibleClusters) {
+    final clusterStartMinutes = cluster.startHour * 60;
+    final clusterEndMinutes = cluster.endHour * 60;
+
+    if (timeMinutes >= clusterStartMinutes && timeMinutes < clusterEndMinutes) {
+      return (startHour: cluster.startHour, endHour: cluster.endHour);
+    }
+  }
+
+  // Check expanded compressed regions
+  for (final region in foldingState.compressedRegions) {
+    if (!expandedRegions.contains(region.startHour)) continue;
+
+    final regionStartMinutes = region.startHour * 60;
+    final regionEndMinutes = region.endHour * 60;
+
+    if (timeMinutes >= regionStartMinutes && timeMinutes < regionEndMinutes) {
+      return (startHour: region.startHour, endHour: region.endHour);
+    }
+  }
+
+  // Time is in a compressed (non-expanded) region
+  return null;
+}
+
+/// Calculates the contiguous drag bounds for a block starting from a section.
+///
+/// This function finds the range of hours that a block can be dragged into,
+/// which includes the starting section plus any adjacent expanded regions.
+/// The range stops at any collapsed (non-expanded) compressed region.
+///
+/// Parameters:
+/// - [sectionStartHour]: The start hour of the block's current section.
+/// - [sectionEndHour]: The end hour of the block's current section.
+/// - [foldingState]: The calculated folding state.
+/// - [expandedRegions]: Set of startHour values for regions that are expanded.
+///
+/// Returns a record with the contiguous drag range (startHour, endHour).
+({int startHour, int endHour}) calculateContiguousDragBounds({
+  required int sectionStartHour,
+  required int sectionEndHour,
+  required TimelineFoldingState foldingState,
+  required Set<int> expandedRegions,
+}) {
+  // Build a sorted list of all regions (visible clusters and compressed regions)
+  final allRegions = <({int startHour, int endHour, bool isVisible})>[];
+
+  for (final cluster in foldingState.visibleClusters) {
+    allRegions.add((
+      startHour: cluster.startHour,
+      endHour: cluster.endHour,
+      isVisible: true,
+    ));
+  }
+
+  for (final region in foldingState.compressedRegions) {
+    final isExpanded = expandedRegions.contains(region.startHour);
+    allRegions.add((
+      startHour: region.startHour,
+      endHour: region.endHour,
+      isVisible: isExpanded,
+    ));
+  }
+
+  allRegions.sort((a, b) => a.startHour.compareTo(b.startHour));
+
+  // Find the index of the section containing the block
+  var currentIndex = -1;
+  for (var i = 0; i < allRegions.length; i++) {
+    final region = allRegions[i];
+    if (region.startHour == sectionStartHour &&
+        region.endHour == sectionEndHour) {
+      currentIndex = i;
+      break;
+    }
+  }
+
+  if (currentIndex == -1) {
+    // Fallback: return original bounds if section not found
+    return (startHour: sectionStartHour, endHour: sectionEndHour);
+  }
+
+  // Expand backward while adjacent regions are visible
+  var minHour = sectionStartHour;
+  for (var i = currentIndex - 1; i >= 0; i--) {
+    final region = allRegions[i];
+    if (!region.isVisible) break; // Stop at collapsed region
+    if (region.endHour != minHour) break; // Not adjacent
+    minHour = region.startHour;
+  }
+
+  // Expand forward while adjacent regions are visible
+  var maxHour = sectionEndHour;
+  for (var i = currentIndex + 1; i < allRegions.length; i++) {
+    final region = allRegions[i];
+    if (!region.isVisible) break; // Stop at collapsed region
+    if (region.startHour != maxHour) break; // Not adjacent
+    maxHour = region.endHour;
+  }
+
+  return (startHour: minHour, endHour: maxHour);
 }
