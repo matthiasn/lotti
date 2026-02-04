@@ -78,7 +78,11 @@ void main() {
         expect(GameyGradients.backgroundDark, isA<LinearGradient>());
       });
 
-      // backgroundLight requires BuildContext, tested via widget tests
+      test('backgroundLight gradient is defined', () {
+        final gradient = GameyGradients.backgroundLight();
+        expect(gradient, isA<LinearGradient>());
+        expect(gradient.colors, isNotEmpty);
+      });
     });
 
     group('Card gradients', () {

@@ -160,7 +160,7 @@ class GameyGradients {
   // ============================================================================
 
   /// Light mode background gradient
-  static LinearGradient backgroundLight(BuildContext context) {
+  static LinearGradient backgroundLight() {
     return LinearGradient(
       colors: [
         Colors.white,
