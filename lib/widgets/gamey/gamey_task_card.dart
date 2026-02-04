@@ -10,6 +10,7 @@ import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/gamey/gamey_theme.dart';
@@ -276,14 +277,15 @@ class GameyTaskCard extends StatelessWidget {
   }
 
   String _getStatusLabel(BuildContext context, TaskStatus status) {
+    final messages = context.messages;
     return status.map(
-      open: (_) => 'Open',
-      groomed: (_) => 'Groomed',
-      inProgress: (_) => 'In Progress',
-      blocked: (_) => 'Blocked',
-      onHold: (_) => 'On Hold',
-      done: (_) => 'Done',
-      rejected: (_) => 'Rejected',
+      open: (_) => messages.taskStatusOpen,
+      groomed: (_) => messages.taskStatusGroomed,
+      inProgress: (_) => messages.taskStatusInProgress,
+      blocked: (_) => messages.taskStatusBlocked,
+      onHold: (_) => messages.taskStatusOnHold,
+      done: (_) => messages.taskStatusDone,
+      rejected: (_) => messages.taskStatusRejected,
     );
   }
 
