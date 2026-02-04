@@ -317,11 +317,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show hour labels on the time axis for the visible cluster
-      // With entry from 9-11 and ±1 hour buffer, visible cluster is 8-12
-      expect(find.text('08:00'), findsOneWidget);
+      // Entry from 9-11 occupies hours 9 and 10 (no buffer padding)
       expect(find.text('09:00'), findsOneWidget);
       expect(find.text('10:00'), findsOneWidget);
-      expect(find.text('11:00'), findsOneWidget);
     });
 
     testWidgets('renders DailyTimeline widget', (tester) async {
@@ -709,10 +707,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show early hour labels
-      expect(find.text('05:00'), findsOneWidget);
+      // With no buffer, entry 6-7 creates a visible cluster just for that hour
+      // The hour label for the entry's hour is visible
       expect(find.text('06:00'), findsOneWidget);
-      expect(find.text('07:00'), findsOneWidget);
     });
 
     testWidgets(
@@ -1562,8 +1559,7 @@ void main() {
       // Entry without category should still render
       // The DailyTimeline should be visible and contain the entry
       expect(find.byType(DailyTimeline), findsOneWidget);
-      // Verify the timeline content rendered (has hour labels)
-      expect(find.text('09:00'), findsOneWidget);
+      // Verify the timeline content rendered (has hour label for entry's hour)
       expect(find.text('10:00'), findsOneWidget);
     });
 
@@ -1612,8 +1608,7 @@ void main() {
 
       // Both entries should render (timeline visible)
       expect(find.byType(DailyTimeline), findsOneWidget);
-      // Verify the timeline content rendered with expected time range
-      expect(find.text('09:00'), findsOneWidget);
+      // Verify the timeline content rendered (hour labels for entries' hours)
       expect(find.text('10:00'), findsOneWidget);
       expect(find.text('11:00'), findsOneWidget);
     });
@@ -1914,7 +1909,7 @@ void main() {
       when(() => mockCacheService.getCategoryById('cat-1'))
           .thenReturn(testCategory);
 
-      // Entry at 10AM - visible cluster should include hours 9-12 (with buffer)
+      // Entry at 10AM - visible cluster is 10-11 (no buffer padding)
       await tester.pumpWidget(
         createTestWidget(
           timelineData: DailyTimelineData(
@@ -1940,10 +1935,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show hour labels for the visible cluster (9-12 with buffer)
-      expect(find.text('09:00'), findsOneWidget);
+      // Should show hour label for the visible cluster (10-11, no buffer)
       expect(find.text('10:00'), findsOneWidget);
-      expect(find.text('11:00'), findsOneWidget);
     });
 
     testWidgets('tapping compressed region expands it', (tester) async {
@@ -2086,10 +2079,8 @@ void main() {
       // Initially, no fold button should be visible
       expect(find.text('Fold'), findsNothing);
 
-      // The hour labels for the visible cluster should be visible
-      expect(find.text('11:00'), findsOneWidget);
+      // The hour label for the visible cluster should be visible (12-13, no buffer)
       expect(find.text('12:00'), findsOneWidget);
-      expect(find.text('13:00'), findsOneWidget);
     });
   });
 }
