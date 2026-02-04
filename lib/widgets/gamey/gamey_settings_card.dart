@@ -39,8 +39,8 @@ class GameySettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Always use unified gamey accent for consistent look
-    const effectiveAccent = GameyColors.gameyAccent;
+    // Use provided accent color or default to unified gamey accent
+    final effectiveAccent = accentColor ?? GameyColors.gameyAccent;
 
     return GameySubtleCard(
       accentColor: effectiveAccent,
@@ -176,8 +176,8 @@ class GameyToggleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Always use unified gamey accent for consistent look
-    const effectiveAccent = GameyColors.gameyAccent;
+    // Use provided accent color or default to unified gamey accent
+    final effectiveAccent = accentColor ?? GameyColors.gameyAccent;
 
     return GameySubtleCard(
       accentColor: value ? effectiveAccent : Colors.grey,
