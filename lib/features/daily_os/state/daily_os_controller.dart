@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -247,19 +248,27 @@ Set<int> expandedFoldRegions(Ref ref) {
 /// since it always checks TODAY's schedule regardless of the selected date.
 ///
 /// Re-evaluates every 15 seconds to keep the focus state reasonably current
-/// without excessive resource usage.
+/// without excessive resource usage. Handles midnight crossings by
+/// recalculating "today" on each iteration.
 @riverpod
 Stream<String?> activeFocusCategoryId(Ref ref) async* {
-  // Always check TODAY's schedule for the active block, regardless of
-  // which date is being viewed. This ensures the active category persists
-  // across date navigation.
-  final today = DateTime.now().dayAtMidnight;
+  // Track the current date to detect midnight crossings
+  final currentDate = clock.now().dayAtMidnight;
 
-  // Establish dependency on today's unified data - when it changes, stream
-  // is recreated.
-  ref.watch(unifiedDailyOsDataControllerProvider(date: today));
+  // Establish initial dependency on today's unified data
+  ref.watch(unifiedDailyOsDataControllerProvider(date: currentDate));
 
   while (true) {
+    final now = clock.now();
+    final today = now.dayAtMidnight;
+
+    // Handle midnight crossing: if the date changed, invalidate self to
+    // re-establish the dependency on the new day's data provider
+    if (today != currentDate) {
+      ref.invalidateSelf();
+      return;
+    }
+
     // Use ref.read inside the loop for fresh data reads
     final todayData = ref.read(
       unifiedDailyOsDataControllerProvider(date: today),
@@ -267,8 +276,6 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
 
     final result = todayData.whenOrNull(
       data: (data) {
-        final now = DateTime.now();
-
         // Find the planned block that contains the current time
         for (final slot in data.timelineData.plannedSlots) {
           if (!now.isBefore(slot.startTime) && now.isBefore(slot.endTime)) {
