@@ -84,14 +84,14 @@ class ThemingPage extends ConsumerWidget {
             SelectTheme(
               setTheme: controller.setLightTheme,
               labelText: context.messages.settingThemingLight,
-              semanticsLabel: 'Select light theme',
+              semanticsLabel: context.messages.settingThemingLight,
               getSelected: (state) => state.lightThemeName ?? '',
             ),
             const SizedBox(height: 25),
             SelectTheme(
               setTheme: controller.setDarkTheme,
               labelText: context.messages.settingThemingDark,
-              semanticsLabel: 'Select dark theme',
+              semanticsLabel: context.messages.settingThemingDark,
               getSelected: (state) => state.darkThemeName ?? '',
             ),
           ],
