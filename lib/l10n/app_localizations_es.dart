@@ -3406,7 +3406,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String imageGenerationWithReferences(int count) {
-    return 'Using $count reference image(s)';
+    return 'Usando $count imagen(es) de referencia';
   }
 
   @override
@@ -3417,21 +3417,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Crear imagen desde descripción de voz';
 
   @override
-  String get referenceImageSelectionTitle => 'Select Reference Images';
+  String get referenceImageSelectionTitle => 'Seleccionar imágenes de referencia';
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Choose up to 3 images to guide the AI\'s visual style';
+      'Elige hasta 3 imágenes para guiar el estilo visual de la IA';
 
   @override
-  String get referenceImageSkip => 'Skip';
+  String get referenceImageSkip => 'Omitir';
 
   @override
-  String get referenceImageContinue => 'Continue';
+  String get referenceImageContinue => 'Continuar';
 
   @override
   String referenceImageContinueWithCount(int count) {
-    return 'Continue ($count)';
+    return 'Continuar ($count)';
   }
 
   @override
