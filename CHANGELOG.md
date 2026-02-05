@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.844] - 2026-02-05
+### Added
+- Cover Art Reference Images: Select up to 3 images linked to a task to guide the AI's visual style when generating cover art
+  - New reference image selection step appears before cover art generation
+  - Images are processed (resized to max 2000px, compressed to JPEG) before sending to Gemini
+  - AI prompt updated to incorporate reference image style, materials, and atmosphere
+  - Skip option available if no reference images are desired
+  - Auto-skips if the task has no linked images
+- Journal Repository: New `getLinkedImagesForTask()` method for retrieving images linked to a task
+- Cover Art Cleanup: Deleting an image that's used as task cover art now automatically clears the `coverArtId` reference
+
+### Fixed
+- Image Generation Modal: Button overflow issues on smaller screens resolved with flexible layout
+- Compact Task Progress: `showTimeText` parameter now defaults to platform-appropriate behavior (desktop shows time, mobile hides)
+
 ## [0.9.843] - 2026-02-05
 ### Changed
 - Daily OS Time Budgets: Optimized UI for tasks with no budgeted time

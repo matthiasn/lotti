@@ -452,7 +452,6 @@ void main() {
           // Select max images
           ..toggleImageSelection('img-1')
           ..toggleImageSelection('img-3')
-
           ..toggleImageSelection('img-5');
 
         // Process - this verifies the map lookup works

@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.844" date="2026-02-05">
+      <description>
+        <p>Cover Art Reference Images: When generating AI cover art for a task, you can now select up to 3 images linked to that task as visual references. The AI uses these images to match the color palette, lighting mood, aesthetic, and materials in the generated cover art. For example, if your woodworking task has photos of your project, the generated cover art will incorporate those textures and atmosphere. A new selection step appears before generation - tap images to select them, or skip to generate without references. If a task has no linked images, this step is automatically skipped.</p>
+        <p>Bug Fixes: Deleting an image that's used as task cover art now properly clears the reference. Button layout in the image generation modal no longer overflows on smaller screens.</p>
+      </description>
+    </release>
     <release version="0.9.843" date="2026-02-05">
       <description>
         <p>Daily OS No-Budget Display: Categories without budgeted time now display a cleaner, more compact UI. Instead of showing redundant "0m / 0m" with "0m left" badge plus a separate warning line, categories with no budget now show a single right-aligned "No time budgeted" badge. When time has been tracked against an unbudgeted category, the display shows "Xm / 0m" alongside the badge instead of confusing negative remaining time. All status badges are now consistently right-aligned across budget cards for visual harmony.</p>
