@@ -286,8 +286,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
     // Scenario A: No budget AND no time recorded -> show only the badge (right-aligned)
     if (hasNoBudget && hasNoTimeRecorded && progress.hasNoBudgetWarning) {
       return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          const Spacer(),
           _NoBudgetBadge(
             message: context.messages.dailyOsNoBudgetWarning,
           ),
@@ -295,47 +295,15 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
       );
     }
 
-    // Scenario B: No budget BUT time recorded -> show time with "No time budgeted" badge
-    if (hasNoBudget && !hasNoTimeRecorded && progress.hasNoBudgetWarning) {
-      return Row(
-        children: [
-          // Timer indicator when running
-          if (isTimerRunningForCategory) ...[
-            Icon(
-              Icons.timer,
-              size: 14,
-              color: context.colorScheme.error,
-            ),
-            const SizedBox(width: 4),
-          ],
-          // Time: recorded / planned
-          Text(
-            '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: isTimerRunningForCategory
-                  ? context.colorScheme.error
-                  : context.colorScheme.onSurfaceVariant,
-              fontWeight: isTimerRunningForCategory ? FontWeight.w600 : null,
-            ),
-          ),
+    // Scenario B: Show "No time budgeted" badge instead of status
+    final showNoBudgetBadge =
+        hasNoBudget && !hasNoTimeRecorded && progress.hasNoBudgetWarning;
 
-          const SizedBox(width: 8),
+    // Build the badge widget
+    final badge = showNoBudgetBadge
+        ? _NoBudgetBadge(message: context.messages.dailyOsNoBudgetWarning)
+        : _StatusText(progress: progress);
 
-          // Progress bar (fixed width)
-          _MiniProgressBar(progress: progress),
-
-          // Push badge to the right
-          const Spacer(),
-
-          // "No time budgeted" badge instead of status
-          _NoBudgetBadge(
-            message: context.messages.dailyOsNoBudgetWarning,
-          ),
-        ],
-      );
-    }
-
-    // Normal: Show full time info row with status badge
     return Row(
       children: [
         // Timer indicator when running
@@ -348,16 +316,13 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
           const SizedBox(width: 4),
         ],
         // Time: recorded / planned
-        Flexible(
-          child: Text(
-            '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: isTimerRunningForCategory
-                  ? context.colorScheme.error
-                  : context.colorScheme.onSurfaceVariant,
-              fontWeight: isTimerRunningForCategory ? FontWeight.w600 : null,
-            ),
-            overflow: TextOverflow.ellipsis,
+        Text(
+          '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: isTimerRunningForCategory
+                ? context.colorScheme.error
+                : context.colorScheme.onSurfaceVariant,
+            fontWeight: isTimerRunningForCategory ? FontWeight.w600 : null,
           ),
         ),
 
@@ -366,10 +331,11 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
         // Progress bar (fixed width)
         _MiniProgressBar(progress: progress),
 
-        const SizedBox(width: 8),
+        // Flexible spacer to push badge to the right
+        const Expanded(child: SizedBox.shrink()),
 
-        // Status badge
-        _StatusText(progress: progress),
+        // Status badge or "No time budgeted" badge (right-aligned)
+        badge,
       ],
     );
   }
