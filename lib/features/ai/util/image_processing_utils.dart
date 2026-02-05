@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -82,8 +83,11 @@ Future<ProcessedReferenceImage?> processReferenceImage({
       mimeType: 'image/jpeg',
       originalId: imageId,
     );
-  } catch (_) {
-    // Swallow errors and return null for failed processing
+  } catch (e) {
+    developer.log(
+      'Failed to process reference image $imageId: $e',
+      name: 'ImageProcessingUtils',
+    );
     return null;
   } finally {
     image?.dispose();

@@ -91,30 +91,26 @@ class ReferenceImageSelectionController
     };
 
     for (final imageId in state.selectedImageIds) {
-      try {
-        final image = imageById[imageId];
-        if (image == null) {
-          throw StateError('Image not found: $imageId');
-        }
-
-        final filePath = getFullImagePath(image);
-        final processed = await processReferenceImage(
-          filePath: filePath,
-          imageId: imageId,
-        );
-
-        // Check if still mounted after async operation
-        if (!ref.mounted) return results;
-
-        if (processed != null) {
-          results.add(processed);
-        }
-      } catch (e) {
-        // Log and skip this image, continue with others
+      final image = imageById[imageId];
+      if (image == null) {
         developer.log(
-          'Failed to process image $imageId, skipping: $e',
+          'Selected image not found in available images: $imageId, skipping',
           name: 'ReferenceImageSelectionController',
         );
+        continue;
+      }
+
+      final filePath = getFullImagePath(image);
+      final processed = await processReferenceImage(
+        filePath: filePath,
+        imageId: imageId,
+      );
+
+      // Check if still mounted after async operation
+      if (!ref.mounted) return results;
+
+      if (processed != null) {
+        results.add(processed);
       }
     }
 

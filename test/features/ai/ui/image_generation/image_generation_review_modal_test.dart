@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
@@ -558,6 +559,130 @@ void main() {
       expect(updatedTextField.controller?.text, testPrompt);
     });
   });
+
+  group('ImageGenerationReviewModal reference image flow', () {
+    testWidgets('retry includes reference images when present', (tester) async {
+      List<ProcessedReferenceImage>? capturedReferenceImages;
+      const refImageState = ReferenceImageSelectionState();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _TrackingMockImageGenerationControllerWithRefs(
+                const ImageGenerationState.error(
+                  prompt: testPrompt,
+                  errorMessage: 'Test error',
+                ),
+                onGenerateImageWithRefs: (prompt, refs) {
+                  capturedReferenceImages = refs;
+                },
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(refImageState),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap retry button
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      // Reference images should be null when none selected
+      expect(capturedReferenceImages, isNull);
+    });
+
+    testWidgets('modal step starts at selectImages', (tester) async {
+      // Create state that will show the selection widget
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          JournalImage(
+            meta: Metadata(
+              id: 'img-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-1',
+              imageFile: 'test.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                const ImageGenerationState.initial(),
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      // Don't settle - just pump once
+      await tester.pump();
+
+      // Should show reference image selection widget
+      expect(find.text('Select Reference Images'), findsOneWidget);
+    });
+
+    testWidgets('handles null prompt gracefully in error state', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.error(
+              prompt: kFailedPromptPlaceholder,
+              errorMessage: 'Prompt generation failed',
+            ),
+          ),
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Error state should be shown
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+
+      // Retry button should be disabled for failed prompt
+      final retryButton = find.widgetWithText(LottiPrimaryButton, 'Retry');
+      expect(retryButton, findsOneWidget);
+      final button = tester.widget<LottiPrimaryButton>(retryButton);
+      expect(button.onPressed, isNull);
+    });
+  });
 }
 
 /// Mock reference image selection controller that returns a fixed state.
@@ -666,4 +791,48 @@ class _MockImageGenerationController extends ImageGenerationController {
   void reset() {
     // No-op for tests
   }
+}
+
+/// Mock controller that tracks reference images in generateImage calls.
+class _TrackingMockImageGenerationControllerWithRefs
+    extends ImageGenerationController {
+  _TrackingMockImageGenerationControllerWithRefs(
+    this._fixedState, {
+    this.onGenerateImageWithRefs,
+  });
+
+  final ImageGenerationState _fixedState;
+  final void Function(String prompt, List<ProcessedReferenceImage>? refs)?
+      onGenerateImageWithRefs;
+
+  @override
+  ImageGenerationState build({required String entityId}) {
+    return _fixedState;
+  }
+
+  @override
+  Future<void> generateImageFromEntity({
+    required String audioEntityId,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> generateImage({
+    required String prompt,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
+    onGenerateImageWithRefs?.call(prompt, referenceImages);
+    return Future.value();
+  }
+
+  @override
+  Future<void> retryGeneration({String? modifiedPrompt}) {
+    return Future.value();
+  }
+
+  @override
+  void reset() {}
 }

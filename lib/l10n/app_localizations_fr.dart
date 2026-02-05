@@ -3420,7 +3420,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Créer une image à partir de la description vocale';
 
   @override
-  String get referenceImageSelectionTitle => 'Sélectionner des images de référence';
+  String get referenceImageSelectionTitle =>
+      'Sélectionner des images de référence';
 
   @override
   String get referenceImageSelectionSubtitle =>

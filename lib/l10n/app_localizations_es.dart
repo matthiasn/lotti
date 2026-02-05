@@ -3417,7 +3417,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Crear imagen desde descripción de voz';
 
   @override
-  String get referenceImageSelectionTitle => 'Seleccionar imágenes de referencia';
+  String get referenceImageSelectionTitle =>
+      'Seleccionar imágenes de referencia';
 
   @override
   String get referenceImageSelectionSubtitle =>

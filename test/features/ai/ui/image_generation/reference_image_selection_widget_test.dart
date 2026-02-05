@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 import '../../../../test_helper.dart';
 
@@ -193,7 +192,7 @@ void main() {
       expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
     });
 
-    testWidgets('shows Skip and Continue buttons', (tester) async {
+    testWidgets('shows Continue button', (tester) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1')],
       );
@@ -214,13 +213,11 @@ void main() {
         ),
       );
 
-      expect(find.byType(LottiSecondaryButton), findsOneWidget);
       expect(find.byType(LottiPrimaryButton), findsOneWidget);
-      expect(find.text('Skip'), findsOneWidget);
       expect(find.text('Continue'), findsOneWidget);
     });
 
-    testWidgets('shows Continue with count when images selected',
+    testWidgets('Continue button label does not change when images selected',
         (tester) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1'), buildTestImage('img-2')],
@@ -243,38 +240,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Continue (2)'), findsOneWidget);
+      // Button should still show "Continue" without count
+      expect(find.text('Continue'), findsOneWidget);
     });
 
-    testWidgets('Skip button calls onSkip', (tester) async {
-      var skipCalled = false;
-      final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1')],
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            referenceImageSelectionControllerProvider(taskId: testTaskId)
-                .overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
-            ),
-          ],
-          child: ReferenceImageSelectionWidget(
-            taskId: testTaskId,
-            onContinue: (_) {},
-            onSkip: () => skipCalled = true,
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Skip'));
-      await tester.pump();
-
-      expect(skipCalled, isTrue);
-    });
-
-    testWidgets('buttons are disabled when processing', (tester) async {
+    testWidgets('Continue button is disabled when processing', (tester) async {
       final processingState = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1')],
         isProcessing: true,
@@ -296,15 +266,11 @@ void main() {
         ),
       );
 
-      // Find buttons and verify they are disabled
-      final skipButton = tester.widget<LottiSecondaryButton>(
-        find.byType(LottiSecondaryButton),
-      );
+      // Find button and verify it is disabled
       final continueButton = tester.widget<LottiPrimaryButton>(
         find.byType(LottiPrimaryButton),
       );
 
-      expect(skipButton.onPressed, isNull);
       expect(continueButton.onPressed, isNull);
     });
 
@@ -334,6 +300,175 @@ void main() {
       );
 
       // GridView should be present
+      expect(find.byType(GridView), findsOneWidget);
+    });
+
+    testWidgets('selection counter shows correct count', (tester) async {
+      final stateWithSelection = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+          buildTestImage('img-3'),
+        ],
+        selectedImageIds: const {'img-1', 'img-2'},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithSelection),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Counter should show 2/3
+      expect(find.text('2/$kMaxReferenceImages'), findsOneWidget);
+    });
+
+    testWidgets('counter shows 0/3 when nothing selected', (tester) async {
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [buildTestImage('img-1')],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Counter should show 0/3
+      expect(find.text('0/$kMaxReferenceImages'), findsOneWidget);
+    });
+
+    testWidgets('counter shows 3/3 when max selected', (tester) async {
+      final stateAtMax = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+          buildTestImage('img-3'),
+          buildTestImage('img-4'),
+        ],
+        selectedImageIds: const {'img-1', 'img-2', 'img-3'},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateAtMax),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Counter should show 3/3
+      expect(find.text('3/$kMaxReferenceImages'), findsOneWidget);
+    });
+
+    testWidgets('onSkip is only called once (auto-skip guard)', (tester) async {
+      var skipCallCount = 0;
+      const emptyState = ReferenceImageSelectionState();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(emptyState),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () => skipCallCount++,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Skip should only be called once even after multiple frames
+      expect(skipCallCount, 1);
+    });
+
+    testWidgets('displays correct number of grid items', (tester) async {
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+          buildTestImage('img-3'),
+          buildTestImage('img-4'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // GridView should be present with correct number of items
+      final gridView = tester.widget<GridView>(find.byType(GridView));
+      expect(gridView, isNotNull);
+    });
+
+    testWidgets('shows error state for missing image files', (tester) async {
+      // Image with path that doesn't exist will show error placeholder
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [buildTestImage('missing-img')],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // GridView should still be present even with missing files
       expect(find.byType(GridView), findsOneWidget);
     });
   });

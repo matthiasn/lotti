@@ -55,12 +55,12 @@ class _ReferenceImageSelectionWidgetState
 
     if (state.availableImages.isEmpty) {
       // No images available, skip this step automatically (only once)
-      if (!_hasAutoSkipped) {
-        _hasAutoSkipped = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) widget.onSkip();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_hasAutoSkipped) {
+          _hasAutoSkipped = true;
+          widget.onSkip();
+        }
+      });
       return const SizedBox.shrink();
     }
 

@@ -495,8 +495,15 @@
     }
   },
   "imageGenerationRetry": "Réessayer",
+  "imageGenerationWithReferences": "Avec {count} image(s) de référence",
   "generateCoverArt": "Générer une couverture",
   "generateCoverArtSubtitle": "Créer une image à partir de la description vocale",
+
+  "referenceImageSelectionTitle": "Sélectionner des images de référence",
+  "referenceImageSelectionSubtitle": "Choisissez jusqu'à 3 images pour guider le style visuel de l'IA",
+  "referenceImageSkip": "Passer",
+  "referenceImageContinue": "Continuer",
+  "referenceImageContinueWithCount": "Continuer ({count})",
 
   "linkedTasksTitle": "Tâches liées",
   "linkedFromLabel": "LIÉ DEPUIS",

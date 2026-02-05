@@ -494,8 +494,15 @@
     }
   },
   "imageGenerationRetry": "Reîncearcă",
+  "imageGenerationWithReferences": "Cu {count} imagine(i) de referință",
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
+
+  "referenceImageSelectionTitle": "Selectează imagini de referință",
+  "referenceImageSelectionSubtitle": "Alege până la 3 imagini pentru a ghida stilul vizual al IA",
+  "referenceImageSkip": "Sari peste",
+  "referenceImageContinue": "Continuă",
+  "referenceImageContinueWithCount": "Continuă ({count})",
 
   "linkedTasksTitle": "Sarcini legate",
   "linkedFromLabel": "LEGAT DE LA",

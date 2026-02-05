@@ -22,6 +22,8 @@ part 'image_generation_controller.freezed.dart';
 part 'image_generation_controller.g.dart';
 
 /// Placeholder used when prompt building fails.
+/// Exported for use in UI to detect failed prompt states.
+@internal
 const kFailedPromptPlaceholder = '[Failed to build prompt]';
 
 /// State for image generation operations.
