@@ -280,8 +280,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
     required TimeBudgetProgress progress,
     required bool isTimerRunningForCategory,
   }) {
-    final hasNoBudget = progress.plannedDuration.inMinutes == 0;
-    final hasNoTimeRecorded = progress.recordedDuration.inMinutes == 0;
+    final hasNoBudget = progress.plannedDuration == Duration.zero;
+    final hasNoTimeRecorded = progress.recordedDuration == Duration.zero;
 
     // Scenario A: No budget AND no time recorded -> show only the badge (right-aligned)
     if (hasNoBudget && hasNoTimeRecorded && progress.hasNoBudgetWarning) {

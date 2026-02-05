@@ -1581,8 +1581,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show inline warning indicator
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-      expect(find.text('No time budgeted'), findsOneWidget);
+      expect(find.text(noBudgetText), findsOneWidget);
 
       // Should NOT show "0m / 0m" time text
       expect(find.text('0m / 0m'), findsNothing);
@@ -1603,7 +1605,9 @@ void main() {
       expect(find.text('45m / 0m'), findsOneWidget);
 
       // Should show "No time budgeted" badge instead of confusing "-45m left" or "+45m over"
-      expect(find.text('No time budgeted'), findsOneWidget);
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
+      expect(find.text(noBudgetText), findsOneWidget);
 
       // Should NOT show misleading status like "+45m over" when there's no budget
       expect(find.text('+45m over'), findsNothing);
