@@ -44,11 +44,17 @@ Future<ProcessedReferenceImage?> processReferenceImage({
 
   // Decode image to get dimensions
   final codec = await ui.instantiateImageCodec(bytes);
-  final frame = await codec.getNextFrame();
-  final image = frame.image;
-  final width = image.width;
-  final height = image.height;
-  image.dispose();
+  int width;
+  int height;
+  try {
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    width = image.width;
+    height = image.height;
+    image.dispose();
+  } finally {
+    codec.dispose();
+  }
 
   // Calculate target dimensions that fit within kMaxReferenceDimension
   // while maintaining aspect ratio
