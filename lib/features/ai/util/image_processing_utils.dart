@@ -40,49 +40,53 @@ Future<ProcessedReferenceImage?> processReferenceImage({
   final file = File(filePath);
   if (!file.existsSync()) return null;
 
-  final bytes = await file.readAsBytes();
+  ui.Codec? codec;
+  ui.Image? image;
 
-  // Decode image to get dimensions
-  final codec = await ui.instantiateImageCodec(bytes);
-  int width;
-  int height;
   try {
+    final bytes = await file.readAsBytes();
+
+    // Decode image to get dimensions
+    codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
-    final image = frame.image;
-    width = image.width;
-    height = image.height;
-    image.dispose();
-  } finally {
-    codec.dispose();
-  }
+    image = frame.image;
+    final width = image.width;
+    final height = image.height;
 
-  // Calculate target dimensions that fit within kMaxReferenceDimension
-  // while maintaining aspect ratio
-  var targetWidth = width;
-  var targetHeight = height;
+    // Calculate target dimensions that fit within kMaxReferenceDimension
+    // while maintaining aspect ratio
+    var targetWidth = width;
+    var targetHeight = height;
 
-  if (width > kMaxReferenceDimension || height > kMaxReferenceDimension) {
-    if (width > height) {
-      targetWidth = kMaxReferenceDimension;
-      targetHeight = (height * kMaxReferenceDimension / width).round();
-    } else {
-      targetHeight = kMaxReferenceDimension;
-      targetWidth = (width * kMaxReferenceDimension / height).round();
+    if (width > kMaxReferenceDimension || height > kMaxReferenceDimension) {
+      if (width > height) {
+        targetWidth = kMaxReferenceDimension;
+        targetHeight = (height * kMaxReferenceDimension / width).round();
+      } else {
+        targetHeight = kMaxReferenceDimension;
+        targetWidth = (width * kMaxReferenceDimension / height).round();
+      }
     }
+
+    // Compress and resize the image to JPEG (default format) for consistency
+    final compressedBytes = await FlutterImageCompress.compressWithList(
+      bytes,
+      minWidth: targetWidth,
+      minHeight: targetHeight,
+      quality: 85,
+    );
+
+    return ProcessedReferenceImage(
+      base64Data: base64Encode(compressedBytes),
+      // Always JPEG since that's what FlutterImageCompress outputs
+      mimeType: 'image/jpeg',
+      originalId: imageId,
+    );
+  } catch (_) {
+    // Swallow errors and return null for failed processing
+    return null;
+  } finally {
+    image?.dispose();
+    codec?.dispose();
   }
-
-  // Compress and resize the image to JPEG (default format) for consistency
-  final compressedBytes = await FlutterImageCompress.compressWithList(
-    bytes,
-    minWidth: targetWidth,
-    minHeight: targetHeight,
-    quality: 85,
-  );
-
-  return ProcessedReferenceImage(
-    base64Data: base64Encode(compressedBytes),
-    // Always JPEG since that's what FlutterImageCompress outputs
-    mimeType: 'image/jpeg',
-    originalId: imageId,
-  );
 }
