@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.843] - 2026-02-05
+### Changed
+- Daily OS Time Budgets: Optimized UI for tasks with no budgeted time
+  - Scenario A (no budget, no time recorded): Shows compact "No time budgeted" badge instead of cluttered "0m / 0m" + "0m left" + warning banner
+  - Scenario B (no budget, time recorded): Shows "Xm / 0m" with "No time budgeted" badge instead of confusing negative time remaining
+  - All badges now consistently right-aligned across all budget cards
+  - Bordered badge styling with warning icon for clear visibility
+
 ## [0.9.842] - 2026-02-04
 ### Added
 - Daily OS Timeline: Drag-and-drop support for planned time blocks

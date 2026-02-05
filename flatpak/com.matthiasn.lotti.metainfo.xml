@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.843" date="2026-02-05">
+      <description>
+        <p>Daily OS No-Budget Display: Categories without budgeted time now display a cleaner, more compact UI. Instead of showing redundant "0m / 0m" with "0m left" badge plus a separate warning line, categories with no budget now show a single right-aligned "No time budgeted" badge. When time has been tracked against an unbudgeted category, the display shows "Xm / 0m" alongside the badge instead of confusing negative remaining time. All status badges are now consistently right-aligned across budget cards for visual harmony.</p>
+      </description>
+    </release>
     <release version="0.9.842" date="2026-02-04">
       <description>
         <p>Daily OS Timeline Drag-and-Drop: Planned time blocks can now be moved and resized with intuitive touch gestures. Long-press a block to enter drag mode - drag the body to reschedule the entire block, or drag the top/bottom edges to adjust start/end times. Blocks stay within their visible timeline section and snap to a 5-minute grid. Small blocks use move-only mode to avoid cramped resize handles. Visual feedback includes elevated styling, real-time time labels, and duration indicators. Blocks overlapping compressed regions must be expanded first before dragging.</p>

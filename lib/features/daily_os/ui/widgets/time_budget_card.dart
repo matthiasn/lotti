@@ -226,50 +226,14 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
               const SizedBox(height: 6),
 
               // Row 2: Time info, progress bar, status
-              Row(
-                children: [
-                  // Timer indicator when running
-                  if (isTimerRunningForCategory) ...[
-                    Icon(
-                      Icons.timer,
-                      size: 14,
-                      color: context.colorScheme.error,
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                  // Time: recorded / planned
-                  Flexible(
-                    child: Text(
-                      '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
-                      style: context.textTheme.bodySmall?.copyWith(
-                        color: isTimerRunningForCategory
-                            ? context.colorScheme.error
-                            : context.colorScheme.onSurfaceVariant,
-                        fontWeight:
-                            isTimerRunningForCategory ? FontWeight.w600 : null,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Progress bar (fixed width)
-                  _MiniProgressBar(progress: progress),
-
-                  const SizedBox(width: 8),
-
-                  // Status badge
-                  _StatusText(progress: progress),
-                ],
+              // Scenario A: No budget AND no time recorded -> show inline "No time budgeted"
+              // Scenario B: No budget BUT time recorded -> show "Xm / 0m" format
+              // Normal: Show full time info with progress bar and status badge
+              _buildTimeRow(
+                context,
+                progress: progress,
+                isTimerRunningForCategory: isTimerRunningForCategory,
               ),
-
-              // Warning banner for categories with due tasks but no budget
-              if (progress.hasNoBudgetWarning) ...[
-                const SizedBox(height: AppTheme.spacingSmall),
-                _WarningBanner(
-                    message: context.messages.dailyOsNoBudgetWarning),
-              ],
 
               // Expandable task list
               if (hasTasks)
@@ -304,6 +268,76 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
     if (task != null && context.mounted) {
       beamToNamed('/tasks/${task.meta.id}');
     }
+  }
+
+  /// Builds the time row with conditional display based on budget state.
+  ///
+  /// - **Scenario A** (no budget, no time recorded): Shows "No time budgeted" badge only
+  /// - **Scenario B** (no budget, time recorded): Shows "Xm / 0m" with "No time budgeted" badge
+  /// - **Normal**: Shows full time info with progress bar and status badge
+  Widget _buildTimeRow(
+    BuildContext context, {
+    required TimeBudgetProgress progress,
+    required bool isTimerRunningForCategory,
+  }) {
+    final hasNoBudget = progress.plannedDuration == Duration.zero;
+    final hasNoTimeRecorded = progress.recordedDuration == Duration.zero;
+
+    // Scenario A: No budget AND no time recorded -> show only the badge (right-aligned)
+    if (hasNoBudget && hasNoTimeRecorded && progress.hasNoBudgetWarning) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _NoBudgetBadge(
+            message: context.messages.dailyOsNoBudgetWarning,
+          ),
+        ],
+      );
+    }
+
+    // Scenario B: Show "No time budgeted" badge instead of status
+    final showNoBudgetBadge =
+        hasNoBudget && !hasNoTimeRecorded && progress.hasNoBudgetWarning;
+
+    // Build the badge widget
+    final badge = showNoBudgetBadge
+        ? _NoBudgetBadge(message: context.messages.dailyOsNoBudgetWarning)
+        : _StatusText(progress: progress);
+
+    return Row(
+      children: [
+        // Timer indicator when running
+        if (isTimerRunningForCategory) ...[
+          Icon(
+            Icons.timer,
+            size: 14,
+            color: context.colorScheme.error,
+          ),
+          const SizedBox(width: 4),
+        ],
+        // Time: recorded / planned
+        Text(
+          '${_formatCompactDuration(progress.recordedDuration)} / ${_formatCompactDuration(progress.plannedDuration)}',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: isTimerRunningForCategory
+                ? context.colorScheme.error
+                : context.colorScheme.onSurfaceVariant,
+            fontWeight: isTimerRunningForCategory ? FontWeight.w600 : null,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Progress bar (fixed width)
+        _MiniProgressBar(progress: progress),
+
+        // Flexible spacer to push badge to the right
+        const Expanded(child: SizedBox.shrink()),
+
+        // Status badge or "No time budgeted" badge (right-aligned)
+        badge,
+      ],
+    );
   }
 }
 
@@ -489,9 +523,11 @@ class _TaskListContent extends ConsumerWidget {
   }
 }
 
-/// Warning banner widget.
-class _WarningBanner extends StatelessWidget {
-  const _WarningBanner({required this.message});
+/// Compact badge indicator for "No time budgeted" state.
+///
+/// Used inline to show that no budget is set, with bordered badge styling.
+class _NoBudgetBadge extends StatelessWidget {
+  const _NoBudgetBadge({required this.message});
 
   final String message;
 
@@ -501,7 +537,7 @@ class _WarningBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -509,13 +545,16 @@ class _WarningBanner extends StatelessWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            size: 16,
+            size: 14,
             color: Colors.orange,
           ),
           const SizedBox(width: 4),
           Text(
             message,
-            style: context.textTheme.labelSmall?.copyWith(color: Colors.orange),
+            style: context.textTheme.labelMedium?.copyWith(
+              color: Colors.orange,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

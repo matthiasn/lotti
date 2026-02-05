@@ -9,6 +9,7 @@ linter:
     avoid_catches_without_on_clauses: false
     discarded_futures: false
     require_trailing_commas: false
+    avoid_types_on_closure_parameters: false
 
 analyzer:
   exclude:

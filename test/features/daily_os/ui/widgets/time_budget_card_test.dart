@@ -1489,8 +1489,8 @@ void main() {
     });
   });
 
-  group('TimeBudgetCard - Warning Banner', () {
-    TimeBudgetProgress createProgressWithWarning() {
+  group('TimeBudgetCard - No Budget Display', () {
+    TimeBudgetProgress createProgressNoBudgetNoTime() {
       return TimeBudgetProgress(
         categoryId: testCategory.id,
         category: testCategory,
@@ -1531,20 +1531,89 @@ void main() {
       );
     }
 
-    testWidgets('shows warning banner when hasNoBudgetWarning is true',
+    TimeBudgetProgress createProgressNoBudgetWithTime() {
+      return TimeBudgetProgress(
+        categoryId: testCategory.id,
+        category: testCategory,
+        plannedDuration: Duration.zero,
+        recordedDuration: const Duration(minutes: 45),
+        status: BudgetProgressStatus.overBudget,
+        contributingEntries: const [],
+        taskProgressItems: [
+          TaskDayProgress(
+            task: Task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: testDate,
+                updatedAt: testDate,
+                dateFrom: testDate,
+                dateTo: testDate,
+                categoryId: testCategory.id,
+              ),
+              data: TaskData(
+                title: 'Due Task No Budget',
+                dateFrom: testDate,
+                dateTo: testDate,
+                due: testDate,
+                statusHistory: const [],
+                status: TaskStatus.open(
+                  id: 'status-1',
+                  createdAt: testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            ),
+            timeSpentOnDay: const Duration(minutes: 45),
+            wasCompletedOnDay: false,
+          ),
+        ],
+        blocks: [],
+        hasNoBudgetWarning: true,
+      );
+    }
+
+    testWidgets(
+        'Scenario A: no budget, no time - shows inline indicator instead of time info',
         (tester) async {
       await tester.pumpWidget(
-        createTestWidget(progress: createProgressWithWarning()),
+        createTestWidget(progress: createProgressNoBudgetNoTime()),
       );
       await tester.pumpAndSettle();
 
-      // Should show warning icon
+      // Should show inline warning indicator
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-      // Should show warning message
-      expect(find.text('No time budgeted'), findsOneWidget);
+      expect(find.text(noBudgetText), findsOneWidget);
+
+      // Should NOT show "0m / 0m" time text
+      expect(find.text('0m / 0m'), findsNothing);
+
+      // Should NOT show "0m left" badge
+      expect(find.text('0m left'), findsNothing);
     });
 
-    testWidgets('does not show warning banner when hasNoBudgetWarning is false',
+    testWidgets(
+        'Scenario B: no budget, has time - shows Xm / 0m with No time budgeted badge',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgressNoBudgetWithTime()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show time comparison (recorded / planned)
+      expect(find.text('45m / 0m'), findsOneWidget);
+
+      // Should show "No time budgeted" badge instead of confusing "-45m left" or "+45m over"
+      final context = tester.element(find.byType(TimeBudgetCard));
+      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
+      expect(find.text(noBudgetText), findsOneWidget);
+
+      // Should NOT show misleading status like "+45m over" when there's no budget
+      expect(find.text('+45m over'), findsNothing);
+    });
+
+    testWidgets('does not show warning when hasNoBudgetWarning is false',
         (tester) async {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
