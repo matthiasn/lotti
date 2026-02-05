@@ -18,7 +18,12 @@ mixin _$ReferenceImageSelectionState {
   Set<String> get selectedImageIds;
   bool get isLoading;
   bool get isProcessing;
-  String? get errorMessage;
+
+  /// Error code for display (to be localized by the widget layer).
+  ReferenceImageSelectionError? get errorCode;
+
+  /// Raw error details for logging/debugging (not for display).
+  String? get errorDetail;
 
   /// Create a copy of ReferenceImageSelectionState
   /// with the given fields replaced by the non-null parameter values.
@@ -42,8 +47,10 @@ mixin _$ReferenceImageSelectionState {
                 other.isLoading == isLoading) &&
             (identical(other.isProcessing, isProcessing) ||
                 other.isProcessing == isProcessing) &&
-            (identical(other.errorMessage, errorMessage) ||
-                other.errorMessage == errorMessage));
+            (identical(other.errorCode, errorCode) ||
+                other.errorCode == errorCode) &&
+            (identical(other.errorDetail, errorDetail) ||
+                other.errorDetail == errorDetail));
   }
 
   @override
@@ -53,11 +60,12 @@ mixin _$ReferenceImageSelectionState {
       const DeepCollectionEquality().hash(selectedImageIds),
       isLoading,
       isProcessing,
-      errorMessage);
+      errorCode,
+      errorDetail);
 
   @override
   String toString() {
-    return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorMessage: $errorMessage)';
+    return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
   }
 }
 
@@ -73,7 +81,8 @@ abstract mixin class $ReferenceImageSelectionStateCopyWith<$Res> {
       Set<String> selectedImageIds,
       bool isLoading,
       bool isProcessing,
-      String? errorMessage});
+      ReferenceImageSelectionError? errorCode,
+      String? errorDetail});
 }
 
 /// @nodoc
@@ -93,7 +102,8 @@ class _$ReferenceImageSelectionStateCopyWithImpl<$Res>
     Object? selectedImageIds = null,
     Object? isLoading = null,
     Object? isProcessing = null,
-    Object? errorMessage = freezed,
+    Object? errorCode = freezed,
+    Object? errorDetail = freezed,
   }) {
     return _then(_self.copyWith(
       availableImages: null == availableImages
@@ -112,9 +122,13 @@ class _$ReferenceImageSelectionStateCopyWithImpl<$Res>
           ? _self.isProcessing
           : isProcessing // ignore: cast_nullable_to_non_nullable
               as bool,
-      errorMessage: freezed == errorMessage
-          ? _self.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
+      errorCode: freezed == errorCode
+          ? _self.errorCode
+          : errorCode // ignore: cast_nullable_to_non_nullable
+              as ReferenceImageSelectionError?,
+      errorDetail: freezed == errorDetail
+          ? _self.errorDetail
+          : errorDetail // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -216,15 +230,21 @@ extension ReferenceImageSelectionStatePatterns on ReferenceImageSelectionState {
             Set<String> selectedImageIds,
             bool isLoading,
             bool isProcessing,
-            String? errorMessage)?
+            ReferenceImageSelectionError? errorCode,
+            String? errorDetail)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _ReferenceImageSelectionState() when $default != null:
-        return $default(_that.availableImages, _that.selectedImageIds,
-            _that.isLoading, _that.isProcessing, _that.errorMessage);
+        return $default(
+            _that.availableImages,
+            _that.selectedImageIds,
+            _that.isLoading,
+            _that.isProcessing,
+            _that.errorCode,
+            _that.errorDetail);
       case _:
         return orElse();
     }
@@ -250,14 +270,20 @@ extension ReferenceImageSelectionStatePatterns on ReferenceImageSelectionState {
             Set<String> selectedImageIds,
             bool isLoading,
             bool isProcessing,
-            String? errorMessage)
+            ReferenceImageSelectionError? errorCode,
+            String? errorDetail)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ReferenceImageSelectionState():
-        return $default(_that.availableImages, _that.selectedImageIds,
-            _that.isLoading, _that.isProcessing, _that.errorMessage);
+        return $default(
+            _that.availableImages,
+            _that.selectedImageIds,
+            _that.isLoading,
+            _that.isProcessing,
+            _that.errorCode,
+            _that.errorDetail);
     }
   }
 
@@ -280,14 +306,20 @@ extension ReferenceImageSelectionStatePatterns on ReferenceImageSelectionState {
             Set<String> selectedImageIds,
             bool isLoading,
             bool isProcessing,
-            String? errorMessage)?
+            ReferenceImageSelectionError? errorCode,
+            String? errorDetail)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ReferenceImageSelectionState() when $default != null:
-        return $default(_that.availableImages, _that.selectedImageIds,
-            _that.isLoading, _that.isProcessing, _that.errorMessage);
+        return $default(
+            _that.availableImages,
+            _that.selectedImageIds,
+            _that.isLoading,
+            _that.isProcessing,
+            _that.errorCode,
+            _that.errorDetail);
       case _:
         return null;
     }
@@ -302,7 +334,8 @@ class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
       final Set<String> selectedImageIds = const {},
       this.isLoading = false,
       this.isProcessing = false,
-      this.errorMessage})
+      this.errorCode,
+      this.errorDetail})
       : _availableImages = availableImages,
         _selectedImageIds = selectedImageIds;
 
@@ -330,8 +363,14 @@ class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
   @override
   @JsonKey()
   final bool isProcessing;
+
+  /// Error code for display (to be localized by the widget layer).
   @override
-  final String? errorMessage;
+  final ReferenceImageSelectionError? errorCode;
+
+  /// Raw error details for logging/debugging (not for display).
+  @override
+  final String? errorDetail;
 
   /// Create a copy of ReferenceImageSelectionState
   /// with the given fields replaced by the non-null parameter values.
@@ -355,8 +394,10 @@ class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
                 other.isLoading == isLoading) &&
             (identical(other.isProcessing, isProcessing) ||
                 other.isProcessing == isProcessing) &&
-            (identical(other.errorMessage, errorMessage) ||
-                other.errorMessage == errorMessage));
+            (identical(other.errorCode, errorCode) ||
+                other.errorCode == errorCode) &&
+            (identical(other.errorDetail, errorDetail) ||
+                other.errorDetail == errorDetail));
   }
 
   @override
@@ -366,11 +407,12 @@ class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
       const DeepCollectionEquality().hash(_selectedImageIds),
       isLoading,
       isProcessing,
-      errorMessage);
+      errorCode,
+      errorDetail);
 
   @override
   String toString() {
-    return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorMessage: $errorMessage)';
+    return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
   }
 }
 
@@ -388,7 +430,8 @@ abstract mixin class _$ReferenceImageSelectionStateCopyWith<$Res>
       Set<String> selectedImageIds,
       bool isLoading,
       bool isProcessing,
-      String? errorMessage});
+      ReferenceImageSelectionError? errorCode,
+      String? errorDetail});
 }
 
 /// @nodoc
@@ -408,7 +451,8 @@ class __$ReferenceImageSelectionStateCopyWithImpl<$Res>
     Object? selectedImageIds = null,
     Object? isLoading = null,
     Object? isProcessing = null,
-    Object? errorMessage = freezed,
+    Object? errorCode = freezed,
+    Object? errorDetail = freezed,
   }) {
     return _then(_ReferenceImageSelectionState(
       availableImages: null == availableImages
@@ -427,9 +471,13 @@ class __$ReferenceImageSelectionStateCopyWithImpl<$Res>
           ? _self.isProcessing
           : isProcessing // ignore: cast_nullable_to_non_nullable
               as bool,
-      errorMessage: freezed == errorMessage
-          ? _self.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
+      errorCode: freezed == errorCode
+          ? _self.errorCode
+          : errorCode // ignore: cast_nullable_to_non_nullable
+              as ReferenceImageSelectionError?,
+      errorDetail: freezed == errorDetail
+          ? _self.errorDetail
+          : errorDetail // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }

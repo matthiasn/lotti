@@ -10,6 +10,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'reference_image_selection_controller.freezed.dart';
 part 'reference_image_selection_controller.g.dart';
 
+/// Error codes for reference image selection operations.
+/// These codes should be mapped to localized strings in the widget layer.
+enum ReferenceImageSelectionError {
+  /// Failed to load linked images for the task.
+  loadImagesFailed,
+}
+
 @freezed
 sealed class ReferenceImageSelectionState with _$ReferenceImageSelectionState {
   const factory ReferenceImageSelectionState({
@@ -17,7 +24,12 @@ sealed class ReferenceImageSelectionState with _$ReferenceImageSelectionState {
     @Default({}) Set<String> selectedImageIds,
     @Default(false) bool isLoading,
     @Default(false) bool isProcessing,
-    String? errorMessage,
+
+    /// Error code for display (to be localized by the widget layer).
+    ReferenceImageSelectionError? errorCode,
+
+    /// Raw error details for logging/debugging (not for display).
+    String? errorDetail,
   }) = _ReferenceImageSelectionState;
 }
 
@@ -49,12 +61,19 @@ class ReferenceImageSelectionController
         isLoading: false,
       );
     } catch (e) {
+      developer.log(
+        'Failed to load images for task $taskId: $e',
+        name: 'ReferenceImageSelectionController',
+        error: e,
+      );
+
       // Only update state if still mounted
       if (!ref.mounted) return;
 
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to load images: $e',
+        errorCode: ReferenceImageSelectionError.loadImagesFailed,
+        errorDetail: e.toString(),
       );
     }
   }

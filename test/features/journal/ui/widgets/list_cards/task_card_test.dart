@@ -1052,7 +1052,8 @@ void main() {
       expect(find.byKey(const Key('task_status_row')), findsOneWidget);
     });
 
-    testWidgets('cover art layout includes labels when present', (tester) async {
+    testWidgets('cover art layout includes labels when present',
+        (tester) async {
       // Arrange labels in the cache
       final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
       final now = DateTime(2025, 11, 3, 12);

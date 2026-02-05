@@ -3407,6 +3407,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get referenceImageLoadError =>
+      'Failed to load images. Please try again.';
+
+  @override
   String get linkedTasksTitle => 'Linked Tasks';
 
   @override

@@ -3419,6 +3419,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get referenceImageLoadError =>
+      'Bilder konnten nicht geladen werden. Bitte versuche es erneut.';
+
+  @override
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
 
   @override

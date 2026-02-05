@@ -63,7 +63,7 @@ final class ReferenceImageSelectionControllerProvider extends $NotifierProvider<
 }
 
 String _$referenceImageSelectionControllerHash() =>
-    r'a8b9356a6d0915b5320247679693c36e81aa8d8c';
+    r'f9604148dd3bb2f8560fb9430d25f81125424ca2';
 
 final class ReferenceImageSelectionControllerFamily extends $Family
     with

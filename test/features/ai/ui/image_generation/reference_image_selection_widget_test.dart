@@ -217,7 +217,7 @@ void main() {
       expect(find.text('Continue'), findsOneWidget);
     });
 
-    testWidgets('Continue button label does not change when images selected',
+    testWidgets('Continue button shows count when images selected',
         (tester) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [buildTestImage('img-1'), buildTestImage('img-2')],
@@ -240,8 +240,8 @@ void main() {
         ),
       );
 
-      // Button should still show "Continue" without count
-      expect(find.text('Continue'), findsOneWidget);
+      // Button should show "Continue (2)" with the selection count
+      expect(find.text('Continue (2)'), findsOneWidget);
     });
 
     testWidgets('Continue button is disabled when processing', (tester) async {

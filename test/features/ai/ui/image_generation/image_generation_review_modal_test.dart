@@ -654,7 +654,8 @@ void main() {
       expect(find.text('Select Reference Images'), findsOneWidget);
     });
 
-    testWidgets('handles null prompt gracefully in error state', (tester) async {
+    testWidgets('handles null prompt gracefully in error state',
+        (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: createOverrides(

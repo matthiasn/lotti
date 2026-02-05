@@ -1355,6 +1355,7 @@
       "count": {"type": "int"}
     }
   },
+  "referenceImageLoadError": "Failed to load images. Please try again.",
 
   "linkedTasksTitle": "Linked Tasks",
   "linkedFromLabel": "LINKED FROM",

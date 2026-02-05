@@ -191,7 +191,8 @@ void main() {
       expect(result, isNull);
     });
 
-    test('handles file with valid path but returns null without platform bindings',
+    test(
+        'handles file with valid path but returns null without platform bindings',
         () async {
       // Write a valid image file
       final testFile = File('${tempDir.path}/test image (1).png');

@@ -495,6 +495,11 @@
   },
   "imageGenerationRetry": "Reintentar",
   "imageGenerationWithReferences": "Usando {count} imagen(es) de referencia",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Generar portada",
   "generateCoverArtSubtitle": "Crear imagen desde descripción de voz",
 
@@ -503,6 +508,12 @@
   "referenceImageSkip": "Omitir",
   "referenceImageContinue": "Continuar",
   "referenceImageContinueWithCount": "Continuar ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Error al cargar las imágenes. Por favor, inténtalo de nuevo.",
 
   "linkedTasksTitle": "Tareas vinculadas",
   "linkedFromLabel": "VINCULADO DESDE",

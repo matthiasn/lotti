@@ -6292,6 +6292,12 @@ abstract class AppLocalizations {
   /// **'Continue ({count})'**
   String referenceImageContinueWithCount(int count);
 
+  /// No description provided for @referenceImageLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load images. Please try again.'**
+  String get referenceImageLoadError;
+
   /// No description provided for @linkedTasksTitle.
   ///
   /// In en, this message translates to:

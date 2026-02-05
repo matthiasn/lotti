@@ -540,6 +540,11 @@
   },
   "imageGenerationRetry": "Wiederholen",
   "imageGenerationWithReferences": "Mit {count} Referenzbild(ern)",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Cover generieren",
   "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen",
 
@@ -548,6 +553,12 @@
   "referenceImageSkip": "Überspringen",
   "referenceImageContinue": "Weiter",
   "referenceImageContinueWithCount": "Weiter ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Bilder konnten nicht geladen werden. Bitte versuche es erneut.",
 
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkedFromLabel": "VERKNÜPFT VON",

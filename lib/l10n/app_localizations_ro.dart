@@ -3413,6 +3413,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get referenceImageLoadError =>
+      'Încărcarea imaginilor a eșuat. Te rugăm să încerci din nou.';
+
+  @override
   String get linkedTasksTitle => 'Sarcini legate';
 
   @override

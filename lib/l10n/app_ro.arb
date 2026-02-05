@@ -495,6 +495,11 @@
   },
   "imageGenerationRetry": "Reîncearcă",
   "imageGenerationWithReferences": "Cu {count} imagine(i) de referință",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
 
@@ -503,6 +508,12 @@
   "referenceImageSkip": "Sari peste",
   "referenceImageContinue": "Continuă",
   "referenceImageContinueWithCount": "Continuă ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Încărcarea imaginilor a eșuat. Te rugăm să încerci din nou.",
 
   "linkedTasksTitle": "Sarcini legate",
   "linkedFromLabel": "LEGAT DE LA",

@@ -3439,6 +3439,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get referenceImageLoadError =>
+      'Échec du chargement des images. Veuillez réessayer.';
+
+  @override
   String get linkedTasksTitle => 'Tâches liées';
 
   @override

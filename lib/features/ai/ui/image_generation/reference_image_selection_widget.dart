@@ -53,6 +53,38 @@ class _ReferenceImageSelectionWidgetState
       );
     }
 
+    // Handle error state
+    if (state.errorCode != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: context.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _getLocalizedError(context, state.errorCode!),
+                textAlign: TextAlign.center,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              LottiPrimaryButton(
+                label: context.messages.referenceImageSkip,
+                onPressed: widget.onSkip,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (state.availableImages.isEmpty) {
       // No images available, skip this step automatically (only once)
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -148,7 +180,10 @@ class _ReferenceImageSelectionWidgetState
         Padding(
           padding: const EdgeInsets.all(16),
           child: LottiPrimaryButton(
-            label: context.messages.referenceImageContinue,
+            label: state.selectionCount > 0
+                ? context.messages
+                    .referenceImageContinueWithCount(state.selectionCount)
+                : context.messages.referenceImageContinue,
             icon: Icons.arrow_forward_rounded,
             onPressed: state.isProcessing
                 ? null
@@ -238,4 +273,15 @@ class _ImageGridTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Maps error codes to localized strings.
+String _getLocalizedError(
+  BuildContext context,
+  ReferenceImageSelectionError errorCode,
+) {
+  return switch (errorCode) {
+    ReferenceImageSelectionError.loadImagesFailed =>
+      context.messages.referenceImageLoadError,
+  };
 }

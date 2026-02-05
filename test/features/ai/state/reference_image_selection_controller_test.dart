@@ -21,18 +21,21 @@ void main() {
       expect(state.selectedImageIds, isEmpty);
       expect(state.isLoading, isFalse);
       expect(state.isProcessing, isFalse);
-      expect(state.errorMessage, isNull);
+      expect(state.errorCode, isNull);
+      expect(state.errorDetail, isNull);
     });
 
     test('copyWith creates correct copy', () {
       const state = ReferenceImageSelectionState();
       final newState = state.copyWith(
         isLoading: true,
-        errorMessage: 'test error',
+        errorCode: ReferenceImageSelectionError.loadImagesFailed,
+        errorDetail: 'test error detail',
       );
 
       expect(newState.isLoading, isTrue);
-      expect(newState.errorMessage, 'test error');
+      expect(newState.errorCode, ReferenceImageSelectionError.loadImagesFailed);
+      expect(newState.errorDetail, 'test error detail');
       expect(newState.availableImages, isEmpty);
     });
   });
@@ -190,7 +193,8 @@ void main() {
       final state = await waitForLoaded(taskId);
 
       expect(state.isLoading, isFalse);
-      expect(state.errorMessage, contains('Failed to load images'));
+      expect(state.errorCode, ReferenceImageSelectionError.loadImagesFailed);
+      expect(state.errorDetail, contains('Database error'));
     });
 
     test('toggleImageSelection adds image to selection', () async {
@@ -352,10 +356,10 @@ void main() {
 
         final controller = container.read(
           referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        );
+        )
 
-        // Select an image
-        controller.toggleImageSelection('img-1');
+          // Select an image
+          ..toggleImageSelection('img-1');
 
         // Start processing (don't await)
         final future = controller.processSelectedImages();
@@ -382,10 +386,10 @@ void main() {
 
         final controller = container.read(
           referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        );
+        )
 
-        // Select an image
-        controller.toggleImageSelection('img-1');
+          // Select an image
+          ..toggleImageSelection('img-1');
 
         // Process and wait
         await controller.processSelectedImages();
@@ -409,10 +413,10 @@ void main() {
 
         final controller = container.read(
           referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        );
+        )
 
-        // Select an image that exists
-        controller.toggleImageSelection('img-1');
+          // Select an image that exists
+          ..toggleImageSelection('img-1');
 
         // Manually modify selection to include a non-existent image
         // This simulates a race condition where an image was deleted
@@ -421,7 +425,7 @@ void main() {
 
         // Since img-1 file doesn't exist on disk, it will return empty
         // The point is that the method doesn't throw
-        expect(results, isA<List>());
+        expect(results, isA<List<ProcessedReferenceImage>>());
       });
 
       test('uses O(1) map lookup for image retrieval', () async {
@@ -443,12 +447,12 @@ void main() {
 
         final controller = container.read(
           referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        );
+        )
 
-        // Select max images
-        controller
+          // Select max images
           ..toggleImageSelection('img-1')
           ..toggleImageSelection('img-3')
+
           ..toggleImageSelection('img-5');
 
         // Process - this verifies the map lookup works
@@ -456,7 +460,7 @@ void main() {
 
         // Results should be empty since files don't exist on disk,
         // but no exception should be thrown
-        expect(results, isA<List>());
+        expect(results, isA<List<ProcessedReferenceImage>>());
       });
     });
   });
