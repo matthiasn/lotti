@@ -85,12 +85,17 @@ class ReferenceImageSelectionController
 
     final results = <ProcessedReferenceImage>[];
 
+    // Build a map for O(1) lookups instead of O(N) firstWhere in loop
+    final imageById = {
+      for (final img in state.availableImages) img.meta.id: img,
+    };
+
     for (final imageId in state.selectedImageIds) {
       try {
-        final image = state.availableImages.firstWhere(
-          (img) => img.meta.id == imageId,
-          orElse: () => throw StateError('Image not found: $imageId'),
-        );
+        final image = imageById[imageId];
+        if (image == null) {
+          throw StateError('Image not found: $imageId');
+        }
 
         final filePath = getFullImagePath(image);
         final processed = await processReferenceImage(
