@@ -3384,7 +3384,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String imageGenerationWithReferences(int count) {
-    return 'Cu $count imagine(i) de referință';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Cu $count de imagini de referință',
+      few: 'Cu $count imagini de referință',
+      one: 'Cu 1 imagine de referință',
+      zero: 'Fără imagini de referință',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -539,7 +539,7 @@
     }
   },
   "imageGenerationRetry": "Wiederholen",
-  "imageGenerationWithReferences": "Mit {count} Referenzbild(ern)",
+  "imageGenerationWithReferences": "{count, plural, =0{Keine Referenzbilder} =1{Mit 1 Referenzbild} other{Mit {count} Referenzbildern}}",
   "@imageGenerationWithReferences": {
     "placeholders": {
       "count": {"type": "int"}

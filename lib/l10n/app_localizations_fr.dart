@@ -3409,7 +3409,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String imageGenerationWithReferences(int count) {
-    return 'Avec $count image(s) de référence';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Avec $count images de référence',
+      one: 'Avec 1 image de référence',
+      zero: 'Aucune image de référence',
+    );
+    return '$_temp0';
   }
 
   @override

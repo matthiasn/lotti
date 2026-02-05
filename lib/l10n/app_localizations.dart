@@ -6247,7 +6247,7 @@ abstract class AppLocalizations {
   /// No description provided for @imageGenerationWithReferences.
   ///
   /// In en, this message translates to:
-  /// **'Using {count} reference image(s)'**
+  /// **'{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}'**
   String imageGenerationWithReferences(int count);
 
   /// No description provided for @generateCoverArt.

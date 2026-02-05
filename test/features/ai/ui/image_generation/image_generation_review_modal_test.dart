@@ -761,14 +761,17 @@ void main() {
 
       // First tap Continue to trigger image processing and generation
       await tester.tap(find.text('Continue (2)'));
+      // Pump to process the tap
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
+      // Pump to let the async callback complete
+      await tester.pump();
+      // Pump to rebuild the widget tree after setState
+      await tester.pump();
 
       // Should now be in generating state showing reference images count
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Generating image...'), findsOneWidget);
-      expect(find.text('Using 2 reference image(s)'), findsOneWidget);
+      expect(find.text('Using 2 reference images'), findsOneWidget);
     });
   });
 }

@@ -495,7 +495,7 @@
     }
   },
   "imageGenerationRetry": "Réessayer",
-  "imageGenerationWithReferences": "Avec {count} image(s) de référence",
+  "imageGenerationWithReferences": "{count, plural, =0{Aucune image de référence} =1{Avec 1 image de référence} other{Avec {count} images de référence}}",
   "@imageGenerationWithReferences": {
     "placeholders": {
       "count": {"type": "int"}

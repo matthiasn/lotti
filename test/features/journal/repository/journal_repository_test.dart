@@ -2131,7 +2131,7 @@ void main() {
       });
     });
 
-    group('createImageEntry', () {
+    group('createImageEntry - callback behavior', () {
       test('invokes onCreated callback after successful creation', () async {
         // Arrange
         final imageData = ImageData(
