@@ -471,5 +471,69 @@ void main() {
       // GridView should still be present even with missing files
       expect(find.byType(GridView), findsOneWidget);
     });
+
+    testWidgets('shows error UI when errorCode is set', (tester) async {
+      const errorState = ReferenceImageSelectionState(
+        errorCode: ReferenceImageSelectionError.loadImagesFailed,
+        errorDetail: 'Database error',
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(errorState),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Should show error icon
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+
+      // Should show localized error message
+      expect(
+        find.text('Failed to load images. Please try again.'),
+        findsOneWidget,
+      );
+
+      // Should show skip button
+      expect(find.text('Skip'), findsOneWidget);
+    });
+
+    testWidgets('error state skip button calls onSkip', (tester) async {
+      var skipCalled = false;
+      const errorState = ReferenceImageSelectionState(
+        errorCode: ReferenceImageSelectionError.loadImagesFailed,
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(errorState),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () => skipCalled = true,
+          ),
+        ),
+      );
+
+      // Tap skip button
+      await tester.tap(find.text('Skip'));
+      await tester.pump();
+
+      expect(skipCalled, isTrue);
+    });
   });
 }

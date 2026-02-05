@@ -226,6 +226,53 @@ void main() {
     expect(find.byType(LabelChip), findsNWidgets(2));
   });
 
+  testWidgets('hides private labels when showPrivateEntries is false',
+      (tester) async {
+    // Arrange labels in the cache with one private label
+    final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+    final now = DateTime(2025, 11, 3, 12);
+    final publicLabel = LabelDefinition(
+      id: 'public',
+      createdAt: now,
+      updatedAt: now,
+      name: 'Public Label',
+      color: '#3366FF',
+      vectorClock: null,
+      private: false,
+    );
+    final privateLabel = LabelDefinition(
+      id: 'private',
+      createdAt: now,
+      updatedAt: now,
+      name: 'Private Label',
+      color: '#FF3366',
+      vectorClock: null,
+      private: true,
+    );
+    when(() => cache.getLabelById('public')).thenReturn(publicLabel);
+    when(() => cache.getLabelById('private')).thenReturn(privateLabel);
+    when(() => cache.showPrivateEntries).thenReturn(false);
+
+    // Build a task with both labels
+    final meta = buildTask().meta.copyWith(labelIds: ['public', 'private']);
+    final task = buildTask().copyWith(meta: meta);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: ModernTaskCard(task: task),
+          ),
+        ),
+      ),
+    );
+
+    // Only public label should be rendered
+    expect(find.byType(LabelChip), findsOneWidget);
+    expect(find.text('Public Label'), findsOneWidget);
+    expect(find.text('Private Label'), findsNothing);
+  });
+
   testWidgets('status chip + icon reflect task status variants',
       (tester) async {
     Future<void> pumpWithStatus(TaskStatus status) async {

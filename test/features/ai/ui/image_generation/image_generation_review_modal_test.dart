@@ -683,7 +683,122 @@ void main() {
       final button = tester.widget<LottiPrimaryButton>(retryButton);
       expect(button.onPressed, isNull);
     });
+
+    testWidgets('generating state shows reference images count when present',
+        (tester) async {
+      // Create state with selected reference images to pass through callbacks
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          JournalImage(
+            meta: Metadata(
+              id: 'img-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-1',
+              imageFile: 'test.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+          JournalImage(
+            meta: Metadata(
+              id: 'img-2',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-2',
+              imageFile: 'test2.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+        ],
+        selectedImageIds: const {'img-1', 'img-2'},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                const ImageGenerationState.generating(prompt: testPrompt),
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionControllerWithProcessing(
+                stateWithImages,
+                processedImages: const [
+                  ProcessedReferenceImage(
+                    base64Data: 'data1',
+                    mimeType: 'image/jpeg',
+                    originalId: 'img-1',
+                  ),
+                  ProcessedReferenceImage(
+                    base64Data: 'data2',
+                    mimeType: 'image/jpeg',
+                    originalId: 'img-2',
+                  ),
+                ],
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      // First tap Continue to trigger image processing and generation
+      await tester.tap(find.text('Continue (2)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Should now be in generating state showing reference images count
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Generating image...'), findsOneWidget);
+      expect(find.text('Using 2 reference image(s)'), findsOneWidget);
+    });
   });
+}
+
+/// Mock controller that returns processed images for testing.
+class _MockReferenceImageSelectionControllerWithProcessing
+    extends ReferenceImageSelectionController {
+  _MockReferenceImageSelectionControllerWithProcessing(
+    this._fixedState, {
+    this.processedImages = const [],
+  });
+
+  final ReferenceImageSelectionState _fixedState;
+  final List<ProcessedReferenceImage> processedImages;
+
+  @override
+  ReferenceImageSelectionState build({required String taskId}) {
+    return _fixedState;
+  }
+
+  @override
+  void toggleImageSelection(String imageId) {}
+
+  @override
+  void clearSelection() {}
+
+  @override
+  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
+    return processedImages;
+  }
 }
 
 /// Mock reference image selection controller that returns a fixed state.
