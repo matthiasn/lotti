@@ -3492,6 +3492,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Search all logs...';
+
+  @override
+  String get celebrationTapToContinue => 'Tap to continue';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -4876,4 +4879,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get logsSearchHint => 'Search all logs…';
+
+  @override
+  String get celebrationTapToContinue => 'Tap to continue';
 }

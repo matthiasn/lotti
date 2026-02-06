@@ -5,11 +5,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/gamey/gamey_settings_card.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -20,6 +22,31 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
     final enableDashboards =
         ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+    final themingState = ref.watch(themingControllerProvider);
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
+
+    Widget settingsCard({
+      required String title,
+      required String subtitle,
+      required IconData icon,
+      required VoidCallback onTap,
+    }) {
+      if (useGamey) {
+        return GameySettingsCard(
+          title: title,
+          subtitle: subtitle,
+          icon: icon,
+          onTap: onTap,
+        );
+      }
+      return AnimatedModernSettingsCardWithIcon(
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        onTap: onTap,
+      );
+    }
 
     return SliverBoxAdapterPage(
       title: context.messages.navTabTitleSettings,
@@ -34,32 +61,32 @@ class SettingsPage extends ConsumerWidget {
       ],
       child: Column(
         children: [
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: "What's New",
             subtitle: 'See the latest updates and features',
             icon: Icons.new_releases_outlined,
             onTap: () => WhatsNewModal.show(context, ref),
           ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: 'AI Settings',
             subtitle: 'Configure AI providers, models, and prompts',
             icon: Icons.psychology_rounded,
             onTap: () => context.beamToNamed('/settings/ai'),
           ),
           if (enableHabits)
-            AnimatedModernSettingsCardWithIcon(
+            settingsCard(
               title: context.messages.settingsHabitsTitle,
               subtitle: 'Manage your habits and routines',
               icon: Icons.repeat_rounded,
               onTap: () => context.beamToNamed('/settings/habits'),
             ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: context.messages.settingsCategoriesTitle,
             subtitle: 'Categories with AI settings',
             icon: Icons.category_rounded,
             onTap: () => context.beamToNamed('/settings/categories'),
           ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: 'Labels',
             subtitle: 'Organize tasks with colored labels',
             icon: Icons.label_rounded,
@@ -71,7 +98,7 @@ class SettingsPage extends ConsumerWidget {
             builder: (context, snap) {
               final enabled = snap.data ?? false;
               if (!enabled) return const SizedBox.shrink();
-              return AnimatedModernSettingsCardWithIcon(
+              return settingsCard(
                 title: context.messages.settingsMatrixTitle,
                 subtitle: context.messages.settingsSyncSubtitle,
                 icon: Icons.sync,
@@ -79,39 +106,39 @@ class SettingsPage extends ConsumerWidget {
               );
             },
           ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: context.messages.settingsTagsTitle,
             subtitle: 'Tag and label your entries',
             icon: Icons.label_rounded,
             onTap: () => context.beamToNamed('/settings/tags'),
           ),
           if (enableDashboards)
-            AnimatedModernSettingsCardWithIcon(
+            settingsCard(
               title: context.messages.settingsDashboardsTitle,
               subtitle: 'Customize your dashboard views',
               icon: Icons.dashboard_rounded,
               onTap: () => context.beamToNamed('/settings/dashboards'),
             ),
           if (enableDashboards)
-            AnimatedModernSettingsCardWithIcon(
+            settingsCard(
               title: context.messages.settingsMeasurablesTitle,
               subtitle: 'Configure measurable data types',
               icon: Icons.trending_up_rounded,
               onTap: () => context.beamToNamed('/settings/measurables'),
             ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: context.messages.settingsThemingTitle,
             subtitle: 'Customize app appearance and themes',
             icon: Icons.palette_rounded,
             onTap: () => context.beamToNamed('/settings/theming'),
           ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: context.messages.settingsFlagsTitle,
             subtitle: 'Configure feature flags and options',
             icon: Icons.tune_rounded,
             onTap: () => context.beamToNamed('/settings/flags'),
           ),
-          AnimatedModernSettingsCardWithIcon(
+          settingsCard(
             title: context.messages.settingsAdvancedTitle,
             subtitle: 'Advanced settings and maintenance',
             icon: Icons.settings_rounded,

@@ -10,6 +10,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:lotti/widgets/search/index.dart';
 
 class LabelsListPage extends ConsumerStatefulWidget {
@@ -56,9 +57,9 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GameyFab(
         onPressed: () => beamToNamed('/settings/labels/create'),
-        tooltip: context.messages.settingsLabelsCreateTitle,
+        semanticLabel: context.messages.settingsLabelsCreateTitle,
         child: const Icon(Icons.add),
       ),
     );

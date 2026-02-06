@@ -108,8 +108,8 @@ void main() {
       // Verify the segmented button for theme mode is present
       expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
 
-      // Verify the theme selection text fields are present
-      expect(find.byType(TextField), findsNWidgets(2));
+      // Verify the theme selection input decorators are present
+      expect(find.byType(InputDecorator), findsNWidgets(2));
 
       // Verify the theme selection labels are present (localized)
       expect(find.text(l10n.settingThemingLight), findsOneWidget);
@@ -144,9 +144,9 @@ void main() {
       final l10n =
           AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
 
-      // Find and tap the light theme text field by label
+      // Find and tap the light theme input decorator by label
       final lightThemeField =
-          find.widgetWithText(TextField, l10n.settingThemingLight);
+          find.widgetWithText(InputDecorator, l10n.settingThemingLight);
       expect(lightThemeField, findsOneWidget);
       await tester.tap(lightThemeField);
       await tester.pumpAndSettle();
@@ -177,9 +177,9 @@ void main() {
       final l10n =
           AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
 
-      // Find and tap the dark theme text field by label
+      // Find and tap the dark theme input decorator by label
       final darkThemeField =
-          find.widgetWithText(TextField, l10n.settingThemingDark);
+          find.widgetWithText(InputDecorator, l10n.settingThemingDark);
       expect(darkThemeField, findsOneWidget);
       await tester.tap(darkThemeField);
       await tester.pumpAndSettle();
@@ -209,7 +209,7 @@ void main() {
       final l10n =
           AppLocalizations.of(tester.element(find.byType(ThemingPage)))!;
       final lightThemeField =
-          find.widgetWithText(TextField, l10n.settingThemingLight);
+          find.widgetWithText(InputDecorator, l10n.settingThemingLight);
       await tester.tap(lightThemeField);
       await tester.pumpAndSettle();
 
@@ -242,19 +242,18 @@ void main() {
       );
     });
 
-    testWidgets('theme selection fields are read-only', (tester) async {
+    testWidgets('theme selection fields are read-only (using InputDecorator)',
+        (tester) async {
       await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
       await tester.pumpAndSettle();
 
-      // Find the text fields
-      final textFields = find.byType(TextField);
-      expect(textFields, findsNWidgets(2));
+      // Find the input decorators (replaced TextField for read-only display)
+      final inputDecorators = find.byType(InputDecorator);
+      expect(inputDecorators, findsNWidgets(2));
 
-      // Verify they are read-only
-      for (final element in textFields.evaluate()) {
-        final textField = element.widget as TextField;
-        expect(textField.readOnly, isTrue);
-      }
+      // Verify they display the theme names as Text widgets (read-only)
+      // The InputDecorator + Text pattern is inherently read-only
+      expect(find.text('Grey Law'), findsNWidgets(2));
     });
   });
 }

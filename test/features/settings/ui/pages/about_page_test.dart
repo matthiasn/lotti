@@ -38,6 +38,9 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(mockJournalDb);
 
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
+
       when(
         () => mockJournalDb.getTasksCount(statuses: any(named: 'statuses')),
       ).thenAnswer((_) async => 10);

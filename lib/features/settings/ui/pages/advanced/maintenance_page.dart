@@ -4,12 +4,12 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/widgets/gamey/gamey_settings_card.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 class MaintenancePage extends ConsumerWidget {
@@ -19,7 +19,6 @@ class MaintenancePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final maintenance = getIt<Maintenance>();
     final db = getIt<JournalDb>();
-    Theme.of(context);
 
     return FutureBuilder<int>(
       future: db.getTaggedCount(),
@@ -32,7 +31,7 @@ class MaintenancePage extends ConsumerWidget {
           showBackButton: true,
           child: Column(
             children: [
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.settingsResetHintsTitle,
                 subtitle: context.messages.settingsResetHintsSubtitle,
                 icon: Icons.tips_and_updates_outlined,
@@ -55,7 +54,7 @@ class MaintenancePage extends ConsumerWidget {
                   }
                 },
               ),
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.settingsResetGeminiTitle,
                 subtitle: context.messages.settingsResetGeminiSubtitle,
                 icon: Icons.auto_awesome,
@@ -72,7 +71,7 @@ class MaintenancePage extends ConsumerWidget {
                       .resetDismissal();
                 },
               ),
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.maintenanceDeleteEditorDb,
                 subtitle: context.messages.maintenanceDeleteEditorDbDescription,
                 icon: Icons.edit_note_rounded,
@@ -89,7 +88,7 @@ class MaintenancePage extends ConsumerWidget {
                   }
                 },
               ),
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.maintenanceDeleteLoggingDb,
                 subtitle:
                     context.messages.maintenanceDeleteLoggingDbDescription,
@@ -107,13 +106,13 @@ class MaintenancePage extends ConsumerWidget {
                   }
                 },
               ),
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.maintenancePurgeDeleted,
                 subtitle: context.messages.maintenancePurgeDeletedDescription,
                 icon: Icons.delete_forever_rounded,
                 onTap: () => PurgeModal.show(context),
               ),
-              AnimatedModernSettingsCardWithIcon(
+              AdaptiveSettingsCard(
                 title: context.messages.maintenanceRecreateFts5,
                 subtitle: context.messages.maintenanceRecreateFts5Description,
                 icon: Icons.search_rounded,

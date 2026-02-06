@@ -546,5 +546,7 @@
       }
     }
   },
-  "logsSearchHint": "Rechercher tous les logs..."
+  "logsSearchHint": "Rechercher tous les logs...",
+
+  "celebrationTapToContinue": "Appuyez pour continuer"
 }

@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../../test_helper.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
@@ -28,8 +29,8 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
     return id == 'test-category-id'
         ? CategoryDefinition(
             id: 'test-category-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 1, 15, 12),
+            updatedAt: DateTime(2024, 1, 15, 12),
             name: 'Test Category',
             vectorClock: null,
             private: false,
@@ -110,8 +111,8 @@ void main() {
       ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<Directory>(mockDirectory);
 
-    // Create test data
-    final now = DateTime.now();
+    // Create test data with fixed dates (never use DateTime.now() in tests)
+    final now = DateTime(2024, 1, 15, 12);
     const categoryId = 'test-category-id';
     const entryId = 'test-entry-id';
     const taskId = 'test-task-id';
@@ -223,17 +224,16 @@ void main() {
     final filePath =
         p.join(mockDirectory.path, 'images', '2023-01-01', 'test-image.jpg');
     File(filePath).createSync();
+
+    // Ensure ThemingController dependencies are registered
+    ensureThemingServicesRegistered();
   });
 
-  tearDown(() {
-    // Clean up registered services
-    getIt
-      ..unregister<EntitiesCacheService>()
-      ..unregister<TimeService>()
-      ..unregister<NavService>()
-      ..unregister<TagsService>()
-      ..unregister<Directory>();
+  tearDown(() async {
+    // Reset all registered services
+    await getIt.reset();
 
+    // Clean up temporary filesystem
     try {
       mockDirectory.deleteSync(recursive: true);
     } catch (_) {}

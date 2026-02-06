@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
@@ -21,9 +22,12 @@ void main() {
   group('CategoriesListPage Widget Tests', () {
     late MockCategoryRepository mockRepository;
 
-    setUp(() {
+    setUp(() async {
+      await setUpTestGetIt();
       mockRepository = MockCategoryRepository();
     });
+
+    tearDown(tearDownTestGetIt);
 
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {

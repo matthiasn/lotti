@@ -5,9 +5,11 @@ import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/gamey/gamey_theme.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/gamey/gamey_card.dart';
 
 class ThemingPage extends ConsumerWidget {
   const ThemingPage({super.key});
@@ -41,61 +43,84 @@ class ThemingPage extends ConsumerWidget {
     if (themingState.darkTheme == null) {
       return const SizedBox.shrink();
     }
+
+    final brightness = Theme.of(context).brightness;
+    final useGamey = themingState.isGameyThemeForBrightness(brightness);
+
+    // Build the content that goes inside the card
+    Widget buildCardContent() {
+      return Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          children: [
+            SegmentedButton<ThemeMode>(
+              selected: {themingState.themeMode},
+              showSelectedIcon: false,
+              onSelectionChanged: controller.onThemeSelectionChanged,
+              segments: [
+                segment(
+                  filter: ThemeMode.dark,
+                  icon: Icons.nightlight_outlined,
+                  activeIcon: Icons.nightlight,
+                  semanticLabel: context.messages.settingsThemingDark,
+                ),
+                segment(
+                  filter: ThemeMode.system,
+                  icon: isMobile ? Icons.smartphone : Icons.laptop,
+                  activeIcon: isMobile
+                      ? Icons.smartphone_outlined
+                      : Icons.laptop_outlined,
+                  semanticLabel: context.messages.settingsThemingAutomatic,
+                ),
+                segment(
+                  filter: ThemeMode.light,
+                  icon: Icons.wb_sunny_outlined,
+                  activeIcon: Icons.sunny,
+                  semanticLabel: context.messages.settingsThemingLight,
+                ),
+              ],
+            ),
+            const SizedBox(height: 25),
+            SelectTheme(
+              setTheme: controller.setLightTheme,
+              labelText: context.messages.settingThemingLight,
+              semanticsLabel: context.messages.settingThemingLight,
+              getSelected: (state) => state.lightThemeName ?? '',
+            ),
+            const SizedBox(height: 25),
+            SelectTheme(
+              setTheme: controller.setDarkTheme,
+              labelText: context.messages.settingThemingDark,
+              semanticsLabel: context.messages.settingThemingDark,
+              getSelected: (state) => state.darkThemeName ?? '',
+            ),
+          ],
+        ),
+      );
+    }
+
     return SliverBoxAdapterPage(
       title: context.messages.settingsThemingTitle,
       showBackButton: true,
-      child: ModernBaseCard(
-        margin: const EdgeInsets.all(10),
-        child: Padding(
-          padding: const EdgeInsets.all(25),
-          child: Column(
-            children: [
-              SegmentedButton<ThemeMode>(
-                selected: {themingState.themeMode},
-                showSelectedIcon: false,
-                onSelectionChanged: controller.onThemeSelectionChanged,
-                segments: [
-                  segment(
-                    filter: ThemeMode.dark,
-                    icon: Icons.nightlight_outlined,
-                    activeIcon: Icons.nightlight,
-                    semanticLabel: context.messages.settingsThemingDark,
-                  ),
-                  segment(
-                    filter: ThemeMode.system,
-                    icon: isMobile ? Icons.smartphone : Icons.laptop,
-                    activeIcon: isMobile
-                        ? Icons.smartphone_outlined
-                        : Icons.laptop_outlined,
-                    semanticLabel: context.messages.settingsThemingAutomatic,
-                  ),
-                  segment(
-                    filter: ThemeMode.light,
-                    icon: Icons.wb_sunny_outlined,
-                    activeIcon: Icons.sunny,
-                    semanticLabel: context.messages.settingsThemingLight,
-                  ),
-                ],
+      child: Column(
+        children: [
+          // Theme Mode and Color Selection
+          if (useGamey)
+            GameySubtleCard(
+              accentColor: GameyColors.gameyAccent,
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingLarge,
+                vertical: AppTheme.cardSpacing / 2,
               ),
-              const SizedBox(height: 25),
-              SelectTheme(
-                setTheme: controller.setLightTheme,
-                labelText: context.messages.settingThemingLight,
-                semanticsLabel: 'Select light theme',
-                getSelected: (state) => state.lightThemeName ?? '',
-              ),
-              const SizedBox(
-                height: 25,
-              ),
-              SelectTheme(
-                setTheme: controller.setDarkTheme,
-                labelText: context.messages.settingThemingDark,
-                semanticsLabel: 'Select dark theme',
-                getSelected: (state) => state.darkThemeName ?? '',
-              ),
-            ],
-          ),
-        ),
+              padding: EdgeInsets.zero,
+              child: buildCardContent(),
+            )
+          else
+            ModernBaseCard(
+              margin: const EdgeInsets.all(10),
+              child: buildCardContent(),
+            ),
+        ],
       ),
     );
   }
@@ -118,8 +143,10 @@ class SelectTheme extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themingState = ref.watch(themingControllerProvider);
-    final controller = TextEditingController()
-      ..text = getSelected(themingState);
+    final selectedThemeName = getSelected(themingState);
+    final isGamey = isGameyTheme(selectedThemeName);
+    final colorScheme = Theme.of(context).colorScheme;
+    final themeData = Theme.of(context);
 
     void onTap() {
       showModalBottomSheet<void>(
@@ -138,13 +165,20 @@ class SelectTheme extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ...themes.keys.map(
+                  ...allThemeNames.map(
                     (key) => SettingsCard(
                       onTap: () {
                         setTheme(key);
                         Navigator.pop(context);
                       },
                       title: key,
+                      trailing: isGameyTheme(key)
+                          ? Icon(
+                              Icons.auto_awesome,
+                              color: colorScheme.primary,
+                              size: 20,
+                            )
+                          : null,
                     ),
                   ),
                 ],
@@ -155,17 +189,26 @@ class SelectTheme extends ConsumerWidget {
       );
     }
 
-    return TextField(
+    return GestureDetector(
       onTap: onTap,
-      readOnly: true,
-      focusNode: FocusNode(),
-      controller: controller,
-      decoration: inputDecoration(
-        labelText: labelText,
-        semanticsLabel: semanticsLabel,
-        themeData: Theme.of(context),
-      ).copyWith(
-        border: InputBorder.none,
+      child: InputDecorator(
+        decoration: inputDecoration(
+          labelText: labelText,
+          semanticsLabel: semanticsLabel,
+          themeData: themeData,
+        ).copyWith(
+          border: InputBorder.none,
+          suffixIcon: isGamey
+              ? Icon(
+                  Icons.auto_awesome,
+                  color: colorScheme.primary,
+                )
+              : null,
+        ),
+        child: Text(
+          selectedThemeName,
+          style: themeData.textTheme.titleMedium,
+        ),
       ),
     );
   }

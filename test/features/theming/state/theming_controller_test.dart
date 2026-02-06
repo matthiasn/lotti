@@ -13,6 +13,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -715,6 +716,158 @@ void main() {
         expect(copy.lightTheme, equals(newLightTheme));
         expect(copy.darkThemeName, equals('Grey Law'));
         expect(copy.lightThemeName, equals('Grey Law'));
+      });
+
+      group('isUsingGameyTheme', () {
+        test('returns true when light theme is gamey', () {
+          final state = ThemingState(
+            darkTheme: ThemeData.dark(),
+            lightTheme: ThemeData.light(),
+            darkThemeName: 'Grey Law',
+            lightThemeName: gameyThemeName,
+          );
+
+          expect(state.isUsingGameyTheme, isTrue);
+        });
+
+        test('returns true when dark theme is gamey', () {
+          final state = ThemingState(
+            darkTheme: ThemeData.dark(),
+            lightTheme: ThemeData.light(),
+            darkThemeName: gameyThemeName,
+            lightThemeName: 'Grey Law',
+          );
+
+          expect(state.isUsingGameyTheme, isTrue);
+        });
+
+        test('returns true when both themes are gamey', () {
+          final state = ThemingState(
+            darkTheme: ThemeData.dark(),
+            lightTheme: ThemeData.light(),
+            darkThemeName: gameyThemeName,
+            lightThemeName: gameyThemeName,
+          );
+
+          expect(state.isUsingGameyTheme, isTrue);
+        });
+
+        test('returns false when neither theme is gamey', () {
+          final state = ThemingState(
+            darkTheme: ThemeData.dark(),
+            lightTheme: ThemeData.light(),
+            darkThemeName: 'Grey Law',
+            lightThemeName: 'Indigo',
+          );
+
+          expect(state.isUsingGameyTheme, isFalse);
+        });
+
+        test('returns false when theme names are null', () {
+          const state = ThemingState();
+
+          expect(state.isUsingGameyTheme, isFalse);
+        });
+      });
+    });
+
+    group('Gamey theme integration', () {
+      test('setLightTheme accepts gamey theme', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey))
+              .thenAnswer((_) async => 'Grey Law');
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          controller.setLightTheme(gameyThemeName);
+
+          final state = container.read(themingControllerProvider);
+          expect(state.lightThemeName, equals(gameyThemeName));
+          expect(state.isUsingGameyTheme, isTrue);
+
+          verify(
+            () => settingsDb.saveSettingsItem(
+              lightSchemeNameKey,
+              gameyThemeName,
+            ),
+          ).called(1);
+        });
+      });
+
+      test('setDarkTheme accepts gamey theme', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(darkSchemeNameKey))
+              .thenAnswer((_) async => 'Grey Law');
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          controller.setDarkTheme(gameyThemeName);
+
+          final state = container.read(themingControllerProvider);
+          expect(state.darkThemeName, equals(gameyThemeName));
+          expect(state.isUsingGameyTheme, isTrue);
+
+          verify(
+            () => settingsDb.saveSettingsItem(
+              darkSchemeNameKey,
+              gameyThemeName,
+            ),
+          ).called(1);
+        });
+      });
+
+      test('loads saved gamey theme from preferences', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey))
+              .thenAnswer((_) async => gameyThemeName);
+          when(() => settingsDb.itemByKey(darkSchemeNameKey))
+              .thenAnswer((_) async => gameyThemeName);
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          expect(states.last.lightThemeName, equals(gameyThemeName));
+          expect(states.last.darkThemeName, equals(gameyThemeName));
+          expect(states.last.isUsingGameyTheme, isTrue);
+        });
+      });
+
+      test('gamey theme builds valid ThemeData', () {
+        fakeAsync((async) {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey))
+              .thenAnswer((_) async => gameyThemeName);
+          when(() => settingsDb.itemByKey(darkSchemeNameKey))
+              .thenAnswer((_) async => gameyThemeName);
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Verify ThemeData is valid and not null
+          expect(states.last.lightTheme, isNotNull);
+          expect(states.last.darkTheme, isNotNull);
+          expect(states.last.lightTheme, isA<ThemeData>());
+          expect(states.last.darkTheme, isA<ThemeData>());
+        });
       });
     });
   });

@@ -62,6 +62,9 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 

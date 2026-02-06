@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/themes/gamey/gamey_theme_builder.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -43,6 +44,28 @@ class ThemingState {
   final String? darkThemeName;
   final String? lightThemeName;
   final ThemeMode themeMode;
+
+  /// Check if the currently active theme is using the gamey theme.
+  /// This considers the current theme mode to determine which theme is active.
+  bool get isUsingGameyTheme {
+    switch (themeMode) {
+      case ThemeMode.light:
+        return isGameyTheme(lightThemeName);
+      case ThemeMode.dark:
+        return isGameyTheme(darkThemeName);
+      case ThemeMode.system:
+        // For system mode, check both since we don't know the system preference here.
+        // Widgets should use isCurrentlyUsingGameyTheme with BuildContext instead.
+        return isGameyTheme(lightThemeName) || isGameyTheme(darkThemeName);
+    }
+  }
+
+  /// Check if the gamey theme is active for a specific brightness.
+  bool isGameyThemeForBrightness(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? isGameyTheme(darkThemeName)
+        : isGameyTheme(lightThemeName);
+  }
 
   ThemingState copyWith({
     ThemeData? darkTheme,
@@ -168,8 +191,14 @@ class ThemingController extends _$ThemingController {
   }
 
   ThemeData _buildTheme(String? themeName, {required bool isDark}) {
-    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-    final themeData = isDark
+    // Check if this is the gamey theme
+    final isGamey = isGameyTheme(themeName);
+
+    // For gamey theme, use the designated base scheme; otherwise use selected scheme
+    final scheme =
+        isGamey ? gameyBaseScheme : (themes[themeName] ?? FlexScheme.greyLaw);
+
+    var themeData = isDark
         ? FlexThemeData.dark(
             scheme: scheme,
             fontFamily: GoogleFonts.inclusiveSans().fontFamily,
@@ -180,7 +209,16 @@ class ThemingController extends _$ThemingController {
             fontFamily: GoogleFonts.inclusiveSans().fontFamily,
             fontFamilyFallback: _getEmojiFontFallback(),
           );
-    return withOverrides(themeData);
+
+    // Apply base overrides
+    themeData = withOverrides(themeData);
+
+    // Apply gamey theme enhancements if this is the gamey theme
+    if (isGamey) {
+      themeData = GameyThemeBuilder.build(themeData);
+    }
+
+    return themeData;
   }
 
   void _enqueueSyncMessage() {
@@ -220,7 +258,7 @@ class ThemingController extends _$ThemingController {
 
   /// Sets the light theme to the specified theme name.
   void setLightTheme(String themeName) {
-    if (themes[themeName] == null) return;
+    if (!isValidThemeName(themeName)) return;
 
     state = state.copyWith(
       lightTheme: _buildTheme(themeName, isDark: false),
@@ -233,7 +271,7 @@ class ThemingController extends _$ThemingController {
 
   /// Sets the dark theme to the specified theme name.
   void setDarkTheme(String themeName) {
-    if (themes[themeName] == null) return;
+    if (!isValidThemeName(themeName)) return;
 
     state = state.copyWith(
       darkTheme: _buildTheme(themeName, isDark: true),

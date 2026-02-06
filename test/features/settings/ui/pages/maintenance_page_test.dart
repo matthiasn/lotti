@@ -36,6 +36,9 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<Maintenance>(mockMaintenance)
         ..registerSingleton<NotificationService>(mockNotificationService);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 

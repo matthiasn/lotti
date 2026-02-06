@@ -28,6 +28,9 @@ void main() {
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 

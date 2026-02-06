@@ -142,6 +142,9 @@ void main() {
           type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
         ),
       ).thenAnswer((_) async => []);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 
@@ -287,6 +290,9 @@ void main() {
 
       when(() => mockJournalDb.journalEntityById(testTask.meta.id))
           .thenAnswer((_) async => testTask);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
 
     tearDown(getIt.reset);

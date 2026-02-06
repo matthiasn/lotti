@@ -140,6 +140,9 @@ void main() {
       when(
         () => mockJournalDb.getMeasurableDataTypeById(any()),
       ).thenAnswer((_) async => measurableWater);
+
+      // Ensure ThemingController dependencies are registered
+      ensureThemingServicesRegistered();
     });
     tearDown(getIt.reset);
 

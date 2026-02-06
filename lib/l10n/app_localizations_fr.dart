@@ -3525,4 +3525,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get logsSearchHint => 'Rechercher tous les logs...';
+
+  @override
+  String get celebrationTapToContinue => 'Appuyez pour continuer';
 }
