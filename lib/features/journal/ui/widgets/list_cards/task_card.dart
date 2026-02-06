@@ -90,14 +90,15 @@ class ModernTaskCard extends StatelessWidget {
               right: AppTheme.cardPadding,
               bottom: 10,
             ),
-            child: _buildStandardContent(context),
+            child: _buildStandardContent(context, hasCoverArt: true),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStandardContent(BuildContext context) {
+  Widget _buildStandardContent(BuildContext context,
+      {bool hasCoverArt = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -105,7 +106,8 @@ class ModernTaskCard extends StatelessWidget {
         ModernCardContent(
           title: task.data.title,
           maxTitleLines: 3,
-          subtitleWidget: _buildSubtitleWidget(context),
+          subtitleWidget:
+              _buildSubtitleWidget(context, hasCoverArt: hasCoverArt),
           trailing: TimeRecordingIcon(
             taskId: task.meta.id,
           ),
@@ -167,8 +169,42 @@ class ModernTaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitleWidget(BuildContext context) {
+  Widget _buildSubtitleWidget(BuildContext context,
+      {bool hasCoverArt = false}) {
     final brightness = Theme.of(context).brightness;
+
+    // When there's cover art, put progress on its own row to avoid overflow
+    if (hasCoverArt) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            key: const Key('task_status_row'),
+            children: [
+              ModernStatusChip(
+                label: task.data.priority.short,
+                color: task.data.priority.colorForBrightness(brightness),
+                borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: ModernStatusChip(
+                  label: _getStatusLabel(context, task.data.status),
+                  color: task.data.status.colorForBrightness(brightness),
+                  icon: _getStatusIcon(task.data.status),
+                ),
+              ),
+              const SizedBox(width: 6),
+              CategoryIconCompact(task.meta.categoryId),
+            ],
+          ),
+          const SizedBox(height: 6),
+          CompactTaskProgress(taskId: task.id),
+          ..._buildLabelsContent(context),
+        ],
+      );
+    }
+
     final statusRow = Row(
       key: const Key('task_status_row'),
       children: [
@@ -234,6 +270,18 @@ class ModernTaskCard extends StatelessWidget {
           )
           .toList(),
     );
+  }
+
+  /// Returns labels as a list of widgets for use with spread operator.
+  List<Widget> _buildLabelsContent(BuildContext context) {
+    final labels = _buildLabelsWrap(context);
+    if (labels == null) {
+      return [];
+    }
+    return [
+      const SizedBox(height: 6),
+      labels,
+    ];
   }
 
   String _getStatusLabel(BuildContext context, TaskStatus status) {

@@ -104,10 +104,12 @@ void main() {
 
       expect(find.byType(Icon), findsNothing);
 
-      // Check that row only contains text
+      // Check that row only contains Flexible with Text (no icon or spacer)
       final row = tester.widget<Row>(find.byType(Row));
       expect(row.children.length, 1);
-      expect(row.children.first, isA<Text>());
+      expect(row.children.first, isA<Flexible>());
+      final flexible = row.children.first as Flexible;
+      expect(flexible.child, isA<Text>());
     });
 
     testWidgets('dark mode adjusts alpha values correctly', (tester) async {
@@ -307,11 +309,14 @@ void main() {
       await tester.pumpAndSettle();
 
       final row = tester.widget<Row>(find.byType(Row));
-      expect(row.children.length, 3); // Icon, SizedBox, Text
+      expect(row.children.length, 3); // Icon, SizedBox, Flexible(Text)
       expect(row.children[1], isA<SizedBox>());
 
       final spacer = row.children[1] as SizedBox;
       expect(spacer.width, 4);
+
+      // Verify the text is wrapped in Flexible
+      expect(row.children[2], isA<Flexible>());
     });
   });
 }

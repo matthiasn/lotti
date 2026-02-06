@@ -1,9 +1,15 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/image_generation_controller.dart';
+import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
@@ -20,22 +26,59 @@ final _testImageBytes = Uint8List.fromList([
 ]);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const testEntityId = 'test-entity-id';
   const testLinkedTaskId = 'test-task-id';
   const testPrompt = 'Test image generation prompt';
+
+  late Directory mockDocumentsDirectory;
+
+  setUp(() async {
+    await getIt.reset();
+    getIt.allowReassignment = true;
+
+    // Create a temp directory to simulate the documents directory
+    mockDocumentsDirectory = Directory.systemTemp.createTempSync('modal_test_');
+
+    // Register temp directory for getDocumentsDirectory()
+    getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+    try {
+      mockDocumentsDirectory.deleteSync(recursive: true);
+    } catch (_) {
+      // Ignore cleanup errors
+    }
+  });
+
+  // Helper to create overrides that skip reference image selection
+  List<Override> createOverrides({
+    required ImageGenerationState imageGenState,
+  }) {
+    // Empty availableImages triggers onSkip which advances to generation step
+    const refImageState = ReferenceImageSelectionState();
+
+    return [
+      imageGenerationControllerProvider(entityId: testEntityId).overrideWith(
+        () => _MockImageGenerationController(imageGenState),
+      ),
+      referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+          .overrideWith(
+        () => _MockReferenceImageSelectionController(refImageState),
+      ),
+    ];
+  }
 
   group('ImageGenerationReviewModal', () {
     testWidgets('shows loading indicator in initial state', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                const ImageGenerationState.initial(),
-              ),
-            ),
-          ],
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.initial(),
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -44,7 +87,11 @@ void main() {
         ),
       );
 
+      // Pump several frames to let onSkip callback trigger the step change
+      // but don't use pumpAndSettle as CircularProgressIndicator animates indefinitely
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
@@ -52,14 +99,10 @@ void main() {
     testWidgets('shows generating state with spinner and text', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
+          overrides: createOverrides(
+            imageGenState:
                 const ImageGenerationState.generating(prompt: testPrompt),
-              ),
-            ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -68,7 +111,11 @@ void main() {
         ),
       );
 
+      // Pump several frames to let onSkip callback trigger the step change
+      // but don't use pumpAndSettle as CircularProgressIndicator animates indefinitely
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Generating image...'), findsOneWidget);
@@ -77,18 +124,13 @@ void main() {
     testWidgets('shows success state with image and buttons', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                ImageGenerationState.success(
-                  prompt: testPrompt,
-                  imageBytes: _testImageBytes,
-                  mimeType: 'image/png',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: ImageGenerationState.success(
+              prompt: testPrompt,
+              imageBytes: _testImageBytes,
+              mimeType: 'image/png',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -97,7 +139,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Should show the image
       expect(find.byType(Image), findsOneWidget);
@@ -117,17 +159,12 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                const ImageGenerationState.error(
-                  prompt: testPrompt,
-                  errorMessage: errorMessage,
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.error(
+              prompt: testPrompt,
+              errorMessage: errorMessage,
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -136,7 +173,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Should show error icon
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
@@ -153,18 +190,13 @@ void main() {
     testWidgets('edit prompt button shows prompt editor', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                ImageGenerationState.success(
-                  prompt: testPrompt,
-                  imageBytes: _testImageBytes,
-                  mimeType: 'image/png',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: ImageGenerationState.success(
+              prompt: testPrompt,
+              imageBytes: _testImageBytes,
+              mimeType: 'image/png',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -173,7 +205,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Tap the edit button
       await tester.tap(find.text('Edit Prompt'));
@@ -190,18 +222,13 @@ void main() {
     testWidgets('cancel edit returns to previous state', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                ImageGenerationState.success(
-                  prompt: testPrompt,
-                  imageBytes: _testImageBytes,
-                  mimeType: 'image/png',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: ImageGenerationState.success(
+              prompt: testPrompt,
+              imageBytes: _testImageBytes,
+              mimeType: 'image/png',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -210,7 +237,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Enter edit mode
       await tester.tap(find.text('Edit Prompt'));
@@ -230,18 +257,13 @@ void main() {
     testWidgets('prompt editor contains prompt from state', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                ImageGenerationState.success(
-                  prompt: testPrompt,
-                  imageBytes: _testImageBytes,
-                  mimeType: 'image/png',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: ImageGenerationState.success(
+              prompt: testPrompt,
+              imageBytes: _testImageBytes,
+              mimeType: 'image/png',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -250,7 +272,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Enter edit mode
       await tester.tap(find.text('Edit Prompt'));
@@ -264,17 +286,12 @@ void main() {
     testWidgets('error state edit button shows prompt editor', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                const ImageGenerationState.error(
-                  prompt: testPrompt,
-                  errorMessage: 'Some error',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.error(
+              prompt: testPrompt,
+              errorMessage: 'Some error',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -283,7 +300,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Tap the edit button from error state
       await tester.tap(find.text('Edit Prompt'));
@@ -329,9 +346,10 @@ void main() {
   });
 
   group('ImageGenerationReviewModal button interactions', () {
-    testWidgets('retry button calls retryGeneration on controller',
+    testWidgets('retry button calls generateImage with current prompt',
         (tester) async {
-      var retryCallCount = 0;
+      String? capturedPrompt;
+      const refImageState = ReferenceImageSelectionState();
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -343,8 +361,12 @@ void main() {
                   prompt: testPrompt,
                   errorMessage: 'Test error',
                 ),
-                onRetry: () => retryCallCount++,
+                onGenerateImage: (prompt) => capturedPrompt = prompt,
               ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(refImageState),
             ),
           ],
           child: const ImageGenerationReviewModal(
@@ -355,18 +377,20 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Tap retry button
       await tester.tap(find.text('Retry'));
       await tester.pump();
 
-      expect(retryCallCount, 1);
+      // Retry should call generateImage with the current prompt
+      expect(capturedPrompt, testPrompt);
     });
 
     testWidgets('generate button calls generateImage with edited prompt',
         (tester) async {
       String? capturedPrompt;
+      const refImageState = ReferenceImageSelectionState();
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -382,6 +406,10 @@ void main() {
                 onGenerateImage: (prompt) => capturedPrompt = prompt,
               ),
             ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(refImageState),
+            ),
           ],
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
@@ -391,7 +419,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Enter edit mode
       await tester.tap(find.text('Edit Prompt'));
@@ -412,6 +440,7 @@ void main() {
     testWidgets('generate button does nothing with empty prompt',
         (tester) async {
       var generateCallCount = 0;
+      const refImageState = ReferenceImageSelectionState();
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -427,6 +456,10 @@ void main() {
                 onGenerateImage: (_) => generateCallCount++,
               ),
             ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(refImageState),
+            ),
           ],
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
@@ -436,7 +469,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Enter edit mode
       await tester.tap(find.text('Edit Prompt'));
@@ -459,17 +492,12 @@ void main() {
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                const ImageGenerationState.error(
-                  prompt: errorPrompt,
-                  errorMessage: 'Some error',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.error(
+              prompt: errorPrompt,
+              errorMessage: 'Some error',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -478,7 +506,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Tap edit button from error state
       await tester.tap(find.text('Edit Prompt'));
@@ -492,18 +520,13 @@ void main() {
     testWidgets('cancel edit resets prompt text to original', (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
-          overrides: [
-            imageGenerationControllerProvider(entityId: testEntityId)
-                .overrideWith(
-              () => _MockImageGenerationController(
-                ImageGenerationState.success(
-                  prompt: testPrompt,
-                  imageBytes: _testImageBytes,
-                  mimeType: 'image/png',
-                ),
-              ),
+          overrides: createOverrides(
+            imageGenState: ImageGenerationState.success(
+              prompt: testPrompt,
+              imageBytes: _testImageBytes,
+              mimeType: 'image/png',
             ),
-          ],
+          ),
           child: const ImageGenerationReviewModal(
             entityId: testEntityId,
             linkedTaskId: testLinkedTaskId,
@@ -512,7 +535,7 @@ void main() {
         ),
       );
 
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Enter edit mode
       await tester.tap(find.text('Edit Prompt'));
@@ -536,18 +559,284 @@ void main() {
       expect(updatedTextField.controller?.text, testPrompt);
     });
   });
+
+  group('ImageGenerationReviewModal reference image flow', () {
+    testWidgets('retry does not include reference images when none selected',
+        (tester) async {
+      List<ProcessedReferenceImage>? capturedReferenceImages;
+      const refImageState = ReferenceImageSelectionState();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _TrackingMockImageGenerationControllerWithRefs(
+                const ImageGenerationState.error(
+                  prompt: testPrompt,
+                  errorMessage: 'Test error',
+                ),
+                onGenerateImageWithRefs: (prompt, refs) {
+                  capturedReferenceImages = refs;
+                },
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(refImageState),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap retry button
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      // Reference images should be null when none selected
+      expect(capturedReferenceImages, isNull);
+    });
+
+    testWidgets('modal step starts at selectImages', (tester) async {
+      // Create state that will show the selection widget
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          JournalImage(
+            meta: Metadata(
+              id: 'img-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-1',
+              imageFile: 'test.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                const ImageGenerationState.initial(),
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      // Don't settle - just pump once
+      await tester.pump();
+
+      // Should show reference image selection widget
+      expect(find.text('Select Reference Images'), findsOneWidget);
+    });
+
+    testWidgets('handles null prompt gracefully in error state',
+        (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: createOverrides(
+            imageGenState: const ImageGenerationState.error(
+              prompt: kFailedPromptPlaceholder,
+              errorMessage: 'Prompt generation failed',
+            ),
+          ),
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Error state should be shown
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+
+      // Retry button should be disabled for failed prompt
+      final retryButton = find.widgetWithText(LottiPrimaryButton, 'Retry');
+      expect(retryButton, findsOneWidget);
+      final button = tester.widget<LottiPrimaryButton>(retryButton);
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('generating state shows reference images count when present',
+        (tester) async {
+      // Create state with selected reference images to pass through callbacks
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          JournalImage(
+            meta: Metadata(
+              id: 'img-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-1',
+              imageFile: 'test.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+          JournalImage(
+            meta: Metadata(
+              id: 'img-2',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ImageData(
+              imageId: 'img-2',
+              imageFile: 'test2.jpg',
+              imageDirectory: mockDocumentsDirectory.path,
+              capturedAt: DateTime(2025),
+            ),
+          ),
+        ],
+        selectedImageIds: const {'img-1', 'img-2'},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            imageGenerationControllerProvider(entityId: testEntityId)
+                .overrideWith(
+              () => _MockImageGenerationController(
+                const ImageGenerationState.generating(prompt: testPrompt),
+              ),
+            ),
+            referenceImageSelectionControllerProvider(taskId: testLinkedTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionControllerWithProcessing(
+                stateWithImages,
+                processedImages: const [
+                  ProcessedReferenceImage(
+                    base64Data: 'data1',
+                    mimeType: 'image/jpeg',
+                    originalId: 'img-1',
+                  ),
+                  ProcessedReferenceImage(
+                    base64Data: 'data2',
+                    mimeType: 'image/jpeg',
+                    originalId: 'img-2',
+                  ),
+                ],
+              ),
+            ),
+          ],
+          child: const ImageGenerationReviewModal(
+            entityId: testEntityId,
+            linkedTaskId: testLinkedTaskId,
+            categoryId: null,
+          ),
+        ),
+      );
+
+      // First tap Continue to trigger image processing and generation
+      await tester.tap(find.text('Continue (2)'));
+      // Pump to process the tap
+      await tester.pump();
+      // Pump to let the async callback complete
+      await tester.pump();
+      // Pump to rebuild the widget tree after setState
+      await tester.pump();
+
+      // Should now be in generating state showing reference images count
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Generating image...'), findsOneWidget);
+      expect(find.text('Using 2 reference images'), findsOneWidget);
+    });
+  });
+}
+
+/// Mock controller that returns processed images for testing.
+class _MockReferenceImageSelectionControllerWithProcessing
+    extends ReferenceImageSelectionController {
+  _MockReferenceImageSelectionControllerWithProcessing(
+    this._fixedState, {
+    this.processedImages = const [],
+  });
+
+  final ReferenceImageSelectionState _fixedState;
+  final List<ProcessedReferenceImage> processedImages;
+
+  @override
+  ReferenceImageSelectionState build({required String taskId}) {
+    return _fixedState;
+  }
+
+  @override
+  void toggleImageSelection(String imageId) {}
+
+  @override
+  void clearSelection() {}
+
+  @override
+  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
+    return processedImages;
+  }
+}
+
+/// Mock reference image selection controller that returns a fixed state.
+class _MockReferenceImageSelectionController
+    extends ReferenceImageSelectionController {
+  _MockReferenceImageSelectionController(this._fixedState);
+
+  final ReferenceImageSelectionState _fixedState;
+
+  @override
+  ReferenceImageSelectionState build({required String taskId}) {
+    return _fixedState;
+  }
+
+  @override
+  void toggleImageSelection(String imageId) {}
+
+  @override
+  void clearSelection() {}
+
+  @override
+  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
+    return [];
+  }
 }
 
 /// Mock controller that tracks method calls for testing.
 class _TrackingMockImageGenerationController extends ImageGenerationController {
   _TrackingMockImageGenerationController(
     this._fixedState, {
-    this.onRetry,
     this.onGenerateImage,
   });
 
   final ImageGenerationState _fixedState;
-  final void Function()? onRetry;
   final void Function(String prompt)? onGenerateImage;
 
   @override
@@ -556,19 +845,25 @@ class _TrackingMockImageGenerationController extends ImageGenerationController {
   }
 
   @override
-  Future<void> generateImageFromEntity({required String audioEntityId}) {
+  Future<void> generateImageFromEntity({
+    required String audioEntityId,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
     return Future.value();
   }
 
   @override
-  Future<void> generateImage({required String prompt, String? systemMessage}) {
+  Future<void> generateImage({
+    required String prompt,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
     onGenerateImage?.call(prompt);
     return Future.value();
   }
 
   @override
   Future<void> retryGeneration({String? modifiedPrompt}) {
-    onRetry?.call();
     return Future.value();
   }
 
@@ -588,13 +883,20 @@ class _MockImageGenerationController extends ImageGenerationController {
   }
 
   @override
-  Future<void> generateImageFromEntity({required String audioEntityId}) {
+  Future<void> generateImageFromEntity({
+    required String audioEntityId,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
     // No-op for tests - we control state through constructor
     return Future.value();
   }
 
   @override
-  Future<void> generateImage({required String prompt, String? systemMessage}) {
+  Future<void> generateImage({
+    required String prompt,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
     // No-op for tests - we control state through constructor
     return Future.value();
   }
@@ -609,4 +911,48 @@ class _MockImageGenerationController extends ImageGenerationController {
   void reset() {
     // No-op for tests
   }
+}
+
+/// Mock controller that tracks reference images in generateImage calls.
+class _TrackingMockImageGenerationControllerWithRefs
+    extends ImageGenerationController {
+  _TrackingMockImageGenerationControllerWithRefs(
+    this._fixedState, {
+    this.onGenerateImageWithRefs,
+  });
+
+  final ImageGenerationState _fixedState;
+  final void Function(String prompt, List<ProcessedReferenceImage>? refs)?
+      onGenerateImageWithRefs;
+
+  @override
+  ImageGenerationState build({required String entityId}) {
+    return _fixedState;
+  }
+
+  @override
+  Future<void> generateImageFromEntity({
+    required String audioEntityId,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> generateImage({
+    required String prompt,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) {
+    onGenerateImageWithRefs?.call(prompt, referenceImages);
+    return Future.value();
+  }
+
+  @override
+  Future<void> retryGeneration({String? modifiedPrompt}) {
+    return Future.value();
+  }
+
+  @override
+  void reset() {}
 }

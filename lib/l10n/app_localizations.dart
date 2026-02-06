@@ -6244,6 +6244,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get imageGenerationRetry;
 
+  /// No description provided for @imageGenerationWithReferences.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}'**
+  String imageGenerationWithReferences(int count);
+
   /// No description provided for @generateCoverArt.
   ///
   /// In en, this message translates to:
@@ -6255,6 +6261,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
+
+  /// No description provided for @referenceImageSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Reference Images'**
+  String get referenceImageSelectionTitle;
+
+  /// No description provided for @referenceImageSelectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to 3 images to guide the AI\'s visual style'**
+  String get referenceImageSelectionSubtitle;
+
+  /// No description provided for @referenceImageSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get referenceImageSkip;
+
+  /// No description provided for @referenceImageContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get referenceImageContinue;
+
+  /// No description provided for @referenceImageContinueWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue ({count})'**
+  String referenceImageContinueWithCount(int count);
+
+  /// No description provided for @referenceImageLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load images. Please try again.'**
+  String get referenceImageLoadError;
 
   /// No description provided for @linkedTasksTitle.
   ///

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
@@ -694,6 +695,127 @@ void main() {
       expect(imageConfig.length, 2);
       expect(imageConfig['aspectRatio'], '16:9');
       expect(imageConfig['imageSize'], '2K');
+    });
+
+    test('includes reference images as inline_data parts', () {
+      final refImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'abc123',
+          mimeType: 'image/png',
+          originalId: 'img-1',
+        ),
+      ];
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate image',
+        referenceImages: refImages,
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+
+      // Should have 2 parts: 1 reference image + 1 text prompt
+      expect(parts.length, 2);
+
+      // First part should be the inline_data
+      expect(parts[0].containsKey('inline_data'), isTrue);
+      final inlineData = parts[0]['inline_data'] as Map<String, dynamic>;
+      expect(inlineData['mime_type'], 'image/png');
+      expect(inlineData['data'], 'abc123');
+
+      // Second part should be the text prompt
+      expect(parts[1]['text'], 'Generate image');
+    });
+
+    test('includes multiple reference images in order', () {
+      final refImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'data1',
+          mimeType: 'image/jpeg',
+          originalId: 'img-1',
+        ),
+        const ProcessedReferenceImage(
+          base64Data: 'data2',
+          mimeType: 'image/png',
+          originalId: 'img-2',
+        ),
+        const ProcessedReferenceImage(
+          base64Data: 'data3',
+          mimeType: 'image/webp',
+          originalId: 'img-3',
+        ),
+      ];
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate with references',
+        referenceImages: refImages,
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+
+      // Should have 4 parts: 3 reference images + 1 text prompt
+      expect(parts.length, 4);
+
+      // Verify images come before text and are in order
+      expect(
+        (parts[0]['inline_data'] as Map)['mime_type'],
+        'image/jpeg',
+      );
+      expect(
+        (parts[1]['inline_data'] as Map)['mime_type'],
+        'image/png',
+      );
+      expect(
+        (parts[2]['inline_data'] as Map)['mime_type'],
+        'image/webp',
+      );
+      expect(parts[3]['text'], 'Generate with references');
+    });
+
+    test('works with empty reference images list', () {
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate without references',
+        referenceImages: [],
+      );
+
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+
+      // Should have only text prompt
+      expect(parts.length, 1);
+      expect(parts[0]['text'], 'Generate without references');
+    });
+
+    test('combines reference images with system message', () {
+      final refImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'refdata',
+          mimeType: 'image/png',
+          originalId: 'ref-1',
+        ),
+      ];
+      final body = GeminiUtils.buildImageGenerationRequestBody(
+        prompt: 'Generate with style',
+        systemMessage: 'Use artistic style',
+        referenceImages: refImages,
+      );
+
+      // Verify reference images are in content
+      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
+      final parts =
+          (contents.first['parts'] as List).cast<Map<String, dynamic>>();
+      expect(parts.length, 2);
+      expect(parts[0].containsKey('inline_data'), isTrue);
+
+      // Verify system instruction is present
+      expect(body.containsKey('systemInstruction'), isTrue);
+      final systemInstruction =
+          body['systemInstruction'] as Map<String, dynamic>;
+      final systemParts =
+          (systemInstruction['parts'] as List).cast<Map<String, dynamic>>();
+      expect(systemParts.first['text'], 'Use artistic style');
     });
   });
 

@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Gemini inference over raw HTTP with OpenAI-compatible streaming output.
@@ -781,6 +782,7 @@ class GeminiInferenceRepository {
   /// - [model]: The Gemini model ID (e.g., 'models/gemini-3-pro-image-preview').
   /// - [provider]: Contains base URL and API key.
   /// - [systemMessage]: Optional system instruction for guiding generation.
+  /// - [referenceImages]: Optional list of reference images for visual context.
   ///
   /// Returns a [GeneratedImage] containing the image bytes and MIME type,
   /// or throws an exception if generation fails.
@@ -789,6 +791,7 @@ class GeminiInferenceRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
   }) async {
     final uri = GeminiUtils.buildGenerateContentUri(
       baseUrl: provider.baseUrl,
@@ -799,6 +802,7 @@ class GeminiInferenceRepository {
     final body = GeminiUtils.buildImageGenerationRequestBody(
       prompt: prompt,
       systemMessage: systemMessage,
+      referenceImages: referenceImages,
     );
 
     developer.log(

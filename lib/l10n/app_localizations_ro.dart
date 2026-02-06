@@ -3383,11 +3383,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageGenerationRetry => 'Reîncearcă';
 
   @override
+  String imageGenerationWithReferences(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Cu $count de imagini de referință',
+      few: 'Cu $count imagini de referință',
+      one: 'Cu 1 imagine de referință',
+      zero: 'Fără imagini de referință',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get generateCoverArt => 'Generează copertă';
 
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String get referenceImageSelectionTitle => 'Selectează imagini de referință';
+
+  @override
+  String get referenceImageSelectionSubtitle =>
+      'Alege până la 3 imagini pentru a ghida stilul vizual al IA';
+
+  @override
+  String get referenceImageSkip => 'Sari peste';
+
+  @override
+  String get referenceImageContinue => 'Continuă';
+
+  @override
+  String referenceImageContinueWithCount(int count) {
+    return 'Continuă ($count)';
+  }
+
+  @override
+  String get referenceImageLoadError =>
+      'Încărcarea imaginilor a eșuat. Te rugăm să încerci din nou.';
 
   @override
   String get linkedTasksTitle => 'Sarcini legate';

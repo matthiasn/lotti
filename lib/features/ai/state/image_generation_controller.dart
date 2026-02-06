@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -19,6 +20,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'image_generation_controller.freezed.dart';
 part 'image_generation_controller.g.dart';
+
+/// Placeholder used when prompt building fails.
+/// Exported for use in UI to detect failed prompt states.
+const kFailedPromptPlaceholder = '[Failed to build prompt]';
 
 /// State for image generation operations.
 @freezed
@@ -65,8 +70,10 @@ class ImageGenerationController extends _$ImageGenerationController {
   ///
   /// Parameters:
   /// - [audioEntityId]: The ID of the audio entry containing the voice description.
+  /// - [referenceImages]: Optional list of reference images for visual context.
   Future<void> generateImageFromEntity({
     required String audioEntityId,
+    List<ProcessedReferenceImage>? referenceImages,
   }) async {
     final loggingService = getIt<LoggingService>();
 
@@ -75,6 +82,9 @@ class ImageGenerationController extends _$ImageGenerationController {
       final journalRepository = ref.read(journalRepositoryProvider);
       final entity =
           await journalRepository.getJournalEntityById(audioEntityId);
+
+      // Check if still mounted after async operation
+      if (!ref.mounted) return;
 
       if (entity == null) {
         throw Exception('Audio entity not found: $audioEntityId');
@@ -95,17 +105,21 @@ class ImageGenerationController extends _$ImageGenerationController {
         entity: entity,
       );
 
+      // Check if still mounted after async operation
+      if (!ref.mounted) return;
+
       if (prompt == null || prompt.isEmpty) {
         throw Exception('Failed to build prompt from entity context');
       }
 
       developer.log(
-        'Built prompt from entity context (${prompt.length} chars)',
+        'Built prompt from entity context (${prompt.length} chars), '
+        'referenceImages: ${referenceImages?.length ?? 0}',
         name: 'ImageGenerationController',
       );
 
-      // Generate the image with the built prompt
-      await generateImage(prompt: prompt);
+      // Generate the image with the built prompt and reference images
+      await generateImage(prompt: prompt, referenceImages: referenceImages);
     } catch (e, stackTrace) {
       developer.log(
         'Image generation from entity failed: $e',
@@ -121,10 +135,13 @@ class ImageGenerationController extends _$ImageGenerationController {
         stackTrace: stackTrace,
       );
 
-      state = ImageGenerationState.error(
-        prompt: '[Failed to build prompt]',
-        errorMessage: e.toString(),
-      );
+      // Only update state if still mounted
+      if (ref.mounted) {
+        state = ImageGenerationState.error(
+          prompt: kFailedPromptPlaceholder,
+          errorMessage: e.toString(),
+        );
+      }
     }
   }
 
@@ -132,9 +149,15 @@ class ImageGenerationController extends _$ImageGenerationController {
   ///
   /// Use [generateImageFromEntity] to build prompts with full context.
   /// This method is used for retries or when using an edited prompt.
+  ///
+  /// Parameters:
+  /// - [prompt]: The text prompt describing the image to generate.
+  /// - [systemMessage]: Optional system instruction for guiding generation.
+  /// - [referenceImages]: Optional list of reference images for visual context.
   Future<void> generateImage({
     required String prompt,
     String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
   }) async {
     final loggingService = getIt<LoggingService>();
 
@@ -148,6 +171,10 @@ class ImageGenerationController extends _$ImageGenerationController {
 
       // Get the Gemini provider with image generation capability
       final provider = await _getImageGenerationProvider();
+
+      // Check if still mounted after async operation
+      if (!ref.mounted) return;
+
       if (provider == null) {
         throw Exception('No Gemini provider configured for image generation');
       }
@@ -169,7 +196,11 @@ class ImageGenerationController extends _$ImageGenerationController {
         model: model.providerModelId,
         provider: provider,
         systemMessage: effectiveSystemMessage,
+        referenceImages: referenceImages,
       );
+
+      // Check if still mounted after async operation
+      if (!ref.mounted) return;
 
       developer.log(
         'Image generation completed: ${generatedImage.bytes.length} bytes, '
@@ -197,10 +228,13 @@ class ImageGenerationController extends _$ImageGenerationController {
         stackTrace: stackTrace,
       );
 
-      state = ImageGenerationState.error(
-        prompt: prompt,
-        errorMessage: e.toString(),
-      );
+      // Only update state if still mounted
+      if (ref.mounted) {
+        state = ImageGenerationState.error(
+          prompt: prompt,
+          errorMessage: e.toString(),
+        );
+      }
     }
   }
 

@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -2358,6 +2359,131 @@ void main() {
           (e) => e.toString(),
           'message',
           contains('Image generation failed'),
+        )),
+      );
+    });
+
+    test('passes reference images to GeminiInferenceRepository', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-3-pro-image-preview';
+      const prompt = 'Generate a similar image';
+
+      final referenceImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'base64data1',
+          mimeType: 'image/jpeg',
+          originalId: 'ref-1',
+        ),
+        const ProcessedReferenceImage(
+          base64Data: 'base64data2',
+          mimeType: 'image/png',
+          originalId: 'ref-2',
+        ),
+      ];
+
+      when(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => const GeneratedImage(
+          bytes: [1, 2, 3],
+          mimeType: 'image/png',
+        ),
+      );
+
+      final result = await repository.generateImage(
+        prompt: prompt,
+        model: model,
+        provider: provider,
+        referenceImages: referenceImages,
+      );
+
+      expect(result.bytes, [1, 2, 3]);
+
+      verify(
+        () => mockGeminiRepo.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          referenceImages: referenceImages,
+        ),
+      ).called(1);
+    });
+
+    test('works with empty reference images list', () async {
+      final provider = createGeminiProvider();
+      const model = 'models/gemini-3-pro-image-preview';
+      const prompt = 'Generate an image';
+
+      when(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => const GeneratedImage(
+          bytes: [5, 6, 7],
+          mimeType: 'image/jpeg',
+        ),
+      );
+
+      final result = await repository.generateImage(
+        prompt: prompt,
+        model: model,
+        provider: provider,
+        referenceImages: [],
+      );
+
+      expect(result.bytes, [5, 6, 7]);
+
+      verify(
+        () => mockGeminiRepo.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          referenceImages: [],
+        ),
+      ).called(1);
+    });
+
+    test('throws UnsupportedError for OpenAI provider with reference images',
+        () async {
+      final openAiProvider = AiConfigInferenceProvider(
+        id: 'openai-provider',
+        name: 'OpenAI',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'test-api-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+
+      final referenceImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'data',
+          mimeType: 'image/png',
+          originalId: 'ref-1',
+        ),
+      ];
+
+      expect(
+        () => repository.generateImage(
+          prompt: 'Generate an image',
+          model: 'dall-e-3',
+          provider: openAiProvider,
+          referenceImages: referenceImages,
+        ),
+        throwsA(isA<UnsupportedError>().having(
+          (e) => e.message,
+          'message',
+          contains('only supported for Gemini providers'),
         )),
       );
     });

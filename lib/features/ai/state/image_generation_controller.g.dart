@@ -78,7 +78,7 @@ final class ImageGenerationControllerProvider
 }
 
 String _$imageGenerationControllerHash() =>
-    r'be154bd4dbb7fa125951cf536ee74bfb4e614871';
+    r'd1147a298d882086a51a3099cff37b3261bac538';
 
 /// Controller for generating cover art images using AI.
 ///

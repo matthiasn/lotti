@@ -10,12 +10,16 @@ import 'package:lotti/utils/platform.dart';
 class CompactTaskProgress extends ConsumerWidget {
   const CompactTaskProgress({
     required this.taskId,
-    this.showTimeText = false,
+    this.showTimeText,
     super.key,
   });
 
   final String taskId;
-  final bool showTimeText;
+
+  /// Whether to show the time text (e.g., "00:00 / 02:00").
+  /// If null, defaults to showing on desktop only.
+  /// If explicitly set to false, hides time text even on desktop.
+  final bool? showTimeText;
 
   String _formatDurationHoursMinutes(Duration duration) {
     final hours = duration.inHours;
@@ -49,7 +53,9 @@ class CompactTaskProgress extends ConsumerWidget {
       color: contentColor,
     ).withTabularFigures;
 
-    final shouldShowTimeText = isDesktop || showTimeText;
+    // If showTimeText is explicitly set, use that value.
+    // Otherwise, default to showing time text on desktop only.
+    final shouldShowTimeText = showTimeText ?? isDesktop;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

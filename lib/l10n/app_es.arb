@@ -494,8 +494,26 @@
     }
   },
   "imageGenerationRetry": "Reintentar",
+  "imageGenerationWithReferences": "{count, plural, =0{Sin imágenes de referencia} =1{Usando 1 imagen de referencia} other{Usando {count} imágenes de referencia}}",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Generar portada",
   "generateCoverArtSubtitle": "Crear imagen desde descripción de voz",
+
+  "referenceImageSelectionTitle": "Seleccionar imágenes de referencia",
+  "referenceImageSelectionSubtitle": "Elige hasta 3 imágenes para guiar el estilo visual de la IA",
+  "referenceImageSkip": "Omitir",
+  "referenceImageContinue": "Continuar",
+  "referenceImageContinueWithCount": "Continuar ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Error al cargar las imágenes. Por favor, inténtalo de nuevo.",
 
   "linkedTasksTitle": "Tareas vinculadas",
   "linkedFromLabel": "VINCULADO DESDE",

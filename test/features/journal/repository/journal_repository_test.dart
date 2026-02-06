@@ -10,6 +10,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -149,6 +150,21 @@ void main() {
         vectorClock: null,
       ),
     );
+    registerFallbackValue(
+      TaskData(
+        status: TaskStatus.open(
+          id: 'status-id',
+          createdAt: DateTime(2023),
+          utcOffset: 0,
+        ),
+        dateFrom: DateTime(2023),
+        dateTo: DateTime(2023),
+        statusHistory: const [],
+        title: 'Test Task',
+      ),
+    );
+    registerFallbackValue(EntryFlag.none);
+    registerFallbackValue(DateTime(2023));
   });
 
   tearDown(() {
@@ -1787,6 +1803,430 @@ void main() {
 
         verify(() => mockJournalDb.linkedToJournalEntities(linkedTo)).called(1);
         verify(mockSelectableJournalDbEntities.get).called(1);
+      });
+    });
+
+    group('getLinkedImagesForTask', () {
+      test('returns only JournalImage entities from linked entities', () async {
+        // Arrange
+        const taskId = 'task-id';
+        final dateTime2023 = DateTime(2023);
+
+        // Create a mix of entity types
+        final journalEntry = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
+          ),
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+        );
+
+        final journalImage1 = JournalEntity.journalImage(
+          meta: Metadata(
+            id: 'image-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: ImageData(
+            capturedAt: dateTime2023,
+            imageId: 'img-1',
+            imageFile: 'image1.jpg',
+            imageDirectory: '/path/to/images',
+          ),
+        );
+
+        final journalImage2 = JournalEntity.journalImage(
+          meta: Metadata(
+            id: 'image-2',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: ImageData(
+            capturedAt: dateTime2023,
+            imageId: 'img-2',
+            imageFile: 'image2.jpg',
+            imageDirectory: '/path/to/images',
+          ),
+        );
+
+        final linkedEntities = [journalEntry, journalImage1, journalImage2];
+
+        // Mock JournalDb
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => linkedEntities);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, hasLength(2));
+        expect(result[0], isA<JournalImage>());
+        expect(result[1], isA<JournalImage>());
+        expect(result[0].meta.id, equals('image-1'));
+        expect(result[1].meta.id, equals('image-2'));
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns empty list when no images are linked', () async {
+        // Arrange
+        const taskId = 'task-id';
+        final dateTime2023 = DateTime(2023);
+
+        // Create only non-image entities
+        final journalEntry = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
+          ),
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+        );
+
+        final audioEntry = JournalEntity.journalAudio(
+          meta: Metadata(
+            id: 'audio-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: AudioData(
+            audioFile: 'audio.m4a',
+            audioDirectory: '/path/to/audio',
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+            duration: const Duration(minutes: 2),
+          ),
+        );
+
+        final linkedEntities = [journalEntry, audioEntry];
+
+        // Mock JournalDb
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => linkedEntities);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, isEmpty);
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+
+      test('returns empty list when no linked entities exist', () async {
+        // Arrange
+        const taskId = 'task-id';
+
+        // Mock JournalDb to return empty list
+        when(() => mockJournalDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+
+        // Act
+        final result = await repository.getLinkedImagesForTask(taskId);
+
+        // Assert
+        expect(result, isEmpty);
+
+        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      });
+    });
+
+    group('deleteJournalEntity with JournalImage cover art', () {
+      test('clears coverArtId from tasks that reference deleted image',
+          () async {
+        // Arrange
+        const imageId = 'image-to-delete';
+        final dateTime2023 = DateTime(2023);
+
+        // Create the image entity to be deleted
+        final imageEntity = JournalEntity.journalImage(
+          meta: Metadata(
+            id: imageId,
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: ImageData(
+            capturedAt: dateTime2023,
+            imageId: 'img-uuid',
+            imageFile: 'test.jpg',
+            imageDirectory: '/path/to/images',
+          ),
+        );
+
+        // Create tasks that reference this image as cover art
+        final taskWithCoverArt = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-with-cover',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 's',
+              createdAt: dateTime2023,
+              utcOffset: 0,
+            ),
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+            statusHistory: const [],
+            title: 'Task with cover art',
+            coverArtId: imageId, // References the image being deleted
+          ),
+        );
+
+        // Create a task without the coverArtId (should not be updated)
+        final taskWithoutCoverArt = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-without-cover',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 's2',
+              createdAt: dateTime2023,
+              utcOffset: 0,
+            ),
+            dateFrom: dateTime2023,
+            dateTo: dateTime2023,
+            statusHistory: const [],
+            title: 'Task without cover art',
+          ),
+        );
+
+        final updatedMeta = imageEntity.meta.copyWith(
+          deletedAt: dateTime2023,
+          updatedAt: dateTime2023,
+        );
+
+        // Create mock selectables
+        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
+
+        // Create JournalDbEntity representations for the tasks
+        final taskDbEntity1 = JournalDbEntity(
+          id: 'task-with-cover',
+          createdAt: dateTime2023,
+          updatedAt: dateTime2023,
+          dateFrom: dateTime2023,
+          deleted: false,
+          type: 'Task',
+          subtype: '',
+          task: true,
+          taskStatus: 'open',
+          starred: false,
+          private: false,
+          flag: 0,
+          category: '',
+          dateTo: dateTime2023,
+          schemaVersion: 1,
+          serialized: jsonEncode(taskWithCoverArt.toJson()),
+        );
+
+        final taskDbEntity2 = JournalDbEntity(
+          id: 'task-without-cover',
+          createdAt: dateTime2023,
+          updatedAt: dateTime2023,
+          dateFrom: dateTime2023,
+          deleted: false,
+          type: 'Task',
+          subtype: '',
+          task: true,
+          taskStatus: 'open',
+          starred: false,
+          private: false,
+          flag: 0,
+          category: '',
+          dateTo: dateTime2023,
+          schemaVersion: 1,
+          serialized: jsonEncode(taskWithoutCoverArt.toJson()),
+        );
+
+        // Mock the journalEntityById call for the image
+        when(() => mockJournalDb.journalEntityById(imageId))
+            .thenAnswer((_) async => imageEntity);
+
+        // Mock linkedToJournalEntities to return tasks that link to this image
+        when(() => mockJournalDb.linkedToJournalEntities(imageId))
+            .thenReturn(mockSelectableJournalDbEntities);
+        when(mockSelectableJournalDbEntities.get)
+            .thenAnswer((_) async => [taskDbEntity1, taskDbEntity2]);
+
+        // Mock updateTask for clearing coverArtId
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        // Mock the updateMetadata call for the image deletion
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            imageEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => updatedMeta);
+
+        // Mock the updateDbEntity call for the image
+        when(() => mockPersistenceLogic.updateDbEntity(any()))
+            .thenAnswer((_) async => true);
+
+        // Mock the updateBadge call
+        when(() => mockNotificationService.updateBadge())
+            .thenAnswer((_) async {});
+
+        // Mock TimeService.getCurrent to return null
+        when(() => mockTimeService.getCurrent()).thenReturn(null);
+
+        // Act
+        final result = await repository.deleteJournalEntity(imageId);
+
+        // Assert
+        expect(result, isTrue);
+
+        // Verify the image was looked up
+        verify(() => mockJournalDb.journalEntityById(imageId)).called(1);
+
+        // Verify that we looked for tasks that link to this image
+        verify(() => mockJournalDb.linkedToJournalEntities(imageId)).called(1);
+
+        // Verify updateTask was called once (only for the task with coverArtId)
+        verify(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: 'task-with-cover',
+            taskData: any(named: 'taskData'),
+          ),
+        ).called(1);
+
+        // Verify the image entity was soft-deleted
+        verify(
+          () => mockPersistenceLogic.updateMetadata(
+            imageEntity.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('createImageEntry - callback behavior', () {
+      test('invokes onCreated callback after successful creation', () async {
+        // Arrange
+        final imageData = ImageData(
+          capturedAt: DateTime(2023),
+          imageId: 'image-id',
+          imageFile: 'image.jpg',
+          imageDirectory: '/path/to/images',
+        );
+        const linkedId = 'linked-id';
+
+        final testMetadata = Metadata(
+          id: 'test-id',
+          createdAt: DateTime(2023),
+          updatedAt: DateTime(2023),
+          dateFrom: imageData.capturedAt,
+          dateTo: imageData.capturedAt,
+          starred: false,
+          private: false,
+          flag: EntryFlag.import,
+        );
+
+        JournalEntity? callbackEntity;
+
+        // Mock the createMetadata call
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => testMetadata);
+
+        // Mock the createDbEntity call
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: linkedId,
+            shouldAddGeolocation: false,
+          ),
+        ).thenAnswer((_) async => true);
+
+        // Act
+        final result = await JournalRepository.createImageEntry(
+          imageData,
+          linkedId: linkedId,
+          onCreated: (entity) {
+            callbackEntity = entity;
+          },
+        );
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result, isA<JournalImage>());
+
+        // Verify callback was invoked with the created entity
+        expect(callbackEntity, isNotNull);
+        expect(callbackEntity, isA<JournalImage>());
+        expect(callbackEntity!.meta.id, equals(result!.meta.id));
+      });
+
+      test('does not invoke onCreated callback when creation fails', () async {
+        // Arrange
+        final imageData = ImageData(
+          capturedAt: DateTime(2023),
+          imageId: 'image-id',
+          imageFile: 'image.jpg',
+          imageDirectory: '/path/to/images',
+        );
+
+        var callbackInvoked = false;
+
+        // Mock the createMetadata call to throw an exception
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenThrow(Exception('Test exception'));
+
+        // Act
+        final result = await JournalRepository.createImageEntry(
+          imageData,
+          onCreated: (entity) {
+            callbackInvoked = true;
+          },
+        );
+
+        // Assert
+        expect(result, isNull);
+        expect(callbackInvoked, isFalse);
       });
     });
   });

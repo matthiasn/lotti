@@ -3405,11 +3405,46 @@ class AppLocalizationsEs extends AppLocalizations {
   String get imageGenerationRetry => 'Reintentar';
 
   @override
+  String imageGenerationWithReferences(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Usando $count imágenes de referencia',
+      one: 'Usando 1 imagen de referencia',
+      zero: 'Sin imágenes de referencia',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get generateCoverArt => 'Generar portada';
 
   @override
   String get generateCoverArtSubtitle =>
       'Crear imagen desde descripción de voz';
+
+  @override
+  String get referenceImageSelectionTitle =>
+      'Seleccionar imágenes de referencia';
+
+  @override
+  String get referenceImageSelectionSubtitle =>
+      'Elige hasta 3 imágenes para guiar el estilo visual de la IA';
+
+  @override
+  String get referenceImageSkip => 'Omitir';
+
+  @override
+  String get referenceImageContinue => 'Continuar';
+
+  @override
+  String referenceImageContinueWithCount(int count) {
+    return 'Continuar ($count)';
+  }
+
+  @override
+  String get referenceImageLoadError =>
+      'Error al cargar las imágenes. Por favor, inténtalo de nuevo.';
 
   @override
   String get linkedTasksTitle => 'Tareas vinculadas';

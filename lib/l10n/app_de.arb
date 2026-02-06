@@ -539,8 +539,26 @@
     }
   },
   "imageGenerationRetry": "Wiederholen",
+  "imageGenerationWithReferences": "{count, plural, =0{Keine Referenzbilder} =1{Mit 1 Referenzbild} other{Mit {count} Referenzbildern}}",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Cover generieren",
   "generateCoverArtSubtitle": "Bild aus Sprachbeschreibung erstellen",
+
+  "referenceImageSelectionTitle": "Referenzbilder auswählen",
+  "referenceImageSelectionSubtitle": "Wähle bis zu 3 Bilder, um den visuellen Stil der KI zu leiten",
+  "referenceImageSkip": "Überspringen",
+  "referenceImageContinue": "Weiter",
+  "referenceImageContinueWithCount": "Weiter ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Bilder konnten nicht geladen werden. Bitte versuche es erneut.",
 
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkedFromLabel": "VERKNÜPFT VON",

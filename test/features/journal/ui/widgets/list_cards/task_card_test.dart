@@ -226,6 +226,53 @@ void main() {
     expect(find.byType(LabelChip), findsNWidgets(2));
   });
 
+  testWidgets('hides private labels when showPrivateEntries is false',
+      (tester) async {
+    // Arrange labels in the cache with one private label
+    final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+    final now = DateTime(2025, 11, 3, 12);
+    final publicLabel = LabelDefinition(
+      id: 'public',
+      createdAt: now,
+      updatedAt: now,
+      name: 'Public Label',
+      color: '#3366FF',
+      vectorClock: null,
+      private: false,
+    );
+    final privateLabel = LabelDefinition(
+      id: 'private',
+      createdAt: now,
+      updatedAt: now,
+      name: 'Private Label',
+      color: '#FF3366',
+      vectorClock: null,
+      private: true,
+    );
+    when(() => cache.getLabelById('public')).thenReturn(publicLabel);
+    when(() => cache.getLabelById('private')).thenReturn(privateLabel);
+    when(() => cache.showPrivateEntries).thenReturn(false);
+
+    // Build a task with both labels
+    final meta = buildTask().meta.copyWith(labelIds: ['public', 'private']);
+    final task = buildTask().copyWith(meta: meta);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: ModernTaskCard(task: task),
+          ),
+        ),
+      ),
+    );
+
+    // Only public label should be rendered
+    expect(find.byType(LabelChip), findsOneWidget);
+    expect(find.text('Public Label'), findsOneWidget);
+    expect(find.text('Private Label'), findsNothing);
+  });
+
   testWidgets('status chip + icon reflect task status variants',
       (tester) async {
     Future<void> pumpWithStatus(TaskStatus status) async {
@@ -994,6 +1041,169 @@ void main() {
 
       // Should have ClipRRect for rounded corners on thumbnail
       expect(find.byType(ClipRRect), findsWidgets);
+    });
+
+    testWidgets('cover art layout shows progress on separate row',
+        (tester) async {
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(
+              coverArtId: 'image-123',
+              estimate: const Duration(hours: 1),
+            ),
+      );
+
+      final now = DateTime(2025, 11, 3, 12);
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+            taskProgressControllerProvider(id: task.meta.id).overrideWith(
+              () => TestTaskProgressController(
+                progress: const Duration(minutes: 30),
+                estimate: const Duration(hours: 1),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // CompactTaskProgress should be present
+      expect(find.byType(CompactTaskProgress), findsOneWidget);
+
+      // Title and status row should be visible
+      expect(find.text('Test Task Title'), findsOneWidget);
+      expect(find.byKey(const Key('task_status_row')), findsOneWidget);
+    });
+
+    testWidgets('cover art layout includes labels when present',
+        (tester) async {
+      // Arrange labels in the cache
+      final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+      final now = DateTime(2025, 11, 3, 12);
+      final labelA = LabelDefinition(
+        id: 'A',
+        createdAt: now,
+        updatedAt: now,
+        name: 'Alpha',
+        color: '#3366FF',
+        vectorClock: null,
+      );
+      when(() => cache.getLabelById('A')).thenReturn(labelA);
+
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      final meta = buildTask().meta.copyWith(labelIds: ['A']);
+      final task = buildTask().copyWith(
+        meta: meta,
+        data: buildTask().data.copyWith(coverArtId: 'image-123'),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Label should be present
+      expect(find.byType(LabelChip), findsOneWidget);
+    });
+
+    testWidgets('cover art uses custom cropX value', (tester) async {
+      // Create task with custom cropX
+      final task = buildTask().copyWith(
+        data: buildTask().data.copyWith(
+              coverArtId: 'image-123',
+              coverArtCropX: 0.3, // Custom crop position
+            ),
+      );
+
+      final now = DateTime(2025, 11, 3, 12);
+      final image = JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/test/dir',
+          capturedAt: now,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // CoverArtThumbnail should have the cropX value
+      final thumbnailFinder = find.byType(CoverArtThumbnail);
+      expect(thumbnailFinder, findsOneWidget);
+
+      final thumbnail = tester.widget<CoverArtThumbnail>(thumbnailFinder);
+      expect(thumbnail.cropX, 0.3);
     });
   });
 }

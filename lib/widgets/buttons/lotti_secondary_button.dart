@@ -21,38 +21,37 @@ class LottiSecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = enabled && onPressed != null;
+    final textColor = isEnabled
+        ? context.colorScheme.primary
+        : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+    final textStyle = TextStyle(
+      color: textColor,
+      fontWeight: FontWeight.w600,
+      fontSize: 16,
+    );
+
     final buttonChild = icon == null
         ? Text(
             label,
-            style: TextStyle(
-              color: isEnabled
-                  ? context.colorScheme.primary
-                  : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+            style: textStyle,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                color: isEnabled
-                    ? context.colorScheme.primary
-                    : context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.5),
+                color: textColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isEnabled
-                      ? context.colorScheme.primary
-                      : context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+              Flexible(
+                child: Text(
+                  label,
+                  style: textStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],

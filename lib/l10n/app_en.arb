@@ -1336,8 +1336,26 @@
     }
   },
   "imageGenerationRetry": "Retry",
+  "imageGenerationWithReferences": "{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}",
+  "@imageGenerationWithReferences": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
+
+  "referenceImageSelectionTitle": "Select Reference Images",
+  "referenceImageSelectionSubtitle": "Choose up to 3 images to guide the AI's visual style",
+  "referenceImageSkip": "Skip",
+  "referenceImageContinue": "Continue",
+  "referenceImageContinueWithCount": "Continue ({count})",
+  "@referenceImageContinueWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "referenceImageLoadError": "Failed to load images. Please try again.",
 
   "linkedTasksTitle": "Linked Tasks",
   "linkedFromLabel": "LINKED FROM",
