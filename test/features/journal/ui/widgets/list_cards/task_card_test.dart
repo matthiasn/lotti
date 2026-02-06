@@ -18,6 +18,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/cards/modern_card_content.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
@@ -345,6 +346,75 @@ void main() {
     ));
     expect(find.text('Rejected'), findsOneWidget);
     expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+  });
+
+  group('priority chip uses purple/violet palette distinct from status', () {
+    testWidgets('priority chip color is from purple palette (light mode)',
+        (tester) async {
+      // buildTask() uses p3Low and groomed status, default MaterialApp is light
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ModernTaskCard(task: task),
+            ),
+          ),
+        ),
+      );
+
+      final rowFinder = find.byKey(const Key('task_status_row'));
+      final row = tester.widget<Row>(rowFinder);
+
+      // Priority chip is the first child
+      final priorityChip = row.children[0] as ModernStatusChip;
+      // Status chip is the third child (after SizedBox)
+      final statusChip = row.children[2] as ModernStatusChip;
+
+      // P3 Low in light mode = taskPriorityLightP3 (blue-grey)
+      expect(priorityChip.color, equals(taskPriorityLightP3));
+      // Groomed in light mode = taskStatusDarkGreen
+      expect(statusChip.color, equals(taskStatusDarkGreen));
+      // Priority and status colors must be different
+      expect(priorityChip.color, isNot(equals(statusChip.color)));
+    });
+
+    testWidgets('each priority level uses distinct purple/violet color',
+        (tester) async {
+      final expectedLightColors = {
+        TaskPriority.p0Urgent: taskPriorityLightP0,
+        TaskPriority.p1High: taskPriorityLightP1,
+        TaskPriority.p2Medium: taskPriorityLightP2,
+        TaskPriority.p3Low: taskPriorityLightP3,
+      };
+
+      for (final entry in expectedLightColors.entries) {
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(priority: entry.key),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: ModernTaskCard(task: task),
+              ),
+            ),
+          ),
+        );
+
+        final rowFinder = find.byKey(const Key('task_status_row'));
+        final row = tester.widget<Row>(rowFinder);
+        final priorityChip = row.children[0] as ModernStatusChip;
+
+        expect(
+          priorityChip.color,
+          equals(entry.value),
+          reason: '${entry.key.short} should use ${entry.value}',
+        );
+      }
+    });
   });
 
   testWidgets('tapping the card navigates to task details', (tester) async {

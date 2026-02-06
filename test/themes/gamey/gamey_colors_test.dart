@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 
 void main() {
@@ -146,26 +147,25 @@ void main() {
       });
     });
 
-    group('priorityColor helper', () {
-      test('returns red for priority 1 (urgent)', () {
-        final color = GameyColors.priorityColor(1);
-        expect(color, equals(GameyColors.primaryRed));
+    group('priorityColor helper (type-safe, purple/violet spectrum)', () {
+      test('returns vivid purple for p0Urgent', () {
+        final color = GameyColors.priorityColor(TaskPriority.p0Urgent);
+        expect(color, equals(GameyColors.priorityUrgent));
       });
 
-      test('returns orange for priority 2 (high)', () {
-        final color = GameyColors.priorityColor(2);
-        expect(color, equals(GameyColors.primaryOrange));
+      test('returns deep purple for p1High', () {
+        final color = GameyColors.priorityColor(TaskPriority.p1High);
+        expect(color, equals(GameyColors.priorityHigh));
       });
 
-      test('returns yellow for priority 3 (medium)', () {
-        final color = GameyColors.priorityColor(3);
-        expect(color, equals(GameyColors.taskYellow));
+      test('returns indigo for p2Medium', () {
+        final color = GameyColors.priorityColor(TaskPriority.p2Medium);
+        expect(color, equals(GameyColors.priorityMedium));
       });
 
-      test('returns green for default/low priority', () {
-        expect(GameyColors.priorityColor(0), equals(GameyColors.primaryGreen));
-        expect(GameyColors.priorityColor(4), equals(GameyColors.primaryGreen));
-        expect(GameyColors.priorityColor(99), equals(GameyColors.primaryGreen));
+      test('returns blue-grey for p3Low', () {
+        final color = GameyColors.priorityColor(TaskPriority.p3Low);
+        expect(color, equals(GameyColors.priorityLow));
       });
     });
   });

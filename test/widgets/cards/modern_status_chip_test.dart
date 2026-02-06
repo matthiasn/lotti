@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 
@@ -317,6 +319,74 @@ void main() {
 
       // Verify the text is wrapped in Flexible
       expect(row.children[2], isA<Flexible>());
+    });
+  });
+
+  group('Priority vs Status color distinction', () {
+    test('priority colors (purple palette) are distinct from status colors',
+        () {
+      // Priority colors use purple/violet spectrum
+      final priorityColors = [
+        taskPriorityLightP0, // deep purple-magenta
+        taskPriorityLightP1, // rich violet
+        taskPriorityLightP2, // indigo
+      ];
+
+      // Status colors use red/orange/blue/green spectrum
+      final statusColors = [
+        taskStatusDarkRed,
+        taskStatusDarkGreen,
+        taskStatusDarkOrange,
+        taskStatusDarkBlue,
+      ];
+
+      // No priority color should equal any status color
+      for (final priorityColor in priorityColors) {
+        for (final statusColor in statusColors) {
+          expect(
+            priorityColor,
+            isNot(equals(statusColor)),
+            reason:
+                'Priority $priorityColor should differ from status $statusColor',
+          );
+        }
+      }
+    });
+
+    test('TaskPriority.colorForBrightness returns purple palette', () {
+      // Light mode
+      expect(
+        TaskPriority.p0Urgent.colorForBrightness(Brightness.light),
+        equals(taskPriorityLightP0),
+      );
+      expect(
+        TaskPriority.p3Low.colorForBrightness(Brightness.light),
+        equals(taskPriorityLightP3),
+      );
+
+      // Dark mode
+      expect(
+        TaskPriority.p0Urgent.colorForBrightness(Brightness.dark),
+        equals(taskPriorityDarkP0),
+      );
+      expect(
+        TaskPriority.p3Low.colorForBrightness(Brightness.dark),
+        equals(taskPriorityDarkP3),
+      );
+    });
+
+    test('all four priority levels have unique colors in both modes', () {
+      final lightColors = TaskPriority.values
+          .map((p) => p.colorForBrightness(Brightness.light))
+          .toSet();
+      final darkColors = TaskPriority.values
+          .map((p) => p.colorForBrightness(Brightness.dark))
+          .toSet();
+
+      expect(lightColors.length, equals(4),
+          reason: 'All 4 priority levels should have unique light colors');
+      expect(darkColors.length, equals(4),
+          reason: 'All 4 priority levels should have unique dark colors');
     });
   });
 }

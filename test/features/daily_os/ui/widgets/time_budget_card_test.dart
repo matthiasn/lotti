@@ -1051,6 +1051,47 @@ void main() {
 
       expect(find.text('P3'), findsOneWidget);
     });
+
+    testWidgets('priority badge text color uses purple/violet palette',
+        (tester) async {
+      // P0 Urgent should use deep purple color
+      await tester.pumpWidget(
+        createTestWidget(
+          progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
+          isFocusActive: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final p0Text = tester.widget<Text>(find.text('P0'));
+      final p0Color = p0Text.style?.color;
+      // The _PriorityBadge uses priority.colorForBrightness(brightness)
+      // as the text color. Default RiverpodWidgetTestBench uses light theme.
+      expect(
+        p0Color,
+        equals(TaskPriority.p0Urgent.colorForBrightness(Brightness.light)),
+      );
+    });
+
+    testWidgets('each priority badge uses a distinct color', (tester) async {
+      final textColors = <Color>[];
+
+      for (final priority in TaskPriority.values) {
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: createProgressWithPriorityTask(priority),
+            isFocusActive: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final text = tester.widget<Text>(find.text(priority.short));
+        textColors.add(text.style!.color!);
+      }
+
+      // All 4 priority levels should have unique text colors
+      expect(textColors.toSet().length, equals(4));
+    });
   });
 
   group('TimeBudgetCard - Running Timer Indicator', () {

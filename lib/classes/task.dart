@@ -50,14 +50,16 @@ extension TaskPriorityExt on TaskPriority {
         TaskPriority.p3Low => 'Low',
       };
 
-  /// Color aligned with task status theme tokens.
+  /// Color using a distinct purple/violet spectrum, separate from status colors.
   Color colorForBrightness(Brightness brightness) {
     final isLight = brightness == Brightness.light;
     return switch (this) {
-      TaskPriority.p0Urgent => isLight ? taskStatusDarkRed : taskStatusRed,
-      TaskPriority.p1High => isLight ? taskStatusDarkOrange : taskStatusOrange,
-      TaskPriority.p2Medium => isLight ? taskStatusDarkBlue : taskStatusBlue,
-      TaskPriority.p3Low => Colors.grey,
+      TaskPriority.p0Urgent =>
+        isLight ? taskPriorityLightP0 : taskPriorityDarkP0,
+      TaskPriority.p1High => isLight ? taskPriorityLightP1 : taskPriorityDarkP1,
+      TaskPriority.p2Medium =>
+        isLight ? taskPriorityLightP2 : taskPriorityDarkP2,
+      TaskPriority.p3Low => isLight ? taskPriorityLightP3 : taskPriorityDarkP3,
     };
   }
 }

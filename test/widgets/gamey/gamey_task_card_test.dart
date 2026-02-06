@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/widgets/gamey/gamey_card.dart';
 import 'package:lotti/widgets/gamey/gamey_icon_badge.dart';
 import 'package:lotti/widgets/gamey/gamey_task_card.dart';
@@ -362,6 +364,179 @@ void main() {
 
       // Task should render - check for GameySubtleCard presence
       expect(find.byType(GameySubtleCard), findsOneWidget);
+    });
+
+    group('priority and status chip colors', () {
+      /// Finds the Container with a gradient decoration that is an ancestor
+      /// of the given text widget (i.e. the _GameyStatusChip container).
+      Container? findGradientChipContainer(
+        WidgetTester tester,
+        String chipText,
+      ) {
+        final textFinder = find.text(chipText);
+        if (textFinder.evaluate().isEmpty) return null;
+
+        final containers = find.ancestor(
+          of: textFinder,
+          matching: find.byType(Container),
+        );
+
+        for (final candidate in containers.evaluate()) {
+          final container = candidate.widget as Container;
+          final decoration = container.decoration;
+          if (decoration is BoxDecoration && decoration.gradient != null) {
+            return container;
+          }
+        }
+        return null;
+      }
+
+      testWidgets('priority chip uses purple palette (not unified blue)',
+          (tester) async {
+        // testTask has default priority p2Medium
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: testOverrides,
+            child: GameyTaskCard(task: testTask),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final container = findGradientChipContainer(tester, 'P2');
+        expect(container, isNotNull);
+
+        final decoration = container!.decoration! as BoxDecoration;
+        final gradient = decoration.gradient! as LinearGradient;
+
+        // GameyColors.priorityColor(p2Medium) = indigo
+        expect(gradient.colors.first,
+            equals(GameyColors.priorityColor(TaskPriority.p2Medium)));
+        // Should NOT be the old unified blue
+        expect(gradient.colors.first, isNot(equals(GameyColors.gameyAccent)));
+      });
+
+      testWidgets('status chip uses semantic orange for open status',
+          (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: testOverrides,
+            child: GameyTaskCard(task: testTask),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // testTask has TaskStatus.open → localized label is "Open"
+        final container = findGradientChipContainer(tester, 'Open');
+        expect(container, isNotNull);
+
+        final decoration = container!.decoration! as BoxDecoration;
+        final gradient = decoration.gradient! as LinearGradient;
+
+        // Open status → GameyColors.primaryOrange
+        expect(gradient.colors.first, equals(GameyColors.primaryOrange));
+      });
+
+      testWidgets('priority and status chips have different colors',
+          (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: testOverrides,
+            child: GameyTaskCard(task: testTask),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final priorityContainer = findGradientChipContainer(tester, 'P2');
+        final statusContainer = findGradientChipContainer(tester, 'Open');
+
+        expect(priorityContainer, isNotNull);
+        expect(statusContainer, isNotNull);
+
+        final priorityGradient =
+            (priorityContainer!.decoration! as BoxDecoration).gradient!
+                as LinearGradient;
+        final statusGradient = (statusContainer!.decoration! as BoxDecoration)
+            .gradient! as LinearGradient;
+
+        expect(
+          priorityGradient.colors.first,
+          isNot(equals(statusGradient.colors.first)),
+        );
+      });
+
+      testWidgets('blocked status uses red color', (tester) async {
+        final blockedTask = Task(
+          meta: testTask.meta,
+          data: TaskData(
+            status: TaskStatus.blocked(
+              id: 'status-id',
+              createdAt: now,
+              utcOffset: now.timeZoneOffset.inMinutes,
+              reason: 'Blocked reason',
+            ),
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            statusHistory: [],
+            title: 'Blocked Task',
+          ),
+          entryText: testTask.entryText,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: testOverrides,
+            child: GameyTaskCard(task: blockedTask),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final container = findGradientChipContainer(tester, 'Blocked');
+        expect(container, isNotNull);
+
+        final decoration = container!.decoration! as BoxDecoration;
+        final gradient = decoration.gradient! as LinearGradient;
+
+        expect(gradient.colors.first, equals(GameyColors.primaryRed));
+      });
+
+      testWidgets('each priority level uses distinct purple palette color',
+          (tester) async {
+        for (final priority in TaskPriority.values) {
+          final task = Task(
+            meta: testTask.meta,
+            data: TaskData(
+              status: testTask.data.status,
+              dateFrom: now,
+              dateTo: now.add(const Duration(hours: 1)),
+              statusHistory: [],
+              title: 'Task ${priority.short}',
+              priority: priority,
+            ),
+            entryText: testTask.entryText,
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: testOverrides,
+              child: GameyTaskCard(task: task),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final container = findGradientChipContainer(tester, priority.short);
+          expect(container, isNotNull,
+              reason: 'Container not found for ${priority.short}');
+
+          final decoration = container!.decoration! as BoxDecoration;
+          final gradient = decoration.gradient! as LinearGradient;
+
+          expect(
+            gradient.colors.first,
+            equals(GameyColors.priorityColor(priority)),
+            reason: '${priority.short} should use priorityColor($priority)',
+          );
+        }
+      });
     });
   });
 }

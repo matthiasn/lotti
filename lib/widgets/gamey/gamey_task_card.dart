@@ -175,11 +175,13 @@ class GameyTaskCard extends StatelessWidget {
                   children: [
                     _GameyStatusChip(
                       label: task.data.priority.short,
-                      color: GameyColors.gameyAccent,
+                      color: GameyColors.priorityColor(
+                        task.data.priority,
+                      ),
                     ),
                     _GameyStatusChip(
                       label: _getStatusLabel(context, task.data.status),
-                      color: GameyColors.gameyAccent,
+                      color: _getGameyStatusColor(task.data.status),
                       icon: _getStatusIcon(task.data.status),
                     ),
                     CategoryIconCompact(task.meta.categoryId),
@@ -291,6 +293,18 @@ class GameyTaskCard extends StatelessWidget {
       onHold: (_) => Icons.pause_circle_outline_rounded,
       done: (_) => Icons.check_circle_rounded,
       rejected: (_) => Icons.cancel_rounded,
+    );
+  }
+
+  Color _getGameyStatusColor(TaskStatus status) {
+    return status.map(
+      open: (_) => GameyColors.primaryOrange,
+      groomed: (_) => GameyColors.primaryGreen,
+      inProgress: (_) => GameyColors.primaryBlue,
+      blocked: (_) => GameyColors.primaryRed,
+      onHold: (_) => GameyColors.primaryRed,
+      done: (_) => GameyColors.primaryGreen,
+      rejected: (_) => GameyColors.primaryRed,
     );
   }
 }
