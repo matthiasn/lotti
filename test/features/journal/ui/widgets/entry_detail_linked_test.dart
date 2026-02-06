@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -24,6 +26,19 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+LinkedDbEntry _linkedDbEntry(EntryLink link) {
+  return LinkedDbEntry(
+    id: link.id,
+    fromId: link.fromId,
+    toId: link.toId,
+    type: 'basic',
+    serialized: jsonEncode(link),
+    hidden: link.hidden,
+    createdAt: link.createdAt,
+    updatedAt: link.updatedAt,
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -318,6 +333,237 @@ void main() {
 
       expect(widget.activeTimerEntryId, equals(timerId));
       expect(widget.highlightedEntryId, equals(highlightId));
+    });
+  });
+
+  group('LinkedEntriesWidget Collapsible Section Tests - ', () {
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(FakeMeasurementData());
+    });
+
+    setUp(() async {
+      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
+      mockPersistenceLogic = MockPersistenceLogic();
+
+      final mockTagsService = mockTagsServiceWithTags([]);
+      final mockTimeService = MockTimeService();
+      final mockEditorStateService = MockEditorStateService();
+      final mockHealthImport = MockHealthImport();
+
+      getIt
+        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<LoggingDb>(MockLoggingDb())
+        ..registerSingleton<EditorStateService>(mockEditorStateService)
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<TagsService>(mockTagsService)
+        ..registerSingleton<HealthImport>(mockHealthImport)
+        ..registerSingleton<TimeService>(mockTimeService)
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+        (_) => [categoryMindfulness],
+      );
+      when(() => mockEntitiesCacheService.getCategoryById(any()))
+          .thenReturn(null);
+      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
+      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
+
+      when(() => mockUpdateNotifications.updateStream).thenAnswer(
+        (_) => Stream<Set<String>>.fromIterable([]),
+      );
+
+      when(mockTagsService.watchTags).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockTagsService.stream).thenAnswer(
+        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
+      );
+
+      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          <ConfigFlag>{
+            const ConfigFlag(
+              name: 'private',
+              description: 'Show private entries?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      when(
+        () => mockEditorStateService.getUnsavedStream(any(), any()),
+      ).thenAnswer(
+        (_) => Stream<bool>.fromIterable([false]),
+      );
+
+      when(mockTimeService.getStream)
+          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+    });
+
+    tearDown(getIt.reset);
+
+    final testLink = EntryLink.basic(
+      id: 'link-1',
+      fromId: testTask.meta.id,
+      toId: testTextEntry.meta.id,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+      vectorClock: null,
+    );
+
+    void mockLinkedEntries(List<EntryLink> links) {
+      final dbEntries = links.map(_linkedDbEntry).toList();
+      final toIds = links.map((l) => l.toId).toList();
+
+      when(() => mockJournalDb.linksFromId(any(), any()))
+          .thenReturn(MockSelectable<LinkedDbEntry>(dbEntries));
+      when(() => mockJournalDb.journalEntityIdsByDateFromDesc(any()))
+          .thenReturn(MockSelectable<String>(toIds));
+    }
+
+    testWidgets('shows chevron and label when entries exist', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
+    });
+
+    testWidgets('shows AnimatedSize when entries exist', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AnimatedSize), findsOneWidget);
+    });
+
+    testWidgets('chevron is not rotated when expanded', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rotation =
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      expect(rotation.turns, equals(0.0));
+    });
+
+    testWidgets('tapping header collapses the section', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final rotation =
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      expect(rotation.turns, equals(-0.25));
+    });
+
+    testWidgets('tapping header twice re-expands the section', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // Re-expand
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final rotation =
+          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      expect(rotation.turns, equals(0.0));
+    });
+
+    testWidgets('collapsed section shows SizedBox.shrink content',
+        (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pump();
+
+      // AnimatedSize wraps the content; after collapse the child is SizedBox.shrink
+      final animatedSize =
+          tester.widget<AnimatedSize>(find.byType(AnimatedSize));
+      expect(animatedSize.child, isA<SizedBox>());
+    });
+
+    testWidgets('filter button is present when entries exist', (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
   });
 }

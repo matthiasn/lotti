@@ -16,6 +16,7 @@ BasicLink _$BasicLinkFromJson(Map<String, dynamic> json) => BasicLink(
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       hidden: json['hidden'] as bool?,
+      collapsed: json['collapsed'] as bool?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -30,6 +31,7 @@ Map<String, dynamic> _$BasicLinkToJson(BasicLink instance) => <String, dynamic>{
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
       'hidden': instance.hidden,
+      'collapsed': instance.collapsed,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

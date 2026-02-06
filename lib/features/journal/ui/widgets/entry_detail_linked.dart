@@ -7,7 +7,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class LinkedEntriesWidget extends ConsumerWidget {
+class LinkedEntriesWidget extends ConsumerStatefulWidget {
   const LinkedEntriesWidget(
     this.item, {
     this.entryKeyBuilder,
@@ -24,25 +24,28 @@ class LinkedEntriesWidget extends ConsumerWidget {
   final bool hideTaskEntries;
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    final provider = linkedEntriesControllerProvider(id: item.id);
+  ConsumerState<LinkedEntriesWidget> createState() =>
+      _LinkedEntriesWidgetState();
+}
+
+class _LinkedEntriesWidgetState extends ConsumerState<LinkedEntriesWidget> {
+  bool _isExpanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = linkedEntriesControllerProvider(id: widget.item.id);
     final entryLinks = ref.watch(provider).value ?? [];
 
     final includeAiEntries =
-        ref.watch(includeAiEntriesControllerProvider(id: item.id));
+        ref.watch(includeAiEntriesControllerProvider(id: widget.item.id));
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // When hideTaskEntries is true, check if there are any non-Task entries
-    // to avoid showing an empty "Linked Entries" section
-    if (hideTaskEntries) {
+    if (widget.hideTaskEntries) {
       final hasNonTaskEntries =
-          ref.watch(hasNonTaskLinkedEntriesProvider(item.id));
+          ref.watch(hasNonTaskLinkedEntriesProvider(widget.item.id));
       if (!hasNonTaskEntries) {
         return const SizedBox.shrink();
       }
@@ -52,49 +55,71 @@ class LinkedEntriesWidget extends ConsumerWidget {
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              context.messages.journalLinkedEntriesLabel,
-              style: context.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            IconButton(
-              icon: Icon(Icons.filter_list, color: color),
-              onPressed: () {
-                ModalUtils.showSinglePageModal<void>(
-                  context: context,
-                  builder: (BuildContext _) =>
-                      LinkedFilterModalContent(entryId: item.id),
-                );
-              },
-            ),
-          ],
-        ),
-        ...List.generate(
-          entryLinks.length,
-          (int index) {
-            final link = entryLinks.elementAt(index);
-            final toId = link.toId;
-
-            // RepaintBoundary isolates repaints to individual entries,
-            // preventing cascading rebuilds during scroll
-            return RepaintBoundary(
-              child: EntryDetailsWidget(
-                key: entryKeyBuilder != null
-                    ? entryKeyBuilder!(toId)
-                    : Key('${item.id}-$toId'),
-                itemId: toId,
-                parentTags: item.meta.tagIds?.toSet(),
-                linkedFrom: item,
-                link: link,
-                showAiEntry: includeAiEntries,
-                hideTaskEntries: hideTaskEntries,
-                isHighlighted: highlightedEntryId == toId,
-                isActiveTimer: activeTimerEntryId == toId,
+        GestureDetector(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          child: Column(
+            children: [
+              AnimatedRotation(
+                turns: _isExpanded ? 0.0 : -0.25,
+                duration: AppTheme.chevronRotationDuration,
+                child: Icon(
+                  Icons.expand_more,
+                  size: AppTheme.chevronSize,
+                  color: color,
+                ),
               ),
-            );
-          },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    context.messages.journalLinkedEntriesLabel,
+                    style: context.textTheme.titleSmall?.copyWith(color: color),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.filter_list, color: color),
+                    onPressed: () {
+                      ModalUtils.showSinglePageModal<void>(
+                        context: context,
+                        builder: (BuildContext _) =>
+                            LinkedFilterModalContent(entryId: widget.item.id),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        AnimatedSize(
+          duration: AppTheme.collapseAnimationDuration,
+          curve: Curves.easeInOut,
+          child: _isExpanded
+              ? Column(
+                  children: List.generate(
+                    entryLinks.length,
+                    (int index) {
+                      final link = entryLinks.elementAt(index);
+                      final toId = link.toId;
+
+                      return RepaintBoundary(
+                        child: EntryDetailsWidget(
+                          key: widget.entryKeyBuilder != null
+                              ? widget.entryKeyBuilder!(toId)
+                              : Key('${widget.item.id}-$toId'),
+                          itemId: toId,
+                          parentTags: widget.item.meta.tagIds?.toSet(),
+                          linkedFrom: widget.item,
+                          link: link,
+                          showAiEntry: includeAiEntries,
+                          hideTaskEntries: widget.hideTaskEntries,
+                          isHighlighted: widget.highlightedEntryId == toId,
+                          isActiveTimer: widget.activeTimerEntryId == toId,
+                        ),
+                      );
+                    },
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );

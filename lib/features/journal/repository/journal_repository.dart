@@ -285,28 +285,39 @@ class JournalRepository {
   Future<bool> updateLink(EntryLink link) async {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
-    if (existing != null && !_hasMeaningfulLinkChange(existing, link)) {
+
+    final hasSyncableChange =
+        existing == null || _hasSyncableChange(existing, link);
+    final hasLocalChange =
+        existing != null && _hasLocalOnlyChange(existing, link);
+
+    if (!hasSyncableChange && !hasLocalChange) {
       return false;
     }
 
     final updated = link.copyWith(
       updatedAt: DateTime.now(),
-      vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
+      vectorClock: hasSyncableChange
+          ? await getIt<VectorClockService>().getNextVectorClock()
+          : existing.vectorClock,
     );
 
     final res = await journalDb.upsertEntryLink(updated);
     getIt<UpdateNotifications>().notify({link.fromId, link.toId});
 
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.entryLink(
-        entryLink: updated,
-        status: SyncEntryStatus.update,
-      ),
-    );
+    if (hasSyncableChange) {
+      await getIt<OutboxService>().enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: updated,
+          status: SyncEntryStatus.update,
+        ),
+      );
+    }
     return res != 0;
   }
 
-  bool _hasMeaningfulLinkChange(EntryLink existing, EntryLink incoming) {
+  /// Changes that should be synced across devices.
+  bool _hasSyncableChange(EntryLink existing, EntryLink incoming) {
     final existingHidden = existing.hidden ?? false;
     final incomingHidden = incoming.hidden ?? false;
 
@@ -315,6 +326,13 @@ class JournalRepository {
         existing.createdAt != incoming.createdAt ||
         existing.deletedAt != incoming.deletedAt ||
         existingHidden != incomingHidden;
+  }
+
+  /// Changes that are persisted locally but not synced (e.g. UI preferences).
+  bool _hasLocalOnlyChange(EntryLink existing, EntryLink incoming) {
+    final existingCollapsed = existing.collapsed ?? false;
+    final incomingCollapsed = incoming.collapsed ?? false;
+    return existingCollapsed != incomingCollapsed;
   }
 
   Future<int> removeLink({
