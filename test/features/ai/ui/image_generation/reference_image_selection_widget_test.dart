@@ -39,6 +39,35 @@ class _MockReferenceImageSelectionController
   }
 }
 
+/// Mock controller that tracks toggleImageSelection calls.
+class _TrackingMockReferenceImageSelectionController
+    extends ReferenceImageSelectionController {
+  _TrackingMockReferenceImageSelectionController(this._fixedState);
+
+  final ReferenceImageSelectionState _fixedState;
+  final List<String> toggledImageIds = [];
+
+  @override
+  ReferenceImageSelectionState build({required String taskId}) {
+    return _fixedState;
+  }
+
+  @override
+  void toggleImageSelection(String imageId) {
+    toggledImageIds.add(imageId);
+  }
+
+  @override
+  void clearSelection() {
+    // No-op for tests
+  }
+
+  @override
+  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
+    return [];
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -505,6 +534,132 @@ void main() {
 
       // Should show skip button
       expect(find.text('Skip'), findsOneWidget);
+    });
+
+    testWidgets('tapping image tile calls toggleImageSelection',
+        (tester) async {
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+        ],
+      );
+
+      final trackingController =
+          _TrackingMockReferenceImageSelectionController(stateWithImages);
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => trackingController,
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Tap the first image tile via GestureDetector
+      final gestureFinders = find.byType(GestureDetector);
+      expect(gestureFinders, findsWidgets);
+
+      // Tap the first GestureDetector in the grid
+      await tester.tap(gestureFinders.first);
+      await tester.pump();
+
+      expect(trackingController.toggledImageIds, contains('img-1'));
+    });
+
+    testWidgets('tapping non-selectable image tile does not toggle',
+        (tester) async {
+      // All 3 slots taken, img-4 is not selected and cannot be toggled
+      final stateAtMax = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+          buildTestImage('img-3'),
+          buildTestImage('img-4'),
+        ],
+        selectedImageIds: const {'img-1', 'img-2', 'img-3'},
+      );
+
+      final trackingController =
+          _TrackingMockReferenceImageSelectionController(stateAtMax);
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => trackingController,
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Find all GestureDetectors in the grid - the 4th one (img-4) should
+      // be non-selectable since max is reached
+      final gestureFinders = find.byType(GestureDetector);
+      final fourthTile = gestureFinders.at(3);
+
+      // Scroll into view since 4th tile is on the second grid row
+      await tester.ensureVisible(fourthTile);
+      await tester.pumpAndSettle();
+
+      // Tap the last image tile (img-4, which is not selected and at max)
+      await tester.tap(fourthTile);
+      await tester.pump();
+
+      // img-4 should NOT have been toggled since it's non-selectable
+      expect(trackingController.toggledImageIds, isNot(contains('img-4')));
+    });
+
+    testWidgets('tapping already-selected image tile toggles deselection',
+        (tester) async {
+      final stateWithSelection = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+        ],
+        selectedImageIds: const {'img-1'},
+      );
+
+      final trackingController =
+          _TrackingMockReferenceImageSelectionController(stateWithSelection);
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => trackingController,
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      // Tap the first image (which is already selected)
+      final gestureFinders = find.byType(GestureDetector);
+      await tester.tap(gestureFinders.first);
+      await tester.pump();
+
+      // Should call toggle for img-1 (deselection)
+      expect(trackingController.toggledImageIds, equals(['img-1']));
     });
 
     testWidgets('error state skip button calls onSkip', (tester) async {

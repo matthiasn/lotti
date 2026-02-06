@@ -561,7 +561,8 @@ void main() {
   });
 
   group('ImageGenerationReviewModal reference image flow', () {
-    testWidgets('retry includes reference images when present', (tester) async {
+    testWidgets('retry does not include reference images when none selected',
+        (tester) async {
       List<ProcessedReferenceImage>? capturedReferenceImages;
       const refImageState = ReferenceImageSelectionState();
 

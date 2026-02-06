@@ -2018,8 +2018,8 @@ void main() {
         );
 
         final updatedMeta = imageEntity.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          deletedAt: dateTime2023,
+          updatedAt: dateTime2023,
         );
 
         // Create mock selectables

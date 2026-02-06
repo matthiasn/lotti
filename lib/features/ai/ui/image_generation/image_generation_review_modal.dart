@@ -79,6 +79,10 @@ class _ImageGenerationReviewModalState
   _ModalStep _currentStep = _ModalStep.selectImages;
   List<ProcessedReferenceImage> _selectedReferenceImages = [];
 
+  /// Returns reference images for API submission, or null if none selected.
+  List<ProcessedReferenceImage>? get _effectiveReferenceImages =>
+      _selectedReferenceImages.isNotEmpty ? _selectedReferenceImages : null;
+
   @override
   void dispose() {
     _promptController?.dispose();
@@ -119,9 +123,7 @@ class _ImageGenerationReviewModalState
         )
         .generateImageFromEntity(
           audioEntityId: widget.entityId,
-          referenceImages: _selectedReferenceImages.isNotEmpty
-              ? _selectedReferenceImages
-              : null,
+          referenceImages: _effectiveReferenceImages,
         );
   }
 
@@ -213,9 +215,7 @@ class _ImageGenerationReviewModalState
           )
           .generateImage(
             prompt: newPrompt,
-            referenceImages: _selectedReferenceImages.isNotEmpty
-                ? _selectedReferenceImages
-                : null,
+            referenceImages: _effectiveReferenceImages,
           );
     }
   }
@@ -230,9 +230,7 @@ class _ImageGenerationReviewModalState
         )
         .generateImage(
           prompt: currentPrompt,
-          referenceImages: _selectedReferenceImages.isNotEmpty
-              ? _selectedReferenceImages
-              : null,
+          referenceImages: _effectiveReferenceImages,
         );
   }
 
