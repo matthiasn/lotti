@@ -29,8 +29,8 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
     return id == 'test-category-id'
         ? CategoryDefinition(
             id: 'test-category-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 1, 15, 12),
+            updatedAt: DateTime(2024, 1, 15, 12),
             name: 'Test Category',
             vectorClock: null,
             private: false,
@@ -111,8 +111,8 @@ void main() {
       ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<Directory>(mockDirectory);
 
-    // Create test data
-    final now = DateTime.now();
+    // Create test data with fixed dates (never use DateTime.now() in tests)
+    final now = DateTime(2024, 1, 15, 12);
     const categoryId = 'test-category-id';
     const entryId = 'test-entry-id';
     const taskId = 'test-task-id';

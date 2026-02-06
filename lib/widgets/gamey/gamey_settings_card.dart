@@ -32,13 +32,6 @@ class GameySettingsCard extends StatelessWidget {
   final Color? accentColor;
   final bool showChevron;
 
-  /// Unified gamey gradient for all cards
-  static const Gradient _gameyGradient = LinearGradient(
-    colors: [GameyColors.gameyAccent, GameyColors.gameyAccentLight],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
   @override
   Widget build(BuildContext context) {
     // Use provided accent color or default to unified gamey accent
@@ -60,7 +53,7 @@ class GameySettingsCard extends StatelessWidget {
           if (icon != null) ...[
             GameyIconBadge(
               icon: icon!,
-              gradient: iconGradient ?? _gameyGradient,
+              gradient: iconGradient ?? GameyGradients.unified,
               size: 48,
               iconSize: 24,
             ),
@@ -169,13 +162,6 @@ class GameyToggleCard extends StatelessWidget {
   final IconData? icon;
   final Color? accentColor;
 
-  /// Unified gamey gradient for all cards
-  static const Gradient _gameyGradient = LinearGradient(
-    colors: [GameyColors.gameyAccent, GameyColors.gameyAccentLight],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
   @override
   Widget build(BuildContext context) {
     // Use provided accent color or default to unified gamey accent
@@ -198,7 +184,7 @@ class GameyToggleCard extends StatelessWidget {
             GameyIconBadge(
               icon: icon!,
               gradient: value
-                  ? _gameyGradient
+                  ? GameyGradients.unified
                   : LinearGradient(
                       colors: [Colors.grey.shade400, Colors.grey.shade500],
                     ),

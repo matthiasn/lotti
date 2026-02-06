@@ -258,13 +258,17 @@ void main() {
 
       expect(containerFinder, findsWidgets);
 
-      // Get the first container that has constraints
+      // Verify a container with 64x64 constraints exists
       final containers = tester.widgetList<Container>(containerFinder);
+      final has64x64 = containers.any(
+        (c) => c.constraints?.maxWidth == 64.0,
+      );
+      expect(has64x64, isTrue,
+          reason: 'Should have a container with 64x64 constraints');
+
       final containerWithSize = containers.firstWhere(
         (c) => c.constraints?.maxWidth == 64.0,
-        orElse: () => containers.first,
       );
-
       expect(containerWithSize.constraints?.maxWidth, equals(64.0));
       expect(containerWithSize.constraints?.maxHeight, equals(64.0));
     });

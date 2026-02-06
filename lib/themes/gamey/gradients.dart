@@ -7,6 +7,18 @@ class GameyGradients {
   GameyGradients._();
 
   // ============================================================================
+  // UNIFIED GAMEY ACCENT GRADIENT
+  // ============================================================================
+
+  /// The unified gamey gradient used for all card icon badges throughout the app.
+  /// Provides a consistent, bubbly look across tasks, journal, and settings.
+  static const LinearGradient unified = LinearGradient(
+    colors: [GameyColors.gameyAccent, GameyColors.gameyAccentLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // ============================================================================
   // FEATURE GRADIENTS
   // ============================================================================
 
@@ -160,16 +172,14 @@ class GameyGradients {
   // ============================================================================
 
   /// Light mode background gradient
-  static LinearGradient backgroundLight() {
-    return LinearGradient(
-      colors: [
-        Colors.white,
-        Colors.grey.shade50,
-      ],
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-    );
-  }
+  static const LinearGradient backgroundLight = LinearGradient(
+    colors: [
+      Colors.white,
+      Color(0xFFFAFAFA), // Colors.grey.shade50 equivalent
+    ],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 
   /// Dark mode background gradient (deep purple night)
   static const LinearGradient backgroundDark = LinearGradient(

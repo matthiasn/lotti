@@ -111,17 +111,28 @@ void main() {
         final activeShadows =
             GameyGlows.iconGlow(Colors.purple, isActive: true);
 
-        if (inactiveShadows.isNotEmpty && activeShadows.isNotEmpty) {
-          final inactiveBlur = inactiveShadows.first.blurRadius;
-          final activeBlur = activeShadows.first.blurRadius;
-          expect(activeBlur, greaterThanOrEqualTo(inactiveBlur));
-        }
+        expect(inactiveShadows, isNotEmpty, reason: 'Should have shadows');
+        expect(activeShadows, isNotEmpty, reason: 'Should have shadows');
+
+        final inactiveBlur = inactiveShadows.first.blurRadius;
+        final activeBlur = activeShadows.first.blurRadius;
+        expect(activeBlur, greaterThanOrEqualTo(inactiveBlur));
       });
     });
 
     group('Feature-specific glows', () {
       test('forFeature returns shadows for known features', () {
-        final features = ['journal', 'habit', 'task', 'mood', 'health', 'ai'];
+        final features = [
+          'journal',
+          'habit',
+          'task',
+          'mood',
+          'health',
+          'measurement',
+          'ai',
+          'speech',
+          'settings',
+        ];
 
         for (final feature in features) {
           final shadows = GameyGlows.forFeature(feature);
@@ -143,12 +154,12 @@ void main() {
         final highlightedShadows =
             GameyGlows.forFeature('journal', highlighted: true);
 
-        // If both return shadows, highlighted should be more intense
-        if (normalShadows.isNotEmpty && highlightedShadows.isNotEmpty) {
-          final normalAlpha = normalShadows.first.color.a;
-          final highlightedAlpha = highlightedShadows.first.color.a;
-          expect(highlightedAlpha, greaterThanOrEqualTo(normalAlpha));
-        }
+        expect(normalShadows, isNotEmpty, reason: 'Should have shadows');
+        expect(highlightedShadows, isNotEmpty, reason: 'Should have shadows');
+
+        final normalAlpha = normalShadows.first.color.a;
+        final highlightedAlpha = highlightedShadows.first.color.a;
+        expect(highlightedAlpha, greaterThanOrEqualTo(normalAlpha));
       });
     });
 
@@ -177,11 +188,12 @@ void main() {
         final highIntensity =
             GameyGlows.pulseGlow(Colors.pink, pulseValue: 0.8);
 
-        if (lowIntensity.isNotEmpty && highIntensity.isNotEmpty) {
-          final lowAlpha = lowIntensity.first.color.a;
-          final highAlpha = highIntensity.first.color.a;
-          expect(highAlpha, greaterThan(lowAlpha));
-        }
+        expect(lowIntensity, isNotEmpty, reason: 'Should have shadows');
+        expect(highIntensity, isNotEmpty, reason: 'Should have shadows');
+
+        final lowAlpha = lowIntensity.first.color.a;
+        final highAlpha = highIntensity.first.color.a;
+        expect(highAlpha, greaterThan(lowAlpha));
       });
     });
 

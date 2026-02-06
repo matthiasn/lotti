@@ -79,9 +79,8 @@ void main() {
       });
 
       test('backgroundLight gradient is defined', () {
-        final gradient = GameyGradients.backgroundLight();
-        expect(gradient, isA<LinearGradient>());
-        expect(gradient.colors, isNotEmpty);
+        expect(GameyGradients.backgroundLight, isA<LinearGradient>());
+        expect(GameyGradients.backgroundLight.colors, isNotEmpty);
       });
     });
 

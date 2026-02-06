@@ -58,13 +58,6 @@ class GameyJournalCard extends StatelessWidget {
   final bool isCompact;
   final bool removeHorizontalMargin;
 
-  /// Unified gamey gradient for all cards
-  static const Gradient _gameyGradient = LinearGradient(
-    colors: [GameyColors.gameyAccent, GameyColors.gameyAccentLight],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
   @override
   Widget build(BuildContext context) {
     if (item.meta.deletedAt != null) {
@@ -173,7 +166,7 @@ class GameyJournalCard extends StatelessWidget {
 
     return GameyIconBadge(
       icon: icon,
-      gradient: _gameyGradient,
+      gradient: GameyGradients.unified,
       size: size,
       iconSize: iconSize,
     );

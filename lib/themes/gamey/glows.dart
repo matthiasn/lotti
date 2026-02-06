@@ -244,12 +244,22 @@ class GameyGlows {
       case 'mood':
       case 'moods':
         return moodGlow(highlighted: highlighted);
+      case 'health':
+      case 'measurement':
+        return successGlow(highlighted: highlighted);
+      case 'ai':
+      case 'speech':
+      case 'transcription':
+        return cardGlow(GameyColors.aiCyan);
       case 'achievement':
       case 'reward':
         return achievementGlow(highlighted: highlighted);
       case 'streak':
         return streakGlow(highlighted: highlighted);
       case 'level':
+        return levelGlow(highlighted: highlighted);
+      case 'settings':
+      case 'config':
         return levelGlow(highlighted: highlighted);
       default:
         return successGlow(highlighted: highlighted);

@@ -46,13 +46,6 @@ class GameyTaskCard extends StatelessWidget {
   static const double _wrapSpacing = 6;
   static const double _bottomPadding = 10;
 
-  /// Unified gamey gradient for all cards
-  static const Gradient _gameyGradient = LinearGradient(
-    colors: [GameyColors.gameyAccent, GameyColors.gameyAccentLight],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
   @override
   Widget build(BuildContext context) {
     void onTap() => beamToNamed('/tasks/${task.meta.id}');
@@ -132,7 +125,7 @@ class GameyTaskCard extends StatelessWidget {
         // Status icon with unified gamey gradient
         GameyIconBadge(
           icon: _getStatusIcon(task.data.status),
-          gradient: _gameyGradient,
+          gradient: GameyGradients.unified,
           size: 40,
           iconSize: 20,
         ),

@@ -200,6 +200,14 @@ class _GameyCardState extends State<GameyCard>
       );
     }
 
+    // Wrap with Semantics for accessibility when the card is interactive
+    if (widget.onTap != null) {
+      card = Semantics(
+        button: true,
+        child: card,
+      );
+    }
+
     return card;
   }
 }
