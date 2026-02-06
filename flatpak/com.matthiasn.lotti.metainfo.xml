@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.845" date="2026-02-06">
+      <description>
+        <p>Gamey Design System: A brand-new vibrant visual theme that transforms the app with playful gradients, glow effects, and animations. The Gamey theme includes a full color palette with feature-specific colors, a gradient system with reward tiers (gold/silver/bronze) and neon effects, glow effects at multiple intensity levels, and spring-based animation utilities. A complete set of themed widgets - cards, FAB, settings cards, icon badges, progress bars - all adapt automatically when the Gamey theme is active. The existing theme infrastructure is untouched; the Gamey theme layers on top via GameyThemeBuilder.apply().</p>
+        <p>Bug Fixes: Fixed double-tap on Gamey FAB, proper dropdown behavior in theme selection, localized task status labels, correct parameter passing in settings cards, and reliable animation state handling.</p>
+      </description>
+    </release>
     <release version="0.9.844" date="2026-02-05">
       <description>
         <p>Cover Art Reference Images: When generating AI cover art for a task, you can now select up to 3 images linked to that task as visual references. The AI uses these images to match the color palette, lighting mood, aesthetic, and materials in the generated cover art. For example, if your woodworking task has photos of your project, the generated cover art will incorporate those textures and atmosphere. A new selection step appears before generation - tap images to select them, or skip to generate without references. If a task has no linked images, this step is automatically skipped.</p>

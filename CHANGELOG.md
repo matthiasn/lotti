@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.845] - 2026-02-06
+### Added
+- Gamey Design System: A complete vibrant visual theme with playful gradients, glow effects, and animations
+  - Gamey color palette with feature-specific colors (journal teal, habit green, task blue, mood lavender, AI cyan, etc.)
+  - Gradient system with feature gradients, reward tiers (gold/silver/bronze), neon, shimmer, and background gradients
+  - Glow effects system with subtle/medium/strong/intense intensity levels and feature-specific glows
+  - Animation utilities with spring curves, durations, and staggered animation support
+  - `GameyThemeBuilder.apply()` integrates the gamey theme without modifying existing FlexColorScheme infrastructure
+- Gamey Widgets: Full set of themed UI components
+  - `GameyCard` and `GameySubtleCard` with gradient borders, glow effects, and tap animations
+  - `GameyFab` with custom character image and press animation for the gamey theme
+  - `GameyJournalCard` and `GameyTaskCard` for themed list items
+  - `GameySettingsCard`, `GameyToggleCard`, and `GameySettingsSection` for settings pages
+  - `GameyIconBadge` with gradient background and optional glow
+  - `GameyProgressBar` with animated gradient fill and shimmer effect
+  - `AdaptiveSettingsCard` that auto-selects gamey or standard styling based on active theme
+- Theme Selection: Theme picker dropdowns now include the Gamey theme option with localized labels
+
+### Fixed
+- Theme Selection: Replaced `TextEditingController` with `InputDecorator` in `SelectTheme` for proper dropdown behavior
+- Card Wrapper: Fixed `getIt.reset()` usage in test teardown for reliable test isolation
+- Gamey FAB: Prevented double invocation of `onPressed` callback
+- Gamey Task Card: Localized task status labels and added null-safety for `coverArtId`
+- Gamey Settings Card: Honored `accentColor` parameter, passed `showChevron` and `iconGradient` correctly
+- Gamey Card Animation: Handled `animateOnChange=false` in `didUpdateWidget` to avoid unnecessary animations
+
 ## [0.9.844] - 2026-02-05
 ### Added
 - Cover Art Reference Images: Select up to 3 images linked to a task to guide the AI's visual style when generating cover art
