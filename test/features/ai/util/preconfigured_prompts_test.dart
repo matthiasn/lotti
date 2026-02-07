@@ -95,7 +95,8 @@ void main() {
   test('Checklist updates prompt instructs array-of-objects format', () {
     final prompt = checklistUpdatesPrompt.systemMessage;
     expect(prompt, contains('add_multiple_checklist_items'));
-    expect(prompt, contains('JSON array of objects'));
+    expect(prompt, contains('single JSON array'));
+    expect(prompt, contains('ONE CALL ONLY'));
     expect(prompt, isNot(contains('actionItemDescription')));
   });
 

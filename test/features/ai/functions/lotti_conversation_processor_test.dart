@@ -435,7 +435,15 @@ void main() {
         return (
           success: true,
           checklistId: 'new-checklist',
-          createdItems: null,
+          createdItems: suggestions
+              .map(
+                (s) => (
+                  id: 'item-${s.title}',
+                  title: s.title,
+                  isChecked: s.isChecked,
+                ),
+              )
+              .toList(),
           error: null,
         );
       });

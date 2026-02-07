@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.847] - 2026-02-07
+### Fixed
+- Audio Transcription: Single-speaker recordings no longer include an unnecessary "Speaker 1:" prefix. Speaker labels now only appear when multiple distinct voices are detected.
+- Checklist Creation: AI-powered checklist generation is now snappy regardless of the model used. Multiple individual function calls from the model are coalesced into a single batch database write, eliminating incremental UI updates.
+- Checklist Prompt: Strengthened instructions to enforce single-call batch creation, preventing models like Gemini Flash from splitting items across multiple function calls.
+- Deprecated Handler: The legacy `add_checklist_item` function is no longer processed; models that hallucinate this function name receive a redirect to the batch API.
+
 ## [0.9.846] - 2026-02-07
 ### Fixed
 - Automatic Image Analysis: Images imported via the photo library/camera roll now trigger automatic AI image analysis when configured on the category. Previously only paste and drag & drop triggered analysis; photo library imports required manually opening each image.
