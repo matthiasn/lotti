@@ -344,6 +344,10 @@ void main() {
         .thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
+    // Default stub for session ratings config flag check
+    when(() => mockJournalDb.getConfigFlagByName(any()))
+        .thenAnswer((_) async => null);
+
     // Default stub for updateJournalEntityText
     when(
       () => mockPersistenceLogic.updateJournalEntityText(

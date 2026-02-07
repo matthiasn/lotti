@@ -113,6 +113,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Daily OS (WIP)?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableSessionRatingsFlag,
+    description: 'Enable session ratings?',
+    status: false,
+  ),
 };
 
 void main() {

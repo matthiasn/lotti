@@ -12,7 +12,16 @@ part of 'entry_link.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 EntryLink _$EntryLinkFromJson(Map<String, dynamic> json) {
-  return BasicLink.fromJson(json);
+  switch (json['runtimeType']) {
+    case 'basic':
+      return BasicLink.fromJson(json);
+    case 'rating':
+      return RatingLink.fromJson(json);
+
+    default:
+      throw CheckedFromJsonException(json, 'runtimeType', 'EntryLink',
+          'Invalid union type "${json['runtimeType']}"!');
+  }
 }
 
 /// @nodoc
@@ -157,12 +166,15 @@ extension EntryLinkPatterns on EntryLink {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(BasicLink value)? basic,
+    TResult Function(RatingLink value)? rating,
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
         return basic(_that);
+      case RatingLink() when rating != null:
+        return rating(_that);
       case _:
         return orElse();
     }
@@ -184,11 +196,14 @@ extension EntryLinkPatterns on EntryLink {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(BasicLink value) basic,
+    required TResult Function(RatingLink value) rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink():
         return basic(_that);
+      case RatingLink():
+        return rating(_that);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -209,11 +224,14 @@ extension EntryLinkPatterns on EntryLink {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(BasicLink value)? basic,
+    TResult? Function(RatingLink value)? rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
         return basic(_that);
+      case RatingLink() when rating != null:
+        return rating(_that);
       case _:
         return null;
     }
@@ -243,12 +261,25 @@ extension EntryLinkPatterns on EntryLink {
             bool? hidden,
             DateTime? deletedAt)?
         basic,
+    TResult Function(
+            String id,
+            String fromId,
+            String toId,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            bool? hidden,
+            DateTime? deletedAt)?
+        rating,
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
         return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
+            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+      case RatingLink() when rating != null:
+        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
       case _:
         return orElse();
@@ -280,11 +311,24 @@ extension EntryLinkPatterns on EntryLink {
             bool? hidden,
             DateTime? deletedAt)
         basic,
+    required TResult Function(
+            String id,
+            String fromId,
+            String toId,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            bool? hidden,
+            DateTime? deletedAt)
+        rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink():
         return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
+            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+      case RatingLink():
+        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
       case _:
         throw StateError('Unexpected subclass');
@@ -315,11 +359,24 @@ extension EntryLinkPatterns on EntryLink {
             bool? hidden,
             DateTime? deletedAt)?
         basic,
+    TResult? Function(
+            String id,
+            String fromId,
+            String toId,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            bool? hidden,
+            DateTime? deletedAt)?
+        rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
         return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
+            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+      case RatingLink() when rating != null:
+        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
       case _:
         return null;
@@ -338,7 +395,9 @@ class BasicLink implements EntryLink {
       required this.updatedAt,
       required this.vectorClock,
       this.hidden,
-      this.deletedAt});
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'basic';
   factory BasicLink.fromJson(Map<String, dynamic> json) =>
       _$BasicLinkFromJson(json);
 
@@ -358,6 +417,9 @@ class BasicLink implements EntryLink {
   final bool? hidden;
   @override
   final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
 
   /// Create a copy of EntryLink
   /// with the given fields replaced by the non-null parameter values.
@@ -444,6 +506,165 @@ class _$BasicLinkCopyWithImpl<$Res> implements $BasicLinkCopyWith<$Res> {
     Object? deletedAt = freezed,
   }) {
     return _then(BasicLink(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      fromId: null == fromId
+          ? _self.fromId
+          : fromId // ignore: cast_nullable_to_non_nullable
+              as String,
+      toId: null == toId
+          ? _self.toId
+          : toId // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      hidden: freezed == hidden
+          ? _self.hidden
+          : hidden // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class RatingLink implements EntryLink {
+  const RatingLink(
+      {required this.id,
+      required this.fromId,
+      required this.toId,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.hidden,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'rating';
+  factory RatingLink.fromJson(Map<String, dynamic> json) =>
+      _$RatingLinkFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String fromId;
+  @override
+  final String toId;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final bool? hidden;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $RatingLinkCopyWith<RatingLink> get copyWith =>
+      _$RatingLinkCopyWithImpl<RatingLink>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$RatingLinkToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is RatingLink &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.fromId, fromId) || other.fromId == fromId) &&
+            (identical(other.toId, toId) || other.toId == toId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.hidden, hidden) || other.hidden == hidden) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
+      updatedAt, vectorClock, hidden, deletedAt);
+
+  @override
+  String toString() {
+    return 'EntryLink.rating(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $RatingLinkCopyWith<$Res>
+    implements $EntryLinkCopyWith<$Res> {
+  factory $RatingLinkCopyWith(
+          RatingLink value, $Res Function(RatingLink) _then) =
+      _$RatingLinkCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String fromId,
+      String toId,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      bool? hidden,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$RatingLinkCopyWithImpl<$Res> implements $RatingLinkCopyWith<$Res> {
+  _$RatingLinkCopyWithImpl(this._self, this._then);
+
+  final RatingLink _self;
+  final $Res Function(RatingLink) _then;
+
+  /// Create a copy of EntryLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? fromId = null,
+    Object? toId = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? hidden = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(RatingLink(
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable

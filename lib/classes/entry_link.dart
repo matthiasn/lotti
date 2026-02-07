@@ -17,6 +17,17 @@ abstract class EntryLink with _$EntryLink {
     DateTime? deletedAt,
   }) = BasicLink;
 
+  const factory EntryLink.rating({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    bool? hidden,
+    DateTime? deletedAt,
+  }) = RatingLink;
+
   factory EntryLink.fromJson(Map<String, dynamic> json) =>
       _$EntryLinkFromJson(json);
 }

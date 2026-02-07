@@ -17,6 +17,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/ratings/state/rating_prompt_controller.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -253,6 +255,16 @@ class EntryController extends _$EntryController {
         await Future<void>.delayed(const Duration(milliseconds: 100)).then((_) {
           getIt<TimeService>().stop();
         });
+
+        // Emit rating prompt if session was >= 1 minute and feature enabled
+        final duration = entry.meta.dateTo.difference(entry.meta.dateFrom);
+        if (duration >= const Duration(minutes: 1)) {
+          final flag =
+              await _journalDb.getConfigFlagByName(enableSessionRatingsFlag);
+          if (flag?.status ?? false) {
+            ref.read(ratingPromptControllerProvider.notifier).requestRating(id);
+          }
+        }
       }
 
       focusNode.unfocus();

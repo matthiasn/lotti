@@ -12,3 +12,4 @@ const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableCalendarPageFlag = 'enable_calendar_page';
 const enableEventsFlag = 'enable_events';
 const enableDailyOsFlag = 'enable_daily_os';
+const enableSessionRatingsFlag = 'enable_session_ratings';

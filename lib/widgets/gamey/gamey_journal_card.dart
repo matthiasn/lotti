@@ -342,6 +342,16 @@ class GameyJournalCard extends StatelessWidget {
               entry.meta.id,
               style: context.textTheme.bodyMedium,
             );
+          case RatingEntry():
+            return Text(
+              'Session Rating',
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: isCompact
+                    ? AppTheme.titleFontSizeCompact
+                    : AppTheme.titleFontSize,
+              ),
+            );
         }
       }(),
     );
