@@ -435,7 +435,15 @@ void main() {
         return (
           success: true,
           checklistId: 'new-checklist',
-          createdItems: null,
+          createdItems: suggestions
+              .map(
+                (s) => (
+                  id: 'item-${s.title}',
+                  title: s.title,
+                  isChecked: s.isChecked,
+                ),
+              )
+              .toList(),
           error: null,
         );
       });
@@ -924,6 +932,115 @@ void main() {
               that: contains('add_multiple_checklist_items'),
             ),
           )).called(1);
+    });
+
+    test('should redirect deprecated add_checklist_item as retryable failure',
+        () async {
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-deprecated',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"actionItemDescription": "Buy milk"}',
+          ),
+        ),
+      ];
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      // Should continue because the failure is retryable
+      expect(action, ConversationAction.continueConversation);
+      expect(strategy.hadErrors, true);
+
+      // Verify the redirect message was sent
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-deprecated',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('add_checklist_item'),
+                contains('not available'),
+                contains('add_multiple_checklist_items'),
+              ),
+            ),
+          )).called(1);
+    });
+
+    test('should handle createBatchItems exception in coalesced flush',
+        () async {
+      // Mock autoCreateChecklist to throw during the coalesced flush
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          )).thenThrow(Exception('Database write failed'));
+
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => task);
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-batch-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"items": [{"title": "item A"}]}',
+          ),
+        ),
+        const ChatCompletionMessageToolCall(
+          id: 'tool-batch-2',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"items": [{"title": "item B"}]}',
+          ),
+        ),
+      ];
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      // Should continue (Ollama provider) and report errors
+      expect(action, ConversationAction.continueConversation);
+      expect(strategy.hadErrors, true);
+
+      // The exception is caught inside createBatchItems (which logs and
+      // returns 0), so the coalesced flush sends the normal tool response
+      // with an empty createdItems list rather than an error string.
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-batch-1',
+            response: any(
+              named: 'response',
+              that: contains('"createdItems":[]'),
+            ),
+          )).called(1);
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-batch-2',
+            response: any(
+              named: 'response',
+              that: contains('"createdItems":[]'),
+            ),
+          )).called(1);
+
+      // No items should have been recorded as successful
+      expect(strategy.getResponseSummary(),
+          'No checklist items were created or updated.');
     });
 
     test('should handle unknown tool calls', () async {

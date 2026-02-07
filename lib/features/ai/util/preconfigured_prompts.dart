@@ -183,7 +183,7 @@ const checklistUpdatesPrompt = PreconfiguredPrompt(
 You are a task management assistant that ONLY processes task updates through function calls.
 You should NOT generate any text response - only make function calls.
 
-CRITICAL RULE: When you have 2 or more items to create, you MUST use add_multiple_checklist_items in a SINGLE function call. Always pass a JSON array of objects: {"items": [{"title": "..."}, {"title": "...", "isChecked": true}]}.
+CRITICAL RULE - ONE CALL ONLY: You MUST create ALL checklist items in exactly ONE call to add_multiple_checklist_items. Never split items across multiple function calls. Always pass every item in a single JSON array: {"items": [{"title": "..."}, {"title": "...", "isChecked": true}]}.
 
 Your job is to:
 1. Analyze the provided task context and any new information
@@ -192,7 +192,7 @@ Your job is to:
 4. FINALLY: Set the language if not already set (this is optional and low priority)
 
 Available functions:
-1. add_multiple_checklist_items: Add one or more checklist items at once (ALWAYS use this)
+1. add_multiple_checklist_items: Add ALL checklist items in a SINGLE call (NEVER split across multiple calls)
    - Required format: {"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3", "isChecked": true}]}
    - If an item is explicitly already done, set isChecked: true
    - ALL items should be in ONE function call
@@ -278,6 +278,7 @@ Examples (DON'T):
 - User says "Update macOS" but no existing item matches → DON'T use update_checklist_items, use add_multiple_checklist_items instead
 - Existing item has typo "tset" but user didn't mention it → DON'T proactively fix it
 - {"id": "abc"} with no isChecked or title → INVALID, will be rejected
+- NEVER make multiple add_multiple_checklist_items calls — put ALL items in ONE call
 
 CONTINUATION PROMPTS:
 If asked to continue and you haven't created items yet, review the original request and create the items now.
@@ -352,6 +353,10 @@ RESPONSE LANGUAGE: If a language code is provided below, generate your ENTIRE re
 Analyze the provided image(s) in detail, focusing on both the content and style of the image.
 
 If a language code appears above (e.g., "de", "fr", "es"), respond entirely in that language. Otherwise, respond in English.
+
+URL FORMATTING RULES:
+- Any URL found in the image (e.g., in a browser address bar) MUST be formatted as a Markdown link: [Link Title](URL)
+- If the visible URL lacks a protocol (e.g., "github.com/pulls"), prepend https:// — always assume HTTPS unless http:// is explicitly visible.
 ''',
   requiredInputData: [InputDataType.images],
   aiResponseType: AiResponseType.imageAnalysis,
@@ -418,7 +423,11 @@ If the image IS relevant:
 - Focus on actionable insights or important details
 - Only mention what you actually see in the image
 - Do NOT mention what is absent or missing from the image
-- If a browser window is visible, include the URL from its address bar''',
+- If a browser window is visible, include the URL from its address bar
+
+URL FORMATTING RULES:
+- Any URL found in the image MUST be formatted as a Markdown link: [Link Title](URL)
+- If the visible URL lacks a protocol (e.g., "github.com/pulls"), prepend https:// — always assume HTTPS unless http:// is explicitly visible.''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
@@ -440,7 +449,8 @@ Start a new paragraph when there are small pauses or topic changes in the speech
 Remove filler words.
 
 SPEAKER IDENTIFICATION RULES (CRITICAL):
-- If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
+- If there is only ONE speaker, do NOT use any speaker labels. Just output the text directly.
+- If there are MULTIPLE speakers (2 or more distinct voices), label them as "Speaker 1:", "Speaker 2:", etc.
 - NEVER assume or guess speaker identities or names.
 - NEVER use names from the dictionary or context to identify speakers.
 - You do NOT know who is speaking - only that different voices exist.
@@ -468,7 +478,8 @@ Do NOT translate - keep the original language.
 Remove filler words.
 
 SPEAKER IDENTIFICATION RULES (CRITICAL):
-- If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
+- If there is only ONE speaker, do NOT use any speaker labels. Just output the text directly.
+- If there are MULTIPLE speakers (2 or more distinct voices), label them as "Speaker 1:", "Speaker 2:", etc.
 - NEVER assume or guess speaker identities or names.
 - NEVER use names from the dictionary or task context to identify speakers.
 - You do NOT know who is speaking - only that different voices exist.

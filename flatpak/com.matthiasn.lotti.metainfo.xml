@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.847" date="2026-02-07">
+      <description>
+        <p>AI Prompt Optimization: Single-speaker audio transcriptions no longer include an unnecessary "Speaker 1:" prefix - speaker labels now only appear when multiple voices are detected. Checklist generation is now snappy regardless of the AI model: when models like Gemini Flash split items across multiple function calls, they are coalesced into a single batch write for instant UI updates instead of incremental per-item rendering. Image analysis now returns URLs as proper Markdown links and automatically infers https:// when the browser hides the protocol.</p>
+      </description>
+    </release>
     <release version="0.9.846" date="2026-02-07">
       <description>
         <p>Automatic Image Analysis Fix: Images imported via the photo library or camera roll now correctly trigger automatic AI image analysis when configured on the category. Previously, only clipboard paste and drag-and-drop imports triggered analysis, requiring users to manually open each imported image. Screenshots also now trigger automatic analysis.</p>

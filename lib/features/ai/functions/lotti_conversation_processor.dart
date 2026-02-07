@@ -355,6 +355,12 @@ class LottiChecklistStrategy extends ConversationStrategy {
       name: 'LottiConversationProcessor',
     );
 
+    // Accumulate batch items across multiple add_multiple_checklist_items
+    // calls within this round, then flush once after the loop. This
+    // coalesces N per-item calls into a single DB write + UI update.
+    final pendingBatchItems = <Map<String, dynamic>>[];
+    final pendingBatchCallIds = <String>[];
+
     for (final call in toolCalls) {
       developer.log(
         'Processing tool call: ${call.function.name} with args: ${call.function.arguments}',
@@ -362,30 +368,28 @@ class LottiChecklistStrategy extends ConversationStrategy {
       );
 
       if (call.function.name == checklistHandler.functionName) {
-        final result = checklistHandler.processFunctionCall(call);
-
+        // Redirect deprecated single-item calls to the batch function.
+        // The add_checklist_item tool is no longer exposed, but some models
+        // may hallucinate the function name. Record as a retryable failure
+        // so the continuation logic triggers a corrective prompt.
         developer.log(
-          'Tool call result: success=${result.success}, description=${checklistHandler.getDescription(result)}',
+          'Redirecting deprecated add_checklist_item call to batch handler',
           name: 'LottiConversationProcessor',
         );
-
-        if (result.success && !checklistHandler.isDuplicate(result)) {
-          final created = await checklistHandler.createItem(result);
-          developer.log(
-            'Item creation result: $created for "${checklistHandler.getDescription(result)}"',
-            name: 'LottiConversationProcessor',
-          );
-          if (!created) {
-            _hadErrors = true;
-          }
-        } else if (!result.success) {
-          _hadErrors = true;
-          _failedResults.add(result);
-        }
-
+        const errorMsg = 'The function "add_checklist_item" is not available. '
+            'Use add_multiple_checklist_items with '
+            '{"items": [{"title": "your item"}]} instead.';
+        _hadErrors = true;
+        _failedResults.add(FunctionCallResult(
+          success: false,
+          functionName: checklistHandler.functionName,
+          arguments: call.function.arguments,
+          data: {'toolCallId': call.id},
+          error: errorMsg,
+        ));
         manager.addToolResponse(
           toolCallId: call.id,
-          response: checklistHandler.createToolResponse(result),
+          response: errorMsg,
         );
       } else if (call.function.name == batchChecklistHandler.functionName) {
         final result = batchChecklistHandler.processFunctionCall(call);
@@ -396,28 +400,20 @@ class LottiChecklistStrategy extends ConversationStrategy {
         );
 
         if (result.success) {
-          final createdCount =
-              await batchChecklistHandler.createBatchItems(result);
-          developer.log(
-            'Batch creation result: created $createdCount items',
-            name: 'LottiConversationProcessor',
-          );
-          final items = result.data['items'] as List<dynamic>?;
-          if (createdCount == 0 && items != null && items.isNotEmpty) {
-            _hadErrors = true;
-          }
-          // Copy successful items to the single item handler for consistency
-          checklistHandler
-              .addSuccessfulItems(batchChecklistHandler.successfulItems);
+          // Accumulate validated items for deferred batch write
+          final items = (result.data['items'] as List<dynamic>)
+              .whereType<Map<String, dynamic>>()
+              .toList();
+          pendingBatchItems.addAll(items);
+          pendingBatchCallIds.add(call.id);
         } else {
           _hadErrors = true;
           _failedResults.add(result);
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: batchChecklistHandler.createToolResponse(result),
+          );
         }
-
-        manager.addToolResponse(
-          toolCallId: call.id,
-          response: batchChecklistHandler.createToolResponse(result),
-        );
       } else if (call.function.name ==
           ChecklistCompletionFunctions.updateChecklistItems) {
         final response =
@@ -629,7 +625,7 @@ class LottiChecklistStrategy extends ConversationStrategy {
         } catch (e) {
           // If we can't parse the arguments, use a generic response
           detailedResponse =
-              'Please use add_checklist_item or add_multiple_checklist_items to create the suggested items.';
+              'Please use add_multiple_checklist_items to create the suggested items.';
         }
 
         manager.addToolResponse(
@@ -646,6 +642,69 @@ class LottiChecklistStrategy extends ConversationStrategy {
           response:
               'Unknown function. Please use add_multiple_checklist_items with the required array-of-objects format.',
         );
+      }
+    }
+
+    // Flush accumulated batch items in a single DB write.
+    // This coalesces N separate add_multiple_checklist_items calls from the
+    // model into one batch operation, ensuring a single UI update.
+    if (pendingBatchItems.isNotEmpty) {
+      developer.log(
+        'Flushing ${pendingBatchItems.length} coalesced batch items '
+        'from ${pendingBatchCallIds.length} call(s)',
+        name: 'LottiConversationProcessor',
+      );
+
+      final coalescedResult = FunctionCallResult(
+        success: true,
+        functionName: batchChecklistHandler.functionName,
+        arguments: '',
+        data: {
+          'items': pendingBatchItems,
+          'taskId': batchChecklistHandler.task.id,
+        },
+      );
+
+      try {
+        final createdCount =
+            await batchChecklistHandler.createBatchItems(coalescedResult);
+
+        developer.log(
+          'Coalesced batch creation result: created $createdCount items',
+          name: 'LottiConversationProcessor',
+        );
+
+        if (createdCount == 0 && pendingBatchItems.isNotEmpty) {
+          _hadErrors = true;
+        }
+        // Copy successful items to the single item handler for consistency
+        checklistHandler
+            .addSuccessfulItems(batchChecklistHandler.successfulItems);
+
+        // Send tool responses for each original call
+        final responseJson =
+            batchChecklistHandler.createToolResponse(coalescedResult);
+        for (final callId in pendingBatchCallIds) {
+          manager.addToolResponse(toolCallId: callId, response: responseJson);
+        }
+      } catch (e, s) {
+        developer.log(
+          'Error flushing ${pendingBatchItems.length} coalesced batch items '
+          'from ${pendingBatchCallIds.length} call(s) for task '
+          '${batchChecklistHandler.task.id}',
+          name: 'LottiConversationProcessor',
+          error: e,
+          stackTrace: s,
+        );
+        _hadErrors = true;
+
+        final errorResponse = 'Error creating checklist items: $e';
+        for (final callId in pendingBatchCallIds) {
+          manager.addToolResponse(
+            toolCallId: callId,
+            response: errorResponse,
+          );
+        }
       }
     }
 
