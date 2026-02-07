@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.846" date="2026-02-07">
+      <description>
+        <p>Automatic Image Analysis Fix: Images imported via the photo library or camera roll now correctly trigger automatic AI image analysis when configured on the category. Previously, only clipboard paste and drag-and-drop imports triggered analysis, requiring users to manually open each imported image. Screenshots also now trigger automatic analysis.</p>
+      </description>
+    </release>
     <release version="0.9.845" date="2026-02-06">
       <description>
         <p>Gamey Design System: A brand-new vibrant visual theme that transforms the app with playful gradients, glow effects, and animations. The Gamey theme includes a full color palette with feature-specific colors, a gradient system with reward tiers (gold/silver/bronze) and neon effects, glow effects at multiple intensity levels, and spring-based animation utilities. A complete set of themed widgets - cards, FAB, settings cards, icon badges, progress bars - all adapt automatically when the Gamey theme is active. The existing theme infrastructure is untouched; the Gamey theme layers on top via GameyThemeBuilder.apply().</p>

@@ -4,9 +4,11 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -81,6 +83,7 @@ Future<JournalEvent?> createEvent({String? linkedId, String? categoryId}) =>
 Future<JournalEntity?> createScreenshot({
   String? linkedId,
   String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   final persistenceLogic = getIt<PersistenceLogic>();
   final imageData = await takeScreenshot();
@@ -88,6 +91,7 @@ Future<JournalEntity?> createScreenshot({
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
+    onCreated: createAnalysisCallback(analysisTrigger, categoryId, linkedId),
   );
 
   if (entry != null) {

@@ -517,7 +517,7 @@ void main() {
       final trigger = testContainer.read(automaticImageAnalysisTriggerProvider);
 
       // Simulate what happens when createImageEntry's onCreated callback is invoked
-      // This is the same pattern used in _createAnalysisCallback in image_import.dart
+      // This is the same pattern used in createAnalysisCallback in image_import.dart
       await trigger.triggerAutomaticImageAnalysis(
         imageEntryId: imageEntryId,
         categoryId: categoryId,

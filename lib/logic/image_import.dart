@@ -24,7 +24,7 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 ///
 /// Returns null if [analysisTrigger] is null, otherwise returns a callback
 /// that triggers automatic image analysis in a fire-and-forget manner.
-void Function(JournalEntity)? _createAnalysisCallback(
+void Function(JournalEntity)? createAnalysisCallback(
   AutomaticImageAnalysisTrigger? analysisTrigger,
   String? categoryId,
   String? linkedId,
@@ -143,7 +143,7 @@ Future<void> importImageAssets(
           linkedId: linkedId,
           categoryId: categoryId,
           onCreated:
-              _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+              createAnalysisCallback(analysisTrigger, categoryId, linkedId),
         );
       }
     }
@@ -208,7 +208,7 @@ Future<void> importDroppedImages({
         linkedId: linkedId,
         categoryId: categoryId,
         onCreated:
-            _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+            createAnalysisCallback(analysisTrigger, categoryId, linkedId),
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -345,7 +345,7 @@ Future<void> importPastedImages({
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
-    onCreated: _createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+    onCreated: createAnalysisCallback(analysisTrigger, categoryId, linkedId),
   );
 }
 

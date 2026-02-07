@@ -6,6 +6,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -18,6 +19,9 @@ class MockLoggingService extends Mock implements LoggingService {}
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockAutomaticImageAnalysisTrigger extends Mock
+    implements AutomaticImageAnalysisTrigger {}
 
 class FakeJournalImage extends Fake implements JournalImage {}
 
@@ -403,6 +407,93 @@ void main() {
         DateTime.now(),
       );
       expect(result, isNull);
+    });
+  });
+
+  group('createAnalysisCallback', () {
+    late MockAutomaticImageAnalysisTrigger mockTrigger;
+
+    setUp(() {
+      mockTrigger = MockAutomaticImageAnalysisTrigger();
+
+      when(
+        () => mockTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          categoryId: any(named: 'categoryId'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    test('returns null when analysisTrigger is null', () {
+      final callback = createAnalysisCallback(null, 'category', 'linked');
+      expect(callback, isNull);
+    });
+
+    test('returns callback when analysisTrigger is provided', () {
+      final callback =
+          createAnalysisCallback(mockTrigger, 'category', 'linked');
+      expect(callback, isNotNull);
+    });
+
+    test('callback triggers analysis with correct parameters', () {
+      final callback =
+          createAnalysisCallback(mockTrigger, 'cat-123', 'linked-456');
+
+      final testEntity = JournalImage(
+        meta: Metadata(
+          id: 'image-789',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: ImageData(
+          imageId: 'img-id',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images/2024/',
+          capturedAt: DateTime(2024),
+        ),
+      );
+
+      callback!(testEntity);
+
+      verify(
+        () => mockTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: 'image-789',
+          categoryId: 'cat-123',
+          linkedTaskId: 'linked-456',
+        ),
+      ).called(1);
+    });
+
+    test('callback works with null categoryId and linkedId', () {
+      final callback = createAnalysisCallback(mockTrigger, null, null);
+
+      final testEntity = JournalImage(
+        meta: Metadata(
+          id: 'image-abc',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: ImageData(
+          imageId: 'img-id',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images/2024/',
+          capturedAt: DateTime(2024),
+        ),
+      );
+
+      callback!(testEntity);
+
+      verify(
+        () => mockTrigger.triggerAutomaticImageAnalysis(
+          imageEntryId: 'image-abc',
+          categoryId: null,
+        ),
+      ).called(1);
     });
   });
 }
