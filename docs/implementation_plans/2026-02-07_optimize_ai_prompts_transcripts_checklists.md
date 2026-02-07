@@ -28,7 +28,7 @@ Two regressions/annoyances have been identified after recent changes:
 | `audioTranscriptionWithTaskContextPrompt` | `audio_transcription_task_context` | 470-475 |
 
 **Current speaker rules (both prompts):**
-```
+```text
 SPEAKER IDENTIFICATION RULES (CRITICAL):
 - If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
 - NEVER assume or guess speaker identities or names.
@@ -74,7 +74,7 @@ The deprecated single-item tool `add_checklist_item` is **not** in the tool list
 **Modification:** Add an explicit single-speaker directive as the **first** rule in the speaker identification section of both `audioTranscriptionPrompt` and `audioTranscriptionWithTaskContextPrompt`.
 
 **Before (both prompts):**
-```
+```text
 SPEAKER IDENTIFICATION RULES (CRITICAL):
 - If there are multiple speakers, label them as "Speaker 1:", "Speaker 2:", etc.
 - NEVER assume or guess speaker identities or names.
@@ -84,7 +84,7 @@ SPEAKER IDENTIFICATION RULES (CRITICAL):
 ```
 
 **After (both prompts):**
-```
+```text
 SPEAKER IDENTIFICATION RULES (CRITICAL):
 - If there is only ONE speaker, do NOT use any speaker labels. Just output the text directly.
 - If there are MULTIPLE speakers (2 or more distinct voices), label them as "Speaker 1:", "Speaker 2:", etc.
@@ -107,31 +107,31 @@ This is a two-part fix: prompt hardening + infrastructure coalescing.
 Strengthen the system message to make the single-call requirement even more explicit and add a "DON'T" example.
 
 **Current critical rule (line 186):**
-```
+```text
 CRITICAL RULE: When you have 2 or more items to create, you MUST use add_multiple_checklist_items in a SINGLE function call. Always pass a JSON array of objects: {"items": [{"title": "..."}, {"title": "...", "isChecked": true}]}.
 ```
 
 **Proposed replacement:**
-```
+```text
 CRITICAL RULE - ONE CALL ONLY: You MUST create ALL checklist items in exactly ONE call to add_multiple_checklist_items. Never split items across multiple function calls. Always pass every item in a single JSON array: {"items": [{"title": "..."}, {"title": "...", "isChecked": true}]}.
 ```
 
 Also update the examples section (around line 277) to add a DON'T example for multiple calls:
 
 **Add to "Examples (DON'T)" section:**
-```
+```text
 - NEVER make multiple add_multiple_checklist_items calls — put ALL items in ONE call
 ```
 
 And update function description (line 195) to reinforce:
 
 **Current (line 195):**
-```
+```text
 1. add_multiple_checklist_items: Add one or more checklist items at once (ALWAYS use this)
 ```
 
 **Proposed:**
-```
+```text
 1. add_multiple_checklist_items: Add ALL checklist items in a SINGLE call (NEVER split across multiple calls)
 ```
 
