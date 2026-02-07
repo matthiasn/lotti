@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.846] - 2026-02-07
+### Fixed
+- Automatic Image Analysis: Images imported via the photo library/camera roll now trigger automatic AI image analysis when configured on the category. Previously only paste and drag & drop triggered analysis; photo library imports required manually opening each image.
+- Automatic Image Analysis: Screenshots now also trigger automatic AI image analysis when configured on the category.
+
 ## [0.9.845] - 2026-02-06
 ### Added
 - Gamey Design System: A complete vibrant visual theme with playful gradients, glow effects, and animations
