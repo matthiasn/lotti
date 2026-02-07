@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checklist Creation: AI-powered checklist generation is now snappy regardless of the model used. Multiple individual function calls from the model are coalesced into a single batch database write, eliminating incremental UI updates.
 - Checklist Prompt: Strengthened instructions to enforce single-call batch creation, preventing models like Gemini Flash from splitting items across multiple function calls.
 - Deprecated Handler: The legacy `add_checklist_item` function is no longer processed; models that hallucinate this function name receive a redirect to the batch API.
+- Image Analysis: URLs extracted from screenshots are now always returned as proper Markdown links. URLs lacking a protocol (e.g., browser address bars showing `github.com/pulls`) are automatically prefixed with `https://`.
 
 ## [0.9.846] - 2026-02-07
 ### Fixed

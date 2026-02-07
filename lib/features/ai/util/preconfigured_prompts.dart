@@ -353,6 +353,10 @@ RESPONSE LANGUAGE: If a language code is provided below, generate your ENTIRE re
 Analyze the provided image(s) in detail, focusing on both the content and style of the image.
 
 If a language code appears above (e.g., "de", "fr", "es"), respond entirely in that language. Otherwise, respond in English.
+
+URL FORMATTING RULES:
+- Any URL found in the image (e.g., in a browser address bar) MUST be formatted as a Markdown link: [Link Title](URL)
+- If the visible URL lacks a protocol (e.g., "github.com/pulls"), prepend https:// — always assume HTTPS unless http:// is explicitly visible.
 ''',
   requiredInputData: [InputDataType.images],
   aiResponseType: AiResponseType.imageAnalysis,
@@ -419,7 +423,11 @@ If the image IS relevant:
 - Focus on actionable insights or important details
 - Only mention what you actually see in the image
 - Do NOT mention what is absent or missing from the image
-- If a browser window is visible, include the URL from its address bar''',
+- If a browser window is visible, include the URL from its address bar
+
+URL FORMATTING RULES:
+- Any URL found in the image MUST be formatted as a Markdown link: [Link Title](URL)
+- If the visible URL lacks a protocol (e.g., "github.com/pulls"), prepend https:// — always assume HTTPS unless http:// is explicitly visible.''',
   requiredInputData: [InputDataType.images, InputDataType.task],
   aiResponseType: AiResponseType.imageAnalysis,
   useReasoning: false,
