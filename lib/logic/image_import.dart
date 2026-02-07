@@ -22,6 +22,11 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 /// Creates an onCreated callback for automatic image analysis.
 ///
+/// - [analysisTrigger]: The trigger service. If null, this function returns null.
+/// - [categoryId]: The category ID to be passed to the analysis.
+/// - [linkedId]: The ID of a linked entity (e.g., a task). This is passed as
+///   `linkedTaskId` to the trigger.
+///
 /// Returns null if [analysisTrigger] is null, otherwise returns a callback
 /// that triggers automatic image analysis in a fire-and-forget manner.
 void Function(JournalEntity)? createAnalysisCallback(
