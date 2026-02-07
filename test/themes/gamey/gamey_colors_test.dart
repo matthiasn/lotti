@@ -147,25 +147,25 @@ void main() {
       });
     });
 
-    group('priorityColor helper (type-safe, purple/violet spectrum)', () {
-      test('returns vivid purple for p0Urgent', () {
+    group('priorityColor helper (type-safe)', () {
+      test('returns red for p0Urgent', () {
         final color = GameyColors.priorityColor(TaskPriority.p0Urgent);
-        expect(color, equals(GameyColors.priorityUrgent));
+        expect(color, equals(GameyColors.primaryRed));
       });
 
-      test('returns deep purple for p1High', () {
+      test('returns orange for p1High', () {
         final color = GameyColors.priorityColor(TaskPriority.p1High);
-        expect(color, equals(GameyColors.priorityHigh));
+        expect(color, equals(GameyColors.primaryOrange));
       });
 
-      test('returns indigo for p2Medium', () {
+      test('returns yellow for p2Medium', () {
         final color = GameyColors.priorityColor(TaskPriority.p2Medium);
-        expect(color, equals(GameyColors.priorityMedium));
+        expect(color, equals(GameyColors.taskYellow));
       });
 
-      test('returns blue-grey for p3Low', () {
+      test('returns green for p3Low', () {
         final color = GameyColors.priorityColor(TaskPriority.p3Low);
-        expect(color, equals(GameyColors.priorityLow));
+        expect(color, equals(GameyColors.primaryGreen));
       });
     });
   });

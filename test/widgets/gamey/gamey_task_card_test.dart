@@ -391,7 +391,7 @@ void main() {
         return null;
       }
 
-      testWidgets('priority chip uses purple palette (not unified blue)',
+      testWidgets('priority chip uses urgency palette (not unified blue)',
           (tester) async {
         // testTask has default priority p2Medium
         await tester.pumpWidget(
@@ -408,7 +408,7 @@ void main() {
         final decoration = container!.decoration! as BoxDecoration;
         final gradient = decoration.gradient! as LinearGradient;
 
-        // GameyColors.priorityColor(p2Medium) = indigo
+        // GameyColors.priorityColor(p2Medium) = taskYellow
         expect(gradient.colors.first,
             equals(GameyColors.priorityColor(TaskPriority.p2Medium)));
         // Should NOT be the old unified blue
@@ -499,7 +499,7 @@ void main() {
         expect(gradient.colors.first, equals(GameyColors.primaryRed));
       });
 
-      testWidgets('each priority level uses distinct purple palette color',
+      testWidgets('each priority level uses distinct urgency palette color',
           (tester) async {
         for (final priority in TaskPriority.values) {
           final task = Task(

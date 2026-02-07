@@ -1052,9 +1052,9 @@ void main() {
       expect(find.text('P3'), findsOneWidget);
     });
 
-    testWidgets('priority badge text color uses purple/violet palette',
+    testWidgets('priority badge text color uses urgency palette',
         (tester) async {
-      // P0 Urgent should use deep purple color
+      // P0 Urgent should use red
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),

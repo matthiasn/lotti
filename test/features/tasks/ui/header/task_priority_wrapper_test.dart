@@ -225,8 +225,7 @@ void main() {
     expect(currentPriority, TaskPriority.p0Urgent);
   });
 
-  testWidgets('ModernStatusChip uses purple/violet palette color',
-      (tester) async {
+  testWidgets('ModernStatusChip uses urgency priority color', (tester) async {
     // testTask has default priority p2Medium
     final task = testTask;
 
@@ -244,13 +243,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The ModernStatusChip should use the purple/violet priority color
     final chip = tester.widget<ModernStatusChip>(
       find.byType(ModernStatusChip),
     );
 
-    // Default theme in RiverpodWidgetTestBench has no explicit theme,
-    // so MaterialApp defaults to light mode
-    expect(chip.color, equals(taskPriorityLightP2));
+    // Default theme in RiverpodWidgetTestBench defaults to light mode
+    // P2 Medium in light = taskStatusDarkBlue
+    expect(chip.color, equals(taskStatusDarkBlue));
   });
 }

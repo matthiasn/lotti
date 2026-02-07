@@ -165,18 +165,16 @@ class GameyColors {
   }
 
   // ==========================================================================
-  // GAMEY PRIORITY COLORS (purple/violet spectrum)
-  // These are intentionally distinct from the shared priority constants in
-  // colors.dart — the gamey theme uses more saturated, vibrant shades.
+  // GAMEY PRIORITY COLORS
+  // Red→Orange→Yellow→Green urgency scale matching universal conventions.
   // ==========================================================================
 
-  static const Color priorityUrgent = Color(0xFFAB47BC); // vivid purple
-  static const Color priorityHigh = Color(0xFF7E57C2); // deep purple
-  static const Color priorityMedium = Color(0xFF7986CB); // indigo
-  static const Color priorityLow = Color(0xFF90A4AE); // blue-grey
+  static const Color priorityUrgent = primaryRed; // red = emergency
+  static const Color priorityHigh = primaryOrange; // orange = needs attention
+  static const Color priorityMedium = taskYellow; // yellow = normal work
+  static const Color priorityLow = primaryGreen; // green = whenever
 
   /// Get priority color for tasks.
-  /// Uses purple/violet spectrum to be visually distinct from status colors.
   static Color priorityColor(TaskPriority priority) => switch (priority) {
         TaskPriority.p0Urgent => priorityUrgent,
         TaskPriority.p1High => priorityHigh,

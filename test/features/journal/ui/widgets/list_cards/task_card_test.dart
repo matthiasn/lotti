@@ -348,8 +348,8 @@ void main() {
     expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
   });
 
-  group('priority chip uses purple/violet palette distinct from status', () {
-    testWidgets('priority chip color is from purple palette (light mode)',
+  group('priority chip uses urgency color palette', () {
+    testWidgets('priority chip color uses status tokens (light mode)',
         (tester) async {
       // buildTask() uses p3Low and groomed status, default MaterialApp is light
       final task = buildTask();
@@ -372,21 +372,19 @@ void main() {
       // Status chip is the third child (after SizedBox)
       final statusChip = row.children[2] as ModernStatusChip;
 
-      // P3 Low in light mode = taskPriorityLightP3 (blue-grey)
-      expect(priorityChip.color, equals(taskPriorityLightP3));
+      // P3 Low in light mode = grey
+      expect(priorityChip.color, equals(Colors.grey));
       // Groomed in light mode = taskStatusDarkGreen
       expect(statusChip.color, equals(taskStatusDarkGreen));
-      // Priority and status colors must be different
-      expect(priorityChip.color, isNot(equals(statusChip.color)));
     });
 
-    testWidgets('each priority level uses distinct purple/violet color',
+    testWidgets('each priority level uses distinct urgency color',
         (tester) async {
       final expectedLightColors = {
-        TaskPriority.p0Urgent: taskPriorityLightP0,
-        TaskPriority.p1High: taskPriorityLightP1,
-        TaskPriority.p2Medium: taskPriorityLightP2,
-        TaskPriority.p3Low: taskPriorityLightP3,
+        TaskPriority.p0Urgent: taskStatusDarkRed,
+        TaskPriority.p1High: taskStatusDarkOrange,
+        TaskPriority.p2Medium: taskStatusDarkBlue,
+        TaskPriority.p3Low: Colors.grey,
       };
 
       for (final entry in expectedLightColors.entries) {

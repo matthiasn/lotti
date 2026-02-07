@@ -36,19 +36,6 @@ const Color taskStatusBlue = Colors.blue;
 const Color taskStatusRed = Colors.red;
 const Color taskStatusGreen = Colors.green;
 
-// Task priority colors - light mode (purple/violet spectrum)
-// Note: GameyColors has its own vibrant priority palette for the gamey theme.
-const taskPriorityLightP0 = Color(0xFF8E24AA); // deep purple-magenta
-const taskPriorityLightP1 = Color(0xFF5E35B1); // rich violet
-const taskPriorityLightP2 = Color(0xFF5C6BC0); // indigo
-const taskPriorityLightP3 = Color(0xFF78909C); // blue-grey
-
-// Task priority colors - dark mode (purple/violet spectrum)
-const taskPriorityDarkP0 = Color(0xFFCE93D8); // soft purple
-const taskPriorityDarkP1 = Color(0xFFB39DDB); // light violet
-const taskPriorityDarkP2 = Color(0xFF9FA8DA); // light indigo
-const taskPriorityDarkP3 = Color(0xFF90A4AE); // blue-grey
-
 // Sync filter colors
 const Color syncAlertAccentColor = Colors.amber;
 const Color syncAlertForegroundColor = Colors.black;

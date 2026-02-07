@@ -322,56 +322,34 @@ void main() {
     });
   });
 
-  group('Priority vs Status color distinction', () {
-    test('priority colors (purple palette) are distinct from status colors',
-        () {
-      // Priority colors use purple/violet spectrum
-      final priorityColors = [
-        taskPriorityLightP0, // deep purple-magenta
-        taskPriorityLightP1, // rich violet
-        taskPriorityLightP2, // indigo
-      ];
-
-      // Status colors use red/orange/blue/green spectrum
-      final statusColors = [
-        taskStatusDarkRed,
-        taskStatusDarkGreen,
-        taskStatusDarkOrange,
-        taskStatusDarkBlue,
-      ];
-
-      // No priority color should equal any status color
-      for (final priorityColor in priorityColors) {
-        for (final statusColor in statusColors) {
-          expect(
-            priorityColor,
-            isNot(equals(statusColor)),
-            reason:
-                'Priority $priorityColor should differ from status $statusColor',
-          );
-        }
-      }
-    });
-
-    test('TaskPriority.colorForBrightness returns purple palette', () {
-      // Light mode
+  group('Priority color urgency signaling', () {
+    test('TaskPriority.colorForBrightness uses status color tokens', () {
+      // Light mode — urgency scale: red → orange → blue → grey
       expect(
         TaskPriority.p0Urgent.colorForBrightness(Brightness.light),
-        equals(taskPriorityLightP0),
+        equals(taskStatusDarkRed),
+      );
+      expect(
+        TaskPriority.p1High.colorForBrightness(Brightness.light),
+        equals(taskStatusDarkOrange),
+      );
+      expect(
+        TaskPriority.p2Medium.colorForBrightness(Brightness.light),
+        equals(taskStatusDarkBlue),
       );
       expect(
         TaskPriority.p3Low.colorForBrightness(Brightness.light),
-        equals(taskPriorityLightP3),
+        equals(Colors.grey),
       );
 
       // Dark mode
       expect(
         TaskPriority.p0Urgent.colorForBrightness(Brightness.dark),
-        equals(taskPriorityDarkP0),
+        equals(taskStatusRed),
       );
       expect(
         TaskPriority.p3Low.colorForBrightness(Brightness.dark),
-        equals(taskPriorityDarkP3),
+        equals(Colors.grey),
       );
     });
 

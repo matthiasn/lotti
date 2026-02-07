@@ -32,41 +32,41 @@ void main() {
       expect(TaskPriority.p3Low.label, 'Low');
     });
 
-    test('color mapping (light mode) uses purple/violet spectrum', () {
+    test('color mapping (light mode)', () {
       expect(
         TaskPriority.p0Urgent.colorForBrightness(Brightness.light),
-        taskPriorityLightP0,
+        taskStatusDarkRed,
       );
       expect(
         TaskPriority.p1High.colorForBrightness(Brightness.light),
-        taskPriorityLightP1,
+        taskStatusDarkOrange,
       );
       expect(
         TaskPriority.p2Medium.colorForBrightness(Brightness.light),
-        taskPriorityLightP2,
+        taskStatusDarkBlue,
       );
       expect(
         TaskPriority.p3Low.colorForBrightness(Brightness.light),
-        taskPriorityLightP3,
+        Colors.grey,
       );
     });
 
-    test('color mapping (dark mode) uses purple/violet spectrum', () {
+    test('color mapping (dark mode)', () {
       expect(
         TaskPriority.p0Urgent.colorForBrightness(Brightness.dark),
-        taskPriorityDarkP0,
+        taskStatusRed,
       );
       expect(
         TaskPriority.p1High.colorForBrightness(Brightness.dark),
-        taskPriorityDarkP1,
+        taskStatusOrange,
       );
       expect(
         TaskPriority.p2Medium.colorForBrightness(Brightness.dark),
-        taskPriorityDarkP2,
+        taskStatusBlue,
       );
       expect(
         TaskPriority.p3Low.colorForBrightness(Brightness.dark),
-        taskPriorityDarkP3,
+        Colors.grey,
       );
     });
   });
