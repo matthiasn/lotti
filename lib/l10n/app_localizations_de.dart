@@ -2802,6 +2802,44 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsThemingTitle => 'Farbschema';
 
   @override
+  String get sessionRatingCardLabel => 'Sitzungsbewertung';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Zu einfach';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Genau richtig';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Zu herausfordernd';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Diese Arbeit fühlte sich an...';
+
+  @override
+  String get sessionRatingEnergyQuestion =>
+      'Wie energiegeladen haben Sie sich gefühlt?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'Wie fokussiert waren Sie?';
+
+  @override
+  String get sessionRatingNoteHint => 'Kurze Notiz (optional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Wie produktiv war diese Sitzung?';
+
+  @override
+  String get sessionRatingSaveButton => 'Speichern';
+
+  @override
+  String get sessionRatingSkipButton => 'Überspringen';
+
+  @override
+  String get sessionRatingTitle => 'Sitzung bewerten';
+
+  @override
   String get speechModalAddTranscription => 'Transkription hinzufügen';
 
   @override

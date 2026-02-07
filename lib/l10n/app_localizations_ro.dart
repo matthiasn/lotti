@@ -2795,6 +2795,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsThemingTitle => 'Tematică';
 
   @override
+  String get sessionRatingCardLabel => 'Evaluare sesiune';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Prea ușor';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Exact potrivit';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Prea provocator';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Această muncă a fost...';
+
+  @override
+  String get sessionRatingEnergyQuestion => 'Cât de energizat te-ai simțit?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'Cât de concentrat ai fost?';
+
+  @override
+  String get sessionRatingNoteHint => 'Notă scurtă (opțional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Cât de productivă a fost această sesiune?';
+
+  @override
+  String get sessionRatingSaveButton => 'Salvează';
+
+  @override
+  String get sessionRatingSkipButton => 'Omite';
+
+  @override
+  String get sessionRatingTitle => 'Evaluează această sesiune';
+
+  @override
   String get speechModalAddTranscription => 'Adăugați transcriere';
 
   @override

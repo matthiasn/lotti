@@ -281,13 +281,14 @@ extension RatingDataPatterns on RatingData {
 
 /// @nodoc
 @JsonSerializable()
-class _RatingData implements RatingData {
+class _RatingData extends RatingData {
   const _RatingData(
       {required this.timeEntryId,
       required final List<RatingDimension> dimensions,
       this.schemaVersion = 1,
       this.note})
-      : _dimensions = dimensions;
+      : _dimensions = dimensions,
+        super._();
   factory _RatingData.fromJson(Map<String, dynamic> json) =>
       _$RatingDataFromJson(json);
 

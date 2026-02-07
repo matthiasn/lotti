@@ -280,7 +280,7 @@ class ModernJournalCard extends StatelessWidget {
             );
           case RatingEntry():
             return Text(
-              'Session Rating',
+              context.messages.sessionRatingCardLabel,
               style: context.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 fontSize: isCompact

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
-import 'package:lotti/features/ratings/state/rating_prompt_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Modal bottom sheet for rating a work session.
@@ -20,12 +20,16 @@ class SessionRatingModal extends ConsumerStatefulWidget {
 
   final String timeEntryId;
 
-  static Future<void> show(BuildContext context, String timeEntryId) {
+  static Future<void> show(
+    BuildContext context,
+    String timeEntryId, {
+    VoidCallback? onDismissed,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => SessionRatingModal(timeEntryId: timeEntryId),
-    );
+    ).whenComplete(() => onDismissed?.call());
   }
 
   @override
@@ -39,6 +43,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
   double? _challengeSkill;
   late TextEditingController _noteController;
   bool _isSubmitting = false;
+  bool _didPrePopulate = false;
 
   @override
   void initState() {
@@ -53,20 +58,13 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
   }
 
   void _prePopulate(JournalEntity? existing) {
-    if (existing is! RatingEntry) return;
-    for (final dim in existing.data.dimensions) {
-      switch (dim.key) {
-        case 'productivity':
-          _productivity ??= dim.value;
-        case 'energy':
-          _energy ??= dim.value;
-        case 'focus':
-          _focus ??= dim.value;
-        case 'challenge_skill':
-          _challengeSkill ??= dim.value;
-      }
-    }
-    if (_noteController.text.isEmpty && existing.data.note != null) {
+    if (_didPrePopulate || existing is! RatingEntry) return;
+    _didPrePopulate = true;
+    _productivity = existing.data.dimensionValue('productivity');
+    _energy = existing.data.dimensionValue('energy');
+    _focus = existing.data.dimensionValue('focus');
+    _challengeSkill = existing.data.dimensionValue('challenge_skill');
+    if (existing.data.note != null) {
       _noteController.text = existing.data.note!;
     }
   }
@@ -101,13 +99,11 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
     await HapticFeedback.heavyImpact();
 
     if (mounted) {
-      ref.read(ratingPromptControllerProvider.notifier).dismiss();
       Navigator.of(context).pop();
     }
   }
 
   void _skip() {
-    ref.read(ratingPromptControllerProvider.notifier).dismiss();
     Navigator.of(context).pop();
   }
 
@@ -143,7 +139,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
             // Title
             Text(
-              'Rate this session',
+              context.messages.sessionRatingTitle,
               style: context.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -152,7 +148,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
             // Productivity
             _RatingRow(
-              label: 'How productive was this session?',
+              label: context.messages.sessionRatingProductivityQuestion,
               value: _productivity,
               onChanged: (v) => setState(() => _productivity = v),
             ),
@@ -160,7 +156,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
             // Energy
             _RatingRow(
-              label: 'How energized did you feel?',
+              label: context.messages.sessionRatingEnergyQuestion,
               value: _energy,
               onChanged: (v) => setState(() => _energy = v),
             ),
@@ -168,7 +164,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
             // Focus
             _RatingRow(
-              label: 'How focused were you?',
+              label: context.messages.sessionRatingFocusQuestion,
               value: _focus,
               onChanged: (v) => setState(() => _focus = v),
             ),
@@ -185,7 +181,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
             TextField(
               controller: _noteController,
               decoration: InputDecoration(
-                hintText: 'Quick note (optional)',
+                hintText: context.messages.sessionRatingNoteHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -205,7 +201,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _skip,
-                    child: const Text('Skip'),
+                    child: Text(context.messages.sessionRatingSkipButton),
                   ),
                 ),
                 const SizedBox(width: AppTheme.spacingMedium),
@@ -218,7 +214,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save'),
+                        : Text(context.messages.sessionRatingSaveButton),
                   ),
                 ),
               ],
@@ -408,17 +404,26 @@ class _ChallengeSkillRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'This work felt...',
+          context.messages.sessionRatingDifficultyLabel,
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppTheme.spacingSmall),
         SegmentedButton<double>(
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Too easy')),
-            ButtonSegment(value: 0.5, label: Text('Just right')),
-            ButtonSegment(value: 1, label: Text('Too hard')),
+          segments: [
+            ButtonSegment(
+              value: 0,
+              label: Text(context.messages.sessionRatingChallengeTooEasy),
+            ),
+            ButtonSegment(
+              value: 0.5,
+              label: Text(context.messages.sessionRatingChallengeJustRight),
+            ),
+            ButtonSegment(
+              value: 1,
+              label: Text(context.messages.sessionRatingChallengeTooHard),
+            ),
           ],
           selected: value != null ? {value!} : {},
           onSelectionChanged: (selected) {

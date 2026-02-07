@@ -19,8 +19,14 @@ class RatingPromptListener extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<String?>(ratingPromptControllerProvider, (previous, next) {
-      if (next != null && previous == null) {
-        SessionRatingModal.show(context, next);
+      if (next != null && next != previous) {
+        SessionRatingModal.show(
+          context,
+          next,
+          onDismissed: () {
+            ref.read(ratingPromptControllerProvider.notifier).dismiss();
+          },
+        );
       }
     });
 

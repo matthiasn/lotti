@@ -2805,6 +2805,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsThemingTitle => 'Thème';
 
   @override
+  String get sessionRatingCardLabel => 'Évaluation de session';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Trop facile';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Juste bien';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Trop difficile';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Ce travail semblait...';
+
+  @override
+  String get sessionRatingEnergyQuestion =>
+      'Quel était votre niveau d\'énergie ?';
+
+  @override
+  String get sessionRatingFocusQuestion =>
+      'Quel était votre niveau de concentration ?';
+
+  @override
+  String get sessionRatingNoteHint => 'Note rapide (optionnelle)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Quelle a été la productivité de cette session ?';
+
+  @override
+  String get sessionRatingSaveButton => 'Enregistrer';
+
+  @override
+  String get sessionRatingSkipButton => 'Passer';
+
+  @override
+  String get sessionRatingTitle => 'Évaluer cette session';
+
+  @override
   String get speechModalAddTranscription => 'Ajouter une transcription';
 
   @override

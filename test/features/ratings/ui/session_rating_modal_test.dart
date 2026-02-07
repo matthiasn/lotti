@@ -60,7 +60,7 @@ void main() {
 
       expect(find.text('Too easy'), findsOneWidget);
       expect(find.text('Just right'), findsOneWidget);
-      expect(find.text('Too hard'), findsOneWidget);
+      expect(find.text('Too challenging'), findsOneWidget);
     });
 
     testWidgets('renders note text field', (tester) async {

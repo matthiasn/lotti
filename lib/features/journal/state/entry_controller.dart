@@ -257,7 +257,7 @@ class EntryController extends _$EntryController {
         });
 
         // Emit rating prompt if session was >= 1 minute and feature enabled
-        final duration = entry.meta.dateTo.difference(entry.meta.dateFrom);
+        final duration = DateTime.now().difference(entry.meta.dateFrom);
         if (duration >= const Duration(minutes: 1)) {
           final flag =
               await _journalDb.getConfigFlagByName(enableSessionRatingsFlag);

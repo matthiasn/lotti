@@ -19,9 +19,18 @@ abstract class RatingData with _$RatingData {
     /// Optional free-text note about the session.
     String? note,
   }) = _RatingData;
+  const RatingData._();
 
   factory RatingData.fromJson(Map<String, dynamic> json) =>
       _$RatingDataFromJson(json);
+
+  /// Looks up a dimension by [key] and returns its value, or null.
+  double? dimensionValue(String key) {
+    for (final dim in dimensions) {
+      if (dim.key == key) return dim.value;
+    }
+    return null;
+  }
 }
 
 @freezed

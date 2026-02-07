@@ -6693,12 +6693,13 @@ abstract class _$JournalDb extends GeneratedDatabase {
         $expandVar($arrayStartIndex, timeEntryIds.length);
     $arrayStartIndex += timeEntryIds.length;
     return customSelect(
-        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND le.hidden = FALSE',
+        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE',
         variables: [
           for (var $ in timeEntryIds) Variable<String>($)
         ],
         readsFrom: {
           linkedEntries,
+          journal,
         }).map((QueryRow row) => RatingsForTimeEntriesResult(
           ratingId: row.read<String>('rating_id'),
           timeEntryId: row.read<String>('time_entry_id'),
@@ -6707,7 +6708,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> ratingForTimeEntry(String timeEntryId) {
     return customSelect(
-        'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND le.hidden = FALSE AND j.deleted = FALSE LIMIT 1',
+        'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
         variables: [
           Variable<String>(timeEntryId)
         ],

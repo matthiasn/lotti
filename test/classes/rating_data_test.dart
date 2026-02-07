@@ -198,6 +198,36 @@ void main() {
       expect(decoded.note, equals('Feeling great'));
     });
 
+    test('dimensionValue returns value for existing key', () {
+      const data = RatingData(
+        timeEntryId: 'entry-1',
+        dimensions: testDimensions,
+      );
+
+      expect(data.dimensionValue('productivity'), equals(0.8));
+      expect(data.dimensionValue('energy'), equals(0.6));
+      expect(data.dimensionValue('focus'), equals(0.9));
+      expect(data.dimensionValue('challenge_skill'), equals(0.5));
+    });
+
+    test('dimensionValue returns null for missing key', () {
+      const data = RatingData(
+        timeEntryId: 'entry-1',
+        dimensions: testDimensions,
+      );
+
+      expect(data.dimensionValue('nonexistent'), isNull);
+    });
+
+    test('dimensionValue returns null for empty dimensions', () {
+      const data = RatingData(
+        timeEntryId: 'entry-1',
+        dimensions: [],
+      );
+
+      expect(data.dimensionValue('productivity'), isNull);
+    });
+
     test('serializes without optional note', () {
       const data = RatingData(
         timeEntryId: 'entry-1',

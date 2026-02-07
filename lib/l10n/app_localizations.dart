@@ -5130,6 +5130,78 @@ abstract class AppLocalizations {
   /// **'Theming'**
   String get settingsThemingTitle;
 
+  /// No description provided for @sessionRatingCardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Rating'**
+  String get sessionRatingCardLabel;
+
+  /// No description provided for @sessionRatingChallengeTooEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Too easy'**
+  String get sessionRatingChallengeTooEasy;
+
+  /// No description provided for @sessionRatingChallengeJustRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Just right'**
+  String get sessionRatingChallengeJustRight;
+
+  /// No description provided for @sessionRatingChallengeTooHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Too challenging'**
+  String get sessionRatingChallengeTooHard;
+
+  /// No description provided for @sessionRatingDifficultyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This work felt...'**
+  String get sessionRatingDifficultyLabel;
+
+  /// No description provided for @sessionRatingEnergyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How energized did you feel?'**
+  String get sessionRatingEnergyQuestion;
+
+  /// No description provided for @sessionRatingFocusQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How focused were you?'**
+  String get sessionRatingFocusQuestion;
+
+  /// No description provided for @sessionRatingNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick note (optional)'**
+  String get sessionRatingNoteHint;
+
+  /// No description provided for @sessionRatingProductivityQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How productive was this session?'**
+  String get sessionRatingProductivityQuestion;
+
+  /// No description provided for @sessionRatingSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get sessionRatingSaveButton;
+
+  /// No description provided for @sessionRatingSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get sessionRatingSkipButton;
+
+  /// No description provided for @sessionRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this session'**
+  String get sessionRatingTitle;
+
   /// No description provided for @speechModalAddTranscription.
   ///
   /// In en, this message translates to:
