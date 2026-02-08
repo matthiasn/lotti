@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 
@@ -317,6 +319,52 @@ void main() {
 
       // Verify the text is wrapped in Flexible
       expect(row.children[2], isA<Flexible>());
+    });
+  });
+
+  group('Priority color urgency signaling', () {
+    test('TaskPriority.colorForBrightness uses status color tokens', () {
+      // Light mode — urgency scale: red → orange → blue → grey
+      expect(
+        TaskPriority.p0Urgent.colorForBrightness(Brightness.light),
+        equals(taskStatusDarkRed),
+      );
+      expect(
+        TaskPriority.p1High.colorForBrightness(Brightness.light),
+        equals(taskStatusDarkOrange),
+      );
+      expect(
+        TaskPriority.p2Medium.colorForBrightness(Brightness.light),
+        equals(taskStatusDarkBlue),
+      );
+      expect(
+        TaskPriority.p3Low.colorForBrightness(Brightness.light),
+        equals(Colors.grey),
+      );
+
+      // Dark mode
+      expect(
+        TaskPriority.p0Urgent.colorForBrightness(Brightness.dark),
+        equals(taskStatusRed),
+      );
+      expect(
+        TaskPriority.p3Low.colorForBrightness(Brightness.dark),
+        equals(Colors.grey),
+      );
+    });
+
+    test('all four priority levels have unique colors in both modes', () {
+      final lightColors = TaskPriority.values
+          .map((p) => p.colorForBrightness(Brightness.light))
+          .toSet();
+      final darkColors = TaskPriority.values
+          .map((p) => p.colorForBrightness(Brightness.dark))
+          .toSet();
+
+      expect(lightColors.length, equals(4),
+          reason: 'All 4 priority levels should have unique light colors');
+      expect(darkColors.length, equals(4),
+          reason: 'All 4 priority levels should have unique dark colors');
     });
   });
 }

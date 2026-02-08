@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -222,5 +223,32 @@ void main() {
     // Verify persistence in UI and captured state
     expect(find.text('P0'), findsOneWidget);
     expect(currentPriority, TaskPriority.p0Urgent);
+  });
+
+  testWidgets('ModernStatusChip uses urgency priority color', (tester) async {
+    // testTask has default priority p2Medium
+    final task = testTask;
+
+    final overrides = <Override>[
+      entryControllerProvider(id: task.meta.id).overrideWith(
+        () => _TestEntryController(task),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: overrides,
+        child: TaskPriorityWrapper(taskId: task.meta.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final chip = tester.widget<ModernStatusChip>(
+      find.byType(ModernStatusChip),
+    );
+
+    // Default theme in RiverpodWidgetTestBench defaults to light mode
+    // P2 Medium in light = taskStatusDarkBlue
+    expect(chip.color, equals(taskStatusDarkBlue));
   });
 }

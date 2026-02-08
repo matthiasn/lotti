@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/task.dart';
 
 /// Vibrant, gamified color palette inspired by MalSehen's playful design.
 /// These colors are designed to make the app feel fun, rewarding, and engaging.
@@ -163,17 +164,21 @@ class GameyColors {
     }
   }
 
-  /// Get priority color for tasks
-  static Color priorityColor(int priority) {
-    switch (priority) {
-      case 1: // Urgent
-        return primaryRed;
-      case 2: // High
-        return primaryOrange;
-      case 3: // Medium
-        return taskYellow;
-      default: // Low
-        return primaryGreen;
-    }
-  }
+  // ==========================================================================
+  // GAMEY PRIORITY COLORS
+  // Red→Orange→Yellow→Green urgency scale matching universal conventions.
+  // ==========================================================================
+
+  static const Color priorityUrgent = primaryRed; // red = emergency
+  static const Color priorityHigh = primaryOrange; // orange = needs attention
+  static const Color priorityMedium = taskYellow; // yellow = normal work
+  static const Color priorityLow = primaryGreen; // green = whenever
+
+  /// Get priority color for tasks.
+  static Color priorityColor(TaskPriority priority) => switch (priority) {
+        TaskPriority.p0Urgent => priorityUrgent,
+        TaskPriority.p1High => priorityHigh,
+        TaskPriority.p2Medium => priorityMedium,
+        TaskPriority.p3Low => priorityLow,
+      };
 }
