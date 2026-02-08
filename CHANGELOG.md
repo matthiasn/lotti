@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.850] - 2026-02-08
+### Added
+- Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded with a chevron toggle. When collapsed, a compact preview shows a thumbnail (for images) or mic icon with duration (for audio) alongside the date, so you can identify entries at a glance without scrolling past large media. Collapse state is saved per link and persists across sessions, but is local to each device — syncing never overwrites your collapsed preferences.
+- Collapsible Section Headers: The "Linked Entries" and "Linked From" section headers now have their own collapse chevron to hide the entire section at once, with smooth animated expand/collapse transitions.
+
 ## [0.9.849] - 2026-02-08
 ### Added
 - Session Ratings: After stopping a timer that ran for at least one minute, a quick-rating modal prompts you to rate the session across four dimensions — productivity, energy, focus, and challenge-skill balance. Ratings are stored as journal entities linked to the time entry, with full sync support.

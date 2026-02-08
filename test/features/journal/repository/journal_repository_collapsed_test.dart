@@ -115,9 +115,9 @@ void main() {
     registerFallbackValue(DateTime(2023));
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    getIt.reset();
+    await getIt.reset();
   });
 
   group('updateLink with collapsed', () {

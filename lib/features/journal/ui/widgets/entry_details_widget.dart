@@ -28,6 +28,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
@@ -455,12 +456,21 @@ class EntryDetailsContent extends ConsumerWidget {
       isCollapsible: isCollapsible,
       isCollapsed: isCollapsed,
       onToggleCollapse: isCollapsible && currentLink != null
-          ? () {
-              ref.read(journalRepositoryProvider).updateLink(
-                    currentLink.copyWith(
-                      collapsed: !(currentLink.collapsed ?? false),
-                    ),
-                  );
+          ? () async {
+              try {
+                await ref.read(journalRepositoryProvider).updateLink(
+                      currentLink.copyWith(
+                        collapsed: !(currentLink.collapsed ?? false),
+                      ),
+                    );
+              } catch (e, s) {
+                getIt<LoggingService>().captureException(
+                  e,
+                  domain: 'EntryDetailsContent',
+                  subDomain: 'onToggleCollapse',
+                  stackTrace: s,
+                );
+              }
               // Auto-scroll after toggle so the entry stays nicely in view
               Future.delayed(AppTheme.collapseAnimationDuration, () {
                 if (context.mounted) {
@@ -518,15 +528,13 @@ class EntryDetailsContent extends ConsumerWidget {
           datePadding,
         ],
         // For audio: audio player first, then date under it
-        if (item is JournalAudio) ...[
-          if (detailSection != null) detailSection,
+        if (item is JournalAudio && detailSection != null) ...[
+          detailSection,
           datePadding,
         ],
         TagsListWidget(entryId: itemId, parentTags: parentTags),
         if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
-        // For non-audio, show detailSection in normal position
-        if (item is! JournalAudio && detailSection != null) detailSection,
         if (item is JournalAudio)
           NestedAiResponsesWidget(
             parentEntryId: itemId,

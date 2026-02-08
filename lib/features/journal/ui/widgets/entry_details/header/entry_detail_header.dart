@@ -142,6 +142,11 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         ],
         // Hide action buttons when collapsed for a clean, minimal look
         if (!widget.isCollapsed) ...[
+          if (entry is JournalImage && widget.linkedFromId != null)
+            SetCoverArtChip(
+              imageId: widget.entryId,
+              linkedFromId: widget.linkedFromId,
+            ),
           if (entry is! JournalEvent && (entry?.meta.starred ?? false))
             SwitchIconWidget(
               tooltip: context.messages.journalFavoriteTooltip,
