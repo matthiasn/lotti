@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_cs.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
@@ -98,6 +99,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('cs'),
     Locale('de'),
     Locale('en', 'GB'),
     Locale('es'),
@@ -1957,7 +1959,8 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{hours}h {minutes}m'**
-  String dailyOsDurationHoursMinutes(int hours, int minutes);
+  String dailyOsDurationHoursMinutes(
+      int hours, int minutes, Object hodin, Object minut);
 
   /// No description provided for @dailyOsDurationMinutes.
   ///
@@ -6459,8 +6462,14 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['de', 'en', 'es', 'fr', 'ro'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+        'cs',
+        'de',
+        'en',
+        'es',
+        'fr',
+        'ro'
+      ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -6481,6 +6490,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'cs':
+      return AppLocalizationsCs();
     case 'de':
       return AppLocalizationsDe();
     case 'en':
