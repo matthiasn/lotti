@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
+import 'package:lotti/features/tasks/ui/set_cover_art_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -677,6 +678,72 @@ void main() {
         expect(find.byIcon(Icons.more_horiz), findsNothing);
         expect(find.byIcon(Icons.flag_outlined), findsNothing);
         expect(find.byIcon(Icons.flag), findsNothing);
+      });
+    });
+
+    group('collapsible expanded state actions', () {
+      testWidgets('shows SetCoverArtChip when image entry has linkedFromId',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testImageEntry.meta.id,
+              inLinkedEntries: true,
+              linkedFromId: 'parent-task-id',
+              isCollapsible: true,
+              onToggleCollapse: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SetCoverArtChip), findsOneWidget);
+      });
+
+      testWidgets('does NOT show SetCoverArtChip without linkedFromId',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testImageEntry.meta.id,
+              inLinkedEntries: true,
+              isCollapsible: true,
+              onToggleCollapse: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SetCoverArtChip), findsNothing);
+      });
+
+      testWidgets('shows flag icon when entry is flagged', (tester) async {
+        final flaggedImage = testImageEntry.copyWith(
+          meta: testImageEntry.meta.copyWith(flag: EntryFlag.import),
+        );
+
+        when(() => mockJournalDb.journalEntityById(flaggedImage.meta.id))
+            .thenAnswer((_) async => flaggedImage);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: flaggedImage.meta.id,
+              inLinkedEntries: true,
+              isCollapsible: true,
+              onToggleCollapse: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.flag), findsOneWidget);
       });
     });
   });

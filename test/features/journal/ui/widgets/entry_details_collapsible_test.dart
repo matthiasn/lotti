@@ -23,6 +23,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -844,6 +845,74 @@ void main() {
         );
         expect(header.isCollapsible, isFalse);
         expect(header.onToggleCollapse, isNull);
+      });
+    });
+
+    group('collapse toggle error handling', () {
+      testWidgets('catches exception from updateLink and logs it',
+          (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        final mockLoggingService = MockLoggingService();
+
+        when(() => mockJournalRepository.updateLink(any()))
+            .thenThrow(Exception('db write failed'));
+
+        when(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String?>(named: 'subDomain'),
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
+
+        getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+        final testLink = EntryLink.basic(
+          id: 'link-error',
+          fromId: testTask.meta.id,
+          toId: testImageEntry.meta.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                journalRepositoryProvider
+                    .overrideWithValue(mockJournalRepository),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testImageEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: testLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap the collapse chevron — updateLink will throw
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pumpAndSettle();
+
+        // Verify the exception was captured via LoggingService
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'EntryDetailsContent',
+            subDomain: 'onToggleCollapse',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        getIt.unregister<LoggingService>();
       });
     });
 

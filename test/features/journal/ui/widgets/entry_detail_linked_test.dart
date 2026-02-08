@@ -565,5 +565,65 @@ void main() {
 
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
+
+    testWidgets(
+        'hideTaskEntries returns SizedBox.shrink when all linked entries are tasks',
+        (tester) async {
+      final linkedTask = testTask.copyWith(
+        meta: testTask.meta.copyWith(
+          id: 'linked-task-id',
+        ),
+      );
+
+      final taskLink = EntryLink.basic(
+        id: 'link-task-only',
+        fromId: testTask.meta.id,
+        toId: linkedTask.meta.id,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+      );
+
+      mockLinkedEntries([taskLink]);
+
+      when(() => mockJournalDb.journalEntityById(linkedTask.meta.id))
+          .thenAnswer((_) async => linkedTask);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(
+            testTask,
+            hideTaskEntries: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No chevron or label because all linked entries are tasks
+      // and hideTaskEntries=true
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.byIcon(Icons.filter_list), findsNothing);
+    });
+
+    testWidgets('hideTaskEntries shows section when non-task entries exist',
+        (tester) async {
+      mockLinkedEntries([testLink]);
+
+      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+          .thenAnswer((_) async => testTextEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedEntriesWidget(
+            testTask,
+            hideTaskEntries: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Non-task entry exists, so section is shown
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    });
   });
 }

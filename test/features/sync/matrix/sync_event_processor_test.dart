@@ -688,6 +688,45 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
   });
 
+  test('EntryLink preserves local collapsed state from existing link',
+      () async {
+    final incomingLink = EntryLink.basic(
+      id: 'link-with-collapse',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime(2025, 6, 1),
+      updatedAt: DateTime(2025, 6, 2),
+      vectorClock: null,
+    );
+    final existingLink = EntryLink.basic(
+      id: 'link-with-collapse',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime(2025, 6, 1),
+      updatedAt: DateTime(2025, 6, 1),
+      vectorClock: null,
+      collapsed: true,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: incomingLink,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalDb.entryLinkById('link-with-collapse'))
+        .thenAnswer((_) async => existingLink);
+    when(() => journalDb.upsertEntryLink(any<EntryLink>()))
+        .thenAnswer((_) async => 1);
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    final capturedLink = verify(
+      () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+    ).captured.single as EntryLink;
+    expect(capturedLink.id, 'link-with-collapse');
+    expect(capturedLink.collapsed, isTrue);
+    expect(capturedLink.updatedAt, DateTime(2025, 6, 2));
+  });
+
   test('processes entity definitions', () async {
     final message = SyncMessage.entityDefinition(
       entityDefinition: measurableWater,
@@ -2872,6 +2911,55 @@ void main() {
             {link.fromId, link.toId},
             fromSync: true,
           )).called(1);
+    });
+
+    test('preserves local collapsed state when existing link is found',
+        () async {
+      final incomingLink = EntryLink.basic(
+        id: 'link-collapsed',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 2),
+        vectorClock: null,
+      );
+
+      final existingLink = EntryLink.basic(
+        id: 'link-collapsed',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+        vectorClock: null,
+        collapsed: true,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [incomingLink],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.entryLinkById('link-collapsed'))
+          .thenAnswer((_) async => existingLink);
+      when(() => journalDb.upsertEntryLink(any<EntryLink>()))
+          .thenAnswer((_) async => 1);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify the upserted link has collapsed=true from the existing link
+      final capturedLink = verify(
+        () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+      ).captured.single as EntryLink;
+      expect(capturedLink.id, 'link-collapsed');
+      expect(capturedLink.collapsed, isTrue);
+      // Verify the updated date from the incoming link is preserved
+      expect(capturedLink.updatedAt, DateTime(2025, 1, 2));
     });
   });
 
