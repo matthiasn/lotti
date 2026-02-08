@@ -219,6 +219,7 @@
   "sessionRatingNoteHint": "Kurze Notiz (optional)",
   "sessionRatingProductivityQuestion": "Wie produktiv war diese Sitzung?",
   "sessionRatingSaveButton": "Speichern",
+  "sessionRatingSaveError": "Bewertung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   "sessionRatingSkipButton": "Überspringen",
   "sessionRatingRateAction": "Sitzung bewerten",
   "sessionRatingViewAction": "Bewertung anzeigen",

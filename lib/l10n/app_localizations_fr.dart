@@ -2849,6 +2849,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sessionRatingSaveButton => 'Enregistrer';
 
   @override
+  String get sessionRatingSaveError =>
+      'Impossible d\'enregistrer l\'évaluation. Veuillez réessayer.';
+
+  @override
   String get sessionRatingSkipButton => 'Passer';
 
   @override

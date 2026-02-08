@@ -219,6 +219,7 @@
   "sessionRatingNoteHint": "Notă scurtă (opțional)",
   "sessionRatingProductivityQuestion": "Cât de productivă a fost această sesiune?",
   "sessionRatingSaveButton": "Salvează",
+  "sessionRatingSaveError": "Nu s-a putut salva evaluarea. Vă rugăm să încercați din nou.",
   "sessionRatingSkipButton": "Omite",
   "sessionRatingRateAction": "Evaluează sesiunea",
   "sessionRatingViewAction": "Vezi evaluarea",

@@ -94,16 +94,25 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
           ? null
           : _noteController.text.trim();
 
-      await ref
+      final result = await ref
           .read(
             ratingControllerProvider(timeEntryId: widget.timeEntryId).notifier,
           )
           .submitRating(dimensions, note: note);
 
-      await HapticFeedback.heavyImpact();
+      if (!mounted) return;
 
-      if (mounted) {
-        Navigator.of(context).pop();
+      if (result != null) {
+        final navigator = Navigator.of(context);
+        await HapticFeedback.heavyImpact();
+        navigator.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.messages.sessionRatingSaveError),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } finally {
       if (mounted) {

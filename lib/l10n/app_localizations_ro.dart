@@ -2837,6 +2837,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sessionRatingSaveButton => 'Salvează';
 
   @override
+  String get sessionRatingSaveError =>
+      'Nu s-a putut salva evaluarea. Vă rugăm să încercați din nou.';
+
+  @override
   String get sessionRatingSkipButton => 'Omite';
 
   @override

@@ -2844,6 +2844,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sessionRatingSaveButton => 'Speichern';
 
   @override
+  String get sessionRatingSaveError =>
+      'Bewertung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+
+  @override
   String get sessionRatingSkipButton => 'Überspringen';
 
   @override

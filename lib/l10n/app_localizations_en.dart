@@ -2822,6 +2822,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionRatingSaveButton => 'Save';
 
   @override
+  String get sessionRatingSaveError =>
+      'Failed to save rating. Please try again.';
+
+  @override
   String get sessionRatingSkipButton => 'Skip';
 
   @override
@@ -4652,6 +4656,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get sessionRatingSaveButton => 'Save';
+
+  @override
+  String get sessionRatingSaveError =>
+      'Failed to save rating. Please try again.';
 
   @override
   String get sessionRatingSkipButton => 'Skip';

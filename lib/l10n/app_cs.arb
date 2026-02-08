@@ -1105,6 +1105,7 @@
   "sessionRatingNoteHint": "Krátká poznámka (volitelné)",
   "sessionRatingProductivityQuestion": "Jak produktivní byla tato relace?",
   "sessionRatingSaveButton": "Uložit",
+  "sessionRatingSaveError": "Nepodařilo se uložit hodnocení. Zkuste to prosím znovu.",
   "sessionRatingSkipButton": "Přeskočit",
   "sessionRatingRateAction": "Ohodnotit relaci",
   "sessionRatingViewAction": "Zobrazit hodnocení",

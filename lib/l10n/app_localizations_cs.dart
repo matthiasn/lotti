@@ -2857,6 +2857,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sessionRatingSaveButton => 'Uložit';
 
   @override
+  String get sessionRatingSaveError =>
+      'Nepodařilo se uložit hodnocení. Zkuste to prosím znovu.';
+
+  @override
   String get sessionRatingSkipButton => 'Přeskočit';
 
   @override

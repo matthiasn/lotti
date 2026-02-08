@@ -2847,6 +2847,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sessionRatingSaveButton => 'Guardar';
 
   @override
+  String get sessionRatingSaveError =>
+      'No se pudo guardar la calificación. Inténtelo de nuevo.';
+
+  @override
   String get sessionRatingSkipButton => 'Omitir';
 
   @override

@@ -219,6 +219,7 @@
   "sessionRatingNoteHint": "Nota rápida (opcional)",
   "sessionRatingProductivityQuestion": "¿Qué tan productiva fue esta sesión?",
   "sessionRatingSaveButton": "Guardar",
+  "sessionRatingSaveError": "No se pudo guardar la calificación. Inténtelo de nuevo.",
   "sessionRatingSkipButton": "Omitir",
   "sessionRatingRateAction": "Calificar sesión",
   "sessionRatingViewAction": "Ver calificación",

@@ -14,7 +14,8 @@ class RatingController extends _$RatingController {
         .getRatingForTimeEntry(timeEntryId);
   }
 
-  Future<void> submitRating(
+  /// Returns the persisted [RatingEntry], or `null` when persistence fails.
+  Future<RatingEntry?> submitRating(
     List<RatingDimension> dimensions, {
     String? note,
   }) async {
@@ -25,5 +26,6 @@ class RatingController extends _$RatingController {
               note: note,
             );
     state = AsyncData(result);
+    return result;
   }
 }

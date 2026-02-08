@@ -212,6 +212,7 @@
   "sessionRatingNoteHint": "Quick note (optional)",
   "sessionRatingProductivityQuestion": "How productive was this session?",
   "sessionRatingSaveButton": "Save",
+  "sessionRatingSaveError": "Failed to save rating. Please try again.",
   "sessionRatingSkipButton": "Skip",
   "sessionRatingTitle": "Rate this session",
   "settingsAboutTitle": "About Lotti",

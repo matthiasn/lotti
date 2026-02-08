@@ -220,6 +220,7 @@
   "sessionRatingNoteHint": "Note rapide (optionnelle)",
   "sessionRatingProductivityQuestion": "Quelle a été la productivité de cette session ?",
   "sessionRatingSaveButton": "Enregistrer",
+  "sessionRatingSaveError": "Impossible d'enregistrer l'évaluation. Veuillez réessayer.",
   "sessionRatingSkipButton": "Passer",
   "sessionRatingRateAction": "Évaluer la session",
   "sessionRatingViewAction": "Voir l'évaluation",

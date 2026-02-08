@@ -50,7 +50,7 @@ final class RatingControllerProvider
   }
 }
 
-String _$ratingControllerHash() => r'fa2838834f11d7e429d5e66a83a928cc02fac7e7';
+String _$ratingControllerHash() => r'e3a71c745539d88f54f362fb4f5027babb6641e9';
 
 final class RatingControllerFamily extends $Family
     with

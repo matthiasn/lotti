@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
@@ -631,6 +633,16 @@ class ModernRateSessionItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final enableRatingsAsync =
+        ref.watch(configFlagProvider(enableSessionRatingsFlag));
+    final enableRatings =
+        enableRatingsAsync.unwrapPrevious().whenData((value) => value).value ??
+            false;
+
+    if (!enableRatings) {
+      return const SizedBox.shrink();
+    }
+
     final rating =
         ref.watch(ratingControllerProvider(timeEntryId: entryId)).value;
     final hasRating = rating != null;

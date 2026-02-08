@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 
 class InitialModalPageContent extends ConsumerWidget {
   const InitialModalPageContent({
@@ -52,6 +54,13 @@ class InitialModalPageContent extends ConsumerWidget {
         : null;
     final linkedIsTask = linkedEntryState?.entry is Task;
 
+    final enableRatings = ref
+            .watch(configFlagProvider(enableSessionRatingsFlag))
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .value ??
+        false;
+
     final items = <Widget>[
       // Always shown for all entries
       ModernToggleStarredItem(entryId: entryId),
@@ -98,8 +107,8 @@ class InitialModalPageContent extends ConsumerWidget {
       ModernLinkFromItem(entryId: entryId),
       ModernLinkToItem(entryId: entryId),
 
-      // Rate session - only for time entries (JournalEntry) in linked context
-      if (isJournalEntry && inLinkedEntries)
+      // Rate session - only for time entries in linked context with flag on
+      if (isJournalEntry && inLinkedEntries && enableRatings)
         ModernRateSessionItem(entryId: entryId),
 
       // Unlink - only when viewing from a linked context

@@ -869,7 +869,8 @@ SELECT le.from_id AS rating_id, le.to_id AS time_entry_id
   WHERE le.to_id IN :timeEntryIds
   AND le.type = 'RatingLink'
   AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false;
+  AND j.deleted = false
+  ORDER BY j.updated_at ASC;
 
 -- Find existing rating for a specific time entry (for re-open logic).
 -- Orders by most recently updated to ensure deterministic result.

@@ -6693,7 +6693,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
         $expandVar($arrayStartIndex, timeEntryIds.length);
     $arrayStartIndex += timeEntryIds.length;
     return customSelect(
-        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE',
+        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
         variables: [
           for (var $ in timeEntryIds) Variable<String>($)
         ],

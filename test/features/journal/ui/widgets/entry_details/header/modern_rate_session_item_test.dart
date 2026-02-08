@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
@@ -55,6 +56,9 @@ void main() {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(true),
+            ),
             ratingControllerProvider(timeEntryId: entryId)
                 .overrideWith(_FakeNoRatingController.new),
           ],
@@ -69,11 +73,33 @@ void main() {
       expect(find.text('Rate Session'), findsOneWidget);
     });
 
+    testWidgets('hidden when feature flag is disabled', (tester) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(false),
+            ),
+            ratingControllerProvider(timeEntryId: entryId)
+                .overrideWith(_FakeNoRatingController.new),
+          ],
+          child: const ModernRateSessionItem(entryId: entryId),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
     testWidgets('shows "View Rating" with filled icon when rating exists',
         (tester) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(true),
+            ),
             ratingControllerProvider(timeEntryId: entryId)
                 .overrideWith(_FakeHasRatingController.new),
           ],

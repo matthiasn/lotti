@@ -1095,6 +1095,10 @@ class JournalDb extends _$JournalDb {
   }
 
   /// Bulk fetch rating IDs for a set of time entries.
+  ///
+  /// The query orders by `updated_at ASC` so that when multiple ratings
+  /// link to the same time entry, the most recently updated one wins
+  /// (last-write-wins in the map comprehension).
   Future<Map<String, String>> getRatingIdsForTimeEntries(
     Set<String> timeEntryIds,
   ) async {

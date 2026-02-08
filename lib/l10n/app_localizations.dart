@@ -5208,6 +5208,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get sessionRatingSaveButton;
 
+  /// No description provided for @sessionRatingSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save rating. Please try again.'**
+  String get sessionRatingSaveError;
+
   /// No description provided for @sessionRatingSkipButton.
   ///
   /// In en, this message translates to:
