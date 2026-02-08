@@ -329,6 +329,8 @@
   "configFlagEnableEvents": "Enable Events",
   "configFlagEnableDailyOs": "Enable Daily OS (WIP)",
   "configFlagEnableDailyOsDescription": "Enable the Daily Operating System view for day planning. This is a work in progress feature.",
+  "configFlagEnableSessionRatings": "Enable Session Ratings",
+  "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",

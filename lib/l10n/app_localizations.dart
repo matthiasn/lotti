@@ -1523,6 +1523,18 @@ abstract class AppLocalizations {
   /// **'Enable the Daily Operating System view for day planning. This is a work in progress feature.'**
   String get configFlagEnableDailyOsDescription;
 
+  /// No description provided for @configFlagEnableSessionRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Session Ratings'**
+  String get configFlagEnableSessionRatings;
+
+  /// No description provided for @configFlagEnableSessionRatingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt for a quick session rating when you stop a timer.'**
+  String get configFlagEnableSessionRatingsDescription;
+
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///
   /// In en, this message translates to:

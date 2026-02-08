@@ -13,14 +13,11 @@ part of 'entry_link.dart';
 T _$identity<T>(T value) => value;
 EntryLink _$EntryLinkFromJson(Map<String, dynamic> json) {
   switch (json['runtimeType']) {
-    case 'basic':
-      return BasicLink.fromJson(json);
     case 'rating':
       return RatingLink.fromJson(json);
 
     default:
-      throw CheckedFromJsonException(json, 'runtimeType', 'EntryLink',
-          'Invalid union type "${json['runtimeType']}"!');
+      return BasicLink.fromJson(json);
   }
 }
 

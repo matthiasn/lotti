@@ -4,7 +4,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 part 'entry_link.g.dart';
 part 'entry_link.freezed.dart';
 
-@freezed
+@Freezed(fallbackUnion: 'basic')
 abstract class EntryLink with _$EntryLink {
   const factory EntryLink.basic({
     required String id,

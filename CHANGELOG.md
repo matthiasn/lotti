@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.849] - 2026-02-08
+### Added
+- Session Ratings: After stopping a timer that ran for at least one minute, a quick-rating modal prompts you to rate the session across four dimensions — productivity, energy, focus, and challenge-skill balance. Ratings are stored as journal entities linked to the time entry, with full sync support.
+- Session Ratings Config Flag: A new "Enable Session Ratings" toggle in Settings controls whether the rating prompt appears. Disabled by default.
+
+### Fixed
+- Linked Entries Deserialization: Adding a new EntryLink variant (RatingLink) broke deserialization of all pre-existing links in the database, causing linked entries to disappear entirely from task detail pages. Fixed by using a freezed fallback union.
+
 ## [0.9.848] - 2026-02-08
 ### Added
 - Czech Language: Full Czech (čeština) localization with ~1360 translated strings covering the entire app UI.
