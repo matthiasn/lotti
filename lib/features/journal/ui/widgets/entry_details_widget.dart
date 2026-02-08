@@ -20,6 +20,7 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
+import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
@@ -398,7 +399,8 @@ class EntryDetailsContent extends ConsumerWidget {
       WorkoutEntry() ||
       Checklist() ||
       ChecklistItem() ||
-      AiResponseEntry() =>
+      AiResponseEntry() ||
+      RatingEntry() =>
         true,
       _ => false,
     };
@@ -431,6 +433,7 @@ class EntryDetailsContent extends ConsumerWidget {
           checklistId: '',
           taskId: '',
         ),
+      RatingEntry() => RatingSummary(item),
       _ => null,
     };
 

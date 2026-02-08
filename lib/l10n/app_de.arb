@@ -213,6 +213,7 @@
   "sessionRatingChallengeJustRight": "Genau richtig",
   "sessionRatingChallengeTooHard": "Zu herausfordernd",
   "sessionRatingDifficultyLabel": "Diese Arbeit fühlte sich an...",
+  "sessionRatingEditButton": "Bewertung bearbeiten",
   "sessionRatingEnergyQuestion": "Wie energiegeladen haben Sie sich gefühlt?",
   "sessionRatingFocusQuestion": "Wie fokussiert waren Sie?",
   "sessionRatingNoteHint": "Kurze Notiz (optional)",

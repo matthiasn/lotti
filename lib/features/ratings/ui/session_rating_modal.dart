@@ -25,9 +25,12 @@ class SessionRatingModal extends ConsumerStatefulWidget {
     String timeEntryId, {
     VoidCallback? onDismissed,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      barrierColor: Colors.black54,
+      backgroundColor: colorScheme.surfaceContainerHigh,
       builder: (context) => SessionRatingModal(timeEntryId: timeEntryId),
     ).whenComplete(() => onDismissed?.call());
   }

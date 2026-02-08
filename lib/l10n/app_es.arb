@@ -213,6 +213,7 @@
   "sessionRatingChallengeJustRight": "Justo",
   "sessionRatingChallengeTooHard": "Demasiado difícil",
   "sessionRatingDifficultyLabel": "Este trabajo se sintió...",
+  "sessionRatingEditButton": "Editar calificación",
   "sessionRatingEnergyQuestion": "¿Qué tan energizado te sentiste?",
   "sessionRatingFocusQuestion": "¿Qué tan concentrado estuviste?",
   "sessionRatingNoteHint": "Nota rápida (opcional)",

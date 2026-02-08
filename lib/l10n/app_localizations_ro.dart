@@ -2818,6 +2818,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sessionRatingDifficultyLabel => 'Această muncă a fost...';
 
   @override
+  String get sessionRatingEditButton => 'Editează evaluarea';
+
+  @override
   String get sessionRatingEnergyQuestion => 'Cât de energizat te-ai simțit?';
 
   @override

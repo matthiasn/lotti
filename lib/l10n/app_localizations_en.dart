@@ -2803,6 +2803,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionRatingDifficultyLabel => 'This work felt...';
 
   @override
+  String get sessionRatingEditButton => 'Edit Rating';
+
+  @override
   String get sessionRatingEnergyQuestion => 'How energized did you feel?';
 
   @override

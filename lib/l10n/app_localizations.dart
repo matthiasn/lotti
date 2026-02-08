@@ -5172,6 +5172,12 @@ abstract class AppLocalizations {
   /// **'This work felt...'**
   String get sessionRatingDifficultyLabel;
 
+  /// No description provided for @sessionRatingEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Rating'**
+  String get sessionRatingEditButton;
+
   /// No description provided for @sessionRatingEnergyQuestion.
   ///
   /// In en, this message translates to:

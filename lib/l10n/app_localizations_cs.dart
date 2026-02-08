@@ -2838,6 +2838,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sessionRatingDifficultyLabel => 'Tato práce byla...';
 
   @override
+  String get sessionRatingEditButton => 'Upravit hodnocení';
+
+  @override
   String get sessionRatingEnergyQuestion => 'Jak energický/á jste se cítil/a?';
 
   @override

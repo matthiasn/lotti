@@ -1099,6 +1099,7 @@
   "sessionRatingChallengeJustRight": "Just right",
   "sessionRatingChallengeTooHard": "Too challenging",
   "sessionRatingDifficultyLabel": "This work felt...",
+  "sessionRatingEditButton": "Edit Rating",
   "sessionRatingEnergyQuestion": "How energized did you feel?",
   "sessionRatingFocusQuestion": "How focused were you?",
   "sessionRatingNoteHint": "Quick note (optional)",
