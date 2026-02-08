@@ -6,7 +6,6 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/misc/collapsible_section.dart';
 
 class LinkedFromEntriesWidget extends ConsumerWidget {
   const LinkedFromEntriesWidget(
@@ -36,13 +35,14 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
 
     final color = context.colorScheme.outline;
 
-    return CollapsibleSection(
-      header: Text(
-        context.messages.journalLinkedFromLabel,
-        style: context.textTheme.titleSmall?.copyWith(color: color),
-      ),
-      child: Column(
-        children: List.generate(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.messages.journalLinkedFromLabel,
+          style: context.textTheme.titleSmall?.copyWith(color: color),
+        ),
+        ...List.generate(
           items.length,
           (int index) {
             final item = items.elementAt(index);
@@ -78,7 +78,7 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
             );
           },
         ),
-      ),
+      ],
     );
   }
 }

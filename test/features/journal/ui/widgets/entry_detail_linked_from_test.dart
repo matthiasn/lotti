@@ -207,7 +207,7 @@ void main() {
     });
   });
 
-  group('LinkedFromEntriesWidget Collapsible Tests', () {
+  group('LinkedFromEntriesWidget', () {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     late MockJournalDb mockJournalDb;
@@ -287,7 +287,7 @@ void main() {
           .thenReturn(MockSelectable<JournalDbEntity>(dbEntries));
     }
 
-    testWidgets('shows chevron and label when entries exist', (tester) async {
+    testWidgets('shows label when entries exist', (tester) async {
       mockLinkedFromEntries([testTextEntry]);
 
       await tester.pumpWidget(
@@ -297,97 +297,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
       expect(find.text('Linked from:'), findsOneWidget);
-    });
-
-    testWidgets('shows AnimatedSize when entries exist', (tester) async {
-      mockLinkedFromEntries([testTextEntry]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedFromEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AnimatedSize), findsOneWidget);
-    });
-
-    testWidgets('chevron is not rotated when expanded', (tester) async {
-      mockLinkedFromEntries([testTextEntry]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedFromEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
-      expect(rotation.turns, equals(0.0));
-    });
-
-    testWidgets('tapping header collapses the section', (tester) async {
-      mockLinkedFromEntries([testTextEntry]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedFromEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pumpAndSettle();
-
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
-      expect(rotation.turns, equals(-0.25));
-    });
-
-    testWidgets('tapping header twice re-expands', (tester) async {
-      mockLinkedFromEntries([testTextEntry]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedFromEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pumpAndSettle();
-
-      // Re-expand
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pumpAndSettle();
-
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
-      expect(rotation.turns, equals(0.0));
-    });
-
-    testWidgets('collapsed section shows SizedBox.shrink content',
-        (tester) async {
-      mockLinkedFromEntries([testTextEntry]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          LinkedFromEntriesWidget(testTask),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
-      await tester.pump();
-
-      final animatedSize =
-          tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-      expect(animatedSize.child, isA<SizedBox>());
     });
 
     testWidgets('renders SizedBox.shrink when no entries', (tester) async {
@@ -400,7 +310,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_more), findsNothing);
       expect(find.text('Linked from:'), findsNothing);
     });
 
@@ -419,8 +328,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // All entries were tasks, so section should be hidden
-      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.text('Linked from:'), findsNothing);
     });
   });
 }

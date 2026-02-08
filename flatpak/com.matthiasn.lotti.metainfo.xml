@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.850" date="2026-02-08">
       <description>
-        <p>Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded. When collapsed, a compact preview shows a thumbnail or mic icon with duration alongside the date for quick identification without scrolling past large media. The "Linked Entries" and "Linked From" section headers also collapse their entire section with smooth animated transitions. Collapse state is saved per link and persists across sessions but stays local to each device — syncing never overwrites your preferences.</p>
+        <p>Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded. When collapsed, a compact preview shows a thumbnail or mic icon with duration alongside the date for quick identification without scrolling past large media. The "Linked Entries" section header also collapses the entire section with a smooth animated transition. Collapse state is saved per link and synced across devices.</p>
       </description>
     </release>
     <release version="0.9.849" date="2026-02-08">
