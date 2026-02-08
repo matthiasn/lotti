@@ -133,7 +133,8 @@ class RatingRepository {
       data: updatedData,
     );
 
-    await _persistenceLogic.updateDbEntity(updated);
+    final success = await _persistenceLogic.updateDbEntity(updated);
+    if (success != true) return null;
     return updated;
   }
 
@@ -157,12 +158,23 @@ class RatingRepository {
     await _journalDb.upsertEntryLink(link);
     getIt<UpdateNotifications>().notify({fromId, toId});
 
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.entryLink(
-        entryLink: link,
-        status: SyncEntryStatus.initial,
-      ),
-    );
+    // Enqueue sync message separately so a sync failure doesn't
+    // cause the caller to roll back an otherwise consistent local state.
+    try {
+      await getIt<OutboxService>().enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        ),
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'RatingRepository',
+        subDomain: '_createRatingLink.enqueue',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Soft-deletes a journal entity by setting its deletedAt timestamp.

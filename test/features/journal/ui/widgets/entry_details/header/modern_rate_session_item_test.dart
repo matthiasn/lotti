@@ -7,6 +7,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../../test_helper.dart';
 
@@ -68,9 +69,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(ModernRateSessionItem));
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
-      expect(find.text('Rate Session'), findsOneWidget);
+      expect(
+        find.text(context.messages.sessionRatingRateAction),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hidden when feature flag is disabled', (tester) async {
@@ -109,9 +114,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(ModernRateSessionItem));
       expect(find.byType(ActionMenuListItem), findsOneWidget);
       expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
-      expect(find.text('View Rating'), findsOneWidget);
+      expect(
+        find.text(context.messages.sessionRatingViewAction),
+        findsOneWidget,
+      );
     });
   });
 }

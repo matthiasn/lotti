@@ -4627,45 +4627,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get settingsThemingTitle => 'Theming';
 
   @override
-  String get sessionRatingCardLabel => 'Session Rating';
-
-  @override
-  String get sessionRatingChallengeTooEasy => 'Too easy';
-
-  @override
-  String get sessionRatingChallengeJustRight => 'Just right';
-
-  @override
-  String get sessionRatingChallengeTooHard => 'Too challenging';
-
-  @override
-  String get sessionRatingDifficultyLabel => 'This work felt...';
-
-  @override
   String get sessionRatingEnergyQuestion => 'How energised did you feel?';
-
-  @override
-  String get sessionRatingFocusQuestion => 'How focused were you?';
-
-  @override
-  String get sessionRatingNoteHint => 'Quick note (optional)';
-
-  @override
-  String get sessionRatingProductivityQuestion =>
-      'How productive was this session?';
-
-  @override
-  String get sessionRatingSaveButton => 'Save';
-
-  @override
-  String get sessionRatingSaveError =>
-      'Failed to save rating. Please try again.';
-
-  @override
-  String get sessionRatingSkipButton => 'Skip';
-
-  @override
-  String get sessionRatingTitle => 'Rate this session';
 
   @override
   String get speechModalAddTranscription => 'Add Transcription';
