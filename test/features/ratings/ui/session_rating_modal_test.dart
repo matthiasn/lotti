@@ -226,18 +226,35 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('tapping on tap bar sets a value', (tester) async {
+    testWidgets('tapping all tap bars and challenge button enables Save',
+        (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Find the first GestureDetector inside the modal (the productivity bar)
-      final gestureDetectors = find.byType(GestureDetector);
-      expect(gestureDetectors, findsWidgets);
+      // Save should be disabled initially
+      var saveButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Save'),
+      );
+      expect(saveButton.onPressed, isNull);
 
-      // Tap on the first tap bar (productivity)
-      // The tap bars are rendered via CustomPaint inside GestureDetectors
-      final customPaints = find.byType(CustomPaint);
-      expect(customPaints, findsWidgets);
+      // Tap on each of the 3 LayoutBuilder tap bars (productivity, energy, focus)
+      final layoutBuilders = find.byType(LayoutBuilder);
+      expect(layoutBuilders, findsNWidgets(3));
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(layoutBuilders.at(i));
+        await tester.pumpAndSettle();
+      }
+
+      // Tap the challenge-skill "Just right" button
+      await tester.tap(find.text('Just right'));
+      await tester.pumpAndSettle();
+
+      // Now all 4 dimensions are set, Save should be enabled
+      saveButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Save'),
+      );
+      expect(saveButton.onPressed, isNotNull);
     });
 
     testWidgets('skip button is always enabled', (tester) async {
