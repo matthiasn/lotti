@@ -821,11 +821,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit zobrazení Daily Operating System pro plánování dne. Tato funkce je ve vývoji.';
 
   @override
-  String get configFlagEnableSessionRatings => 'Enable Session Ratings';
+  String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
 
   @override
   String get configFlagEnableSessionRatingsDescription =>
-      'Prompt for a quick session rating when you stop a timer.';
+      'Po zastavení časovače zobrazit rychlé hodnocení relace.';
 
   @override
   String get configFlagUseCloudInferenceDescription =>
@@ -2823,41 +2823,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsThemingTitle => 'Vzhled';
 
   @override
-  String get sessionRatingCardLabel => 'Session Rating';
+  String get sessionRatingCardLabel => 'Hodnocení relace';
 
   @override
-  String get sessionRatingChallengeTooEasy => 'Too easy';
+  String get sessionRatingChallengeTooEasy => 'Příliš snadné';
 
   @override
-  String get sessionRatingChallengeJustRight => 'Just right';
+  String get sessionRatingChallengeJustRight => 'Tak akorát';
 
   @override
-  String get sessionRatingChallengeTooHard => 'Too challenging';
+  String get sessionRatingChallengeTooHard => 'Příliš náročné';
 
   @override
-  String get sessionRatingDifficultyLabel => 'This work felt...';
+  String get sessionRatingDifficultyLabel => 'Tato práce byla...';
 
   @override
-  String get sessionRatingEnergyQuestion => 'How energized did you feel?';
+  String get sessionRatingEnergyQuestion => 'Jak energický/á jste se cítil/a?';
 
   @override
-  String get sessionRatingFocusQuestion => 'How focused were you?';
+  String get sessionRatingFocusQuestion => 'Jak soustředění jste byli?';
 
   @override
-  String get sessionRatingNoteHint => 'Quick note (optional)';
+  String get sessionRatingNoteHint => 'Krátká poznámka (volitelné)';
 
   @override
   String get sessionRatingProductivityQuestion =>
-      'How productive was this session?';
+      'Jak produktivní byla tato relace?';
 
   @override
-  String get sessionRatingSaveButton => 'Save';
+  String get sessionRatingSaveButton => 'Uložit';
 
   @override
-  String get sessionRatingSkipButton => 'Skip';
+  String get sessionRatingSkipButton => 'Přeskočit';
 
   @override
-  String get sessionRatingTitle => 'Rate this session';
+  String get sessionRatingTitle => 'Ohodnoťte tuto relaci';
 
   @override
   String get speechModalAddTranscription => 'Přidat přepis';
