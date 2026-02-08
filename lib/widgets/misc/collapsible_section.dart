@@ -24,6 +24,7 @@ class CollapsibleSectionState extends State<CollapsibleSection> {
     final color = context.colorScheme.outline;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         GestureDetector(
           onTap: () => setState(() => isExpanded = !isExpanded),
