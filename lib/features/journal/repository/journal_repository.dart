@@ -285,7 +285,8 @@ class JournalRepository {
   Future<bool> updateLink(EntryLink link) async {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
-    if (existing != null && !_hasMeaningfulLinkChange(existing, link)) {
+
+    if (existing != null && !_hasChange(existing, link)) {
       return false;
     }
 
@@ -306,15 +307,18 @@ class JournalRepository {
     return res != 0;
   }
 
-  bool _hasMeaningfulLinkChange(EntryLink existing, EntryLink incoming) {
+  bool _hasChange(EntryLink existing, EntryLink incoming) {
     final existingHidden = existing.hidden ?? false;
     final incomingHidden = incoming.hidden ?? false;
+    final existingCollapsed = existing.collapsed ?? false;
+    final incomingCollapsed = incoming.collapsed ?? false;
 
     return existing.fromId != incoming.fromId ||
         existing.toId != incoming.toId ||
         existing.createdAt != incoming.createdAt ||
         existing.deletedAt != incoming.deletedAt ||
-        existingHidden != incomingHidden;
+        existingHidden != incomingHidden ||
+        existingCollapsed != incomingCollapsed;
   }
 
   Future<int> removeLink({

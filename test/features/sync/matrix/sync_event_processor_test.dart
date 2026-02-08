@@ -113,6 +113,8 @@ void main() {
 
     when(() => journalDb.updateJournalEntity(any<JournalEntity>()))
         .thenAnswer((_) async => JournalUpdateResult.applied());
+    when(() => journalDb.entryLinkById(any<String>()))
+        .thenAnswer((_) async => null);
     when(() => journalDb.upsertEntryLink(any<EntryLink>()))
         .thenAnswer((_) async => 1);
     when(() => journalDb.upsertEntityDefinition(any<EntityDefinition>()))
@@ -684,6 +686,33 @@ void main() {
     };
 
     await processor.process(event: event, journalDb: journalDb);
+  });
+
+  test('EntryLink syncs collapsed state from remote', () async {
+    final incomingLink = EntryLink.basic(
+      id: 'link-with-collapse',
+      fromId: 'from',
+      toId: 'to',
+      createdAt: DateTime(2025, 6, 1),
+      updatedAt: DateTime(2025, 6, 2),
+      vectorClock: null,
+      collapsed: true,
+    );
+    final message = SyncMessage.entryLink(
+      entryLink: incomingLink,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(() => journalDb.upsertEntryLink(any<EntryLink>()))
+        .thenAnswer((_) async => 1);
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    final capturedLink = verify(
+      () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+    ).captured.single as EntryLink;
+    expect(capturedLink.id, 'link-with-collapse');
+    expect(capturedLink.collapsed, isTrue);
   });
 
   test('processes entity definitions', () async {
@@ -2870,6 +2899,42 @@ void main() {
             {link.fromId, link.toId},
             fromSync: true,
           )).called(1);
+    });
+
+    test('syncs collapsed state from remote embedded link', () async {
+      final incomingLink = EntryLink.basic(
+        id: 'link-collapsed',
+        fromId: 'entry-id',
+        toId: 'category-1',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 2),
+        vectorClock: null,
+        collapsed: true,
+      );
+
+      final message = SyncMessage.journalEntity(
+        id: 'entry-id',
+        jsonPath: '/entry.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+        entryLinks: [incomingLink],
+      );
+
+      when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
+          .thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => journalDb.upsertEntryLink(any<EntryLink>()))
+          .thenAnswer((_) async => 1);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Verify the upserted link has collapsed=true from the incoming link
+      final capturedLink = verify(
+        () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
+      ).captured.single as EntryLink;
+      expect(capturedLink.id, 'link-collapsed');
+      expect(capturedLink.collapsed, isTrue);
+      expect(capturedLink.updatedAt, DateTime(2025, 1, 2));
     });
   });
 

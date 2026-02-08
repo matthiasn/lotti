@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
@@ -393,6 +396,10 @@ class EntryDetailsContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final isCollapsible =
+        linkedFrom != null && (item is JournalImage || item is JournalAudio);
+    final isCollapsed = isCollapsible && (link?.collapsed ?? false);
+
     final shouldHideEditor = switch (item) {
       JournalEvent() ||
       QuantitativeEntry() ||
@@ -440,25 +447,94 @@ class EntryDetailsContent extends ConsumerWidget {
     // Show labels for non-event, non-task entries (chips only, no header/edit button)
     final showLabels = item is! JournalEvent && item is! Task;
 
-    return Column(
+    final currentLink = link;
+    final header = EntryDetailHeader(
+      entryId: itemId,
+      inLinkedEntries: linkedFrom != null,
+      linkedFromId: linkedFrom?.id,
+      link: link,
+      isCollapsible: isCollapsible,
+      isCollapsed: isCollapsed,
+      onToggleCollapse: isCollapsible && currentLink != null
+          ? () async {
+              try {
+                await ref.read(journalRepositoryProvider).updateLink(
+                      currentLink.copyWith(
+                        collapsed: !(currentLink.collapsed ?? false),
+                      ),
+                    );
+              } catch (e, s) {
+                getIt<LoggingService>().captureException(
+                  e,
+                  domain: 'EntryDetailsContent',
+                  subDomain: 'onToggleCollapse',
+                  stackTrace: s,
+                );
+              }
+              // Auto-scroll after toggle so the entry stays nicely in view
+              Future.delayed(AppTheme.collapseAnimationDuration, () {
+                if (context.mounted) {
+                  Scrollable.ensureVisible(
+                    context,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              });
+            }
+          : null,
+    );
+
+    if (!isCollapsible) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          TagsListWidget(entryId: itemId, parentTags: parentTags),
+          if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
+          if (item is JournalImage) EntryImageWidget(item),
+          if (!shouldHideEditor) EditorWidget(entryId: itemId),
+          if (detailSection != null) detailSection,
+          if (item is JournalAudio)
+            NestedAiResponsesWidget(
+              parentEntryId: itemId,
+              linkedFromEntity: item,
+            ),
+          EntryDetailFooter(
+            entryId: itemId,
+            linkedFrom: linkedFrom,
+            inLinkedEntries: linkedFrom != null,
+          ),
+        ],
+      );
+    }
+
+    // Collapsible layout for image/audio entries in linked context
+    // Date is shown under the image/audio player on the left side
+    final datePadding = Padding(
+      padding: const EdgeInsets.only(
+        left: AppTheme.spacingXSmall,
+        top: AppTheme.spacingXSmall,
+      ),
+      child: EntryDatetimeWidget(entryId: itemId),
+    );
+
+    final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        EntryDetailHeader(
-          entryId: itemId,
-          inLinkedEntries: linkedFrom != null,
-          linkedFromId: linkedFrom?.id,
-          link: link,
-        ),
+        // For images: image first, then date under it
+        if (item is JournalImage) ...[
+          EntryImageWidget(item),
+          datePadding,
+        ],
+        // For audio: audio player first, then date under it
+        if (item is JournalAudio && detailSection != null) ...[
+          detailSection,
+          datePadding,
+        ],
         TagsListWidget(entryId: itemId, parentTags: parentTags),
-        // Labels display (chips only - editing via triple-dot menu)
         if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
-        if (item is JournalImage) EntryImageWidget(item),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
-        if (detailSection != null) detailSection,
-        // Show nested AI responses for audio entries (e.g., generated prompts)
-        // Note: This intentionally bypasses showAiEntry because nested AI responses
-        // are contextually relevant to the audio entry they were generated from,
-        // unlike standalone AI entries in the journal list.
         if (item is JournalAudio)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
@@ -468,6 +544,18 @@ class EntryDetailsContent extends ConsumerWidget {
           entryId: itemId,
           linkedFrom: linkedFrom,
           inLinkedEntries: linkedFrom != null,
+        ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        AnimatedSize(
+          duration: AppTheme.collapseAnimationDuration,
+          curve: Curves.easeOutCubic,
+          child: isCollapsed ? const SizedBox.shrink() : expandedContent,
         ),
       ],
     );

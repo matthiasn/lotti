@@ -5,6 +5,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/collapsible_section.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class LinkedEntriesWidget extends ConsumerWidget {
@@ -38,8 +39,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // When hideTaskEntries is true, check if there are any non-Task entries
-    // to avoid showing an empty "Linked Entries" section
     if (hideTaskEntries) {
       final hasNonTaskEntries =
           ref.watch(hasNonTaskLinkedEntriesProvider(item.id));
@@ -50,35 +49,33 @@ class LinkedEntriesWidget extends ConsumerWidget {
 
     final color = context.colorScheme.outline;
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              context.messages.journalLinkedEntriesLabel,
-              style: context.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            IconButton(
-              icon: Icon(Icons.filter_list, color: color),
-              onPressed: () {
-                ModalUtils.showSinglePageModal<void>(
-                  context: context,
-                  builder: (BuildContext _) =>
-                      LinkedFilterModalContent(entryId: item.id),
-                );
-              },
-            ),
-          ],
-        ),
-        ...List.generate(
+    return CollapsibleSection(
+      header: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            context.messages.journalLinkedEntriesLabel,
+            style: context.textTheme.titleSmall?.copyWith(color: color),
+          ),
+          IconButton(
+            icon: Icon(Icons.filter_list, color: color),
+            onPressed: () {
+              ModalUtils.showSinglePageModal<void>(
+                context: context,
+                builder: (BuildContext _) =>
+                    LinkedFilterModalContent(entryId: item.id),
+              );
+            },
+          ),
+        ],
+      ),
+      child: Column(
+        children: List.generate(
           entryLinks.length,
           (int index) {
             final link = entryLinks.elementAt(index);
             final toId = link.toId;
 
-            // RepaintBoundary isolates repaints to individual entries,
-            // preventing cascading rebuilds during scroll
             return RepaintBoundary(
               child: EntryDetailsWidget(
                 key: entryKeyBuilder != null
@@ -96,7 +93,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
             );
           },
         ),
-      ],
+      ),
     );
   }
 }

@@ -1043,6 +1043,120 @@ void main() {
           'No checklist items were created or updated.');
     });
 
+    test('should coalesce multiple batch calls and flush successfully',
+        () async {
+      // Mock task lookup so createBatchItems can refresh state
+      when(() => mockJournalDb.journalEntityById(any()))
+          .thenAnswer((_) async => task);
+
+      // Mock autoCreateChecklist to succeed with created items
+      when(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          )).thenAnswer((invocation) async {
+        final suggestions =
+            invocation.namedArguments[#suggestions] as List<ChecklistItemData>;
+        return (
+          success: true,
+          checklistId: 'new-checklist',
+          createdItems: suggestions
+              .map(
+                (s) => (
+                  id: 'item-${s.title}',
+                  title: s.title,
+                  isChecked: s.isChecked,
+                ),
+              )
+              .toList(),
+          error: null,
+        );
+      });
+
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      // Two separate batch calls that should be coalesced into one flush
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-batch-a',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"items": [{"title": "item A"}]}',
+          ),
+        ),
+        const ChatCompletionMessageToolCall(
+          id: 'tool-batch-b',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"items": [{"title": "item B"}, {"title": "item C"}]}',
+          ),
+        ),
+      ];
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+
+      // autoCreateChecklist should be called exactly once (coalesced)
+      verify(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.meta.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          )).called(1);
+
+      // Both original call IDs should get a tool response
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-batch-a',
+            response: any(named: 'response'),
+          )).called(1);
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-batch-b',
+            response: any(named: 'response'),
+          )).called(1);
+
+      // Items should be tracked as successful
+      expect(strategy.getResponseSummary(), contains('3'));
+    });
+
+    test('should not flush when only deprecated calls are processed', () async {
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      // Only deprecated single-item calls, no batch calls
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-old-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_checklist_item',
+            arguments: '{"actionItemDescription": "Old API item"}',
+          ),
+        ),
+      ];
+
+      await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      // autoCreateChecklist should NOT be called (no batch items to flush)
+      verifyNever(() => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ));
+    });
+
     test('should handle unknown tool calls', () async {
       final toolCalls = [
         const ChatCompletionMessageToolCall(
@@ -1071,6 +1185,77 @@ void main() {
             toolCallId: 'tool-1',
             response:
                 any(named: 'response', that: contains('Unknown function')),
+          )).called(1);
+    });
+
+    test('should send error tool response for failed batch parsing', () async {
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      // Invalid format: missing "items" key entirely
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-bad-batch',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'add_multiple_checklist_items',
+            arguments: '{"wrongField": "value"}',
+          ),
+        ),
+      ];
+
+      final action = await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+      expect(strategy.hadErrors, true);
+
+      // The failed result should produce a tool response with the error
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-bad-batch',
+            response: any(named: 'response'),
+          )).called(1);
+    });
+
+    test('suggest_checklist_completion uses add_multiple_checklist_items text',
+        () async {
+      when(() => mockConversationManager.addToolResponse(
+            toolCallId: any(named: 'toolCallId'),
+            response: any(named: 'response'),
+          )).thenAnswer((_) {});
+
+      final toolCalls = [
+        const ChatCompletionMessageToolCall(
+          id: 'tool-suggest-items',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'suggest_checklist_completion',
+            arguments:
+                '{"suggestions": [{"title": "Alpha"}, {"title": "Beta"}]}',
+          ),
+        ),
+      ];
+
+      await strategy.processToolCalls(
+        toolCalls: toolCalls,
+        manager: mockConversationManager,
+      );
+
+      // Verify the redirect response mentions the correct function name
+      verify(() => mockConversationManager.addToolResponse(
+            toolCallId: 'tool-suggest-items',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('add_multiple_checklist_items'),
+                contains('Alpha'),
+                contains('Beta'),
+              ),
+            ),
           )).called(1);
     });
 

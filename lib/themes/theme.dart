@@ -37,6 +37,16 @@ class AppTheme {
   // Chevron icon size
   static const double chevronSize = 22; // Slightly larger
 
+  // Collapse animation durations
+  static const Duration chevronRotationDuration = Duration(milliseconds: 300);
+  static const Duration collapseAnimationDuration = Duration(milliseconds: 400);
+
+  // Collapsed header thumbnail constants
+  static const double thumbnailSize = 40;
+  static const double thumbnailBorderRadius = 6;
+  static const double thumbnailCacheMultiplier = 2; // for retina
+  static const double previewIconSize = 24;
+
   // Typography constants - Modern typography scale
   static const double titleFontSize = 18; // Increased
   static const double titleFontSizeCompact = 17;

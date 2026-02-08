@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -30,6 +31,14 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
+
+/// Generic mock for drift Selectable queries used in widget tests.
+class MockSelectable<T> extends Mock implements drift.Selectable<T> {
+  MockSelectable(this._values);
+  final List<T> _values;
+  @override
+  Future<List<T>> get() async => _values;
+}
 
 class MockTagsService extends Mock implements TagsService {}
 

@@ -14,6 +14,7 @@ abstract class EntryLink with _$EntryLink {
     required DateTime updatedAt,
     required VectorClock? vectorClock,
     bool? hidden,
+    bool? collapsed,
     DateTime? deletedAt,
   }) = BasicLink;
 
@@ -25,6 +26,7 @@ abstract class EntryLink with _$EntryLink {
     required DateTime updatedAt,
     required VectorClock? vectorClock,
     bool? hidden,
+    bool? collapsed,
     DateTime? deletedAt,
   }) = RatingLink;
 

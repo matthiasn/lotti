@@ -30,6 +30,7 @@ mixin _$EntryLink {
   DateTime get updatedAt;
   VectorClock? get vectorClock;
   bool? get hidden;
+  bool? get collapsed;
   DateTime? get deletedAt;
 
   /// Create a copy of EntryLink
@@ -57,6 +58,8 @@ mixin _$EntryLink {
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.hidden, hidden) || other.hidden == hidden) &&
+            (identical(other.collapsed, collapsed) ||
+                other.collapsed == collapsed) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -64,11 +67,11 @@ mixin _$EntryLink {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
-      updatedAt, vectorClock, hidden, deletedAt);
+      updatedAt, vectorClock, hidden, collapsed, deletedAt);
 
   @override
   String toString() {
-    return 'EntryLink(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, deletedAt: $deletedAt)';
+    return 'EntryLink(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
   }
 }
 
@@ -85,6 +88,7 @@ abstract mixin class $EntryLinkCopyWith<$Res> {
       DateTime updatedAt,
       VectorClock? vectorClock,
       bool? hidden,
+      bool? collapsed,
       DateTime? deletedAt});
 }
 
@@ -107,6 +111,7 @@ class _$EntryLinkCopyWithImpl<$Res> implements $EntryLinkCopyWith<$Res> {
     Object? updatedAt = null,
     Object? vectorClock = freezed,
     Object? hidden = freezed,
+    Object? collapsed = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(_self.copyWith(
@@ -137,6 +142,10 @@ class _$EntryLinkCopyWithImpl<$Res> implements $EntryLinkCopyWith<$Res> {
       hidden: freezed == hidden
           ? _self.hidden
           : hidden // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      collapsed: freezed == collapsed
+          ? _self.collapsed
+          : collapsed // ignore: cast_nullable_to_non_nullable
               as bool?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
@@ -256,6 +265,7 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)?
         basic,
     TResult Function(
@@ -266,6 +276,7 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)?
         rating,
     required TResult orElse(),
@@ -273,11 +284,27 @@ extension EntryLinkPatterns on EntryLink {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
-        return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return basic(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case RatingLink() when rating != null:
-        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return rating(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case _:
         return orElse();
     }
@@ -306,6 +333,7 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)
         basic,
     required TResult Function(
@@ -316,17 +344,34 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)
         rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink():
-        return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return basic(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case RatingLink():
-        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return rating(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -354,6 +399,7 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)?
         basic,
     TResult? Function(
@@ -364,17 +410,34 @@ extension EntryLinkPatterns on EntryLink {
             DateTime updatedAt,
             VectorClock? vectorClock,
             bool? hidden,
+            bool? collapsed,
             DateTime? deletedAt)?
         rating,
   }) {
     final _that = this;
     switch (_that) {
       case BasicLink() when basic != null:
-        return basic(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return basic(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case RatingLink() when rating != null:
-        return rating(_that.id, _that.fromId, _that.toId, _that.createdAt,
-            _that.updatedAt, _that.vectorClock, _that.hidden, _that.deletedAt);
+        return rating(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.hidden,
+            _that.collapsed,
+            _that.deletedAt);
       case _:
         return null;
     }
@@ -392,6 +455,7 @@ class BasicLink implements EntryLink {
       required this.updatedAt,
       required this.vectorClock,
       this.hidden,
+      this.collapsed,
       this.deletedAt,
       final String? $type})
       : $type = $type ?? 'basic';
@@ -412,6 +476,8 @@ class BasicLink implements EntryLink {
   final VectorClock? vectorClock;
   @override
   final bool? hidden;
+  @override
+  final bool? collapsed;
   @override
   final DateTime? deletedAt;
 
@@ -448,6 +514,8 @@ class BasicLink implements EntryLink {
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.hidden, hidden) || other.hidden == hidden) &&
+            (identical(other.collapsed, collapsed) ||
+                other.collapsed == collapsed) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -455,11 +523,11 @@ class BasicLink implements EntryLink {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
-      updatedAt, vectorClock, hidden, deletedAt);
+      updatedAt, vectorClock, hidden, collapsed, deletedAt);
 
   @override
   String toString() {
-    return 'EntryLink.basic(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, deletedAt: $deletedAt)';
+    return 'EntryLink.basic(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
   }
 }
 
@@ -478,6 +546,7 @@ abstract mixin class $BasicLinkCopyWith<$Res>
       DateTime updatedAt,
       VectorClock? vectorClock,
       bool? hidden,
+      bool? collapsed,
       DateTime? deletedAt});
 }
 
@@ -500,6 +569,7 @@ class _$BasicLinkCopyWithImpl<$Res> implements $BasicLinkCopyWith<$Res> {
     Object? updatedAt = null,
     Object? vectorClock = freezed,
     Object? hidden = freezed,
+    Object? collapsed = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(BasicLink(
@@ -531,6 +601,10 @@ class _$BasicLinkCopyWithImpl<$Res> implements $BasicLinkCopyWith<$Res> {
           ? _self.hidden
           : hidden // ignore: cast_nullable_to_non_nullable
               as bool?,
+      collapsed: freezed == collapsed
+          ? _self.collapsed
+          : collapsed // ignore: cast_nullable_to_non_nullable
+              as bool?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
@@ -550,6 +624,7 @@ class RatingLink implements EntryLink {
       required this.updatedAt,
       required this.vectorClock,
       this.hidden,
+      this.collapsed,
       this.deletedAt,
       final String? $type})
       : $type = $type ?? 'rating';
@@ -570,6 +645,8 @@ class RatingLink implements EntryLink {
   final VectorClock? vectorClock;
   @override
   final bool? hidden;
+  @override
+  final bool? collapsed;
   @override
   final DateTime? deletedAt;
 
@@ -606,6 +683,8 @@ class RatingLink implements EntryLink {
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.hidden, hidden) || other.hidden == hidden) &&
+            (identical(other.collapsed, collapsed) ||
+                other.collapsed == collapsed) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -613,11 +692,11 @@ class RatingLink implements EntryLink {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
-      updatedAt, vectorClock, hidden, deletedAt);
+      updatedAt, vectorClock, hidden, collapsed, deletedAt);
 
   @override
   String toString() {
-    return 'EntryLink.rating(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, deletedAt: $deletedAt)';
+    return 'EntryLink.rating(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
   }
 }
 
@@ -637,6 +716,7 @@ abstract mixin class $RatingLinkCopyWith<$Res>
       DateTime updatedAt,
       VectorClock? vectorClock,
       bool? hidden,
+      bool? collapsed,
       DateTime? deletedAt});
 }
 
@@ -659,6 +739,7 @@ class _$RatingLinkCopyWithImpl<$Res> implements $RatingLinkCopyWith<$Res> {
     Object? updatedAt = null,
     Object? vectorClock = freezed,
     Object? hidden = freezed,
+    Object? collapsed = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(RatingLink(
@@ -689,6 +770,10 @@ class _$RatingLinkCopyWithImpl<$Res> implements $RatingLinkCopyWith<$Res> {
       hidden: freezed == hidden
           ? _self.hidden
           : hidden // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      collapsed: freezed == collapsed
+          ? _self.collapsed
+          : collapsed // ignore: cast_nullable_to_non_nullable
               as bool?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt

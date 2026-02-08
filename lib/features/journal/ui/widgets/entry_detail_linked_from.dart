@@ -25,7 +25,6 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     final provider = linkedFromEntriesControllerProvider(id: item.id);
     var items = ref.watch(provider).value ?? [];
 
-    // Filter out Task entries if requested (shown in dedicated Linked Tasks section)
     if (hideTaskEntries) {
       items = items.where((e) => e is! Task).toList();
     }
@@ -34,12 +33,14 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final color = context.colorScheme.outline;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           context.messages.journalLinkedFromLabel,
-          style: context.textTheme.titleSmall
-              ?.copyWith(color: context.colorScheme.outline),
+          style: context.textTheme.titleSmall?.copyWith(color: color),
         ),
         ...List.generate(
           items.length,

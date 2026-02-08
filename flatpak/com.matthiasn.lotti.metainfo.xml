@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.850" date="2026-02-08">
+      <description>
+        <p>Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded. When collapsed, a compact preview shows a thumbnail or mic icon with duration alongside the date for quick identification without scrolling past large media. The "Linked Entries" section header also collapses the entire section with a smooth animated transition. Collapse state is saved per link and synced across devices.</p>
+      </description>
+    </release>
     <release version="0.9.849" date="2026-02-08">
       <description>
         <p>Session Ratings: When you stop a timer that ran for at least one minute, Lotti can now prompt you with a quick rating modal to capture how productive, energized, and focused the session felt, plus a challenge-skill balance check. Ratings are persisted as journal entities linked to the time entry with full sync support. The feature is behind a new "Enable Session Ratings" toggle in Settings, disabled by default.</p>
