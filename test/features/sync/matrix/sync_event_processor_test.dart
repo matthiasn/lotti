@@ -688,22 +688,13 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
   });
 
-  test('EntryLink preserves local collapsed state from existing link',
-      () async {
+  test('EntryLink syncs collapsed state from remote', () async {
     final incomingLink = EntryLink.basic(
       id: 'link-with-collapse',
       fromId: 'from',
       toId: 'to',
       createdAt: DateTime(2025, 6, 1),
       updatedAt: DateTime(2025, 6, 2),
-      vectorClock: null,
-    );
-    final existingLink = EntryLink.basic(
-      id: 'link-with-collapse',
-      fromId: 'from',
-      toId: 'to',
-      createdAt: DateTime(2025, 6, 1),
-      updatedAt: DateTime(2025, 6, 1),
       vectorClock: null,
       collapsed: true,
     );
@@ -712,8 +703,6 @@ void main() {
       status: SyncEntryStatus.initial,
     );
     when(() => event.text).thenReturn(encodeMessage(message));
-    when(() => journalDb.entryLinkById('link-with-collapse'))
-        .thenAnswer((_) async => existingLink);
     when(() => journalDb.upsertEntryLink(any<EntryLink>()))
         .thenAnswer((_) async => 1);
 
@@ -724,7 +713,6 @@ void main() {
     ).captured.single as EntryLink;
     expect(capturedLink.id, 'link-with-collapse');
     expect(capturedLink.collapsed, isTrue);
-    expect(capturedLink.updatedAt, DateTime(2025, 6, 2));
   });
 
   test('processes entity definitions', () async {
@@ -2913,23 +2901,13 @@ void main() {
           )).called(1);
     });
 
-    test('preserves local collapsed state when existing link is found',
-        () async {
+    test('syncs collapsed state from remote embedded link', () async {
       final incomingLink = EntryLink.basic(
         id: 'link-collapsed',
         fromId: 'entry-id',
         toId: 'category-1',
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 2),
-        vectorClock: null,
-      );
-
-      final existingLink = EntryLink.basic(
-        id: 'link-collapsed',
-        fromId: 'entry-id',
-        toId: 'category-1',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
         vectorClock: null,
         collapsed: true,
       );
@@ -2945,20 +2923,17 @@ void main() {
       when(() => journalEntityLoader.load(jsonPath: '/entry.json'))
           .thenAnswer((_) async => fallbackJournalEntity);
       when(() => event.text).thenReturn(encodeMessage(message));
-      when(() => journalDb.entryLinkById('link-collapsed'))
-          .thenAnswer((_) async => existingLink);
       when(() => journalDb.upsertEntryLink(any<EntryLink>()))
           .thenAnswer((_) async => 1);
 
       await processor.process(event: event, journalDb: journalDb);
 
-      // Verify the upserted link has collapsed=true from the existing link
+      // Verify the upserted link has collapsed=true from the incoming link
       final capturedLink = verify(
         () => journalDb.upsertEntryLink(captureAny<EntryLink>()),
       ).captured.single as EntryLink;
       expect(capturedLink.id, 'link-collapsed');
       expect(capturedLink.collapsed, isTrue);
-      // Verify the updated date from the incoming link is preserved
       expect(capturedLink.updatedAt, DateTime(2025, 1, 2));
     });
   });

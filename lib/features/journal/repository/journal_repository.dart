@@ -286,54 +286,39 @@ class JournalRepository {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
 
-    final hasSyncableChange =
-        existing == null || _hasSyncableChange(existing, link);
-    final hasLocalChange =
-        existing != null && _hasLocalOnlyChange(existing, link);
-
-    if (!hasSyncableChange && !hasLocalChange) {
+    if (existing != null && !_hasChange(existing, link)) {
       return false;
     }
 
     final updated = link.copyWith(
       updatedAt: DateTime.now(),
-      vectorClock: hasSyncableChange
-          ? await getIt<VectorClockService>().getNextVectorClock()
-          : existing.vectorClock,
+      vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
     );
 
     final res = await journalDb.upsertEntryLink(updated);
     getIt<UpdateNotifications>().notify({link.fromId, link.toId});
 
-    if (hasSyncableChange) {
-      await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.entryLink(
-          // Strip local-only fields so they don't leak to other devices.
-          entryLink: updated.copyWith(collapsed: null),
-          status: SyncEntryStatus.update,
-        ),
-      );
-    }
+    await getIt<OutboxService>().enqueueMessage(
+      SyncMessage.entryLink(
+        entryLink: updated,
+        status: SyncEntryStatus.update,
+      ),
+    );
     return res != 0;
   }
 
-  /// Changes that should be synced across devices.
-  bool _hasSyncableChange(EntryLink existing, EntryLink incoming) {
+  bool _hasChange(EntryLink existing, EntryLink incoming) {
     final existingHidden = existing.hidden ?? false;
     final incomingHidden = incoming.hidden ?? false;
+    final existingCollapsed = existing.collapsed ?? false;
+    final incomingCollapsed = incoming.collapsed ?? false;
 
     return existing.fromId != incoming.fromId ||
         existing.toId != incoming.toId ||
         existing.createdAt != incoming.createdAt ||
         existing.deletedAt != incoming.deletedAt ||
-        existingHidden != incomingHidden;
-  }
-
-  /// Changes that are persisted locally but not synced (e.g. UI preferences).
-  bool _hasLocalOnlyChange(EntryLink existing, EntryLink incoming) {
-    final existingCollapsed = existing.collapsed ?? false;
-    final incomingCollapsed = incoming.collapsed ?? false;
-    return existingCollapsed != incomingCollapsed;
+        existingHidden != incomingHidden ||
+        existingCollapsed != incomingCollapsed;
   }
 
   Future<int> removeLink({

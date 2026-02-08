@@ -121,7 +121,7 @@ void main() {
   });
 
   group('updateLink with collapsed', () {
-    test('persists collapsed change locally but does not sync', () async {
+    test('syncs collapsed change to other devices', () async {
       final testLink = EntryLink.basic(
         id: 'link-id',
         fromId: 'from-id',
@@ -134,9 +134,13 @@ void main() {
 
       when(() => mockJournalDb.entryLinkById(updatedLink.id))
           .thenAnswer((_) async => testLink);
+      when(() => mockVectorClockService.getNextVectorClock())
+          .thenAnswer((_) async => const VectorClock({'node1': 1}));
       when(() => mockJournalDb.upsertEntryLink(any()))
           .thenAnswer((_) async => 1);
       when(() => mockUpdateNotifications.notify(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
       final result = await repository.updateLink(updatedLink);
@@ -144,8 +148,8 @@ void main() {
       expect(result, isTrue);
       verify(() => mockJournalDb.upsertEntryLink(any())).called(1);
       verify(() => mockUpdateNotifications.notify(any())).called(1);
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-      verifyNever(() => mockVectorClockService.getNextVectorClock());
+      verify(() => mockVectorClockService.getNextVectorClock()).called(1);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
     test('skips update when collapsed is unchanged (both null)', () async {
@@ -210,7 +214,7 @@ void main() {
       verifyNever(() => mockJournalDb.upsertEntryLink(any()));
     });
 
-    test('persists collapsed true -> false locally without syncing', () async {
+    test('syncs collapsed true -> false to other devices', () async {
       final existingLink = EntryLink.basic(
         id: 'link-id',
         fromId: 'from-id',
@@ -224,17 +228,21 @@ void main() {
 
       when(() => mockJournalDb.entryLinkById(incomingLink.id))
           .thenAnswer((_) async => existingLink);
+      when(() => mockVectorClockService.getNextVectorClock())
+          .thenAnswer((_) async => const VectorClock({'node1': 1}));
       when(() => mockJournalDb.upsertEntryLink(any()))
           .thenAnswer((_) async => 1);
       when(() => mockUpdateNotifications.notify(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
       final result = await repository.updateLink(incomingLink);
 
       expect(result, isTrue);
       verify(() => mockJournalDb.upsertEntryLink(any())).called(1);
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-      verifyNever(() => mockVectorClockService.getNextVectorClock());
+      verify(() => mockVectorClockService.getNextVectorClock()).called(1);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
 
     test('notifies affected IDs after collapsed update', () async {
@@ -250,9 +258,13 @@ void main() {
 
       when(() => mockJournalDb.entryLinkById(updatedLink.id))
           .thenAnswer((_) async => testLink);
+      when(() => mockVectorClockService.getNextVectorClock())
+          .thenAnswer((_) async => const VectorClock({'node1': 1}));
       when(() => mockJournalDb.upsertEntryLink(any()))
           .thenAnswer((_) async => 1);
       when(() => mockUpdateNotifications.notify(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
       await repository.updateLink(updatedLink);
@@ -263,7 +275,7 @@ void main() {
     });
   });
 
-  group('_hasSyncableChange via updateLink', () {
+  group('_hasChange via updateLink', () {
     test('detects fromId change as meaningful', () async {
       final existing = EntryLink.basic(
         id: 'link-id',
@@ -403,7 +415,7 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('strips collapsed from sync payload on syncable change', () async {
+    test('includes collapsed in sync payload', () async {
       final existing = EntryLink.basic(
         id: 'link-id',
         fromId: 'from-id',
@@ -413,7 +425,7 @@ void main() {
         vectorClock: null,
         collapsed: true,
       );
-      // Change hidden (syncable) while collapsed is true
+      // Change hidden while collapsed is true
       final incoming = existing.copyWith(hidden: true);
 
       when(() => mockJournalDb.entryLinkById(incoming.id))
@@ -429,12 +441,12 @@ void main() {
 
       await repository.updateLink(incoming);
 
-      // Verify the sync message has collapsed stripped (set to null)
+      // Verify the sync message includes collapsed state
       final captured =
           verify(() => mockOutboxService.enqueueMessage(captureAny()))
               .captured
               .single as SyncEntryLink;
-      expect(captured.entryLink.collapsed, isNull);
+      expect(captured.entryLink.collapsed, isTrue);
     });
 
     test('detects hidden change as meaningful', () async {
