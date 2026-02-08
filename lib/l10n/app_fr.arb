@@ -76,6 +76,8 @@
   "configFlagEnableHabitsPage": "Activer la page Habitudes",
   "configFlagEnableDashboardsPage": "Activer la page Tableaux de bord",
   "configFlagEnableCalendarPage": "Activer la page Calendrier",
+  "configFlagEnableSessionRatings": "Activer les évaluations de session",
+  "configFlagEnableSessionRatingsDescription": "Proposer une évaluation rapide de session à l'arrêt d'un minuteur.",
   "configFlagUseCloudInferenceDescription": "Utiliser les services d'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.",
   "conflictsResolved": "résolu",
   "conflictsUnresolved": "non résolu",

@@ -813,11 +813,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
 
   @override
-  String get configFlagEnableSessionRatings => 'Enable Session Ratings';
+  String get configFlagEnableSessionRatings =>
+      'Activează evaluările de sesiune';
 
   @override
   String get configFlagEnableSessionRatingsDescription =>
-      'Prompt for a quick session rating when you stop a timer.';
+      'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

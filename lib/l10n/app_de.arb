@@ -76,6 +76,8 @@
   "configFlagEnableHabitsPage": "Seite Gewohnheiten aktivieren",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",
   "configFlagEnableCalendarPage": "Seite Kalender aktivieren",
+  "configFlagEnableSessionRatings": "Sitzungsbewertungen aktivieren",
+  "configFlagEnableSessionRatingsDescription": "Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.",
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
   "conflictsResolved": "gelöst",
   "conflictsUnresolved": "ungelöst",

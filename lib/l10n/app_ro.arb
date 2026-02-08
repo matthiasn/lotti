@@ -76,6 +76,8 @@
   "configFlagEnableHabitsPage": "Activează pagina Obiceiuri",
   "configFlagEnableDashboardsPage": "Activează pagina Tablouri de bord",
   "configFlagEnableCalendarPage": "Activează pagina Calendar",
+  "configFlagEnableSessionRatings": "Activează evaluările de sesiune",
+  "configFlagEnableSessionRatingsDescription": "Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.",
   "configFlagUseCloudInferenceDescription": "Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.",
   "conflictsResolved": "rezolvat",
   "conflictsUnresolved": "nerezolvat",

@@ -142,21 +142,26 @@ type: link.map(
 
 ```sql
 -- Find ratings linked to a set of time entry IDs (avoids N+1).
+-- Joins journal to exclude soft-deleted rating entities.
 ratingsForTimeEntries:
 SELECT le.from_id AS rating_id, le.to_id AS time_entry_id
   FROM linked_entries le
+  INNER JOIN journal j ON j.id = le.from_id
   WHERE le.to_id IN :timeEntryIds
   AND le.type = 'RatingLink'
-  AND le.hidden = false;
+  AND COALESCE(le.hidden, false) = false
+  AND j.deleted = false;
 
 -- Find existing rating for a specific time entry (for re-open logic).
+-- Orders by most recently updated to ensure deterministic result.
 ratingForTimeEntry:
 SELECT j.* FROM journal j
   INNER JOIN linked_entries le ON j.id = le.from_id
   WHERE le.to_id = :timeEntryId
   AND le.type = 'RatingLink'
-  AND le.hidden = false
+  AND COALESCE(le.hidden, false) = false
   AND j.deleted = false
+  ORDER BY j.updated_at DESC
   LIMIT 1;
 ```
 
@@ -181,7 +186,7 @@ Future<Map<String, String>> getRatingIdsForTimeEntries(
 }
 ```
 
-**Schema version**: Bump to **30**. No table changes needed — just new queries.
+**Schema version**: No bump needed — named queries in `.drift` don't require schema version changes.
 
 ### Step 4: Business Logic — `RatingRepository`
 

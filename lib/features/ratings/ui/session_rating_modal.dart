@@ -79,27 +79,33 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
     if (!_canSubmit || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    final dimensions = [
-      RatingDimension(key: 'productivity', value: _productivity!),
-      RatingDimension(key: 'energy', value: _energy!),
-      RatingDimension(key: 'focus', value: _focus!),
-      RatingDimension(key: 'challenge_skill', value: _challengeSkill!),
-    ];
+    try {
+      final dimensions = [
+        RatingDimension(key: 'productivity', value: _productivity!),
+        RatingDimension(key: 'energy', value: _energy!),
+        RatingDimension(key: 'focus', value: _focus!),
+        RatingDimension(key: 'challenge_skill', value: _challengeSkill!),
+      ];
 
-    final note = _noteController.text.trim().isEmpty
-        ? null
-        : _noteController.text.trim();
+      final note = _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim();
 
-    await ref
-        .read(
-          ratingControllerProvider(timeEntryId: widget.timeEntryId).notifier,
-        )
-        .submitRating(dimensions, note: note);
+      await ref
+          .read(
+            ratingControllerProvider(timeEntryId: widget.timeEntryId).notifier,
+          )
+          .submitRating(dimensions, note: note);
 
-    await HapticFeedback.heavyImpact();
+      await HapticFeedback.heavyImpact();
 
-    if (mounted) {
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -397,7 +403,7 @@ class _ChallengeSkillRow extends StatelessWidget {
   });
 
   final double? value;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -428,8 +434,12 @@ class _ChallengeSkillRow extends StatelessWidget {
           ],
           selected: value != null ? {value!} : {},
           onSelectionChanged: (selected) {
-            onChanged(selected.first);
-            HapticFeedback.selectionClick();
+            if (selected.isEmpty) {
+              onChanged(null);
+            } else {
+              onChanged(selected.first);
+              HapticFeedback.selectionClick();
+            }
           },
           emptySelectionAllowed: true,
         ),

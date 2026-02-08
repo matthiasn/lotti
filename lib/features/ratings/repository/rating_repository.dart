@@ -85,10 +85,12 @@ class RatingRepository {
       ),
     );
 
-    await _persistenceLogic.createDbEntity(
+    final persisted = await _persistenceLogic.createDbEntity(
       journalEntity,
       shouldAddGeolocation: false,
     );
+
+    if (persisted != true) return null;
 
     // Create a RatingLink from the rating to the time entry
     await _createRatingLink(

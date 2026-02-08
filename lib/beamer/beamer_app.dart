@@ -290,7 +290,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               currentIndex: index,
               items: [
                 createNavBarItem(
-                  semanticLabel: 'Tasks Tab',
+                  semanticLabel: context.messages.navTabTitleTasks,
                   icon: TasksBadge(
                     child: Icon(MdiIcons.checkboxMarkedCircleOutline),
                   ),
@@ -301,7 +301,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ),
                 if (_isCalendarPageEnabled)
                   createNavBarItem(
-                    semanticLabel: 'Calendar Tab',
+                    semanticLabel: context.messages.navTabTitleCalendar,
                     icon: const Icon(Ionicons.calendar_outline),
                     activeIcon: const OutboxBadgeIcon(
                       icon: Icon(Ionicons.calendar),
@@ -310,26 +310,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   ),
                 if (_isHabitsPageEnabled)
                   createNavBarItem(
-                    semanticLabel: 'Habits Tab',
+                    semanticLabel: context.messages.navTabTitleHabits,
                     icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
                     activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
                     label: context.messages.navTabTitleHabits,
                   ),
                 if (_isDashboardsPageEnabled)
                   createNavBarItem(
-                    semanticLabel: 'Dashboards Tab',
+                    semanticLabel: context.messages.navTabTitleInsights,
                     icon: const Icon(Ionicons.bar_chart_outline),
                     activeIcon: const Icon(Ionicons.bar_chart),
                     label: context.messages.navTabTitleInsights,
                   ),
                 createNavBarItem(
-                  semanticLabel: 'Logbook Tab',
+                  semanticLabel: context.messages.navTabTitleJournal,
                   icon: const Icon(Ionicons.book_outline),
                   activeIcon: const Icon(Ionicons.book),
                   label: context.messages.navTabTitleJournal,
                 ),
                 createNavBarItem(
-                  semanticLabel: 'Settings Tab',
+                  semanticLabel: context.messages.navTabTitleSettings,
                   icon: const OutboxBadgeIcon(
                     icon: Icon(Ionicons.settings_outline),
                   ),
