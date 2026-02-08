@@ -92,11 +92,24 @@ class RatingRepository {
 
     if (persisted != true) return null;
 
-    // Create a RatingLink from the rating to the time entry
-    await _createRatingLink(
-      fromId: journalEntity.meta.id,
-      toId: timeEntryId,
-    );
+    // Create a RatingLink from the rating to the time entry.
+    // If link creation fails, soft-delete the orphaned rating entity
+    // to avoid leaving it dangling without a link.
+    try {
+      await _createRatingLink(
+        fromId: journalEntity.meta.id,
+        toId: timeEntryId,
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'RatingRepository',
+        subDomain: '_createRating.linkCleanup',
+        stackTrace: stackTrace,
+      );
+      await _softDeleteEntity(journalEntity);
+      return null;
+    }
 
     return journalEntity as RatingEntry;
   }
@@ -150,5 +163,28 @@ class RatingRepository {
         status: SyncEntryStatus.initial,
       ),
     );
+  }
+
+  /// Soft-deletes a journal entity by setting its deletedAt timestamp.
+  /// Used as compensating cleanup when link creation fails after
+  /// the entity has already been persisted.
+  Future<void> _softDeleteEntity(JournalEntity entity) async {
+    try {
+      await _persistenceLogic.updateDbEntity(
+        entity.copyWith(
+          meta: await _persistenceLogic.updateMetadata(
+            entity.meta,
+            deletedAt: DateTime.now(),
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'RatingRepository',
+        subDomain: '_softDeleteEntity',
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

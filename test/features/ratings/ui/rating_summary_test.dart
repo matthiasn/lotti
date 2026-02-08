@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -38,12 +39,22 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(RatingSummary)),
+      )!;
+
       expect(
-        find.text('How productive was this session?'),
+        find.text(l10n.sessionRatingProductivityQuestion),
         findsOneWidget,
       );
-      expect(find.text('How energized did you feel?'), findsOneWidget);
-      expect(find.text('How focused were you?'), findsOneWidget);
+      expect(
+        find.text(l10n.sessionRatingEnergyQuestion),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.sessionRatingFocusQuestion),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders progress indicators for each dimension',
@@ -58,8 +69,15 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('This work felt...'), findsOneWidget);
-      expect(find.text('Just right'), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(RatingSummary)),
+      )!;
+
+      expect(find.text(l10n.sessionRatingDifficultyLabel), findsOneWidget);
+      expect(
+        find.text(l10n.sessionRatingChallengeJustRight),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders challenge-skill "Too easy"', (tester) async {
@@ -85,7 +103,11 @@ void main() {
       await tester.pumpWidget(buildSubject(entry: entry));
       await tester.pumpAndSettle();
 
-      expect(find.text('Too easy'), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(RatingSummary)),
+      )!;
+
+      expect(find.text(l10n.sessionRatingChallengeTooEasy), findsOneWidget);
     });
 
     testWidgets('renders challenge-skill "Too challenging"', (tester) async {
@@ -111,7 +133,14 @@ void main() {
       await tester.pumpWidget(buildSubject(entry: entry));
       await tester.pumpAndSettle();
 
-      expect(find.text('Too challenging'), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(RatingSummary)),
+      )!;
+
+      expect(
+        find.text(l10n.sessionRatingChallengeTooHard),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders note text when present', (tester) async {
@@ -159,10 +188,14 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(RatingSummary)),
+      )!;
+
       final iconButton = tester.widget<IconButton>(
         find.byType(IconButton),
       );
-      expect(iconButton.tooltip, 'Edit Rating');
+      expect(iconButton.tooltip, l10n.sessionRatingEditButton);
     });
   });
 }

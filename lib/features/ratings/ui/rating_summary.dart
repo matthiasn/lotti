@@ -145,7 +145,7 @@ class _DimensionRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: value,
+              value: value.clamp(0.0, 1.0),
               backgroundColor: context.colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 8,
