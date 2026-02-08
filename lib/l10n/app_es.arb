@@ -220,6 +220,8 @@
   "sessionRatingProductivityQuestion": "¿Qué tan productiva fue esta sesión?",
   "sessionRatingSaveButton": "Guardar",
   "sessionRatingSkipButton": "Omitir",
+  "sessionRatingRateAction": "Calificar sesión",
+  "sessionRatingViewAction": "Ver calificación",
   "sessionRatingTitle": "Calificar esta sesión",
   "settingsAboutTitle": "Acerca de Lotti",
   "settingsAboutAppTagline": "Tu diario personal",

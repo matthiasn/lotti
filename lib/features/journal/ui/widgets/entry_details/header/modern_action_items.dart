@@ -7,6 +7,8 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
+import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
@@ -611,6 +613,37 @@ class ModernLinkToItem extends StatelessWidget {
       onTap: () {
         getIt<LinkService>().linkTo(entryId);
         Navigator.of(context).pop();
+      },
+    );
+  }
+}
+
+/// Modern styled rate session action item.
+/// Shows "Rate Session" or "View Rating" depending on whether
+/// a rating already exists for this time entry.
+class ModernRateSessionItem extends ConsumerWidget {
+  const ModernRateSessionItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rating =
+        ref.watch(ratingControllerProvider(timeEntryId: entryId)).value;
+    final hasRating = rating != null;
+
+    return ActionMenuListItem(
+      icon: hasRating ? Icons.star_rate_rounded : Icons.star_rate_outlined,
+      title: hasRating
+          ? context.messages.sessionRatingViewAction
+          : context.messages.sessionRatingRateAction,
+      iconColor: hasRating ? starredGold : null,
+      onTap: () {
+        Navigator.of(context).pop();
+        SessionRatingModal.show(context, entryId);
       },
     );
   }

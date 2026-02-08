@@ -2840,6 +2840,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sessionRatingSkipButton => 'Omite';
 
   @override
+  String get sessionRatingRateAction => 'Evaluează sesiunea';
+
+  @override
+  String get sessionRatingViewAction => 'Vezi evaluarea';
+
+  @override
   String get sessionRatingTitle => 'Evaluează această sesiune';
 
   @override

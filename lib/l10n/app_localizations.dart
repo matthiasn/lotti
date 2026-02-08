@@ -5214,6 +5214,18 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get sessionRatingSkipButton;
 
+  /// No description provided for @sessionRatingRateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Session'**
+  String get sessionRatingRateAction;
+
+  /// No description provided for @sessionRatingViewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View Rating'**
+  String get sessionRatingViewAction;
+
   /// No description provided for @sessionRatingTitle.
   ///
   /// In en, this message translates to:

@@ -221,6 +221,8 @@
   "sessionRatingProductivityQuestion": "Quelle a été la productivité de cette session ?",
   "sessionRatingSaveButton": "Enregistrer",
   "sessionRatingSkipButton": "Passer",
+  "sessionRatingRateAction": "Évaluer la session",
+  "sessionRatingViewAction": "Voir l'évaluation",
   "sessionRatingTitle": "Évaluer cette session",
   "settingsAboutTitle": "À propos de Lotti",
   "settingsAboutAppTagline": "Votre journal personnel",

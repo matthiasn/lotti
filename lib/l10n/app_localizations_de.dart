@@ -2847,6 +2847,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sessionRatingSkipButton => 'Überspringen';
 
   @override
+  String get sessionRatingRateAction => 'Sitzung bewerten';
+
+  @override
+  String get sessionRatingViewAction => 'Bewertung anzeigen';
+
+  @override
   String get sessionRatingTitle => 'Sitzung bewerten';
 
   @override

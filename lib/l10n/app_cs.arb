@@ -1106,6 +1106,8 @@
   "sessionRatingProductivityQuestion": "Jak produktivní byla tato relace?",
   "sessionRatingSaveButton": "Uložit",
   "sessionRatingSkipButton": "Přeskočit",
+  "sessionRatingRateAction": "Ohodnotit relaci",
+  "sessionRatingViewAction": "Zobrazit hodnocení",
   "sessionRatingTitle": "Ohodnoťte tuto relaci",
   "speechModalAddTranscription": "Přidat přepis",
   "speechModalSelectLanguage": "Vyberte jazyk",

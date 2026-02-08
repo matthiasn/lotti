@@ -220,6 +220,8 @@
   "sessionRatingProductivityQuestion": "Cât de productivă a fost această sesiune?",
   "sessionRatingSaveButton": "Salvează",
   "sessionRatingSkipButton": "Omite",
+  "sessionRatingRateAction": "Evaluează sesiunea",
+  "sessionRatingViewAction": "Vezi evaluarea",
   "sessionRatingTitle": "Evaluează această sesiune",
   "settingsAboutTitle": "Despre Lotti",
   "settingsAboutAppTagline": "Jurnalul tău personal",

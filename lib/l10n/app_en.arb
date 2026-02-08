@@ -1106,6 +1106,8 @@
   "sessionRatingProductivityQuestion": "How productive was this session?",
   "sessionRatingSaveButton": "Save",
   "sessionRatingSkipButton": "Skip",
+  "sessionRatingRateAction": "Rate Session",
+  "sessionRatingViewAction": "View Rating",
   "sessionRatingTitle": "Rate this session",
   "speechModalAddTranscription": "Add Transcription",
   "speechModalSelectLanguage": "Select Language",

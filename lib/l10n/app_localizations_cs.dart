@@ -2860,6 +2860,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sessionRatingSkipButton => 'Přeskočit';
 
   @override
+  String get sessionRatingRateAction => 'Ohodnotit relaci';
+
+  @override
+  String get sessionRatingViewAction => 'Zobrazit hodnocení';
+
+  @override
   String get sessionRatingTitle => 'Ohodnoťte tuto relaci';
 
   @override

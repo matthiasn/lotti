@@ -220,6 +220,8 @@
   "sessionRatingProductivityQuestion": "Wie produktiv war diese Sitzung?",
   "sessionRatingSaveButton": "Speichern",
   "sessionRatingSkipButton": "Überspringen",
+  "sessionRatingRateAction": "Sitzung bewerten",
+  "sessionRatingViewAction": "Bewertung anzeigen",
   "sessionRatingTitle": "Sitzung bewerten",
   "settingsAboutTitle": "Über Lotti",
   "settingsAboutAppTagline": "Ihr persönliches Tagebuch",

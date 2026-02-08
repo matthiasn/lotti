@@ -33,6 +33,7 @@ class InitialModalPageContent extends ConsumerWidget {
 
     // Determine entry type for conditional rendering
     final isTask = entry is Task;
+    final isJournalEntry = entry is JournalEntry;
     final isAudio = entry is JournalAudio;
     final isImage = entry is JournalImage;
     final hasGeolocation = entry?.geolocation != null && !isTask;
@@ -96,6 +97,10 @@ class InitialModalPageContent extends ConsumerWidget {
       // Link actions - always shown
       ModernLinkFromItem(entryId: entryId),
       ModernLinkToItem(entryId: entryId),
+
+      // Rate session - only for time entries (JournalEntry) in linked context
+      if (isJournalEntry && inLinkedEntries)
+        ModernRateSessionItem(entryId: entryId),
 
       // Unlink - only when viewing from a linked context
       if (linkedFromId != null)

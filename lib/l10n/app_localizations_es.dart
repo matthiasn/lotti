@@ -2850,6 +2850,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sessionRatingSkipButton => 'Omitir';
 
   @override
+  String get sessionRatingRateAction => 'Calificar sesión';
+
+  @override
+  String get sessionRatingViewAction => 'Ver calificación';
+
+  @override
   String get sessionRatingTitle => 'Calificar esta sesión';
 
   @override
