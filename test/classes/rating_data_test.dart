@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/services/db_notification.dart';
 
 void main() {
   group('RatingDimension', () {
@@ -241,6 +243,29 @@ void main() {
 
       expect(restored.note, isNull);
       expect(restored, equals(data));
+    });
+  });
+
+  group('RatingEntry', () {
+    test('affectedIds includes ratingNotification', () {
+      final entry = JournalEntity.rating(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const RatingData(
+          timeEntryId: 'te-1',
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.8),
+          ],
+        ),
+      );
+
+      expect(entry.affectedIds, contains(ratingNotification));
+      expect(entry.affectedIds, contains('rating-1'));
     });
   });
 }

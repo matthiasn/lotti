@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -472,6 +473,27 @@ final resolvedConflict = Conflict(
   serialized: jsonEncode(testTextEntry.toJson()),
   schemaVersion: 1,
   status: ConflictStatus.resolved.index,
+);
+
+final testRatingEntry = JournalEntity.rating(
+  meta: Metadata(
+    id: 'test-rating-id',
+    createdAt: DateTime(2022, 7, 8, 14),
+    updatedAt: DateTime(2022, 7, 8, 14),
+    dateFrom: DateTime(2022, 7, 8, 14),
+    dateTo: DateTime(2022, 7, 8, 15),
+    starred: false,
+  ),
+  data: const RatingData(
+    timeEntryId: 'test-time-entry-id',
+    dimensions: [
+      RatingDimension(key: 'productivity', value: 0.8),
+      RatingDimension(key: 'energy', value: 0.7),
+      RatingDimension(key: 'focus', value: 0.9),
+      RatingDimension(key: 'challenge_skill', value: 0.5),
+    ],
+    note: 'Good session',
+  ),
 );
 
 final unresolvedConflict = Conflict(

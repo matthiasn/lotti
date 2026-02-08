@@ -385,7 +385,8 @@ class _TapBarPainter extends CustomPainter {
   bool shouldRepaint(_TapBarPainter oldDelegate) =>
       value != oldDelegate.value ||
       activeColor != oldDelegate.activeColor ||
-      inactiveColor != oldDelegate.inactiveColor;
+      inactiveColor != oldDelegate.inactiveColor ||
+      fillColor != oldDelegate.fillColor;
 }
 
 /// Challenge-Skill dimension with 3 categorical buttons.
