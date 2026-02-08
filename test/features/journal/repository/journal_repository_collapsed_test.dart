@@ -403,6 +403,40 @@ void main() {
       expect(result, isTrue);
     });
 
+    test('strips collapsed from sync payload on syncable change', () async {
+      final existing = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from-id',
+        toId: 'to-id',
+        createdAt: DateTime(2023),
+        updatedAt: DateTime(2023),
+        vectorClock: null,
+        collapsed: true,
+      );
+      // Change hidden (syncable) while collapsed is true
+      final incoming = existing.copyWith(hidden: true);
+
+      when(() => mockJournalDb.entryLinkById(incoming.id))
+          .thenAnswer((_) async => existing);
+      when(() => mockVectorClockService.getNextVectorClock())
+          .thenAnswer((_) async => const VectorClock({'node1': 1}));
+      when(() => mockJournalDb.upsertEntryLink(any()))
+          .thenAnswer((_) async => 1);
+      when(() => mockUpdateNotifications.notify(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await repository.updateLink(incoming);
+
+      // Verify the sync message has collapsed stripped (set to null)
+      final captured =
+          verify(() => mockOutboxService.enqueueMessage(captureAny()))
+              .captured
+              .single as SyncEntryLink;
+      expect(captured.entryLink.collapsed, isNull);
+    });
+
     test('detects hidden change as meaningful', () async {
       final existing = EntryLink.basic(
         id: 'link-id',

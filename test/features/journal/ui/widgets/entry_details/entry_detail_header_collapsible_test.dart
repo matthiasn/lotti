@@ -548,6 +548,45 @@ void main() {
       });
     });
 
+    group('default header AI popup condition', () {
+      testWidgets(
+          'shows AI popup for audio entry in default (non-collapsible) header',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
+            .thenAnswer((_) async => testAudioEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testAudioEntry.meta.id,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The 3-dots menu must be present (operator precedence fix)
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      });
+
+      testWidgets(
+          'shows AI popup for image entry in default (non-collapsible) header',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testImageEntry.meta.id,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      });
+    });
+
     group('expanded state shows action buttons', () {
       testWidgets('shows 3-dots and collapse arrow when expanded',
           (tester) async {

@@ -683,7 +683,14 @@ class SyncEventProcessor {
     final affectedIds = <String>{};
     for (final link in entryLinks) {
       try {
-        final linkRows = await journalDb.upsertEntryLink(link);
+        // Preserve local-only fields (e.g. collapsed) that the remote device
+        // should not overwrite.
+        final existingLink = await journalDb.entryLinkById(link.id);
+        final linkToUpsert = existingLink != null
+            ? link.copyWith(collapsed: existingLink.collapsed)
+            : link;
+
+        final linkRows = await journalDb.upsertEntryLink(linkToUpsert);
         if (linkRows > 0) {
           processedLinksCount++;
           _loggingService.captureEvent(
@@ -939,7 +946,14 @@ class SyncEventProcessor {
     final originatingHostId = syncMessage.originatingHostId;
     final coveredVectorClocks = syncMessage.coveredVectorClocks;
 
-    final rows = await journalDb.upsertEntryLink(entryLink);
+    // Preserve local-only fields (e.g. collapsed) that the remote device
+    // should not overwrite.
+    final existing = await journalDb.entryLinkById(entryLink.id);
+    final linkToUpsert = existing != null
+        ? entryLink.copyWith(collapsed: existing.collapsed)
+        : entryLink;
+
+    final rows = await journalDb.upsertEntryLink(linkToUpsert);
     try {
       if (rows > 0) {
         _loggingService.captureEvent(

@@ -113,6 +113,8 @@ void main() {
 
     when(() => journalDb.updateJournalEntity(any<JournalEntity>()))
         .thenAnswer((_) async => JournalUpdateResult.applied());
+    when(() => journalDb.entryLinkById(any<String>()))
+        .thenAnswer((_) async => null);
     when(() => journalDb.upsertEntryLink(any<EntryLink>()))
         .thenAnswer((_) async => 1);
     when(() => journalDb.upsertEntityDefinition(any<EntityDefinition>()))

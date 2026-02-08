@@ -466,8 +466,8 @@ class EntryDetailsContent extends ConsumerWidget {
                 if (context.mounted) {
                   Scrollable.ensureVisible(
                     context,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOutCubic,
                   );
                 }
               });
@@ -546,7 +546,7 @@ class EntryDetailsContent extends ConsumerWidget {
         header,
         AnimatedSize(
           duration: AppTheme.collapseAnimationDuration,
-          curve: Curves.easeInOut,
+          curve: Curves.easeOutCubic,
           child: isCollapsed ? const SizedBox.shrink() : expandedContent,
         ),
       ],

@@ -308,7 +308,8 @@ class JournalRepository {
     if (hasSyncableChange) {
       await getIt<OutboxService>().enqueueMessage(
         SyncMessage.entryLink(
-          entryLink: updated,
+          // Strip local-only fields so they don't leak to other devices.
+          entryLink: updated.copyWith(collapsed: null),
           status: SyncEntryStatus.update,
         ),
       );

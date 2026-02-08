@@ -5,9 +5,10 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/collapsible_section.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class LinkedEntriesWidget extends ConsumerStatefulWidget {
+class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
     this.item, {
     this.entryKeyBuilder,
@@ -24,28 +25,23 @@ class LinkedEntriesWidget extends ConsumerStatefulWidget {
   final bool hideTaskEntries;
 
   @override
-  ConsumerState<LinkedEntriesWidget> createState() =>
-      _LinkedEntriesWidgetState();
-}
-
-class _LinkedEntriesWidgetState extends ConsumerState<LinkedEntriesWidget> {
-  bool _isExpanded = true;
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = linkedEntriesControllerProvider(id: widget.item.id);
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final provider = linkedEntriesControllerProvider(id: item.id);
     final entryLinks = ref.watch(provider).value ?? [];
 
     final includeAiEntries =
-        ref.watch(includeAiEntriesControllerProvider(id: widget.item.id));
+        ref.watch(includeAiEntriesControllerProvider(id: item.id));
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    if (widget.hideTaskEntries) {
+    if (hideTaskEntries) {
       final hasNonTaskEntries =
-          ref.watch(hasNonTaskLinkedEntriesProvider(widget.item.id));
+          ref.watch(hasNonTaskLinkedEntriesProvider(item.id));
       if (!hasNonTaskEntries) {
         return const SizedBox.shrink();
       }
@@ -53,75 +49,51 @@ class _LinkedEntriesWidgetState extends ConsumerState<LinkedEntriesWidget> {
 
     final color = context.colorScheme.outline;
 
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _isExpanded = !_isExpanded),
-          child: Column(
-            children: [
-              AnimatedRotation(
-                turns: _isExpanded ? 0.0 : -0.25,
-                duration: AppTheme.chevronRotationDuration,
-                child: Icon(
-                  Icons.expand_more,
-                  size: AppTheme.chevronSize,
-                  color: color,
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    context.messages.journalLinkedEntriesLabel,
-                    style: context.textTheme.titleSmall?.copyWith(color: color),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.filter_list, color: color),
-                    onPressed: () {
-                      ModalUtils.showSinglePageModal<void>(
-                        context: context,
-                        builder: (BuildContext _) =>
-                            LinkedFilterModalContent(entryId: widget.item.id),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
+    return CollapsibleSection(
+      header: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            context.messages.journalLinkedEntriesLabel,
+            style: context.textTheme.titleSmall?.copyWith(color: color),
           ),
-        ),
-        AnimatedSize(
-          duration: AppTheme.collapseAnimationDuration,
-          curve: Curves.easeInOut,
-          child: _isExpanded
-              ? Column(
-                  children: List.generate(
-                    entryLinks.length,
-                    (int index) {
-                      final link = entryLinks.elementAt(index);
-                      final toId = link.toId;
+          IconButton(
+            icon: Icon(Icons.filter_list, color: color),
+            onPressed: () {
+              ModalUtils.showSinglePageModal<void>(
+                context: context,
+                builder: (BuildContext _) =>
+                    LinkedFilterModalContent(entryId: item.id),
+              );
+            },
+          ),
+        ],
+      ),
+      child: Column(
+        children: List.generate(
+          entryLinks.length,
+          (int index) {
+            final link = entryLinks.elementAt(index);
+            final toId = link.toId;
 
-                      return RepaintBoundary(
-                        child: EntryDetailsWidget(
-                          key: widget.entryKeyBuilder != null
-                              ? widget.entryKeyBuilder!(toId)
-                              : Key('${widget.item.id}-$toId'),
-                          itemId: toId,
-                          parentTags: widget.item.meta.tagIds?.toSet(),
-                          linkedFrom: widget.item,
-                          link: link,
-                          showAiEntry: includeAiEntries,
-                          hideTaskEntries: widget.hideTaskEntries,
-                          isHighlighted: widget.highlightedEntryId == toId,
-                          isActiveTimer: widget.activeTimerEntryId == toId,
-                        ),
-                      );
-                    },
-                  ),
-                )
-              : const SizedBox.shrink(),
+            return RepaintBoundary(
+              child: EntryDetailsWidget(
+                key: entryKeyBuilder != null
+                    ? entryKeyBuilder!(toId)
+                    : Key('${item.id}-$toId'),
+                itemId: toId,
+                parentTags: item.meta.tagIds?.toSet(),
+                linkedFrom: item,
+                link: link,
+                showAiEntry: includeAiEntries,
+                hideTaskEntries: hideTaskEntries,
+                isHighlighted: highlightedEntryId == toId,
+                isActiveTimer: activeTimerEntryId == toId,
+              ),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }

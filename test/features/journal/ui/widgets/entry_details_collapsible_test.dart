@@ -8,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
@@ -31,6 +32,8 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+class MockJournalRepository extends Mock implements JournalRepository {}
 
 void main() {
   group('EntryDetailsWidget Collapsible Tests', () {
@@ -699,6 +702,113 @@ void main() {
         expect(header.isCollapsible, isTrue);
         expect(header.isCollapsed, isFalse);
         expect(header.onToggleCollapse, isNotNull);
+      });
+
+      testWidgets('tapping chevron calls updateLink with collapsed true',
+          (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(() => mockJournalRepository.updateLink(any()))
+            .thenAnswer((_) async => true);
+
+        final testLink = EntryLink.basic(
+          id: 'link-tap-collapse',
+          fromId: testTask.meta.id,
+          toId: testImageEntry.meta.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                journalRepositoryProvider
+                    .overrideWithValue(mockJournalRepository),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testImageEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: testLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap the collapse chevron
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        // Verify updateLink was called with collapsed: true
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updatedLink = captured.first as EntryLink;
+        expect(updatedLink.collapsed, isTrue);
+        expect(updatedLink.id, 'link-tap-collapse');
+
+        // Drain the Future.delayed timer from the auto-scroll logic
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets(
+          'tapping chevron on collapsed entry calls updateLink with collapsed false',
+          (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(() => mockJournalRepository.updateLink(any()))
+            .thenAnswer((_) async => true);
+
+        final testLink = EntryLink.basic(
+          id: 'link-tap-expand',
+          fromId: testTask.meta.id,
+          toId: testImageEntry.meta.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          collapsed: true,
+        );
+
+        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
+            .thenAnswer((_) async => testImageEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                journalRepositoryProvider
+                    .overrideWithValue(mockJournalRepository),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testImageEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: testLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap the collapse chevron (which should expand)
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        // Verify updateLink was called with collapsed: false
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updatedLink = captured.first as EntryLink;
+        expect(updatedLink.collapsed, isFalse);
+
+        // Drain the Future.delayed timer from the auto-scroll logic
+        await tester.pumpAndSettle();
       });
 
       testWidgets('non-collapsible text entry does NOT pass onToggleCollapse',

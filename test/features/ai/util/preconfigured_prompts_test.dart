@@ -145,6 +145,48 @@ void main() {
     expect(sys, contains('INVALID'));
   });
 
+  group('Image analysis URL formatting rules', () {
+    test('image analysis prompt contains URL formatting rules', () {
+      final user = imageAnalysisPrompt.userMessage;
+      expect(user, contains('URL FORMATTING RULES'));
+      expect(user, contains('Markdown link'));
+      expect(user, contains('https://'));
+    });
+
+    test('task image analysis prompt contains URL formatting rules', () {
+      final user = imageAnalysisInTaskContextPrompt.userMessage;
+      expect(user, contains('URL FORMATTING RULES'));
+      expect(user, contains('Markdown link'));
+      expect(user, contains('https://'));
+    });
+  });
+
+  group('Transcription speaker identification', () {
+    test('transcription prompt handles single speaker without labels', () {
+      final user = audioTranscriptionPrompt.userMessage;
+      expect(user, contains('only ONE speaker'));
+      expect(user, contains('do NOT use any speaker labels'));
+    });
+
+    test('transcription prompt handles multiple speakers with labels', () {
+      final user = audioTranscriptionPrompt.userMessage;
+      expect(user, contains('MULTIPLE speakers'));
+      expect(user, contains('Speaker 1'));
+    });
+
+    test('task-context transcription prompt handles single speaker', () {
+      final user = audioTranscriptionWithTaskContextPrompt.userMessage;
+      expect(user, contains('only ONE speaker'));
+      expect(user, contains('do NOT use any speaker labels'));
+    });
+  });
+
+  test('Checklist updates prompt forbids multiple batch calls', () {
+    final sys = checklistUpdatesPrompt.systemMessage;
+    expect(sys, contains('NEVER split across multiple calls'));
+    expect(sys, contains('NEVER make multiple add_multiple_checklist_items'));
+  });
+
   group('Image Prompt Generation Template', () {
     test('has correct structure and metadata', () {
       expect(imagePromptGenerationPrompt.id, 'image_prompt_generation');
