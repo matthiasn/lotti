@@ -1523,6 +1523,18 @@ abstract class AppLocalizations {
   /// **'Enable the Daily Operating System view for day planning. This is a work in progress feature.'**
   String get configFlagEnableDailyOsDescription;
 
+  /// No description provided for @configFlagEnableSessionRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Session Ratings'**
+  String get configFlagEnableSessionRatings;
+
+  /// No description provided for @configFlagEnableSessionRatingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt for a quick session rating when you stop a timer.'**
+  String get configFlagEnableSessionRatingsDescription;
+
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///
   /// In en, this message translates to:
@@ -5129,6 +5141,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Theming'**
   String get settingsThemingTitle;
+
+  /// No description provided for @sessionRatingCardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Rating'**
+  String get sessionRatingCardLabel;
+
+  /// No description provided for @sessionRatingChallengeTooEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Too easy'**
+  String get sessionRatingChallengeTooEasy;
+
+  /// No description provided for @sessionRatingChallengeJustRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Just right'**
+  String get sessionRatingChallengeJustRight;
+
+  /// No description provided for @sessionRatingChallengeTooHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Too challenging'**
+  String get sessionRatingChallengeTooHard;
+
+  /// No description provided for @sessionRatingDifficultyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This work felt...'**
+  String get sessionRatingDifficultyLabel;
+
+  /// No description provided for @sessionRatingEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Rating'**
+  String get sessionRatingEditButton;
+
+  /// No description provided for @sessionRatingEnergyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How energized did you feel?'**
+  String get sessionRatingEnergyQuestion;
+
+  /// No description provided for @sessionRatingFocusQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How focused were you?'**
+  String get sessionRatingFocusQuestion;
+
+  /// No description provided for @sessionRatingNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick note (optional)'**
+  String get sessionRatingNoteHint;
+
+  /// No description provided for @sessionRatingProductivityQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How productive was this session?'**
+  String get sessionRatingProductivityQuestion;
+
+  /// No description provided for @sessionRatingSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get sessionRatingSaveButton;
+
+  /// No description provided for @sessionRatingSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save rating. Please try again.'**
+  String get sessionRatingSaveError;
+
+  /// No description provided for @sessionRatingSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get sessionRatingSkipButton;
+
+  /// No description provided for @sessionRatingRateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Session'**
+  String get sessionRatingRateAction;
+
+  /// No description provided for @sessionRatingViewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View Rating'**
+  String get sessionRatingViewAction;
+
+  /// No description provided for @sessionRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this session'**
+  String get sessionRatingTitle;
 
   /// No description provided for @speechModalAddTranscription.
   ///

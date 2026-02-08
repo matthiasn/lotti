@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -111,6 +112,11 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableDailyOsFlag,
     description: 'Enable Daily OS (WIP)?',
+    status: false,
+  ),
+  const ConfigFlag(
+    name: enableSessionRatingsFlag,
+    description: 'Enable session ratings?',
     status: false,
   ),
 };
@@ -2239,6 +2245,329 @@ void main() {
         expect(result, 1);
         final stored = await specialDb.linksForEntryIds({'dst'});
         expect(stored, hasLength(1));
+      });
+    });
+
+    group('Rating queries -', () {
+      final base = DateTime(2024, 9, 1, 10);
+
+      JournalEntity buildRatingEntry({
+        required String id,
+        required String timeEntryId,
+        DateTime? timestamp,
+        DateTime? deletedAt,
+      }) {
+        final ts = timestamp ?? base;
+        return JournalEntity.rating(
+          meta: Metadata(
+            id: id,
+            createdAt: ts,
+            updatedAt: ts,
+            dateFrom: ts,
+            dateTo: ts,
+            deletedAt: deletedAt,
+          ),
+          data: RatingData(
+            timeEntryId: timeEntryId,
+            dimensions: const [
+              RatingDimension(key: 'productivity', value: 0.8),
+              RatingDimension(key: 'energy', value: 0.6),
+            ],
+          ),
+        );
+      }
+
+      EntryLink buildRatingLink({
+        required String id,
+        required String fromId,
+        required String toId,
+        DateTime? timestamp,
+        bool hidden = false,
+      }) {
+        final ts = timestamp ?? base;
+        return EntryLink.rating(
+          id: id,
+          fromId: fromId,
+          toId: toId,
+          createdAt: ts,
+          updatedAt: ts,
+          vectorClock: const VectorClock({'db': 1}),
+          hidden: hidden,
+        );
+      }
+
+      test('getRatingForTimeEntry returns rating entity', () async {
+        final timeEntry = buildJournalEntry(
+          id: 'te-1',
+          timestamp: base,
+          text: 'Work session',
+        );
+        final ratingEntry = buildRatingEntry(
+          id: 'rating-1',
+          timeEntryId: 'te-1',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+        await db!.upsertJournalDbEntity(toDbEntity(ratingEntry));
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'link-1',
+            fromId: 'rating-1',
+            toId: 'te-1',
+          ),
+        );
+
+        final result = await db!.getRatingForTimeEntry('te-1');
+        expect(result, isNotNull);
+        expect(result, isA<RatingEntry>());
+        expect(result!.meta.id, 'rating-1');
+        expect(result.data.timeEntryId, 'te-1');
+      });
+
+      test('getRatingForTimeEntry returns null when no rating exists',
+          () async {
+        final timeEntry = buildJournalEntry(
+          id: 'te-no-rating',
+          timestamp: base,
+          text: 'No rating',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+
+        final result = await db!.getRatingForTimeEntry('te-no-rating');
+        expect(result, isNull);
+      });
+
+      test('getRatingForTimeEntry excludes deleted ratings', () async {
+        final timeEntry = buildJournalEntry(
+          id: 'te-deleted',
+          timestamp: base,
+          text: 'Session',
+        );
+        final deletedRating = buildRatingEntry(
+          id: 'rating-deleted',
+          timeEntryId: 'te-deleted',
+          deletedAt: base.add(const Duration(hours: 1)),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+        await db!.upsertJournalDbEntity(toDbEntity(deletedRating));
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'link-deleted',
+            fromId: 'rating-deleted',
+            toId: 'te-deleted',
+          ),
+        );
+
+        final result = await db!.getRatingForTimeEntry('te-deleted');
+        expect(result, isNull);
+      });
+
+      test('getRatingForTimeEntry excludes hidden links', () async {
+        final timeEntry = buildJournalEntry(
+          id: 'te-hidden',
+          timestamp: base,
+          text: 'Session',
+        );
+        final rating = buildRatingEntry(
+          id: 'rating-hidden',
+          timeEntryId: 'te-hidden',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+        await db!.upsertJournalDbEntity(toDbEntity(rating));
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'link-hidden',
+            fromId: 'rating-hidden',
+            toId: 'te-hidden',
+            hidden: true,
+          ),
+        );
+
+        final result = await db!.getRatingForTimeEntry('te-hidden');
+        expect(result, isNull);
+      });
+
+      test(
+          'getRatingForTimeEntry returns most recently updated when '
+          'multiple ratings exist', () async {
+        final timeEntry = buildJournalEntry(
+          id: 'te-multi',
+          timestamp: base,
+          text: 'Session',
+        );
+        final olderRating = buildRatingEntry(
+          id: 'rating-older',
+          timeEntryId: 'te-multi',
+          timestamp: base,
+        );
+        final newerRating = buildRatingEntry(
+          id: 'rating-newer',
+          timeEntryId: 'te-multi',
+          timestamp: base.add(const Duration(hours: 2)),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+        await db!.upsertJournalDbEntity(toDbEntity(olderRating));
+        await db!.upsertJournalDbEntity(toDbEntity(newerRating));
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'link-older',
+            fromId: 'rating-older',
+            toId: 'te-multi',
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'link-newer',
+            fromId: 'rating-newer',
+            toId: 'te-multi',
+          ),
+        );
+
+        final result = await db!.getRatingForTimeEntry('te-multi');
+        expect(result, isNotNull);
+        expect(result!.meta.id, 'rating-newer');
+      });
+
+      test('getRatingIdsForTimeEntries returns mapping for multiple entries',
+          () async {
+        for (final i in [1, 2, 3]) {
+          final teId = 'bulk-te-$i';
+          final ratingId = 'bulk-rating-$i';
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildJournalEntry(
+                id: teId,
+                timestamp: base.add(Duration(hours: i)),
+                text: 'Session $i',
+              ),
+            ),
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildRatingEntry(
+                id: ratingId,
+                timeEntryId: teId,
+                timestamp: base.add(Duration(hours: i)),
+              ),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildRatingLink(
+              id: 'bulk-link-$i',
+              fromId: ratingId,
+              toId: teId,
+              timestamp: base.add(Duration(hours: i)),
+            ),
+          );
+        }
+
+        final result = await db!.getRatingIdsForTimeEntries(
+            {'bulk-te-1', 'bulk-te-2', 'bulk-te-3'});
+        expect(result.length, 3);
+        expect(result['bulk-te-1'], 'bulk-rating-1');
+        expect(result['bulk-te-2'], 'bulk-rating-2');
+        expect(result['bulk-te-3'], 'bulk-rating-3');
+      });
+
+      test('getRatingIdsForTimeEntries excludes deleted ratings', () async {
+        // Active rating for te-a
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildJournalEntry(
+              id: 'del-te-a',
+              timestamp: base,
+              text: 'Session A',
+            ),
+          ),
+        );
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildRatingEntry(
+              id: 'del-rating-a',
+              timeEntryId: 'del-te-a',
+            ),
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'del-link-a',
+            fromId: 'del-rating-a',
+            toId: 'del-te-a',
+          ),
+        );
+
+        // Deleted rating for te-b
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildJournalEntry(
+              id: 'del-te-b',
+              timestamp: base,
+              text: 'Session B',
+            ),
+          ),
+        );
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildRatingEntry(
+              id: 'del-rating-b',
+              timeEntryId: 'del-te-b',
+              deletedAt: base.add(const Duration(hours: 1)),
+            ),
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'del-link-b',
+            fromId: 'del-rating-b',
+            toId: 'del-te-b',
+          ),
+        );
+
+        final result =
+            await db!.getRatingIdsForTimeEntries({'del-te-a', 'del-te-b'});
+        expect(result.length, 1);
+        expect(result.containsKey('del-te-a'), isTrue);
+        expect(result.containsKey('del-te-b'), isFalse);
+      });
+
+      test('getRatingIdsForTimeEntries excludes hidden links', () async {
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildJournalEntry(
+              id: 'hid-te',
+              timestamp: base,
+              text: 'Session',
+            ),
+          ),
+        );
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildRatingEntry(
+              id: 'hid-rating',
+              timeEntryId: 'hid-te',
+            ),
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildRatingLink(
+            id: 'hid-link',
+            fromId: 'hid-rating',
+            toId: 'hid-te',
+            hidden: true,
+          ),
+        );
+
+        final result = await db!.getRatingIdsForTimeEntries({'hid-te'});
+        expect(result.isEmpty, isTrue);
+      });
+
+      test('getRatingIdsForTimeEntries returns empty map for empty input',
+          () async {
+        final result = await db!.getRatingIdsForTimeEntries({});
+        expect(result.isEmpty, isTrue);
       });
     });
 

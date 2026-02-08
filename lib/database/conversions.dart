@@ -81,6 +81,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       habitCompletion: (_) => 'HabitCompletionEntry',
       survey: (_) => 'SurveyEntry',
       dayPlan: (_) => 'DayPlanEntry',
+      rating: (_) => 'RatingEntry',
     ),
     subtype: subtype,
     serialized: json.encode(entity),
@@ -260,6 +261,7 @@ LinkedDbEntry linkedDbEntity(EntryLink link) {
     updatedAt: link.updatedAt,
     type: link.map(
       basic: (_) => 'BasicLink',
+      rating: (_) => 'RatingLink',
     ),
   );
 }

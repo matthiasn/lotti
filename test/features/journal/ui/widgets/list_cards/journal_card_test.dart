@@ -690,6 +690,17 @@ void main() {
         expect(find.byType(SurveySummary), findsOneWidget);
       });
 
+      testWidgets('renders rating entry', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: testRatingEntry),
+          ),
+        );
+
+        expect(find.byType(ModernJournalCard), findsOneWidget);
+        expect(find.text('Session Rating'), findsOneWidget);
+      });
+
       testWidgets('renders AI response entry', (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(

@@ -821,6 +821,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit zobrazení Daily Operating System pro plánování dne. Tato funkce je ve vývoji.';
 
   @override
+  String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
+
+  @override
+  String get configFlagEnableSessionRatingsDescription =>
+      'Po zastavení časovače zobrazit rychlé hodnocení relace.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.';
 
@@ -2814,6 +2821,56 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Vzhled';
+
+  @override
+  String get sessionRatingCardLabel => 'Hodnocení relace';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Příliš snadné';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Tak akorát';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Příliš náročné';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Tato práce byla...';
+
+  @override
+  String get sessionRatingEditButton => 'Upravit hodnocení';
+
+  @override
+  String get sessionRatingEnergyQuestion => 'Jak energický/á jste se cítil/a?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'Jak soustředění jste byli?';
+
+  @override
+  String get sessionRatingNoteHint => 'Krátká poznámka (volitelné)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Jak produktivní byla tato relace?';
+
+  @override
+  String get sessionRatingSaveButton => 'Uložit';
+
+  @override
+  String get sessionRatingSaveError =>
+      'Nepodařilo se uložit hodnocení. Zkuste to prosím znovu.';
+
+  @override
+  String get sessionRatingSkipButton => 'Přeskočit';
+
+  @override
+  String get sessionRatingRateAction => 'Ohodnotit relaci';
+
+  @override
+  String get sessionRatingViewAction => 'Zobrazit hodnocení';
+
+  @override
+  String get sessionRatingTitle => 'Ohodnoťte tuto relaci';
 
   @override
   String get speechModalAddTranscription => 'Přidat přepis';

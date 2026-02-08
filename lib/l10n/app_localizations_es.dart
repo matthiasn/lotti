@@ -815,6 +815,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
 
   @override
+  String get configFlagEnableSessionRatings =>
+      'Habilitar calificaciones de sesión';
+
+  @override
+  String get configFlagEnableSessionRatingsDescription =>
+      'Solicitar una calificación rápida de sesión al detener un temporizador.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utiliza servicios de IA basados en la nube para funciones mejoradas. Esto requiere una conexión a Internet.';
 
@@ -2803,6 +2811,56 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Temas';
+
+  @override
+  String get sessionRatingCardLabel => 'Calificación de sesión';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Demasiado fácil';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Justo';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Demasiado difícil';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Este trabajo se sintió...';
+
+  @override
+  String get sessionRatingEditButton => 'Editar calificación';
+
+  @override
+  String get sessionRatingEnergyQuestion => '¿Qué tan energizado te sentiste?';
+
+  @override
+  String get sessionRatingFocusQuestion => '¿Qué tan concentrado estuviste?';
+
+  @override
+  String get sessionRatingNoteHint => 'Nota rápida (opcional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      '¿Qué tan productiva fue esta sesión?';
+
+  @override
+  String get sessionRatingSaveButton => 'Guardar';
+
+  @override
+  String get sessionRatingSaveError =>
+      'No se pudo guardar la calificación. Inténtelo de nuevo.';
+
+  @override
+  String get sessionRatingSkipButton => 'Omitir';
+
+  @override
+  String get sessionRatingRateAction => 'Calificar sesión';
+
+  @override
+  String get sessionRatingViewAction => 'Ver calificación';
+
+  @override
+  String get sessionRatingTitle => 'Calificar esta sesión';
 
   @override
   String get speechModalAddTranscription => 'Añadir transcripción';

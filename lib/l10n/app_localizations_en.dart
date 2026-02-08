@@ -807,6 +807,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
 
   @override
+  String get configFlagEnableSessionRatings => 'Enable Session Ratings';
+
+  @override
+  String get configFlagEnableSessionRatingsDescription =>
+      'Prompt for a quick session rating when you stop a timer.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Use cloud-based AI services for enhanced features. This requires an internet connection.';
 
@@ -2781,6 +2788,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemingTitle => 'Theming';
 
   @override
+  String get sessionRatingCardLabel => 'Session Rating';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Too easy';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Just right';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Too challenging';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'This work felt...';
+
+  @override
+  String get sessionRatingEditButton => 'Edit Rating';
+
+  @override
+  String get sessionRatingEnergyQuestion => 'How energized did you feel?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'How focused were you?';
+
+  @override
+  String get sessionRatingNoteHint => 'Quick note (optional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'How productive was this session?';
+
+  @override
+  String get sessionRatingSaveButton => 'Save';
+
+  @override
+  String get sessionRatingSaveError =>
+      'Failed to save rating. Please try again.';
+
+  @override
+  String get sessionRatingSkipButton => 'Skip';
+
+  @override
+  String get sessionRatingRateAction => 'Rate Session';
+
+  @override
+  String get sessionRatingViewAction => 'View Rating';
+
+  @override
+  String get sessionRatingTitle => 'Rate this session';
+
+  @override
   String get speechModalAddTranscription => 'Add Transcription';
 
   @override
@@ -4568,6 +4625,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsThemingTitle => 'Theming';
+
+  @override
+  String get sessionRatingEnergyQuestion => 'How energised did you feel?';
 
   @override
   String get speechModalAddTranscription => 'Add Transcription';

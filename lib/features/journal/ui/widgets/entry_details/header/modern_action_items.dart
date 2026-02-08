@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
+import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
@@ -611,6 +615,47 @@ class ModernLinkToItem extends StatelessWidget {
       onTap: () {
         getIt<LinkService>().linkTo(entryId);
         Navigator.of(context).pop();
+      },
+    );
+  }
+}
+
+/// Modern styled rate session action item.
+/// Shows "Rate Session" or "View Rating" depending on whether
+/// a rating already exists for this time entry.
+class ModernRateSessionItem extends ConsumerWidget {
+  const ModernRateSessionItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enableRatingsAsync =
+        ref.watch(configFlagProvider(enableSessionRatingsFlag));
+    final enableRatings =
+        enableRatingsAsync.unwrapPrevious().whenData((value) => value).value ??
+            false;
+
+    if (!enableRatings) {
+      return const SizedBox.shrink();
+    }
+
+    final rating =
+        ref.watch(ratingControllerProvider(timeEntryId: entryId)).value;
+    final hasRating = rating != null;
+
+    return ActionMenuListItem(
+      icon: hasRating ? Icons.star_rate_rounded : Icons.star_rate_outlined,
+      title: hasRating
+          ? context.messages.sessionRatingViewAction
+          : context.messages.sessionRatingRateAction,
+      iconColor: hasRating ? starredGold : null,
+      onTap: () {
+        Navigator.of(context).pop();
+        SessionRatingModal.show(context, entryId);
       },
     );
   }

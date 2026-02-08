@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 
 class InitialModalPageContent extends ConsumerWidget {
   const InitialModalPageContent({
@@ -33,6 +35,7 @@ class InitialModalPageContent extends ConsumerWidget {
 
     // Determine entry type for conditional rendering
     final isTask = entry is Task;
+    final isJournalEntry = entry is JournalEntry;
     final isAudio = entry is JournalAudio;
     final isImage = entry is JournalImage;
     final hasGeolocation = entry?.geolocation != null && !isTask;
@@ -50,6 +53,13 @@ class InitialModalPageContent extends ConsumerWidget {
         ? ref.watch(entryControllerProvider(id: linkedFromId)).value
         : null;
     final linkedIsTask = linkedEntryState?.entry is Task;
+
+    final enableRatings = ref
+            .watch(configFlagProvider(enableSessionRatingsFlag))
+            .unwrapPrevious()
+            .whenData((value) => value)
+            .value ??
+        false;
 
     final items = <Widget>[
       // Always shown for all entries
@@ -96,6 +106,10 @@ class InitialModalPageContent extends ConsumerWidget {
       // Link actions - always shown
       ModernLinkFromItem(entryId: entryId),
       ModernLinkToItem(entryId: entryId),
+
+      // Rate session - only for time entries in linked context with flag on
+      if (isJournalEntry && inLinkedEntries && enableRatings)
+        ModernRateSessionItem(entryId: entryId),
 
       // Unlink - only when viewing from a linked context
       if (linkedFromId != null)

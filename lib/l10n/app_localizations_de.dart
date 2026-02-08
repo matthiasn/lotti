@@ -813,6 +813,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
 
   @override
+  String get configFlagEnableSessionRatings => 'Sitzungsbewertungen aktivieren';
+
+  @override
+  String get configFlagEnableSessionRatingsDescription =>
+      'Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
 
@@ -2800,6 +2807,57 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Farbschema';
+
+  @override
+  String get sessionRatingCardLabel => 'Sitzungsbewertung';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Zu einfach';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Genau richtig';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Zu herausfordernd';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Diese Arbeit fühlte sich an...';
+
+  @override
+  String get sessionRatingEditButton => 'Bewertung bearbeiten';
+
+  @override
+  String get sessionRatingEnergyQuestion =>
+      'Wie energiegeladen haben Sie sich gefühlt?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'Wie fokussiert waren Sie?';
+
+  @override
+  String get sessionRatingNoteHint => 'Kurze Notiz (optional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Wie produktiv war diese Sitzung?';
+
+  @override
+  String get sessionRatingSaveButton => 'Speichern';
+
+  @override
+  String get sessionRatingSaveError =>
+      'Bewertung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get sessionRatingSkipButton => 'Überspringen';
+
+  @override
+  String get sessionRatingRateAction => 'Sitzung bewerten';
+
+  @override
+  String get sessionRatingViewAction => 'Bewertung anzeigen';
+
+  @override
+  String get sessionRatingTitle => 'Sitzung bewerten';
 
   @override
   String get speechModalAddTranscription => 'Transkription hinzufügen';

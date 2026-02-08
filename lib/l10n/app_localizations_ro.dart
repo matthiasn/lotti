@@ -813,6 +813,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
 
   @override
+  String get configFlagEnableSessionRatings =>
+      'Activează evaluările de sesiune';
+
+  @override
+  String get configFlagEnableSessionRatingsDescription =>
+      'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 
@@ -2793,6 +2801,56 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Tematică';
+
+  @override
+  String get sessionRatingCardLabel => 'Evaluare sesiune';
+
+  @override
+  String get sessionRatingChallengeTooEasy => 'Prea ușor';
+
+  @override
+  String get sessionRatingChallengeJustRight => 'Exact potrivit';
+
+  @override
+  String get sessionRatingChallengeTooHard => 'Prea provocator';
+
+  @override
+  String get sessionRatingDifficultyLabel => 'Această muncă a fost...';
+
+  @override
+  String get sessionRatingEditButton => 'Editează evaluarea';
+
+  @override
+  String get sessionRatingEnergyQuestion => 'Cât de energizat te-ai simțit?';
+
+  @override
+  String get sessionRatingFocusQuestion => 'Cât de concentrat ai fost?';
+
+  @override
+  String get sessionRatingNoteHint => 'Notă scurtă (opțional)';
+
+  @override
+  String get sessionRatingProductivityQuestion =>
+      'Cât de productivă a fost această sesiune?';
+
+  @override
+  String get sessionRatingSaveButton => 'Salvează';
+
+  @override
+  String get sessionRatingSaveError =>
+      'Nu s-a putut salva evaluarea. Vă rugăm să încercați din nou.';
+
+  @override
+  String get sessionRatingSkipButton => 'Omite';
+
+  @override
+  String get sessionRatingRateAction => 'Evaluează sesiunea';
+
+  @override
+  String get sessionRatingViewAction => 'Vezi evaluarea';
+
+  @override
+  String get sessionRatingTitle => 'Evaluează această sesiune';
 
   @override
   String get speechModalAddTranscription => 'Adăugați transcriere';

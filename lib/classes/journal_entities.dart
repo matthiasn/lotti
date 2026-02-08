@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -203,6 +204,13 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = DayPlanEntry;
 
+  const factory JournalEntity.rating({
+    required Metadata meta,
+    required RatingData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = RatingEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -263,6 +271,9 @@ extension JournalEntityExtension on JournalEntity {
 
       case DayPlanEntry():
         ids.add(dayPlanNotification);
+
+      case RatingEntry():
+        ids.add(ratingNotification);
     }
 
     return ids;

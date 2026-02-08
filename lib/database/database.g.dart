@@ -6686,6 +6686,38 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<RatingsForTimeEntriesResult> ratingsForTimeEntries(
+      List<String> timeEntryIds) {
+    var $arrayStartIndex = 1;
+    final expandedtimeEntryIds =
+        $expandVar($arrayStartIndex, timeEntryIds.length);
+    $arrayStartIndex += timeEntryIds.length;
+    return customSelect(
+        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
+        variables: [
+          for (var $ in timeEntryIds) Variable<String>($)
+        ],
+        readsFrom: {
+          linkedEntries,
+          journal,
+        }).map((QueryRow row) => RatingsForTimeEntriesResult(
+          ratingId: row.read<String>('rating_id'),
+          timeEntryId: row.read<String>('time_entry_id'),
+        ));
+  }
+
+  Selectable<JournalDbEntity> ratingForTimeEntry(String timeEntryId) {
+    return customSelect(
+        'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
+        variables: [
+          Variable<String>(timeEntryId)
+        ],
+        readsFrom: {
+          journal,
+          linkedEntries,
+        }).asyncMap(journal.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9368,4 +9400,13 @@ class $JournalDbManager {
   $LabeledTableManager get labeled => $LabeledTableManager(_db, _db.labeled);
   $LinkedEntriesTableManager get linkedEntries =>
       $LinkedEntriesTableManager(_db, _db.linkedEntries);
+}
+
+class RatingsForTimeEntriesResult {
+  final String ratingId;
+  final String timeEntryId;
+  RatingsForTimeEntriesResult({
+    required this.ratingId,
+    required this.timeEntryId,
+  });
 }

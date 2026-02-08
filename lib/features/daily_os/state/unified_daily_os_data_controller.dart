@@ -32,12 +32,17 @@ class DailyOsData {
     required this.dayPlan,
     required this.timelineData,
     required this.budgetProgress,
+    this.ratingIds = const {},
   });
 
   final DateTime date;
   final DayPlanEntry dayPlan;
   final DailyTimelineData timelineData;
   final List<TimeBudgetProgress> budgetProgress;
+
+  /// Maps time entry IDs to their rating entity IDs.
+  /// Empty if no ratings exist for the day's entries.
+  final Map<String, String> ratingIds;
 }
 
 /// Unified data controller for the Daily OS view.
@@ -224,6 +229,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         dayPlan: currentState.dayPlan,
         timelineData: currentState.timelineData,
         budgetProgress: updatedBudgets,
+        ratingIds: currentState.ratingIds,
       ),
     );
   }
@@ -303,11 +309,15 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       dueTasks: dueTasks,
     );
 
+    // Bulk fetch ratings for all time entries (avoids N+1)
+    final ratingIds = await db.getRatingIdsForTimeEntries(entryIds);
+
     return DailyOsData(
       date: _date,
       dayPlan: dayPlan,
       timelineData: timelineData,
       budgetProgress: budgetProgress,
+      ratingIds: ratingIds,
     );
   }
 

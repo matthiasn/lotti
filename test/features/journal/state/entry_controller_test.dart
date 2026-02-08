@@ -22,10 +22,11 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
+import 'package:lotti/features/ratings/state/rating_prompt_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
-import 'package:lotti/features/sync/vector_clock.dart'; // Added import for VectorClock
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -35,6 +36,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -343,6 +345,10 @@ void main() {
     when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
         .thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
+
+    // Default stub for session ratings config flag check
+    when(() => mockJournalDb.getConfigFlagByName(any()))
+        .thenAnswer((_) async => null);
 
     // Default stub for updateJournalEntityText
     when(
@@ -1426,6 +1432,187 @@ void main() {
         await notifier.save(stopRecording: true);
 
         verify(mockTimeService.stop).called(1);
+      });
+
+      test(
+          'save with stopRecording triggers rating prompt when flag enabled '
+          'and session >= 1 min', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+        notifier.setDirty(value: true);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+        when(mockTimeService.stop).thenAnswer((_) async {});
+
+        // Enable the session ratings flag
+        when(
+          () => mockJournalDb.getConfigFlagByName(enableSessionRatingsFlag),
+        ).thenAnswer(
+          (_) async => const ConfigFlag(
+            name: enableSessionRatingsFlag,
+            description: 'Session Ratings',
+            status: true,
+          ),
+        );
+
+        // Keep the ratingPromptController alive so autoDispose
+        // doesn't clear the state before we can read it
+        String? capturedPromptState;
+        container.listen(
+          ratingPromptControllerProvider,
+          (_, next) => capturedPromptState = next,
+        );
+
+        await notifier.save(stopRecording: true);
+
+        // testTextEntry.meta.dateFrom is 2022, so duration >> 1 min
+        expect(capturedPromptState, equals(entryId));
+      });
+
+      test(
+          'save with stopRecording does NOT trigger rating prompt when '
+          'flag disabled', () async {
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final notifier =
+            container.read(entryControllerProvider(id: entryId).notifier);
+        await container.read(entryControllerProvider(id: entryId).future);
+        notifier.setDirty(value: true);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            entryId,
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+        when(mockTimeService.stop).thenAnswer((_) async {});
+
+        // Flag is disabled (default stub returns null)
+        when(() => mockJournalDb.getConfigFlagByName(any()))
+            .thenAnswer((_) async => null);
+
+        // Listen to catch any state change
+        String? capturedPromptState;
+        container.listen(
+          ratingPromptControllerProvider,
+          (_, next) => capturedPromptState = next,
+        );
+
+        await notifier.save(stopRecording: true);
+
+        expect(capturedPromptState, isNull);
+      });
+
+      test(
+          'save with stopRecording does NOT trigger rating prompt for '
+          'short sessions (< 1 min)', () async {
+        // Create a short-session entry with dateFrom very recent
+        // (less than 1 minute ago is impossible to guarantee with
+        // real clock, so use a dateFrom just seconds before "now"
+        // by using a date far in the future that DateTime.now()
+        // will always be less than 1 min from)
+        final futureDate = DateTime(2099);
+        final shortSessionEntry = JournalEntry(
+          meta: Metadata(
+            id: 'short-session-entry',
+            createdAt: futureDate,
+            dateFrom: futureDate,
+            dateTo: futureDate,
+            updatedAt: futureDate,
+            vectorClock: const VectorClock({'a': 1}),
+          ),
+          entryText: const EntryText(plainText: 'short'),
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(shortSessionEntry.meta.id),
+        ).thenAnswer((_) async => shortSessionEntry);
+
+        final localMockJournalRepository = MockJournalRepository();
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+          ],
+        );
+        final shortId = shortSessionEntry.meta.id;
+        final notifier =
+            container.read(entryControllerProvider(id: shortId).notifier);
+        await container.read(entryControllerProvider(id: shortId).future);
+        notifier.setDirty(value: true);
+
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            shortId,
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: shortId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
+        when(mockTimeService.stop).thenAnswer((_) async {});
+
+        // Enable the flag
+        when(
+          () => mockJournalDb.getConfigFlagByName(enableSessionRatingsFlag),
+        ).thenAnswer(
+          (_) async => const ConfigFlag(
+            name: enableSessionRatingsFlag,
+            description: 'Session Ratings',
+            status: true,
+          ),
+        );
+
+        // Listen to catch any state change
+        String? capturedPromptState;
+        container.listen(
+          ratingPromptControllerProvider,
+          (_, next) => capturedPromptState = next,
+        );
+
+        await notifier.save(stopRecording: true);
+
+        // Duration is negative (future dateFrom), so prompt should NOT trigger
+        expect(capturedPromptState, isNull);
       });
 
       test('save propagates exception from updateJournalEntityText', () async {

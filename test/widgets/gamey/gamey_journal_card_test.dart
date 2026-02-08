@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/get_it.dart';
@@ -200,6 +201,35 @@ void main() {
         mockNavService.navigationHistory,
         contains('/tasks/test-task-id'),
       );
+    });
+
+    testWidgets('renders rating entry with label', (tester) async {
+      final ratingEntry = JournalEntity.rating(
+        meta: Metadata(
+          id: 'test-rating-id',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now.add(const Duration(hours: 1)),
+        ),
+        data: const RatingData(
+          timeEntryId: 'te-1',
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.8),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: GameyJournalCard(item: ratingEntry),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameySubtleCard), findsOneWidget);
+      expect(find.text('Session Rating'), findsOneWidget);
     });
 
     testWidgets('returns empty when item is deleted', (tester) async {

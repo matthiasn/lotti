@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.849" date="2026-02-08">
+      <description>
+        <p>Session Ratings: When you stop a timer that ran for at least one minute, Lotti can now prompt you with a quick rating modal to capture how productive, energized, and focused the session felt, plus a challenge-skill balance check. Ratings are persisted as journal entities linked to the time entry with full sync support. The feature is behind a new "Enable Session Ratings" toggle in Settings, disabled by default.</p>
+      </description>
+    </release>
     <release version="0.9.848" date="2026-02-08">
       <description>
         <p>Czech Language Support: Lotti is now available in Czech (čeština) with full coverage of all ~1360 UI strings. Platform locale declarations for iOS, macOS, and Windows have also been updated to include all supported languages (Czech, Spanish, French) that were previously missing from the native manifests.</p>

@@ -1086,6 +1086,27 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
+  /// Find existing rating entity for a time entry (for edit/re-open).
+  Future<RatingEntry?> getRatingForTimeEntry(String timeEntryId) async {
+    final res = await ratingForTimeEntry(timeEntryId).get();
+    if (res.isEmpty) return null;
+    final entity = fromDbEntity(res.first);
+    return entity is RatingEntry ? entity : null;
+  }
+
+  /// Bulk fetch rating IDs for a set of time entries.
+  ///
+  /// The query orders by `updated_at ASC` so that when multiple ratings
+  /// link to the same time entry, the most recently updated one wins
+  /// (last-write-wins in the map comprehension).
+  Future<Map<String, String>> getRatingIdsForTimeEntries(
+    Set<String> timeEntryIds,
+  ) async {
+    if (timeEntryIds.isEmpty) return {};
+    final rows = await ratingsForTimeEntries(timeEntryIds.toList()).get();
+    return {for (final row in rows) row.timeEntryId: row.ratingId};
+  }
+
   Future<List<JournalEntity>> getQuantitativeByType({
     required String type,
     required DateTime rangeStart,

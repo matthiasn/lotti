@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path_provider/path_provider.dart';
@@ -50,6 +51,21 @@ void main() {
 
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/text_entries/2021-11-30/test-id.text.json');
+    });
+
+    test('JSON file name for rating entry should be correct', () async {
+      final testEntity = JournalEntity.rating(
+        meta: testMeta,
+        data: const RatingData(
+          timeEntryId: 'te-1',
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.8),
+          ],
+        ),
+      );
+
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/ratings/2021-11-30/test-id.rating.json');
     });
 
     test('JSON file name for survey entry should be correct', () async {
