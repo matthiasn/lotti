@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.848" date="2026-02-08">
+      <description>
+        <p>Czech Language Support: Lotti is now available in Czech (čeština) with full coverage of all ~1360 UI strings. Platform locale declarations for iOS, macOS, and Windows have also been updated to include all supported languages (Czech, Spanish, French) that were previously missing from the native manifests.</p>
+      </description>
+    </release>
     <release version="0.9.847" date="2026-02-07">
       <description>
         <p>AI Prompt Optimization: Single-speaker audio transcriptions no longer include an unnecessary "Speaker 1:" prefix - speaker labels now only appear when multiple voices are detected. Checklist generation is now snappy regardless of the AI model: when models like Gemini Flash split items across multiple function calls, they are coalesced into a single batch write for instant UI updates instead of incremental per-item rendering. Image analysis now returns URLs as proper Markdown links and automatically infers https:// when the browser hides the protocol.</p>

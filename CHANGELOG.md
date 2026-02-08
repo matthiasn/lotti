@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.848] - 2026-02-08
+### Added
+- Czech Language: Full Czech (čeština) localization with ~1360 translated strings covering the entire app UI.
+- Platform Locale Registration: Added missing locale entries for iOS, macOS, and Windows so that all supported languages (cs, es, fr) are properly declared on every platform.
+
 ## [0.9.847] - 2026-02-07
 ### Fixed
 - Audio Transcription: Single-speaker recordings no longer include an unnecessary "Speaker 1:" prefix. Speaker labels now only appear when multiple distinct voices are detected.

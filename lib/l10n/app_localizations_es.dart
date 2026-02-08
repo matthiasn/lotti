@@ -1063,8 +1063,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String dailyOsDurationHoursMinutes(
-      int hours, int minutes, Object hodin, Object minut) {
+  String dailyOsDurationHoursMinutes(int hours, int minutes) {
     return '${hours}h ${minutes}m';
   }
 

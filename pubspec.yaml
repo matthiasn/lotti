@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.847+3664
+version: 0.9.848+3665
 
 msix_config:
   display_name: LottiApp
@@ -9,7 +9,7 @@ msix_config:
   publisher: CN=ED722F95-3F7E-428E-A642-9B9C121815D1
   identity_name: NehlsenEDVBeratungGmbH.LottiApp
   capabilities: internetClient, location, microphone
-  languages: en-us, de-de, ro-ro
+  languages: en-us, cs-cz, de-de, es-es, fr-fr, ro-ro
   install_certificate: false
   sign_msix: false
   logo_path: .\assets\icon\app_icon_1024.png

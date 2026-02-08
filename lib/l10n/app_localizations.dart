@@ -1959,8 +1959,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{hours}h {minutes}m'**
-  String dailyOsDurationHoursMinutes(
-      int hours, int minutes, Object hodin, Object minut);
+  String dailyOsDurationHoursMinutes(int hours, int minutes);
 
   /// No description provided for @dailyOsDurationMinutes.
   ///
