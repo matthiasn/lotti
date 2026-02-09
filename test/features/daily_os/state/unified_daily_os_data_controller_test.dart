@@ -180,7 +180,7 @@ void main() {
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
 
-    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getRatingIdsForTimeEntries(any()))
         .thenAnswer((_) async => <String, String>{});
@@ -606,7 +606,7 @@ void main() {
       ).thenAnswer((_) async => [timeEntry]);
 
       // Set up link from task to time entry
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -675,7 +675,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -913,7 +913,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -983,7 +983,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           // Intentionally put rating first to reproduce bad selection order.
           EntryLink.rating(
@@ -1051,7 +1051,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.rating(
             id: 'rating-link-1',
@@ -1547,7 +1547,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1622,7 +1622,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry1, timeEntry2]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1', 'time-entry-2'}))
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1', 'time-entry-2'}))
           .thenAnswer(
         (_) async => [
           EntryLink.basic(
@@ -1701,7 +1701,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1769,7 +1769,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1843,7 +1843,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [entry1, entry2]);
 
-      when(() => mockDb.linksForEntryIds({'entry-1', 'entry-2'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'entry-1', 'entry-2'}))
+          .thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1910,7 +1911,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       // No links
-      when(() => mockDb.linksForEntryIds({'entry-1'}))
+      when(() => mockDb.basicLinksForEntryIds({'entry-1'}))
           .thenAnswer((_) async => []);
 
       final result = await container.read(
@@ -2040,7 +2041,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',

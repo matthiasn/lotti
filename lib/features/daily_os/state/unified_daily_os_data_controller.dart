@@ -272,7 +272,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
 
     // Fetch linked entries (parent tasks/journals) for each entry
     final entryIds = entries.map((e) => e.meta.id).toSet();
-    final links = await db.linksForEntryIds(entryIds);
+    final links = await db.basicLinksForEntryIds(entryIds);
 
     // Build lookup maps for linked entries
     final entryIdToLinkedFromIds = <String, Set<String>>{};
