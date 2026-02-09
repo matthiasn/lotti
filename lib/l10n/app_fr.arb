@@ -1118,7 +1118,7 @@
   "syncDeleteConfigConfirm": "OUI, JE SUIS SÛR",
   "syncDeleteConfigQuestion": "Veux-tu supprimer la configuration de synchronisation ?",
   "syncEntitiesConfirm": "DÉMARRER LA SYNCHRONISATION",
-  "syncEntitiesMessage": "Choisissez les données à synchroniser.",
+  "syncEntitiesMessage": "Choisis les données à synchroniser.",
   "syncEntitiesSuccessDescription": "Tout est à jour.",
   "syncEntitiesSuccessTitle": "Synchronisation terminée",
   "syncStepAiSettings": "Paramètres IA",

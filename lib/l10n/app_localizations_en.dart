@@ -3565,160 +3565,13 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   AppLocalizationsEnGb() : super('en_GB');
 
   @override
-  String get addActionAddAudioRecording => 'Audio Recording';
-
-  @override
-  String get addActionAddChecklist => 'Checklist';
-
-  @override
-  String get addActionAddEvent => 'Event';
-
-  @override
-  String get addActionAddImageFromClipboard => 'Paste Image';
-
-  @override
-  String get addActionAddPhotos => 'Photo(s)';
-
-  @override
-  String get addActionAddScreenshot => 'Screenshot';
-
-  @override
-  String get addActionAddTask => 'Task';
-
-  @override
-  String get addActionAddText => 'Text Entry';
-
-  @override
-  String get addActionAddTimeRecording => 'Timer Entry';
-
-  @override
-  String get addAudioTitle => 'Audio Recording';
-
-  @override
-  String get addHabitCommentLabel => 'Comment';
-
-  @override
-  String get addHabitDateLabel => 'Completed at';
-
-  @override
-  String get addMeasurementCommentLabel => 'Comment';
-
-  @override
-  String get addMeasurementDateLabel => 'Observed at';
-
-  @override
-  String get addMeasurementSaveButton => 'Save';
-
-  @override
-  String get addSurveyTitle => 'Fill Survey';
-
-  @override
-  String get aiAssistantActionItemSuggestions => 'Action Item Suggestions';
-
-  @override
   String get aiAssistantAnalyzeImage => 'Analyse image';
 
   @override
   String get aiAssistantSummarizeTask => 'Summarise task';
 
   @override
-  String get aiAssistantThinking => 'Thinking...';
-
-  @override
-  String get aiAssistantTitle => 'AI Assistant';
-
-  @override
-  String get aiAssistantTranscribeAudio => 'Transcribe audio';
-
-  @override
-  String aiConfigAssociatedModelsRemoved(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 's',
-      one: '',
-    );
-    return '$count associated model$_temp0 removed';
-  }
-
-  @override
-  String get aiConfigFailedToLoadModelsGeneric =>
-      'Failed to load models. Please try again.';
-
-  @override
-  String get loggingFailedToLoad => 'Failed to load logs. Please try again.';
-
-  @override
-  String get loggingSearchFailed => 'Search failed. Please try again.';
-
-  @override
-  String get loggingFailedToLoadMore =>
-      'Failed to load more results. Please try again.';
-
-  @override
-  String get aiConfigListUndoDelete => 'UNDO';
-
-  @override
-  String get aiConfigManageModelsButton => 'Manage Models';
-
-  @override
-  String get aiConfigProviderDeletedSuccessfully =>
-      'Provider deleted successfully';
-
-  @override
   String get aiTaskSummaryRunning => 'Thinking about summarising task...';
-
-  @override
-  String get aiTaskSummaryTitle => 'AI Task Summary';
-
-  @override
-  String get cancelButton => 'Cancel';
-
-  @override
-  String get categoryDeleteConfirm => 'YES, DELETE THIS CATEGORY';
-
-  @override
-  String get categoryDeleteQuestion => 'Do you want to delete this category?';
-
-  @override
-  String get categorySearchPlaceholder => 'Search categories...';
-
-  @override
-  String get checklistAddItem => 'Add a new item';
-
-  @override
-  String get checklistDelete => 'Delete checklist?';
-
-  @override
-  String get checklistItemDelete => 'Delete checklist item?';
-
-  @override
-  String get checklistItemDeleteCancel => 'Cancel';
-
-  @override
-  String get checklistItemDeleteConfirm => 'Confirm';
-
-  @override
-  String get checklistItemDeleteWarning => 'This action cannot be undone.';
-
-  @override
-  String get checklistItemDrag => 'Drag suggestions into checklist';
-
-  @override
-  String get checklistNoSuggestionsTitle => 'No suggested Action Items';
-
-  @override
-  String get checklistSuggestionsOutdated => 'Outdated';
-
-  @override
-  String get checklistSuggestionsRunning =>
-      'Thinking about untracked suggestions...';
-
-  @override
-  String get checklistSuggestionsTitle => 'Suggested Action Items';
-
-  @override
-  String get checklistsTitle => 'Checklists';
 
   @override
   String get colorLabel => 'Colour:';
@@ -3730,69 +3583,8 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get colorPickerHint => 'Enter Hex colour or pick';
 
   @override
-  String get completeHabitFailButton => 'Fail';
-
-  @override
-  String get completeHabitSkipButton => 'Skip';
-
-  @override
-  String get completeHabitSuccessButton => 'Success';
-
-  @override
-  String get configFlagAttemptEmbeddingDescription =>
-      'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
-
-  @override
-  String get configFlagAutoTranscribeDescription =>
-      'Automatically transcribe audio recordings in your entries. This requires an internet connection.';
-
-  @override
-  String get configFlagEnableAutoTaskTldrDescription =>
-      'Automatically generate summaries for your tasks to help you quickly understand their status.';
-
-  @override
-  String get configFlagEnableCalendarPageDescription =>
-      'Show the Calendar page in the main navigation. View and manage your entries in a calendar view.';
-
-  @override
   String get configFlagEnableDashboardsPageDescription =>
       'Show the Dashboards page in the main navigation. View your data and insights in customisable dashboards.';
-
-  @override
-  String get configFlagEnableHabitsPageDescription =>
-      'Show the Habits page in the main navigation. Track and manage your daily habits here.';
-
-  @override
-  String get configFlagEnableLoggingDescription =>
-      'Enable detailed logging for debugging purposes. This may impact performance.';
-
-  @override
-  String get configFlagEnableMatrixDescription =>
-      'Enable the Matrix integration to sync your entries across devices and with other Matrix users.';
-
-  @override
-  String get configFlagEnableNotifications => 'Enable notifications?';
-
-  @override
-  String get configFlagEnableNotificationsDescription =>
-      'Receive notifications for reminders, updates, and important events.';
-
-  @override
-  String get configFlagEnableTooltip => 'Enable tooltips';
-
-  @override
-  String get configFlagEnableTooltipDescription =>
-      'Show helpful tooltips throughout the app to guide you through features.';
-
-  @override
-  String get configFlagPrivate => 'Show private entries?';
-
-  @override
-  String get configFlagPrivateDescription =>
-      'Enable this to make your entries private by default. Private entries are only visible to you.';
-
-  @override
-  String get configFlagRecordLocation => 'Record location';
 
   @override
   String get configFlagRecordLocationDescription =>
@@ -3857,6 +3649,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get createEntryTitle => 'Add';
+
+  @override
+  String get customColor => 'Custom Colour';
+
+  @override
+  String get dailyOsUncategorized => 'Uncategorised';
 
   @override
   String get dashboardActiveLabel => 'Active:';
@@ -3932,6 +3730,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get editorPlaceholder => 'Enter notes...';
+
+  @override
+  String get enhancedPromptFormSystemMessageHelperText =>
+      'Instructions that define the AI\'s behaviour and response style';
 
   @override
   String get entryActions => 'Actions';
@@ -4215,16 +4017,13 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get outboxMonitorSwitchLabel => 'enabled';
 
   @override
+  String get promptBehaviorTitle => 'Prompt Behaviour';
+
+  @override
   String get saveLabel => 'Save';
 
   @override
   String get searchHint => 'Search…';
-
-  @override
-  String get settingThemingDark => 'Dark Theme';
-
-  @override
-  String get settingThemingLight => 'Light Theme';
 
   @override
   String get settingsAboutTitle => 'About Lotti';
@@ -4272,687 +4071,46 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Resolve synchronisation conflicts to ensure data consistency';
 
   @override
-  String get settingsAdvancedLogsSubtitle =>
-      'Access and review application logs for debugging';
-
-  @override
-  String get settingsAdvancedHealthImportSubtitle =>
-      'Import health-related data from external sources';
-
-  @override
   String get settingsAdvancedMaintenanceSubtitle =>
       'Perform maintenance tasks to optimise application performance';
-
-  @override
-  String get settingsAdvancedAboutSubtitle =>
-      'Learn more about the Lotti application';
-
-  @override
-  String get settingsCategoriesDuplicateError => 'Category exists already';
-
-  @override
-  String get settingsCategoriesNameLabel => 'Category name:';
-
-  @override
-  String get settingsCategoriesTitle => 'Categories';
-
-  @override
-  String get settingsLabelsTitle => 'Labels';
 
   @override
   String get settingsLabelsSubtitle => 'Organise tasks with coloured labels';
 
   @override
-  String get settingsLabelsSearchHint => 'Search labels…';
-
-  @override
-  String get settingsLabelsEmptyState => 'No labels yet';
-
-  @override
-  String get settingsLabelsEmptyStateHint =>
-      'Tap the + button to create your first label.';
-
-  @override
-  String get settingsLabelsErrorLoading => 'Failed to load labels';
-
-  @override
-  String get settingsLabelsCreateTitle => 'Create label';
-
-  @override
-  String get settingsLabelsEditTitle => 'Edit label';
-
-  @override
-  String get settingsLabelsNameLabel => 'Label name';
-
-  @override
-  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
-
-  @override
-  String get settingsLabelsNameRequired => 'Label name must not be empty.';
-
-  @override
-  String get settingsLabelsDescriptionLabel => 'Description (optional)';
-
-  @override
-  String get settingsLabelsDescriptionHint =>
-      'Explain when to apply this label';
+  String get settingsCategoriesEmptyStateHint =>
+      'Create a category to organise your entries';
 
   @override
   String get settingsLabelsColorHeading => 'Select a colour';
 
   @override
-  String get settingsLabelsColorSubheading => 'Quick presets';
+  String get selectColor => 'Select Colour';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Private label';
+  String get favoriteLabel => 'Favourite';
 
   @override
-  String get settingsLabelsCreateSuccess => 'Label created successfully';
-
-  @override
-  String get settingsLabelsUpdateSuccess => 'Label updated';
-
-  @override
-  String get settingsLabelsDeleteConfirmTitle => 'Delete label';
-
-  @override
-  String settingsLabelsDeleteConfirmMessage(Object labelName) {
-    return 'Are you sure you want to delete \"$labelName\"? Tasks with this label will lose the assignment.';
-  }
-
-  @override
-  String settingsLabelsDeleteSuccess(Object labelName) {
-    return 'Label \"$labelName\" deleted';
-  }
-
-  @override
-  String get settingsLabelsDeleteCancel => 'Cancel';
-
-  @override
-  String get settingsLabelsDeleteConfirmAction => 'Delete';
+  String get categoryFavoriteDescription => 'Mark this category as a favourite';
 
   @override
   String get entryTypeLabelChecklistItem => 'To Do';
 
   @override
-  String get settingsConflictsResolutionTitle => 'Sync Conflict Resolution';
-
-  @override
-  String get settingsConflictsTitle => 'Sync Conflicts';
-
-  @override
-  String get settingsDashboardsTitle => 'Dashboards';
-
-  @override
-  String get settingsFlagsTitle => 'Config Flags';
-
-  @override
-  String get settingsHabitsDeleteTooltip => 'Delete Habit';
-
-  @override
-  String get settingsHabitsDescriptionLabel => 'Description (optional):';
-
-  @override
-  String get settingsHabitsNameLabel => 'Habit name:';
-
-  @override
-  String get settingsHabitsPrivateLabel => 'Private:';
-
-  @override
-  String get settingsHabitsSaveLabel => 'Save';
-
-  @override
-  String get settingsHabitsTitle => 'Habits';
-
-  @override
-  String get settingsHealthImportFromDate => 'Start';
-
-  @override
-  String get settingsHealthImportTitle => 'Health Import';
-
-  @override
-  String get settingsHealthImportToDate => 'End';
-
-  @override
-  String get settingsLogsTitle => 'Logs';
-
-  @override
-  String get settingsMaintenanceTitle => 'Maintenance';
-
-  @override
-  String get settingsMatrixAcceptVerificationLabel =>
-      'Other device shows emojis, continue';
-
-  @override
-  String get settingsMatrixCancel => 'Cancel';
-
-  @override
-  String get settingsMatrixCancelVerificationLabel => 'Cancel Verification';
-
-  @override
-  String get settingsMatrixContinueVerificationLabel =>
-      'Accept on other device to continue';
-
-  @override
-  String get settingsMatrixDeleteLabel => 'Delete';
-
-  @override
-  String get settingsMatrixDone => 'Done';
-
-  @override
-  String get settingsMatrixEnterValidUrl => 'Please enter a valid URL';
-
-  @override
-  String get settingsMatrixHomeServerLabel => 'Homeserver';
-
-  @override
-  String get settingsMatrixHomeserverConfigTitle => 'Matrix Homeserver Setup';
-
-  @override
-  String get settingsMatrixListUnverifiedLabel => 'Unverified devices';
-
-  @override
-  String get settingsMatrixLoginButtonLabel => 'Login';
-
-  @override
-  String get settingsMatrixLoginFailed => 'Login failed';
-
-  @override
-  String get settingsMatrixLogoutButtonLabel => 'Logout';
-
-  @override
-  String get settingsMatrixNextPage => 'Next Page';
-
-  @override
-  String get settingsMatrixNoUnverifiedLabel => 'No unverified devices';
-
-  @override
-  String get settingsMatrixPasswordLabel => 'Password';
-
-  @override
-  String get settingsMatrixPasswordTooShort => 'Password too short';
-
-  @override
-  String get settingsMatrixPreviousPage => 'Previous Page';
-
-  @override
-  String get settingsMatrixQrTextPage =>
-      'Scan this QR code to invite device to a sync room.';
-
-  @override
-  String get settingsMatrixRoomConfigTitle => 'Matrix Sync Room Setup';
-
-  @override
-  String get settingsMatrixStartVerificationLabel => 'Start Verification';
-
-  @override
-  String get settingsMatrixStatsTitle => 'Matrix Stats';
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Sent messages:';
-
-  @override
-  String get settingsMatrixMessageType => 'Message Type';
-
-  @override
-  String get settingsMatrixCount => 'Count';
-
-  @override
-  String get settingsMatrixMetric => 'Metric';
-
-  @override
-  String get settingsMatrixValue => 'Value';
-
-  @override
-  String get settingsMatrixLastUpdated => 'Last updated:';
-
-  @override
-  String get settingsMatrixRefresh => 'Refresh';
-
-  @override
-  String get settingsMatrixTitle => 'Matrix Sync Settings';
-
-  @override
-  String get settingsMatrixMaintenanceTitle => 'Matrix Sync Maintenance';
-
-  @override
-  String get settingsMatrixMaintenanceSubtitle =>
-      'Run Matrix maintenance tasks and recovery tools';
-
-  @override
-  String get settingsMatrixUnverifiedDevicesPage => 'Unverified Devices';
-
-  @override
-  String get settingsMatrixUserLabel => 'User';
-
-  @override
-  String get settingsMatrixUserNameTooShort => 'User name too short';
-
-  @override
-  String get settingsMatrixVerificationCancelledLabel =>
-      'Cancelled on other device…';
-
-  @override
-  String get settingsMatrixVerificationSuccessConfirm => 'Got it';
-
-  @override
-  String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
-    return 'You\'ve successfully verified $deviceName ($deviceID)';
-  }
-
-  @override
-  String get settingsMatrixVerifyConfirm =>
-      'Confirm on other device that the emojis below are displayed on both devices, in the same order:';
-
-  @override
-  String get settingsMatrixVerifyIncomingConfirm =>
-      'Confirm that the emojis below are displayed on both devices, in the same order:';
-
-  @override
-  String get settingsMatrixVerifyLabel => 'Verify';
-
-  @override
-  String get settingsMeasurableAggregationLabel =>
-      'Default Aggregation Type (optional):';
-
-  @override
-  String get settingsMeasurableDeleteTooltip => 'Delete measurable type';
-
-  @override
-  String get settingsMeasurableDescriptionLabel => 'Description (optional):';
+  String get categoryDeleteConfirmation =>
+      'This action cannot be undone. All entries in this category will remain but will no longer be categorised.';
 
   @override
   String get settingsMeasurableFavoriteLabel => 'Favourite: ';
 
   @override
-  String get settingsMeasurableNameLabel => 'Measurable name:';
-
-  @override
-  String get settingsMeasurablePrivateLabel => 'Private:';
-
-  @override
-  String get settingsMeasurableSaveLabel => 'Save';
-
-  @override
-  String get settingsMeasurableUnitLabel => 'Unit abbreviation (optional):';
-
-  @override
-  String get settingsMeasurablesTitle => 'Measurable Types';
-
-  @override
-  String get settingsSpeechAudioWithoutTranscript =>
-      'Audio entries without transcript:';
-
-  @override
-  String get settingsSpeechAudioWithoutTranscriptButton => 'Find & transcribe';
-
-  @override
-  String get settingsSpeechLastActivity => 'Last transcription activity:';
-
-  @override
-  String get settingsSpeechModelSelectionTitle =>
-      'Whisper speech recognition model:';
-
-  @override
-  String get settingsSyncOutboxTitle => 'Sync Outbox';
-
-  @override
-  String get settingsTagsDeleteTooltip => 'Delete tag';
-
-  @override
-  String get settingsTagsHideLabel => 'Hide from suggestions:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Private:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Save';
-
-  @override
-  String get settingsTagsTagName => 'Tag:';
-
-  @override
-  String get settingsTagsTitle => 'Tags';
-
-  @override
-  String get settingsTagsTypeLabel => 'Tag type:';
-
-  @override
-  String get settingsTagsTypePerson => 'PERSON';
-
-  @override
-  String get settingsTagsTypeStory => 'STORY';
-
-  @override
-  String get settingsTagsTypeTag => 'TAG';
-
-  @override
-  String get settingsThemingAutomatic => 'Automatic';
-
-  @override
-  String get settingsThemingDark => 'Dark Appearance';
-
-  @override
-  String get settingsThemingLight => 'Light Appearance';
-
-  @override
-  String get settingsThemingTitle => 'Theming';
-
-  @override
   String get sessionRatingEnergyQuestion => 'How energised did you feel?';
 
   @override
-  String get speechModalAddTranscription => 'Add Transcription';
+  String get entryLabelsActionSubtitle =>
+      'Assign labels to organise this entry';
 
   @override
-  String get speechModalSelectLanguage => 'Select Language';
-
-  @override
-  String get speechModalTitle => 'Speech Recognition';
-
-  @override
-  String get speechModalTranscriptionProgress => 'Transcription Progress';
-
-  @override
-  String get syncDeleteConfigConfirm => 'YES, I\'M SURE';
-
-  @override
-  String get syncDeleteConfigQuestion =>
-      'Do you want to delete the sync configuration?';
-
-  @override
-  String get syncEntitiesMessage => 'Choose the data you want to sync.';
-
-  @override
-  String get syncEntitiesSuccessDescription => 'Everything is up to date.';
-
-  @override
-  String get syncEntitiesSuccessTitle => 'Sync complete';
-
-  @override
-  String get taskCategoryAllLabel => 'all';
-
-  @override
-  String get taskCategoryLabel => 'Category:';
-
-  @override
-  String get taskCategoryUnassignedLabel => 'unassigned';
-
-  @override
-  String get taskEstimateLabel => 'Estimate:';
-
-  @override
-  String get taskNameHint => 'Enter a name for the task';
-
-  @override
-  String get taskStatusAll => 'All';
-
-  @override
-  String get taskStatusBlocked => 'Blocked';
-
-  @override
-  String get taskStatusDone => 'Done';
-
-  @override
-  String get taskStatusGroomed => 'Groomed';
-
-  @override
-  String get taskStatusInProgress => 'In Progress';
-
-  @override
-  String get taskStatusLabel => 'Status:';
-
-  @override
-  String get taskStatusOnHold => 'On Hold';
-
-  @override
-  String get taskStatusOpen => 'Open';
-
-  @override
-  String get taskStatusRejected => 'Rejected';
-
-  @override
-  String get taskLanguageLabel => 'Language:';
-
-  @override
-  String get taskLanguageArabic => 'Arabic';
-
-  @override
-  String get taskLanguageBengali => 'Bengali';
-
-  @override
-  String get taskLanguageBulgarian => 'Bulgarian';
-
-  @override
-  String get taskLanguageChinese => 'Chinese';
-
-  @override
-  String get taskLanguageCroatian => 'Croatian';
-
-  @override
-  String get taskLanguageCzech => 'Czech';
-
-  @override
-  String get taskLanguageDanish => 'Danish';
-
-  @override
-  String get taskLanguageDutch => 'Dutch';
-
-  @override
-  String get taskLanguageEnglish => 'English';
-
-  @override
-  String get taskLanguageEstonian => 'Estonian';
-
-  @override
-  String get taskLanguageFinnish => 'Finnish';
-
-  @override
-  String get taskLanguageFrench => 'French';
-
-  @override
-  String get taskLanguageGerman => 'German';
-
-  @override
-  String get taskLanguageGreek => 'Greek';
-
-  @override
-  String get taskLanguageHebrew => 'Hebrew';
-
-  @override
-  String get taskLanguageHindi => 'Hindi';
-
-  @override
-  String get taskLanguageHungarian => 'Hungarian';
-
-  @override
-  String get taskLanguageIndonesian => 'Indonesian';
-
-  @override
-  String get taskLanguageItalian => 'Italian';
-
-  @override
-  String get taskLanguageJapanese => 'Japanese';
-
-  @override
-  String get taskLanguageKorean => 'Korean';
-
-  @override
-  String get taskLanguageLatvian => 'Latvian';
-
-  @override
-  String get taskLanguageLithuanian => 'Lithuanian';
-
-  @override
-  String get taskLanguageNorwegian => 'Norwegian';
-
-  @override
-  String get taskLanguagePolish => 'Polish';
-
-  @override
-  String get taskLanguagePortuguese => 'Portuguese';
-
-  @override
-  String get taskLanguageRomanian => 'Romanian';
-
-  @override
-  String get taskLanguageRussian => 'Russian';
-
-  @override
-  String get taskLanguageSerbian => 'Serbian';
-
-  @override
-  String get taskLanguageSlovak => 'Slovak';
-
-  @override
-  String get taskLanguageSlovenian => 'Slovenian';
-
-  @override
-  String get taskLanguageSpanish => 'Spanish';
-
-  @override
-  String get taskLanguageSwahili => 'Swahili';
-
-  @override
-  String get taskLanguageSwedish => 'Swedish';
-
-  @override
-  String get taskLanguageThai => 'Thai';
-
-  @override
-  String get taskLanguageTurkish => 'Turkish';
-
-  @override
-  String get taskLanguageUkrainian => 'Ukrainian';
-
-  @override
-  String get taskLanguageIgbo => 'Igbo';
-
-  @override
-  String get taskLanguageNigerianPidgin => 'Nigerian Pidgin';
-
-  @override
-  String get taskLanguageYoruba => 'Yoruba';
-
-  @override
-  String get taskLanguageSearchPlaceholder => 'Search languages...';
-
-  @override
-  String get taskLanguageSelectedLabel => 'Currently selected';
-
-  @override
-  String get taskLanguageVietnamese => 'Vietnamese';
-
-  @override
-  String get tasksFilterTitle => 'Tasks Filter';
-
-  @override
-  String get timeByCategoryChartTitle => 'Time by Category';
-
-  @override
-  String get timeByCategoryChartTotalLabel => 'Total';
-
-  @override
-  String get viewMenuTitle => 'View';
-
-  @override
-  String get correctionExamplesSectionTitle => 'Checklist Correction Examples';
-
-  @override
-  String get correctionExamplesSectionDescription =>
-      'When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.';
-
-  @override
-  String get correctionExamplesEmpty =>
-      'No corrections captured yet. Edit a checklist item to add your first example.';
-
-  @override
-  String correctionExamplesWarning(int count, int max) {
-    return 'You have $count corrections. Only the most recent $max will be used in AI prompts. Consider deleting old or redundant examples.';
-  }
-
-  @override
-  String get correctionExampleCaptured => 'Correction saved for AI learning';
-
-  @override
-  String correctionExamplePending(int seconds) {
-    return 'Saving correction in ${seconds}s...';
-  }
-
-  @override
-  String get correctionExampleCancel => 'CANCEL';
-
-  @override
-  String get syncRoomDiscoveryTitle => 'Find Existing Sync Room';
-
-  @override
-  String get syncDiscoverRoomsButton => 'Discover Existing Rooms';
-
-  @override
-  String get syncDiscoveringRooms => 'Discovering sync rooms...';
-
-  @override
-  String get syncNoRoomsFound =>
-      'No existing sync rooms found.\nYou can create a new room to start syncing.';
-
-  @override
-  String get syncCreateNewRoom => 'Create New Room';
-
-  @override
-  String get syncSelectRoom => 'Select a Sync Room';
-
-  @override
-  String get syncSelectRoomDescription =>
-      'We found existing sync rooms. Select one to join, or create a new room.';
-
-  @override
-  String get syncCreateNewRoomInstead => 'Create New Room Instead';
-
-  @override
-  String get syncDiscoveryError => 'Failed to discover rooms';
-
-  @override
-  String get syncRetry => 'Retry';
-
-  @override
-  String get syncSkip => 'Skip';
-
-  @override
-  String get syncRoomUnnamed => 'Unnamed Room';
-
-  @override
-  String get syncRoomCreatedUnknown => 'Unknown';
-
-  @override
-  String get syncRoomVerified => 'Verified';
-
-  @override
-  String get syncRoomHasContent => 'Has Content';
-
-  @override
-  String get syncInviteErrorNetwork =>
-      'Network error. Please check your connection and try again.';
-
-  @override
-  String get syncInviteErrorUserNotFound =>
-      'User not found. Please verify the scanned code is correct.';
-
-  @override
-  String get syncInviteErrorForbidden =>
-      'Permission denied. You may not have access to invite this user.';
-
-  @override
-  String get syncInviteErrorRateLimited =>
-      'Too many requests. Please wait a moment and try again.';
-
-  @override
-  String get syncInviteErrorUnknown =>
-      'Failed to send invite. Please try again later.';
-
-  @override
-  String get logsSearchHint => 'Search all logs…';
-
-  @override
-  String get celebrationTapToContinue => 'Tap to continue';
+  String get aiSetupWizardCreatesOptimized =>
+      'Creates optimised models, prompts, and a test category';
 }
