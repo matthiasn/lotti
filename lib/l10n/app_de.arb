@@ -665,7 +665,7 @@
       }
     }
   },
-  "backfillManualTitle": "Manueller Nachfüllung",
+  "backfillManualTitle": "Manuelle Nachfüllung",
   "backfillManualDescription": "Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutzen Sie dies zur Wiederherstellung älterer Synchronisierungslücken.",
   "backfillManualTrigger": "Fehlende Einträge anfordern",
   "backfillManualProcessing": "Verarbeitung...",
