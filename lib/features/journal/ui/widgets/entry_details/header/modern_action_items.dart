@@ -693,7 +693,7 @@ class ModernRateSessionItem extends ConsumerWidget {
       iconColor: hasRating ? starredGold : null,
       onTap: () {
         Navigator.of(context).pop();
-        SessionRatingModal.show(context, entryId);
+        RatingModal.show(context, entryId);
       },
     );
   }

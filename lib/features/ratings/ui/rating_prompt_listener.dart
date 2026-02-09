@@ -4,7 +4,7 @@ import 'package:lotti/features/ratings/state/rating_prompt_controller.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 
 /// Listens to [RatingPromptController] and shows the rating modal
-/// when a time entry ID becomes available.
+/// when a rating prompt becomes available.
 ///
 /// Place this widget high in the widget tree (e.g., in the app scaffold)
 /// so it can show the modal regardless of the current navigation state.
@@ -18,11 +18,12 @@ class RatingPromptListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<String?>(ratingPromptControllerProvider, (previous, next) {
+    ref.listen<RatingPrompt?>(ratingPromptControllerProvider, (previous, next) {
       if (next != null && next != previous) {
-        SessionRatingModal.show(
+        RatingModal.show(
           context,
-          next,
+          next.targetId,
+          catalogId: next.catalogId,
           onDismissed: () {
             ref.read(ratingPromptControllerProvider.notifier).dismiss();
           },

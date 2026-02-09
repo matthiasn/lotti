@@ -3,26 +3,34 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/rating_question.dart';
+import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Modal bottom sheet for rating a work session.
+/// Modal bottom sheet for rating any entity using a catalog-driven
+/// question set.
 ///
-/// Presents 4 dimensions: Productivity, Energy, Focus, and Challenge-Skill.
-/// The first three use a continuous tap-bar (10 visual ticks, stores exact
-/// position as 0.0-1.0). The last uses 3 categorical buttons.
-class SessionRatingModal extends ConsumerStatefulWidget {
-  const SessionRatingModal({
+/// Resolves the [catalogId] against [ratingCatalogRegistry] to determine
+/// which questions to show. If the catalog is unknown (e.g. received via
+/// sync from a newer client), the modal renders stored dimensions in
+/// read-only mode without a save button.
+class RatingModal extends ConsumerStatefulWidget {
+  const RatingModal({
     required this.targetId,
+    this.catalogId = 'session',
     super.key,
   });
 
   final String targetId;
+  final String catalogId;
 
   static Future<void> show(
     BuildContext context,
     String targetId, {
+    String catalogId = 'session',
     VoidCallback? onDismissed,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -31,19 +39,19 @@ class SessionRatingModal extends ConsumerStatefulWidget {
       isScrollControlled: true,
       barrierColor: Colors.black54,
       backgroundColor: colorScheme.surfaceContainerHigh,
-      builder: (context) => SessionRatingModal(targetId: targetId),
+      builder: (context) => RatingModal(
+        targetId: targetId,
+        catalogId: catalogId,
+      ),
     ).whenComplete(() => onDismissed?.call());
   }
 
   @override
-  ConsumerState<SessionRatingModal> createState() => _SessionRatingModalState();
+  ConsumerState<RatingModal> createState() => _RatingModalState();
 }
 
-class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
-  double? _productivity;
-  double? _energy;
-  double? _focus;
-  double? _challengeSkill;
+class _RatingModalState extends ConsumerState<RatingModal> {
+  final Map<String, double?> _answers = {};
   late TextEditingController _noteController;
   bool _isSubmitting = false;
   bool _didPrePopulate = false;
@@ -63,32 +71,38 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
   void _prePopulate(JournalEntity? existing) {
     if (_didPrePopulate || existing is! RatingEntry) return;
     _didPrePopulate = true;
-    _productivity = existing.data.dimensionValue('productivity');
-    _energy = existing.data.dimensionValue('energy');
-    _focus = existing.data.dimensionValue('focus');
-    _challengeSkill = existing.data.dimensionValue('challenge_skill');
+    for (final dim in existing.data.dimensions) {
+      _answers[dim.key] = dim.value;
+    }
     if (existing.data.note != null) {
       _noteController.text = existing.data.note!;
     }
   }
 
-  bool get _canSubmit =>
-      _productivity != null &&
-      _energy != null &&
-      _focus != null &&
-      _challengeSkill != null;
+  bool _canSubmit(int questionCount) {
+    if (questionCount == 0) return false;
+    return _answers.values.where((v) => v != null).length == questionCount;
+  }
 
   Future<void> _submit() async {
-    if (!_canSubmit || _isSubmitting) return;
+    final messages = context.messages;
+    final catalog = ratingCatalogRegistry[widget.catalogId]?.call(messages);
+    if (catalog == null || _isSubmitting) return;
+    if (!_canSubmit(catalog.length)) return;
+
     setState(() => _isSubmitting = true);
 
     try {
-      final dimensions = [
-        RatingDimension(key: 'productivity', value: _productivity!),
-        RatingDimension(key: 'energy', value: _energy!),
-        RatingDimension(key: 'focus', value: _focus!),
-        RatingDimension(key: 'challenge_skill', value: _challengeSkill!),
-      ];
+      final dimensions = catalog.map((question) {
+        return RatingDimension(
+          key: question.key,
+          value: _answers[question.key]!,
+          question: question.question,
+          description: question.description,
+          inputType: question.inputType,
+          optionLabels: question.options?.map((o) => o.label).toList(),
+        );
+      }).toList();
 
       final note = _noteController.text.trim().isEmpty
           ? null
@@ -96,7 +110,10 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
       final result = await ref
           .read(
-            ratingControllerProvider(targetId: widget.targetId).notifier,
+            ratingControllerProvider(
+              targetId: widget.targetId,
+              catalogId: widget.catalogId,
+            ).notifier,
           )
           .submitRating(dimensions, note: note);
 
@@ -121,16 +138,33 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
     }
   }
 
-  void _skip() {
+  void _close() {
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     ref
-        .watch(ratingControllerProvider(targetId: widget.targetId))
+        .watch(ratingControllerProvider(
+          targetId: widget.targetId,
+          catalogId: widget.catalogId,
+        ))
         .whenData(_prePopulate);
 
+    final messages = context.messages;
+    final catalog = ratingCatalogRegistry[widget.catalogId]?.call(messages);
+
+    if (catalog == null) {
+      return _buildReadOnlyView(context);
+    }
+
+    return _buildEditableView(context, catalog);
+  }
+
+  Widget _buildEditableView(
+    BuildContext context,
+    List<RatingQuestion> catalog,
+  ) {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -141,21 +175,8 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            _dragHandle(context),
             const SizedBox(height: AppTheme.spacingLarge),
-
-            // Title
             Text(
               context.messages.sessionRatingTitle,
               style: context.textTheme.titleLarge?.copyWith(
@@ -164,36 +185,22 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
             ),
             const SizedBox(height: 24),
 
-            // Productivity
-            _RatingRow(
-              label: context.messages.sessionRatingProductivityQuestion,
-              value: _productivity,
-              onChanged: (v) => setState(() => _productivity = v),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Energy
-            _RatingRow(
-              label: context.messages.sessionRatingEnergyQuestion,
-              value: _energy,
-              onChanged: (v) => setState(() => _energy = v),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Focus
-            _RatingRow(
-              label: context.messages.sessionRatingFocusQuestion,
-              value: _focus,
-              onChanged: (v) => setState(() => _focus = v),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
-
-            // Challenge-Skill
-            _ChallengeSkillRow(
-              value: _challengeSkill,
-              onChanged: (v) => setState(() => _challengeSkill = v),
-            ),
-            const SizedBox(height: AppTheme.spacingLarge),
+            // Dynamic questions from catalog
+            for (final question in catalog) ...[
+              if (question.inputType == 'segmented' && question.options != null)
+                RatingSegmentedInput(
+                  label: question.question,
+                  segments: [
+                    for (final opt in question.options!)
+                      (label: opt.label, value: opt.value),
+                  ],
+                  value: _answers[question.key],
+                  onChanged: (v) => setState(() => _answers[question.key] = v),
+                )
+              else
+                _buildTapBarRow(question),
+              const SizedBox(height: AppTheme.spacingLarge),
+            ],
 
             // Note field
             TextField(
@@ -218,14 +225,16 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _skip,
+                    onPressed: _close,
                     child: Text(context.messages.sessionRatingSkipButton),
                   ),
                 ),
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _canSubmit && !_isSubmitting ? _submit : null,
+                    onPressed: _canSubmit(catalog.length) && !_isSubmitting
+                        ? _submit
+                        : null,
                     child: _isSubmitting
                         ? const SizedBox(
                             width: 16,
@@ -243,219 +252,185 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
       ),
     );
   }
-}
 
-/// A row with a label and a continuous tap-bar (10 visual ticks).
-///
-/// Stores the exact tap position as a normalized double 0.0-1.0.
-class _RatingRow extends StatelessWidget {
-  const _RatingRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final double? value;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildTapBarRow(RatingQuestion question) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          question.question,
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppTheme.spacingSmall),
-        _TapBar(
-          value: value,
-          onChanged: onChanged,
+        RatingTapBar(
+          value: _answers[question.key],
+          onChanged: (v) => setState(() => _answers[question.key] = v),
         ),
       ],
     );
   }
-}
 
-/// A continuous tap-bar with 10 visual tick marks.
-///
-/// Tapping stores the exact horizontal position as 0.0-1.0.
-/// No snapping - a tap between tick 3 and 4 stores ~0.35.
-class _TapBar extends StatelessWidget {
-  const _TapBar({
-    required this.value,
-    required this.onChanged,
-  });
+  /// Renders stored dimensions in read-only mode when the catalog is
+  /// unknown. No save button — only a close button.
+  Widget _buildReadOnlyView(BuildContext context) {
+    final existing = ref
+        .watch(ratingControllerProvider(
+          targetId: widget.targetId,
+          catalogId: widget.catalogId,
+        ))
+        .value;
 
-  final double? value;
-  final ValueChanged<double> onChanged;
+    final dimensions = existing is RatingEntry
+        ? existing.data.dimensions
+        : <RatingDimension>[];
 
-  static const int _tickCount = 10;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        return GestureDetector(
-          onTapDown: (details) {
-            final normalized =
-                (details.localPosition.dx / width).clamp(0.0, 1.0);
-            onChanged(normalized);
-            HapticFeedback.selectionClick();
-          },
-          onHorizontalDragUpdate: (details) {
-            final normalized =
-                (details.localPosition.dx / width).clamp(0.0, 1.0);
-            onChanged(normalized);
-          },
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            ),
-            child: CustomPaint(
-              size: Size(width, 40),
-              painter: _TapBarPainter(
-                value: value,
-                tickCount: _tickCount,
-                activeColor: colorScheme.primary,
-                inactiveColor:
-                    colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                fillColor: colorScheme.primary.withValues(alpha: 0.2),
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _dragHandle(context),
+            const SizedBox(height: AppTheme.spacingLarge),
+            Text(
+              widget.catalogId,
+              style: context.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 24),
+
+            // Show each stored dimension read-only
+            for (final dim in dimensions) ...[
+              _ReadOnlyDimensionRow(dimension: dim),
+              const SizedBox(height: AppTheme.spacingSmall),
+            ],
+
+            // Note
+            if (existing is RatingEntry &&
+                existing.data.note != null &&
+                existing.data.note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+                child: Text(
+                  existing.data.note!,
+                  style: context.textTheme.bodyMedium,
+                ),
+              ),
+
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _close,
+                child: Text(context.messages.sessionRatingSkipButton),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingSmall),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dragHandle(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
     );
   }
 }
 
-class _TapBarPainter extends CustomPainter {
-  _TapBarPainter({
-    required this.value,
-    required this.tickCount,
-    required this.activeColor,
-    required this.inactiveColor,
-    required this.fillColor,
-  });
+/// A single dimension displayed read-only with its stored label and value.
+class _ReadOnlyDimensionRow extends StatelessWidget {
+  const _ReadOnlyDimensionRow({required this.dimension});
 
-  final double? value;
-  final int tickCount;
-  final Color activeColor;
-  final Color inactiveColor;
-  final Color fillColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final tickSpacing = size.width / tickCount;
-
-    // Draw fill up to value
-    if (value != null) {
-      final fillWidth = value! * size.width;
-      final fillPaint = Paint()..color = fillColor;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, 0, fillWidth, size.height),
-          const Radius.circular(8),
-        ),
-        fillPaint,
-      );
-    }
-
-    // Draw tick marks
-    final tickPaint = Paint()
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-
-    for (var i = 1; i < tickCount; i++) {
-      final x = i * tickSpacing;
-      final isActive = value != null && (i / tickCount) <= value!;
-      tickPaint.color = isActive ? activeColor : inactiveColor;
-      canvas.drawLine(
-        Offset(x, size.height * 0.25),
-        Offset(x, size.height * 0.75),
-        tickPaint,
-      );
-    }
-
-    // Draw value indicator
-    if (value != null) {
-      final indicatorX = value! * size.width;
-      final indicatorPaint = Paint()..color = activeColor;
-      canvas.drawCircle(
-        Offset(indicatorX, size.height / 2),
-        6,
-        indicatorPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_TapBarPainter oldDelegate) =>
-      value != oldDelegate.value ||
-      activeColor != oldDelegate.activeColor ||
-      inactiveColor != oldDelegate.inactiveColor ||
-      fillColor != oldDelegate.fillColor;
-}
-
-/// Challenge-Skill dimension with 3 categorical buttons.
-class _ChallengeSkillRow extends StatelessWidget {
-  const _ChallengeSkillRow({
-    required this.value,
-    required this.onChanged,
-  });
-
-  final double? value;
-  final ValueChanged<double?> onChanged;
+  final RatingDimension dimension;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.sessionRatingDifficultyLabel,
-          style: context.textTheme.bodyMedium?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppTheme.spacingSmall),
-        SegmentedButton<double>(
-          segments: [
-            ButtonSegment(
-              value: 0,
-              label: Text(context.messages.sessionRatingChallengeTooEasy),
+    final label = dimension.question ?? dimension.key;
+    final colorScheme = context.colorScheme;
+
+    // Segmented: show matching option label as text
+    if (dimension.inputType == 'segmented' && dimension.optionLabels != null) {
+      final optionText = _findOptionLabel(
+        dimension.value,
+        dimension.optionLabels!,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-            ButtonSegment(
-              value: 0.5,
-              label: Text(context.messages.sessionRatingChallengeJustRight),
-            ),
-            ButtonSegment(
-              value: 1,
-              label: Text(context.messages.sessionRatingChallengeTooHard),
+            Text(
+              optionText,
+              style: context.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
-          selected: value != null ? {value!} : {},
-          onSelectionChanged: (selected) {
-            if (selected.isEmpty) {
-              onChanged(null);
-            } else {
-              onChanged(selected.first);
-              HapticFeedback.selectionClick();
-            }
-          },
-          emptySelectionAllowed: true,
         ),
-      ],
+      );
+    }
+
+    // Default: progress bar
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: dimension.value.clamp(0.0, 1.0),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+/// Maps a normalized value to the closest option label, assuming evenly
+/// spaced values across 0.0-1.0 (e.g. 3 options → 0.0, 0.5, 1.0).
+String _findOptionLabel(double value, List<String> labels) {
+  final count = labels.length;
+  for (var i = 0; i < count; i++) {
+    final expectedValue = count == 1 ? 0.5 : i / (count - 1);
+    if ((expectedValue - value).abs() < 0.01) {
+      return labels[i];
+    }
+  }
+  return '${(value * 100).round()}%';
 }

@@ -16,7 +16,11 @@ final class RatingControllerProvider
     extends $AsyncNotifierProvider<RatingController, JournalEntity?> {
   RatingControllerProvider._(
       {required RatingControllerFamily super.from,
-      required String super.argument})
+      required ({
+        String targetId,
+        String catalogId,
+      })
+          super.argument})
       : super(
           retry: null,
           name: r'ratingControllerProvider',
@@ -32,7 +36,7 @@ final class RatingControllerProvider
   String toString() {
     return r'ratingControllerProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -50,12 +54,19 @@ final class RatingControllerProvider
   }
 }
 
-String _$ratingControllerHash() => r'1692aa3d0e54da0c24f265e301c3d5659f64c175';
+String _$ratingControllerHash() => r'928761becac741d5d98985803d506e042919acdf';
 
 final class RatingControllerFamily extends $Family
     with
-        $ClassFamilyOverride<RatingController, AsyncValue<JournalEntity?>,
-            JournalEntity?, FutureOr<JournalEntity?>, String> {
+        $ClassFamilyOverride<
+            RatingController,
+            AsyncValue<JournalEntity?>,
+            JournalEntity?,
+            FutureOr<JournalEntity?>,
+            ({
+              String targetId,
+              String catalogId,
+            })> {
   RatingControllerFamily._()
       : super(
           retry: null,
@@ -67,19 +78,28 @@ final class RatingControllerFamily extends $Family
 
   RatingControllerProvider call({
     required String targetId,
+    String catalogId = 'session',
   }) =>
-      RatingControllerProvider._(argument: targetId, from: this);
+      RatingControllerProvider._(argument: (
+        targetId: targetId,
+        catalogId: catalogId,
+      ), from: this);
 
   @override
   String toString() => r'ratingControllerProvider';
 }
 
 abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
-  late final _$args = ref.$arg as String;
-  String get targetId => _$args;
+  late final _$args = ref.$arg as ({
+    String targetId,
+    String catalogId,
+  });
+  String get targetId => _$args.targetId;
+  String get catalogId => _$args.catalogId;
 
   FutureOr<JournalEntity?> build({
     required String targetId,
+    String catalogId = 'session',
   });
   @$mustCallSuper
   @override
@@ -93,7 +113,8 @@ abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
     element.handleCreate(
         ref,
         () => build(
-              targetId: _$args,
+              targetId: _$args.targetId,
+              catalogId: _$args.catalogId,
             ));
   }
 }

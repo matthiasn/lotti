@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.854] - 2026-02-10
+### Changed
+- Flexible Ratings Model: Session ratings are now driven by a catalog registry instead of hardcoded questions. Each rating dimension snapshots its question metadata (question text, input type, option labels) at save time, making stored ratings fully self-describing. Unknown catalogs (e.g. received via sync from a newer client) render in read-only mode with a graceful fallback chain: stored metadata, catalog lookup, then dimension key.
+
 ## [0.9.852] - 2026-02-09
 ### Fixed
 - Calendar Navigation: Tapping a time recording in the calendar view could navigate to a session rating instead of the parent task. The calendar link resolver now filters out RatingLinks, so only the Task-to-TimeRecording relationship is used for navigation.

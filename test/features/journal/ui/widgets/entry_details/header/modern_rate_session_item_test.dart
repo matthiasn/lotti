@@ -14,7 +14,10 @@ import '../../../../../../test_helper.dart';
 /// Fake RatingController that returns null (no existing rating).
 class _FakeNoRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({required String targetId}) async {
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
     state = const AsyncData(null);
     return null;
   }
@@ -23,7 +26,10 @@ class _FakeNoRatingController extends RatingController {
 /// Fake RatingController that returns an existing rating.
 class _FakeHasRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({required String targetId}) async {
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
     final testDate = DateTime(2025, 12, 31, 12);
     final entity = RatingEntry(
       meta: Metadata(

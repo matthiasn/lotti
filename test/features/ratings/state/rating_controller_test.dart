@@ -83,6 +83,37 @@ void main() {
       container.dispose();
     });
 
+    test('build passes catalogId to repository', () async {
+      when(
+        () => mockRepository.getRatingForTargetEntry(
+          testTimeEntryId,
+          catalogId: 'day_morning',
+        ),
+      ).thenAnswer((_) async => null);
+
+      final container = ProviderContainer(
+        overrides: [
+          ratingRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+
+      await container.read(
+        ratingControllerProvider(
+          targetId: testTimeEntryId,
+          catalogId: 'day_morning',
+        ).future,
+      );
+
+      verify(
+        () => mockRepository.getRatingForTargetEntry(
+          testTimeEntryId,
+          catalogId: 'day_morning',
+        ),
+      ).called(1);
+
+      container.dispose();
+    });
+
     test('submitRating calls repository and updates state', () async {
       when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
           .thenAnswer((_) async => null);

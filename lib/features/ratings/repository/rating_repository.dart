@@ -28,16 +28,20 @@ class RatingRepository {
 
   /// Creates or updates a rating for a target entry.
   ///
-  /// If a rating already exists for [targetId], updates it.
-  /// Otherwise, creates a new [RatingEntry] and links it via [RatingLink].
+  /// If a rating already exists for [targetId] with the given [catalogId],
+  /// updates it. Otherwise, creates a new [RatingEntry] and links it via
+  /// [RatingLink].
   Future<RatingEntry?> createOrUpdateRating({
     required String targetId,
     required List<RatingDimension> dimensions,
+    String catalogId = 'session',
     String? note,
   }) async {
     try {
-      final existing =
-          await _journalDb.getRatingForTimeEntry(targetId);
+      final existing = await _journalDb.getRatingForTimeEntry(
+        targetId,
+        catalogId: catalogId,
+      );
 
       if (existing != null) {
         return _updateRating(
@@ -53,6 +57,7 @@ class RatingRepository {
       return _createRating(
         targetId: targetId,
         dimensions: dimensions,
+        catalogId: catalogId,
         note: note,
         categoryId: targetEntry?.meta.categoryId,
       );
@@ -67,9 +72,12 @@ class RatingRepository {
     }
   }
 
-  /// Look up existing rating for a target entry.
-  Future<RatingEntry?> getRatingForTargetEntry(String targetId) async {
-    return _journalDb.getRatingForTimeEntry(targetId);
+  /// Look up existing rating for a target entry with the given [catalogId].
+  Future<RatingEntry?> getRatingForTargetEntry(
+    String targetId, {
+    String catalogId = 'session',
+  }) async {
+    return _journalDb.getRatingForTimeEntry(targetId, catalogId: catalogId);
   }
 
   Future<RatingEntry?> _createRating({

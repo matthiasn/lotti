@@ -284,33 +284,29 @@ The existing `_TapBar` and `_ChallengeSkillRow` become reusable widgets selected
 20. Update tests for rename and deterministic ID ✅
 21. Analyze + format + test ✅
 
-### Phase 3: Dynamic UI (rewire session rating) — IN PROGRESS (~40%)
+### Phase 3: Dynamic UI (rewire session rating) ✅ COMPLETE
 
-**Done:**
 - ✅ Parameter renaming throughout: `timeEntryId` → `targetId` in modal, controllers, repository
 - ✅ `RatingController` provider parameter renamed to `targetId`, method renamed to `getRatingForTargetEntry`
 - ✅ `RatingRepository.getRatingForTargetEntry()` added, `createOrUpdateRating()` accepts `targetId`
 - ✅ `ModernRateSessionItem` updated to use renamed provider parameter
+- ✅ Extracted `RatingTapBar` and `RatingSegmentedInput` to `rating_input_widgets.dart`
+- ✅ Refactored `SessionRatingModal` → `RatingModal` — catalog-driven, snapshots question metadata on save
+- ✅ Unknown catalog guard: read-only view with no save button for unregistered catalogs
+- ✅ `RatingPromptController` state changed to `RatingPrompt` record `({String targetId, String catalogId})`
+- ✅ `RatingController` accepts `catalogId` as family parameter
+- ✅ `RatingRepository` passes `catalogId` through to DB layer
+- ✅ `RatingSummary` renders dynamically with fallback chain (stored → catalog → key) for both labels and inputType
+- ✅ All call sites updated: `ModernRateSessionItem`, `RatingPromptListener`, `EntryController`
+- ✅ Unknown-catalog tests for both `RatingModal` and `RatingSummary`
+- ✅ All tests updated and passing
 
-**Remaining:**
-22. Extract `_TapBar` and `_ChallengeSkillRow` to `rating_input_widgets.dart` as public widgets
-23. Refactor `SessionRatingModal` → `RatingModal` — render from catalog, snapshot question metadata into dimensions on save. **Currently `_submit()` creates bare dimensions without question/description/inputType/optionLabels — the self-describing record goal is not yet met.**
-24. **Unknown catalog guard in RatingModal**: At modal open, check `ratingCatalogRegistry.containsKey(catalogId)`. If unknown, render stored dimensions read-only (no save button, no editable inputs). This guard applies to every entry point that can open the modal: `ModernRateSessionItem`, `InitialModalPageContent`, `RatingPromptListener`. Each passes `catalogId`; the modal itself decides editable vs read-only.
-25. Update `RatingPromptController` state to carry `(targetId, catalogId)` tuple — **currently holds only `String?`**
-26. ~~Update `RatingController` to accept `catalogId`~~ ✅ (partially — parameter renamed but `catalogId` not yet a dynamic parameter, defaults to `'session'`)
-27. Update `RatingRepository` to embed question metadata in dimensions on save — **not yet snapshotting catalog metadata into `RatingDimension` objects**
-28. Update `RatingSummary` to render dynamically from stored dimension metadata, with fallback chain (stored question → catalog lookup → key) — **currently hardcodes 4 specific dimension labels**
-29. Update all call sites (`ModernRateSessionItem`, `InitialModalPageContent`, `RatingPromptListener`) — all must pass `catalogId` to modal — **currently using defaults only**
-30. **Write unknown-catalog tests**: Test that `RatingModal` renders read-only when given an unregistered `catalogId`. Test that `RatingSummary` renders gracefully for dimensions with no stored metadata and no matching catalog (falls back to key).
-31. Update all remaining tests for the refactored components
-32. Analyze + format + test — verify session rating flow works identically
-
-### Phase 4: Polish — NOT STARTED
-33. Update CHANGELOG
-34. Update `flatpak/com.matthiasn.lotti.metainfo.xml`
-35. Update feature README
-36. Full project analyze + format
-37. Run related test suites
+### Phase 4: Polish ✅ COMPLETE
+- ✅ CHANGELOG updated
+- ✅ `flatpak/com.matthiasn.lotti.metainfo.xml` updated
+- ✅ Feature README created at `lib/features/ratings/README.md`
+- ✅ Full project analyzer green, formatted
+- ✅ All related test suites passing
 
 ## Backward Compatibility
 

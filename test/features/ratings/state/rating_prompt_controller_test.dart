@@ -17,22 +17,35 @@ void main() {
       expect(state, isNull);
     });
 
-    test('requestRating sets state to the time entry ID', () {
+    test('requestRating sets state to RatingPrompt record', () {
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-123');
+          .requestRating(targetId: 'entry-123');
 
       final state = container.read(ratingPromptControllerProvider);
-      expect(state, equals('entry-123'));
+      expect(state, isNotNull);
+      expect(state!.targetId, equals('entry-123'));
+      expect(state.catalogId, equals('session'));
+    });
+
+    test('requestRating with custom catalogId', () {
+      container
+          .read(ratingPromptControllerProvider.notifier)
+          .requestRating(targetId: 'entry-123', catalogId: 'day_morning');
+
+      final state = container.read(ratingPromptControllerProvider);
+      expect(state, isNotNull);
+      expect(state!.targetId, equals('entry-123'));
+      expect(state.catalogId, equals('day_morning'));
     });
 
     test('dismiss sets state back to null', () {
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-456');
+          .requestRating(targetId: 'entry-456');
       expect(
         container.read(ratingPromptControllerProvider),
-        equals('entry-456'),
+        isNotNull,
       );
 
       container.read(ratingPromptControllerProvider.notifier).dismiss();
@@ -42,13 +55,19 @@ void main() {
     test('requesting a different entry replaces the current one', () {
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-1');
-      expect(container.read(ratingPromptControllerProvider), equals('entry-1'));
+          .requestRating(targetId: 'entry-1');
+      expect(
+        container.read(ratingPromptControllerProvider)?.targetId,
+        equals('entry-1'),
+      );
 
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-2');
-      expect(container.read(ratingPromptControllerProvider), equals('entry-2'));
+          .requestRating(targetId: 'entry-2');
+      expect(
+        container.read(ratingPromptControllerProvider)?.targetId,
+        equals('entry-2'),
+      );
     });
 
     test('dismiss when already null is a no-op', () {
