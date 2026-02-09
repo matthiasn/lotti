@@ -306,6 +306,7 @@ void main() {
       );
       expect(productivity.inputType, equals('tapBar'));
       expect(productivity.optionLabels, isNull);
+      expect(productivity.optionValues, isNull);
 
       // Verify specific metadata for challenge_skill (segmented type)
       final challengeSkill = captured.firstWhere(
@@ -314,6 +315,9 @@ void main() {
       expect(challengeSkill.inputType, equals('segmented'));
       expect(challengeSkill.optionLabels, isNotNull);
       expect(challengeSkill.optionLabels, hasLength(3));
+      expect(challengeSkill.optionValues, isNotNull);
+      expect(challengeSkill.optionValues, hasLength(3));
+      expect(challengeSkill.optionValues, equals([0.0, 0.5, 1.0]));
     });
 
     testWidgets('tapping all tap bars and challenge button enables Save',

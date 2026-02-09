@@ -408,5 +408,41 @@ void main() {
       expect(find.text('Ambiguous dimension'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
+
+    testWidgets('uses stored optionValues for non-linear scales',
+        (tester) async {
+      final entry = RatingEntry(
+        meta: Metadata(
+          id: 'rating-nonlinear',
+          createdAt: DateTime(2024, 6, 15),
+          updatedAt: DateTime(2024, 6, 15),
+          dateFrom: DateTime(2024, 6, 15),
+          dateTo: DateTime(2024, 6, 15),
+        ),
+        data: const RatingData(
+          targetId: 'time-entry-11',
+          catalogId: 'unknown_catalog',
+          dimensions: [
+            RatingDimension(
+              key: 'severity',
+              value: 0.2,
+              question: 'How severe?',
+              inputType: 'segmented',
+              // Non-linear scale: without optionValues, 0.2 would not match
+              // any evenly-spaced value [0.0, 0.5, 1.0] and fall back to "20%"
+              optionLabels: ['Mild', 'Moderate', 'Severe'],
+              optionValues: [0.0, 0.2, 1.0],
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject(entry: entry));
+      await tester.pumpAndSettle();
+
+      // With stored optionValues, 0.2 matches index 1 → "Moderate"
+      expect(find.text('Moderate'), findsOneWidget);
+      expect(find.text('How severe?'), findsOneWidget);
+    });
   });
 }

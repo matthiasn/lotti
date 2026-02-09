@@ -79,16 +79,16 @@ class _RatingModalState extends ConsumerState<RatingModal> {
     }
   }
 
-  bool _canSubmit(int questionCount) {
-    if (questionCount == 0) return false;
-    return _answers.values.where((v) => v != null).length == questionCount;
+  bool _canSubmit(List<RatingQuestion> catalog) {
+    if (catalog.isEmpty) return false;
+    return catalog.every((q) => _answers[q.key] != null);
   }
 
   Future<void> _submit() async {
     final messages = context.messages;
     final catalog = ratingCatalogRegistry[widget.catalogId]?.call(messages);
     if (catalog == null || _isSubmitting) return;
-    if (!_canSubmit(catalog.length)) return;
+    if (!_canSubmit(catalog)) return;
 
     setState(() => _isSubmitting = true);
 
@@ -101,6 +101,7 @@ class _RatingModalState extends ConsumerState<RatingModal> {
           description: question.description,
           inputType: question.inputType,
           optionLabels: question.options?.map((o) => o.label).toList(),
+          optionValues: question.options?.map((o) => o.value).toList(),
         );
       }).toList();
 
@@ -232,9 +233,8 @@ class _RatingModalState extends ConsumerState<RatingModal> {
                 const SizedBox(width: AppTheme.spacingMedium),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _canSubmit(catalog.length) && !_isSubmitting
-                        ? _submit
-                        : null,
+                    onPressed:
+                        _canSubmit(catalog) && !_isSubmitting ? _submit : null,
                     child: _isSubmitting
                         ? const SizedBox(
                             width: 16,
@@ -369,6 +369,7 @@ class _ReadOnlyDimensionRow extends StatelessWidget {
       final optionText = _findOptionLabel(
         dimension.value,
         dimension.optionLabels!,
+        values: dimension.optionValues,
       );
 
       return Padding(
@@ -422,12 +423,21 @@ class _ReadOnlyDimensionRow extends StatelessWidget {
   }
 }
 
-/// Maps a normalized value to the closest option label, assuming evenly
-/// spaced values across 0.0-1.0 (e.g. 3 options → 0.0, 0.5, 1.0).
-String _findOptionLabel(double value, List<String> labels) {
+/// Maps a normalized value to the closest option label.
+///
+/// When [values] is provided, uses the actual stored values for matching.
+/// Otherwise falls back to assuming evenly spaced values across 0.0-1.0
+/// (e.g. 3 options → 0.0, 0.5, 1.0) for old data without stored values.
+String _findOptionLabel(
+  double value,
+  List<String> labels, {
+  List<double>? values,
+}) {
   final count = labels.length;
   for (var i = 0; i < count; i++) {
-    final expectedValue = count == 1 ? 0.5 : i / (count - 1);
+    final expectedValue = values != null && i < values.length
+        ? values[i]
+        : (count == 1 ? 0.5 : i / (count - 1));
     if ((expectedValue - value).abs() < 0.01) {
       return labels[i];
     }

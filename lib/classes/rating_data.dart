@@ -70,6 +70,12 @@ abstract class RatingDimension with _$RatingDimension {
     /// "Just right", "Too challenging"]). Present only when
     /// [inputType] is 'segmented'.
     List<String>? optionLabels,
+
+    /// Normalized values corresponding to each entry in [optionLabels]
+    /// (e.g. [0.0, 0.5, 1.0]). Stored alongside labels so that
+    /// non-linear option scales reconstruct correctly. When null
+    /// (old data), consumers fall back to assuming evenly spaced values.
+    List<double>? optionValues,
   }) = _RatingDimension;
 
   factory RatingDimension.fromJson(Map<String, dynamic> json) =>

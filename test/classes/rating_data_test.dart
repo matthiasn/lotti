@@ -79,10 +79,13 @@ void main() {
             '0.0 = too easy, 0.5 = just right, 1.0 = too challenging.',
         inputType: 'segmented',
         optionLabels: ['Too easy', 'Just right', 'Too challenging'],
+        optionValues: [0.0, 0.5, 1.0],
       );
 
       expect(dim.optionLabels, hasLength(3));
       expect(dim.optionLabels, contains('Just right'));
+      expect(dim.optionValues, hasLength(3));
+      expect(dim.optionValues, equals([0.0, 0.5, 1.0]));
     });
 
     test('new optional fields default to null for backward compat', () {
@@ -92,6 +95,7 @@ void main() {
       expect(dim.description, isNull);
       expect(dim.inputType, isNull);
       expect(dim.optionLabels, isNull);
+      expect(dim.optionValues, isNull);
     });
 
     test('deserializes legacy JSON without new fields', () {
@@ -107,6 +111,7 @@ void main() {
       expect(dim.description, isNull);
       expect(dim.inputType, isNull);
       expect(dim.optionLabels, isNull);
+      expect(dim.optionValues, isNull);
     });
 
     test('JSON round-trip preserves self-describing fields', () {
@@ -143,6 +148,61 @@ void main() {
 
       expect(restored, equals(dim));
       expect(restored.optionLabels, hasLength(3));
+    });
+
+    test('JSON round-trip preserves optionValues', () {
+      const dim = RatingDimension(
+        key: 'severity',
+        value: 0.2,
+        question: 'How severe?',
+        inputType: 'segmented',
+        optionLabels: ['Mild', 'Moderate', 'Severe'],
+        optionValues: [0.0, 0.2, 1.0],
+      );
+
+      final jsonString = jsonEncode(dim.toJson());
+      final restored = RatingDimension.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(dim));
+      expect(restored.optionValues, equals([0.0, 0.2, 1.0]));
+    });
+
+    test('equality distinguishes optionValues', () {
+      const withValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+        optionValues: [0.0, 1.0],
+      );
+      const withoutValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+      );
+      const withDifferentValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+        optionValues: [0.0, 0.5],
+      );
+
+      expect(withValues, isNot(equals(withoutValues)));
+      expect(withValues, isNot(equals(withDifferentValues)));
+    });
+
+    test('deserializes JSON with optionLabels but without optionValues', () {
+      final json = <String, dynamic>{
+        'key': 'challenge_skill',
+        'value': 0.5,
+        'inputType': 'segmented',
+        'optionLabels': ['Too easy', 'Just right', 'Too challenging'],
+      };
+      final dim = RatingDimension.fromJson(json);
+
+      expect(dim.optionLabels, hasLength(3));
+      expect(dim.optionValues, isNull);
     });
   });
 

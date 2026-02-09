@@ -179,9 +179,13 @@ String? _resolveSegmentedLabel(
   required List<RatingQuestion>? catalog,
   required AppLocalizations messages,
 }) {
-  // Try stored option labels
+  // Try stored option labels (with stored values if available)
   if (dim.optionLabels != null && dim.optionLabels!.isNotEmpty) {
-    return _findOptionLabel(dim.value, dim.optionLabels!);
+    return _findOptionLabel(
+      dim.value,
+      dim.optionLabels!,
+      values: dim.optionValues,
+    );
   }
 
   // Try catalog lookup
@@ -200,12 +204,21 @@ String? _resolveSegmentedLabel(
   return null;
 }
 
-/// Maps a normalized value to the closest option label, assuming evenly
-/// spaced values across 0.0-1.0 (e.g. 3 options → 0.0, 0.5, 1.0).
-String _findOptionLabel(double value, List<String> labels) {
+/// Maps a normalized value to the closest option label.
+///
+/// When [values] is provided, uses the actual stored values for matching.
+/// Otherwise falls back to assuming evenly spaced values across 0.0-1.0
+/// (e.g. 3 options → 0.0, 0.5, 1.0) for old data without stored values.
+String _findOptionLabel(
+  double value,
+  List<String> labels, {
+  List<double>? values,
+}) {
   final count = labels.length;
   for (var i = 0; i < count; i++) {
-    final expectedValue = count == 1 ? 0.5 : i / (count - 1);
+    final expectedValue = values != null && i < values.length
+        ? values[i]
+        : (count == 1 ? 0.5 : i / (count - 1));
     if ((expectedValue - value).abs() < 0.01) {
       return labels[i];
     }

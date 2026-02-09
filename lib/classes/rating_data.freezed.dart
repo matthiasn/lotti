@@ -498,6 +498,12 @@ mixin _$RatingDimension {
   /// [inputType] is 'segmented'.
   List<String>? get optionLabels;
 
+  /// Normalized values corresponding to each entry in [optionLabels]
+  /// (e.g. [0.0, 0.5, 1.0]). Stored alongside labels so that
+  /// non-linear option scales reconstruct correctly. When null
+  /// (old data), consumers fall back to assuming evenly spaced values.
+  List<double>? get optionValues;
+
   /// Create a copy of RatingDimension
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -523,7 +529,9 @@ mixin _$RatingDimension {
             (identical(other.inputType, inputType) ||
                 other.inputType == inputType) &&
             const DeepCollectionEquality()
-                .equals(other.optionLabels, optionLabels));
+                .equals(other.optionLabels, optionLabels) &&
+            const DeepCollectionEquality()
+                .equals(other.optionValues, optionValues));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -535,11 +543,12 @@ mixin _$RatingDimension {
       question,
       description,
       inputType,
-      const DeepCollectionEquality().hash(optionLabels));
+      const DeepCollectionEquality().hash(optionLabels),
+      const DeepCollectionEquality().hash(optionValues));
 
   @override
   String toString() {
-    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels)';
+    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels, optionValues: $optionValues)';
   }
 }
 
@@ -555,7 +564,8 @@ abstract mixin class $RatingDimensionCopyWith<$Res> {
       String? question,
       String? description,
       String? inputType,
-      List<String>? optionLabels});
+      List<String>? optionLabels,
+      List<double>? optionValues});
 }
 
 /// @nodoc
@@ -577,6 +587,7 @@ class _$RatingDimensionCopyWithImpl<$Res>
     Object? description = freezed,
     Object? inputType = freezed,
     Object? optionLabels = freezed,
+    Object? optionValues = freezed,
   }) {
     return _then(_self.copyWith(
       key: null == key
@@ -603,6 +614,10 @@ class _$RatingDimensionCopyWithImpl<$Res>
           ? _self.optionLabels
           : optionLabels // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      optionValues: freezed == optionValues
+          ? _self.optionValues
+          : optionValues // ignore: cast_nullable_to_non_nullable
+              as List<double>?,
     ));
   }
 }
@@ -700,16 +715,28 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String key, double value, String? question,
-            String? description, String? inputType, List<String>? optionLabels)?
+    TResult Function(
+            String key,
+            double value,
+            String? question,
+            String? description,
+            String? inputType,
+            List<String>? optionLabels,
+            List<double>? optionValues)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _RatingDimension() when $default != null:
-        return $default(_that.key, _that.value, _that.question,
-            _that.description, _that.inputType, _that.optionLabels);
+        return $default(
+            _that.key,
+            _that.value,
+            _that.question,
+            _that.description,
+            _that.inputType,
+            _that.optionLabels,
+            _that.optionValues);
       case _:
         return orElse();
     }
@@ -730,15 +757,27 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String key, double value, String? question,
-            String? description, String? inputType, List<String>? optionLabels)
+    TResult Function(
+            String key,
+            double value,
+            String? question,
+            String? description,
+            String? inputType,
+            List<String>? optionLabels,
+            List<double>? optionValues)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingDimension():
-        return $default(_that.key, _that.value, _that.question,
-            _that.description, _that.inputType, _that.optionLabels);
+        return $default(
+            _that.key,
+            _that.value,
+            _that.question,
+            _that.description,
+            _that.inputType,
+            _that.optionLabels,
+            _that.optionValues);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -758,15 +797,27 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String key, double value, String? question,
-            String? description, String? inputType, List<String>? optionLabels)?
+    TResult? Function(
+            String key,
+            double value,
+            String? question,
+            String? description,
+            String? inputType,
+            List<String>? optionLabels,
+            List<double>? optionValues)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingDimension() when $default != null:
-        return $default(_that.key, _that.value, _that.question,
-            _that.description, _that.inputType, _that.optionLabels);
+        return $default(
+            _that.key,
+            _that.value,
+            _that.question,
+            _that.description,
+            _that.inputType,
+            _that.optionLabels,
+            _that.optionValues);
       case _:
         return null;
     }
@@ -782,8 +833,10 @@ class _RatingDimension implements RatingDimension {
       this.question,
       this.description,
       this.inputType,
-      final List<String>? optionLabels})
-      : _optionLabels = optionLabels;
+      final List<String>? optionLabels,
+      final List<double>? optionValues})
+      : _optionLabels = optionLabels,
+        _optionValues = optionValues;
   factory _RatingDimension.fromJson(Map<String, dynamic> json) =>
       _$RatingDimensionFromJson(json);
 
@@ -831,6 +884,25 @@ class _RatingDimension implements RatingDimension {
     return EqualUnmodifiableListView(value);
   }
 
+  /// Normalized values corresponding to each entry in [optionLabels]
+  /// (e.g. [0.0, 0.5, 1.0]). Stored alongside labels so that
+  /// non-linear option scales reconstruct correctly. When null
+  /// (old data), consumers fall back to assuming evenly spaced values.
+  final List<double>? _optionValues;
+
+  /// Normalized values corresponding to each entry in [optionLabels]
+  /// (e.g. [0.0, 0.5, 1.0]). Stored alongside labels so that
+  /// non-linear option scales reconstruct correctly. When null
+  /// (old data), consumers fall back to assuming evenly spaced values.
+  @override
+  List<double>? get optionValues {
+    final value = _optionValues;
+    if (value == null) return null;
+    if (_optionValues is EqualUnmodifiableListView) return _optionValues;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   /// Create a copy of RatingDimension
   /// with the given fields replaced by the non-null parameter values.
   @override
@@ -860,7 +932,9 @@ class _RatingDimension implements RatingDimension {
             (identical(other.inputType, inputType) ||
                 other.inputType == inputType) &&
             const DeepCollectionEquality()
-                .equals(other._optionLabels, _optionLabels));
+                .equals(other._optionLabels, _optionLabels) &&
+            const DeepCollectionEquality()
+                .equals(other._optionValues, _optionValues));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -872,11 +946,12 @@ class _RatingDimension implements RatingDimension {
       question,
       description,
       inputType,
-      const DeepCollectionEquality().hash(_optionLabels));
+      const DeepCollectionEquality().hash(_optionLabels),
+      const DeepCollectionEquality().hash(_optionValues));
 
   @override
   String toString() {
-    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels)';
+    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels, optionValues: $optionValues)';
   }
 }
 
@@ -894,7 +969,8 @@ abstract mixin class _$RatingDimensionCopyWith<$Res>
       String? question,
       String? description,
       String? inputType,
-      List<String>? optionLabels});
+      List<String>? optionLabels,
+      List<double>? optionValues});
 }
 
 /// @nodoc
@@ -916,6 +992,7 @@ class __$RatingDimensionCopyWithImpl<$Res>
     Object? description = freezed,
     Object? inputType = freezed,
     Object? optionLabels = freezed,
+    Object? optionValues = freezed,
   }) {
     return _then(_RatingDimension(
       key: null == key
@@ -942,6 +1019,10 @@ class __$RatingDimensionCopyWithImpl<$Res>
           ? _self._optionLabels
           : optionLabels // ignore: cast_nullable_to_non_nullable
               as List<String>?,
+      optionValues: freezed == optionValues
+          ? _self._optionValues
+          : optionValues // ignore: cast_nullable_to_non_nullable
+              as List<double>?,
     ));
   }
 }

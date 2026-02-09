@@ -35,6 +35,9 @@ _RatingDimension _$RatingDimensionFromJson(Map<String, dynamic> json) =>
       optionLabels: (json['optionLabels'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      optionValues: (json['optionValues'] as List<dynamic>?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
     );
 
 Map<String, dynamic> _$RatingDimensionToJson(_RatingDimension instance) =>
@@ -45,4 +48,5 @@ Map<String, dynamic> _$RatingDimensionToJson(_RatingDimension instance) =>
       'description': instance.description,
       'inputType': instance.inputType,
       'optionLabels': instance.optionLabels,
+      'optionValues': instance.optionValues,
     };
