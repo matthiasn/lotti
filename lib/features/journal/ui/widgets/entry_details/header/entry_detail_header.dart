@@ -126,16 +126,21 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   ) {
     return Row(
       children: [
-        // When collapsed, show preview so user can identify the entry
         if (widget.isCollapsed) ...[
+          // Collapsed preview: thumbnail/icon + date + duration
           if (entry is JournalImage) _buildImageThumbnail(entry),
           if (entry is JournalAudio) _buildAudioIcon(context),
           const SizedBox(width: AppTheme.spacingSmall),
           EntryDatetimeWidget(entryId: widget.entryId),
           if (entry is JournalAudio) _buildDurationLabel(context, entry),
         ],
-        // Hide action buttons when collapsed for a clean, minimal look
         if (!widget.isCollapsed) ...[
+          // Expanded: date on left, actions on right
+          EntryDatetimeWidget(entryId: widget.entryId),
+        ],
+        const Spacer(),
+        if (!widget.isCollapsed) ...[
+          // Action icons only when expanded
           if (entry is! JournalEvent && (entry?.meta.starred ?? false))
             SwitchIconWidget(
               tooltip: context.messages.journalFavoriteTooltip,
@@ -174,7 +179,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             ),
           ),
         ],
-        const Spacer(),
         AnimatedRotation(
           turns: widget.isCollapsed ? -0.25 : 0.0,
           duration: AppTheme.chevronRotationDuration,

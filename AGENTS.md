@@ -105,3 +105,12 @@
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
 - In most cases we prefer one test file for one implementation file.
+- Maintain READMEs for product features and keep them up-to-date and relevant as you change code.
+- Don't report that you've successfully implemented anything unless you've actually verified that the code compiles and tests succeed. Do not be overly confident without checking.
+- When writing tests, do not give up too easily and delete what doesn't work right away, instead put some more thought into getting the tests to work.
+- When rewriting a feature and instructed to leave both in place, do not create ANY dependencies on the old code, as the goal will usually be to remove the old code once the new code has feature parity, or surpasses it.
+- Aim for high engineering standards, such as honoring the DRY principle where sensible, proper modularity, and good testability. Your goal is to create code that people would and should be proud of.
+- Do no ever report that you're done with anything when not all tests pass. They must, as no PR can be merged when there are failing tests.
+- Use fvm when running any flutter command
+- Read test/README.md on every session start and keep it up to date when gaining relevant new information
+- 
