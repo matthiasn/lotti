@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -14,7 +14,7 @@ part 'task_progress_controller.g.dart';
 
 @riverpod
 class TaskProgressController extends _$TaskProgressController {
-  final _durations = <String, Duration>{};
+  final _timeRanges = <String, TimeRange>{};
   final _subscribedIds = <String>{};
   Duration? _estimate;
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -38,8 +38,10 @@ class TaskProgressController extends _$TaskProgressController {
           return;
         }
 
-        final duration = entryDuration(journalEntity);
-        _durations[journalEntity.meta.id] = duration;
+        _timeRanges[journalEntity.meta.id] = TimeRange(
+          start: journalEntity.meta.dateFrom,
+          end: journalEntity.meta.dateTo,
+        );
         state = AsyncData(_getProgress());
       }
     });
@@ -64,17 +66,17 @@ class TaskProgressController extends _$TaskProgressController {
         .getTaskProgressData(id: id);
 
     _estimate = res?.$1;
-    final durations = res?.$2;
+    final timeRanges = res?.$2;
 
-    if (durations == null) {
+    if (timeRanges == null) {
       return null;
     }
 
-    _durations
+    _timeRanges
       ..clear()
-      ..addAll(durations);
+      ..addAll(timeRanges);
 
-    _subscribedIds.addAll(durations.keys);
+    _subscribedIds.addAll(timeRanges.keys);
 
     return _getProgress();
   }
@@ -82,6 +84,6 @@ class TaskProgressController extends _$TaskProgressController {
   TaskProgressState _getProgress() {
     return ref
         .read(taskProgressRepositoryProvider)
-        .getTaskProgress(durations: _durations, estimate: _estimate);
+        .getTaskProgress(timeRanges: _timeRanges, estimate: _estimate);
   }
 }

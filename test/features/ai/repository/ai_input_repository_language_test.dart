@@ -68,7 +68,7 @@ void main() {
 
   void setupTaskProgressMock() {
     when(() => mockTaskProgressRepo.getTaskProgress(
-          durations: any(named: 'durations'),
+          timeRanges: any(named: 'timeRanges'),
           estimate: any(named: 'estimate'),
         )).thenReturn(
       const TaskProgressState(

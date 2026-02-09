@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.851] - 2026-02-09
+### Fixed
+- Task Time Summation: Overlapping linked entries (e.g., a gym trip containing a fitness workout) are no longer double-counted when calculating time spent on a task. The task progress view now uses the same union-of-time-ranges algorithm that already powered the accurate Time Budget view, so both display consistent durations.
+
 ## [0.9.850] - 2026-02-08
 ### Added
 - Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded with a chevron toggle. When collapsed, a compact preview shows a thumbnail (for images) or mic icon with duration (for audio) alongside the date, so you can identify entries at a glance without scrolling past large media. Collapse state is saved per link and synced across devices.

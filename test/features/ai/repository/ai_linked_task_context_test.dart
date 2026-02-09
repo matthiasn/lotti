@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -26,13 +27,10 @@ class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {
   @override
   TaskProgressState getTaskProgress({
-    required Map<String, Duration> durations,
+    required Map<String, TimeRange> timeRanges,
     Duration? estimate,
   }) {
-    var progress = Duration.zero;
-    for (final duration in durations.values) {
-      progress = progress + duration;
-    }
+    final progress = calculateUnionDuration(timeRanges.values.toList());
     return TaskProgressState(
       progress: progress,
       estimate: estimate ?? Duration.zero,
@@ -345,7 +343,7 @@ void main() {
       // Default mocks
       when(() => mockTaskProgressRepository.getTaskProgressData(
             id: any(named: 'id'),
-          )).thenAnswer((_) async => (null, <String, Duration>{}));
+          )).thenAnswer((_) async => (null, <String, TimeRange>{}));
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
       when(() => mockDb.getLinkedEntities(any()))
           .thenAnswer((_) async => <JournalEntity>[]);
@@ -535,7 +533,7 @@ void main() {
         when(() => mockDb.getLinkedEntities(any())).thenAnswer((_) async => []);
         when(() => mockTaskProgressRepository.getTaskProgressData(
               id: any(named: 'id'),
-            )).thenAnswer((_) async => (null, <String, Duration>{}));
+            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -613,7 +611,7 @@ void main() {
             .thenAnswer((_) async => []);
         when(() => mockTaskProgressRepository.getTaskProgressData(
               id: parentTaskId,
-            )).thenAnswer((_) async => (null, <String, Duration>{}));
+            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedToContext(taskId);
 
@@ -691,7 +689,7 @@ void main() {
             .thenAnswer((_) async => []);
         when(() => mockTaskProgressRepository.getTaskProgressData(
               id: any(named: 'id'),
-            )).thenAnswer((_) async => (null, <String, Duration>{}));
+            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         // Use cache service for label lookups
         when(() => mockCacheService.getLabelById('label-1')).thenReturn(
@@ -734,7 +732,7 @@ void main() {
             .thenAnswer((_) async => []);
         when(() =>
                 mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+            .thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -881,7 +879,7 @@ void main() {
             .thenAnswer((_) async => [imageAnalysis]);
         when(() =>
                 mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+            .thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -907,7 +905,7 @@ void main() {
             .thenAnswer((_) async => []);
         when(() =>
                 mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+            .thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         // Use cache service for label lookups (O(1) per label)
         when(() => mockCacheService.getLabelById('label-1')).thenReturn(
@@ -957,7 +955,7 @@ void main() {
             .thenAnswer((_) async => []);
         when(() =>
                 mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, Duration>{}));
+            .thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
