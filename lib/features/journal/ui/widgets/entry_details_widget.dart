@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -457,6 +457,7 @@ class EntryDetailsContent extends ConsumerWidget {
       isCollapsed: isCollapsed,
       onToggleCollapse: isCollapsible && currentLink != null
           ? () async {
+              final isExpanding = currentLink.collapsed ?? false;
               try {
                 await ref.read(journalRepositoryProvider).updateLink(
                       currentLink.copyWith(
@@ -471,16 +472,32 @@ class EntryDetailsContent extends ConsumerWidget {
                   stackTrace: s,
                 );
               }
-              // Auto-scroll after toggle so the entry stays nicely in view
-              Future.delayed(AppTheme.collapseAnimationDuration, () {
-                if (context.mounted) {
-                  Scrollable.ensureVisible(
-                    context,
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeOutCubic,
+              // Only auto-scroll when expanding and the card top is pushed
+              // above the visible viewport. Collapsing never needs a scroll.
+              if (isExpanding) {
+                Future.delayed(AppTheme.collapseAnimationDuration, () {
+                  if (!context.mounted) return;
+                  final renderObject = context.findRenderObject();
+                  if (renderObject == null) return;
+                  final viewport = RenderAbstractViewport.maybeOf(renderObject);
+                  if (viewport == null) return;
+                  final revealedOffset = viewport.getOffsetToReveal(
+                    renderObject,
+                    0,
                   );
-                }
-              });
+                  final scrollable = Scrollable.maybeOf(context);
+                  if (scrollable == null) return;
+                  final currentOffset = scrollable.position.pixels;
+                  if (revealedOffset.offset < currentOffset) {
+                    Scrollable.ensureVisible(
+                      context,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutCubic,
+                      alignment: 0.05,
+                    );
+                  }
+                });
+              }
             }
           : null,
     );
@@ -510,28 +527,12 @@ class EntryDetailsContent extends ConsumerWidget {
     }
 
     // Collapsible layout for image/audio entries in linked context
-    // Date is shown under the image/audio player on the left side
-    final datePadding = Padding(
-      padding: const EdgeInsets.only(
-        left: AppTheme.spacingXSmall,
-        top: AppTheme.spacingXSmall,
-      ),
-      child: EntryDatetimeWidget(entryId: itemId),
-    );
-
+    // Date is now shown in the header (Step 2), no longer duplicated here
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // For images: image first, then date under it
-        if (item is JournalImage) ...[
-          EntryImageWidget(item),
-          datePadding,
-        ],
-        // For audio: audio player first, then date under it
-        if (item is JournalAudio && detailSection != null) ...[
-          detailSection,
-          datePadding,
-        ],
+        if (item is JournalImage) EntryImageWidget(item),
+        if (item is JournalAudio && detailSection != null) detailSection,
         TagsListWidget(entryId: itemId, parentTags: parentTags),
         if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
@@ -552,12 +553,86 @@ class EntryDetailsContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         header,
-        AnimatedSize(
-          duration: AppTheme.collapseAnimationDuration,
-          curve: Curves.easeOutCubic,
-          child: isCollapsed ? const SizedBox.shrink() : expandedContent,
+        _CollapsibleBody(
+          isCollapsed: isCollapsed,
+          child: expandedContent,
         ),
       ],
+    );
+  }
+}
+
+/// Animates expand/collapse with synchronized size and opacity transitions.
+///
+/// Uses [SizeTransition] (clips from bottom, no squishing) combined with
+/// [FadeTransition] for a smooth reveal/hide effect.
+class _CollapsibleBody extends StatefulWidget {
+  const _CollapsibleBody({
+    required this.isCollapsed,
+    required this.child,
+  });
+
+  final bool isCollapsed;
+  final Widget child;
+
+  @override
+  State<_CollapsibleBody> createState() => _CollapsibleBodyState();
+}
+
+class _CollapsibleBodyState extends State<_CollapsibleBody>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _sizeAnimation;
+  late final Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: AppTheme.collapseAnimationDuration,
+      vsync: this,
+      value: widget.isCollapsed ? 0.0 : 1.0,
+    );
+    _sizeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeOutCubic,
+    );
+    _opacityAnimation = CurvedAnimation(
+      parent: _controller,
+      // Delay fade-in so content becomes visible after size has grown enough
+      curve: const Interval(0.3, 1, curve: Curves.easeInOutCubic),
+      reverseCurve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_CollapsibleBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCollapsed != oldWidget.isCollapsed) {
+      if (widget.isCollapsed) {
+        _controller.reverse();
+      } else {
+        _controller.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: _sizeAnimation,
+      axisAlignment: -1,
+      child: FadeTransition(
+        opacity: _opacityAnimation,
+        child: widget.child,
+      ),
     );
   }
 }

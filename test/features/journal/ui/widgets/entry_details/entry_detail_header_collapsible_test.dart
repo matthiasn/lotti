@@ -609,7 +609,7 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
 
-      testWidgets('does NOT show date or preview when expanded',
+      testWidgets('shows date but NOT preview icons when expanded',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
             .thenAnswer((_) async => testAudioEntry);
@@ -626,6 +626,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        // Date widget is present in expanded header
+        expect(find.byType(EntryDatetimeWidget), findsOneWidget);
         // No mic icon or duration in expanded state
         expect(find.byIcon(Icons.mic_rounded), findsNothing);
       });

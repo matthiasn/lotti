@@ -204,7 +204,7 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
 
-      testWidgets('shows AnimatedSize for collapsible entry', (tester) async {
+      testWidgets('shows SizeTransition for collapsible entry', (tester) async {
         when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
             .thenAnswer((_) async => testImageEntry);
 
@@ -222,7 +222,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(AnimatedSize), findsOneWidget);
+        expect(find.byType(SizeTransition), findsOneWidget);
       });
 
       testWidgets('does NOT show collapsible AnimatedSize for non-collapsible',
@@ -246,7 +246,7 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsNothing);
       });
 
-      testWidgets('AnimatedSize shows expanded content when not collapsed',
+      testWidgets('SizeTransition is fully expanded when not collapsed',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
             .thenAnswer((_) async => testImageEntry);
@@ -265,12 +265,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<Column>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 1.0);
       });
 
-      testWidgets('AnimatedSize shows SizedBox.shrink when collapsed',
+      testWidgets('SizeTransition is fully collapsed when collapsed',
           (tester) async {
         final collapsedLink = testLink.copyWith(collapsed: true);
 
@@ -291,9 +292,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<SizedBox>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 0.0);
       });
     });
 
@@ -353,9 +355,10 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<SizedBox>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 0.0);
       });
     });
 
@@ -448,8 +451,7 @@ void main() {
         expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('collapsed image entry hides image and shows SizedBox.shrink',
-          (tester) async {
+      testWidgets('collapsed image entry hides image content', (tester) async {
         final collapsedLink = testLink.copyWith(collapsed: true);
 
         when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
@@ -469,10 +471,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // AnimatedSize child is SizedBox.shrink when collapsed
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<SizedBox>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 0.0);
       });
 
       testWidgets('expanded image entry shows TagsListWidget', (tester) async {
@@ -577,9 +579,10 @@ void main() {
         await tester.pump();
         await tester.pump(AppTheme.chevronRotationDuration);
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<SizedBox>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 0.0);
       });
     });
 
@@ -613,9 +616,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<Column>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 1.0);
       });
 
       testWidgets('link with collapsed=false renders as expanded',
@@ -647,9 +651,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedSize =
-            tester.widget<AnimatedSize>(find.byType(AnimatedSize));
-        expect(animatedSize.child, isA<Column>());
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 1.0);
       });
     });
 

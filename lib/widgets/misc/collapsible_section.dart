@@ -46,6 +46,7 @@ class CollapsibleSectionState extends State<CollapsibleSection> {
         AnimatedSize(
           duration: AppTheme.collapseAnimationDuration,
           curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
           child: isExpanded ? widget.child : const SizedBox.shrink(),
         ),
       ],
