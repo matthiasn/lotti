@@ -809,11 +809,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
+  String get configFlagEnableDailyOs => 'Activer DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
+      'Afficher DailyOS dans la navigation principale.';
 
   @override
   String get configFlagEnableSessionRatings =>

@@ -808,11 +808,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
+  String get configFlagEnableDailyOs => 'Habilitar DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
+      'Mostrar DailyOS en la navegación principal.';
 
   @override
   String get configFlagEnableSessionRatings =>

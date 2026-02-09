@@ -806,11 +806,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
+  String get configFlagEnableDailyOs => 'Activează DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
+      'Afișează DailyOS în navigarea principală.';
 
   @override
   String get configFlagEnableSessionRatings =>

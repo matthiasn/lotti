@@ -814,11 +814,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get configFlagEnableEvents => 'Povolit události';
 
   @override
-  String get configFlagEnableDailyOs => 'Enable DailyOS';
+  String get configFlagEnableDailyOs => 'Povolit DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Show the DailyOS page in the main navigation.';
+      'Zobrazit DailyOS v hlavní navigaci.';
 
   @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
