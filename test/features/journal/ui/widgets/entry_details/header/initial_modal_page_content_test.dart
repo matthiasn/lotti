@@ -359,6 +359,111 @@ void main() {
     });
   });
 
+  group('InitialModalPageContent set cover art for image linked to task', () {
+    JournalImage imageEntry() {
+      final now = DateTime(2023);
+      return JournalImage(
+        meta: Metadata(
+          id: 'image-123',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ImageData(
+          imageId: 'img-uuid',
+          imageFile: 'test.jpg',
+          imageDirectory: '/tmp',
+          capturedAt: now,
+        ),
+      );
+    }
+
+    ProviderScope buildImageLinkedWrapper({
+      required JournalImage image,
+      required JournalEntity linkedParent,
+    }) {
+      return ProviderScope(
+        overrides: [
+          entryControllerProvider(id: image.id).overrideWith(
+            () => _TestEntryController(image),
+          ),
+          entryControllerProvider(id: linkedParent.id).overrideWith(
+            () => _TestEntryController(linkedParent),
+          ),
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value([]),
+          ),
+        ],
+        child: makeTestableWidgetWithScaffold(
+          InitialModalPageContent(
+            entryId: image.id,
+            linkedFromId: linkedParent.id,
+            inLinkedEntries: true,
+            link: null,
+            pageIndexNotifier: pageIndexNotifier,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('shows set cover art item when image linked to a task',
+        (tester) async {
+      final image = imageEntry();
+      final task = taskEntry();
+
+      await tester.pumpWidget(
+        buildImageLinkedWrapper(image: image, linkedParent: task),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set cover'), findsOneWidget);
+    });
+
+    testWidgets('hides set cover art item when image linked to a non-task',
+        (tester) async {
+      final image = imageEntry();
+      final parent = textEntry();
+
+      await tester.pumpWidget(
+        buildImageLinkedWrapper(image: image, linkedParent: parent),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set cover'), findsNothing);
+    });
+
+    testWidgets('hides set cover art item when image has no linkedFromId',
+        (tester) async {
+      final image = imageEntry();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            entryControllerProvider(id: image.id).overrideWith(
+              () => _TestEntryController(image),
+            ),
+            labelsStreamProvider.overrideWith(
+              (ref) => Stream<List<LabelDefinition>>.value([]),
+            ),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            InitialModalPageContent(
+              entryId: image.id,
+              linkedFromId: null,
+              inLinkedEntries: false,
+              link: null,
+              pageIndexNotifier: pageIndexNotifier,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set cover'), findsNothing);
+    });
+  });
+
   group('InitialModalPageContent with geolocation', () {
     JournalEntry entryWithGeolocation() {
       final now = DateTime(2023);

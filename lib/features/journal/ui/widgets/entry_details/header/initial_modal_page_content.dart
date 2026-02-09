@@ -97,6 +97,13 @@ class InitialModalPageContent extends ConsumerWidget {
           linkedFromId: linkedFromId,
         ),
 
+      // Set cover art - only for images linked to a task
+      if (isImage && linkedFromId != null && linkedIsTask)
+        ModernSetCoverArtItem(
+          entryId: entryId,
+          linkedFromId: linkedFromId,
+        ),
+
       // Share - only for image/audio entries
       if (isImage || isAudio) ModernShareItem(entryId: entryId),
 

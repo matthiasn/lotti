@@ -10,7 +10,6 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
-import 'package:lotti/features/tasks/ui/set_cover_art_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -77,11 +76,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             !widget.inLinkedEntries)
           CategorySelectionIconButton(entry: entry),
         const SizedBox(width: 10),
-        if (entry is JournalImage && widget.linkedFromId != null)
-          SetCoverArtChip(
-            imageId: widget.entryId,
-            linkedFromId: widget.linkedFromId,
-          ),
         const Spacer(),
         if (entry is! JournalEvent && (entry?.meta.starred ?? false))
           SwitchIconWidget(
@@ -142,11 +136,6 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         ],
         // Hide action buttons when collapsed for a clean, minimal look
         if (!widget.isCollapsed) ...[
-          if (entry is JournalImage && widget.linkedFromId != null)
-            SetCoverArtChip(
-              imageId: widget.entryId,
-              linkedFromId: widget.linkedFromId,
-            ),
           if (entry is! JournalEvent && (entry?.meta.starred ?? false))
             SwitchIconWidget(
               tooltip: context.messages.journalFavoriteTooltip,

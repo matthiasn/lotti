@@ -51,7 +51,7 @@ class AudioPlayerWidget extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: AppTheme.animationDuration),
       curve: AppTheme.animationCurve,
-      margin: const EdgeInsets.only(top: AppTheme.cardPadding),
+      margin: EdgeInsets.zero,
       child: ModernBaseCard(
         gradient: isDark ? GradientThemes.cardGradient(context) : null,
         backgroundColor: isDark
