@@ -2415,7 +2415,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get entryTypeLabelChecklist => 'Checklist';
 
   @override
-  String get entryTypeLabelChecklistItem => 'To Do';
+  String get entryTypeLabelChecklistItem => 'Element de verificare';
 
   @override
   String get entryTypeLabelAiResponse => 'AI Response';

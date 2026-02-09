@@ -954,7 +954,7 @@
   "entryTypeLabelHabitCompletionEntry": "Gewohnheit",
   "entryTypeLabelQuantitativeEntry": "Gesundheit",
   "entryTypeLabelChecklist": "Checkliste",
-  "entryTypeLabelChecklistItem": "To Do",
+  "entryTypeLabelChecklistItem": "Aufgabe",
   "entryTypeLabelAiResponse": "AI-Antwort",
   "taskSummaries": "Aufgabenzusammenfassungen",
   "noPromptsForType": "Keine Prompts für diesen Typ verfügbar",

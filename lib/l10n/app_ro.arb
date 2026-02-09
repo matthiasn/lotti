@@ -954,7 +954,7 @@
   "entryTypeLabelHabitCompletionEntry": "Obicei",
   "entryTypeLabelQuantitativeEntry": "Sănătate",
   "entryTypeLabelChecklist": "Listă de verificare",
-  "entryTypeLabelChecklistItem": "To Do",
+  "entryTypeLabelChecklistItem": "Element de verificare",
   "entryTypeLabelAiResponse": "Răspuns AI",
   "taskSummaries": "Rezumate sarcini",
   "noPromptsForType": "Nu există prompturi disponibile pentru acest tip",
