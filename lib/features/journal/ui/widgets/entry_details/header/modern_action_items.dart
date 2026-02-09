@@ -576,6 +576,44 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
   }
 }
 
+/// Modern styled set cover art action item.
+/// Shows only for image entries that are linked to a task.
+class ModernSetCoverArtItem extends ConsumerWidget {
+  const ModernSetCoverArtItem({
+    required this.entryId,
+    required this.linkedFromId,
+    super.key,
+  });
+
+  final String entryId;
+  final String linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final parentProvider = entryControllerProvider(id: linkedFromId);
+    final parentEntry = ref.watch(parentProvider).value?.entry;
+
+    if (parentEntry is! Task) return const SizedBox.shrink();
+
+    final isCurrentCover = parentEntry.data.coverArtId == entryId;
+
+    return ActionMenuListItem(
+      icon: isCurrentCover ? Icons.image : Icons.image_outlined,
+      title: isCurrentCover
+          ? context.messages.coverArtChipActive
+          : context.messages.coverArtChipSet,
+      iconColor: isCurrentCover ? starredGold : null,
+      onTap: () async {
+        final notifier = ref.read(parentProvider.notifier);
+        await notifier.setCoverArt(isCurrentCover ? null : entryId);
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+  }
+}
+
 /// Modern styled link from action item
 class ModernLinkFromItem extends StatelessWidget {
   const ModernLinkFromItem({
