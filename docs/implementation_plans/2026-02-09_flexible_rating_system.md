@@ -275,29 +275,37 @@ The existing `_TapBar` and `_ChallengeSkillRow` become reusable widgets selected
 13. Write catalog tests
 14. Analyze + format + test ✅
 
-### Phase 2.5: Addressing Review Feedback
-15. Rename `RatingData.timeEntryId` → `targetId` with `@JsonKey(name: 'timeEntryId')` for wire compat
-16. Run `build_runner`
-17. Update all Dart references from `.timeEntryId` to `.targetId` (repository, controller, modal, summary, tests)
-18. Fix `allRatingsForTarget` query ORDER BY to use `COALESCE(NULLIF(j.subtype, ''), 'session')`
-19. Update `RatingRepository._createRating` to use deterministic UUID v5 ID: `uuidV5Input: jsonEncode(['rating', targetId, catalogId])`
-20. Update tests for rename and deterministic ID
-21. Analyze + format + test
+### Phase 2.5: Addressing Review Feedback ✅ COMPLETE
+15. Rename `RatingData.timeEntryId` → `targetId` with `@JsonKey(name: 'timeEntryId')` for wire compat ✅
+16. Run `build_runner` ✅
+17. Update all Dart references from `.timeEntryId` to `.targetId` (repository, controller, modal, summary, tests) ✅
+18. Fix `allRatingsForTarget` query ORDER BY to use `COALESCE(NULLIF(j.subtype, ''), 'session')` ✅
+19. Update `RatingRepository._createRating` to use deterministic UUID v5 ID: `uuidV5Input: jsonEncode(['rating', targetId, catalogId])` ✅
+20. Update tests for rename and deterministic ID ✅
+21. Analyze + format + test ✅
 
-### Phase 3: Dynamic UI (rewire session rating)
+### Phase 3: Dynamic UI (rewire session rating) — IN PROGRESS (~40%)
+
+**Done:**
+- ✅ Parameter renaming throughout: `timeEntryId` → `targetId` in modal, controllers, repository
+- ✅ `RatingController` provider parameter renamed to `targetId`, method renamed to `getRatingForTargetEntry`
+- ✅ `RatingRepository.getRatingForTargetEntry()` added, `createOrUpdateRating()` accepts `targetId`
+- ✅ `ModernRateSessionItem` updated to use renamed provider parameter
+
+**Remaining:**
 22. Extract `_TapBar` and `_ChallengeSkillRow` to `rating_input_widgets.dart` as public widgets
-23. Refactor `SessionRatingModal` → `RatingModal` — render from catalog, snapshot question metadata into dimensions on save
+23. Refactor `SessionRatingModal` → `RatingModal` — render from catalog, snapshot question metadata into dimensions on save. **Currently `_submit()` creates bare dimensions without question/description/inputType/optionLabels — the self-describing record goal is not yet met.**
 24. **Unknown catalog guard in RatingModal**: At modal open, check `ratingCatalogRegistry.containsKey(catalogId)`. If unknown, render stored dimensions read-only (no save button, no editable inputs). This guard applies to every entry point that can open the modal: `ModernRateSessionItem`, `InitialModalPageContent`, `RatingPromptListener`. Each passes `catalogId`; the modal itself decides editable vs read-only.
-25. Update `RatingPromptController` state to carry `(targetId, catalogId)` tuple
-26. Update `RatingController` to accept `catalogId`
-27. Update `RatingRepository` to pass `catalogId` into `RatingData` and embed question metadata in dimensions
-28. Update `RatingSummary` to render dynamically from stored dimension metadata, with fallback chain (stored question → catalog lookup → key)
-29. Update all call sites (`ModernRateSessionItem`, `InitialModalPageContent`, `RatingPromptListener`) — all must pass `catalogId` to modal
+25. Update `RatingPromptController` state to carry `(targetId, catalogId)` tuple — **currently holds only `String?`**
+26. ~~Update `RatingController` to accept `catalogId`~~ ✅ (partially — parameter renamed but `catalogId` not yet a dynamic parameter, defaults to `'session'`)
+27. Update `RatingRepository` to embed question metadata in dimensions on save — **not yet snapshotting catalog metadata into `RatingDimension` objects**
+28. Update `RatingSummary` to render dynamically from stored dimension metadata, with fallback chain (stored question → catalog lookup → key) — **currently hardcodes 4 specific dimension labels**
+29. Update all call sites (`ModernRateSessionItem`, `InitialModalPageContent`, `RatingPromptListener`) — all must pass `catalogId` to modal — **currently using defaults only**
 30. **Write unknown-catalog tests**: Test that `RatingModal` renders read-only when given an unregistered `catalogId`. Test that `RatingSummary` renders gracefully for dimensions with no stored metadata and no matching catalog (falls back to key).
 31. Update all remaining tests for the refactored components
 32. Analyze + format + test — verify session rating flow works identically
 
-### Phase 4: Polish
+### Phase 4: Polish — NOT STARTED
 33. Update CHANGELOG
 34. Update `flatpak/com.matthiasn.lotti.metainfo.xml`
 35. Update feature README
