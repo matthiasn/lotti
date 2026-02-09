@@ -67,7 +67,7 @@
     }
   },
   "aiConfigListDeleteConfirmTitle": "Löschen bestätigen",
-  "aiConfigListEmptyState": "Keine Konfigurationen gefunden. Fügen Sie eine hinzu, um zu beginnen.",
+  "aiConfigListEmptyState": "Keine Konfigurationen gefunden. Füge eine hinzu, um zu beginnen.",
   "aiConfigListErrorDeleting": "Fehler beim Löschen von {configName}: {error}",
   "@aiConfigListErrorDeleting": {
     "placeholders": {
@@ -311,7 +311,7 @@
   "configFlagEnableLoggingDescription": "Aktiviert die detaillierte Protokollierung für Debugging-Zwecke. Dies kann die Leistung beeinträchtigen.",
   "configFlagEnableMatrixDescription": "Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.",
   "configFlagEnableNotifications": "Benachrichtigungen aktivieren?",
-  "configFlagEnableNotificationsDescription": "Erhalten Sie Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.",
+  "configFlagEnableNotificationsDescription": "Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.",
   "configFlagEnableTooltip": "Tooltips aktivieren",
   "configFlagEnableTooltipDescription": "Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.",
   "configFlagPrivate": "Private Einträge anzeigen?",
@@ -643,7 +643,7 @@
   "maintenanceSyncDefinitionsDescription": "Tags, Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren",
   "backfillSettingsTitle": "Sync-Nachfüllung",
   "backfillSettingsSubtitle": "Synchronisierungslücken verwalten",
-  "backfillSettingsInfo": "Automatische Nachfüllung fordert fehlende Einträge der letzten 24 Stunden an. Nutzen Sie manuelle Nachfüllung für ältere Einträge.",
+  "backfillSettingsInfo": "Automatische Nachfüllung fordert fehlende Einträge der letzten 24 Stunden an. Nutze manuelle Nachfüllung für ältere Einträge.",
   "backfillToggleTitle": "Automatische Nachfüllung",
   "backfillToggleEnabledDescription": "Fehlende Sync-Einträge automatisch anfordern",
   "backfillToggleDisabledDescription": "Nachfüllung deaktiviert – nützlich bei Mobilfunknetzen",
@@ -666,7 +666,7 @@
     }
   },
   "backfillManualTitle": "Manuelle Nachfüllung",
-  "backfillManualDescription": "Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutzen Sie dies zur Wiederherstellung älterer Synchronisierungslücken.",
+  "backfillManualDescription": "Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutze dies zur Wiederherstellung älterer Synchronisierungslücken.",
   "backfillManualTrigger": "Fehlende Einträge anfordern",
   "backfillManualProcessing": "Verarbeitung...",
   "backfillManualSuccess": "{count} Einträge angefordert",
@@ -678,7 +678,7 @@
     }
   },
   "backfillReRequestTitle": "Ausstehende erneut anfordern",
-  "backfillReRequestDescription": "Einträge erneut anfordern, die angefordert aber nie empfangen wurden. Nutzen Sie dies bei hängenden Antworten.",
+  "backfillReRequestDescription": "Einträge erneut anfordern, die angefordert aber nie empfangen wurden. Nutze dies bei hängenden Antworten.",
   "backfillReRequestTrigger": "Ausstehende Einträge erneut anfordern",
   "backfillReRequestProcessing": "Erneut anfordern...",
   "backfillReRequestSuccess": "{count} Einträge erneut angefordert",
@@ -798,7 +798,7 @@
   "promptLoadingModel": "Modell wird geladen...",
   "promptModelSelectionDescription": "Kompatible Modelle für diesen Prompt auswählen",
   "promptModelSelectionTitle": "Modellauswahl",
-  "promptNoModelsSelectedError": "Keine Modelle ausgewählt. Wählen Sie mindestens ein Modell aus.",
+  "promptNoModelsSelectedError": "Keine Modelle ausgewählt. Wähle mindestens ein Modell aus.",
   "promptReasoningModeDescription": "Für Prompts aktivieren, die tiefes Nachdenken erfordern",
   "promptReasoningModeLabel": "Schlussfolgerungsmodus",
   "promptRequiredInputDataDescription": "Art der Daten, die dieser Prompt erwartet",
