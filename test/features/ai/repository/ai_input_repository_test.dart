@@ -366,7 +366,7 @@ void main() {
           .thenAnswer(
         (_) async => (
           null, // null estimate
-          <String, TimeRange>{}, // empty durations
+          <String, TimeRange>{}, // empty time ranges
         ),
       );
 

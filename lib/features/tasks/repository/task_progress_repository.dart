@@ -34,19 +34,17 @@ class TaskProgressRepository {
   /// Both [getTaskProgressData] and `AiInputRepository._calculateTimeSpentFromEntities`
   /// use this same filtering logic.
   static Duration sumTimeSpentFromEntities(List<JournalEntity> entities) {
-    final countable = entities.where(_shouldCountDuration).toList();
-    if (countable.isEmpty) return Duration.zero;
-
-    final ranges = countable
-        .map(
-          (entity) => TimeRange(
-            start: entity.meta.dateFrom,
-            end: entity.meta.dateTo,
-          ),
-        )
-        .toList();
-
-    return calculateUnionDuration(ranges);
+    return calculateUnionDuration(
+      entities
+          .where(_shouldCountDuration)
+          .map(
+            (entity) => TimeRange(
+              start: entity.meta.dateFrom,
+              end: entity.meta.dateTo,
+            ),
+          )
+          .toList(),
+    );
   }
 
   Future<(Duration?, Map<String, TimeRange>)?> getTaskProgressData({
