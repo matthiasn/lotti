@@ -467,7 +467,7 @@
       }
     }
   },
-  "dailyOsDurationMinutes": "{count} minutes",
+  "dailyOsDurationMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@dailyOsDurationMinutes": {
     "placeholders": {
       "count": {
