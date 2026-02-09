@@ -44,10 +44,14 @@ class RatingRepository {
         );
       }
 
+      // Look up the time entry to inherit its category
+      final timeEntry = await _journalDb.journalEntityById(timeEntryId);
+
       return _createRating(
         timeEntryId: timeEntryId,
         dimensions: dimensions,
         note: note,
+        categoryId: timeEntry?.meta.categoryId,
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -69,6 +73,7 @@ class RatingRepository {
     required String timeEntryId,
     required List<RatingDimension> dimensions,
     String? note,
+    String? categoryId,
   }) async {
     final now = DateTime.now();
     final ratingData = RatingData(
@@ -82,6 +87,7 @@ class RatingRepository {
       meta: await _persistenceLogic.createMetadata(
         dateFrom: now,
         dateTo: now,
+        categoryId: categoryId,
       ),
     );
 

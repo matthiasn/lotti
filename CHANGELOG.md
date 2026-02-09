@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.852] - 2026-02-09
+### Fixed
+- Calendar Navigation: Tapping a time recording in the calendar view could navigate to a session rating instead of the parent task. The calendar link resolver now filters out RatingLinks, so only the Task-to-TimeRecording relationship is used for navigation.
+- Session Rating Category: Newly created session ratings inherit the category of the time entry they rate, so they display the correct task icon instead of a generic one.
+- Timer Entry Category: Starting a timer from a task now forwards the task's category to the new time recording, ensuring it is explicitly stored rather than left blank.
+
 ## [0.9.851] - 2026-02-09
 ### Fixed
 - Task Time Summation: Overlapping linked entries (e.g., a gym trip containing a fitness workout) are no longer double-counted when calculating time spent on a task. The task progress view now uses the same union-of-time-ranges algorithm that already powered the accurate Time Budget view, so both display consistent durations.

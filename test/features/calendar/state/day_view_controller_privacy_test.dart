@@ -54,6 +54,8 @@ void main() {
     when(() => mockSettingsDb.watchSettingsItemByKey(any()))
         .thenAnswer((_) => settingsStreamController.stream);
 
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
+
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
@@ -106,7 +108,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [testEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.basicLinksForEntryIds(any()))
+          .thenAnswer((_) async => []);
       when(() => mockDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => []);
       when(() => mockEntitiesCacheService.getCategoryById('visible-category'))
@@ -171,7 +174,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [testEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => [
+      when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => [
             EntryLink.basic(
               id: 'link-1',
               fromId: 'task-1',
@@ -271,7 +274,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [testEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => [
+      when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => [
             EntryLink.basic(
               id: 'link-1',
               fromId: 'task-1',
@@ -321,7 +324,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [unassignedEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.basicLinksForEntryIds(any()))
+          .thenAnswer((_) async => []);
       when(() => mockDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => []);
       when(() => mockEntitiesCacheService.getCategoryById(any()))
@@ -382,7 +386,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [unassignedEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.basicLinksForEntryIds(any()))
+          .thenAnswer((_) async => []);
       when(() => mockDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => []);
       when(() => mockEntitiesCacheService.getCategoryById(any()))
@@ -452,7 +457,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [workoutEntry]);
 
-      when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+      when(() => mockDb.basicLinksForEntryIds(any()))
+          .thenAnswer((_) async => []);
       when(() => mockDb.getJournalEntitiesForIds(any()))
           .thenAnswer((_) async => []);
       when(() => mockEntitiesCacheService.getCategoryById(any()))

@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
@@ -124,7 +127,7 @@ void main() {
       ),
     ).thenAnswer((_) async => [testEntry]);
 
-    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
@@ -190,7 +193,7 @@ void main() {
       ),
     ).thenAnswer((_) async => [testEntry]);
 
-    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
@@ -295,7 +298,7 @@ void main() {
       ),
     ).thenAnswer((_) async => [testEntry]);
 
-    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
@@ -335,6 +338,198 @@ void main() {
         rangeEnd: any(named: 'rangeEnd'),
       ),
     ).called(2);
+  });
+
+  test('RatingLinks are excluded from linkedFrom resolution', () async {
+    // Arrange - time recording linked to a Task via BasicLink
+    // and also linked to a Rating via RatingLink.
+    // Only the BasicLink should resolve as the parent.
+    final now = DateTime.now();
+    final dateFrom = DateTime(now.year, now.month, now.day, 9);
+    final dateTo = dateFrom.add(const Duration(hours: 2));
+
+    const taskCategoryId = 'task-category-id';
+    const taskId = 'task-id';
+    const timeRecordingId = 'time-recording-id';
+    const ratingId = 'rating-id';
+
+    final timeRecording = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: timeRecordingId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      entryText: const EntryText(plainText: 'Work session'),
+    );
+
+    final taskEntry = JournalEntity.task(
+      meta: Metadata(
+        id: taskId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        createdAt: now,
+        updatedAt: now,
+        categoryId: taskCategoryId,
+      ),
+      data: TaskData(
+        title: 'My Task',
+        status: TaskStatus.open(
+          createdAt: now,
+          id: 'status-1',
+          utcOffset: 0,
+        ),
+        statusHistory: [],
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      ),
+    );
+
+    // BasicLink: Task -> TimeRecording (parent relationship)
+    final basicLink = EntryLink.basic(
+      id: 'basic-link-id',
+      fromId: taskId,
+      toId: timeRecordingId,
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+    );
+
+    final category = CategoryDefinition(
+      id: taskCategoryId,
+      createdAt: now,
+      updatedAt: now,
+      name: 'Work',
+      color: '#0000FF',
+      vectorClock: null,
+      private: false,
+      active: true,
+    );
+
+    when(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => [timeRecording]);
+
+    // basicLinksForEntryIds filters at SQL level, only returns BasicLink
+    when(() => mockDb.basicLinksForEntryIds(any()))
+        .thenAnswer((_) async => [basicLink]);
+
+    when(() => mockDb.getJournalEntitiesForIds(any()))
+        .thenAnswer((_) async => [taskEntry]);
+
+    when(() => mockEntitiesCacheService.getCategoryById(taskCategoryId))
+        .thenReturn(category);
+
+    // Act
+    container.listen(
+      dayViewControllerProvider,
+      listener.call,
+      fireImmediately: true,
+    );
+
+    final events = await container.read(dayViewControllerProvider.future);
+
+    // Assert - the calendar event resolves to the Task (not the Rating)
+    // because basicLinksForEntryIds excludes RatingLinks at the SQL level
+    expect(events, hasLength(1));
+    final calendarEvent = events.first.event!;
+    expect(calendarEvent.linkedFrom, isNotNull);
+    expect(calendarEvent.linkedFrom!.meta.id, equals(taskId));
+    expect(calendarEvent.categoryId, equals(taskCategoryId));
+
+    // Verify that only the Task ID was requested (not the Rating ID)
+    final capturedIds =
+        verify(() => mockDb.getJournalEntitiesForIds(captureAny()))
+            .captured
+            .single as Set<String>;
+    expect(capturedIds, contains(taskId));
+    expect(capturedIds, isNot(contains(ratingId)));
+  });
+
+  test('RatingEntry entities excluded from linkedFrom even with BasicLink type',
+      () async {
+    // Defense in depth: if a RatingLink somehow deserializes as a BasicLink
+    // (e.g., due to missing runtimeType discriminator), the resolved entity
+    // is still a RatingEntry and should be excluded from linkedFrom.
+    final now = DateTime.now();
+    final dateFrom = DateTime(now.year, now.month, now.day, 9);
+    final dateTo = dateFrom.add(const Duration(hours: 2));
+
+    const ratingId = 'rating-id';
+    const timeRecordingId = 'time-recording-id';
+
+    final timeRecording = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: timeRecordingId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      entryText: const EntryText(plainText: 'Work session'),
+    );
+
+    // A RatingEntry that would be resolved as linkedFrom
+    final ratingEntry = JournalEntity.rating(
+      meta: Metadata(
+        id: ratingId,
+        dateFrom: now,
+        dateTo: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      data: const RatingData(
+        timeEntryId: timeRecordingId,
+        dimensions: [RatingDimension(key: 'focus', value: 0.8)],
+      ),
+    );
+
+    // Simulate a RatingLink that deserialized as BasicLink (fallback)
+    final linkAsBasic = EntryLink.basic(
+      id: 'mistyped-link-id',
+      fromId: ratingId,
+      toId: timeRecordingId,
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+    );
+
+    when(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => [timeRecording]);
+
+    // Return the mis-typed link (BasicLink wrapping what should be RatingLink)
+    when(() => mockDb.basicLinksForEntryIds(any()))
+        .thenAnswer((_) async => [linkAsBasic]);
+
+    // Return the RatingEntry when the rating ID is fetched
+    when(() => mockDb.getJournalEntitiesForIds(any()))
+        .thenAnswer((_) async => [ratingEntry]);
+
+    when(() => mockEntitiesCacheService.getCategoryById(any()))
+        .thenReturn(null);
+
+    // Act
+    container.listen(
+      dayViewControllerProvider,
+      listener.call,
+      fireImmediately: true,
+    );
+
+    final events = await container.read(dayViewControllerProvider.future);
+
+    // Assert - event should have no linkedFrom since the only
+    // resolved entity is a RatingEntry (which is excluded)
+    expect(events, hasLength(1));
+    final calendarEvent = events.first.event!;
+    expect(calendarEvent.linkedFrom, isNull);
   });
 
   test('DaySelectionController selects day correctly', () {

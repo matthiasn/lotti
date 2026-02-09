@@ -191,6 +191,26 @@ void main() {
       expect(entry?.meta.categoryId, testCategoryId);
     });
 
+    test('createTimerEntry forwards parent categoryId', () async {
+      const testCategoryId = 'parent-category-123';
+
+      // Create a parent entry with a categoryId
+      final parent = await service.createTextEntry(
+        categoryId: testCategoryId,
+      );
+      expect(parent, isNotNull);
+      expect(parent!.meta.categoryId, testCategoryId);
+
+      final timer = await service.createTimerEntry(linked: parent);
+
+      expect(timer, isNotNull);
+      // The timer entry should inherit the parent's categoryId
+      expect(timer!.meta.categoryId, testCategoryId);
+
+      // Timer should also have been started
+      verify(() => mockTimeService.start(timer, parent)).called(1);
+    });
+
     test('showAudioRecordingModal calls AudioRecordingModal.show', () {
       // Note: This test verifies the method exists and can be called.
       // Full integration testing of AudioRecordingModal.show would require

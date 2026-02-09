@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:calendar_view/calendar_view.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/calendar/state/calendar_event.dart';
@@ -22,25 +24,34 @@ void handleCalendarEventTap(
 
   if (id == null) return;
 
-  if (linkedFrom != null) {
-    if (linkedFrom is Task) {
+  log('CAL_TAP entity=${event?.entity.runtimeType} id=$id '
+      'linkedFrom=${linkedFrom?.runtimeType}:${linkedFrom?.meta.id}');
+
+  // Skip RatingEntry parents — ratings are children of time entries,
+  // not meaningful navigation targets from the calendar.
+  final effectiveLinkedFrom = (linkedFrom is RatingEntry) ? null : linkedFrom;
+
+  if (effectiveLinkedFrom != null) {
+    if (effectiveLinkedFrom is Task) {
       // Publish task focus intent before navigation
       // ignore: avoid_dynamic_calls
       ref
           .read(
-            taskFocusControllerProvider(id: linkedFrom.meta.id).notifier,
+            taskFocusControllerProvider(id: effectiveLinkedFrom.meta.id)
+                .notifier,
           )
           .publishTaskFocus(entryId: id, alignment: kDefaultScrollAlignment);
-      beamToNamed('/tasks/${linkedFrom.meta.id}');
+      beamToNamed('/tasks/${effectiveLinkedFrom.meta.id}');
     } else {
       // Publish journal focus intent before navigation
       // ignore: avoid_dynamic_calls
       ref
           .read(
-            journalFocusControllerProvider(id: linkedFrom.meta.id).notifier,
+            journalFocusControllerProvider(id: effectiveLinkedFrom.meta.id)
+                .notifier,
           )
           .publishJournalFocus(entryId: id, alignment: kDefaultScrollAlignment);
-      beamToNamed('/journal/${linkedFrom.meta.id}');
+      beamToNamed('/journal/${effectiveLinkedFrom.meta.id}');
     }
   } else {
     beamToNamed('/journal/$id');

@@ -97,7 +97,10 @@ class DayViewController extends _$DayViewController {
     );
 
     final itemIds = items.map((item) => item.meta.id).toSet();
-    final links = await db.linksForEntryIds(itemIds);
+    // Only fetch BasicLinks (Task -> TimeRecording parent relationships).
+    // RatingLinks (Rating -> TimeRecording) are filtered at the SQL level
+    // to prevent ratings from being resolved as calendar event parents.
+    final links = await db.basicLinksForEntryIds(itemIds);
     final entryIdFromLinkedIds = <String, Set<String>>{};
     final linkedIds = <String>{};
 
@@ -130,7 +133,8 @@ class DayViewController extends _$DayViewController {
               journalEntity is WorkoutEntry)) {
         final linkedTo = entryIdFromLinkedIds[journalEntity.meta.id]
             ?.map((id) => linkedEntries[id])
-            .nonNulls;
+            .nonNulls
+            .where((e) => e is! RatingEntry);
 
         final linkedEntry = linkedTo?.firstOrNull;
         final categoryId = linkedEntry?.meta.categoryId;

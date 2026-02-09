@@ -13,7 +13,6 @@ import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
 import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
-import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -858,7 +857,11 @@ class _ActualBlockContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linkedFrom = slot.linkedFrom;
+    // Ratings are children of time entries, not parent navigation targets.
+    final linkedFrom = switch (slot.linkedFrom) {
+      RatingEntry() => null,
+      final value => value,
+    };
     final entryId = slot.entry.meta.id;
     final categoryId = slot.categoryId;
 
@@ -872,29 +875,16 @@ class _ActualBlockContent extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        if (linkedFrom != null) {
-          if (linkedFrom is Task) {
-            ref
-                .read(
-                  taskFocusControllerProvider(id: linkedFrom.meta.id).notifier,
-                )
-                .publishTaskFocus(
-                  entryId: entryId,
-                  alignment: kDefaultScrollAlignment,
-                );
-            beamToNamed('/tasks/${linkedFrom.meta.id}');
-          } else {
-            ref
-                .read(
-                  journalFocusControllerProvider(id: linkedFrom.meta.id)
-                      .notifier,
-                )
-                .publishJournalFocus(
-                  entryId: entryId,
-                  alignment: kDefaultScrollAlignment,
-                );
-            beamToNamed('/journal/${linkedFrom.meta.id}');
-          }
+        if (linkedFrom is Task) {
+          ref
+              .read(
+                taskFocusControllerProvider(id: linkedFrom.meta.id).notifier,
+              )
+              .publishTaskFocus(
+                entryId: entryId,
+                alignment: kDefaultScrollAlignment,
+              );
+          beamToNamed('/tasks/${linkedFrom.meta.id}');
         } else {
           beamToNamed('/journal/$entryId');
         }
