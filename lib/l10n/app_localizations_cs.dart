@@ -814,11 +814,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get configFlagEnableEvents => 'Povolit události';
 
   @override
-  String get configFlagEnableDailyOs => 'Povolit Daily OS (probíhá vývoj)';
+  String get configFlagEnableDailyOs => 'Povolit DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Povolit zobrazení Daily Operating System pro plánování dne. Tato funkce je ve vývoji.';
+      'Zobrazit DailyOS v hlavní navigaci.';
 
   @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
@@ -1736,7 +1736,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get multiSelectNoItemsFound => 'Žádné položky nenalezeny';
 
   @override
-  String get navTabTitleCalendar => 'Kalendář';
+  String get navTabTitleCalendar => 'DailyOS';
 
   @override
   String get navTabTitleHabits => 'Zvyky';

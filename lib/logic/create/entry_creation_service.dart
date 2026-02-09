@@ -37,7 +37,10 @@ class EntryCreationService {
   /// Creates a timer entry and starts the timer if linked to a parent entry.
   /// Returns the created timer entry or null if creation failed.
   Future<JournalEntity?> createTimerEntry({JournalEntity? linked}) async {
-    final timerItem = await createTextEntry(linkedId: linked?.meta.id);
+    final timerItem = await createTextEntry(
+      linkedId: linked?.meta.id,
+      categoryId: linked?.meta.categoryId,
+    );
     if (linked != null) {
       if (timerItem != null) {
         await getIt<TimeService>().start(timerItem, linked);

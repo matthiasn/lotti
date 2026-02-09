@@ -72,7 +72,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
   bool _isHabitsPageEnabled = true;
   bool _isDashboardsPageEnabled = true;
-  bool _isCalendarPageEnabled = true;
+  bool _isDailyOsPageEnabled = true;
   bool _notLoggedInToastShown = false;
 
   @override
@@ -87,7 +87,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
           _isDashboardsPageEnabled =
               configFlags.contains(enableDashboardsPageFlag);
-          _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
+          _isDailyOsPageEnabled = configFlags.contains(enableDailyOsPageFlag);
         });
       }
     });
@@ -219,7 +219,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         // Calculate the number of navigation items based on enabled flags
         final navItems = [
           true, // Tasks
-          _isCalendarPageEnabled, // Calendar
+          _isDailyOsPageEnabled, // DailyOS
           _isHabitsPageEnabled, // Habits
           _isDashboardsPageEnabled, // Dashboards
           true, // Journal
@@ -244,7 +244,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   index: index,
                   children: [
                     Beamer(routerDelegate: navService.tasksDelegate),
-                    if (_isCalendarPageEnabled)
+                    if (_isDailyOsPageEnabled)
                       Beamer(routerDelegate: navService.calendarDelegate),
                     if (_isHabitsPageEnabled)
                       Beamer(routerDelegate: navService.habitsDelegate),
@@ -299,7 +299,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   ),
                   label: context.messages.navTabTitleTasks,
                 ),
-                if (_isCalendarPageEnabled)
+                if (_isDailyOsPageEnabled)
                   createNavBarItem(
                     semanticLabel: context.messages.navTabTitleCalendar,
                     icon: const Icon(Ionicons.calendar_outline),

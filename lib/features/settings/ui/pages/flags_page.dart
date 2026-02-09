@@ -26,9 +26,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     resendAttachments,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
-    enableCalendarPageFlag,
+    enableDailyOsPageFlag,
     enableEventsFlag,
-    enableDailyOsFlag,
     enableSessionRatingsFlag,
   ];
 
@@ -55,12 +54,10 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
         return Icons.dashboard_rounded;
-      case enableCalendarPageFlag:
+      case enableDailyOsPageFlag:
         return Icons.calendar_today_rounded;
       case enableEventsFlag:
         return Icons.event_rounded;
-      case enableDailyOsFlag:
-        return Icons.today_rounded;
       case enableSessionRatingsFlag:
         return Icons.star_rate_rounded;
       default:
@@ -91,12 +88,10 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPageDescription;
-      case enableCalendarPageFlag:
-        return context.messages.configFlagEnableCalendarPageDescription;
+      case enableDailyOsPageFlag:
+        return context.messages.configFlagEnableDailyOsDescription;
       case enableEventsFlag:
         return context.messages.configFlagEnableEventsDescription;
-      case enableDailyOsFlag:
-        return context.messages.configFlagEnableDailyOsDescription;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatingsDescription;
       default:
@@ -127,12 +122,10 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPage;
-      case enableCalendarPageFlag:
-        return context.messages.configFlagEnableCalendarPage;
+      case enableDailyOsPageFlag:
+        return context.messages.configFlagEnableDailyOs;
       case enableEventsFlag:
         return context.messages.configFlagEnableEvents;
-      case enableDailyOsFlag:
-        return context.messages.configFlagEnableDailyOs;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatings;
       default:

@@ -95,11 +95,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableCalendarPageFlag,
-    description: 'Enable Calendar Page?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable notifications?',
     status: false,
@@ -110,8 +105,8 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableDailyOsFlag,
-    description: 'Enable Daily OS (WIP)?',
+    name: enableDailyOsPageFlag,
+    description: 'Enable DailyOS Page?',
     status: false,
   ),
   const ConfigFlag(
@@ -2161,6 +2156,37 @@ void main() {
 
         final results = await db!.linksForEntryIdsBidirectional({'a'});
         expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ca'});
+      });
+
+      test('basicLinksForEntryIds returns empty list for empty target set',
+          () async {
+        final results = await db!.basicLinksForEntryIds(<String>{});
+        expect(results, isEmpty);
+      });
+
+      test('basicLinksForEntryIds filters out RatingLink entries', () async {
+        final basicLink = buildEntryLink(
+          id: 'basic-link',
+          fromId: 'task-1',
+          toId: 'entry-1',
+          timestamp: DateTime(2024, 8, 2),
+        );
+        final ratingLink = EntryLink.rating(
+          id: 'rating-link',
+          fromId: 'rating-1',
+          toId: 'entry-1',
+          createdAt: DateTime(2024, 8, 2),
+          updatedAt: DateTime(2024, 8, 2),
+          vectorClock: null,
+        );
+
+        await db!.upsertEntryLink(basicLink);
+        await db!.upsertEntryLink(ratingLink);
+
+        final results = await db!.basicLinksForEntryIds({'entry-1'});
+        expect(results, hasLength(1));
+        expect(results.single.id, 'basic-link');
+        expect(results.single, isA<BasicLink>());
       });
 
       test('upsertEntryLink rejects self-links', () async {

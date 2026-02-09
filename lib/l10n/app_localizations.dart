@@ -1514,13 +1514,13 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableDailyOs.
   ///
   /// In en, this message translates to:
-  /// **'Enable Daily OS (WIP)'**
+  /// **'Enable DailyOS'**
   String get configFlagEnableDailyOs;
 
   /// No description provided for @configFlagEnableDailyOsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Enable the Daily Operating System view for day planning. This is a work in progress feature.'**
+  /// **'Show the DailyOS page in the main navigation.'**
   String get configFlagEnableDailyOsDescription;
 
   /// No description provided for @configFlagEnableSessionRatings.
@@ -3158,7 +3158,7 @@ abstract class AppLocalizations {
   /// No description provided for @navTabTitleCalendar.
   ///
   /// In en, this message translates to:
-  /// **'Calendar'**
+  /// **'DailyOS'**
   String get navTabTitleCalendar;
 
   /// No description provided for @navTabTitleHabits.

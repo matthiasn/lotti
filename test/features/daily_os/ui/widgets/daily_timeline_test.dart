@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -11,8 +13,10 @@ import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,6 +67,7 @@ void main() {
   });
 
   tearDown(() async {
+    beamToNamedOverride = null;
     if (getIt.isRegistered<EntitiesCacheService>()) {
       getIt.unregister<EntitiesCacheService>();
     }
@@ -676,6 +681,194 @@ void main() {
         matching: find.byType(GestureDetector),
       );
       expect(gestureDetector, findsWidgets);
+    });
+
+    testWidgets('tap on rating-linked actual block navigates to time entry',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final timeEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'time-entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 11)),
+        ),
+      );
+
+      final ratingEntry = JournalEntity.rating(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: const RatingData(
+          timeEntryId: 'time-entry-1',
+          dimensions: [RatingDimension(key: 'focus', value: 0.5)],
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: timeEntry,
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+                linkedFrom: ratingEntry,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Work'));
+      await tester.pumpAndSettle();
+
+      expect(navigatedPath, equals('/journal/time-entry-1'));
+    });
+
+    testWidgets('tap on non-task linked actual block navigates to time entry',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final timeEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'time-entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 11)),
+        ),
+      );
+
+      final parentJournal = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'journal-parent-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: timeEntry,
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+                linkedFrom: parentJournal,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Work'));
+      await tester.pumpAndSettle();
+
+      expect(navigatedPath, equals('/journal/time-entry-1'));
+    });
+
+    testWidgets(
+        'tap on task-linked actual block navigates to task and publishes focus',
+        (tester) async {
+      when(() => mockCacheService.getCategoryById('cat-1'))
+          .thenReturn(testCategory);
+
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final timeEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'time-entry-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 11)),
+        ),
+      );
+
+      final parentTask = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'cat-1',
+        ),
+        data: TaskData(
+          title: 'Task 1',
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: const [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          timelineData: DailyTimelineData(
+            date: testDate,
+            plannedSlots: const [],
+            actualSlots: [
+              ActualTimeSlot(
+                entry: timeEntry,
+                startTime: testDate.add(const Duration(hours: 10)),
+                endTime: testDate.add(const Duration(hours: 11)),
+                categoryId: testCategory.id,
+                linkedFrom: parentTask,
+              ),
+            ],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Work'));
+      await tester.pumpAndSettle();
+
+      expect(navigatedPath, equals('/tasks/task-1'));
+
+      final container =
+          ProviderScope.containerOf(tester.element(find.byType(DailyTimeline)));
+      final focusState =
+          container.read(taskFocusControllerProvider(id: 'task-1'));
+      expect(focusState?.entryId, equals('time-entry-1'));
     });
 
     testWidgets('respects custom day bounds', (tester) async {

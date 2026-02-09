@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
@@ -179,7 +180,7 @@ void main() {
     when(() => mockDb.getJournalEntitiesForIds(any()))
         .thenAnswer((_) async => []);
 
-    when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+    when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
     when(() => mockDb.getRatingIdsForTimeEntries(any()))
         .thenAnswer((_) async => <String, String>{});
@@ -605,7 +606,7 @@ void main() {
       ).thenAnswer((_) async => [timeEntry]);
 
       // Set up link from task to time entry
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -674,7 +675,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -912,7 +913,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -939,6 +940,140 @@ void main() {
       expect(slot.linkedFrom, isNotNull);
       expect(slot.linkedFrom!.meta.id, equals('task-1'));
       expect(slot.categoryId, equals('cat-work')); // From parent
+    });
+
+    test('actual slots prefer task parent when rating and task are both linked',
+        () async {
+      final plan = createTestPlan(plannedBlocks: []);
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: 'entry-cat',
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      final parentTask = createTestTask(
+        id: 'task-1',
+        categoryId: 'cat-work',
+        dateFrom: testDate,
+        dateTo: testDate,
+      );
+
+      final ratingEntry = JournalEntity.rating(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: const RatingData(
+          timeEntryId: 'time-entry-1',
+          dimensions: [RatingDimension(key: 'focus', value: 0.8)],
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          // Intentionally put rating first to reproduce bad selection order.
+          EntryLink.rating(
+            id: 'rating-link-1',
+            fromId: 'rating-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+          EntryLink.basic(
+            id: 'basic-link-1',
+            fromId: 'task-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'task-1', 'rating-1'}))
+          .thenAnswer((_) async => [ratingEntry, parentTask]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final slot = result.timelineData.actualSlots.single;
+      expect(slot.linkedFrom, isA<Task>());
+      expect(slot.linkedFrom!.meta.id, equals('task-1'));
+      expect(slot.categoryId, equals('cat-work'));
+    });
+
+    test('actual slots ignore rating-only parent links', () async {
+      final plan = createTestPlan(plannedBlocks: []);
+      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+          .thenAnswer((_) async => plan);
+
+      final timeEntry = createTestEntry(
+        id: 'time-entry-1',
+        categoryId: 'entry-cat',
+        dateFrom: testDate.add(const Duration(hours: 9)),
+        dateTo: testDate.add(const Duration(hours: 10)),
+      );
+
+      final ratingEntry = JournalEntity.rating(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: const RatingData(
+          timeEntryId: 'time-entry-1',
+          dimensions: [RatingDimension(key: 'focus', value: 0.8)],
+        ),
+      );
+
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [timeEntry]);
+
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.rating(
+            id: 'rating-link-1',
+            fromId: 'rating-1',
+            toId: 'time-entry-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockDb.getJournalEntitiesForIds({'rating-1'}))
+          .thenAnswer((_) async => [ratingEntry]);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      final slot = result.timelineData.actualSlots.single;
+      expect(slot.linkedFrom, isNull);
+      expect(slot.categoryId, equals('entry-cat'));
     });
 
     test('sorts planned and actual slots by start time', () async {
@@ -1412,7 +1547,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1487,7 +1622,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry1, timeEntry2]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1', 'time-entry-2'}))
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1', 'time-entry-2'}))
           .thenAnswer(
         (_) async => [
           EntryLink.basic(
@@ -1566,7 +1701,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1634,7 +1769,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1708,7 +1843,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [entry1, entry2]);
 
-      when(() => mockDb.linksForEntryIds({'entry-1', 'entry-2'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'entry-1', 'entry-2'}))
+          .thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',
@@ -1775,7 +1911,7 @@ void main() {
       ).thenAnswer((_) async => [entry]);
 
       // No links
-      when(() => mockDb.linksForEntryIds({'entry-1'}))
+      when(() => mockDb.basicLinksForEntryIds({'entry-1'}))
           .thenAnswer((_) async => []);
 
       final result = await container.read(
@@ -1905,7 +2041,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [timeEntry]);
 
-      when(() => mockDb.linksForEntryIds({'time-entry-1'})).thenAnswer(
+      when(() => mockDb.basicLinksForEntryIds({'time-entry-1'})).thenAnswer(
         (_) async => [
           EntryLink.basic(
             id: 'link-1',

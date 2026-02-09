@@ -24,7 +24,7 @@ class NavService {
     _journalDb.watchActiveConfigFlagNames().forEach((configFlags) {
       _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
       _isDashboardsPageEnabled = configFlags.contains(enableDashboardsPageFlag);
-      _isCalendarPageEnabled = configFlags.contains(enableCalendarPageFlag);
+      _isDailyOsPageEnabled = configFlags.contains(enableDailyOsPageFlag);
     });
   }
 
@@ -33,7 +33,7 @@ class NavService {
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
-  bool _isCalendarPageEnabled = false;
+  bool _isDailyOsPageEnabled = false;
 
   String currentPath = '/habits';
   final indexStreamController = StreamController<int>.broadcast();
@@ -94,7 +94,7 @@ class NavService {
 
   List<BeamerDelegate> get beamerDelegates => <BeamerDelegate>[
         tasksDelegate,
-        if (_isCalendarPageEnabled) calendarDelegate,
+        if (_isDailyOsPageEnabled) calendarDelegate,
         if (_isHabitsPageEnabled) habitsDelegate,
         if (_isDashboardsPageEnabled) dashboardsDelegate,
         journalDelegate,

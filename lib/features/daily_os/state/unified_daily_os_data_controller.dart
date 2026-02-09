@@ -272,7 +272,7 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
 
     // Fetch linked entries (parent tasks/journals) for each entry
     final entryIds = entries.map((e) => e.meta.id).toSet();
-    final links = await db.linksForEntryIds(entryIds);
+    final links = await db.basicLinksForEntryIds(entryIds);
 
     // Build lookup maps for linked entries
     final entryIdToLinkedFromIds = <String, Set<String>>{};
@@ -321,6 +321,31 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     );
   }
 
+  /// Resolves the most appropriate parent entry for a time entry.
+  ///
+  /// Priority:
+  /// 1. `Task` parents (primary navigation target)
+  /// 2. Any non-rating parent
+  /// 3. `null` if only rating parents exist
+  JournalEntity? _resolveLinkedFrom({
+    required Set<String>? linkedFromIds,
+    required Map<String, JournalEntity> linkedFromMap,
+  }) {
+    if (linkedFromIds == null) return null;
+
+    JournalEntity? fallbackNonRating;
+
+    for (final linkedFromId in linkedFromIds) {
+      final linkedFrom = linkedFromMap[linkedFromId];
+      if (linkedFrom == null) continue;
+      if (linkedFrom is Task) return linkedFrom;
+      if (linkedFrom is RatingEntry) continue;
+      fallbackNonRating ??= linkedFrom;
+    }
+
+    return fallbackNonRating;
+  }
+
   DailyTimelineData _buildTimelineData({
     required DayPlanEntry dayPlan,
     required List<JournalEntity> entries,
@@ -347,9 +372,10 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       final duration = entry.meta.dateTo.difference(entry.meta.dateFrom);
       if (duration <= Duration.zero) continue;
 
-      final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
-      final linkedFrom =
-          linkedFromId != null ? linkedFromMap[linkedFromId] : null;
+      final linkedFrom = _resolveLinkedFrom(
+        linkedFromIds: entryIdToLinkedFromIds[entry.meta.id],
+        linkedFromMap: linkedFromMap,
+      );
       final categoryId = linkedFrom?.meta.categoryId ?? entry.meta.categoryId;
 
       actualSlots.add(
@@ -407,9 +433,10 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     // Group entries by category, using linked parent's category if available
     final entriesByCategory = <String, List<JournalEntity>>{};
     for (final entry in entries) {
-      final linkedFromId = entryIdToLinkedFromIds[entry.meta.id]?.firstOrNull;
-      final linkedFrom =
-          linkedFromId != null ? linkedFromMap[linkedFromId] : null;
+      final linkedFrom = _resolveLinkedFrom(
+        linkedFromIds: entryIdToLinkedFromIds[entry.meta.id],
+        linkedFromMap: linkedFromMap,
+      );
       final categoryId = linkedFrom?.meta.categoryId ?? entry.meta.categoryId;
 
       if (categoryId != null) {

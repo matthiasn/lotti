@@ -1,6 +1,5 @@
 import 'package:beamer/beamer.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
-import 'package:lotti/beamer/locations/daily_os_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
@@ -74,18 +73,6 @@ final settingsBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.uri.path.contains('settings')) {
       return SettingsLocation(routeInformation);
-    }
-    return NotFound(path: routeInformation.uri.path);
-  },
-);
-
-final dailyOsBeamerDelegate = BeamerDelegate(
-  initialPath: '/daily-os',
-  updateParent: false,
-  updateFromParent: false,
-  locationBuilder: (routeInformation, _) {
-    if (routeInformation.uri.path.contains('daily-os')) {
-      return DailyOsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },

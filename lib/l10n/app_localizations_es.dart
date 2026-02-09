@@ -808,11 +808,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get configFlagEnableEvents => 'Enable Events';
 
   @override
-  String get configFlagEnableDailyOs => 'Enable Daily OS (WIP)';
+  String get configFlagEnableDailyOs => 'Habilitar DailyOS';
 
   @override
   String get configFlagEnableDailyOsDescription =>
-      'Enable the Daily Operating System view for day planning. This is a work in progress feature.';
+      'Mostrar DailyOS en la navegación principal.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -1729,7 +1729,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get multiSelectNoItemsFound => 'No se encontraron elementos';
 
   @override
-  String get navTabTitleCalendar => 'Calendario';
+  String get navTabTitleCalendar => 'DailyOS';
 
   @override
   String get navTabTitleHabits => 'Hábitos';

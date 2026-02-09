@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/database.dart';
@@ -126,10 +127,13 @@ void main() {
       test('creates new rating when none exists', () async {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => null);
+        when(() => mockDb.journalEntityById(testTimeEntryId))
+            .thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -219,10 +223,13 @@ void main() {
       test('creates rating without note', () async {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => null);
+        when(() => mockDb.journalEntityById(testTimeEntryId))
+            .thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -244,6 +251,69 @@ void main() {
 
         expect(result, isA<RatingEntry>());
         expect(result!.data.note, isNull);
+      });
+
+      test('inherits categoryId from time entry', () async {
+        const timeEntryCategoryId = 'category-work';
+        final timeEntryMeta = Metadata(
+          id: testTimeEntryId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          categoryId: timeEntryCategoryId,
+        );
+        final timeEntry = JournalEntity.journalEntry(
+          meta: timeEntryMeta,
+          entryText: const EntryText(plainText: 'Work session'),
+        );
+
+        final metadataWithCategory = testMetadata.copyWith(
+          categoryId: timeEntryCategoryId,
+        );
+
+        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
+            .thenAnswer((_) async => null);
+        when(() => mockDb.journalEntityById(testTimeEntryId))
+            .thenAnswer((_) async => timeEntry);
+        when(
+          () => mockPersistence.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: timeEntryCategoryId,
+          ),
+        ).thenAnswer((_) async => metadataWithCategory);
+        when(
+          () => mockPersistence.createDbEntity(
+            any(),
+            shouldAddGeolocation: false,
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => mockVectorClock.getNextVectorClock())
+            .thenAnswer((_) async => testVectorClock);
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+        when(() => mockNotifications.notify(any())).thenReturn(null);
+        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+
+        final result = await repository.createOrUpdateRating(
+          timeEntryId: testTimeEntryId,
+          dimensions: testDimensions,
+        );
+
+        expect(result, isA<RatingEntry>());
+        expect(result!.meta.categoryId, equals(timeEntryCategoryId));
+
+        // Verify the time entry was looked up
+        verify(() => mockDb.journalEntityById(testTimeEntryId)).called(1);
+
+        // Verify createMetadata was called with the category
+        verify(
+          () => mockPersistence.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: timeEntryCategoryId,
+          ),
+        ).called(1);
       });
 
       test('returns null and logs on exception', () async {
@@ -279,10 +349,13 @@ void main() {
       test('creates RatingLink with correct from/to IDs', () async {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => null);
+        when(() => mockDb.journalEntityById(testTimeEntryId))
+            .thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -317,10 +390,13 @@ void main() {
       test('enqueues sync message for link', () async {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => null);
+        when(() => mockDb.journalEntityById(testTimeEntryId))
+            .thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(

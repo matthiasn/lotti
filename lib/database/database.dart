@@ -1326,6 +1326,18 @@ class JournalDb extends _$JournalDb {
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 
+  /// Returns only [BasicLink] entries for the given [ids], filtering out
+  /// RatingLinks at the SQL level using the `type` column.
+  Future<List<EntryLink>> basicLinksForEntryIds(Set<String> ids) async {
+    if (ids.isEmpty) return <EntryLink>[];
+    final entryLinks = await (select(linkedEntries)
+          ..where(
+            (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
+          ))
+        .get();
+    return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
   Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
     if (ids.isEmpty) return <EntryLink>[];
     final idList = ids.toList();

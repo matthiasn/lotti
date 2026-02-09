@@ -78,13 +78,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableCalendarPageFlag,
-      description: 'Enable Calendar Page?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableEventsFlag,
       description: 'Enable Events?',
       status: false,
@@ -92,8 +85,8 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableDailyOsFlag,
-      description: 'Enable Daily OS (WIP)?',
+      name: enableDailyOsPageFlag,
+      description: 'Enable DailyOS Page?',
       status: false,
     ),
   );

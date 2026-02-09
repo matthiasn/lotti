@@ -9,7 +9,8 @@ const enableLoggingFlag = 'enable_logging';
 
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
-const enableCalendarPageFlag = 'enable_calendar_page';
+const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';
-const enableDailyOsFlag = 'enable_daily_os';
 const enableSessionRatingsFlag = 'enable_session_ratings';
+
+const kDefaultScrollAlignment = 0.3;

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.852" date="2026-02-09">
+      <description>
+        <p>DailyOS Migration and Navigation Fixes: The old Calendar tab has been removed and replaced by the DailyOS tab. The classic calendar day view has been removed and the /calendar route now always opens DailyOS. Tapping a time recording no longer navigates to a session rating instead of the parent task. Session ratings and timer entries now inherit their parent task's category, and the old calendar/DailyOS feature toggles were replaced with a single DailyOS page flag.</p>
+      </description>
+    </release>
     <release version="0.9.851" date="2026-02-09">
       <description>
         <p>Task Time Fix: When multiple linked entries overlap in time (for example a gym trip that contains a fitness workout), the task progress view previously summed their durations independently, inflating the displayed time. It now merges overlapping time ranges into their union — the same algorithm that already powers the accurate Time Budget view — so task progress and budget views show consistent, correct durations.</p>
