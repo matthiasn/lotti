@@ -467,7 +467,7 @@
       }
     }
   },
-  "dailyOsDurationMinutes": "{count} minute",
+  "dailyOsDurationMinutes": "{count, plural, =1{1 minut} other{{count} minute}}",
   "@dailyOsDurationMinutes": {
     "placeholders": {
       "count": {
@@ -1208,7 +1208,7 @@
   "taskDueToday": "Scadent astăzi",
   "taskDueTomorrow": "Scadent mâine",
   "taskDueYesterday": "Scadent ieri",
-  "taskDueInDays": "Scadent în {days} zile",
+  "taskDueInDays": "{days, plural, =1{Scadent mâine} other{Scadent în {days} zile}}",
   "@taskDueInDays": {
     "placeholders": {
       "days": {
@@ -1216,7 +1216,7 @@
       }
     }
   },
-  "taskOverdueByDays": "Întârziat cu {days} zile",
+  "taskOverdueByDays": "{days, plural, =1{Întârziat cu 1 zi} other{Întârziat cu {days} zile}}",
   "@taskOverdueByDays": {
     "placeholders": {
       "days": {

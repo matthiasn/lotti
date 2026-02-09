@@ -1088,7 +1088,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsDurationMinutes(int count) {
-    return '$count minute';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minute',
+      one: '1 minut',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3171,12 +3177,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String taskDueInDays(int days) {
-    return 'Scadent în $days zile';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Scadent în $days zile',
+      one: 'Scadent mâine',
+    );
+    return '$_temp0';
   }
 
   @override
   String taskOverdueByDays(int days) {
-    return 'Întârziat cu $days zile';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Întârziat cu $days zile',
+      one: 'Întârziat cu 1 zi',
+    );
+    return '$_temp0';
   }
 
   @override
