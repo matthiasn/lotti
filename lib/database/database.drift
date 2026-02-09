@@ -872,14 +872,29 @@ SELECT le.from_id AS rating_id, le.to_id AS time_entry_id
   AND j.deleted = false
   ORDER BY j.updated_at ASC;
 
--- Find existing rating for a specific time entry (for re-open logic).
--- Orders by most recently updated to ensure deterministic result.
+-- Find existing rating for a specific time entry and catalog
+-- (for re-open logic). Orders by most recently updated to ensure
+-- deterministic result. Uses COALESCE to handle legacy rows where
+-- subtype was empty (treats them as 'session').
 ratingForTimeEntry:
 SELECT j.* FROM journal j
   INNER JOIN linked_entries le ON j.id = le.from_id
   WHERE le.to_id = :timeEntryId
   AND le.type = 'RatingLink'
+  AND COALESCE(NULLIF(j.subtype, ''), 'session') = :catalogId
   AND COALESCE(le.hidden, false) = false
   AND j.deleted = false
   ORDER BY j.updated_at DESC
   LIMIT 1;
+
+-- Find all ratings linked to a target entity (for summary views
+-- showing multiple catalogs). Returns all catalogs, most recent first
+-- within each catalog.
+allRatingsForTarget:
+SELECT j.* FROM journal j
+  INNER JOIN linked_entries le ON j.id = le.from_id
+  WHERE le.to_id = :targetId
+  AND le.type = 'RatingLink'
+  AND COALESCE(le.hidden, false) = false
+  AND j.deleted = false
+  ORDER BY COALESCE(NULLIF(j.subtype, ''), 'session') ASC, j.updated_at DESC;

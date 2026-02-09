@@ -233,7 +233,7 @@ The existing `_TapBar` and `_ChallengeSkillRow` become reusable widgets selected
 ### State/Repository Changes
 - **`lib/features/ratings/state/rating_controller.dart`** — Accept `catalogId` parameter alongside `targetId`. Pass both to DB and repository.
 - **`lib/features/ratings/state/rating_prompt_controller.dart`** — Extend state to carry both `targetId` and `catalogId`.
-- **`lib/features/ratings/repository/rating_repository.dart`** — Pass `catalogId` through to `RatingData`. Use deterministic UUID v5 ID (`'rating:$targetId:$catalogId'`) when creating. Snapshot question metadata into dimensions on save.
+- **`lib/features/ratings/repository/rating_repository.dart`** — Pass `catalogId` through to `RatingData`. Use deterministic UUID v5 ID (`jsonEncode(['rating', targetId, catalogId])`) when creating. Snapshot question metadata into dimensions on save.
 
 ### Database
 - **`lib/database/database.drift`** — Update `ratingForTimeEntry` query to filter by `subtype` (catalogId) with COALESCE for legacy compat. Add `allRatingsForTarget` query with COALESCE in ORDER BY.

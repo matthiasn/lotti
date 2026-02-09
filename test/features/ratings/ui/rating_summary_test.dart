@@ -17,7 +17,7 @@ void main() {
       dateTo: DateTime(2024, 6, 15),
     ),
     data: const RatingData(
-      timeEntryId: 'time-entry-1',
+      targetId: 'time-entry-1',
       dimensions: [
         RatingDimension(key: 'productivity', value: 0.7),
         RatingDimension(key: 'energy', value: 0.5),
@@ -90,7 +90,7 @@ void main() {
           dateTo: DateTime(2024, 6, 15),
         ),
         data: const RatingData(
-          timeEntryId: 'time-entry-2',
+          targetId: 'time-entry-2',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.7),
             RatingDimension(key: 'energy', value: 0.5),
@@ -120,7 +120,7 @@ void main() {
           dateTo: DateTime(2024, 6, 15),
         ),
         data: const RatingData(
-          timeEntryId: 'time-entry-3',
+          targetId: 'time-entry-3',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.7),
             RatingDimension(key: 'energy', value: 0.5),
@@ -160,7 +160,7 @@ void main() {
           dateTo: DateTime(2024, 6, 15),
         ),
         data: const RatingData(
-          timeEntryId: 'time-entry-4',
+          targetId: 'time-entry-4',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.7),
             RatingDimension(key: 'energy', value: 0.5),

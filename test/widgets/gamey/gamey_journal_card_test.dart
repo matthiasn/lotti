@@ -213,7 +213,7 @@ void main() {
           dateTo: now.add(const Duration(hours: 1)),
         ),
         data: const RatingData(
-          timeEntryId: 'te-1',
+          targetId: 'te-1',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.8),
           ],

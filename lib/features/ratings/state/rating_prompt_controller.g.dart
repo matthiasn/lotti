@@ -10,7 +10,7 @@ part of 'rating_prompt_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Controls when the rating modal should be shown.
 ///
-/// Holds the time entry ID that should be rated, or null when no
+/// Holds the target entry ID that should be rated, or null when no
 /// rating is pending. The UI layer listens to this and shows the
 /// modal when it becomes non-null.
 
@@ -19,14 +19,14 @@ final ratingPromptControllerProvider = RatingPromptControllerProvider._();
 
 /// Controls when the rating modal should be shown.
 ///
-/// Holds the time entry ID that should be rated, or null when no
+/// Holds the target entry ID that should be rated, or null when no
 /// rating is pending. The UI layer listens to this and shows the
 /// modal when it becomes non-null.
 final class RatingPromptControllerProvider
     extends $NotifierProvider<RatingPromptController, String?> {
   /// Controls when the rating modal should be shown.
   ///
-  /// Holds the time entry ID that should be rated, or null when no
+  /// Holds the target entry ID that should be rated, or null when no
   /// rating is pending. The UI layer listens to this and shows the
   /// modal when it becomes non-null.
   RatingPromptControllerProvider._()
@@ -57,11 +57,11 @@ final class RatingPromptControllerProvider
 }
 
 String _$ratingPromptControllerHash() =>
-    r'41bc5711ca788185f0d48c0c4e0393a1051fbd07';
+    r'af45b51088fd457dff96fbcbeb905930a00f7209';
 
 /// Controls when the rating modal should be shown.
 ///
-/// Holds the time entry ID that should be rated, or null when no
+/// Holds the target entry ID that should be rated, or null when no
 /// rating is pending. The UI layer listens to this and shows the
 /// modal when it becomes non-null.
 

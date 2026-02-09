@@ -682,7 +682,7 @@ class ModernRateSessionItem extends ConsumerWidget {
     }
 
     final rating =
-        ref.watch(ratingControllerProvider(timeEntryId: entryId)).value;
+        ref.watch(ratingControllerProvider(targetId: entryId)).value;
     final hasRating = rating != null;
 
     return ActionMenuListItem(

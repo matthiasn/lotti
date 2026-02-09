@@ -106,7 +106,7 @@ class RatingSummary extends StatelessWidget {
               tooltip: messages.sessionRatingEditButton,
               onPressed: () => SessionRatingModal.show(
                 context,
-                data.timeEntryId,
+                data.targetId,
               ),
             ),
           ),

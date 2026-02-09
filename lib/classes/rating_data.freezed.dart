@@ -14,11 +14,20 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$RatingData {
-  /// The rated time entry's ID (denormalized for convenience).
-  String get timeEntryId;
+  /// The rated entity's ID. For session ratings this is the time entry ID.
+  /// For day ratings it will be the DayPlanEntry ID, for task ratings
+  /// the Task ID. JSON key remains 'timeEntryId' for wire compatibility.
+  @JsonKey(name: 'timeEntryId')
+  String get targetId;
 
   /// Individual dimension ratings, each normalized to 0.0-1.0.
   List<RatingDimension> get dimensions;
+
+  /// Identifies which question catalog was used to produce this rating.
+  /// Enables multiple distinct ratings per target entity (e.g. a task
+  /// rated at start vs completion, or a day rated morning vs evening).
+  /// The invariant is: at most one rating per (targetId, catalogId).
+  String get catalogId;
 
   /// Schema version for the rating dimensions.
   /// Increment when adding/removing/reordering questions.
@@ -42,10 +51,12 @@ mixin _$RatingData {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is RatingData &&
-            (identical(other.timeEntryId, timeEntryId) ||
-                other.timeEntryId == timeEntryId) &&
+            (identical(other.targetId, targetId) ||
+                other.targetId == targetId) &&
             const DeepCollectionEquality()
                 .equals(other.dimensions, dimensions) &&
+            (identical(other.catalogId, catalogId) ||
+                other.catalogId == catalogId) &&
             (identical(other.schemaVersion, schemaVersion) ||
                 other.schemaVersion == schemaVersion) &&
             (identical(other.note, note) || other.note == note));
@@ -53,12 +64,17 @@ mixin _$RatingData {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, timeEntryId,
-      const DeepCollectionEquality().hash(dimensions), schemaVersion, note);
+  int get hashCode => Object.hash(
+      runtimeType,
+      targetId,
+      const DeepCollectionEquality().hash(dimensions),
+      catalogId,
+      schemaVersion,
+      note);
 
   @override
   String toString() {
-    return 'RatingData(timeEntryId: $timeEntryId, dimensions: $dimensions, schemaVersion: $schemaVersion, note: $note)';
+    return 'RatingData(targetId: $targetId, dimensions: $dimensions, catalogId: $catalogId, schemaVersion: $schemaVersion, note: $note)';
   }
 }
 
@@ -69,8 +85,9 @@ abstract mixin class $RatingDataCopyWith<$Res> {
       _$RatingDataCopyWithImpl;
   @useResult
   $Res call(
-      {String timeEntryId,
+      {@JsonKey(name: 'timeEntryId') String targetId,
       List<RatingDimension> dimensions,
+      String catalogId,
       int schemaVersion,
       String? note});
 }
@@ -87,20 +104,25 @@ class _$RatingDataCopyWithImpl<$Res> implements $RatingDataCopyWith<$Res> {
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? timeEntryId = null,
+    Object? targetId = null,
     Object? dimensions = null,
+    Object? catalogId = null,
     Object? schemaVersion = null,
     Object? note = freezed,
   }) {
     return _then(_self.copyWith(
-      timeEntryId: null == timeEntryId
-          ? _self.timeEntryId
-          : timeEntryId // ignore: cast_nullable_to_non_nullable
+      targetId: null == targetId
+          ? _self.targetId
+          : targetId // ignore: cast_nullable_to_non_nullable
               as String,
       dimensions: null == dimensions
           ? _self.dimensions
           : dimensions // ignore: cast_nullable_to_non_nullable
               as List<RatingDimension>,
+      catalogId: null == catalogId
+          ? _self.catalogId
+          : catalogId // ignore: cast_nullable_to_non_nullable
+              as String,
       schemaVersion: null == schemaVersion
           ? _self.schemaVersion
           : schemaVersion // ignore: cast_nullable_to_non_nullable
@@ -206,15 +228,19 @@ extension RatingDataPatterns on RatingData {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String timeEntryId, List<RatingDimension> dimensions,
-            int schemaVersion, String? note)?
+    TResult Function(
+            @JsonKey(name: 'timeEntryId') String targetId,
+            List<RatingDimension> dimensions,
+            String catalogId,
+            int schemaVersion,
+            String? note)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _RatingData() when $default != null:
-        return $default(_that.timeEntryId, _that.dimensions,
+        return $default(_that.targetId, _that.dimensions, _that.catalogId,
             _that.schemaVersion, _that.note);
       case _:
         return orElse();
@@ -236,14 +262,18 @@ extension RatingDataPatterns on RatingData {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String timeEntryId, List<RatingDimension> dimensions,
-            int schemaVersion, String? note)
+    TResult Function(
+            @JsonKey(name: 'timeEntryId') String targetId,
+            List<RatingDimension> dimensions,
+            String catalogId,
+            int schemaVersion,
+            String? note)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingData():
-        return $default(_that.timeEntryId, _that.dimensions,
+        return $default(_that.targetId, _that.dimensions, _that.catalogId,
             _that.schemaVersion, _that.note);
       case _:
         throw StateError('Unexpected subclass');
@@ -264,14 +294,18 @@ extension RatingDataPatterns on RatingData {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String timeEntryId, List<RatingDimension> dimensions,
-            int schemaVersion, String? note)?
+    TResult? Function(
+            @JsonKey(name: 'timeEntryId') String targetId,
+            List<RatingDimension> dimensions,
+            String catalogId,
+            int schemaVersion,
+            String? note)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingData() when $default != null:
-        return $default(_that.timeEntryId, _that.dimensions,
+        return $default(_that.targetId, _that.dimensions, _that.catalogId,
             _that.schemaVersion, _that.note);
       case _:
         return null;
@@ -283,8 +317,9 @@ extension RatingDataPatterns on RatingData {
 @JsonSerializable()
 class _RatingData extends RatingData {
   const _RatingData(
-      {required this.timeEntryId,
+      {@JsonKey(name: 'timeEntryId') required this.targetId,
       required final List<RatingDimension> dimensions,
+      this.catalogId = 'session',
       this.schemaVersion = 1,
       this.note})
       : _dimensions = dimensions,
@@ -292,9 +327,12 @@ class _RatingData extends RatingData {
   factory _RatingData.fromJson(Map<String, dynamic> json) =>
       _$RatingDataFromJson(json);
 
-  /// The rated time entry's ID (denormalized for convenience).
+  /// The rated entity's ID. For session ratings this is the time entry ID.
+  /// For day ratings it will be the DayPlanEntry ID, for task ratings
+  /// the Task ID. JSON key remains 'timeEntryId' for wire compatibility.
   @override
-  final String timeEntryId;
+  @JsonKey(name: 'timeEntryId')
+  final String targetId;
 
   /// Individual dimension ratings, each normalized to 0.0-1.0.
   final List<RatingDimension> _dimensions;
@@ -306,6 +344,14 @@ class _RatingData extends RatingData {
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_dimensions);
   }
+
+  /// Identifies which question catalog was used to produce this rating.
+  /// Enables multiple distinct ratings per target entity (e.g. a task
+  /// rated at start vs completion, or a day rated morning vs evening).
+  /// The invariant is: at most one rating per (targetId, catalogId).
+  @override
+  @JsonKey()
+  final String catalogId;
 
   /// Schema version for the rating dimensions.
   /// Increment when adding/removing/reordering questions.
@@ -337,10 +383,12 @@ class _RatingData extends RatingData {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _RatingData &&
-            (identical(other.timeEntryId, timeEntryId) ||
-                other.timeEntryId == timeEntryId) &&
+            (identical(other.targetId, targetId) ||
+                other.targetId == targetId) &&
             const DeepCollectionEquality()
                 .equals(other._dimensions, _dimensions) &&
+            (identical(other.catalogId, catalogId) ||
+                other.catalogId == catalogId) &&
             (identical(other.schemaVersion, schemaVersion) ||
                 other.schemaVersion == schemaVersion) &&
             (identical(other.note, note) || other.note == note));
@@ -348,12 +396,17 @@ class _RatingData extends RatingData {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, timeEntryId,
-      const DeepCollectionEquality().hash(_dimensions), schemaVersion, note);
+  int get hashCode => Object.hash(
+      runtimeType,
+      targetId,
+      const DeepCollectionEquality().hash(_dimensions),
+      catalogId,
+      schemaVersion,
+      note);
 
   @override
   String toString() {
-    return 'RatingData(timeEntryId: $timeEntryId, dimensions: $dimensions, schemaVersion: $schemaVersion, note: $note)';
+    return 'RatingData(targetId: $targetId, dimensions: $dimensions, catalogId: $catalogId, schemaVersion: $schemaVersion, note: $note)';
   }
 }
 
@@ -366,8 +419,9 @@ abstract mixin class _$RatingDataCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String timeEntryId,
+      {@JsonKey(name: 'timeEntryId') String targetId,
       List<RatingDimension> dimensions,
+      String catalogId,
       int schemaVersion,
       String? note});
 }
@@ -384,20 +438,25 @@ class __$RatingDataCopyWithImpl<$Res> implements _$RatingDataCopyWith<$Res> {
   @override
   @pragma('vm:prefer-inline')
   $Res call({
-    Object? timeEntryId = null,
+    Object? targetId = null,
     Object? dimensions = null,
+    Object? catalogId = null,
     Object? schemaVersion = null,
     Object? note = freezed,
   }) {
     return _then(_RatingData(
-      timeEntryId: null == timeEntryId
-          ? _self.timeEntryId
-          : timeEntryId // ignore: cast_nullable_to_non_nullable
+      targetId: null == targetId
+          ? _self.targetId
+          : targetId // ignore: cast_nullable_to_non_nullable
               as String,
       dimensions: null == dimensions
           ? _self._dimensions
           : dimensions // ignore: cast_nullable_to_non_nullable
               as List<RatingDimension>,
+      catalogId: null == catalogId
+          ? _self.catalogId
+          : catalogId // ignore: cast_nullable_to_non_nullable
+              as String,
       schemaVersion: null == schemaVersion
           ? _self.schemaVersion
           : schemaVersion // ignore: cast_nullable_to_non_nullable
@@ -419,6 +478,26 @@ mixin _$RatingDimension {
   /// Normalized value between 0.0 and 1.0.
   double get value;
 
+  /// The localized question text shown to the user at time of rating.
+  /// Captured in whatever language the user had active.
+  String? get question;
+
+  /// English semantic description of what this dimension measures and
+  /// how to interpret the 0-1 scale. Intended for LLM consumption so
+  /// it can determine "good" vs "bad" outcomes without a schema lookup.
+  /// Example: "Measures subjective productivity. 0.0 = completely
+  /// unproductive, 1.0 = peak productivity."
+  String? get description;
+
+  /// Input type used to collect this answer ('tapBar', 'segmented',
+  /// 'boolean'). Allows the UI and LLMs to interpret the value.
+  String? get inputType;
+
+  /// Labels for segmented/categorical options (e.g. ["Too easy",
+  /// "Just right", "Too challenging"]). Present only when
+  /// [inputType] is 'segmented'.
+  List<String>? get optionLabels;
+
   /// Create a copy of RatingDimension
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -436,16 +515,31 @@ mixin _$RatingDimension {
         (other.runtimeType == runtimeType &&
             other is RatingDimension &&
             (identical(other.key, key) || other.key == key) &&
-            (identical(other.value, value) || other.value == value));
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.question, question) ||
+                other.question == question) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.inputType, inputType) ||
+                other.inputType == inputType) &&
+            const DeepCollectionEquality()
+                .equals(other.optionLabels, optionLabels));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, key, value);
+  int get hashCode => Object.hash(
+      runtimeType,
+      key,
+      value,
+      question,
+      description,
+      inputType,
+      const DeepCollectionEquality().hash(optionLabels));
 
   @override
   String toString() {
-    return 'RatingDimension(key: $key, value: $value)';
+    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels)';
   }
 }
 
@@ -455,7 +549,13 @@ abstract mixin class $RatingDimensionCopyWith<$Res> {
           RatingDimension value, $Res Function(RatingDimension) _then) =
       _$RatingDimensionCopyWithImpl;
   @useResult
-  $Res call({String key, double value});
+  $Res call(
+      {String key,
+      double value,
+      String? question,
+      String? description,
+      String? inputType,
+      List<String>? optionLabels});
 }
 
 /// @nodoc
@@ -473,6 +573,10 @@ class _$RatingDimensionCopyWithImpl<$Res>
   $Res call({
     Object? key = null,
     Object? value = null,
+    Object? question = freezed,
+    Object? description = freezed,
+    Object? inputType = freezed,
+    Object? optionLabels = freezed,
   }) {
     return _then(_self.copyWith(
       key: null == key
@@ -483,6 +587,22 @@ class _$RatingDimensionCopyWithImpl<$Res>
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
               as double,
+      question: freezed == question
+          ? _self.question
+          : question // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      inputType: freezed == inputType
+          ? _self.inputType
+          : inputType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      optionLabels: freezed == optionLabels
+          ? _self.optionLabels
+          : optionLabels // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }
@@ -580,13 +700,16 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String key, double value)? $default, {
+    TResult Function(String key, double value, String? question,
+            String? description, String? inputType, List<String>? optionLabels)?
+        $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _RatingDimension() when $default != null:
-        return $default(_that.key, _that.value);
+        return $default(_that.key, _that.value, _that.question,
+            _that.description, _that.inputType, _that.optionLabels);
       case _:
         return orElse();
     }
@@ -607,12 +730,15 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String key, double value) $default,
+    TResult Function(String key, double value, String? question,
+            String? description, String? inputType, List<String>? optionLabels)
+        $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingDimension():
-        return $default(_that.key, _that.value);
+        return $default(_that.key, _that.value, _that.question,
+            _that.description, _that.inputType, _that.optionLabels);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -632,12 +758,15 @@ extension RatingDimensionPatterns on RatingDimension {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String key, double value)? $default,
+    TResult? Function(String key, double value, String? question,
+            String? description, String? inputType, List<String>? optionLabels)?
+        $default,
   ) {
     final _that = this;
     switch (_that) {
       case _RatingDimension() when $default != null:
-        return $default(_that.key, _that.value);
+        return $default(_that.key, _that.value, _that.question,
+            _that.description, _that.inputType, _that.optionLabels);
       case _:
         return null;
     }
@@ -647,7 +776,14 @@ extension RatingDimensionPatterns on RatingDimension {
 /// @nodoc
 @JsonSerializable()
 class _RatingDimension implements RatingDimension {
-  const _RatingDimension({required this.key, required this.value});
+  const _RatingDimension(
+      {required this.key,
+      required this.value,
+      this.question,
+      this.description,
+      this.inputType,
+      final List<String>? optionLabels})
+      : _optionLabels = optionLabels;
   factory _RatingDimension.fromJson(Map<String, dynamic> json) =>
       _$RatingDimensionFromJson(json);
 
@@ -659,6 +795,41 @@ class _RatingDimension implements RatingDimension {
   /// Normalized value between 0.0 and 1.0.
   @override
   final double value;
+
+  /// The localized question text shown to the user at time of rating.
+  /// Captured in whatever language the user had active.
+  @override
+  final String? question;
+
+  /// English semantic description of what this dimension measures and
+  /// how to interpret the 0-1 scale. Intended for LLM consumption so
+  /// it can determine "good" vs "bad" outcomes without a schema lookup.
+  /// Example: "Measures subjective productivity. 0.0 = completely
+  /// unproductive, 1.0 = peak productivity."
+  @override
+  final String? description;
+
+  /// Input type used to collect this answer ('tapBar', 'segmented',
+  /// 'boolean'). Allows the UI and LLMs to interpret the value.
+  @override
+  final String? inputType;
+
+  /// Labels for segmented/categorical options (e.g. ["Too easy",
+  /// "Just right", "Too challenging"]). Present only when
+  /// [inputType] is 'segmented'.
+  final List<String>? _optionLabels;
+
+  /// Labels for segmented/categorical options (e.g. ["Too easy",
+  /// "Just right", "Too challenging"]). Present only when
+  /// [inputType] is 'segmented'.
+  @override
+  List<String>? get optionLabels {
+    final value = _optionLabels;
+    if (value == null) return null;
+    if (_optionLabels is EqualUnmodifiableListView) return _optionLabels;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   /// Create a copy of RatingDimension
   /// with the given fields replaced by the non-null parameter values.
@@ -681,16 +852,31 @@ class _RatingDimension implements RatingDimension {
         (other.runtimeType == runtimeType &&
             other is _RatingDimension &&
             (identical(other.key, key) || other.key == key) &&
-            (identical(other.value, value) || other.value == value));
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.question, question) ||
+                other.question == question) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.inputType, inputType) ||
+                other.inputType == inputType) &&
+            const DeepCollectionEquality()
+                .equals(other._optionLabels, _optionLabels));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, key, value);
+  int get hashCode => Object.hash(
+      runtimeType,
+      key,
+      value,
+      question,
+      description,
+      inputType,
+      const DeepCollectionEquality().hash(_optionLabels));
 
   @override
   String toString() {
-    return 'RatingDimension(key: $key, value: $value)';
+    return 'RatingDimension(key: $key, value: $value, question: $question, description: $description, inputType: $inputType, optionLabels: $optionLabels)';
   }
 }
 
@@ -702,7 +888,13 @@ abstract mixin class _$RatingDimensionCopyWith<$Res>
       __$RatingDimensionCopyWithImpl;
   @override
   @useResult
-  $Res call({String key, double value});
+  $Res call(
+      {String key,
+      double value,
+      String? question,
+      String? description,
+      String? inputType,
+      List<String>? optionLabels});
 }
 
 /// @nodoc
@@ -720,6 +912,10 @@ class __$RatingDimensionCopyWithImpl<$Res>
   $Res call({
     Object? key = null,
     Object? value = null,
+    Object? question = freezed,
+    Object? description = freezed,
+    Object? inputType = freezed,
+    Object? optionLabels = freezed,
   }) {
     return _then(_RatingDimension(
       key: null == key
@@ -730,6 +926,22 @@ class __$RatingDimensionCopyWithImpl<$Res>
           ? _self.value
           : value // ignore: cast_nullable_to_non_nullable
               as double,
+      question: freezed == question
+          ? _self.question
+          : question // ignore: cast_nullable_to_non_nullable
+              as String?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      inputType: freezed == inputType
+          ? _self.inputType
+          : inputType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      optionLabels: freezed == optionLabels
+          ? _self._optionLabels
+          : optionLabels // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }

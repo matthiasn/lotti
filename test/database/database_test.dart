@@ -2279,7 +2279,7 @@ void main() {
 
       JournalEntity buildRatingEntry({
         required String id,
-        required String timeEntryId,
+        required String targetId,
         DateTime? timestamp,
         DateTime? deletedAt,
       }) {
@@ -2294,7 +2294,7 @@ void main() {
             deletedAt: deletedAt,
           ),
           data: RatingData(
-            timeEntryId: timeEntryId,
+            targetId: targetId,
             dimensions: const [
               RatingDimension(key: 'productivity', value: 0.8),
               RatingDimension(key: 'energy', value: 0.6),
@@ -2330,7 +2330,7 @@ void main() {
         );
         final ratingEntry = buildRatingEntry(
           id: 'rating-1',
-          timeEntryId: 'te-1',
+          targetId: 'te-1',
         );
 
         await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
@@ -2347,7 +2347,7 @@ void main() {
         expect(result, isNotNull);
         expect(result, isA<RatingEntry>());
         expect(result!.meta.id, 'rating-1');
-        expect(result.data.timeEntryId, 'te-1');
+        expect(result.data.targetId, 'te-1');
       });
 
       test('getRatingForTimeEntry returns null when no rating exists',
@@ -2371,7 +2371,7 @@ void main() {
         );
         final deletedRating = buildRatingEntry(
           id: 'rating-deleted',
-          timeEntryId: 'te-deleted',
+          targetId: 'te-deleted',
           deletedAt: base.add(const Duration(hours: 1)),
         );
 
@@ -2397,7 +2397,7 @@ void main() {
         );
         final rating = buildRatingEntry(
           id: 'rating-hidden',
-          timeEntryId: 'te-hidden',
+          targetId: 'te-hidden',
         );
 
         await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
@@ -2425,12 +2425,12 @@ void main() {
         );
         final olderRating = buildRatingEntry(
           id: 'rating-older',
-          timeEntryId: 'te-multi',
+          targetId: 'te-multi',
           timestamp: base,
         );
         final newerRating = buildRatingEntry(
           id: 'rating-newer',
-          timeEntryId: 'te-multi',
+          targetId: 'te-multi',
           timestamp: base.add(const Duration(hours: 2)),
         );
 
@@ -2475,7 +2475,7 @@ void main() {
             toDbEntity(
               buildRatingEntry(
                 id: ratingId,
-                timeEntryId: teId,
+                targetId: teId,
                 timestamp: base.add(Duration(hours: i)),
               ),
             ),
@@ -2513,7 +2513,7 @@ void main() {
           toDbEntity(
             buildRatingEntry(
               id: 'del-rating-a',
-              timeEntryId: 'del-te-a',
+              targetId: 'del-te-a',
             ),
           ),
         );
@@ -2539,7 +2539,7 @@ void main() {
           toDbEntity(
             buildRatingEntry(
               id: 'del-rating-b',
-              timeEntryId: 'del-te-b',
+              targetId: 'del-te-b',
               deletedAt: base.add(const Duration(hours: 1)),
             ),
           ),
@@ -2573,7 +2573,7 @@ void main() {
           toDbEntity(
             buildRatingEntry(
               id: 'hid-rating',
-              timeEntryId: 'hid-te',
+              targetId: 'hid-te',
             ),
           ),
         );

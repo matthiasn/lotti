@@ -14,15 +14,15 @@ import 'package:lotti/themes/theme.dart';
 /// position as 0.0-1.0). The last uses 3 categorical buttons.
 class SessionRatingModal extends ConsumerStatefulWidget {
   const SessionRatingModal({
-    required this.timeEntryId,
+    required this.targetId,
     super.key,
   });
 
-  final String timeEntryId;
+  final String targetId;
 
   static Future<void> show(
     BuildContext context,
-    String timeEntryId, {
+    String targetId, {
     VoidCallback? onDismissed,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -31,7 +31,7 @@ class SessionRatingModal extends ConsumerStatefulWidget {
       isScrollControlled: true,
       barrierColor: Colors.black54,
       backgroundColor: colorScheme.surfaceContainerHigh,
-      builder: (context) => SessionRatingModal(timeEntryId: timeEntryId),
+      builder: (context) => SessionRatingModal(targetId: targetId),
     ).whenComplete(() => onDismissed?.call());
   }
 
@@ -96,7 +96,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
 
       final result = await ref
           .read(
-            ratingControllerProvider(timeEntryId: widget.timeEntryId).notifier,
+            ratingControllerProvider(targetId: widget.targetId).notifier,
           )
           .submitRating(dimensions, note: note);
 
@@ -128,7 +128,7 @@ class _SessionRatingModalState extends ConsumerState<SessionRatingModal> {
   @override
   Widget build(BuildContext context) {
     ref
-        .watch(ratingControllerProvider(timeEntryId: widget.timeEntryId))
+        .watch(ratingControllerProvider(targetId: widget.targetId))
         .whenData(_prePopulate);
 
     return Padding(

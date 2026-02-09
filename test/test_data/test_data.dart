@@ -485,7 +485,7 @@ final testRatingEntry = JournalEntity.rating(
     starred: false,
   ),
   data: const RatingData(
-    timeEntryId: 'test-time-entry-id',
+    targetId: 'test-time-entry-id',
     dimensions: [
       RatingDimension(key: 'productivity', value: 0.8),
       RatingDimension(key: 'energy', value: 0.7),

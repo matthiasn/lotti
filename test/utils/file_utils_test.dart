@@ -57,7 +57,7 @@ void main() {
       final testEntity = JournalEntity.rating(
         meta: testMeta,
         data: const RatingData(
-          timeEntryId: 'te-1',
+          targetId: 'te-1',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.8),
           ],

@@ -971,7 +971,7 @@ void main() {
           dateTo: testDate,
         ),
         data: const RatingData(
-          timeEntryId: 'time-entry-1',
+          targetId: 'time-entry-1',
           dimensions: [RatingDimension(key: 'focus', value: 0.8)],
         ),
       );
@@ -1039,7 +1039,7 @@ void main() {
           dateTo: testDate,
         ),
         data: const RatingData(
-          timeEntryId: 'time-entry-1',
+          targetId: 'time-entry-1',
           dimensions: [RatingDimension(key: 'focus', value: 0.8)],
         ),
       );

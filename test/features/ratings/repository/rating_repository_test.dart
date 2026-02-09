@@ -47,7 +47,7 @@ void main() {
   final testRatingEntry = RatingEntry(
     meta: testMetadata,
     data: const RatingData(
-      timeEntryId: testTimeEntryId,
+      targetId: testTimeEntryId,
       dimensions: testDimensions,
       note: 'Good session',
     ),
@@ -102,12 +102,13 @@ void main() {
   });
 
   group('RatingRepository', () {
-    group('getRatingForTimeEntry', () {
+    group('getRatingForTargetEntry', () {
       test('delegates to JournalDb', () async {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => testRatingEntry);
 
-        final result = await repository.getRatingForTimeEntry(testTimeEntryId);
+        final result =
+            await repository.getRatingForTargetEntry(testTimeEntryId);
 
         expect(result, equals(testRatingEntry));
         verify(() => mockDb.getRatingForTimeEntry(testTimeEntryId)).called(1);
@@ -117,7 +118,8 @@ void main() {
         when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
             .thenAnswer((_) async => null);
 
-        final result = await repository.getRatingForTimeEntry(testTimeEntryId);
+        final result =
+            await repository.getRatingForTargetEntry(testTimeEntryId);
 
         expect(result, isNull);
       });
@@ -134,6 +136,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -149,13 +152,13 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
           note: 'Test note',
         );
 
         expect(result, isA<RatingEntry>());
-        expect(result!.data.timeEntryId, equals(testTimeEntryId));
+        expect(result!.data.targetId, equals(testTimeEntryId));
         expect(result.data.dimensions, equals(testDimensions));
         expect(result.data.note, equals('Test note'));
 
@@ -197,7 +200,7 @@ void main() {
         ];
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: newDimensions,
           note: 'Updated note',
         );
@@ -230,6 +233,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -245,7 +249,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -281,6 +285,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: timeEntryCategoryId,
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => metadataWithCategory);
         when(
@@ -296,7 +301,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -312,6 +317,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: timeEntryCategoryId,
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).called(1);
       });
@@ -329,7 +335,7 @@ void main() {
         ).thenReturn(null);
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -356,6 +362,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -371,7 +378,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -397,6 +404,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -412,7 +420,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 

@@ -50,7 +50,7 @@ final class RatingControllerProvider
   }
 }
 
-String _$ratingControllerHash() => r'e3a71c745539d88f54f362fb4f5027babb6641e9';
+String _$ratingControllerHash() => r'1692aa3d0e54da0c24f265e301c3d5659f64c175';
 
 final class RatingControllerFamily extends $Family
     with
@@ -66,9 +66,9 @@ final class RatingControllerFamily extends $Family
         );
 
   RatingControllerProvider call({
-    required String timeEntryId,
+    required String targetId,
   }) =>
-      RatingControllerProvider._(argument: timeEntryId, from: this);
+      RatingControllerProvider._(argument: targetId, from: this);
 
   @override
   String toString() => r'ratingControllerProvider';
@@ -76,10 +76,10 @@ final class RatingControllerFamily extends $Family
 
 abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
   late final _$args = ref.$arg as String;
-  String get timeEntryId => _$args;
+  String get targetId => _$args;
 
   FutureOr<JournalEntity?> build({
-    required String timeEntryId,
+    required String targetId,
   });
   @$mustCallSuper
   @override
@@ -93,7 +93,7 @@ abstract class _$RatingController extends $AsyncNotifier<JournalEntity?> {
     element.handleCreate(
         ref,
         () => build(
-              timeEntryId: _$args,
+              targetId: _$args,
             ));
   }
 }

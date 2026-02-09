@@ -28,7 +28,7 @@ void main() {
     await setUpTestGetIt();
     mockRepository = MockRatingRepository();
 
-    when(() => mockRepository.getRatingForTimeEntry(testTimeEntryId))
+    when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
         .thenAnswer((_) async => null);
   });
 
@@ -36,7 +36,7 @@ void main() {
 
   Widget buildSubject({List<Override> overrides = const []}) {
     return makeTestableWidgetWithScaffold(
-      const SessionRatingModal(timeEntryId: testTimeEntryId),
+      const SessionRatingModal(targetId: testTimeEntryId),
       overrides: [
         ratingRepositoryProvider.overrideWithValue(mockRepository),
         ...overrides,
@@ -120,7 +120,7 @@ void main() {
           dateTo: DateTime(2024, 3, 15),
         ),
         data: const RatingData(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.7),
             RatingDimension(key: 'energy', value: 0.5),
@@ -131,7 +131,7 @@ void main() {
         ),
       );
 
-      when(() => mockRepository.getRatingForTimeEntry(testTimeEntryId))
+      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
           .thenAnswer((_) async => existingRating);
 
       await tester.pumpWidget(buildSubject());
@@ -182,7 +182,7 @@ void main() {
           dateTo: DateTime(2024, 3, 15),
         ),
         data: const RatingData(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.7),
             RatingDimension(key: 'energy', value: 0.5),
@@ -192,12 +192,12 @@ void main() {
         ),
       );
 
-      when(() => mockRepository.getRatingForTimeEntry(testTimeEntryId))
+      when(() => mockRepository.getRatingForTargetEntry(testTimeEntryId))
           .thenAnswer((_) async => existingRating);
 
       when(
         () => mockRepository.createOrUpdateRating(
-          timeEntryId: any(named: 'timeEntryId'),
+          targetId: any(named: 'targetId'),
           dimensions: any(named: 'dimensions'),
           note: any(named: 'note'),
         ),
@@ -219,7 +219,7 @@ void main() {
 
       verify(
         () => mockRepository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: any(named: 'dimensions'),
           note: any(named: 'note'),
         ),

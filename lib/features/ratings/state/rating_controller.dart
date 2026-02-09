@@ -8,10 +8,10 @@ part 'rating_controller.g.dart';
 @riverpod
 class RatingController extends _$RatingController {
   @override
-  Future<JournalEntity?> build({required String timeEntryId}) async {
+  Future<JournalEntity?> build({required String targetId}) async {
     return ref
         .read(ratingRepositoryProvider)
-        .getRatingForTimeEntry(timeEntryId);
+        .getRatingForTargetEntry(targetId);
   }
 
   /// Returns the persisted [RatingEntry], or `null` when persistence fails.
@@ -21,7 +21,7 @@ class RatingController extends _$RatingController {
   }) async {
     final result =
         await ref.read(ratingRepositoryProvider).createOrUpdateRating(
-              timeEntryId: timeEntryId,
+              targetId: targetId,
               dimensions: dimensions,
               note: note,
             );
