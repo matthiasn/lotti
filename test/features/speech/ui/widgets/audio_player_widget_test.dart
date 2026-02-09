@@ -199,6 +199,12 @@ void main() {
     expect(find.bySemanticsLabel('Pause audio'), findsOneWidget);
     expect(find.byIcon(Icons.article_outlined), findsNothing);
     expect(find.textContaining('Tap to play'), findsNothing);
+
+    // Verify zero top margin
+    final container = tester.widget<AnimatedContainer>(
+      find.byType(AnimatedContainer).first,
+    );
+    expect(container.margin, EdgeInsets.zero);
   });
 
   testWidgets('shows play semantics when inactive',

@@ -26,6 +26,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -325,7 +326,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
@@ -350,7 +351,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         final animatedSize =
             tester.widget<AnimatedSize>(find.byType(AnimatedSize));
@@ -525,7 +526,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       });
@@ -549,7 +550,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
       });
@@ -574,7 +575,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         final animatedSize =
             tester.widget<AnimatedSize>(find.byType(AnimatedSize));
@@ -944,7 +945,7 @@ void main() {
         );
 
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(AppTheme.chevronRotationDuration);
 
         // In collapsible audio layout, both AudioPlayer and date are shown
         expect(find.byType(AudioPlayerWidget), findsOneWidget);

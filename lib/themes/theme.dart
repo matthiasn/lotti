@@ -38,8 +38,8 @@ class AppTheme {
   static const double chevronSize = 22; // Slightly larger
 
   // Collapse animation durations
-  static const Duration chevronRotationDuration = Duration(milliseconds: 300);
-  static const Duration collapseAnimationDuration = Duration(milliseconds: 400);
+  static const Duration chevronRotationDuration = Duration(milliseconds: 500);
+  static const Duration collapseAnimationDuration = Duration(milliseconds: 600);
 
   // Collapsed header thumbnail constants
   static const double thumbnailSize = 40;

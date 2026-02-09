@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -24,6 +29,40 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class MockLinkService extends Mock implements LinkService {}
+
+/// Builds a widget wrapped in a pushed Navigator route so that
+/// Navigator.of(context).pop() can be exercised during tests.
+Widget _buildWithRoute({
+  required Widget child,
+  required List<Override> overrides,
+}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) {
+          // Immediately push a route containing the child widget,
+          // so Navigator.pop() has a route to dismiss.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => Scaffold(body: child),
+              ),
+            );
+          });
+          return const Scaffold(body: SizedBox.shrink());
+        },
+      ),
+    ),
+  );
+}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);
@@ -613,6 +652,144 @@ void main() {
 
       expect(controller.updateLinkCalls, hasLength(1));
       expect(controller.updateLinkCalls.first.hidden, isTrue);
+    });
+  });
+
+  Task buildTask({String? coverArtId, String id = 'task-1'}) {
+    return Task(
+      meta: Metadata(
+        id: id,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: const [],
+        title: 'Test Task',
+        coverArtId: coverArtId,
+      ),
+    );
+  }
+
+  group('ModernSetCoverArtItem', () {
+    testWidgets('hidden when parent is not a Task', (tester) async {
+      final textEntry = buildTextEntry(id: 'parent-1');
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(textEntry)],
+          child: const ModernSetCoverArtItem(
+            entryId: 'image-1',
+            linkedFromId: 'parent-1',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('shows outlined image icon when not current cover',
+        (tester) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(task)],
+          child: const ModernSetCoverArtItem(
+            entryId: 'image-1',
+            linkedFromId: 'task-1',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.text('Set cover'), findsOneWidget);
+    });
+
+    testWidgets('shows filled image icon when image is current cover',
+        (tester) async {
+      final task = buildTask(coverArtId: 'image-1');
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(task)],
+          child: const ModernSetCoverArtItem(
+            entryId: 'image-1',
+            linkedFromId: 'task-1',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+      expect(find.byIcon(Icons.image), findsOneWidget);
+      expect(find.text('Cover'), findsOneWidget);
+    });
+
+    testWidgets('calls setCoverArt with entryId and pops navigator',
+        (tester) async {
+      final task = buildTask();
+      final (override, tracker) = createTrackingEntryControllerOverride(task);
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [override],
+          child: const ModernSetCoverArtItem(
+            entryId: 'image-1',
+            linkedFromId: 'task-1',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      // Verify we're on the pushed route
+      expect(find.byType(ActionMenuListItem), findsOneWidget);
+
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      expect(tracker.calls, contains('image-1'));
+      // Navigator.pop should have dismissed the route
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('calls setCoverArt with null and pops navigator',
+        (tester) async {
+      final task = buildTask(coverArtId: 'image-1');
+      final (override, tracker) = createTrackingEntryControllerOverride(task);
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [override],
+          child: const ModernSetCoverArtItem(
+            entryId: 'image-1',
+            linkedFromId: 'task-1',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pumpAndSettle();
+
+      expect(tracker.calls, contains(null));
+      // Navigator.pop should have dismissed the route
+      expect(find.byType(ActionMenuListItem), findsNothing);
     });
   });
 
