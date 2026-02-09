@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -66,9 +66,15 @@ void main() {
 
   const testTaskId = 'test-task-id';
   const testEstimate = Duration(hours: 2);
-  final testDurations = <String, Duration>{
-    'entry1': const Duration(minutes: 30),
-    'entry2': const Duration(minutes: 45),
+  final testTimeRanges = <String, TimeRange>{
+    'entry1': TimeRange(
+      start: DateTime(2022, 7, 7, 9),
+      end: DateTime(2022, 7, 7, 9, 30), // 30 min
+    ),
+    'entry2': TimeRange(
+      start: DateTime(2022, 7, 7, 14),
+      end: DateTime(2022, 7, 7, 14, 45), // 45 min
+    ),
   };
   const testProgress = TaskProgressState(
     progress: Duration(minutes: 75),
@@ -80,7 +86,7 @@ void main() {
     registerFallbackValue(const AsyncValue<TaskProgressState?>.loading());
     registerFallbackValue(const AsyncValue<TaskProgressState?>.data(null));
     registerFallbackValue(FakeTaskProgressState());
-    registerFallbackValue(<String, Duration>{});
+    registerFallbackValue(<String, TimeRange>{});
   });
 
   setUp(() {
@@ -111,11 +117,11 @@ void main() {
 
     // Mock repository methods with specific values
     when(() => mockRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, testDurations));
+        .thenAnswer((_) async => (testEstimate, testTimeRanges));
 
     when(
       () => mockRepository.getTaskProgress(
-        durations: testDurations,
+        timeRanges: testTimeRanges,
         estimate: testEstimate,
       ),
     ).thenReturn(testProgress);
@@ -156,9 +162,15 @@ void main() {
     clearInteractions(mockRepository);
 
     // Create updated data for the second fetch
-    final updatedDurations = <String, Duration>{
-      'entry1': const Duration(minutes: 30),
-      'entry2': const Duration(minutes: 60),
+    final updatedTimeRanges = <String, TimeRange>{
+      'entry1': TimeRange(
+        start: DateTime(2022, 7, 7, 9),
+        end: DateTime(2022, 7, 7, 9, 30), // 30 min
+      ),
+      'entry2': TimeRange(
+        start: DateTime(2022, 7, 7, 14),
+        end: DateTime(2022, 7, 7, 15), // 60 min
+      ),
     };
     const updatedProgress = TaskProgressState(
       progress: Duration(minutes: 90),
@@ -166,11 +178,11 @@ void main() {
     );
 
     when(() => mockRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, updatedDurations));
+        .thenAnswer((_) async => (testEstimate, updatedTimeRanges));
 
     when(
       () => mockRepository.getTaskProgress(
-        durations: updatedDurations,
+        timeRanges: updatedTimeRanges,
         estimate: testEstimate,
       ),
     ).thenReturn(updatedProgress);
@@ -215,7 +227,7 @@ void main() {
     when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
 
     // Create a test journal entity
-    final testDateTime = DateTime.now();
+    final testDateTime = DateTime(2022, 7, 7, 16);
     final testJournalEntity = JournalEntity.journalEntry(
       meta: Metadata(
         id: 'entry3',
@@ -226,22 +238,22 @@ void main() {
       ),
     );
 
-    // Calculate actual duration of the journal entity
-    final entryDurationValue = entryDuration(testJournalEntity);
-
-    // Prepare updated durations and progress
-    final expectedDurations = Map<String, Duration>.from(testDurations);
-    expectedDurations['entry3'] = entryDurationValue;
+    // Prepare updated time ranges and progress
+    final expectedTimeRanges = Map<String, TimeRange>.from(testTimeRanges);
+    expectedTimeRanges['entry3'] = TimeRange(
+      start: testDateTime,
+      end: testDateTime.add(const Duration(minutes: 20)),
+    );
 
     final updatedProgress = TaskProgressState(
-      progress: const Duration(minutes: 75) + entryDurationValue,
+      progress: const Duration(minutes: 75) + const Duration(minutes: 20),
       estimate: testEstimate,
     );
 
-    // Set up repository to return expected values when called with expectedDurations
+    // Set up repository to return expected values when called with expectedTimeRanges
     when(
       () => mockRepository.getTaskProgress(
-        durations: expectedDurations,
+        timeRanges: expectedTimeRanges,
         estimate: testEstimate,
       ),
     ).thenReturn(updatedProgress);
@@ -265,7 +277,7 @@ void main() {
     when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
 
     // Create a test journal entity
-    final testDateTime = DateTime.now();
+    final testDateTime = DateTime(2022, 7, 7, 16);
     final testJournalEntity = JournalEntity.journalEntry(
       meta: Metadata(
         id: 'entry3',
@@ -286,7 +298,7 @@ void main() {
     // Verify getTaskProgress is never called when task ID doesn't match
     verifyNever(
       () => mockRepository.getTaskProgress(
-        durations: any(named: 'durations'),
+        timeRanges: any(named: 'timeRanges'),
         estimate: any(named: 'estimate'),
       ),
     );
@@ -296,12 +308,12 @@ void main() {
     // Create a separate repository for this test to avoid interference
     final testRepository = MockTaskProgressRepository();
     when(() => testRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, testDurations));
+        .thenAnswer((_) async => (testEstimate, testTimeRanges));
 
     // Important: We need to mock the getTaskProgress method as well
     when(
       () => testRepository.getTaskProgress(
-        durations: any(named: 'durations'),
+        timeRanges: any(named: 'timeRanges'),
         estimate: any(named: 'estimate'),
       ),
     ).thenReturn(testProgress);

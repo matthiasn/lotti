@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
@@ -295,7 +296,7 @@ void main() {
       expect(total, equals(textDuration + imageDuration));
     });
 
-    test('sums multiple text entries correctly', () {
+    test('sums multiple non-overlapping text entries correctly', () {
       // Arrange
       final textEntry1 = JournalEntry(
         meta: Metadata(
@@ -322,20 +323,82 @@ void main() {
       // Act
       final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
 
-      // Assert - 1 hour + 30 min = 1.5 hours
+      // Assert - 1 hour + 30 min = 1.5 hours (no overlap)
       expect(total, equals(const Duration(hours: 1, minutes: 30)));
+    });
+
+    test('merges overlapping entries to prevent double-counting', () {
+      // Arrange - gym trip containing a fitness entry (like the Winter Walk bug)
+      final gymTrip = JournalEntry(
+        meta: Metadata(
+          id: 'gym-trip',
+          createdAt: DateTime(2022, 7, 7, 10),
+          dateFrom: DateTime(2022, 7, 7, 10),
+          dateTo: DateTime(2022, 7, 7, 11, 30), // 1.5 hours
+          updatedAt: DateTime(2022, 7, 7, 11, 30),
+        ),
+        entryText: const EntryText(plainText: 'gym trip'),
+      );
+      final fitnessEntry = JournalEntry(
+        meta: Metadata(
+          id: 'fitness-entry',
+          createdAt: DateTime(2022, 7, 7, 10, 30),
+          dateFrom: DateTime(2022, 7, 7, 10, 30),
+          dateTo: DateTime(2022, 7, 7, 11, 15), // 45 min, inside gym trip
+          updatedAt: DateTime(2022, 7, 7, 11, 15),
+        ),
+        entryText: const EntryText(plainText: 'fitness entry'),
+      );
+      final entities = [gymTrip, fitnessEntry];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - should be 1.5 hours (union), NOT 2h 15m (simple sum)
+      expect(total, equals(const Duration(hours: 1, minutes: 30)));
+    });
+
+    test('merges partially overlapping entries correctly', () {
+      // Arrange - two entries that partially overlap
+      final entry1 = JournalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: DateTime(2022, 7, 7, 10),
+          dateFrom: DateTime(2022, 7, 7, 10),
+          dateTo: DateTime(2022, 7, 7, 11, 30), // 10:00-11:30
+          updatedAt: DateTime(2022, 7, 7, 11, 30),
+        ),
+        entryText: const EntryText(plainText: 'entry 1'),
+      );
+      final entry2 = JournalEntry(
+        meta: Metadata(
+          id: 'entry-2',
+          createdAt: DateTime(2022, 7, 7, 11),
+          dateFrom: DateTime(2022, 7, 7, 11),
+          dateTo: DateTime(2022, 7, 7, 12), // 11:00-12:00
+          updatedAt: DateTime(2022, 7, 7, 12),
+        ),
+        entryText: const EntryText(plainText: 'entry 2'),
+      );
+      final entities = [entry1, entry2];
+
+      // Act
+      final total = TaskProgressRepository.sumTimeSpentFromEntities(entities);
+
+      // Assert - union is 10:00-12:00 = 2 hours, not 1.5h + 1h = 2.5h
+      expect(total, equals(const Duration(hours: 2)));
     });
   });
 
   group('getTaskProgress', () {
-    test('calculates progress correctly with no durations', () {
+    test('calculates progress correctly with no time ranges', () {
       // Arrange
-      final durations = <String, Duration>{};
+      final timeRanges = <String, TimeRange>{};
       const estimate = Duration(hours: 2);
 
       // Act
       final result = repository.getTaskProgress(
-        durations: durations,
+        timeRanges: timeRanges,
         estimate: estimate,
       );
 
@@ -344,18 +407,24 @@ void main() {
       expect(result.estimate, estimate);
     });
 
-    test('calculates progress correctly with durations', () {
+    test('calculates progress correctly with non-overlapping time ranges', () {
       // Arrange
-      final durations = <String, Duration>{
-        'entry1': const Duration(minutes: 30),
-        'entry2': const Duration(minutes: 45),
+      final timeRanges = <String, TimeRange>{
+        'entry1': TimeRange(
+          start: DateTime(2022, 7, 7, 9),
+          end: DateTime(2022, 7, 7, 9, 30), // 30 min
+        ),
+        'entry2': TimeRange(
+          start: DateTime(2022, 7, 7, 14),
+          end: DateTime(2022, 7, 7, 14, 45), // 45 min
+        ),
       };
       const estimate = Duration(hours: 2);
       const expectedProgress = Duration(minutes: 75);
 
       // Act
       final result = repository.getTaskProgress(
-        durations: durations,
+        timeRanges: timeRanges,
         estimate: estimate,
       );
 
@@ -366,16 +435,69 @@ void main() {
 
     test('uses zero for estimate when null is provided', () {
       // Arrange
-      final durations = <String, Duration>{
-        'entry1': const Duration(minutes: 30),
+      final timeRanges = <String, TimeRange>{
+        'entry1': TimeRange(
+          start: DateTime(2022, 7, 7, 9),
+          end: DateTime(2022, 7, 7, 9, 30), // 30 min
+        ),
       };
 
       // Act
-      final result = repository.getTaskProgress(durations: durations);
+      final result = repository.getTaskProgress(timeRanges: timeRanges);
 
       // Assert
       expect(result.progress, const Duration(minutes: 30));
       expect(result.estimate, Duration.zero);
+    });
+
+    test('merges overlapping time ranges to prevent double-counting', () {
+      // Arrange - overlapping entries like a gym trip containing a fitness entry
+      final timeRanges = <String, TimeRange>{
+        'gym-trip': TimeRange(
+          start: DateTime(2022, 7, 7, 10),
+          end: DateTime(2022, 7, 7, 11, 30), // 1.5 hours
+        ),
+        'fitness-entry': TimeRange(
+          start: DateTime(2022, 7, 7, 10, 30),
+          end: DateTime(2022, 7, 7, 11, 15), // 45 min, fully inside gym trip
+        ),
+      };
+      const estimate = Duration(hours: 3);
+
+      // Act
+      final result = repository.getTaskProgress(
+        timeRanges: timeRanges,
+        estimate: estimate,
+      );
+
+      // Assert - should be 1.5 hours (union), not 2.25 hours (simple sum)
+      expect(result.progress, const Duration(hours: 1, minutes: 30));
+      expect(result.estimate, estimate);
+    });
+
+    test('merges partially overlapping time ranges correctly', () {
+      // Arrange - two entries that partially overlap
+      final timeRanges = <String, TimeRange>{
+        'entry1': TimeRange(
+          start: DateTime(2022, 7, 7, 10),
+          end: DateTime(2022, 7, 7, 11, 30), // 10:00-11:30
+        ),
+        'entry2': TimeRange(
+          start: DateTime(2022, 7, 7, 11),
+          end: DateTime(2022, 7, 7, 12), // 11:00-12:00
+        ),
+      };
+      const estimate = Duration(hours: 3);
+
+      // Act
+      final result = repository.getTaskProgress(
+        timeRanges: timeRanges,
+        estimate: estimate,
+      );
+
+      // Assert - union is 10:00-12:00 = 2 hours, not 1.5h + 1h = 2.5h
+      expect(result.progress, const Duration(hours: 2));
+      expect(result.estimate, estimate);
     });
   });
 }

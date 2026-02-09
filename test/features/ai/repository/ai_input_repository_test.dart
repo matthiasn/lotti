@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -26,14 +27,10 @@ class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {
   @override
   TaskProgressState getTaskProgress({
-    required Map<String, Duration> durations,
+    required Map<String, TimeRange> timeRanges,
     Duration? estimate,
   }) {
-    var progress = Duration.zero;
-    for (final duration in durations.values) {
-      progress = progress + duration;
-    }
-
+    final progress = calculateUnionDuration(timeRanges.values.toList());
     return TaskProgressState(
       progress: progress,
       estimate: estimate ?? Duration.zero,
@@ -108,7 +105,7 @@ void main() {
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(FakeId());
-    registerFallbackValue(<String, Duration>{});
+    registerFallbackValue(<String, TimeRange>{});
     registerFallbackValue(Duration.zero);
     registerFallbackValue(
       const AiResponseData(
@@ -179,7 +176,7 @@ void main() {
         () => mockTaskProgressRepository.getTaskProgressData(
           id: any(named: 'id'),
         ),
-      ).thenAnswer((_) async => (null, <String, Duration>{}));
+      ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
       // Set default return value for journalEntityById to avoid null subtype errors
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
@@ -231,7 +228,12 @@ void main() {
           .thenAnswer(
         (_) async => (
           const Duration(minutes: 60), // estimate
-          {'entry1': const Duration(minutes: 45)}, // durations
+          {
+            'entry1': TimeRange(
+              start: DateTime(2022, 7, 7, 9),
+              end: DateTime(2022, 7, 7, 9, 45),
+            ),
+          },
         ),
       );
 
@@ -317,7 +319,12 @@ void main() {
       when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
           .thenAnswer((_) async => (
                 const Duration(hours: 1),
-                <String, Duration>{'entry': const Duration(minutes: 45)},
+                <String, TimeRange>{
+                  'entry': TimeRange(
+                    start: DateTime(2022, 7, 7, 9),
+                    end: DateTime(2022, 7, 7, 9, 45),
+                  ),
+                },
               ));
 
       // Act
@@ -359,7 +366,7 @@ void main() {
           .thenAnswer(
         (_) async => (
           null, // null estimate
-          <String, Duration>{}, // empty durations
+          <String, TimeRange>{}, // empty time ranges
         ),
       );
 
@@ -423,11 +430,20 @@ void main() {
           .thenAnswer(
         (_) async => (
           const Duration(minutes: 30), // estimate
-          {
-            'entry-123': const Duration(minutes: 15),
-            'image-123': const Duration(minutes: 30),
-            'audio-123': const Duration(minutes: 45),
-          }, // durations
+          <String, TimeRange>{
+            'entry-123': TimeRange(
+              start: DateTime(2022, 7, 7, 9),
+              end: DateTime(2022, 7, 7, 9, 15),
+            ),
+            'image-123': TimeRange(
+              start: DateTime(2022, 7, 7, 10),
+              end: DateTime(2022, 7, 7, 10, 30),
+            ),
+            'audio-123': TimeRange(
+              start: DateTime(2022, 7, 7, 11),
+              end: DateTime(2022, 7, 7, 11, 45),
+            ),
+          },
         ),
       );
 
@@ -672,7 +688,12 @@ void main() {
             .thenAnswer(
           (_) async => (
             const Duration(minutes: 30), // estimate
-            {'entry1': const Duration(minutes: 15)}, // durations
+            <String, TimeRange>{
+              'entry1': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 15),
+              ),
+            },
           ),
         );
 
@@ -768,7 +789,12 @@ void main() {
             .thenAnswer(
           (_) async => (
             const Duration(minutes: 60), // estimate
-            {'entry1': const Duration(minutes: 45)}, // durations
+            <String, TimeRange>{
+              'entry1': TimeRange(
+                start: DateTime(2022, 7, 7, 9),
+                end: DateTime(2022, 7, 7, 9, 45),
+              ),
+            },
           ),
         );
 
@@ -885,7 +911,7 @@ void main() {
         // Provide progress data
         when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
             .thenAnswer((_) async =>
-                (const Duration(minutes: 10), <String, Duration>{}));
+                (const Duration(minutes: 10), <String, TimeRange>{}));
 
         // Task with assigned labels
         final task = JournalEntity.task(

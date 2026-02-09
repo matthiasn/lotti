@@ -232,9 +232,9 @@ class AiInputRepository {
     final progressData = await progressRepository.getTaskProgressData(
       id: taskId,
     );
-    final durations = progressData?.$2 ?? {};
+    final timeRanges = progressData?.$2 ?? {};
     return progressRepository
-        .getTaskProgress(durations: durations, estimate: progressData?.$1)
+        .getTaskProgress(timeRanges: timeRanges, estimate: progressData?.$1)
         .progress;
   }
 

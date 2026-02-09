@@ -1,6 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -27,25 +27,30 @@ class TaskProgressRepository {
   /// Calculate total time spent from a list of entities.
   ///
   /// Uses [_shouldCountDuration] to filter out entities that don't represent
-  /// logged work, then sums the durations of the remaining entities.
+  /// logged work, then calculates the union of their time ranges to prevent
+  /// double-counting overlapping entries.
   ///
   /// This is the canonical implementation of time-spent calculation logic.
   /// Both [getTaskProgressData] and `AiInputRepository._calculateTimeSpentFromEntities`
   /// use this same filtering logic.
   static Duration sumTimeSpentFromEntities(List<JournalEntity> entities) {
-    var total = Duration.zero;
-    for (final entity in entities) {
-      if (_shouldCountDuration(entity)) {
-        total += entryDuration(entity);
-      }
-    }
-    return total;
+    return calculateUnionDuration(
+      entities
+          .where(_shouldCountDuration)
+          .map(
+            (entity) => TimeRange(
+              start: entity.meta.dateFrom,
+              end: entity.meta.dateTo,
+            ),
+          )
+          .toList(),
+    );
   }
 
-  Future<(Duration?, Map<String, Duration>)?> getTaskProgressData({
+  Future<(Duration?, Map<String, TimeRange>)?> getTaskProgressData({
     required String id,
   }) async {
-    final durations = <String, Duration>{};
+    final timeRanges = <String, TimeRange>{};
     final task = await getIt<JournalDb>().journalEntityById(id);
 
     if (task is! Task) {
@@ -57,22 +62,21 @@ class TaskProgressRepository {
 
     for (final journalEntity in items) {
       if (_shouldCountDuration(journalEntity)) {
-        final duration = entryDuration(journalEntity);
-        durations[journalEntity.id] = duration;
+        timeRanges[journalEntity.id] = TimeRange(
+          start: journalEntity.meta.dateFrom,
+          end: journalEntity.meta.dateTo,
+        );
       }
     }
 
-    return (estimate, durations);
+    return (estimate, timeRanges);
   }
 
   TaskProgressState getTaskProgress({
-    required Map<String, Duration> durations,
+    required Map<String, TimeRange> timeRanges,
     Duration? estimate,
   }) {
-    var progress = Duration.zero;
-    for (final duration in durations.values) {
-      progress = progress + duration;
-    }
+    final progress = calculateUnionDuration(timeRanges.values.toList());
 
     return TaskProgressState(
       progress: progress,

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.851" date="2026-02-09">
+      <description>
+        <p>Task Time Fix: When multiple linked entries overlap in time (for example a gym trip that contains a fitness workout), the task progress view previously summed their durations independently, inflating the displayed time. It now merges overlapping time ranges into their union — the same algorithm that already powers the accurate Time Budget view — so task progress and budget views show consistent, correct durations.</p>
+      </description>
+    </release>
     <release version="0.9.850" date="2026-02-08">
       <description>
         <p>Collapsible Linked Entries: Image and audio entries linked to a task can now be individually collapsed and expanded. When collapsed, a compact preview shows a thumbnail or mic icon with duration alongside the date for quick identification without scrolling past large media. The "Linked Entries" section header also collapses the entire section with a smooth animated transition. Collapse state is saved per link and synced across devices.</p>
