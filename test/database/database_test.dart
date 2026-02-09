@@ -95,11 +95,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableCalendarPageFlag,
-    description: 'Enable Calendar Page?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableNotificationsFlag,
     description: 'Enable notifications?',
     status: false,
@@ -110,8 +105,8 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableDailyOsFlag,
-    description: 'Enable Daily OS (WIP)?',
+    name: enableDailyOsPageFlag,
+    description: 'Enable DailyOS Page?',
     status: false,
   ),
   const ConfigFlag(

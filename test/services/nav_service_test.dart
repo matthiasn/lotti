@@ -30,7 +30,7 @@ void main() {
       when(() => mockJournalDb.watchActiveConfigFlagNames()).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([
           {
-            enableCalendarPageFlag,
+            enableDailyOsPageFlag,
             enableHabitsPageFlag,
             enableDashboardsPageFlag,
           }

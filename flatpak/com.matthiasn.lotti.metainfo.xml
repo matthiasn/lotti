@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.852" date="2026-02-09">
       <description>
-        <p>Calendar and Session Rating Fixes: Tapping a time recording in the calendar view no longer navigates to a session rating instead of the parent task. Session ratings and timer entries now inherit their parent task's category, so they display the correct icon and appear under the right category in views.</p>
+        <p>DailyOS Migration and Navigation Fixes: The old Calendar tab has been removed and replaced by the DailyOS tab. The classic calendar day view has been removed and the /calendar route now always opens DailyOS. Tapping a time recording no longer navigates to a session rating instead of the parent task. Session ratings and timer entries now inherit their parent task's category, and the old calendar/DailyOS feature toggles were replaced with a single DailyOS page flag.</p>
       </description>
     </release>
     <release version="0.9.851" date="2026-02-09">

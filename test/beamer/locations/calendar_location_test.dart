@@ -2,7 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
-import 'package:lotti/features/calendar/ui/pages/calendar_wrapper_page.dart';
+import 'package:lotti/features/daily_os/ui/pages/daily_os_page.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockBuildContext extends Mock implements BuildContext {}
@@ -21,7 +21,7 @@ void main() {
       expect(location.pathPatterns, ['/calendar']);
     });
 
-    test('buildPages builds CalendarWrapperPage with default values', () {
+    test('buildPages builds DailyOsPage with default values', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/calendar'));
       final location = CalendarLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
@@ -31,10 +31,10 @@ void main() {
       );
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<CalendarWrapperPage>());
+      expect(pages[0].child, isA<DailyOsPage>());
     });
 
-    test('buildPages builds CalendarWrapperPage with provided values', () {
+    test('buildPages builds DailyOsPage with provided values', () {
       final routeInformation = RouteInformation(
           uri: Uri.parse('/calendar?ymd=2023-01-01&timeSpanDays=7'));
       final location = CalendarLocation(routeInformation);
@@ -45,7 +45,7 @@ void main() {
       );
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<CalendarWrapperPage>());
+      expect(pages[0].child, isA<DailyOsPage>());
     });
   });
 }
