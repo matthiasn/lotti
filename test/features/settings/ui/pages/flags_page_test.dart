@@ -58,6 +58,11 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
+            name: enableDailyOsPageFlag,
+            description: 'Enable DailyOS Page?',
+            status: true,
+          ),
+          const ConfigFlag(
             name: enableAiStreamingFlag,
             description: 'Enable AI streaming responses?',
             status: false,
@@ -239,6 +244,45 @@ void main() {
         ),
       );
       expect(streamingSwitch.value, isFalse);
+    });
+
+    testWidgets(
+        'displays enableDailyOsPageFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final dailyOsCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableDailyOs,
+      );
+      expect(dailyOsCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: dailyOsCard,
+          matching:
+              find.text(context.messages.configFlagEnableDailyOsDescription),
+        ),
+        findsOneWidget,
+      );
+
+      expect(
+          find.byIcon(Icons.calendar_today_rounded), findsAtLeastNWidgets(1));
+
+      final dailyOsSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: dailyOsCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(dailyOsSwitch.value, isTrue);
     });
   });
 }
