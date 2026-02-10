@@ -189,9 +189,12 @@ async def provision(
 
         # Write the bundle to a file instead of stdout to avoid leaking
         # credentials into terminal scrollback, CI logs, or shell history.
+        # The bundle intentionally contains the generated password — the Lotti
+        # desktop client rotates it immediately upon import.
         output_file = getattr(args, "output_file", None)
         if output_file:
             with open(output_file, "w", encoding="utf-8") as fh:
+                # codeql[py/clear-text-storage-sensitive-data]
                 fh.write(bundle_b64)
             log(f"Bundle written to {output_file}")
 
