@@ -2433,6 +2433,85 @@ class AppLocalizationsFr extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt utilisateur';
 
   @override
+  String get provisionedSyncConfigureButton => 'Configurer';
+
+  @override
+  String get provisionedSyncCopiedToClipboard => 'Copié dans le presse-papiers';
+
+  @override
+  String get provisionedSyncDisconnect => 'Déconnecter';
+
+  @override
+  String get provisionedSyncDone => 'Synchronisation configurée avec succès';
+
+  @override
+  String get provisionedSyncError => 'Échec de la configuration';
+
+  @override
+  String get provisionedSyncErrorConfigurationFailed =>
+      'Une erreur est survenue lors de la configuration. Veuillez réessayer.';
+
+  @override
+  String get provisionedSyncErrorLoginFailed =>
+      'Échec de la connexion. Veuillez vérifier vos identifiants et réessayer.';
+
+  @override
+  String get provisionedSyncImportButton => 'Importer';
+
+  @override
+  String get provisionedSyncImportHint =>
+      'Collez le code de provisionnement ici';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importer la configuration de synchronisation';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Rejoindre la salle de synchronisation...';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Connexion en cours...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Scannez ce code QR sur votre appareil mobile';
+
+  @override
+  String get provisionedSyncRetry => 'Réessayer';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Sécurisation du compte...';
+
+  @override
+  String get provisionedSyncScanButton => 'Scanner le code QR';
+
+  @override
+  String get provisionedSyncShowQr => 'Afficher le QR de provisionnement';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Configurer la synchronisation à partir d\'un paquet de provisionnement';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Serveur';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Salle';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Utilisateur';
+
+  @override
+  String get provisionedSyncTitle => 'Synchronisation provisionnée';
+
+  @override
+  String get provisionedSyncVerifyDevicesTitle => 'Vérification des appareils';
+
+  @override
   String get referenceImageContinue => 'Continuer';
 
   @override

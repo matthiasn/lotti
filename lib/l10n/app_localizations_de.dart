@@ -2388,6 +2388,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptUserPromptLabel => 'Benutzer-Prompt';
 
   @override
+  String get provisionedSyncConfigureButton => 'Konfigurieren';
+
+  @override
+  String get provisionedSyncCopiedToClipboard =>
+      'In die Zwischenablage kopiert';
+
+  @override
+  String get provisionedSyncDisconnect => 'Trennen';
+
+  @override
+  String get provisionedSyncDone => 'Synchronisierung erfolgreich konfiguriert';
+
+  @override
+  String get provisionedSyncError => 'Konfiguration fehlgeschlagen';
+
+  @override
+  String get provisionedSyncErrorConfigurationFailed =>
+      'Bei der Konfiguration ist ein Fehler aufgetreten. Bitte versuche es erneut.';
+
+  @override
+  String get provisionedSyncErrorLoginFailed =>
+      'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten und versuche es erneut.';
+
+  @override
+  String get provisionedSyncImportButton => 'Importieren';
+
+  @override
+  String get provisionedSyncImportHint => 'Bereitstellungscode hier einfügen';
+
+  @override
+  String get provisionedSyncImportTitle => 'Sync-Konfiguration importieren';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
+
+  @override
+  String get provisionedSyncJoiningRoom => 'Sync-Raum beitreten...';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Anmeldung läuft...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Scanne diesen QR-Code auf deinem Mobilgerät';
+
+  @override
+  String get provisionedSyncRetry => 'Erneut versuchen';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Konto wird gesichert...';
+
+  @override
+  String get provisionedSyncScanButton => 'QR-Code scannen';
+
+  @override
+  String get provisionedSyncShowQr => 'QR-Code anzeigen';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Synchronisierung aus einem Bereitstellungspaket einrichten';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Raum';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Benutzer';
+
+  @override
+  String get provisionedSyncTitle => 'Provisionierte Synchronisierung';
+
+  @override
+  String get provisionedSyncVerifyDevicesTitle => 'Geräteverifizierung';
+
+  @override
   String get referenceImageContinue => 'Weiter';
 
   @override

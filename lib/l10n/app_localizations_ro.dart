@@ -2381,6 +2381,84 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt utilizator';
 
   @override
+  String get provisionedSyncConfigureButton => 'Configurează';
+
+  @override
+  String get provisionedSyncCopiedToClipboard => 'Copiat în clipboard';
+
+  @override
+  String get provisionedSyncDisconnect => 'Deconectează';
+
+  @override
+  String get provisionedSyncDone => 'Sincronizare configurată cu succes';
+
+  @override
+  String get provisionedSyncError => 'Configurarea a eșuat';
+
+  @override
+  String get provisionedSyncErrorConfigurationFailed =>
+      'A apărut o eroare în timpul configurării. Încearcă din nou.';
+
+  @override
+  String get provisionedSyncErrorLoginFailed =>
+      'Autentificarea a eșuat. Verifică datele de acces și încearcă din nou.';
+
+  @override
+  String get provisionedSyncImportButton => 'Importă';
+
+  @override
+  String get provisionedSyncImportHint => 'Lipește codul de provizionare aici';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importă configurația de sincronizare';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Se alătură camerei de sincronizare...';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Conectare în curs...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Scanează acest cod QR pe dispozitivul tău mobil';
+
+  @override
+  String get provisionedSyncRetry => 'Reîncearcă';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Securizarea contului...';
+
+  @override
+  String get provisionedSyncScanButton => 'Scanează codul QR';
+
+  @override
+  String get provisionedSyncShowQr => 'Arată QR de aprovizionare';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Configurarea sincronizării dintr-un pachet de provizionare';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Server';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Cameră';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Utilizator';
+
+  @override
+  String get provisionedSyncTitle => 'Sincronizare provizionată';
+
+  @override
+  String get provisionedSyncVerifyDevicesTitle => 'Verificarea dispozitivelor';
+
+  @override
   String get referenceImageContinue => 'Continuă';
 
   @override

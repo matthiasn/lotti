@@ -4313,6 +4313,150 @@ abstract class AppLocalizations {
   /// **'User Prompt'**
   String get promptUserPromptLabel;
 
+  /// No description provided for @provisionedSyncConfigureButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure'**
+  String get provisionedSyncConfigureButton;
+
+  /// No description provided for @provisionedSyncCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get provisionedSyncCopiedToClipboard;
+
+  /// No description provided for @provisionedSyncDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get provisionedSyncDisconnect;
+
+  /// No description provided for @provisionedSyncDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync configured successfully'**
+  String get provisionedSyncDone;
+
+  /// No description provided for @provisionedSyncError.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration failed'**
+  String get provisionedSyncError;
+
+  /// No description provided for @provisionedSyncErrorConfigurationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred during configuration. Please try again.'**
+  String get provisionedSyncErrorConfigurationFailed;
+
+  /// No description provided for @provisionedSyncErrorLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please check your credentials and try again.'**
+  String get provisionedSyncErrorLoginFailed;
+
+  /// No description provided for @provisionedSyncImportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get provisionedSyncImportButton;
+
+  /// No description provided for @provisionedSyncImportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste provisioning code here'**
+  String get provisionedSyncImportHint;
+
+  /// No description provided for @provisionedSyncImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Sync Configuration'**
+  String get provisionedSyncImportTitle;
+
+  /// No description provided for @provisionedSyncInvalidBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid provisioning code'**
+  String get provisionedSyncInvalidBundle;
+
+  /// No description provided for @provisionedSyncJoiningRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining sync room...'**
+  String get provisionedSyncJoiningRoom;
+
+  /// No description provided for @provisionedSyncLoggingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging in...'**
+  String get provisionedSyncLoggingIn;
+
+  /// No description provided for @provisionedSyncReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code on your mobile device'**
+  String get provisionedSyncReady;
+
+  /// No description provided for @provisionedSyncRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get provisionedSyncRetry;
+
+  /// No description provided for @provisionedSyncRotatingPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Securing account...'**
+  String get provisionedSyncRotatingPassword;
+
+  /// No description provided for @provisionedSyncScanButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get provisionedSyncScanButton;
+
+  /// No description provided for @provisionedSyncShowQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Show provisioning QR'**
+  String get provisionedSyncShowQr;
+
+  /// No description provided for @provisionedSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up sync from a provisioning bundle'**
+  String get provisionedSyncSubtitle;
+
+  /// No description provided for @provisionedSyncSummaryHomeserver.
+  ///
+  /// In en, this message translates to:
+  /// **'Homeserver'**
+  String get provisionedSyncSummaryHomeserver;
+
+  /// No description provided for @provisionedSyncSummaryRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Room'**
+  String get provisionedSyncSummaryRoom;
+
+  /// No description provided for @provisionedSyncSummaryUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get provisionedSyncSummaryUser;
+
+  /// No description provided for @provisionedSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provisioned Sync'**
+  String get provisionedSyncTitle;
+
+  /// No description provided for @provisionedSyncVerifyDevicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Verification'**
+  String get provisionedSyncVerifyDevicesTitle;
+
   /// No description provided for @referenceImageContinue.
   ///
   /// In en, this message translates to:

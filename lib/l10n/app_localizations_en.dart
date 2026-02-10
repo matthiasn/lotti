@@ -2341,6 +2341,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptUserPromptLabel => 'User Prompt';
 
   @override
+  String get provisionedSyncConfigureButton => 'Configure';
+
+  @override
+  String get provisionedSyncCopiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get provisionedSyncDisconnect => 'Disconnect';
+
+  @override
+  String get provisionedSyncDone => 'Sync configured successfully';
+
+  @override
+  String get provisionedSyncError => 'Configuration failed';
+
+  @override
+  String get provisionedSyncErrorConfigurationFailed =>
+      'An error occurred during configuration. Please try again.';
+
+  @override
+  String get provisionedSyncErrorLoginFailed =>
+      'Login failed. Please check your credentials and try again.';
+
+  @override
+  String get provisionedSyncImportButton => 'Import';
+
+  @override
+  String get provisionedSyncImportHint => 'Paste provisioning code here';
+
+  @override
+  String get provisionedSyncImportTitle => 'Import Sync Configuration';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Invalid provisioning code';
+
+  @override
+  String get provisionedSyncJoiningRoom => 'Joining sync room...';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Logging in...';
+
+  @override
+  String get provisionedSyncReady => 'Scan this QR code on your mobile device';
+
+  @override
+  String get provisionedSyncRetry => 'Retry';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Securing account...';
+
+  @override
+  String get provisionedSyncScanButton => 'Scan QR Code';
+
+  @override
+  String get provisionedSyncShowQr => 'Show provisioning QR';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Set up sync from a provisioning bundle';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Room';
+
+  @override
+  String get provisionedSyncSummaryUser => 'User';
+
+  @override
+  String get provisionedSyncTitle => 'Provisioned Sync';
+
+  @override
+  String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
+
+  @override
   String get referenceImageContinue => 'Continue';
 
   @override
