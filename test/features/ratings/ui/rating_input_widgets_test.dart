@@ -119,11 +119,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // SegmentedButton should render with the value selected
-      final segmented = tester.widget<SegmentedButton<double>>(
-        find.byType(SegmentedButton<double>),
+      // SegmentedButton uses int indices; value 0.5 maps to index 1
+      final segmented = tester.widget<SegmentedButton<int>>(
+        find.byType(SegmentedButton<int>),
       );
-      expect(segmented.selected, equals({0.5}));
+      expect(segmented.selected, equals({1}));
     });
 
     testWidgets('calls onChanged when segment is tapped', (tester) async {
@@ -167,8 +167,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final segmented = tester.widget<SegmentedButton<double>>(
-        find.byType(SegmentedButton<double>),
+      final segmented = tester.widget<SegmentedButton<int>>(
+        find.byType(SegmentedButton<int>),
       );
       expect(segmented.selected, isEmpty);
     });

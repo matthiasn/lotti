@@ -149,15 +149,18 @@ void main() {
     });
 
     test('descriptions are always English regardless of locale', () {
+      final enMessages = lookupAppLocalizations(const Locale('en'));
       final deMessages = lookupAppLocalizations(const Locale('de'));
+      final enQuestions = sessionRatingCatalog(enMessages);
       final deQuestions = sessionRatingCatalog(deMessages);
 
-      for (final q in deQuestions) {
-        // English descriptions should not change with locale
+      for (final deQ in deQuestions) {
+        final enQ = enQuestions.firstWhere((q) => q.key == deQ.key);
         expect(
-          q.description.contains(RegExp('[A-Z]')),
-          isTrue,
-          reason: '${q.key} description should be English',
+          deQ.description,
+          equals(enQ.description),
+          reason: '${deQ.key} description should match English regardless '
+              'of locale',
         );
       }
     });

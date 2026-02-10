@@ -148,8 +148,20 @@ class RatingSegmentedInput extends StatelessWidget {
   final double? value;
   final ValueChanged<double?> onChanged;
 
+  /// Finds the segment index whose value is closest to [v] within
+  /// a tolerance of 0.01, or returns -1 if no match.
+  int _selectedIndex(double? v) {
+    if (v == null) return -1;
+    for (var i = 0; i < segments.length; i++) {
+      if ((segments[i].value - v).abs() < 0.01) return i;
+    }
+    return -1;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selectedIdx = _selectedIndex(value);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -160,20 +172,20 @@ class RatingSegmentedInput extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppTheme.spacingSmall),
-        SegmentedButton<double>(
+        SegmentedButton<int>(
           segments: [
-            for (final segment in segments)
+            for (var i = 0; i < segments.length; i++)
               ButtonSegment(
-                value: segment.value,
-                label: Text(segment.label),
+                value: i,
+                label: Text(segments[i].label),
               ),
           ],
-          selected: value != null ? {value!} : {},
+          selected: selectedIdx >= 0 ? {selectedIdx} : {},
           onSelectionChanged: (selected) {
             if (selected.isEmpty) {
               onChanged(null);
             } else {
-              onChanged(selected.first);
+              onChanged(segments[selected.first].value);
               HapticFeedback.selectionClick();
             }
           },

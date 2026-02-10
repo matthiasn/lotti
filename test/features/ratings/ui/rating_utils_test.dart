@@ -7,7 +7,7 @@ void main() {
       test('matches exact value at index 0', () {
         expect(
           findOptionLabel(
-            0.0,
+            0,
             ['Mild', 'Moderate', 'Severe'],
             values: [0.0, 0.2, 1.0],
           ),
@@ -29,7 +29,7 @@ void main() {
       test('matches exact value at last index', () {
         expect(
           findOptionLabel(
-            1.0,
+            1,
             ['Mild', 'Moderate', 'Severe'],
             values: [0.0, 0.2, 1.0],
           ),
@@ -63,7 +63,7 @@ void main() {
     group('without optionValues (evenly spaced fallback)', () {
       test('matches first option at 0.0 for 3 options', () {
         expect(
-          findOptionLabel(0.0, ['Too easy', 'Just right', 'Too challenging']),
+          findOptionLabel(0, ['Too easy', 'Just right', 'Too challenging']),
           equals('Too easy'),
         );
       });
@@ -77,21 +77,21 @@ void main() {
 
       test('matches last option at 1.0 for 3 options', () {
         expect(
-          findOptionLabel(1.0, ['Too easy', 'Just right', 'Too challenging']),
+          findOptionLabel(1, ['Too easy', 'Just right', 'Too challenging']),
           equals('Too challenging'),
         );
       });
 
       test('matches first option at 0.0 for 2 options', () {
         expect(
-          findOptionLabel(0.0, ['No', 'Yes']),
+          findOptionLabel(0, ['No', 'Yes']),
           equals('No'),
         );
       });
 
       test('matches second option at 1.0 for 2 options', () {
         expect(
-          findOptionLabel(1.0, ['No', 'Yes']),
+          findOptionLabel(1, ['No', 'Yes']),
           equals('Yes'),
         );
       });
@@ -139,7 +139,7 @@ void main() {
         // Falls back to evenly-spaced for indices beyond values list
         expect(
           findOptionLabel(
-            1.0,
+            1,
             ['A', 'B', 'C'],
             values: [0.0, 0.5],
           ),

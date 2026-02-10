@@ -1,8 +1,10 @@
 # Ratings Feature
 
-Session ratings let users rate time-tracked work sessions across multiple
-dimensions (productivity, energy, focus, challenge-skill balance) and attach
-an optional freeform note.
+Ratings let users rate any target entry (time recordings, tasks, day plans,
+etc.) across multiple configurable dimensions with an optional freeform note.
+Which dimensions are shown — and how they are collected — is defined by a
+rating catalog rather than being hard-coded, so new rating contexts (e.g.
+morning check-in, task completion review) can be added without code changes.
 
 ## Architecture
 
@@ -65,7 +67,7 @@ ratings/
 - `RatingDimension` — a single rated dimension with `key`, `value` (0.0-1.0),
   and optional snapshotted metadata (`question`, `description`, `inputType`,
   `optionLabels`)
-- `RatingEntry` is linked to its target time entry via `RatingLink`
+- `RatingEntry` is linked to its target entry (`targetId`) via `RatingLink`
 
 ## Adding a New Catalog
 
