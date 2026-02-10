@@ -3620,4 +3620,63 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Tippen zum Fortfahren';
+
+  @override
+  String get provisionedSyncTitle => 'Provisionierte Synchronisierung';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Synchronisierung aus einem Bereitstellungspaket einrichten';
+
+  @override
+  String get provisionedSyncImportTitle => 'Sync-Konfiguration importieren';
+
+  @override
+  String get provisionedSyncImportHint => 'Bereitstellungscode hier einfügen';
+
+  @override
+  String get provisionedSyncImportButton => 'Importieren';
+
+  @override
+  String get provisionedSyncScanButton => 'QR-Code scannen';
+
+  @override
+  String get provisionedSyncConfigureButton => 'Konfigurieren';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Anmeldung läuft...';
+
+  @override
+  String get provisionedSyncJoiningRoom => 'Sync-Raum beitreten...';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Konto wird gesichert...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Scannen Sie diesen QR-Code auf Ihrem Mobilgerät';
+
+  @override
+  String get provisionedSyncDone => 'Synchronisierung erfolgreich konfiguriert';
+
+  @override
+  String get provisionedSyncError => 'Konfiguration fehlgeschlagen';
+
+  @override
+  String get provisionedSyncRetry => 'Erneut versuchen';
+
+  @override
+  String get provisionedSyncDisconnect => 'Trennen';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Homeserver';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Benutzer';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Raum';
 }

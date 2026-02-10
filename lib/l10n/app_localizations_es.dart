@@ -3665,4 +3665,67 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Toca para continuar';
+
+  @override
+  String get provisionedSyncTitle => 'Sincronización provisionada';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Configurar sincronización desde un paquete de aprovisionamiento';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importar configuración de sincronización';
+
+  @override
+  String get provisionedSyncImportHint =>
+      'Pega el código de aprovisionamiento aquí';
+
+  @override
+  String get provisionedSyncImportButton => 'Importar';
+
+  @override
+  String get provisionedSyncScanButton => 'Escanear código QR';
+
+  @override
+  String get provisionedSyncConfigureButton => 'Configurar';
+
+  @override
+  String get provisionedSyncInvalidBundle =>
+      'Código de aprovisionamiento no válido';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Iniciando sesión...';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Uniéndose a la sala de sincronización...';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Asegurando la cuenta...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Escanea este código QR en tu dispositivo móvil';
+
+  @override
+  String get provisionedSyncDone => 'Sincronización configurada exitosamente';
+
+  @override
+  String get provisionedSyncError => 'Error en la configuración';
+
+  @override
+  String get provisionedSyncRetry => 'Reintentar';
+
+  @override
+  String get provisionedSyncDisconnect => 'Desconectar';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Servidor';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Usuario';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Sala';
 }

@@ -667,6 +667,23 @@ class MatrixService {
         session: _sessionManager,
         storage: _secureStorage,
       );
+
+  /// Changes the password for the currently logged-in user and updates
+  /// the stored configuration.
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await _gateway.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
+    final config = await loadConfig();
+    if (config != null) {
+      await setConfig(config.copyWith(password: newPassword));
+    }
+  }
+
   Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
         config,
         session: _sessionManager,

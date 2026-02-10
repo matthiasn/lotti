@@ -70,6 +70,12 @@ abstract class MatrixSyncGateway {
   /// Returns a list of unverified devices across joined rooms.
   List<DeviceKeys> unverifiedDevices();
 
+  /// Changes the password for the currently logged-in user.
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  });
+
   /// Releases any resources (streams, controllers, database connections).
   Future<void> dispose();
 }

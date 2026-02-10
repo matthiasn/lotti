@@ -1407,5 +1407,24 @@
   "aiSetupWizardRunningButton": "Running...",
   "logsSearchHint": "Search all logs...",
 
-  "celebrationTapToContinue": "Tap to continue"
+  "celebrationTapToContinue": "Tap to continue",
+  "provisionedSyncTitle": "Provisioned Sync",
+  "provisionedSyncSubtitle": "Set up sync from a provisioning bundle",
+  "provisionedSyncImportTitle": "Import Sync Configuration",
+  "provisionedSyncImportHint": "Paste provisioning code here",
+  "provisionedSyncImportButton": "Import",
+  "provisionedSyncScanButton": "Scan QR Code",
+  "provisionedSyncConfigureButton": "Configure",
+  "provisionedSyncInvalidBundle": "Invalid provisioning code",
+  "provisionedSyncLoggingIn": "Logging in...",
+  "provisionedSyncJoiningRoom": "Joining sync room...",
+  "provisionedSyncRotatingPassword": "Securing account...",
+  "provisionedSyncReady": "Scan this QR code on your mobile device",
+  "provisionedSyncDone": "Sync configured successfully",
+  "provisionedSyncError": "Configuration failed",
+  "provisionedSyncRetry": "Retry",
+  "provisionedSyncDisconnect": "Disconnect",
+  "provisionedSyncSummaryHomeserver": "Homeserver",
+  "provisionedSyncSummaryUser": "User",
+  "provisionedSyncSummaryRoom": "Room"
 }

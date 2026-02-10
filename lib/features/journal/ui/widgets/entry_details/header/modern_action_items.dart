@@ -681,8 +681,7 @@ class ModernRateSessionItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final rating =
-        ref.watch(ratingControllerProvider(targetId: entryId)).value;
+    final rating = ref.watch(ratingControllerProvider(targetId: entryId)).value;
     final hasRating = rating != null;
 
     return ActionMenuListItem(

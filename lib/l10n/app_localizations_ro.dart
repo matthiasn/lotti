@@ -3612,4 +3612,65 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Atingeți pentru a continua';
+
+  @override
+  String get provisionedSyncTitle => 'Sincronizare provizionată';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Configurarea sincronizării dintr-un pachet de provizionare';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importă configurația de sincronizare';
+
+  @override
+  String get provisionedSyncImportHint => 'Lipește codul de provizionare aici';
+
+  @override
+  String get provisionedSyncImportButton => 'Importă';
+
+  @override
+  String get provisionedSyncScanButton => 'Scanează codul QR';
+
+  @override
+  String get provisionedSyncConfigureButton => 'Configurează';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Conectare în curs...';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Se alătură camerei de sincronizare...';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Securizarea contului...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Scanează acest cod QR pe dispozitivul tău mobil';
+
+  @override
+  String get provisionedSyncDone => 'Sincronizare configurată cu succes';
+
+  @override
+  String get provisionedSyncError => 'Configurarea a eșuat';
+
+  @override
+  String get provisionedSyncRetry => 'Reîncearcă';
+
+  @override
+  String get provisionedSyncDisconnect => 'Deconectează';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Server';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Utilizator';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Cameră';
 }

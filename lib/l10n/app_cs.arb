@@ -1405,5 +1405,24 @@
   "aiSetupWizardRunningButton": "Probíhá...",
   "logsSearchHint": "Prohledat všechny logy...",
 
-  "celebrationTapToContinue": "Klepněte pro pokračování"
+  "celebrationTapToContinue": "Klepněte pro pokračování",
+  "provisionedSyncTitle": "Provizní synchronizace",
+  "provisionedSyncSubtitle": "Nastavit synchronizaci z provizního balíčku",
+  "provisionedSyncImportTitle": "Importovat konfiguraci synchronizace",
+  "provisionedSyncImportHint": "Vložte provizní kód sem",
+  "provisionedSyncImportButton": "Importovat",
+  "provisionedSyncScanButton": "Naskenovat QR kód",
+  "provisionedSyncConfigureButton": "Konfigurovat",
+  "provisionedSyncInvalidBundle": "Neplatný provizní kód",
+  "provisionedSyncLoggingIn": "Přihlašování...",
+  "provisionedSyncJoiningRoom": "Připojování k synchronizační místnosti...",
+  "provisionedSyncRotatingPassword": "Zabezpečování účtu...",
+  "provisionedSyncReady": "Naskenujte tento QR kód na svém mobilním zařízení",
+  "provisionedSyncDone": "Synchronizace úspěšně nakonfigurována",
+  "provisionedSyncError": "Konfigurace selhala",
+  "provisionedSyncRetry": "Zkusit znovu",
+  "provisionedSyncDisconnect": "Odpojit",
+  "provisionedSyncSummaryHomeserver": "Server",
+  "provisionedSyncSummaryUser": "Uživatel",
+  "provisionedSyncSummaryRoom": "Místnost"
 }

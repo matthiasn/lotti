@@ -3591,4 +3591,65 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Klepněte pro pokračování';
+
+  @override
+  String get provisionedSyncTitle => 'Provizní synchronizace';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Nastavit synchronizaci z provizního balíčku';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importovat konfiguraci synchronizace';
+
+  @override
+  String get provisionedSyncImportHint => 'Vložte provizní kód sem';
+
+  @override
+  String get provisionedSyncImportButton => 'Importovat';
+
+  @override
+  String get provisionedSyncScanButton => 'Naskenovat QR kód';
+
+  @override
+  String get provisionedSyncConfigureButton => 'Konfigurovat';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Přihlašování...';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Připojování k synchronizační místnosti...';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Zabezpečování účtu...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Naskenujte tento QR kód na svém mobilním zařízení';
+
+  @override
+  String get provisionedSyncDone => 'Synchronizace úspěšně nakonfigurována';
+
+  @override
+  String get provisionedSyncError => 'Konfigurace selhala';
+
+  @override
+  String get provisionedSyncRetry => 'Zkusit znovu';
+
+  @override
+  String get provisionedSyncDisconnect => 'Odpojit';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Server';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Uživatel';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Místnost';
 }

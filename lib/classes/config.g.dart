@@ -19,3 +19,23 @@ Map<String, dynamic> _$MatrixConfigToJson(_MatrixConfig instance) =>
       'user': instance.user,
       'password': instance.password,
     };
+
+_SyncProvisioningBundle _$SyncProvisioningBundleFromJson(
+        Map<String, dynamic> json) =>
+    _SyncProvisioningBundle(
+      v: (json['v'] as num).toInt(),
+      homeServer: json['homeServer'] as String,
+      user: json['user'] as String,
+      password: json['password'] as String,
+      roomId: json['roomId'] as String,
+    );
+
+Map<String, dynamic> _$SyncProvisioningBundleToJson(
+        _SyncProvisioningBundle instance) =>
+    <String, dynamic>{
+      'v': instance.v,
+      'homeServer': instance.homeServer,
+      'user': instance.user,
+      'password': instance.password,
+      'roomId': instance.roomId,
+    };

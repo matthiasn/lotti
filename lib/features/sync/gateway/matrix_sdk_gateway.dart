@@ -198,6 +198,14 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await _client.changePassword(newPassword, oldPassword: oldPassword);
+  }
+
+  @override
   Future<void> dispose() async {
     await _inviteSubscription.cancel();
     await _inviteController.close();
