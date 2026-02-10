@@ -311,6 +311,45 @@ async def test_no_rollback_on_admin_login_failure():
 
 
 # ---------------------------------------------------------------------------
+# MXID validation tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_provision_rejects_mxid_without_colon():
+    """ValueError is raised when admin login returns an MXID with no ':'."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(
+                200,
+                json={"access_token": "tok", "user_id": "@adminNOCOLON"},
+            )
+        return synapse_handler(request)
+
+    transport = httpx.MockTransport(handler)
+    with pytest.raises(ValueError, match="no ':' separator"):
+        await provision(make_args(), transport=transport)
+
+
+@pytest.mark.anyio
+async def test_provision_rejects_mxid_with_empty_domain():
+    """ValueError is raised when admin login returns an MXID with empty domain."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(
+                200,
+                json={"access_token": "tok", "user_id": "@admin:"},
+            )
+        return synapse_handler(request)
+
+    transport = httpx.MockTransport(handler)
+    with pytest.raises(ValueError, match="empty domain part"):
+        await provision(make_args(), transport=transport)
+
+
+# ---------------------------------------------------------------------------
 # Error handling tests
 # ---------------------------------------------------------------------------
 

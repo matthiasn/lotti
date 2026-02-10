@@ -100,7 +100,13 @@ async def provision(
         admin_mxid = login_data["user_id"]
 
         # Extract server name from admin MXID (@admin:server_name)
+        if ":" not in admin_mxid:
+            raise ValueError(
+                f"Admin login returned invalid MXID (no ':' separator): {admin_mxid!r}"
+            )
         server_name = admin_mxid.split(":", 1)[1]
+        if not server_name:
+            raise ValueError(f"Admin login returned MXID with empty domain part: {admin_mxid!r}")
         log(f"Server name: {server_name}")
 
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
@@ -286,6 +292,9 @@ def main() -> None:
         sys.exit(1)
     except OSError as exc:
         print(f"\nFile error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as exc:
+        print(f"\nValidation error: {exc}", file=sys.stderr)
         sys.exit(1)
 
 
