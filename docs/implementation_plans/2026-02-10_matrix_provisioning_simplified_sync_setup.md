@@ -10,7 +10,7 @@
 - **Phasing:** Python CLI first → Desktop import/rotate/QR → Mobile scan
 - **User identity format:** Full MXID (`@user:server`) everywhere — never bare localpart
 - **Room marker:** CLI sets `m.lotti.sync_room` state event for discovery consistency
-- **No feature flag:** New wizard is a second entry in sync settings alongside the old one. Old flow will be removed soon.
+- **No NEW feature flag:** The existing `enableMatrixFlag` still gates access to the sync settings page (`SyncFeatureGate`, `settings_page.dart:97`). We are NOT adding a new flag — the provisioned sync card simply appears alongside the existing `MatrixSettingsCard` inside the already-gated sync settings page.
 
 ## Context
 

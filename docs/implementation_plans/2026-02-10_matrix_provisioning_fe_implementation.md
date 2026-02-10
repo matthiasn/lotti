@@ -11,7 +11,7 @@ The Python CLI provisioning tool outputs a Base64-encoded bundle containing `{ho
 - **Desktop:** Ingest this bundle → login → join room → rotate password → display QR with new creds
 - **Mobile:** Scan QR → login → join room → done (no rotation)
 
-This is a **completely new wizard** added to `sync_settings_page.dart` alongside the existing `MatrixSettingsCard`. No feature flag — the old flow will be removed soon. No modifications to the existing wizard or its pages.
+This is a **completely new wizard** added to `sync_settings_page.dart` alongside the existing `MatrixSettingsCard`. No NEW feature flag — the existing `enableMatrixFlag` already gates the sync settings page via `SyncFeatureGate` (`lib/features/sync/ui/widgets/sync_feature_gate.dart:15`) and `settings_page.dart:97`. The old flow will be removed soon. No modifications to the existing wizard or its pages.
 
 ---
 
@@ -120,7 +120,7 @@ class ProvisioningController extends _$ProvisioningController {
 
 #### `configureFromBundle(SyncProvisioningBundle bundle, {bool rotatePassword = true})`
 1. **Login:** state → `loggingIn()`, call `matrixService.setConfig(MatrixConfig(homeServer: bundle.homeServer, user: bundle.user, password: bundle.password))` then `matrixService.login()`. If login returns false → state `error('Login failed')`.
-2. **Join room:** state → `joiningRoom()`, call `matrixService.joinRoom(bundle.roomId)` + `matrixService.saveRoom(bundle.roomId)`.
+2. **Join room:** state → `joiningRoom()`, call `matrixService.joinRoom(bundle.roomId)`. (No separate `saveRoom` call needed — `joinRoom` already persists via `SyncRoomManager.joinRoom` at `sync_room_manager.dart:127`.)
 3. If `!rotatePassword` → state `done()`, return null.
 4. **Rotate password:** state → `rotatingPassword()`, generate 32-byte random password via `Random.secure()` + base64url encode, call `matrixService.changePassword(oldPassword: bundle.password, newPassword: newPw)`.
 5. **Generate handover:** Build new `SyncProvisioningBundle` with rotated password, JSON encode → UTF-8 → Base64url (no padding). State → `ready(handoverBase64)`.
@@ -225,7 +225,7 @@ Watches `provisioningControllerProvider` state. Calls `configureFromBundle()` on
 
 ## Integration Point — `sync_settings_page.dart`
 
-Add the new card directly after the existing `MatrixSettingsCard` (line 24). No flag gating:
+Add the new card directly after the existing `MatrixSettingsCard` (line 24). No additional flag gating (beyond existing `enableMatrixFlag` page gate):
 
 ```dart
 // After line 24: const MatrixSettingsCard(),
