@@ -1,0 +1,9 @@
+# Development and test dependencies
+flake8
+black
+isort
+pytest
+pytest-asyncio
+pytest-cov
+pytest-watch
+anyio

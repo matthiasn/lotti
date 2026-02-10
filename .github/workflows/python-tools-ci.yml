@@ -1,0 +1,53 @@
+name: Python Tools CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "tools/matrix_provisioner/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "tools/matrix_provisioner/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  matrix-provisioner:
+    name: Matrix Provisioner (lint + test)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: tools/matrix_provisioner
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            tools/matrix_provisioner/requirements.txt
+            tools/matrix_provisioner/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (flake8 + isort + black)
+        run: make lint
+
+      - name: Test
+        run: make test
+
+      - name: Test with coverage
+        run: make test-cov
