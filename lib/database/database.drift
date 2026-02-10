@@ -879,7 +879,7 @@ SELECT le.from_id AS rating_id, le.to_id AS time_entry_id
 ratingForTimeEntry:
 SELECT j.* FROM journal j
   INNER JOIN linked_entries le ON j.id = le.from_id
-  WHERE le.to_id = :timeEntryId
+  WHERE le.to_id = :targetId
   AND le.type = 'RatingLink'
   AND COALESCE(NULLIF(j.subtype, ''), 'session') = :catalogId
   AND COALESCE(le.hidden, false) = false

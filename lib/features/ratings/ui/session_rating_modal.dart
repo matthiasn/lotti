@@ -7,6 +7,7 @@ import 'package:lotti/classes/rating_question.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
+import 'package:lotti/features/ratings/ui/rating_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -366,7 +367,7 @@ class _ReadOnlyDimensionRow extends StatelessWidget {
 
     // Segmented: show matching option label as text
     if (dimension.inputType == 'segmented' && dimension.optionLabels != null) {
-      final optionText = _findOptionLabel(
+      final optionText = findOptionLabel(
         dimension.value,
         dimension.optionLabels!,
         values: dimension.optionValues,
@@ -421,26 +422,4 @@ class _ReadOnlyDimensionRow extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Maps a normalized value to the closest option label.
-///
-/// When [values] is provided, uses the actual stored values for matching.
-/// Otherwise falls back to assuming evenly spaced values across 0.0-1.0
-/// (e.g. 3 options → 0.0, 0.5, 1.0) for old data without stored values.
-String _findOptionLabel(
-  double value,
-  List<String> labels, {
-  List<double>? values,
-}) {
-  final count = labels.length;
-  for (var i = 0; i < count; i++) {
-    final expectedValue = values != null && i < values.length
-        ? values[i]
-        : (count == 1 ? 0.5 : i / (count - 1));
-    if ((expectedValue - value).abs() < 0.01) {
-      return labels[i];
-    }
-  }
-  return '${(value * 100).round()}%';
 }

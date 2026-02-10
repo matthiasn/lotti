@@ -6707,11 +6707,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
   }
 
   Selectable<JournalDbEntity> ratingForTimeEntry(
-      String timeEntryId, String catalogId) {
+      String targetId, String catalogId) {
     return customSelect(
         'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(NULLIF(j.subtype, \'\'), \'session\') = ?2 AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
         variables: [
-          Variable<String>(timeEntryId),
+          Variable<String>(targetId),
           Variable<String>(catalogId)
         ],
         readsFrom: {
