@@ -2,11 +2,12 @@
 
 import base64
 import json
+from urllib.parse import unquote
 
 import httpx
 import pytest
 
-from provision import provision
+from provision import _encode_mxid_for_path, provision
 from tests.conftest import decode_bundle, make_args, synapse_handler
 
 # ---------------------------------------------------------------------------
@@ -47,6 +48,51 @@ async def test_provision_password_is_random(mock_transport):
 
 
 # ---------------------------------------------------------------------------
+# URL encoding tests (#1)
+# ---------------------------------------------------------------------------
+
+
+def test_encode_mxid_simple():
+    """Simple MXID is percent-encoded (@ and : are encoded)."""
+    encoded = _encode_mxid_for_path("@user:example.com")
+    assert "@" not in encoded
+    assert ":" not in encoded
+    assert encoded == "%40user%3Aexample.com"
+
+
+def test_encode_mxid_with_slash():
+    """MXID containing a slash is safely encoded."""
+    encoded = _encode_mxid_for_path("@user/name:example.com")
+    assert "/" not in encoded
+    assert "%2F" in encoded or "%2f" in encoded
+
+
+@pytest.mark.anyio
+async def test_provision_url_encodes_mxid_in_paths(tracking_transport):
+    """API paths contain the percent-encoded MXID on the wire."""
+    transport, requests_seen = tracking_transport
+    await provision(make_args(), transport=transport)
+
+    # request.url.raw_path gives the actual bytes sent over the wire,
+    # preserving percent-encoding; .path decodes them.
+    admin_api_raw_paths = [
+        r.url.raw_path for r in requests_seen if "/_synapse/admin/" in r.url.path
+    ]
+    for raw_path in admin_api_raw_paths:
+        assert b"%40" in raw_path, f"MXID @ not encoded in {raw_path!r}"
+
+
+@pytest.mark.anyio
+async def test_provision_username_with_slash(mock_transport):
+    """Username containing a slash does not break the API path."""
+    args = make_args(username="user/with/slash")
+    result = await provision(args, transport=mock_transport)
+    bundle = decode_bundle(result)
+
+    assert bundle["user"] == "@user/with/slash:example.com"
+
+
+# ---------------------------------------------------------------------------
 # Request inspection tests
 # ---------------------------------------------------------------------------
 
@@ -57,7 +103,9 @@ async def test_provision_custom_display_name(tracking_transport):
     transport, requests_seen = tracking_transport
     await provision(make_args(display_name="My Custom Name"), transport=transport)
 
-    create_user_reqs = [r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path]
+    create_user_reqs = [
+        r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path and r.method == "PUT"
+    ]
     assert len(create_user_reqs) == 1
     body = json.loads(create_user_reqs[0].content)
     assert body["displayname"] == "My Custom Name"
@@ -69,7 +117,10 @@ async def test_provision_creates_non_admin_user(tracking_transport):
     transport, requests_seen = tracking_transport
     await provision(make_args(), transport=transport)
 
-    create_user_reqs = [r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path]
+    create_user_reqs = [
+        r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path and r.method == "PUT"
+    ]
+    # Exactly one PUT — no accidental rollback on the success path
     assert len(create_user_reqs) == 1
     body = json.loads(create_user_reqs[0].content)
     assert body["admin"] is False
@@ -84,7 +135,7 @@ async def test_provision_user_token_is_short_lived(tracking_transport):
     login_as_user_reqs = [
         r
         for r in requests_seen
-        if r.url.path.startswith("/_synapse/admin/v1/users/") and r.url.path.endswith("/login")
+        if "/_synapse/admin/v1/users/" in r.url.path and unquote(r.url.path).endswith("/login")
     ]
     assert len(login_as_user_reqs) == 1
     body = json.loads(login_as_user_reqs[0].content)
@@ -137,6 +188,106 @@ async def test_provision_room_is_private(tracking_transport):
 
 
 # ---------------------------------------------------------------------------
+# Verbose output gating (#3)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_provision_default_output_no_decoded_json(mock_transport, capsys):
+    """Default output does NOT print the decoded JSON bundle."""
+    await provision(make_args(), transport=mock_transport)
+    captured = capsys.readouterr()
+
+    assert "Provisioning Bundle (Base64)" in captured.out
+    assert "Decoded (for verification)" not in captured.out
+
+
+@pytest.mark.anyio
+async def test_provision_verbose_prints_decoded_json(mock_transport, capsys):
+    """With verbose=True, the decoded JSON bundle is printed."""
+    await provision(make_args(verbose=True), transport=mock_transport)
+    captured = capsys.readouterr()
+
+    assert "Decoded (for verification)" in captured.out
+    assert '"password"' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# Rollback tests (#4)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_rollback_on_room_creation_failure():
+    """If room creation fails, the orphan user is deactivated."""
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        path = unquote(request.url.path)
+        if path == "/_matrix/client/v3/createRoom":
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    transport = httpx.MockTransport(handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        await provision(make_args(), transport=transport)
+
+    # Find the deactivation PUT (second PUT to admin/v2/users)
+    admin_user_puts = [
+        r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path and r.method == "PUT"
+    ]
+    # First PUT = create user, second PUT = deactivate user
+    assert len(admin_user_puts) == 2
+    deactivate_body = json.loads(admin_user_puts[1].content)
+    assert deactivate_body["deactivated"] is True
+
+
+@pytest.mark.anyio
+async def test_rollback_on_user_login_failure():
+    """If login-as-user fails, the orphan user is deactivated."""
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        path = unquote(request.url.path)
+        if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/login"):
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    transport = httpx.MockTransport(handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        await provision(make_args(), transport=transport)
+
+    admin_user_puts = [
+        r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path and r.method == "PUT"
+    ]
+    assert len(admin_user_puts) == 2
+    deactivate_body = json.loads(admin_user_puts[1].content)
+    assert deactivate_body["deactivated"] is True
+
+
+@pytest.mark.anyio
+async def test_no_rollback_on_admin_login_failure():
+    """If admin login fails, no user was created so no rollback occurs."""
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        if request.url.path == "/_matrix/client/v3/login":
+            return httpx.Response(403, json={"errcode": "M_FORBIDDEN"})
+        return synapse_handler(request)
+
+    transport = httpx.MockTransport(handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        await provision(make_args(), transport=transport)
+
+    # No admin API user calls should have been made
+    admin_user_puts = [r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path]
+    assert len(admin_user_puts) == 0
+
+
+# ---------------------------------------------------------------------------
 # Error handling tests
 # ---------------------------------------------------------------------------
 
@@ -160,7 +311,7 @@ async def test_provision_user_creation_failure():
     """User creation failure raises HTTPStatusError."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.startswith("/_synapse/admin/v2/users/"):
+        if "/_synapse/admin/v2/users/" in request.url.path:
             return httpx.Response(
                 409,
                 json={"errcode": "M_USER_IN_USE", "error": "User already exists"},

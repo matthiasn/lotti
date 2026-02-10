@@ -5,6 +5,7 @@ import base64
 import json
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 import httpx
 import pytest
@@ -17,8 +18,12 @@ pytest_plugins = ["pytest_asyncio"]
 
 
 def synapse_handler(request: httpx.Request) -> httpx.Response:
-    """Mock Synapse responses for the full provisioning flow."""
-    path = request.url.path
+    """Mock Synapse responses for the full provisioning flow.
+
+    Path segments are URL-decoded before matching so that percent-encoded
+    MXIDs (e.g. ``%40user%3Aserver``) are handled correctly.
+    """
+    path = unquote(request.url.path)
 
     if path == "/_matrix/client/v3/login":
         return httpx.Response(
@@ -76,6 +81,7 @@ def make_args(**overrides) -> argparse.Namespace:
         "admin_password": "admin_secret",
         "username": "lotti_user",
         "display_name": "Lotti Sync",
+        "verbose": False,
     }
     defaults.update(overrides)
     return argparse.Namespace(**defaults)
