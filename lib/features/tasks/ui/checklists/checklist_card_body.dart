@@ -99,7 +99,6 @@ class ChecklistCardBody extends StatelessWidget {
                 onSave: onCreateItem,
                 clearOnSave: true,
                 keepFocusOnSave: true,
-                autofocus: itemIds.isEmpty,
                 semanticsLabel: 'Add item to checklist',
               ),
             ),

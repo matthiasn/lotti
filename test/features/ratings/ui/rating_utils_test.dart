@@ -9,7 +9,7 @@ void main() {
           findOptionLabel(
             0,
             ['Mild', 'Moderate', 'Severe'],
-            values: [0.0, 0.2, 1.0],
+            values: [0, 0.2, 1.0],
           ),
           equals('Mild'),
         );
@@ -20,7 +20,7 @@ void main() {
           findOptionLabel(
             0.2,
             ['Mild', 'Moderate', 'Severe'],
-            values: [0.0, 0.2, 1.0],
+            values: [0, 0.2, 1.0],
           ),
           equals('Moderate'),
         );
@@ -31,7 +31,7 @@ void main() {
           findOptionLabel(
             1,
             ['Mild', 'Moderate', 'Severe'],
-            values: [0.0, 0.2, 1.0],
+            values: [0, 0.2, 1.0],
           ),
           equals('Severe'),
         );
@@ -42,7 +42,7 @@ void main() {
           findOptionLabel(
             0.205,
             ['Mild', 'Moderate', 'Severe'],
-            values: [0.0, 0.2, 1.0],
+            values: [0, 0.2, 1.0],
           ),
           equals('Moderate'),
         );
@@ -53,7 +53,7 @@ void main() {
           findOptionLabel(
             0.6,
             ['Mild', 'Moderate', 'Severe'],
-            values: [0.0, 0.2, 1.0],
+            values: [0, 0.2, 1.0],
           ),
           equals('60%'),
         );
@@ -141,7 +141,7 @@ void main() {
           findOptionLabel(
             1,
             ['A', 'B', 'C'],
-            values: [0.0, 0.5],
+            values: [0, 0.5],
           ),
           equals('C'),
         );
