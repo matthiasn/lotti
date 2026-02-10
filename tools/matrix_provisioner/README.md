@@ -1,8 +1,8 @@
 # Matrix Provisioner
 
 Admin CLI tool that creates a Matrix user account and sync room on a Synapse
-homeserver, then outputs a Base64-encoded provisioning bundle for import into
-the Lotti desktop client.
+homeserver, then outputs a Base64url-encoded (no padding) provisioning bundle
+for import into the Lotti desktop client.
 
 ## Prerequisites
 

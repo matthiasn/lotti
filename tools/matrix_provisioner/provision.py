@@ -193,9 +193,12 @@ async def provision(
         # desktop client rotates it immediately upon import.
         output_file = getattr(args, "output_file", None)
         if output_file:
-            with open(output_file, "w", encoding="utf-8") as fh:
-                # codeql[py/clear-text-storage-sensitive-data]
-                fh.write(bundle_b64)
+            try:
+                with open(output_file, "w", encoding="utf-8") as fh:
+                    # codeql[py/clear-text-storage-sensitive-data]
+                    fh.write(bundle_b64)
+            except OSError as exc:
+                raise OSError(f"Failed to write bundle to {output_file}: {exc}") from exc
             log(f"Bundle written to {output_file}")
 
         if verbose:
@@ -280,6 +283,9 @@ def main() -> None:
         sys.exit(1)
     except httpx.RequestError as exc:
         print(f"\nRequest error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as exc:
+        print(f"\nFile error: {exc}", file=sys.stderr)
         sys.exit(1)
 
 

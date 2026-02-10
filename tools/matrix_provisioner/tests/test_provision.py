@@ -361,6 +361,19 @@ async def test_provision_room_creation_failure():
 
 
 # ---------------------------------------------------------------------------
+# File-write error tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_provision_output_file_write_error(mock_transport, tmp_path):
+    """OSError is raised with a clear message when the output file cannot be written."""
+    bad_path = str(tmp_path / "no_such_dir" / "bundle.txt")
+    with pytest.raises(OSError, match="Failed to write bundle"):
+        await provision(make_args(output_file=bad_path), transport=mock_transport)
+
+
+# ---------------------------------------------------------------------------
 # Bundle encoding tests
 # ---------------------------------------------------------------------------
 
