@@ -14,7 +14,10 @@ import '../../../../../../test_helper.dart';
 /// Fake RatingController that returns null (no existing rating).
 class _FakeNoRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({required String timeEntryId}) async {
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
     state = const AsyncData(null);
     return null;
   }
@@ -23,7 +26,10 @@ class _FakeNoRatingController extends RatingController {
 /// Fake RatingController that returns an existing rating.
 class _FakeHasRatingController extends RatingController {
   @override
-  Future<JournalEntity?> build({required String timeEntryId}) async {
+  Future<JournalEntity?> build({
+    required String targetId,
+    String catalogId = 'session',
+  }) async {
     final testDate = DateTime(2025, 12, 31, 12);
     final entity = RatingEntry(
       meta: Metadata(
@@ -34,7 +40,7 @@ class _FakeHasRatingController extends RatingController {
         dateTo: testDate,
       ),
       data: RatingData(
-        timeEntryId: timeEntryId,
+        targetId: targetId,
         dimensions: const [
           RatingDimension(key: 'productivity', value: 0.8),
           RatingDimension(key: 'energy', value: 0.6),
@@ -60,7 +66,7 @@ void main() {
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(true),
             ),
-            ratingControllerProvider(timeEntryId: entryId)
+            ratingControllerProvider(targetId: entryId)
                 .overrideWith(_FakeNoRatingController.new),
           ],
           child: const ModernRateSessionItem(entryId: entryId),
@@ -85,7 +91,7 @@ void main() {
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(false),
             ),
-            ratingControllerProvider(timeEntryId: entryId)
+            ratingControllerProvider(targetId: entryId)
                 .overrideWith(_FakeNoRatingController.new),
           ],
           child: const ModernRateSessionItem(entryId: entryId),
@@ -105,7 +111,7 @@ void main() {
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(true),
             ),
-            ratingControllerProvider(timeEntryId: entryId)
+            ratingControllerProvider(targetId: entryId)
                 .overrideWith(_FakeHasRatingController.new),
           ],
           child: const ModernRateSessionItem(entryId: entryId),

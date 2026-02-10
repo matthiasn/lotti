@@ -1478,7 +1478,7 @@ void main() {
 
         // Keep the ratingPromptController alive so autoDispose
         // doesn't clear the state before we can read it
-        String? capturedPromptState;
+        RatingPrompt? capturedPromptState;
         container.listen(
           ratingPromptControllerProvider,
           (_, next) => capturedPromptState = next,
@@ -1487,7 +1487,7 @@ void main() {
         await notifier.save(stopRecording: true);
 
         // testTextEntry.meta.dateFrom is 2022, so duration >> 1 min
-        expect(capturedPromptState, equals(entryId));
+        expect(capturedPromptState?.targetId, equals(entryId));
       });
 
       test(
@@ -1526,7 +1526,7 @@ void main() {
             .thenAnswer((_) async => null);
 
         // Listen to catch any state change
-        String? capturedPromptState;
+        RatingPrompt? capturedPromptState;
         container.listen(
           ratingPromptControllerProvider,
           (_, next) => capturedPromptState = next,
@@ -1603,7 +1603,7 @@ void main() {
         );
 
         // Listen to catch any state change
-        String? capturedPromptState;
+        RatingPrompt? capturedPromptState;
         container.listen(
           ratingPromptControllerProvider,
           (_, next) => capturedPromptState = next,

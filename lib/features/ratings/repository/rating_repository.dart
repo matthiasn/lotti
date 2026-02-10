@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
@@ -24,17 +26,22 @@ class RatingRepository {
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
   final _uuid = const Uuid();
 
-  /// Creates or updates a rating for a time entry.
+  /// Creates or updates a rating for a target entry.
   ///
-  /// If a rating already exists for [timeEntryId], updates it.
-  /// Otherwise, creates a new [RatingEntry] and links it via [RatingLink].
+  /// If a rating already exists for [targetId] with the given [catalogId],
+  /// updates it. Otherwise, creates a new [RatingEntry] and links it via
+  /// [RatingLink].
   Future<RatingEntry?> createOrUpdateRating({
-    required String timeEntryId,
+    required String targetId,
     required List<RatingDimension> dimensions,
+    String catalogId = 'session',
     String? note,
   }) async {
     try {
-      final existing = await _journalDb.getRatingForTimeEntry(timeEntryId);
+      final existing = await _journalDb.getRatingForTimeEntry(
+        targetId,
+        catalogId: catalogId,
+      );
 
       if (existing != null) {
         return _updateRating(
@@ -44,14 +51,15 @@ class RatingRepository {
         );
       }
 
-      // Look up the time entry to inherit its category
-      final timeEntry = await _journalDb.journalEntityById(timeEntryId);
+      // Look up the target entry to inherit its category
+      final targetEntry = await _journalDb.journalEntityById(targetId);
 
       return _createRating(
-        timeEntryId: timeEntryId,
+        targetId: targetId,
         dimensions: dimensions,
+        catalogId: catalogId,
         note: note,
-        categoryId: timeEntry?.meta.categoryId,
+        categoryId: targetEntry?.meta.categoryId,
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -64,21 +72,26 @@ class RatingRepository {
     }
   }
 
-  /// Look up existing rating for a time entry.
-  Future<RatingEntry?> getRatingForTimeEntry(String timeEntryId) async {
-    return _journalDb.getRatingForTimeEntry(timeEntryId);
+  /// Look up existing rating for a target entry with the given [catalogId].
+  Future<RatingEntry?> getRatingForTargetEntry(
+    String targetId, {
+    String catalogId = 'session',
+  }) async {
+    return _journalDb.getRatingForTimeEntry(targetId, catalogId: catalogId);
   }
 
   Future<RatingEntry?> _createRating({
-    required String timeEntryId,
+    required String targetId,
     required List<RatingDimension> dimensions,
     String? note,
     String? categoryId,
+    String catalogId = 'session',
   }) async {
     final now = DateTime.now();
     final ratingData = RatingData(
-      timeEntryId: timeEntryId,
+      targetId: targetId,
       dimensions: dimensions,
+      catalogId: catalogId,
       note: note,
     );
 
@@ -88,6 +101,7 @@ class RatingRepository {
         dateFrom: now,
         dateTo: now,
         categoryId: categoryId,
+        uuidV5Input: jsonEncode(['rating', targetId, catalogId]),
       ),
     );
 
@@ -98,13 +112,13 @@ class RatingRepository {
 
     if (persisted != true) return null;
 
-    // Create a RatingLink from the rating to the time entry.
+    // Create a RatingLink from the rating to the target entry.
     // If link creation fails, soft-delete the orphaned rating entity
     // to avoid leaving it dangling without a link.
     try {
       await _createRatingLink(
         fromId: journalEntity.meta.id,
-        toId: timeEntryId,
+        toId: targetId,
       );
     } catch (e, stackTrace) {
       getIt<LoggingService>().captureException(

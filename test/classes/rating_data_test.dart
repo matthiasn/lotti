@@ -53,6 +53,157 @@ void main() {
       expect(updated.value, equals(0.9));
       expect(original.value, equals(0.5));
     });
+
+    test('creates with self-describing metadata', () {
+      const dim = RatingDimension(
+        key: 'productivity',
+        value: 0.8,
+        question: 'How productive was this session?',
+        description: 'Measures subjective productivity. '
+            '0.0 = completely unproductive, 1.0 = peak productivity.',
+        inputType: 'tapBar',
+      );
+
+      expect(dim.question, equals('How productive was this session?'));
+      expect(dim.description, contains('subjective productivity'));
+      expect(dim.inputType, equals('tapBar'));
+      expect(dim.optionLabels, isNull);
+    });
+
+    test('creates segmented dimension with option labels', () {
+      const dim = RatingDimension(
+        key: 'challenge_skill',
+        value: 0.5,
+        question: 'This work felt...',
+        description: 'Challenge-skill balance. '
+            '0.0 = too easy, 0.5 = just right, 1.0 = too challenging.',
+        inputType: 'segmented',
+        optionLabels: ['Too easy', 'Just right', 'Too challenging'],
+        optionValues: [0.0, 0.5, 1.0],
+      );
+
+      expect(dim.optionLabels, hasLength(3));
+      expect(dim.optionLabels, contains('Just right'));
+      expect(dim.optionValues, hasLength(3));
+      expect(dim.optionValues, equals([0.0, 0.5, 1.0]));
+    });
+
+    test('new optional fields default to null for backward compat', () {
+      const dim = RatingDimension(key: 'energy', value: 0.6);
+
+      expect(dim.question, isNull);
+      expect(dim.description, isNull);
+      expect(dim.inputType, isNull);
+      expect(dim.optionLabels, isNull);
+      expect(dim.optionValues, isNull);
+    });
+
+    test('deserializes legacy JSON without new fields', () {
+      final legacyJson = <String, dynamic>{
+        'key': 'focus',
+        'value': 0.75,
+      };
+      final dim = RatingDimension.fromJson(legacyJson);
+
+      expect(dim.key, equals('focus'));
+      expect(dim.value, equals(0.75));
+      expect(dim.question, isNull);
+      expect(dim.description, isNull);
+      expect(dim.inputType, isNull);
+      expect(dim.optionLabels, isNull);
+      expect(dim.optionValues, isNull);
+    });
+
+    test('JSON round-trip preserves self-describing fields', () {
+      const dim = RatingDimension(
+        key: 'productivity',
+        value: 0.8,
+        question: 'How productive was this session?',
+        description: 'Measures subjective productivity.',
+        inputType: 'tapBar',
+      );
+
+      final jsonString = jsonEncode(dim.toJson());
+      final restored = RatingDimension.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(dim));
+    });
+
+    test('JSON round-trip preserves option labels', () {
+      const dim = RatingDimension(
+        key: 'challenge_skill',
+        value: 0.5,
+        question: 'This work felt...',
+        description: 'Challenge-skill balance.',
+        inputType: 'segmented',
+        optionLabels: ['Too easy', 'Just right', 'Too challenging'],
+      );
+
+      final jsonString = jsonEncode(dim.toJson());
+      final restored = RatingDimension.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(dim));
+      expect(restored.optionLabels, hasLength(3));
+    });
+
+    test('JSON round-trip preserves optionValues', () {
+      const dim = RatingDimension(
+        key: 'severity',
+        value: 0.2,
+        question: 'How severe?',
+        inputType: 'segmented',
+        optionLabels: ['Mild', 'Moderate', 'Severe'],
+        optionValues: [0.0, 0.2, 1.0],
+      );
+
+      final jsonString = jsonEncode(dim.toJson());
+      final restored = RatingDimension.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
+
+      expect(restored, equals(dim));
+      expect(restored.optionValues, equals([0.0, 0.2, 1.0]));
+    });
+
+    test('equality distinguishes optionValues', () {
+      const withValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+        optionValues: [0.0, 1.0],
+      );
+      const withoutValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+      );
+      const withDifferentValues = RatingDimension(
+        key: 'x',
+        value: 0.5,
+        optionLabels: ['A', 'B'],
+        optionValues: [0.0, 0.5],
+      );
+
+      expect(withValues, isNot(equals(withoutValues)));
+      expect(withValues, isNot(equals(withDifferentValues)));
+    });
+
+    test('deserializes JSON with optionLabels but without optionValues', () {
+      final json = <String, dynamic>{
+        'key': 'challenge_skill',
+        'value': 0.5,
+        'inputType': 'segmented',
+        'optionLabels': ['Too easy', 'Just right', 'Too challenging'],
+      };
+      final dim = RatingDimension.fromJson(json);
+
+      expect(dim.optionLabels, hasLength(3));
+      expect(dim.optionValues, isNull);
+    });
   });
 
   group('RatingData', () {
@@ -65,25 +216,26 @@ void main() {
 
     test('creates with required fields and defaults', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
 
-      expect(data.timeEntryId, equals('entry-1'));
+      expect(data.targetId, equals('entry-1'));
       expect(data.dimensions, equals(testDimensions));
+      expect(data.catalogId, equals('session'));
       expect(data.schemaVersion, equals(1));
       expect(data.note, isNull);
     });
 
     test('creates with all fields', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         schemaVersion: 2,
         note: 'Great session',
       );
 
-      expect(data.timeEntryId, equals('entry-1'));
+      expect(data.targetId, equals('entry-1'));
       expect(data.dimensions.length, equals(4));
       expect(data.schemaVersion, equals(2));
       expect(data.note, equals('Great session'));
@@ -91,12 +243,12 @@ void main() {
 
     test('equality works correctly', () {
       const data1 = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         note: 'test',
       );
       const data2 = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         note: 'test',
       );
@@ -104,13 +256,13 @@ void main() {
       expect(data1, equals(data2));
     });
 
-    test('inequality with different timeEntryId', () {
+    test('inequality with different targetId', () {
       const data1 = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
       const data2 = RatingData(
-        timeEntryId: 'entry-2',
+        targetId: 'entry-2',
         dimensions: testDimensions,
       );
 
@@ -119,21 +271,21 @@ void main() {
 
     test('copyWith preserves fields', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         note: 'original note',
       );
 
       final updated = data.copyWith(note: 'updated note');
 
-      expect(updated.timeEntryId, equals('entry-1'));
+      expect(updated.targetId, equals('entry-1'));
       expect(updated.dimensions, equals(testDimensions));
       expect(updated.note, equals('updated note'));
     });
 
     test('copyWith can clear optional note', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         note: 'some note',
       );
@@ -145,7 +297,7 @@ void main() {
 
     test('copyWith can update dimensions', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
 
@@ -156,12 +308,12 @@ void main() {
       final updated = data.copyWith(dimensions: newDimensions);
 
       expect(updated.dimensions, equals(newDimensions));
-      expect(updated.timeEntryId, equals('entry-1'));
+      expect(updated.targetId, equals('entry-1'));
     });
 
     test('serializes to and from JSON', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
         note: 'Great focus session',
       );
@@ -178,7 +330,7 @@ void main() {
 
     test('JSON round-trip preserves all fields', () {
       const data = RatingData(
-        timeEntryId: 'entry-abc',
+        targetId: 'entry-abc',
         dimensions: [
           RatingDimension(key: 'productivity', value: 0.85),
           RatingDimension(key: 'energy', value: 0.4),
@@ -192,7 +344,7 @@ void main() {
       final decoded =
           RatingData.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
 
-      expect(decoded.timeEntryId, equals('entry-abc'));
+      expect(decoded.targetId, equals('entry-abc'));
       expect(decoded.dimensions.length, equals(4));
       expect(decoded.dimensions[0].key, equals('productivity'));
       expect(decoded.dimensions[0].value, equals(0.85));
@@ -202,7 +354,7 @@ void main() {
 
     test('dimensionValue returns value for existing key', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
 
@@ -214,7 +366,7 @@ void main() {
 
     test('dimensionValue returns null for missing key', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
 
@@ -223,7 +375,7 @@ void main() {
 
     test('dimensionValue returns null for empty dimensions', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: [],
       );
 
@@ -232,7 +384,7 @@ void main() {
 
     test('serializes without optional note', () {
       const data = RatingData(
-        timeEntryId: 'entry-1',
+        targetId: 'entry-1',
         dimensions: testDimensions,
       );
 
@@ -242,6 +394,56 @@ void main() {
       );
 
       expect(restored.note, isNull);
+      expect(restored, equals(data));
+    });
+
+    test('catalogId defaults to session', () {
+      const data = RatingData(
+        targetId: 'entry-1',
+        dimensions: testDimensions,
+      );
+
+      expect(data.catalogId, equals('session'));
+    });
+
+    test('catalogId can be set explicitly', () {
+      const data = RatingData(
+        targetId: 'dayplan-2026-02-09',
+        dimensions: testDimensions,
+        catalogId: 'day_morning',
+      );
+
+      expect(data.catalogId, equals('day_morning'));
+    });
+
+    test('deserializes legacy JSON without catalogId as session', () {
+      final legacyJson = <String, dynamic>{
+        'timeEntryId': 'entry-1',
+        'dimensions': [
+          {'key': 'productivity', 'value': 0.8},
+        ],
+        'schemaVersion': 1,
+      };
+
+      final data = RatingData.fromJson(legacyJson);
+
+      expect(data.catalogId, equals('session'));
+      expect(data.targetId, equals('entry-1'));
+    });
+
+    test('JSON round-trip preserves catalogId', () {
+      const data = RatingData(
+        targetId: 'task-123',
+        dimensions: testDimensions,
+        catalogId: 'task_completed',
+      );
+
+      final jsonString = jsonEncode(data.toJson());
+      final restored = RatingData.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
+
+      expect(restored.catalogId, equals('task_completed'));
       expect(restored, equals(data));
     });
   });
@@ -257,7 +459,7 @@ void main() {
           dateTo: DateTime(2024, 3, 15),
         ),
         data: const RatingData(
-          timeEntryId: 'te-1',
+          targetId: 'te-1',
           dimensions: [
             RatingDimension(key: 'productivity', value: 0.8),
           ],

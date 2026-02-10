@@ -1086,12 +1086,22 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
-  /// Find existing rating entity for a time entry (for edit/re-open).
-  Future<RatingEntry?> getRatingForTimeEntry(String timeEntryId) async {
-    final res = await ratingForTimeEntry(timeEntryId).get();
+  /// Find existing rating entity for a target entry and catalog
+  /// (for edit/re-open).
+  Future<RatingEntry?> getRatingForTimeEntry(
+    String targetId, {
+    String catalogId = 'session',
+  }) async {
+    final res = await ratingForTimeEntry(targetId, catalogId).get();
     if (res.isEmpty) return null;
     final entity = fromDbEntity(res.first);
     return entity is RatingEntry ? entity : null;
+  }
+
+  /// Fetch all ratings linked to a target entity (across all catalogs).
+  Future<List<RatingEntry>> getAllRatingsForTarget(String targetId) async {
+    final res = await allRatingsForTarget(targetId).get();
+    return res.map(fromDbEntity).whereType<RatingEntry>().toList();
   }
 
   /// Bulk fetch rating IDs for a set of time entries.

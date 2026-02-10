@@ -19,6 +19,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     workout: (WorkoutEntry entry) => entry.data.workoutType,
     habitCompletion: (HabitCompletionEntry entry) => entry.data.habitId,
     aiResponse: (AiResponseEntry entry) => entry.data.type?.name,
+    rating: (RatingEntry entry) => entry.data.catalogId,
     orElse: () => '',
   );
 

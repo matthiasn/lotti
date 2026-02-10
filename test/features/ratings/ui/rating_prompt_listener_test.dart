@@ -73,7 +73,7 @@ void main() {
       // Trigger rating prompt
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-1');
+          .requestRating(targetId: 'entry-1');
       await tester.pumpAndSettle();
 
       // Modal should appear
@@ -92,7 +92,7 @@ void main() {
       // Set to a value first then dismiss
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-1');
+          .requestRating(targetId: 'entry-1');
       await tester.pumpAndSettle();
 
       // Close the modal via Skip
@@ -115,7 +115,7 @@ void main() {
       // Trigger rating prompt
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-1');
+          .requestRating(targetId: 'entry-1');
       await tester.pumpAndSettle();
 
       expect(find.text('Rate this session'), findsOneWidget);
@@ -139,7 +139,7 @@ void main() {
       // First rating prompt
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-1');
+          .requestRating(targetId: 'entry-1');
       await tester.pumpAndSettle();
       expect(find.text('Rate this session'), findsOneWidget);
 
@@ -151,7 +151,7 @@ void main() {
       // Second rating prompt (different entry)
       container
           .read(ratingPromptControllerProvider.notifier)
-          .requestRating('entry-2');
+          .requestRating(targetId: 'entry-2');
       await tester.pumpAndSettle();
 
       // New modal should appear

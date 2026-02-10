@@ -262,7 +262,9 @@ class EntryController extends _$EntryController {
           final flag =
               await _journalDb.getConfigFlagByName(enableSessionRatingsFlag);
           if (flag?.status ?? false) {
-            ref.read(ratingPromptControllerProvider.notifier).requestRating(id);
+            ref
+                .read(ratingPromptControllerProvider.notifier)
+                .requestRating(targetId: id);
           }
         }
       }

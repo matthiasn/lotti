@@ -47,7 +47,7 @@ void main() {
   final testRatingEntry = RatingEntry(
     meta: testMetadata,
     data: const RatingData(
-      timeEntryId: testTimeEntryId,
+      targetId: testTimeEntryId,
       dimensions: testDimensions,
       note: 'Good session',
     ),
@@ -102,31 +102,68 @@ void main() {
   });
 
   group('RatingRepository', () {
-    group('getRatingForTimeEntry', () {
+    group('getRatingForTargetEntry', () {
       test('delegates to JournalDb', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => testRatingEntry);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => testRatingEntry);
 
-        final result = await repository.getRatingForTimeEntry(testTimeEntryId);
+        final result =
+            await repository.getRatingForTargetEntry(testTimeEntryId);
 
         expect(result, equals(testRatingEntry));
-        verify(() => mockDb.getRatingForTimeEntry(testTimeEntryId)).called(1);
+        verify(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).called(1);
       });
 
       test('returns null when no rating exists', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
 
-        final result = await repository.getRatingForTimeEntry(testTimeEntryId);
+        final result =
+            await repository.getRatingForTargetEntry(testTimeEntryId);
 
         expect(result, isNull);
+      });
+
+      test('passes catalogId to JournalDb', () async {
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+            catalogId: 'day_morning',
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await repository.getRatingForTargetEntry(
+          testTimeEntryId,
+          catalogId: 'day_morning',
+        );
+
+        expect(result, isNull);
+        verify(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+            catalogId: 'day_morning',
+          ),
+        ).called(1);
       });
     });
 
     group('createOrUpdateRating', () {
       test('creates new rating when none exists', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
         when(() => mockDb.journalEntityById(testTimeEntryId))
             .thenAnswer((_) async => null);
         when(
@@ -134,6 +171,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -149,13 +187,13 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
           note: 'Test note',
         );
 
         expect(result, isA<RatingEntry>());
-        expect(result!.data.timeEntryId, equals(testTimeEntryId));
+        expect(result!.data.targetId, equals(testTimeEntryId));
         expect(result.data.dimensions, equals(testDimensions));
         expect(result.data.note, equals('Test note'));
 
@@ -182,8 +220,11 @@ void main() {
           updatedAt: DateTime(2024, 3, 15, 11),
         );
 
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => testRatingEntry);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => testRatingEntry);
         when(() => mockPersistence.updateMetadata(testMetadata))
             .thenAnswer((_) async => updatedMeta);
         when(() => mockPersistence.updateDbEntity(any()))
@@ -197,7 +238,7 @@ void main() {
         ];
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: newDimensions,
           note: 'Updated note',
         );
@@ -221,8 +262,11 @@ void main() {
       });
 
       test('creates rating without note', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
         when(() => mockDb.journalEntityById(testTimeEntryId))
             .thenAnswer((_) async => null);
         when(
@@ -230,6 +274,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -245,7 +290,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -272,8 +317,11 @@ void main() {
           categoryId: timeEntryCategoryId,
         );
 
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
         when(() => mockDb.journalEntityById(testTimeEntryId))
             .thenAnswer((_) async => timeEntry);
         when(
@@ -281,6 +329,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: timeEntryCategoryId,
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => metadataWithCategory);
         when(
@@ -296,7 +345,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -312,13 +361,17 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: timeEntryCategoryId,
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).called(1);
       });
 
       test('returns null and logs on exception', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenThrow(Exception('DB error'));
         when(
           () => mockLogging.captureException(
             any<dynamic>(),
@@ -329,7 +382,7 @@ void main() {
         ).thenReturn(null);
 
         final result = await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -347,8 +400,11 @@ void main() {
 
     group('link creation', () {
       test('creates RatingLink with correct from/to IDs', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
         when(() => mockDb.journalEntityById(testTimeEntryId))
             .thenAnswer((_) async => null);
         when(
@@ -356,6 +412,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -371,7 +428,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
@@ -388,8 +445,11 @@ void main() {
       });
 
       test('enqueues sync message for link', () async {
-        when(() => mockDb.getRatingForTimeEntry(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getRatingForTimeEntry(
+            testTimeEntryId,
+          ),
+        ).thenAnswer((_) async => null);
         when(() => mockDb.journalEntityById(testTimeEntryId))
             .thenAnswer((_) async => null);
         when(
@@ -397,6 +457,7 @@ void main() {
             dateFrom: any(named: 'dateFrom'),
             dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
+            uuidV5Input: any(named: 'uuidV5Input'),
           ),
         ).thenAnswer((_) async => testMetadata);
         when(
@@ -412,7 +473,7 @@ void main() {
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
 
         await repository.createOrUpdateRating(
-          timeEntryId: testTimeEntryId,
+          targetId: testTimeEntryId,
           dimensions: testDimensions,
         );
 
