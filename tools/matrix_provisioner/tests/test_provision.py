@@ -193,23 +193,32 @@ async def test_provision_room_is_private(tracking_transport):
 
 
 @pytest.mark.anyio
-async def test_provision_default_output_no_decoded_json(mock_transport, capsys):
-    """Default output does NOT print the decoded JSON bundle."""
-    await provision(make_args(), transport=mock_transport)
+async def test_provision_output_streams(mock_transport, capsys):
+    """Bundle goes to stdout; progress messages go to stderr."""
+    result = await provision(make_args(), transport=mock_transport)
     captured = capsys.readouterr()
 
-    assert "Provisioning Bundle (Base64)" in captured.out
-    assert "Decoded (for verification)" not in captured.out
+    # stdout has only the bare bundle string
+    assert captured.out.strip() == result
+    # Progress goes to stderr
+    assert "Creating user" in captured.err
+    assert "Room created" in captured.err
+    # No decoded JSON by default
+    assert "Decoded (for verification)" not in captured.err
 
 
 @pytest.mark.anyio
-async def test_provision_verbose_prints_decoded_json(mock_transport, capsys):
-    """With verbose=True, the decoded JSON bundle is printed."""
+async def test_provision_verbose_redacts_password(mock_transport, capsys):
+    """With verbose=True, decoded JSON is printed with password redacted."""
     await provision(make_args(verbose=True), transport=mock_transport)
     captured = capsys.readouterr()
 
-    assert "Decoded (for verification)" in captured.out
-    assert '"password"' in captured.out
+    # Verbose output goes to stderr
+    assert "Decoded (for verification)" in captured.err
+    assert "<redacted>" in captured.err
+    # The actual generated password must NOT appear in stderr
+    bundle = decode_bundle(captured.out.strip())
+    assert bundle["password"] not in captured.err
 
 
 # ---------------------------------------------------------------------------

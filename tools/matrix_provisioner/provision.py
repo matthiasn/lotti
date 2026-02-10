@@ -82,8 +82,10 @@ async def provision(
         client_kwargs["transport"] = transport
 
     async with httpx.AsyncClient(**client_kwargs) as client:
+        log = lambda msg: print(msg, file=sys.stderr)  # noqa: E731
+
         # Step 1: Login as admin
-        print(f"Logging in as admin '{args.admin_user}'...")
+        log(f"Logging in as admin '{args.admin_user}'...")
         resp = await client.post(
             "/_matrix/client/v3/login",
             json={
@@ -99,7 +101,7 @@ async def provision(
 
         # Extract server name from admin MXID (@admin:server_name)
         server_name = admin_mxid.split(":", 1)[1]
-        print(f"Server name: {server_name}")
+        log(f"Server name: {server_name}")
 
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -111,7 +113,7 @@ async def provision(
         encoded_mxid = _encode_mxid_for_path(user_mxid)
         display_name = args.display_name
 
-        print(f"Creating user {user_mxid}...")
+        log(f"Creating user {user_mxid}...")
         resp = await client.put(
             f"/_synapse/admin/v2/users/{encoded_mxid}",
             headers=admin_headers,
@@ -122,14 +124,14 @@ async def provision(
             },
         )
         resp.raise_for_status()
-        print(f"User created: {user_mxid}")
+        log(f"User created: {user_mxid}")
 
         # From here on, if anything fails we try to deactivate the orphan user.
         try:
             # Step 4: Login as user via admin endpoint (short-lived token)
             valid_until_ms = int(time.time() * 1000) + 10 * 60 * 1000  # 10 min
 
-            print("Obtaining user token...")
+            log("Obtaining user token...")
             resp = await client.post(
                 f"/_synapse/admin/v1/users/{encoded_mxid}/login",
                 headers=admin_headers,
@@ -141,7 +143,7 @@ async def provision(
             user_headers = {"Authorization": f"Bearer {user_token}"}
 
             # Step 5: Create room as user
-            print("Creating sync room...")
+            log("Creating sync room...")
             resp = await client.post(
                 "/_matrix/client/v3/createRoom",
                 headers=user_headers,
@@ -168,7 +170,7 @@ async def provision(
             )
             resp.raise_for_status()
             room_id = resp.json()["room_id"]
-            print(f"Room created: {room_id}")
+            log(f"Room created: {room_id}")
         except Exception:
             await _deactivate_user(client, admin_headers, user_mxid)
             raise
@@ -185,12 +187,14 @@ async def provision(
         bundle_json = json.dumps(bundle, separators=(",", ":"))
         bundle_b64 = base64.urlsafe_b64encode(bundle_json.encode()).rstrip(b"=").decode()
 
-        print("\n--- Provisioning Bundle (Base64) ---")
-        print(bundle_b64)
+        # The bundle is the tool's primary output — intentionally written
+        # to stdout so `provision.py ... > bundle.txt` captures only it.
+        print(bundle_b64)  # noqa: T201
 
         if verbose:
-            print("\n--- Decoded (for verification) ---")
-            print(json.dumps(bundle, indent=2))
+            redacted = {**bundle, "password": "<redacted>"}
+            log("\n--- Decoded (for verification) ---")
+            log(json.dumps(redacted, indent=2))
 
         return bundle_b64
 

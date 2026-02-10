@@ -70,15 +70,26 @@ Future<void> changePassword({
   required String oldPassword,
   required String newPassword,
 }) async {
-  await _gateway.changePassword(oldPassword: oldPassword, newPassword: newPassword);
+  // Load config BEFORE the server call — if missing, the user isn't
+  // configured and we must not change the password on the server without
+  // being able to persist the new one locally.
   final config = await loadConfig();
-  if (config != null) {
-    await setConfig(config.copyWith(password: newPassword));
+  if (config == null) {
+    throw StateError(
+      'Cannot change password: no local Matrix configuration found.',
+    );
   }
+
+  await _gateway.changePassword(
+    oldPassword: oldPassword,
+    newPassword: newPassword,
+  );
+  await setConfig(config.copyWith(password: newPassword));
 }
 ```
 
 Note: `MatrixConfig` is freezed so `copyWith` is available (see `lib/classes/config.dart:7-16`).
+Loading the config before the server call prevents a state where the server password was rotated but the local config still holds the old one.
 
 ---
 
