@@ -1976,7 +1976,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsDurationMinutes.
   ///
   /// In en, this message translates to:
-  /// **'{count} minutes'**
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String dailyOsDurationMinutes(int count);
 
   /// No description provided for @dailyOsDuration30m.

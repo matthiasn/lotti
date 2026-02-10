@@ -1,4 +1,5 @@
 {
+  "@@locale": "cs",
   "addActionAddAudioRecording": "Audiozáznam",
   "addActionAddChecklist": "Kontrolní seznam",
   "addActionAddEvent": "Událost",
