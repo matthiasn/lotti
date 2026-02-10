@@ -344,7 +344,7 @@ void main() {
         );
       });
 
-      test('Voxtral Small should have correct model ID', () {
+      test('Voxtral Small 24B should have correct model ID', () {
         final smallModel = voxtralModels.firstWhere(
           (m) => m.providerModelId.contains('Small'),
         );
@@ -357,10 +357,10 @@ void main() {
       test('Voxtral models should have informative descriptions', () {
         for (final model in voxtralModels) {
           expect(model.description, isNotEmpty);
-          expect(model.description, contains('30 minutes'),
+          expect(model.description, contains('30 min'),
               reason:
                   '${model.name} description should mention audio duration');
-          expect(model.description, contains('9 languages'),
+          expect(model.description, contains('languages'),
               reason:
                   '${model.name} description should mention language support');
         }
@@ -403,12 +403,12 @@ void main() {
             reason: 'Magistral Medium should be a reasoning model');
       });
 
-      test('Voxtral Small should have audio input', () {
+      test('Voxtral Mini Transcribe should have audio input', () {
         final audioModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralAudioModelId,
         );
         expect(audioModel.inputModalities, contains(Modality.audio),
-            reason: 'Voxtral Small should accept audio input');
+            reason: 'Voxtral Mini Transcribe should accept audio input');
         expect(audioModel.outputModalities, contains(Modality.text));
       });
 
@@ -458,7 +458,7 @@ void main() {
             equals(ftueMistralReasoningModelId));
         expect(models.reasoning.isReasoningModel, isTrue);
 
-        // Verify audio model (Voxtral Small)
+        // Verify audio model (Voxtral Mini Transcribe)
         expect(models.audio.providerModelId, equals(ftueMistralAudioModelId));
         expect(models.audio.inputModalities, contains(Modality.audio));
       });

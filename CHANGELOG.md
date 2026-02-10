@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.857] - 2026-02-12
+### Changed
+- Removed M4A-to-WAV audio conversion for Mistral — all providers now accept M4A natively. Eliminates FFmpeg dependency and file size quota issues.
+- Updated Voxtral model description to reflect Voxtral Transcribe 2 capabilities with support for 13 languages and up to 1 GB / 3 hours per file.
+
+
 ## [0.9.856] - 2026-02-11
 ### Fixed
 - Emoji Verification Flow: SAS verification now reacts to SDK `onUpdate`/`isDone` state changes, triggers a post-verification device-key refresh, and forces a sync rescan so sync resumes without restarting desktop or mobile.

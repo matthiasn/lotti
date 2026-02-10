@@ -806,7 +806,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiProviderMistralDescription.
   ///
   /// In en, this message translates to:
-  /// **'Mistral AI cloud API'**
+  /// **'Mistral AI cloud API with native audio transcription'**
   String get aiProviderMistralDescription;
 
   /// No description provided for @aiProviderMistralName.
@@ -866,7 +866,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiProviderVoxtralDescription.
   ///
   /// In en, this message translates to:
-  /// **'Local Voxtral transcription (up to 30 min audio, 9 languages)'**
+  /// **'Local Voxtral transcription (up to 30 min audio, 13 languages)'**
   String get aiProviderVoxtralDescription;
 
   /// No description provided for @aiProviderVoxtralName.

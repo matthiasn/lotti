@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.857" date="2026-02-12">
+      <description>
+          <p>Native M4A Audio: Removed M4A-to-WAV conversion for Mistral transcription. All providers now accept M4A natively, eliminating the FFmpeg dependency and file size quota issues. Updated Voxtral model to reflect Transcribe V2 capabilities (13 languages, up to 1 GB / 3 hours per file).</p>
+      </description>
+    </release>
     <release version="0.9.856" date="2026-02-11">
       <description>
         <p>Sync Verification Follow-up: SAS emoji verification now updates reliably on both devices, refreshes device keys on completion, and triggers a sync rescan so synchronization resumes immediately without restarting apps. Post-verification trust status now refreshes automatically for a short window so stale "unverified device" indicators clear without manual refresh, and desktop provisioning auto-advances from the QR step to the final status page once trust state is updated. The legacy manual Matrix setup wizard has been removed from Settings; provisioning is now the single onboarding path while keeping emoji/SAS verification in the provisioned flow. Disconnect now shows an explicit confirmation dialog and closes the status modal after successful deletion. Logging performance has also been improved by batching routine log file writes instead of forcing a disk flush for every line.</p>

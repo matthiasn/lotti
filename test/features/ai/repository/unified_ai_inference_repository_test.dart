@@ -34,7 +34,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/audio_format_converter.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -107,9 +106,6 @@ class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class MockSelectable<T> extends Mock implements Selectable<T> {}
 
-class MockAudioFormatConverterService extends Mock
-    implements AudioFormatConverterService {}
-
 void main() {
   UnifiedAiInferenceRepository? repository;
   late ProviderContainer container;
@@ -125,7 +121,6 @@ void main() {
   late MockCategoryRepository mockCategoryRepo;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
   late MockLabelsRepository mockLabelsRepository;
-  late MockAudioFormatConverterService mockAudioFormatConverter;
   late TestChecklistCompletionService testChecklistCompletionService;
 
   setUpAll(() {
@@ -164,7 +159,6 @@ void main() {
     mockCategoryRepo = MockCategoryRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
     mockLabelsRepository = MockLabelsRepository();
-    mockAudioFormatConverter = MockAudioFormatConverterService();
     testChecklistCompletionService = TestChecklistCompletionService();
 
     reset(mockJournalDb);
@@ -219,8 +213,6 @@ void main() {
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
         checklistCompletionServiceProvider
             .overrideWith(() => testChecklistCompletionService),
-        audioFormatConverterProvider
-            .overrideWithValue(mockAudioFormatConverter),
       ],
     );
 
@@ -2267,87 +2259,6 @@ void main() {
           ).called(1);
 
           // updateJournalEntity verification is already done via the captured call above
-        } finally {
-          // Clean up the temporary directory
-          tempDir.deleteSync(recursive: true);
-        }
-      });
-
-      test('throws AudioConversionException for Mistral with M4A file',
-          () async {
-        // Create a temporary directory for the test
-        final tempDir = Directory.systemTemp.createTempSync('audio_test');
-        overrideTempDirs.add(tempDir);
-
-        // Update the mock directory to point to our temp directory
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
-
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioFile: 'test.m4a', // M4A file triggers conversion for Mistral
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-          ),
-        );
-
-        // Create the directory structure and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        final audioFile = File('${tempDir.path}/audio/test.m4a');
-        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
-        audioFile.writeAsBytesSync(mockAudioBytes);
-
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Audio Transcription',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'voxtral-small-2507',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.mistral,
-        );
-
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-
-        // Mock getLinkedToEntities to return empty list
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
-
-        // Mock audio converter to return failure (simulating FFmpeg not available)
-        when(() => mockAudioFormatConverter.convertM4aToWav(any())).thenAnswer(
-          (_) async => AudioConversionResult(
-            success: false,
-            error: 'FFmpeg conversion failed: not available in test',
-          ),
-        );
-
-        try {
-          // This should throw AudioConversionException because the mock
-          // returns a failure result
-          await expectLater(
-            repository!.runInference(
-              entityId: 'test-id',
-              promptConfig: promptConfig,
-              onProgress: (_) {},
-              onStatusChange: (_) {},
-            ),
-            throwsA(isA<AudioConversionException>()),
-          );
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);

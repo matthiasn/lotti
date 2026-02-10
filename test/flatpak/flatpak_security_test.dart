@@ -188,17 +188,12 @@ void main() {
         }
       });
 
-      test('ffmpeg extension is properly configured', () {
-        // The manifest includes ffmpeg-full extension
-        if (PortalService.isRunningInFlatpak) {
-          // FFmpeg should be available at the extension path
-          const ffmpegExtPath = '/app/lib/ffmpeg';
-
-          // We can't directly check file existence in tests,
-          // but we verify the expected path
-          expect(ffmpegExtPath, startsWith('/app'));
-          expect(ffmpegExtPath, contains('ffmpeg'));
-        }
+      test('no FFmpeg dependency remains', () {
+        // FFmpeg was removed — Mistral now accepts M4A natively.
+        // Verify pubspec.yaml does not reference ffmpeg_kit_flutter.
+        final pubspec = File('pubspec.yaml').readAsStringSync();
+        expect(pubspec, isNot(contains('ffmpeg_kit_flutter')),
+            reason: 'FFmpeg dependency should have been removed');
       });
     });
 

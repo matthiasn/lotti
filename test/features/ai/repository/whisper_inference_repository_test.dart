@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -113,7 +114,7 @@ void main() {
         expect(response.choices?[0].delta?.content, equals(transcribedText));
       });
 
-      test('throws WhisperTranscriptionException on HTTP error', () async {
+      test('throws TranscriptionException on HTTP error', () async {
         // Arrange
         when(() => mockHttpClient.post(
               any(),
@@ -136,7 +137,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.message, 'message',
                     contains('Failed to transcribe audio (HTTP 500)'))
                 .having((e) => e.statusCode, 'statusCode', 500),
@@ -144,8 +145,7 @@ void main() {
         );
       });
 
-      test('throws WhisperTranscriptionException on invalid JSON response',
-          () async {
+      test('throws TranscriptionException on invalid JSON response', () async {
         // Arrange
         when(() => mockHttpClient.post(
               any(),
@@ -168,7 +168,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.message, 'message',
                     contains('Invalid response format'))
                 .having((e) => e.originalError, 'originalError',
@@ -177,7 +177,7 @@ void main() {
         );
       });
 
-      test('throws WhisperTranscriptionException when text field is missing',
+      test('throws TranscriptionException when text field is missing',
           () async {
         // Arrange
         when(() => mockHttpClient.post(
@@ -201,7 +201,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>().having(
+            isA<TranscriptionException>().having(
                 (e) => e.message, 'message', contains('missing text field')),
           ),
         );
@@ -285,7 +285,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.message, 'message',
                     contains('Failed to transcribe audio'))
                 .having(
@@ -453,7 +453,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.statusCode, 'statusCode', 400),
           ),
         );
@@ -482,7 +482,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.statusCode, 'statusCode', 401),
           ),
         );
@@ -511,7 +511,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having((e) => e.statusCode, 'statusCode', 429),
           ),
         );
@@ -539,7 +539,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having(
                     (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('1 minute')),
@@ -589,10 +589,10 @@ void main() {
           final err = error;
           expect(
               err,
-              isA<WhisperTranscriptionException>()
+              isA<TranscriptionException>()
                   .having((e) => e.statusCode, 'statusCode',
                       httpStatusRequestTimeout)
-                  .having((e) => e.message, 'message', contains('0 minutes')));
+                  .having((e) => e.message, 'message', contains('0 seconds')));
         });
       });
 
@@ -645,7 +645,7 @@ void main() {
         await expectLater(
           stream.first,
           throwsA(
-            isA<WhisperTranscriptionException>()
+            isA<TranscriptionException>()
                 .having(
                     (e) => e.statusCode, 'statusCode', httpStatusRequestTimeout)
                 .having((e) => e.message, 'message', contains('10 minutes')),
@@ -654,18 +654,24 @@ void main() {
       });
     });
 
-    group('WhisperTranscriptionException', () {
-      test('toString returns message', () {
+    group('TranscriptionException', () {
+      test('toString includes provider and message', () {
         const message = 'Test error message';
-        final exception = WhisperTranscriptionException(message);
+        final exception = TranscriptionException(
+          message,
+          provider: 'WhisperInference',
+        );
 
-        expect(exception.toString(),
-            equals('WhisperTranscriptionException: $message'));
+        expect(
+          exception.toString(),
+          equals('TranscriptionException(WhisperInference): $message'),
+        );
       });
 
       test('preserves status code', () {
-        final exception = WhisperTranscriptionException(
+        final exception = TranscriptionException(
           'Error',
+          provider: 'WhisperInference',
           statusCode: 404,
         );
 
@@ -674,8 +680,9 @@ void main() {
 
       test('preserves original error', () {
         final originalError = Exception('Original');
-        final exception = WhisperTranscriptionException(
+        final exception = TranscriptionException(
           'Wrapped error',
+          provider: 'WhisperInference',
           originalError: originalError,
         );
 
