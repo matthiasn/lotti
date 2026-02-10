@@ -80,16 +80,35 @@ Future<void> changePassword({
     );
   }
 
-  await _gateway.changePassword(
-    oldPassword: oldPassword,
-    newPassword: newPassword,
-  );
+  // Persist the new password locally BEFORE the server call.
+  // If the server call then fails, the client holds the new password but
+  // the server still has the old one — recoverable by retrying with the
+  // old password.  The reverse (server changed, local stale) would lock
+  // the user out permanently.
   await setConfig(config.copyWith(password: newPassword));
+
+  try {
+    await _gateway.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
+  } catch (e) {
+    // Server rejected the change — roll the local config back so the
+    // client can still authenticate with the old (still-valid) password.
+    await setConfig(config);
+    rethrow;
+  }
 }
 ```
 
 Note: `MatrixConfig` is freezed so `copyWith` is available (see `lib/classes/config.dart:7-16`).
-Loading the config before the server call prevents a state where the server password was rotated but the local config still holds the old one.
+
+**Atomicity rationale:** The local config is updated first so that a crash
+between the two operations leaves the client with the new password while the
+server still has the old one (recoverable by retrying).  If the server call
+fails cleanly, the local config is rolled back immediately.  The reverse
+order (server first, local second) risks permanent lock-out if the local
+persist fails after the server has already accepted the new password.
 
 ---
 
@@ -133,8 +152,11 @@ class ProvisioningController extends _$ProvisioningController {
 1. **Login:** state → `loggingIn()`, call `matrixService.setConfig(MatrixConfig(homeServer: bundle.homeServer, user: bundle.user, password: bundle.password))` then `matrixService.login()`. If login returns false → state `error('Login failed')`.
 2. **Join room:** state → `joiningRoom()`, call `matrixService.joinRoom(bundle.roomId)`. (No separate `saveRoom` call needed — `joinRoom` already persists via `SyncRoomManager.joinRoom` at `sync_room_manager.dart:127`.)
 3. If `!rotatePassword` → state `done()`, return null.
-4. **Rotate password:** state → `rotatingPassword()`, generate 32-byte random password via `Random.secure()` + base64url encode, call `matrixService.changePassword(oldPassword: bundle.password, newPassword: newPw)`.
-5. **Generate handover:** Build new `SyncProvisioningBundle` with rotated password, JSON encode → UTF-8 → Base64url (no padding). State → `ready(handoverBase64)`.
+4. **Rotate password:** state → `rotatingPassword()`:
+   - Generate new password: `Random.secure()` + base64url encode (32 bytes).
+   - **Build the handover bundle immediately** (before the server call) so the new password is captured in `handoverBase64` even if the app crashes mid-rotation.
+   - Call `matrixService.changePassword(oldPassword: bundle.password, newPassword: newPw)`. The service method persists the new password locally *before* calling the server (see atomicity rationale above). If the server call fails, the local config is rolled back and the error is surfaced.
+5. **Handover ready:** State → `ready(handoverBase64)`. The QR/copyable text already contains the rotated password from step 4.
 
 #### `reset()`
 State → `initial()`. Called when user dismisses wizard or wants to re-import.

@@ -81,6 +81,7 @@ def make_args(**overrides) -> argparse.Namespace:
         "admin_password": "admin_secret",
         "username": "lotti_user",
         "display_name": "Lotti Sync",
+        "output_file": None,
         "verbose": False,
     }
     defaults.update(overrides)

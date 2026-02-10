@@ -105,7 +105,7 @@ async def provision(
 
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
-        # Step 2: Generate random password (44 chars, cryptographically random)
+        # Step 2: Generate random password (43 chars, cryptographically random)
         password = secrets.token_urlsafe(32)
 
         # Step 3: Create user
@@ -187,9 +187,13 @@ async def provision(
         bundle_json = json.dumps(bundle, separators=(",", ":"))
         bundle_b64 = base64.urlsafe_b64encode(bundle_json.encode()).rstrip(b"=").decode()
 
-        # The bundle is the tool's primary output — intentionally written
-        # to stdout so `provision.py ... > bundle.txt` captures only it.
-        print(bundle_b64)  # noqa: T201
+        # Write the bundle to a file instead of stdout to avoid leaking
+        # credentials into terminal scrollback, CI logs, or shell history.
+        output_file = getattr(args, "output_file", None)
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as fh:
+                fh.write(bundle_b64)
+            log(f"Bundle written to {output_file}")
 
         if verbose:
             redacted = {**bundle, "password": "<redacted>"}
@@ -244,10 +248,15 @@ def main() -> None:
         help='Display name for the new user (default: "Lotti Sync")',
     )
     parser.add_argument(
+        "--output-file",
+        required=True,
+        help="File path to write the provisioning bundle to",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         default=False,
-        help="Print decoded bundle JSON (contains plaintext password)",
+        help="Print decoded bundle JSON (with password redacted) to stderr",
     )
 
     args = parser.parse_args()

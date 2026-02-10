@@ -72,12 +72,13 @@ python provision.py \
   --admin-user admin \
   --admin-password <secret> \
   --username lotti_sync_user42 \
+  --output-file bundle.txt \
   [--display-name "Lotti Sync"]
 ```
 
 **Script steps:**
 1. **Login as admin** → `POST /_matrix/client/v3/login` → obtain `admin_access_token`
-2. **Generate random password** → `secrets.token_urlsafe(32)` (44 chars, cryptographically random)
+2. **Generate random password** → `secrets.token_urlsafe(32)` (43 chars, cryptographically random)
 3. **Create user** → `PUT /_synapse/admin/v2/users/@{username}:{server}` with `{"password": generated, "admin": false, "displayname": "Lotti Sync"}`
 4. **Login as user** → `POST /_synapse/admin/v1/users/@{username}:{server}/login` with `{"valid_until_ms": <now + 10 minutes>}` → obtain short-lived `user_token`
 5. **Create room as user** → `POST /_matrix/client/v3/createRoom` with:
@@ -94,7 +95,7 @@ python provision.py \
    }
    ```
    → obtain `room_id`. The `m.lotti.sync_room` state marker is set at creation time so room discovery (`sync_room_discovery.dart`) works consistently.
-6. **Output provisioning bundle** → JSON → URL-safe Base64 (no padding):
+6. **Write provisioning bundle to file** → JSON → URL-safe Base64 (no padding) → written to `--output-file`:
    ```json
    {
      "v": 1,

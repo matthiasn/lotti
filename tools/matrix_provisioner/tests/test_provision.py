@@ -193,31 +193,45 @@ async def test_provision_room_is_private(tracking_transport):
 
 
 @pytest.mark.anyio
-async def test_provision_output_streams(mock_transport, capsys):
-    """Bundle goes to stdout; progress messages go to stderr."""
-    result = await provision(make_args(), transport=mock_transport)
+async def test_provision_writes_bundle_to_file(mock_transport, tmp_path, capsys):
+    """Bundle is written to the specified output file."""
+    out = tmp_path / "bundle.txt"
+    result = await provision(make_args(output_file=str(out)), transport=mock_transport)
     captured = capsys.readouterr()
 
-    # stdout has only the bare bundle string
-    assert captured.out.strip() == result
+    assert out.read_text() == result
+    # Nothing sensitive on stdout
+    assert captured.out == ""
     # Progress goes to stderr
     assert "Creating user" in captured.err
-    assert "Room created" in captured.err
-    # No decoded JSON by default
+    assert f"Bundle written to {out}" in captured.err
+
+
+@pytest.mark.anyio
+async def test_provision_no_stdout_without_output_file(mock_transport, capsys):
+    """Without output_file, nothing is written to stdout."""
+    await provision(make_args(), transport=mock_transport)
+    captured = capsys.readouterr()
+
+    assert captured.out == ""
+    assert "Creating user" in captured.err
     assert "Decoded (for verification)" not in captured.err
 
 
 @pytest.mark.anyio
-async def test_provision_verbose_redacts_password(mock_transport, capsys):
+async def test_provision_verbose_redacts_password(mock_transport, tmp_path, capsys):
     """With verbose=True, decoded JSON is printed with password redacted."""
-    await provision(make_args(verbose=True), transport=mock_transport)
+    out = tmp_path / "bundle.txt"
+    result = await provision(
+        make_args(verbose=True, output_file=str(out)), transport=mock_transport
+    )
     captured = capsys.readouterr()
 
     # Verbose output goes to stderr
     assert "Decoded (for verification)" in captured.err
     assert "<redacted>" in captured.err
     # The actual generated password must NOT appear in stderr
-    bundle = decode_bundle(captured.out.strip())
+    bundle = decode_bundle(result)
     assert bundle["password"] not in captured.err
 
 
