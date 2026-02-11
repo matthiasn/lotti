@@ -60,12 +60,11 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
         final audioBytes = base64Decode(audioBase64);
 
         // Build the transcription endpoint URL from the base URL.
-        // baseUrl typically ends with '/v1', so we append '/audio/transcriptions'.
-        final baseUri = Uri.parse(baseUrl);
-        final transcriptionPath = '${baseUri.path}'
-            "${baseUri.path.endsWith('/') ? '' : '/'}"
-            'audio/transcriptions';
-        final uri = baseUri.replace(path: transcriptionPath);
+        // Ensures that 'audio/transcriptions' is correctly appended.
+        final baseUri = Uri.parse(
+          baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
+        );
+        final uri = baseUri.resolve('audio/transcriptions');
 
         final request = http.MultipartRequest('POST', uri)
           ..headers['Authorization'] = 'Bearer $apiKey'

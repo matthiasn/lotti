@@ -202,7 +202,7 @@ native M4A support via Voxtral Transcribe 2.
 **File**: `CHANGELOG.md`
 
 Add entry under new version:
-```
+```text
 - Removed M4A-to-WAV audio conversion for Mistral — all providers now accept
   M4A natively. Eliminates FFmpeg dependency and file size quota issues.
 - Updated Voxtral model to Transcribe V2 with support for 13 languages,
