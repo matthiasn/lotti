@@ -66,10 +66,11 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
         _errorText = null;
         _showScanner = false;
       });
-    } on FormatException catch (e) {
+    } on FormatException {
       setState(() {
-        _errorText = e.message;
+        _errorText = context.messages.provisionedSyncInvalidBundle;
         _decodedBundle = null;
+        _lastScannedCode = null;
       });
     }
   }
@@ -84,8 +85,8 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final camDimension =
-        max(MediaQuery.of(context).size.width - 100, 300).toDouble();
+    final availableWidth = MediaQuery.of(context).size.width - 100;
+    final camDimension = max(availableWidth, 200).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,7 +120,10 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    setState(() => _showScanner = !_showScanner);
+                    setState(() {
+                      _showScanner = !_showScanner;
+                      _lastScannedCode = null;
+                    });
                   },
                   icon: const Icon(Icons.qr_code_scanner),
                   label: Text(messages.provisionedSyncScanButton),

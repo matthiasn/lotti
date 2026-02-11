@@ -53,6 +53,9 @@ void main() {
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => testBundle.roomId);
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
+    when(() => mockMatrixService.logout()).thenAnswer((_) async {});
+    when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => MatrixConfig(
         homeServer: testBundle.homeServer,

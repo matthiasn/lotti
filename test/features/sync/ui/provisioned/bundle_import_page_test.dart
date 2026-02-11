@@ -59,6 +59,9 @@ void main() {
         newPassword: any(named: 'newPassword'),
       ),
     ).thenAnswer((_) async {});
+    when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
+    when(() => mockMatrixService.logout()).thenAnswer((_) async {});
+    when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',

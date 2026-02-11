@@ -91,15 +91,31 @@ class ProvisioningController extends _$ProvisioningController {
     try {
       // Step 1: Login
       state = const ProvisioningState.loggingIn();
-      await matrixService.setConfig(
-        MatrixConfig(
-          homeServer: bundle.homeServer,
-          user: bundle.user,
-          password: bundle.password,
-        ),
+
+      // If already logged in, disconnect first so the session manager will
+      // actually attempt credential login instead of silently reusing the
+      // existing session.
+      final oldConfig = await matrixService.loadConfig();
+      if (matrixService.isLoggedIn()) {
+        await matrixService.logout();
+      }
+
+      final newConfig = MatrixConfig(
+        homeServer: bundle.homeServer,
+        user: bundle.user,
+        password: bundle.password,
       );
+      await matrixService.setConfig(newConfig);
       final loggedIn = await matrixService.login();
       if (!loggedIn) {
+        // Restore previous config and reconnect so the user does not end up
+        // disconnected after a failed provisioning attempt.
+        if (oldConfig != null) {
+          await matrixService.setConfig(oldConfig);
+          await matrixService.login();
+        } else {
+          await matrixService.deleteConfig();
+        }
         state = const ProvisioningState.error(ProvisioningError.loginFailed);
         return;
       }

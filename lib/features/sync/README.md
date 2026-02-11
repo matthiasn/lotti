@@ -633,7 +633,7 @@ Validation: version must be 1, user must start with `@`, roomId must start with
 - `rotatingPassword` — changing password to a secure random value (desktop only)
 - `ready(handoverBase64)` — new bundle ready to display as QR
 - `done` — mobile flow complete
-- `error(message)` — recoverable error with retry
+- `error(ProvisioningError error)` — recoverable error with retry
 
 ### Testing
 

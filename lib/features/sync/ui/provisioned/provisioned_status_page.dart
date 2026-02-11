@@ -139,14 +139,19 @@ class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
 
   Future<void> _generate() async {
     setState(() => _loading = true);
-    final data = await ref
-        .read(provisioningControllerProvider.notifier)
-        .regenerateHandover();
-    if (mounted) {
-      setState(() {
-        _handoverBase64 = data;
-        _loading = false;
-      });
+    try {
+      final data = await ref
+          .read(provisioningControllerProvider.notifier)
+          .regenerateHandover();
+      if (mounted) {
+        setState(() {
+          _handoverBase64 = data;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
