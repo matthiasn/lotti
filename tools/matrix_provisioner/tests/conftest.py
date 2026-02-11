@@ -49,6 +49,9 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
             json={"room_id": "!test_room:example.com"},
         )
 
+    if "/_matrix/client/v3/rooms/" in path and "/state/" in path:
+        return httpx.Response(200, json={"event_id": "$fake_event"})
+
     return httpx.Response(404)
 
 
@@ -80,7 +83,7 @@ def make_args(**overrides) -> argparse.Namespace:
         "admin_user": "admin",
         "admin_password": "admin_secret",
         "username": "lotti_user",
-        "display_name": "Lotti Sync",
+        "display_name": "",
         "output_file": None,
         "verbose": False,
     }

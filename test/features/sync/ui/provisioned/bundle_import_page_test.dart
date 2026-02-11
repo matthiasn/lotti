@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -49,10 +50,17 @@ void main() {
     pageIndexNotifier = ValueNotifier(0);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+    when(
+      () => mockMatrixService.login(
+        waitForLifecycle: any(named: 'waitForLifecycle'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
+    when(() => mockMatrixService.getRoom())
+        .thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),
@@ -180,7 +188,7 @@ void main() {
 
       // Verify configureFromBundle was triggered
       verify(() => mockMatrixService.setConfig(any())).called(1);
-      verify(() => mockMatrixService.login()).called(1);
+      verify(() => mockMatrixService.login(waitForLifecycle: false)).called(1);
     });
 
     testWidgets('displays error text in TextField for invalid JSON',
@@ -319,6 +327,79 @@ void main() {
     });
   });
 
+  group('desktop paste button', () {
+    testWidgets('paste button appears on desktop', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.content_paste), findsOneWidget);
+    });
+
+    testWidgets('paste button imports from clipboard', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.getData') {
+            return <String, dynamic>{'text': validBase64};
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show the decoded bundle summary
+      expect(find.text('https://matrix.example.com'), findsOneWidget);
+      expect(find.text('@alice:example.com'), findsOneWidget);
+    });
+  });
+
   group('mobile scanner', () {
     testWidgets('shows scan button on mobile', (tester) async {
       final wasDesktop = isDesktop;
@@ -367,8 +448,7 @@ void main() {
       expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
     });
 
-    testWidgets('replaces bundle after re-import with different data',
-        (tester) async {
+    testWidgets('hides import form after successful import', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
@@ -385,25 +465,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('@alice:example.com'), findsOneWidget);
-
-      // Import second bundle with different user
-      const otherBundle = SyncProvisioningBundle(
-        v: 1,
-        homeServer: 'https://matrix.example.com',
-        user: '@bob:example.com',
-        password: 'other-secret',
-        roomId: '!room456:example.com',
+      expect(find.byType(TextField), findsNothing);
+      expect(
+        find.text(context.messages.provisionedSyncImportButton),
+        findsNothing,
       );
-      final otherBase64 =
-          base64UrlEncode(utf8.encode(jsonEncode(otherBundle.toJson())));
-
-      await tester.enterText(find.byType(TextField), otherBase64);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('@bob:example.com'), findsOneWidget);
-      expect(find.text('@alice:example.com'), findsNothing);
     });
   });
 }

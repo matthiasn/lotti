@@ -977,7 +977,9 @@
   "provisionedSyncErrorLoginFailed": "Error de inicio de sesión. Verifica tus credenciales e inténtalo de nuevo.",
   "provisionedSyncImportButton": "Importar",
   "provisionedSyncImportHint": "Pega el código de aprovisionamiento aquí",
-  "provisionedSyncImportTitle": "Importar configuración de sincronización",
+  "provisionedSyncImportTitle": "Configurar sincronización",
+  "provisionedSyncPasteClipboard": "Pegar desde el portapapeles",
+  "provisionedSyncBundleImported": "Código de aprovisionamiento importado",
   "provisionedSyncInvalidBundle": "Código de aprovisionamiento no válido",
   "provisionedSyncJoiningRoom": "Uniéndose a la sala de sincronización...",
   "provisionedSyncLoggingIn": "Iniciando sesión...",
@@ -1124,7 +1126,24 @@
   "settingsMatrixCancelVerificationLabel": "Cancelar verificación",
   "settingsMatrixContinueVerificationLabel": "Aceptar en el otro dispositivo para continuar",
   "settingsMatrixCount": "Cantidad",
+  "deleteDeviceLabel": "Eliminar dispositivo",
+  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Eliminar",
+  "settingsMatrixDiagnosticCopied": "Información de diagnóstico copiada al portapapeles",
+  "settingsMatrixDiagnosticCopyButton": "Copiar al portapapeles",
+  "settingsMatrixDiagnosticDialogTitle": "Información de diagnóstico de sincronización",
+  "settingsMatrixDiagnosticShowButton": "Mostrar información de diagnóstico",
   "settingsMatrixDone": "Listo",
   "settingsMatrixEnterValidUrl": "Introduce una URL válida",
   "settingsMatrixHomeserverConfigTitle": "Configuración del servidor doméstico Matrix",

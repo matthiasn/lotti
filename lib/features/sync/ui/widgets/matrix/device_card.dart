@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -22,76 +25,85 @@ class DeviceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final deviceKeys = this.deviceKeys;
     final matrixService = ref.read(matrixServiceProvider);
-    return Card(
-      child: ListTile(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? '',
-                softWrap: true,
+    return SyncFlowSection(
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? '',
+                  softWrap: true,
+                ),
               ),
-            ),
-            IconButton(
-              padding: const EdgeInsets.all(10),
-              icon: Semantics(
-                label: 'Delete device',
-                child: Icon(MdiIcons.trashCanOutline),
-              ),
-              onPressed: () async {
-                try {
-                  await matrixService.deleteDevice(deviceKeys);
-                  refreshListCallback();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Device ${deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? 'unknown'} deleted successfully',
+              IconButton(
+                padding: const EdgeInsets.all(10),
+                icon: Semantics(
+                  label: context.messages.deleteDeviceLabel,
+                  child: Icon(MdiIcons.trashCanOutline),
+                ),
+                onPressed: () async {
+                  try {
+                    await matrixService.deleteDevice(deviceKeys);
+                    refreshListCallback();
+                    if (context.mounted) {
+                      final deviceName = deviceKeys.deviceDisplayName ??
+                          deviceKeys.deviceId ??
+                          'unknown';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.messages.deviceDeletedSuccess(deviceName),
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.messages.deviceDeleteFailed('$e'),
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete device: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ],
-        ),
-        subtitle: Column(
-          children: [
-            Opacity(
-              opacity: 0.5,
-              child: Text(
-                deviceKeys.userId,
-                style: context.textTheme.bodySmall,
+                },
               ),
+            ],
+          ),
+          Opacity(
+            opacity: 0.5,
+            child: Text(
+              deviceKeys.userId,
+              style: context.textTheme.bodySmall,
             ),
-            const SizedBox(height: 10),
-            LottiPrimaryButton(
-              onPressed: () async {
-                await showModalBottomSheet<void>(
+          ),
+          const SizedBox(height: 10),
+          LottiPrimaryButton(
+            onPressed: () async {
+              final lock = ref.read(
+                matrixVerificationModalLockProvider.notifier,
+              );
+              if (!lock.tryAcquire()) return;
+
+              try {
+                await showVerificationModalSheet(
                   context: context,
-                  isScrollControlled: true,
-                  builder: (_) {
-                    return VerificationModal(deviceKeys);
-                  },
+                  title: context.messages.settingsMatrixVerifyLabel,
+                  child: VerificationModal(deviceKeys),
                 );
+              } finally {
+                lock.release();
                 refreshListCallback();
-              },
-              label: context.messages.settingsMatrixVerifyLabel,
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
+              }
+            },
+            label: context.messages.settingsMatrixVerifyLabel,
+          ),
+        ],
       ),
     );
   }

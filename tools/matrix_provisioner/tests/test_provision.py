@@ -112,6 +112,20 @@ async def test_provision_custom_display_name(tracking_transport):
 
 
 @pytest.mark.anyio
+async def test_provision_default_display_name_includes_username(tracking_transport):
+    """Default user display name includes the username for easier admin UX."""
+    transport, requests_seen = tracking_transport
+    await provision(make_args(username="lotti_test_user0203"), transport=transport)
+
+    create_user_reqs = [
+        r for r in requests_seen if "/_synapse/admin/v2/users/" in r.url.path and r.method == "PUT"
+    ]
+    assert len(create_user_reqs) == 1
+    body = json.loads(create_user_reqs[0].content)
+    assert body["displayname"] == "Lotti Sync (lotti_test_user0203)"
+
+
+@pytest.mark.anyio
 async def test_provision_creates_non_admin_user(tracking_transport):
     """The created user must have admin: false."""
     transport, requests_seen = tracking_transport
@@ -185,6 +199,7 @@ async def test_provision_room_is_private(tracking_transport):
     body = json.loads(create_room_reqs[0].content)
     assert body["visibility"] == "private"
     assert body["preset"] == "trusted_private_chat"
+    assert body["name"] == "Lotti Sync (lotti_user)"
 
 
 # ---------------------------------------------------------------------------

@@ -96,9 +96,13 @@ class ProvisioningController extends _$ProvisioningController {
       // actually attempt credential login instead of silently reusing the
       // existing session.
       final oldConfig = await matrixService.loadConfig();
+      final oldRoomId = await matrixService.getRoom();
       if (matrixService.isLoggedIn()) {
         await matrixService.logout();
       }
+      // Clear stale room pointer before switching credentials to avoid an
+      // eager auto-join attempt against a room from a previous account.
+      await matrixService.clearPersistedRoom();
 
       final newConfig = MatrixConfig(
         homeServer: bundle.homeServer,
@@ -106,13 +110,16 @@ class ProvisioningController extends _$ProvisioningController {
         password: bundle.password,
       );
       await matrixService.setConfig(newConfig);
-      final loggedIn = await matrixService.login();
+      final loggedIn = await matrixService.login(waitForLifecycle: false);
       if (!loggedIn) {
         // Restore previous config and reconnect so the user does not end up
         // disconnected after a failed provisioning attempt.
         if (oldConfig != null) {
           await matrixService.setConfig(oldConfig);
-          await matrixService.login();
+          if (oldRoomId != null) {
+            await matrixService.saveRoom(oldRoomId);
+          }
+          await matrixService.login(waitForLifecycle: false);
         } else {
           await matrixService.deleteConfig();
         }

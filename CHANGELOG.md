@@ -6,12 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.856] - 2026-02-11
+### Fixed
+- Emoji Verification Flow: SAS verification now reacts to SDK `onUpdate`/`isDone` state changes, triggers a post-verification device-key refresh, and forces a sync rescan so sync resumes without restarting desktop or mobile.
+- Verification UX: Both outgoing and incoming verification modals now provide clearer "waiting for other device" feedback during confirmation and transition more reliably to the success state.
+- Verification Status Refresh: After SAS verification completes, the app now retries unverified-device refresh for a short window so the stale "unverified" badge clears without manual refresh, and desktop provisioning auto-advances from the QR step to the final status page once trust state is updated.
+- Provisioned Sync Disconnect: Disconnect now uses an explicit confirmation dialog (`Cancel` + destructive confirm) and closes the status modal after successful deletion.
+
+### Changed
+- Sync Onboarding: The legacy manual Matrix setup wizard was removed from Settings, leaving provisioning as the single onboarding path while keeping emoji/SAS verification available from the provisioned flow.
+
 ## [0.9.855] - 2026-02-10
 ### Added
 - Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle (homeserver, user, password, room ID), log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Includes full validation, step-by-step progress UI, error handling with retry, and a status page showing the connected account.
 
 ### Changed
 - Flexible Ratings Model: Session ratings are now driven by a catalog registry instead of hardcoded questions. Each rating dimension snapshots its question metadata (question text, input type, option labels) at save time, making stored ratings fully self-describing. Unknown catalogs (e.g. received via sync from a newer client) render in read-only mode with a graceful fallback chain: stored metadata, catalog lookup, then dimension key.
+- Matrix Sync Room Creation: Sync rooms are now created with encryption state in the initial room creation request (instead of relying on a later room snapshot), and room names now include the creating username for easier server-side identification.
 
 ## [0.9.852] - 2026-02-09
 ### Fixed

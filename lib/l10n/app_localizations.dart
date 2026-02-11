@@ -4370,8 +4370,20 @@ abstract class AppLocalizations {
   /// No description provided for @provisionedSyncImportTitle.
   ///
   /// In en, this message translates to:
-  /// **'Import Sync Configuration'**
+  /// **'Sync Setup'**
   String get provisionedSyncImportTitle;
+
+  /// No description provided for @provisionedSyncPasteClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get provisionedSyncPasteClipboard;
+
+  /// No description provided for @provisionedSyncBundleImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Provisioning code imported'**
+  String get provisionedSyncBundleImported;
 
   /// No description provided for @provisionedSyncInvalidBundle.
   ///
@@ -5165,11 +5177,53 @@ abstract class AppLocalizations {
   /// **'Count'**
   String get settingsMatrixCount;
 
+  /// No description provided for @deleteDeviceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete device'**
+  String get deleteDeviceLabel;
+
+  /// No description provided for @deviceDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device {deviceName} deleted successfully'**
+  String deviceDeletedSuccess(Object deviceName);
+
+  /// No description provided for @deviceDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete device: {error}'**
+  String deviceDeleteFailed(Object error);
+
   /// No description provided for @settingsMatrixDeleteLabel.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get settingsMatrixDeleteLabel;
+
+  /// No description provided for @settingsMatrixDiagnosticCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic info copied to clipboard'**
+  String get settingsMatrixDiagnosticCopied;
+
+  /// No description provided for @settingsMatrixDiagnosticCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Clipboard'**
+  String get settingsMatrixDiagnosticCopyButton;
+
+  /// No description provided for @settingsMatrixDiagnosticDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Diagnostic Info'**
+  String get settingsMatrixDiagnosticDialogTitle;
+
+  /// No description provided for @settingsMatrixDiagnosticShowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Diagnostic Info'**
+  String get settingsMatrixDiagnosticShowButton;
 
   /// No description provided for @settingsMatrixDone.
   ///

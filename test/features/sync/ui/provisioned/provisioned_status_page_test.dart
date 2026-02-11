@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,6 +21,12 @@ class MockMatrixService extends Mock implements MatrixService {}
 class MockClient extends Mock implements Client {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
+
+class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 
 class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
   _FakeMatrixUnverifiedController(this.devices);
@@ -35,6 +43,10 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockClient mockClient;
 
+  setUpAll(() {
+    registerFallbackValue(_FakeDeviceKeys());
+  });
+
   setUp(() {
     mockMatrixService = MockMatrixService();
     mockClient = MockClient();
@@ -43,68 +55,20 @@ void main() {
     when(() => mockClient.userID).thenReturn('@alice:example.com');
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
+    when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => mockMatrixService.keyVerificationStream)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.loadConfig()).thenAnswer(
+      (_) async => const MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@alice:example.com',
+        password: 'rotated-pw',
+      ),
+    );
   });
 
   group('ProvisionedStatusWidget', () {
-    testWidgets('displays user ID from Matrix client', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('@alice:example.com'), findsOneWidget);
-    });
-
-    testWidgets('displays sync room ID', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('!room123:example.com'), findsOneWidget);
-    });
-
-    testWidgets('displays labels for user and room', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      expect(
-        find.text(context.messages.provisionedSyncSummaryUser),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.provisionedSyncSummaryRoom),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('displays diagnostic info button', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -159,7 +123,10 @@ void main() {
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncDisconnect));
+      final disconnectFinder =
+          find.text(context.messages.provisionedSyncDisconnect);
+      await tester.ensureVisible(disconnectFinder);
+      await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
 
       // Confirmation dialog should be visible
@@ -173,6 +140,53 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockMatrixService.deleteConfig()).called(1);
+    });
+
+    testWidgets('disconnect closes route after confirmation', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const Scaffold(
+                        body: ProvisionedStatusWidget(),
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open Sync Status'),
+              ),
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Sync Status'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      final disconnectFinder =
+          find.text(context.messages.provisionedSyncDisconnect);
+      await tester.ensureVisible(disconnectFinder);
+      await tester.tap(disconnectFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(context.messages.syncDeleteConfigConfirm));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.deleteConfig()).called(1);
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+      expect(find.text('Open Sync Status'), findsOneWidget);
     });
 
     testWidgets('disconnect does not call deleteConfig when cancelled',
@@ -191,7 +205,10 @@ void main() {
       await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncDisconnect));
+      final disconnectFinder =
+          find.text(context.messages.provisionedSyncDisconnect);
+      await tester.ensureVisible(disconnectFinder);
+      await tester.tap(disconnectFinder);
       await tester.pumpAndSettle();
 
       // Confirmation dialog should be visible
@@ -200,70 +217,11 @@ void main() {
         findsOneWidget,
       );
 
-      // Dismiss the dialog by tapping outside (scrim)
-      await tester.tapAt(Offset.zero);
+      // Tap cancel in confirmation dialog
+      await tester.tap(find.text(context.messages.settingsMatrixCancel));
       await tester.pumpAndSettle();
 
       verifyNever(() => mockMatrixService.deleteConfig());
-    });
-
-    testWidgets('handles null user ID gracefully', (tester) async {
-      when(() => mockClient.userID).thenReturn(null);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      // Should show empty string when user ID is null
-      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
-    });
-
-    testWidgets('handles null room ID gracefully', (tester) async {
-      when(() => mockMatrixService.syncRoomId).thenReturn(null);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      // Should show empty string when room ID is null
-      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
-    });
-
-    testWidgets('user ID and room ID are selectable', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      // SelectableText widgets for the values
-      final selectableTexts = find.byType(SelectableText);
-      expect(selectableTexts, findsAtLeast(2));
     });
   });
 
@@ -310,9 +268,15 @@ void main() {
     testWidgets('shows device cards when unverified devices exist',
         (tester) async {
       final device = MockDeviceKeys();
+      final keyVerification = MockKeyVerification();
+      final runner = MockKeyVerificationRunner();
       when(() => device.deviceDisplayName).thenReturn('Pixel 7');
       when(() => device.deviceId).thenReturn('DEVICE1');
       when(() => device.userId).thenReturn('@alice:example.com');
+      when(() => keyVerification.isDone).thenReturn(false);
+      when(() => runner.lastStep).thenReturn('');
+      when(() => runner.keyVerification).thenReturn(keyVerification);
+      when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -328,12 +292,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DeviceCard), findsOneWidget);
-      expect(find.text('Pixel 7'), findsOneWidget);
+      expect(find.text('Pixel 7'), findsWidgets);
     });
   });
 
   group('handover QR section (desktop)', () {
-    testWidgets('shows QR button on desktop', (tester) async {
+    testWidgets('shows QR by default on desktop', (tester) async {
       final wasDesktop = isDesktop;
       isDesktop = true;
       addTearDown(() => isDesktop = wasDesktop);
@@ -349,13 +313,14 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
-        find.text(context.messages.provisionedSyncShowQr),
+        find.byKey(const Key('statusHandoverQrImage')),
         findsOneWidget,
       );
+      expect(find.text(context.messages.provisionedSyncReady), findsOneWidget);
     });
 
     testWidgets('hides QR button on mobile', (tester) async {
@@ -374,52 +339,14 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
         find.text(context.messages.provisionedSyncShowQr),
         findsNothing,
       );
-    });
-
-    testWidgets('generates and displays QR on tap', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = true;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      when(() => mockMatrixService.loadConfig()).thenAnswer(
-        (_) async => const MatrixConfig(
-          homeServer: 'https://matrix.example.com',
-          user: '@alice:example.com',
-          password: 'rotated-pw',
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncShowQr));
-      await tester.pumpAndSettle();
-
-      // QR image should be visible
-      expect(find.byKey(const Key('statusHandoverQrImage')), findsOneWidget);
-      // Ready text should be visible
-      expect(
-        find.text(context.messages.provisionedSyncReady),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
     });
 
     testWidgets('toggles handover data visibility', (tester) async {
@@ -427,14 +354,6 @@ void main() {
       isDesktop = true;
       addTearDown(() => isDesktop = wasDesktop);
 
-      when(() => mockMatrixService.loadConfig()).thenAnswer(
-        (_) async => const MatrixConfig(
-          homeServer: 'https://matrix.example.com',
-          user: '@alice:example.com',
-          password: 'rotated-pw',
-        ),
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -446,13 +365,8 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncShowQr));
       await tester.pumpAndSettle();
 
-      // Initially masked
       expect(find.text('\u2022' * 24), findsOneWidget);
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
@@ -470,7 +384,7 @@ void main() {
     });
   });
 
-  testWidgets('QR button stays when config is null', (tester) async {
+  testWidgets('shows retry button when config is null', (tester) async {
     final wasDesktop = isDesktop;
     isDesktop = true;
     addTearDown(() => isDesktop = wasDesktop);
@@ -490,104 +404,92 @@ void main() {
         ],
       ),
     );
-    await tester.pump();
-
-    final context = tester.element(find.byType(ProvisionedStatusWidget));
-    await tester.tap(find.text(context.messages.provisionedSyncShowQr));
     await tester.pumpAndSettle();
 
-    // regenerateHandover returns null, so QR should not appear
+    final context = tester.element(find.byType(ProvisionedStatusWidget));
     expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
-    // Button should still be visible for retry
     expect(
       find.text(context.messages.provisionedSyncShowQr),
       findsOneWidget,
     );
   });
 
-  group('ProvisionedStatusPage action bar', () {
-    testWidgets('back button navigates to page 0', (tester) async {
-      final pageIndexNotifier = ValueNotifier<int>(2);
-      addTearDown(pageIndexNotifier.dispose);
+  testWidgets('copy button copies handover data on desktop', (tester) async {
+    final wasDesktop = isDesktop;
+    isDesktop = true;
+    addTearDown(() => isDesktop = wasDesktop);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          _StatusActionBarTestWrapper(
-            pageIndexNotifier: pageIndexNotifier,
-          ),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(_StatusActionBarTestWrapper));
-      await tester.tap(
-        find.text(context.messages.settingsMatrixPreviousPage),
-      );
-      await tester.pump();
-
-      expect(pageIndexNotifier.value, 0);
-    });
-
-    testWidgets('close button is rendered with correct label', (tester) async {
-      final pageIndexNotifier = ValueNotifier<int>(2);
-      addTearDown(pageIndexNotifier.dispose);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          _StatusActionBarTestWrapper(
-            pageIndexNotifier: pageIndexNotifier,
-          ),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(_StatusActionBarTestWrapper));
-      expect(
-        find.text(context.messages.tasksLabelsDialogClose),
-        findsOneWidget,
-      );
-    });
-  });
-}
-
-/// Wrapper to test navigation via pageIndexNotifier. Since _StatusActionBar
-/// is private, we replicate its button logic through the notifier.
-class _StatusActionBarTestWrapper extends StatelessWidget {
-  const _StatusActionBarTestWrapper({required this.pageIndexNotifier});
-
-  final ValueNotifier<int> pageIndexNotifier;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const ProvisionedStatusWidget(),
-        Row(
-          children: [
-            OutlinedButton(
-              onPressed: () => pageIndexNotifier.value = 0,
-              child: Text(context.messages.settingsMatrixPreviousPage),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.messages.tasksLabelsDialogClose),
-            ),
-          ],
-        ),
-      ],
+    String? clipboardText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          final args = call.arguments as Map<dynamic, dynamic>;
+          clipboardText = args['text'] as String?;
+        }
+        return null;
+      },
     );
-  }
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+    });
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ProvisionedStatusWidget(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController(const []),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final copyFinder = find.byKey(const Key('statusCopyHandoverData'));
+    await tester.ensureVisible(copyFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(copyFinder);
+    await tester.pumpAndSettle();
+
+    expect(clipboardText, isNotNull);
+
+    final context = tester.element(find.byType(ProvisionedStatusWidget));
+    expect(
+      find.text(context.messages.provisionedSyncCopiedToClipboard),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'auto-verification launcher shows modal for unverified devices',
+    (tester) async {
+      final mockDevice = MockDeviceKeys();
+      when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
+      when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
+      when(() => mockDevice.userId).thenReturn('@alice:example.com');
+      when(() => mockMatrixService.verifyDevice(mockDevice))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController([mockDevice]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The auto-verification launcher should trigger a verification modal
+      expect(find.text('Other Device'), findsWidgets);
+    },
+  );
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -74,11 +75,40 @@ class SyncEngine {
   /// to sync its view of the world so hooks run even if no new login event is
   /// emitted.
   Future<bool> connect({required bool shouldAttemptLogin}) async {
+    return connectWithLifecycleOption(
+      shouldAttemptLogin: shouldAttemptLogin,
+      waitForLifecycle: true,
+    );
+  }
+
+  /// Connects and optionally waits for lifecycle reconciliation.
+  ///
+  /// When [waitForLifecycle] is false, lifecycle reconciliation runs in the
+  /// background so callers can proceed without blocking on pipeline startup.
+  Future<bool> connectWithLifecycleOption({
+    required bool shouldAttemptLogin,
+    required bool waitForLifecycle,
+  }) async {
     final success = await _sessionManager.connect(
       shouldAttemptLogin: shouldAttemptLogin,
     );
     if (success) {
-      await _lifecycleCoordinator.reconcileLifecycleState();
+      if (waitForLifecycle) {
+        await _lifecycleCoordinator.reconcileLifecycleState();
+      } else {
+        unawaited(() async {
+          try {
+            await _lifecycleCoordinator.reconcileLifecycleState();
+          } catch (error, stackTrace) {
+            _loggingService.captureException(
+              error,
+              domain: 'SYNC_ENGINE',
+              subDomain: 'connect.backgroundLifecycle',
+              stackTrace: stackTrace,
+            );
+          }
+        }());
+      }
     }
     return success;
   }

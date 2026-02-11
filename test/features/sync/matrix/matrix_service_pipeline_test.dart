@@ -96,6 +96,7 @@ void main() {
         connectivity ?? const Stream<List<ConnectivityResult>>.empty();
 
     when(() => pipeline.reportDbApplyDiagnostics(any())).thenReturn(null);
+    when(() => pipeline.start()).thenAnswer((_) async {});
     when(() =>
             pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')))
         .thenAnswer((_) async {});
@@ -107,6 +108,7 @@ void main() {
     when(() => messageSender.sentEventRegistry).thenReturn(SentEventRegistry());
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.dispose()).thenAnswer((_) async {});
+    when(() => roomManager.saveRoomId(any())).thenAnswer((_) async {});
     when(() => roomManager.dispose()).thenAnswer((_) async {});
     when(() => activityGate.dispose()).thenAnswer((_) async {});
 
@@ -199,6 +201,21 @@ void main() {
     await service!.retryNow();
 
     verify(() => pipeline.retryNow()).called(1);
+  });
+
+  test('saveRoom bootstraps pipeline start + catch-up in background', () async {
+    MatrixService? service;
+    fakeAsync((async) {
+      unawaited(createService().then((s) => service = s));
+      async.elapse(const Duration(milliseconds: 350));
+    });
+
+    await service!.saveRoom('!room:server');
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    verify(() => roomManager.saveRoomId('!room:server')).called(1);
+    verify(() => pipeline.start()).called(1);
+    verify(() => pipeline.forceRescan(includeCatchUp: true)).called(1);
   });
 
   test('connectivity change calls recordConnectivitySignal before forceRescan',

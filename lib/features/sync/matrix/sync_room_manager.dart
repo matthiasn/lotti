@@ -93,7 +93,7 @@ class SyncRoomManager {
   /// The room is marked with the Lotti sync room state event for future
   /// discovery by other devices using the same Matrix account.
   Future<String> createRoom({List<String>? inviteUserIds}) async {
-    final name = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+    final name = _buildSyncRoomName();
     final roomId = await _gateway.createRoom(
       name: name,
       inviteUserIds: inviteUserIds,
@@ -113,6 +113,29 @@ class SyncRoomManager {
       subDomain: 'createRoom',
     );
     return roomId;
+  }
+
+  String _buildSyncRoomName() {
+    final timestamp = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
+    final localpart = _currentUserLocalpart();
+    if (localpart == null) {
+      return 'Lotti Sync $timestamp';
+    }
+    return 'Lotti Sync ($localpart) $timestamp';
+  }
+
+  String? _currentUserLocalpart() {
+    try {
+      final userId = _gateway.client.userID;
+      if (userId == null || userId.isEmpty) return null;
+      final withoutAt = userId.startsWith('@') ? userId.substring(1) : userId;
+      if (withoutAt.isEmpty) return null;
+      final idx = withoutAt.indexOf(':');
+      if (idx <= 0) return withoutAt;
+      return withoutAt.substring(0, idx);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Persistently saves the provided room ID without joining. Useful for manual

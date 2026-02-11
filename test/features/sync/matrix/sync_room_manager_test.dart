@@ -315,6 +315,9 @@ void main() {
     test('createRoom marks room with Lotti state when discovery service exists',
         () async {
       final room = MockRoom();
+      final client = MockClient();
+      when(() => gateway.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@lotti_user:example.com');
       when(() => gateway.createRoom(
             name: any(named: 'name'),
             inviteUserIds: any(named: 'inviteUserIds'),
@@ -330,8 +333,34 @@ void main() {
       verify(() => discoveryService.markRoomAsLottiSync(room)).called(1);
     });
 
+    test('createRoom includes the creator username in room name', () async {
+      final client = MockClient();
+      when(() => gateway.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@lotti_user:example.com');
+      when(() => gateway.createRoom(
+            name: any(named: 'name'),
+            inviteUserIds: any(named: 'inviteUserIds'),
+          )).thenAnswer((_) async => '!newroom:server');
+      when(() => settingsDb.saveSettingsItem(matrixRoomKey, '!newroom:server'))
+          .thenAnswer((_) async => 1);
+      when(() => gateway.getRoomById('!newroom:server')).thenReturn(null);
+
+      await managerWithDiscovery.createRoom();
+
+      final name = verify(
+        () => gateway.createRoom(
+          name: captureAny(named: 'name'),
+          inviteUserIds: any(named: 'inviteUserIds'),
+        ),
+      ).captured.single as String;
+      expect(name, contains('Lotti Sync (lotti_user)'));
+    });
+
     test('createRoom does not mark room when gateway returns null room',
         () async {
+      final client = MockClient();
+      when(() => gateway.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@lotti_user:example.com');
       when(() => gateway.createRoom(
             name: any(named: 'name'),
             inviteUserIds: any(named: 'inviteUserIds'),

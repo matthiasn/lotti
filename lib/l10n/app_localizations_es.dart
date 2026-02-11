@@ -2457,8 +2457,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pega el código de aprovisionamiento aquí';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importar configuración de sincronización';
+  String get provisionedSyncImportTitle => 'Configurar sincronización';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Pegar desde el portapapeles';
+
+  @override
+  String get provisionedSyncBundleImported =>
+      'Código de aprovisionamiento importado';
 
   @override
   String get provisionedSyncInvalidBundle =>
@@ -2899,7 +2905,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixCount => 'Cantidad';
 
   @override
+  String get deleteDeviceLabel => 'Eliminar dispositivo';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispositivo $deviceName eliminado correctamente';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Error al eliminar el dispositivo: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Eliminar';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Información de diagnóstico copiada al portapapeles';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copiar al portapapeles';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Información de diagnóstico de sincronización';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Mostrar información de diagnóstico';
 
   @override
   String get settingsMatrixDone => 'Listo';

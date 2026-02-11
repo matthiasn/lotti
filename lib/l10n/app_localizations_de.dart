@@ -2418,7 +2418,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncImportHint => 'Bereitstellungscode hier einfügen';
 
   @override
-  String get provisionedSyncImportTitle => 'Sync-Konfiguration importieren';
+  String get provisionedSyncImportTitle => 'Sync einrichten';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
+
+  @override
+  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
 
   @override
   String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
@@ -2855,7 +2861,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixCount => 'Anzahl';
 
   @override
+  String get deleteDeviceLabel => 'Gerät löschen';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Gerät $deviceName erfolgreich gelöscht';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Gerät konnte nicht gelöscht werden: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Löschen';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Diagnoseinfos in die Zwischenablage kopiert';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'In Zwischenablage kopieren';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle => 'Sync-Diagnoseinfos';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton => 'Diagnoseinfos anzeigen';
 
   @override
   String get settingsMatrixDone => 'Fertig';

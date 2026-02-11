@@ -174,4 +174,82 @@ void main() {
       ),
     );
   });
+
+  test(
+    'connectWithLifecycleOption background lifecycle logs errors',
+    () async {
+      when(
+        () => sessionManager.connect(
+          shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      when(() => lifecycleCoordinator.reconcileLifecycleState())
+          .thenThrow(Exception('background error'));
+
+      when(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      final result = await engine.connectWithLifecycleOption(
+        shouldAttemptLogin: true,
+        waitForLifecycle: false,
+      );
+
+      expect(result, isTrue);
+
+      // Allow the background future to complete
+      await Future<void>.delayed(Duration.zero);
+
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'SYNC_ENGINE',
+          subDomain: 'connect.backgroundLifecycle',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test('diagnostics handles client error gracefully', () async {
+    when(() => sessionManager.client).thenThrow(Exception('client broken'));
+    when(() => sessionManager.isLoggedIn()).thenReturn(false);
+    when(() => lifecycleCoordinator.isActive).thenReturn(false);
+    when(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+
+    final diagnostics = await engine.diagnostics();
+
+    expect(diagnostics['error'], contains('client broken'));
+    expect(diagnostics['isLoggedIn'], isFalse);
+    expect(diagnostics['pipelineActive'], isFalse);
+
+    verify(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: 'SYNC_ENGINE',
+        subDomain: 'diagnostics.snapshot',
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).called(1);
+  });
 }

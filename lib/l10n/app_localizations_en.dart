@@ -2370,7 +2370,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncImportHint => 'Paste provisioning code here';
 
   @override
-  String get provisionedSyncImportTitle => 'Import Sync Configuration';
+  String get provisionedSyncImportTitle => 'Sync Setup';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
+
+  @override
+  String get provisionedSyncBundleImported => 'Provisioning code imported';
 
   @override
   String get provisionedSyncInvalidBundle => 'Invalid provisioning code';
@@ -2802,7 +2808,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixCount => 'Count';
 
   @override
+  String get deleteDeviceLabel => 'Delete device';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Device $deviceName deleted successfully';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Failed to delete device: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Delete';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Diagnostic info copied to clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copy to Clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle => 'Sync Diagnostic Info';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton => 'Show Diagnostic Info';
 
   @override
   String get settingsMatrixDone => 'Done';

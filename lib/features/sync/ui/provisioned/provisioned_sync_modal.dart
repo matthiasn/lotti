@@ -32,15 +32,6 @@ class _ProvisionedSyncSettingsCardState
     super.dispose();
   }
 
-  void _updatePageIndex() {
-    final matrixService = ref.read(matrixServiceProvider);
-    if (matrixService.isLoggedIn() && matrixService.syncRoomId != null) {
-      pageIndexNotifier.value = 2;
-    } else {
-      pageIndexNotifier.value = 0;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return AnimatedModernSettingsCardWithIcon(
@@ -48,24 +39,39 @@ class _ProvisionedSyncSettingsCardState
       subtitle: context.messages.provisionedSyncSubtitle,
       icon: Icons.qr_code_scanner,
       onTap: () {
-        _updatePageIndex();
+        final matrixService = ref.read(matrixServiceProvider);
+        final isConfigured =
+            matrixService.isLoggedIn() && matrixService.syncRoomId != null;
+        pageIndexNotifier.value = 0;
+
         ModalUtils.showMultiPageModal<void>(
           context: context,
           pageIndexNotifier: pageIndexNotifier,
-          pageListBuilder: (modalContext) => [
-            bundleImportPage(
-              context: modalContext,
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            provisionedConfigPage(
-              context: modalContext,
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-            provisionedStatusPage(
-              context: modalContext,
-              pageIndexNotifier: pageIndexNotifier,
-            ),
-          ],
+          pageListBuilder: (modalContext) {
+            if (isConfigured) {
+              return [
+                provisionedStatusPage(
+                  context: modalContext,
+                  pageIndexNotifier: pageIndexNotifier,
+                ),
+              ];
+            }
+
+            return [
+              bundleImportPage(
+                context: modalContext,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+              provisionedConfigPage(
+                context: modalContext,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+              provisionedStatusPage(
+                context: modalContext,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+            ];
+          },
         );
       },
     );

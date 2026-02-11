@@ -2463,8 +2463,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Colle le code de provisionnement ici';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importer la configuration de synchronisation';
+  String get provisionedSyncImportTitle => 'Configurer la synchronisation';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
+
+  @override
+  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
 
   @override
   String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';
@@ -2907,7 +2912,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixCount => 'Nombre';
 
   @override
+  String get deleteDeviceLabel => 'Supprimer l\'appareil';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Appareil $deviceName supprimé avec succès';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Échec de suppression de l\'appareil : $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Supprimer';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Informations de diagnostic copiées dans le presse-papiers';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton =>
+      'Copier dans le presse-papiers';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Informations de diagnostic de synchronisation';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Afficher les informations de diagnostic';
 
   @override
   String get settingsMatrixDone => 'Terminé';

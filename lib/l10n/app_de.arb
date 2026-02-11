@@ -977,7 +977,9 @@
   "provisionedSyncErrorLoginFailed": "Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten und versuche es erneut.",
   "provisionedSyncImportButton": "Importieren",
   "provisionedSyncImportHint": "Bereitstellungscode hier einfügen",
-  "provisionedSyncImportTitle": "Sync-Konfiguration importieren",
+  "provisionedSyncImportTitle": "Sync einrichten",
+  "provisionedSyncPasteClipboard": "Aus Zwischenablage einfügen",
+  "provisionedSyncBundleImported": "Bereitstellungscode importiert",
   "provisionedSyncInvalidBundle": "Ungültiger Bereitstellungscode",
   "provisionedSyncJoiningRoom": "Sync-Raum beitreten...",
   "provisionedSyncLoggingIn": "Anmeldung läuft...",
@@ -1124,7 +1126,24 @@
   "settingsMatrixCancelVerificationLabel": "Verifizierung abbrechen",
   "settingsMatrixContinueVerificationLabel": "Auf anderem Gerät akzeptieren, um fortzufahren",
   "settingsMatrixCount": "Anzahl",
+  "deleteDeviceLabel": "Gerät löschen",
+  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Löschen",
+  "settingsMatrixDiagnosticCopied": "Diagnoseinfos in die Zwischenablage kopiert",
+  "settingsMatrixDiagnosticCopyButton": "In Zwischenablage kopieren",
+  "settingsMatrixDiagnosticDialogTitle": "Sync-Diagnoseinfos",
+  "settingsMatrixDiagnosticShowButton": "Diagnoseinfos anzeigen",
   "settingsMatrixDone": "Fertig",
   "settingsMatrixEnterValidUrl": "Bitte gib eine gültige URL ein",
   "settingsMatrixHomeserverConfigTitle": "Matrix-Homeserver-Einrichtung",

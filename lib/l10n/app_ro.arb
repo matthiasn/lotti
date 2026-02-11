@@ -977,7 +977,9 @@
   "provisionedSyncErrorLoginFailed": "Autentificarea a eșuat. Verifică datele de acces și încearcă din nou.",
   "provisionedSyncImportButton": "Importă",
   "provisionedSyncImportHint": "Lipește codul de provizionare aici",
-  "provisionedSyncImportTitle": "Importă configurația de sincronizare",
+  "provisionedSyncImportTitle": "Configurează sincronizarea",
+  "provisionedSyncPasteClipboard": "Lipește din clipboard",
+  "provisionedSyncBundleImported": "Cod de provizionare importat",
   "provisionedSyncInvalidBundle": "Cod de provizionare invalid",
   "provisionedSyncJoiningRoom": "Se alătură camerei de sincronizare...",
   "provisionedSyncLoggingIn": "Conectare în curs...",
@@ -1124,7 +1126,24 @@
   "settingsMatrixCancelVerificationLabel": "Anulează verificarea",
   "settingsMatrixContinueVerificationLabel": "Acceptați pe celălalt dispozitiv pentru a continua",
   "settingsMatrixCount": "Număr",
+  "deleteDeviceLabel": "Șterge dispozitivul",
+  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Șterge",
+  "settingsMatrixDiagnosticCopied": "Informațiile de diagnostic au fost copiate în clipboard",
+  "settingsMatrixDiagnosticCopyButton": "Copiază în clipboard",
+  "settingsMatrixDiagnosticDialogTitle": "Informații de diagnostic pentru sincronizare",
+  "settingsMatrixDiagnosticShowButton": "Afișează informațiile de diagnostic",
   "settingsMatrixDone": "Gata",
   "settingsMatrixEnterValidUrl": "Introduceți o adresă URL validă",
   "settingsMatrixHomeserverConfigTitle": "Configurare Matrix Homeserver",

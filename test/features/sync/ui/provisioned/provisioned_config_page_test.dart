@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
@@ -12,6 +14,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,6 +23,10 @@ import '../../../../widget_test_utils.dart';
 class MockMatrixService extends Mock implements MatrixService {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
 
 /// A fake provisioning controller that provides a fixed state.
 class _FakeProvisioningController extends ProvisioningController {
@@ -56,10 +63,17 @@ void main() {
     pageIndexNotifier = ValueNotifier(1);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+    when(
+      () => mockMatrixService.login(
+        waitForLifecycle: any(named: 'waitForLifecycle'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
+    when(() => mockMatrixService.getRoom())
+        .thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),
@@ -74,6 +88,10 @@ void main() {
       ),
     );
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => mockMatrixService.keyVerificationStream)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
+        .thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(() {
@@ -222,6 +240,135 @@ void main() {
       expect(find.text('\u2022' * 24), findsOneWidget);
       expect(find.byIcon(Icons.copy), findsOneWidget);
     });
+
+    testWidgets(
+      'auto-advances via incoming verification stream',
+      (tester) async {
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final device = MockDeviceKeys();
+        final incomingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(incomingController.close);
+
+        var checks = 0;
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
+            .thenAnswer((_) => incomingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
+          checks += 1;
+          return checks < 3 ? [device] : [];
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        incomingController.add(runner);
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(pageIndexNotifier.value, 2);
+      },
+    );
+
+    testWidgets(
+      'does not auto-advance on mobile when verification completes',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        isDesktop = false;
+        addTearDown(() => isDesktop = wasDesktop);
+
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final outgoingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(outgoingController.close);
+
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.keyVerificationStream)
+            .thenAnswer((_) => outgoingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        outgoingController.add(runner);
+        await tester.pump(const Duration(seconds: 2));
+
+        // Should not auto-advance on mobile
+        expect(pageIndexNotifier.value, 1);
+      },
+    );
+
+    testWidgets(
+      'auto-advances to status page when verification completes and trust updates',
+      (tester) async {
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final device = MockDeviceKeys();
+        final outgoingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(outgoingController.close);
+
+        var checks = 0;
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.keyVerificationStream)
+            .thenAnswer((_) => outgoingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
+          checks += 1;
+          return checks < 3 ? [device] : [];
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        outgoingController.add(runner);
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(pageIndexNotifier.value, 2);
+      },
+    );
 
     testWidgets('shows success when in done state', (tester) async {
       await tester.pumpWidget(

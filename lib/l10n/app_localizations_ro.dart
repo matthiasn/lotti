@@ -2410,8 +2410,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncImportHint => 'Lipește codul de provizionare aici';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importă configurația de sincronizare';
+  String get provisionedSyncImportTitle => 'Configurează sincronizarea';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Lipește din clipboard';
+
+  @override
+  String get provisionedSyncBundleImported => 'Cod de provizionare importat';
 
   @override
   String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';
@@ -2849,7 +2854,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixCount => 'Număr';
 
   @override
+  String get deleteDeviceLabel => 'Șterge dispozitivul';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispozitivul $deviceName a fost șters cu succes';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Ștergerea dispozitivului a eșuat: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Șterge';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Informațiile de diagnostic au fost copiate în clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copiază în clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Informații de diagnostic pentru sincronizare';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Afișează informațiile de diagnostic';
 
   @override
   String get settingsMatrixDone => 'Gata';

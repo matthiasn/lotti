@@ -2392,8 +2392,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncImportHint => 'Vložte provizní kód sem';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importovat konfiguraci synchronizace';
+  String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
+
+  @override
+  String get provisionedSyncBundleImported => 'Provizní kód importován';
 
   @override
   String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
@@ -2829,7 +2834,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixCount => 'Počet';
 
   @override
+  String get deleteDeviceLabel => 'Odstranit zařízení';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Zařízení $deviceName bylo úspěšně odstraněno';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Zařízení se nepodařilo odstranit: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Odstranit';
+
+  @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Diagnostic info copied to clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copy to Clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle => 'Sync Diagnostic Info';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton => 'Show Diagnostic Info';
 
   @override
   String get settingsMatrixDone => 'Hotovo';

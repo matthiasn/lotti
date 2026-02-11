@@ -31,9 +31,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.856" date="2026-02-11">
+      <description>
+        <p>Sync Verification Follow-up: SAS emoji verification now updates reliably on both devices, refreshes device keys on completion, and triggers a sync rescan so synchronization resumes immediately without restarting apps. Post-verification trust status now refreshes automatically for a short window so stale "unverified device" indicators clear without manual refresh, and desktop provisioning auto-advances from the QR step to the final status page once trust state is updated. The legacy manual Matrix setup wizard has been removed from Settings; provisioning is now the single onboarding path while keeping emoji/SAS verification in the provisioned flow. Disconnect now shows an explicit confirmation dialog and closes the status modal after successful deletion.</p>
+      </description>
+    </release>
     <release version="0.9.855" date="2026-02-10">
       <description>
-        <p>Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle, log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Also includes flexible ratings model improvements where session ratings are now driven by a catalog registry instead of hardcoded questions.</p>
+        <p>Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle, log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Also includes flexible ratings model improvements where session ratings are now driven by a catalog registry instead of hardcoded questions. Sync room creation now enforces encryption in the initial createRoom request and names rooms with the creating username for easier administration.</p>
       </description>
     </release>
     <release version="0.9.852" date="2026-02-09">

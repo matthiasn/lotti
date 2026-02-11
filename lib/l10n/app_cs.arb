@@ -977,7 +977,9 @@
   "provisionedSyncErrorLoginFailed": "Přihlášení selhalo. Zkontrolujte své přihlašovací údaje a zkuste to znovu.",
   "provisionedSyncImportButton": "Importovat",
   "provisionedSyncImportHint": "Vložte provizní kód sem",
-  "provisionedSyncImportTitle": "Importovat konfiguraci synchronizace",
+  "provisionedSyncImportTitle": "Nastavit synchronizaci",
+  "provisionedSyncPasteClipboard": "Vložit ze schránky",
+  "provisionedSyncBundleImported": "Provizní kód importován",
   "provisionedSyncInvalidBundle": "Neplatný provizní kód",
   "provisionedSyncJoiningRoom": "Připojování k synchronizační místnosti...",
   "provisionedSyncLoggingIn": "Přihlašování...",
@@ -1124,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Zrušit ověření",
   "settingsMatrixContinueVerificationLabel": "Přijměte na jiném zařízení pro pokračování",
   "settingsMatrixCount": "Počet",
+  "deleteDeviceLabel": "Odstranit zařízení",
+  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Odstranit",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixEnterValidUrl": "Zadejte platnou URL",
