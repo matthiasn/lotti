@@ -3185,7 +3185,7 @@ void main() {
         final request = captured.first as http.MultipartRequest;
         expect(
           request.fields['context_bias'],
-          equals(jsonEncode(['macOS', 'Flutter', 'Dart'])),
+          equals('macOS,Flutter,Dart'),
         );
       });
 
