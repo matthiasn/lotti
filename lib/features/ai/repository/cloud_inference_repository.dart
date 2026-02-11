@@ -314,6 +314,7 @@ class CloudInferenceRepository {
     bool stream = true,
     ChatCompletionMessageInputAudioFormat audioFormat =
         ChatCompletionMessageInputAudioFormat.mp3,
+    List<String>? speechDictionaryTerms,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -375,7 +376,7 @@ class CloudInferenceRepository {
         audioBase64: audioBase64,
         baseUrl: baseUrl,
         apiKey: apiKey,
-        prompt: prompt,
+        contextBias: speechDictionaryTerms,
       );
     }
 

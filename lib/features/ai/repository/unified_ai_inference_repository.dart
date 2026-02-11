@@ -553,6 +553,11 @@ class UnifiedAiInferenceRepository {
         name: 'UnifiedAiInferenceRepository',
       );
 
+      // Extract speech dictionary terms for context biasing
+      // (used by Mistral's transcription endpoint as context_bias)
+      final speechDictionaryTerms =
+          await promptBuilderHelper.getSpeechDictionaryTerms(entity);
+
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,
@@ -563,6 +568,8 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
         stream: isAiStreamingEnabled,
         audioFormat: preparedAudio.format,
+        speechDictionaryTerms:
+            speechDictionaryTerms.isNotEmpty ? speechDictionaryTerms : null,
       );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks

@@ -30,12 +30,16 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   ///
   /// Sends audio data to Mistral's `/v1/audio/transcriptions` endpoint
   /// using multipart/form-data format.
+  ///
+  /// [contextBias] is a list of words/phrases (up to 100) that the model
+  /// should pay special attention to. Sent as the `context_bias` JSON array
+  /// field in the multipart form.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
     required String apiKey,
-    String? prompt,
+    List<String>? contextBias,
     Duration? timeout,
   }) {
     if (model.isEmpty) {
@@ -77,8 +81,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           )
           ..fields['model'] = model;
 
-        if (prompt != null && prompt.isNotEmpty) {
-          request.fields['prompt'] = prompt;
+        if (contextBias != null && contextBias.isNotEmpty) {
+          request.fields['context_bias'] = jsonEncode(contextBias);
         }
 
         final streamedResponse = await httpClient.send(request).timeout(

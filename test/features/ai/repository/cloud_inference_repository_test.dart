@@ -3147,6 +3147,48 @@ void main() {
         expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
       });
 
+      test('passes speechDictionaryTerms as context_bias to Mistral endpoint',
+          () async {
+        final mistralProvider = AiConfigInferenceProvider(
+          id: 'mistral-provider',
+          name: 'Mistral',
+          baseUrl: 'https://api.mistral.ai/v1',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.mistral,
+        );
+
+        when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+          return http.StreamedResponse(
+            Stream.value(
+              utf8.encode(jsonEncode({'text': 'Biased transcription'})),
+            ),
+            200,
+          );
+        });
+
+        final stream = repository.generateWithAudio(
+          'Transcribe this audio',
+          model: 'voxtral-mini-latest',
+          audioBase64: 'dGVzdC1hdWRpby1kYXRh',
+          baseUrl: 'https://api.mistral.ai/v1',
+          apiKey: 'test-key',
+          provider: mistralProvider,
+          speechDictionaryTerms: ['macOS', 'Flutter', 'Dart'],
+        );
+
+        await stream.first;
+
+        final captured =
+            verify(() => mockHttpClient.send(captureAny())).captured;
+        expect(captured, hasLength(1));
+        final request = captured.first as http.MultipartRequest;
+        expect(
+          request.fields['context_bias'],
+          equals(jsonEncode(['macOS', 'Flutter', 'Dart'])),
+        );
+      });
+
       test('does not route non-voxtral Mistral model to transcription endpoint',
           () {
         final mistralProvider = AiConfigInferenceProvider(

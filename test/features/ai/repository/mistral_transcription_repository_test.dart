@@ -106,7 +106,7 @@ void main() {
         expect(responses.first.id, startsWith('mistral-transcription-'));
       });
 
-      test('includes prompt field when provided', () async {
+      test('includes context_bias field when provided', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -123,29 +123,29 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo
-            .transcribeAudio(
-              model: testModel,
-              audioBase64: testAudioBase64,
-              baseUrl: testBaseUrl,
-              apiKey: testApiKey,
-              prompt: 'Context for transcription',
-            )
-            .toList();
+        await repo.transcribeAudio(
+          model: testModel,
+          audioBase64: testAudioBase64,
+          baseUrl: testBaseUrl,
+          apiKey: testApiKey,
+          contextBias: ['macOS', 'Flutter', 'Kirkjubæjarklaustur'],
+        ).toList();
 
         expect(capturedRequest, isA<http.MultipartRequest>());
         final multipart = capturedRequest! as http.MultipartRequest;
         expect(multipart.fields['model'], equals(testModel));
         expect(
-          multipart.fields['prompt'],
-          equals('Context for transcription'),
+          multipart.fields['context_bias'],
+          equals(
+            jsonEncode(['macOS', 'Flutter', 'Kirkjubæjarklaustur']),
+          ),
         );
         expect(multipart.files, hasLength(1));
         expect(multipart.files.first.field, equals('file'));
         expect(multipart.files.first.filename, equals('audio.m4a'));
       });
 
-      test('does not include prompt field when null', () async {
+      test('does not include context_bias field when null', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -172,10 +172,10 @@ void main() {
             .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
-        expect(multipart.fields.containsKey('prompt'), isFalse);
+        expect(multipart.fields.containsKey('context_bias'), isFalse);
       });
 
-      test('does not include prompt field when empty', () async {
+      test('does not include context_bias field when empty', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -192,18 +192,16 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo
-            .transcribeAudio(
-              model: testModel,
-              audioBase64: testAudioBase64,
-              baseUrl: testBaseUrl,
-              apiKey: testApiKey,
-              prompt: '',
-            )
-            .toList();
+        await repo.transcribeAudio(
+          model: testModel,
+          audioBase64: testAudioBase64,
+          baseUrl: testBaseUrl,
+          apiKey: testApiKey,
+          contextBias: [],
+        ).toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
-        expect(multipart.fields.containsKey('prompt'), isFalse);
+        expect(multipart.fields.containsKey('context_bias'), isFalse);
       });
 
       test('throws TranscriptionException on HTTP error', () async {
