@@ -2858,6 +2858,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixDeleteLabel => 'Löschen';
 
   @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Diagnoseinfos in die Zwischenablage kopiert';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'In Zwischenablage kopieren';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle => 'Sync-Diagnoseinfos';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton => 'Diagnoseinfos anzeigen';
+
+  @override
   String get settingsMatrixDone => 'Fertig';
 
   @override

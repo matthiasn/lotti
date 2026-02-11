@@ -5171,6 +5171,30 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get settingsMatrixDeleteLabel;
 
+  /// No description provided for @settingsMatrixDiagnosticCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostic info copied to clipboard'**
+  String get settingsMatrixDiagnosticCopied;
+
+  /// No description provided for @settingsMatrixDiagnosticCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to Clipboard'**
+  String get settingsMatrixDiagnosticCopyButton;
+
+  /// No description provided for @settingsMatrixDiagnosticDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Diagnostic Info'**
+  String get settingsMatrixDiagnosticDialogTitle;
+
+  /// No description provided for @settingsMatrixDiagnosticShowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Diagnostic Info'**
+  String get settingsMatrixDiagnosticShowButton;
+
   /// No description provided for @settingsMatrixDone.
   ///
   /// In en, this message translates to:

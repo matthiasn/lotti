@@ -2852,6 +2852,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixDeleteLabel => 'Șterge';
 
   @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Informațiile de diagnostic au fost copiate în clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copiază în clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Informații de diagnostic pentru sincronizare';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Afișează informațiile de diagnostic';
+
+  @override
   String get settingsMatrixDone => 'Gata';
 
   @override

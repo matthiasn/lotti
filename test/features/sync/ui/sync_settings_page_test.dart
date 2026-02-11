@@ -37,7 +37,7 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('renders setup, outbox, conflicts, and stats cards',
+    testWidgets('renders provisioned setup, outbox, conflicts, and stats cards',
         (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
@@ -45,12 +45,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert the card title specifically (not the page app bar)
+      // Assert the setup card title specifically (not the page app bar)
       final pageContext = tester.element(find.byType(SyncSettingsPage));
       expect(
         find.descendant(
           of: find.byType(AnimatedModernSettingsCardWithIcon),
-          matching: find.text(pageContext.messages.navTabTitleSettings),
+          matching: find.text(pageContext.messages.provisionedSyncTitle),
         ),
         findsOneWidget,
       );
@@ -80,7 +80,8 @@ void main() {
       await tester.pump();
 
       final pageContext = tester.element(find.byType(SyncSettingsPage));
-      expect(find.text(pageContext.messages.navTabTitleSettings), findsNothing);
+      expect(
+          find.text(pageContext.messages.provisionedSyncTitle), findsNothing);
       expect(find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
           findsNothing);
       expect(find.text('Matrix Stats'), findsNothing);

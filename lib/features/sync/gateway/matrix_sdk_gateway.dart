@@ -81,15 +81,28 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     required String name,
     List<String>? inviteUserIds,
   }) async {
-    final roomId = await _client.createRoom(
+    return _client.createRoom(
       visibility: Visibility.private,
       name: name,
       invite: inviteUserIds,
       preset: CreateRoomPreset.trustedPrivateChat,
+      initialState: [
+        StateEvent(
+          type: 'm.room.encryption',
+          stateKey: '',
+          content: <String, Object?>{
+            'algorithm': 'm.megolm.v1.aes-sha2',
+          },
+        ),
+        StateEvent(
+          type: 'm.lotti.sync_room',
+          stateKey: '',
+          content: <String, Object?>{
+            'version': 1,
+          },
+        ),
+      ],
     );
-    final room = _client.getRoomById(roomId);
-    await room?.enableEncryption();
-    return roomId;
   }
 
   @override

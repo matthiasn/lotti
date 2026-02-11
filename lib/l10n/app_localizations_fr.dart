@@ -2910,6 +2910,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixDeleteLabel => 'Supprimer';
 
   @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Informations de diagnostic copiées dans le presse-papiers';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton =>
+      'Copier dans le presse-papiers';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Informations de diagnostic de synchronisation';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Afficher les informations de diagnostic';
+
+  @override
   String get settingsMatrixDone => 'Terminé';
 
   @override

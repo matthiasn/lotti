@@ -2832,6 +2832,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixDeleteLabel => 'Odstranit';
 
   @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Diagnostic info copied to clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copy to Clipboard';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle => 'Sync Diagnostic Info';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton => 'Show Diagnostic Info';
+
+  @override
   String get settingsMatrixDone => 'Hotovo';
 
   @override

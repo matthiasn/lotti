@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Flexible Ratings Model: Session ratings are now driven by a catalog registry instead of hardcoded questions. Each rating dimension snapshots its question metadata (question text, input type, option labels) at save time, making stored ratings fully self-describing. Unknown catalogs (e.g. received via sync from a newer client) render in read-only mode with a graceful fallback chain: stored metadata, catalog lookup, then dimension key.
+- Matrix Sync Room Creation: Sync rooms are now created with encryption state in the initial room creation request (instead of relying on a later room snapshot), and room names now include the creating username for easier server-side identification.
+- Sync Onboarding UI: Removed the legacy manual Matrix setup wizard from Settings so provisioning is the single onboarding path. Emoji/SAS device verification remains available via the provisioned status flow.
 
 ## [0.9.852] - 2026-02-09
 ### Fixed

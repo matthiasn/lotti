@@ -2902,6 +2902,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixDeleteLabel => 'Eliminar';
 
   @override
+  String get settingsMatrixDiagnosticCopied =>
+      'Información de diagnóstico copiada al portapapeles';
+
+  @override
+  String get settingsMatrixDiagnosticCopyButton => 'Copiar al portapapeles';
+
+  @override
+  String get settingsMatrixDiagnosticDialogTitle =>
+      'Información de diagnóstico de sincronización';
+
+  @override
+  String get settingsMatrixDiagnosticShowButton =>
+      'Mostrar información de diagnóstico';
+
+  @override
   String get settingsMatrixDone => 'Listo';
 
   @override

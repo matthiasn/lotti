@@ -29,6 +29,14 @@ void main() {
       AuthenticationUserIdentifier(user: '@user:server'),
     );
     registerFallbackValue(MockMatrixFile());
+    registerFallbackValue(
+      StateEvent(
+        type: 'm.room.encryption',
+        stateKey: '',
+        content: <String, Object?>{},
+      ),
+    );
+    registerFallbackValue(<StateEvent>[]);
   });
 
   late MockClient client;
@@ -148,18 +156,16 @@ void main() {
     verify(() => client.logout()).called(1);
   });
 
-  test('createRoom enables encryption after room creation', () async {
-    final room = MockRoom();
+  test('createRoom sets encrypted initial state and sync marker', () async {
     when(
       () => client.createRoom(
         visibility: Visibility.private,
         name: 'Room',
         invite: ['@bob:server'],
         preset: CreateRoomPreset.trustedPrivateChat,
+        initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
-    when(room.enableEncryption).thenAnswer((_) async {});
 
     final roomId = await gateway.createRoom(
       name: 'Room',
@@ -167,7 +173,24 @@ void main() {
     );
 
     expect(roomId, '!room:server');
-    verify(room.enableEncryption).called(1);
+    final captured = verify(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: ['@bob:server'],
+        preset: CreateRoomPreset.trustedPrivateChat,
+        initialState: captureAny(named: 'initialState'),
+      ),
+    ).captured.single as List<StateEvent>;
+
+    final types = captured.map((event) => event.type).toSet();
+    expect(types, contains('m.room.encryption'));
+    expect(types, contains('m.lotti.sync_room'));
+
+    final encryption = captured
+        .firstWhere((event) => event.type == 'm.room.encryption')
+        .content;
+    expect(encryption['algorithm'], 'm.megolm.v1.aes-sha2');
   });
 
   test('joinRoom and leaveRoom delegate to client', () async {
@@ -279,16 +302,16 @@ void main() {
     await sub.cancel();
   });
 
-  test('createRoom handles null room from getRoomById', () async {
+  test('createRoom does not rely on immediate room snapshot', () async {
     when(
       () => client.createRoom(
         visibility: Visibility.private,
         name: 'Room',
         invite: <String>[],
         preset: CreateRoomPreset.trustedPrivateChat,
+        initialState: any(named: 'initialState'),
       ),
     ).thenAnswer((_) async => '!room:server');
-    when(() => client.getRoomById('!room:server')).thenReturn(null);
 
     final roomId = await gateway.createRoom(
       name: 'Room',
@@ -296,7 +319,7 @@ void main() {
     );
 
     expect(roomId, '!room:server');
-    // enableEncryption should not be called since room is null
+    verifyNever(() => client.getRoomById(any<String>()));
   });
 
   test('timelineEvents currently returns an empty stream', () async {
