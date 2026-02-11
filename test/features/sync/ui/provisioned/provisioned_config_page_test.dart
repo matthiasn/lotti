@@ -71,6 +71,10 @@ void main() {
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom())
+        .thenAnswer((_) async {});
+    when(() => mockMatrixService.getRoom())
+        .thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),

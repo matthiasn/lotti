@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -91,57 +92,73 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: _textController,
-          decoration: InputDecoration(
-            hintText: messages.provisionedSyncImportHint,
-            errorText: _errorText,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (_) {
-            setState(() {
-              _errorText = null;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: LottiPrimaryButton(
-                onPressed: _textController.text.trim().isEmpty
-                    ? null
-                    : () => _importBundle(_textController.text),
-                label: messages.provisionedSyncImportButton,
+        SyncFlowSection(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                messages.provisionedSyncImportHint,
+                style: context.textTheme.bodyMedium,
               ),
-            ),
-            if (isMobile) ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _showScanner = !_showScanner;
-                      _lastScannedCode = null;
-                    });
-                  },
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: Text(messages.provisionedSyncScanButton),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _textController,
+                decoration: InputDecoration(
+                  hintText: messages.provisionedSyncImportHint,
+                  errorText: _errorText,
+                  border: const OutlineInputBorder(),
                 ),
+                onChanged: (_) {
+                  setState(() {
+                    _errorText = null;
+                  });
+                },
               ),
             ],
-          ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SyncFlowSection(
+          child: Row(
+            children: [
+              Expanded(
+                child: LottiPrimaryButton(
+                  onPressed: _textController.text.trim().isEmpty
+                      ? null
+                      : () => _importBundle(_textController.text),
+                  label: messages.provisionedSyncImportButton,
+                ),
+              ),
+              if (isMobile) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _showScanner = !_showScanner;
+                        _lastScannedCode = null;
+                      });
+                    },
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: Text(messages.provisionedSyncScanButton),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
         if (isMobile && _showScanner) ...[
           const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              height: camDimension,
-              width: camDimension,
-              child: MobileScanner(
-                controller: _ensureScannerController(),
-                onDetect: _handleBarcode,
+          SyncFlowSection(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: camDimension,
+                width: camDimension,
+                child: MobileScanner(
+                  controller: _ensureScannerController(),
+                  onDetect: _handleBarcode,
+                ),
               ),
             ),
           ),
@@ -177,28 +194,25 @@ class _BundleSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final messages = context.messages;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SummaryRow(
-              label: messages.provisionedSyncSummaryHomeserver,
-              value: bundle.homeServer,
-            ),
-            const SizedBox(height: 8),
-            _SummaryRow(
-              label: messages.provisionedSyncSummaryUser,
-              value: bundle.user,
-            ),
-            const SizedBox(height: 8),
-            _SummaryRow(
-              label: messages.provisionedSyncSummaryRoom,
-              value: bundle.roomId,
-            ),
-          ],
-        ),
+    return SyncFlowSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SummaryRow(
+            label: messages.provisionedSyncSummaryHomeserver,
+            value: bundle.homeServer,
+          ),
+          const SizedBox(height: 8),
+          _SummaryRow(
+            label: messages.provisionedSyncSummaryUser,
+            value: bundle.user,
+          ),
+          const SizedBox(height: 8),
+          _SummaryRow(
+            label: messages.provisionedSyncSummaryRoom,
+            value: bundle.roomId,
+          ),
+        ],
       ),
     );
   }

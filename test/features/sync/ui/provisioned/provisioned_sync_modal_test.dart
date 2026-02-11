@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -27,6 +29,13 @@ void main() {
     when(() => mockMatrixService.syncRoomId).thenReturn(null);
     when(() => mockMatrixService.client).thenReturn(mockClient);
     when(() => mockClient.userID).thenReturn(null);
+    when(() => mockMatrixService.loadConfig()).thenAnswer(
+      (_) async => const MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@alice:example.com',
+        password: 'rotated-pw',
+      ),
+    );
   });
 
   group('ProvisionedSyncSettingsCard', () {
@@ -150,9 +159,26 @@ void main() {
           await tester.tap(find.byType(ProvisionedSyncSettingsCard));
           await tester.pumpAndSettle();
 
-          // Should show page 2 (status page) content with user ID and room ID
-          expect(find.text('@alice:example.com'), findsOneWidget);
-          expect(find.text('!room123:example.com'), findsOneWidget);
+          final context =
+              tester.element(find.byType(ProvisionedSyncSettingsCard));
+
+          // Should open directly to status page (no provisioning input page)
+          expect(
+            find.text('Show Diagnostic Info'),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const Key('statusHandoverQrImage')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(context.messages.settingsMatrixPreviousPage),
+            findsNothing,
+          );
+          expect(
+            find.byType(BundleImportWidget),
+            findsNothing,
+          );
         },
       );
 

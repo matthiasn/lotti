@@ -8,7 +8,9 @@ import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -140,26 +142,30 @@ class _ProgressStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 40),
-        const CircularProgressIndicator(),
-        const SizedBox(height: 24),
-        Text(
-          label,
-          style: context.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: step / totalSteps,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '$step / $totalSteps',
-          style: context.textTheme.bodySmall,
-        ),
-      ],
+    return SyncFlowSection(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 24),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 24),
+          Text(
+            label,
+            style: context.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: step / totalSteps,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$step / $totalSteps',
+            style: context.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
@@ -254,71 +260,76 @@ class _ReadyViewState extends ConsumerState<_ReadyView> {
 
     return Column(
       children: [
-        const SizedBox(height: 20),
-        Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(8),
-              child: QrImageView(
-                data: widget.handoverBase64,
-                padding: EdgeInsets.zero,
-                size: 240,
-                key: const Key('provisionedQrImage'),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          messages.provisionedSyncReady,
-          style: context.textTheme.bodyLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _revealed
-                  ? SelectableText(
-                      widget.handoverBase64,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                      ),
-                    )
-                  : Text(
-                      '\u2022' * 24,
-                      style: context.textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                      ),
+        SyncFlowSection(
+          child: Column(
+            children: [
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(8),
+                    child: QrImageView(
+                      data: widget.handoverBase64,
+                      padding: EdgeInsets.zero,
+                      size: 240,
+                      key: const Key('provisionedQrImage'),
                     ),
-            ),
-            IconButton(
-              key: const Key('toggleHandoverVisibility'),
-              icon: Icon(
-                _revealed
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                  ),
+                ),
               ),
-              onPressed: () => setState(() => _revealed = !_revealed),
-            ),
-            IconButton(
-              key: const Key('copyHandoverData'),
-              icon: const Icon(Icons.copy),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final copiedMessage =
-                    context.messages.provisionedSyncCopiedToClipboard;
-                await Clipboard.setData(
-                  ClipboardData(text: widget.handoverBase64),
-                );
-                messenger.showSnackBar(
-                  SnackBar(content: Text(copiedMessage)),
-                );
-              },
-            ),
-          ],
+              const SizedBox(height: 20),
+              Text(
+                messages.provisionedSyncReady,
+                style: context.textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _revealed
+                        ? SelectableText(
+                            widget.handoverBase64,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
+                          )
+                        : Text(
+                            '\u2022' * 24,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                  ),
+                  IconButton(
+                    key: const Key('toggleHandoverVisibility'),
+                    icon: Icon(
+                      _revealed
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () => setState(() => _revealed = !_revealed),
+                  ),
+                  IconButton(
+                    key: const Key('copyHandoverData'),
+                    icon: const Icon(Icons.copy),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final copiedMessage =
+                          context.messages.provisionedSyncCopiedToClipboard;
+                      await Clipboard.setData(
+                        ClipboardData(text: widget.handoverBase64),
+                      );
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(copiedMessage)),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -359,12 +370,10 @@ class _DoneViewState extends ConsumerState<_DoneView> {
       if (!lock.tryAcquire()) return;
       setState(() => _verificationTriggered = true);
       try {
-        await showModalBottomSheet<void>(
+        await showVerificationModalSheet(
           context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          showDragHandle: true,
-          builder: (_) => VerificationModal(unverifiedDevices.first),
+          title: context.messages.settingsMatrixVerifyLabel,
+          child: VerificationModal(unverifiedDevices.first),
         );
       } finally {
         if (mounted) {
@@ -377,22 +386,25 @@ class _DoneViewState extends ConsumerState<_DoneView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 40),
-        Icon(
-          Icons.check_circle_outline,
-          size: 64,
-          color: context.colorScheme.primary,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          context.messages.provisionedSyncDone,
-          style: context.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-      ],
+    return SyncFlowSection(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 24),
+          Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: context.colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            context.messages.provisionedSyncDone,
+            style: context.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
@@ -415,32 +427,35 @@ class _ErrorView extends StatelessWidget {
         messages.provisionedSyncErrorConfigurationFailed,
     };
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 40),
-        Icon(
-          Icons.error_outline,
-          size: 64,
-          color: context.colorScheme.error,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          messages.provisionedSyncError,
-          style: context.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          errorMessage,
-          style: context.textTheme.bodySmall,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        LottiSecondaryButton(
-          onPressed: onRetry,
-          label: messages.provisionedSyncRetry,
-        ),
-      ],
+    return SyncFlowSection(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 24),
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: context.colorScheme.error,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            messages.provisionedSyncError,
+            style: context.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage,
+            style: context.textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          LottiSecondaryButton(
+            onPressed: onRetry,
+            label: messages.provisionedSyncRetry,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }

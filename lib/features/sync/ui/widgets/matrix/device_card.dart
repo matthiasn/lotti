@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -85,14 +86,10 @@ class DeviceCard extends ConsumerWidget {
                 if (!lock.tryAcquire()) return;
 
                 try {
-                  await showModalBottomSheet<void>(
+                  await showVerificationModalSheet(
                     context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    showDragHandle: true,
-                    builder: (_) {
-                      return VerificationModal(deviceKeys);
-                    },
+                    title: context.messages.settingsMatrixVerifyLabel,
+                    child: VerificationModal(deviceKeys),
                   );
                 } finally {
                   lock.release();

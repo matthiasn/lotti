@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/status_indicator.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -68,35 +69,40 @@ class UnverifiedDevices extends ConsumerWidget {
     }
 
     if (unverifiedDevices.isEmpty) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(context.messages.settingsMatrixNoUnverifiedLabel),
-          const StatusIndicator(
-            Colors.greenAccent,
-            semanticsLabel: 'No unverified devices',
-          ),
-        ],
+      return SyncFlowSection(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(context.messages.settingsMatrixNoUnverifiedLabel),
+            const StatusIndicator(
+              Colors.greenAccent,
+              semanticsLabel: 'No unverified devices',
+            ),
+          ],
+        ),
       );
     }
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              context.messages.settingsMatrixListUnverifiedLabel,
-              semanticsLabel:
-                  context.messages.settingsMatrixListUnverifiedLabel,
-            ),
-            IconButton(
-              key: const Key('matrix_list_unverified'),
-              onPressed: refreshList,
-              icon: Icon(MdiIcons.refresh),
-            ),
-          ],
+        SyncFlowSection(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.messages.settingsMatrixListUnverifiedLabel,
+                semanticsLabel:
+                    context.messages.settingsMatrixListUnverifiedLabel,
+              ),
+              IconButton(
+                key: const Key('matrix_list_unverified'),
+                onPressed: refreshList,
+                icon: Icon(MdiIcons.refresh),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(height: 8),
         ...unverifiedDevices.map(
           (deviceKeys) => DeviceCard(
             deviceKeys,

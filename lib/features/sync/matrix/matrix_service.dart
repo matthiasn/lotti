@@ -500,6 +500,13 @@ class MatrixService {
     }());
   }
 
+  /// Clears only the locally persisted sync-room pointer.
+  ///
+  /// This does not leave the room on the homeserver. It is intended for flows
+  /// that switch credentials and must avoid auto-joining a stale room ID
+  /// during reconnect.
+  Future<void> clearPersistedRoom() => _roomManager.clearPersistedRoom();
+
   bool isLoggedIn() => _sessionManager.isLoggedIn();
 
   Future<String> createRoom({List<String>? invite}) =>

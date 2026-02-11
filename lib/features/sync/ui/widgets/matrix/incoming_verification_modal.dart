@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -118,105 +120,108 @@ class _IncomingVerificationModalState
 
         return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        displayName,
-                        style: context.textTheme.titleLarge,
-                        softWrap: true,
+            padding: const EdgeInsets.all(8),
+            child: SyncFlowSection(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          displayName,
+                          style: context.textTheme.titleLarge,
+                          softWrap: true,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                if (!isDone && emojis == null)
-                  LottiPrimaryButton(
-                    onPressed: runner?.acceptVerification,
-                    label: context.messages.settingsMatrixVerifyLabel,
+                    ],
                   ),
-                if (!isDone && emojis != null) ...[
-                  if (_awaitingOtherDevice)
+                  const SizedBox(height: 20),
+                  if (!isDone && emojis == null)
+                    LottiPrimaryButton(
+                      onPressed: runner?.acceptVerification,
+                      label: context.messages.settingsMatrixVerifyLabel,
+                    ),
+                  if (!isDone && emojis != null) ...[
+                    if (_awaitingOtherDevice)
+                      Text(
+                        context
+                            .messages.settingsMatrixContinueVerificationLabel,
+                        style: context.textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    if (_awaitingOtherDevice) const SizedBox(height: 12),
                     Text(
-                      context.messages.settingsMatrixContinueVerificationLabel,
-                      style: context.textTheme.bodyMedium,
+                      context.messages.settingsMatrixVerifyIncomingConfirm,
+                      style: context.textTheme.bodyLarge,
                       textAlign: TextAlign.center,
                     ),
-                  if (_awaitingOtherDevice) const SizedBox(height: 12),
-                  Text(
-                    context.messages.settingsMatrixVerifyIncomingConfirm,
-                    style: context.textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  VerificationEmojisRow(emojis.take(4)),
-                  VerificationEmojisRow(emojis.skip(4)),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: LottiPrimaryButton(
-                          key: const Key('matrix_cancel_verification'),
-                          onPressed: () async {
-                            closeModal();
-                          },
-                          label: context
-                              .messages.settingsMatrixCancelVerificationLabel,
-                          isDestructive: true,
+                    const SizedBox(height: 20),
+                    VerificationEmojisRow(emojis.take(4)),
+                    VerificationEmojisRow(emojis.skip(4)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: LottiPrimaryButton(
+                            key: const Key('matrix_cancel_verification'),
+                            onPressed: () async {
+                              closeModal();
+                            },
+                            label: context
+                                .messages.settingsMatrixCancelVerificationLabel,
+                            isDestructive: true,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: LottiPrimaryButton(
-                          onPressed: _awaitingOtherDevice
-                              ? null
-                              : () => _acceptEmojiVerification(runner),
-                          label: _awaitingOtherDevice
-                              ? context.messages
-                                  .settingsMatrixContinueVerificationLabel
-                              : context.messages.settingsMatrixAccept,
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: LottiPrimaryButton(
+                            onPressed: _awaitingOtherDevice
+                                ? null
+                                : () => _acceptEmojiVerification(runner),
+                            label: _awaitingOtherDevice
+                                ? context.messages
+                                    .settingsMatrixContinueVerificationLabel
+                                : context.messages.settingsMatrixAccept,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                if (isDone) ...[
-                  Text(
-                    context.messages.settingsMatrixVerificationSuccessLabel(
-                      '',
-                      runner?.keyVerification.deviceId ?? '',
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Icon(
-                    MdiIcons.shieldCheck,
-                    color: Colors.greenAccent,
-                    size: 128,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      LottiPrimaryButton(
-                        onPressed: () {
-                          unawaited(refreshUnverifiedDevices());
-                          runner?.stopTimer();
-                          pop();
-                        },
-                        label: context
-                            .messages.settingsMatrixVerificationSuccessConfirm,
+                    const SizedBox(height: 20),
+                  ],
+                  if (isDone) ...[
+                    Text(
+                      context.messages.settingsMatrixVerificationSuccessLabel(
+                        '',
+                        runner?.keyVerification.deviceId ?? '',
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 20),
+                    Icon(
+                      MdiIcons.shieldCheck,
+                      color: Colors.greenAccent,
+                      size: 128,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        LottiPrimaryButton(
+                          onPressed: () {
+                            unawaited(refreshUnverifiedDevices());
+                            runner?.stopTimer();
+                            pop();
+                          },
+                          label: context.messages
+                              .settingsMatrixVerificationSuccessConfirm,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -250,14 +255,10 @@ class _IncomingVerificationWrapperState
         if (!lock.tryAcquire()) return;
         unawaited(() async {
           try {
-            await showModalBottomSheet<void>(
+            await showVerificationModalSheet(
               context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              showDragHandle: true,
-              builder: (context) {
-                return IncomingVerificationModal(keyVerification);
-              },
+              title: context.messages.settingsMatrixVerifyLabel,
+              child: IncomingVerificationModal(keyVerification),
             );
           } finally {
             if (mounted) {
