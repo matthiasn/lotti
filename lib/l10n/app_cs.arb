@@ -1126,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Zrušit ověření",
   "settingsMatrixContinueVerificationLabel": "Přijměte na jiném zařízení pro pokračování",
   "settingsMatrixCount": "Počet",
+  "deleteDeviceLabel": "Odstranit zařízení",
+  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Odstranit",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixEnterValidUrl": "Zadejte platnou URL",

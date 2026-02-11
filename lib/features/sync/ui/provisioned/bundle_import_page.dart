@@ -86,10 +86,15 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
   }
 
   Future<void> _pasteFromClipboard() async {
-    final data = await Clipboard.getData('text/plain');
-    final text = data?.text?.trim();
-    if (text == null || text.isEmpty) return;
-    _textController.text = text;
+    try {
+      final data = await Clipboard.getData('text/plain');
+      final text = data?.text?.trim();
+      if (text == null || text.isEmpty) return;
+      _textController.text = text;
+      _importBundle(text);
+    } on PlatformException {
+      // Ignore clipboard access failures and keep manual paste as fallback.
+    }
   }
 
   @override

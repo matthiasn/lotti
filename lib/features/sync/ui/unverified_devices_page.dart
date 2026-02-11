@@ -74,9 +74,9 @@ class UnverifiedDevices extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(context.messages.settingsMatrixNoUnverifiedLabel),
-            const StatusIndicator(
+            StatusIndicator(
               Colors.greenAccent,
-              semanticsLabel: 'No unverified devices',
+              semanticsLabel: context.messages.settingsMatrixNoUnverifiedLabel,
             ),
           ],
         ),

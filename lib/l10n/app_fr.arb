@@ -1126,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Annuler la vérification",
   "settingsMatrixContinueVerificationLabel": "Accepter sur l'autre appareil pour continuer",
   "settingsMatrixCount": "Nombre",
+  "deleteDeviceLabel": "Supprimer l'appareil",
+  "deviceDeletedSuccess": "Appareil {deviceName} supprimé avec succès",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Échec de suppression de l'appareil : {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Supprimer",
   "settingsMatrixDiagnosticCopied": "Informations de diagnostic copiées dans le presse-papiers",
   "settingsMatrixDiagnosticCopyButton": "Copier dans le presse-papiers",

@@ -198,7 +198,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   if (isLastStepKey && emojis == null)
                     LottiPrimaryButton(
                       key: const Key('matrix_accept_verify'),
-                      onPressed: runner?.acceptEmojiVerification,
+                      onPressed: () => _acceptEmojiVerification(runner),
                       label: context
                           .messages.settingsMatrixAcceptVerificationLabel,
                     ),

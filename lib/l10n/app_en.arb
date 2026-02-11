@@ -1125,6 +1125,19 @@
   "settingsMatrixCancelVerificationLabel": "Cancel Verification",
   "settingsMatrixContinueVerificationLabel": "Accept on other device to continue",
   "settingsMatrixCount": "Count",
+  "deleteDeviceLabel": "Delete device",
+  "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Failed to delete device: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Delete",
   "settingsMatrixDiagnosticCopied": "Diagnostic info copied to clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copy to Clipboard",

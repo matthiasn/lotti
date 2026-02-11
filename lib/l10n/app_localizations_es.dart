@@ -2905,6 +2905,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixCount => 'Cantidad';
 
   @override
+  String get deleteDeviceLabel => 'Eliminar dispositivo';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispositivo $deviceName eliminado correctamente';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Error al eliminar el dispositivo: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Eliminar';
 
   @override

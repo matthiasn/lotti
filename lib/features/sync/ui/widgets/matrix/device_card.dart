@@ -40,7 +40,7 @@ class DeviceCard extends ConsumerWidget {
               IconButton(
                 padding: const EdgeInsets.all(10),
                 icon: Semantics(
-                  label: 'Delete device',
+                  label: context.messages.deleteDeviceLabel,
                   child: Icon(MdiIcons.trashCanOutline),
                 ),
                 onPressed: () async {
@@ -48,10 +48,13 @@ class DeviceCard extends ConsumerWidget {
                     await matrixService.deleteDevice(deviceKeys);
                     refreshListCallback();
                     if (context.mounted) {
+                      final deviceName = deviceKeys.deviceDisplayName ??
+                          deviceKeys.deviceId ??
+                          'unknown';
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Device ${deviceKeys.deviceDisplayName ?? deviceKeys.deviceId ?? 'unknown'} deleted successfully',
+                            context.messages.deviceDeletedSuccess(deviceName),
                           ),
                         ),
                       );
@@ -60,7 +63,9 @@ class DeviceCard extends ConsumerWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Failed to delete device: $e'),
+                          content: Text(
+                            context.messages.deviceDeleteFailed('$e'),
+                          ),
                           backgroundColor: Colors.red,
                         ),
                       );

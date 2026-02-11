@@ -92,4 +92,44 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('renders device name and user ID', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DeviceCard(
+          mockDeviceKeys,
+          refreshListCallback: () {},
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pixel 7'), findsOneWidget);
+    expect(find.text('@user:server'), findsOneWidget);
+    expect(find.text('Verify'), findsOneWidget);
+  });
+
+  testWidgets('shows device ID when display name is null', (tester) async {
+    when(() => mockDeviceKeys.deviceDisplayName).thenReturn(null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        DeviceCard(
+          mockDeviceKeys,
+          refreshListCallback: () {},
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('DEVICE1'), findsOneWidget);
+  });
 }

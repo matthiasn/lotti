@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -57,8 +58,7 @@ void main() {
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.clearPersistedRoom())
-        .thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
     when(() => mockMatrixService.getRoom())
         .thenAnswer((_) async => '!room:example.com');
     when(
@@ -324,6 +324,79 @@ void main() {
         find.text(context.messages.provisionedSyncSummaryRoom),
         findsOneWidget,
       );
+    });
+  });
+
+  group('desktop paste button', () {
+    testWidgets('paste button appears on desktop', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.content_paste), findsOneWidget);
+    });
+
+    testWidgets('paste button imports from clipboard', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.getData') {
+            return <String, dynamic>{'text': validBase64};
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(
+        find.text(context.messages.provisionedSyncPasteClipboard),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show the decoded bundle summary
+      expect(find.text('https://matrix.example.com'), findsOneWidget);
+      expect(find.text('@alice:example.com'), findsOneWidget);
     });
   });
 

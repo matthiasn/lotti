@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
@@ -412,4 +413,83 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('copy button copies handover data on desktop', (tester) async {
+    final wasDesktop = isDesktop;
+    isDesktop = true;
+    addTearDown(() => isDesktop = wasDesktop);
+
+    String? clipboardText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          final args = call.arguments as Map<dynamic, dynamic>;
+          clipboardText = args['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+    });
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ProvisionedStatusWidget(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController(const []),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final copyFinder = find.byKey(const Key('statusCopyHandoverData'));
+    await tester.ensureVisible(copyFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(copyFinder);
+    await tester.pumpAndSettle();
+
+    expect(clipboardText, isNotNull);
+
+    final context = tester.element(find.byType(ProvisionedStatusWidget));
+    expect(
+      find.text(context.messages.provisionedSyncCopiedToClipboard),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'auto-verification launcher shows modal for unverified devices',
+    (tester) async {
+      final mockDevice = MockDeviceKeys();
+      when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
+      when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
+      when(() => mockDevice.userId).thenReturn('@alice:example.com');
+      when(() => mockMatrixService.verifyDevice(mockDevice))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController([mockDevice]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The auto-verification launcher should trigger a verification modal
+      expect(find.text('Other Device'), findsWidgets);
+    },
+  );
 }

@@ -1126,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Cancelar verificación",
   "settingsMatrixContinueVerificationLabel": "Aceptar en el otro dispositivo para continuar",
   "settingsMatrixCount": "Cantidad",
+  "deleteDeviceLabel": "Eliminar dispositivo",
+  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Eliminar",
   "settingsMatrixDiagnosticCopied": "Información de diagnóstico copiada al portapapeles",
   "settingsMatrixDiagnosticCopyButton": "Copiar al portapapeles",

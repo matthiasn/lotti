@@ -71,8 +71,7 @@ void main() {
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.clearPersistedRoom())
-        .thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
     when(() => mockMatrixService.getRoom())
         .thenAnswer((_) async => '!room:example.com');
     when(
@@ -241,6 +240,92 @@ void main() {
       expect(find.text('\u2022' * 24), findsOneWidget);
       expect(find.byIcon(Icons.copy), findsOneWidget);
     });
+
+    testWidgets(
+      'auto-advances via incoming verification stream',
+      (tester) async {
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final device = MockDeviceKeys();
+        final incomingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(incomingController.close);
+
+        var checks = 0;
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
+            .thenAnswer((_) => incomingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
+          checks += 1;
+          return checks < 3 ? [device] : [];
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        incomingController.add(runner);
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(pageIndexNotifier.value, 2);
+      },
+    );
+
+    testWidgets(
+      'does not auto-advance on mobile when verification completes',
+      (tester) async {
+        final wasDesktop = isDesktop;
+        isDesktop = false;
+        addTearDown(() => isDesktop = wasDesktop);
+
+        final keyVerification = MockKeyVerification();
+        final runner = MockKeyVerificationRunner();
+        final outgoingController =
+            StreamController<KeyVerificationRunner>.broadcast();
+        addTearDown(outgoingController.close);
+
+        when(() => keyVerification.isDone).thenReturn(true);
+        when(() => runner.lastStep).thenReturn('m.key.verification.done');
+        when(() => runner.keyVerification).thenReturn(keyVerification);
+        when(() => mockMatrixService.keyVerificationStream)
+            .thenAnswer((_) => outgoingController.stream);
+        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        outgoingController.add(runner);
+        await tester.pump(const Duration(seconds: 2));
+
+        // Should not auto-advance on mobile
+        expect(pageIndexNotifier.value, 1);
+      },
+    );
 
     testWidgets(
       'auto-advances to status page when verification completes and trust updates',

@@ -168,6 +168,7 @@ class _IncomingVerificationModalState
                           child: LottiPrimaryButton(
                             key: const Key('matrix_cancel_verification'),
                             onPressed: () async {
+                              await runner?.cancelVerification();
                               closeModal();
                             },
                             label: context.messages.settingsMatrixCancel,

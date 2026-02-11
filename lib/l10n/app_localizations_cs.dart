@@ -2834,6 +2834,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixCount => 'Počet';
 
   @override
+  String get deleteDeviceLabel => 'Odstranit zařízení';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Zařízení $deviceName bylo úspěšně odstraněno';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Zařízení se nepodařilo odstranit: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Odstranit';
 
   @override

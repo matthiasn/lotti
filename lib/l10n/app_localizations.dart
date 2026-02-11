@@ -5177,6 +5177,24 @@ abstract class AppLocalizations {
   /// **'Count'**
   String get settingsMatrixCount;
 
+  /// No description provided for @deleteDeviceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete device'**
+  String get deleteDeviceLabel;
+
+  /// No description provided for @deviceDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device {deviceName} deleted successfully'**
+  String deviceDeletedSuccess(Object deviceName);
+
+  /// No description provided for @deviceDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete device: {error}'**
+  String deviceDeleteFailed(Object error);
+
   /// No description provided for @settingsMatrixDeleteLabel.
   ///
   /// In en, this message translates to:

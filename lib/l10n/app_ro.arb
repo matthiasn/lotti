@@ -1126,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Anulează verificarea",
   "settingsMatrixContinueVerificationLabel": "Acceptați pe celălalt dispozitiv pentru a continua",
   "settingsMatrixCount": "Număr",
+  "deleteDeviceLabel": "Șterge dispozitivul",
+  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Șterge",
   "settingsMatrixDiagnosticCopied": "Informațiile de diagnostic au fost copiate în clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copiază în clipboard",

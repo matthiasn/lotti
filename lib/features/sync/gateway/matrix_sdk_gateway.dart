@@ -29,6 +29,9 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     );
   }
 
+  static const _roomEncryptionType = 'm.room.encryption';
+  static const _syncRoomStateType = 'm.lotti.sync_room';
+
   final Client _client;
   final SentEventRegistry _sentEventRegistry;
 
@@ -81,21 +84,21 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     required String name,
     List<String>? inviteUserIds,
   }) async {
-    return _client.createRoom(
+    final roomId = await _client.createRoom(
       visibility: Visibility.private,
       name: name,
       invite: inviteUserIds,
       preset: CreateRoomPreset.trustedPrivateChat,
       initialState: [
         StateEvent(
-          type: 'm.room.encryption',
+          type: _roomEncryptionType,
           stateKey: '',
           content: <String, Object?>{
             'algorithm': 'm.megolm.v1.aes-sha2',
           },
         ),
         StateEvent(
-          type: 'm.lotti.sync_room',
+          type: _syncRoomStateType,
           stateKey: '',
           content: <String, Object?>{
             'version': 1,
@@ -103,6 +106,41 @@ class MatrixSdkGateway implements MatrixSyncGateway {
         ),
       ],
     );
+
+    await _ensureRequiredRoomState(roomId);
+    return roomId;
+  }
+
+  Future<void> _ensureRequiredRoomState(String roomId) async {
+    final stateEvents = await _client.getRoomState(roomId);
+    final hasEncryptionState = stateEvents.any(
+      (event) => event.type == _roomEncryptionType && event.stateKey == '',
+    );
+    final hasSyncMarkerState = stateEvents.any(
+      (event) => event.type == _syncRoomStateType && event.stateKey == '',
+    );
+
+    if (!hasEncryptionState) {
+      await _client.setRoomStateWithKey(
+        roomId,
+        _roomEncryptionType,
+        '',
+        const <String, Object?>{
+          'algorithm': 'm.megolm.v1.aes-sha2',
+        },
+      );
+    }
+
+    if (!hasSyncMarkerState) {
+      await _client.setRoomStateWithKey(
+        roomId,
+        _syncRoomStateType,
+        '',
+        const <String, Object?>{
+          'version': 1,
+        },
+      );
+    }
   }
 
   @override

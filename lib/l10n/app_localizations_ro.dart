@@ -2854,6 +2854,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixCount => 'Număr';
 
   @override
+  String get deleteDeviceLabel => 'Șterge dispozitivul';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispozitivul $deviceName a fost șters cu succes';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Ștergerea dispozitivului a eșuat: $error';
+  }
+
+  @override
   String get settingsMatrixDeleteLabel => 'Șterge';
 
   @override

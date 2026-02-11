@@ -278,6 +278,89 @@ void main() {
     });
   });
 
+  group('KeyVerificationRunner - SDK onUpdate forwarding', () {
+    test('forwards SDK onUpdate to the previous handler', () {
+      final controller =
+          StreamController<KeyVerificationRunner>.broadcast(sync: true);
+      addTearDown(controller.close);
+
+      fakeAsync((async) {
+        final verification = _MockKeyVerification();
+        void Function()? capturedOnUpdate;
+        void Function()? storedOnUpdate;
+        when(() => verification.lastStep).thenReturn(null);
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.onUpdate).thenAnswer((_) => storedOnUpdate);
+
+        var previousCalled = false;
+        storedOnUpdate = () {
+          previousCalled = true;
+        };
+
+        // Capture the onUpdate that KeyVerificationRunner sets
+        when(() => verification.onUpdate = any()).thenAnswer((invocation) {
+          final next = invocation.positionalArguments.first as void Function()?;
+          capturedOnUpdate = next;
+          storedOnUpdate = next;
+          return null;
+        });
+
+        final runner = KeyVerificationRunner(
+          verification,
+          controller: controller,
+          name: 'Forward test',
+        );
+
+        // Simulate SDK calling onUpdate
+        capturedOnUpdate?.call();
+
+        expect(previousCalled, isTrue);
+        runner.stopTimer();
+      });
+    });
+
+    test('cancel step stops the timer', () {
+      final controller =
+          StreamController<KeyVerificationRunner>.broadcast(sync: true);
+      addTearDown(controller.close);
+
+      fakeAsync((async) {
+        final verification = _MockKeyVerification();
+        final steps = Queue<String?>.from([
+          null,
+          'm.key.verification.cancel',
+        ]);
+        String? lastStep;
+        when(() => verification.lastStep).thenAnswer((_) {
+          if (steps.isNotEmpty) {
+            lastStep = steps.removeFirst();
+          }
+          return lastStep;
+        });
+        when(() => verification.isDone).thenReturn(false);
+
+        final emitted = <KeyVerificationRunner>[];
+        controller.stream.listen(emitted.add);
+
+        final runner = KeyVerificationRunner(
+          verification,
+          controller: controller,
+          name: 'Cancel test',
+        );
+
+        async.elapse(const Duration(milliseconds: 100));
+        expect(runner.lastStep, 'm.key.verification.cancel');
+
+        // Timer should be stopped; no more emissions after this
+        final emissionCount = emitted.length;
+        async.elapse(const Duration(milliseconds: 500));
+        expect(emitted.length, emissionCount);
+
+        runner.stopTimer();
+      });
+    });
+  });
+
   group('verifyMatrixDevice', () {
     test('starts verification and publishes runner state', () async {
       final service = _MockMatrixService();

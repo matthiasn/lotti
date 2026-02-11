@@ -23,6 +23,23 @@ class MockMatrixFile extends Mock implements MatrixFile {}
 
 class MockGetVersionsResponse extends Mock implements GetVersionsResponse {}
 
+MatrixEvent _stateEvent({
+  required String type,
+  String stateKey = '',
+  Map<String, Object?> content = const <String, Object?>{},
+}) {
+  return MatrixEvent.fromJson(
+    <String, Object?>{
+      'event_id': r'$state-event',
+      'origin_server_ts': 0,
+      'sender': '@tester:server',
+      'type': type,
+      'state_key': stateKey,
+      'content': content,
+    },
+  );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -62,6 +79,30 @@ void main() {
     when(() => client.onKeyVerificationRequest.stream)
         .thenAnswer((_) => keyVerificationController.stream);
     when(() => client.dispose()).thenAnswer((_) async {});
+    when(() => client.getRoomState(any())).thenAnswer(
+      (_) async => [
+        _stateEvent(
+          type: 'm.room.encryption',
+          content: const <String, Object?>{
+            'algorithm': 'm.megolm.v1.aes-sha2',
+          },
+        ),
+        _stateEvent(
+          type: 'm.lotti.sync_room',
+          content: const <String, Object?>{
+            'version': 1,
+          },
+        ),
+      ],
+    );
+    when(
+      () => client.setRoomStateWithKey(
+        any(),
+        any(),
+        any(),
+        any(),
+      ),
+    ).thenAnswer((_) async => r'$state');
 
     disposed = false;
     sentEventRegistry = SentEventRegistry();
@@ -191,6 +232,15 @@ void main() {
         .firstWhere((event) => event.type == 'm.room.encryption')
         .content;
     expect(encryption['algorithm'], 'm.megolm.v1.aes-sha2');
+    verify(() => client.getRoomState('!room:server')).called(1);
+    verifyNever(
+      () => client.setRoomStateWithKey(
+        any(),
+        any(),
+        any(),
+        any(),
+      ),
+    );
   });
 
   test('joinRoom and leaveRoom delegate to client', () async {
@@ -320,6 +370,95 @@ void main() {
 
     expect(roomId, '!room:server');
     verifyNever(() => client.getRoomById(any<String>()));
+    verify(() => client.getRoomState('!room:server')).called(1);
+  });
+
+  test('createRoom backfills encryption state when missing', () async {
+    when(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: <String>[],
+        preset: CreateRoomPreset.trustedPrivateChat,
+        initialState: any(named: 'initialState'),
+      ),
+    ).thenAnswer((_) async => '!room:server');
+    when(() => client.getRoomState('!room:server')).thenAnswer(
+      (_) async => [
+        _stateEvent(
+          type: 'm.lotti.sync_room',
+          content: const <String, Object?>{'version': 1},
+        ),
+      ],
+    );
+
+    final roomId = await gateway.createRoom(
+      name: 'Room',
+      inviteUserIds: [],
+    );
+
+    expect(roomId, '!room:server');
+    verify(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'm.room.encryption',
+        '',
+        const <String, Object?>{'algorithm': 'm.megolm.v1.aes-sha2'},
+      ),
+    ).called(1);
+    verifyNever(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'm.lotti.sync_room',
+        '',
+        any(),
+      ),
+    );
+  });
+
+  test('createRoom backfills sync marker state when missing', () async {
+    when(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: <String>[],
+        preset: CreateRoomPreset.trustedPrivateChat,
+        initialState: any(named: 'initialState'),
+      ),
+    ).thenAnswer((_) async => '!room:server');
+    when(() => client.getRoomState('!room:server')).thenAnswer(
+      (_) async => [
+        _stateEvent(
+          type: 'm.room.encryption',
+          content: const <String, Object?>{
+            'algorithm': 'm.megolm.v1.aes-sha2',
+          },
+        ),
+      ],
+    );
+
+    final roomId = await gateway.createRoom(
+      name: 'Room',
+      inviteUserIds: [],
+    );
+
+    expect(roomId, '!room:server');
+    verify(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'm.lotti.sync_room',
+        '',
+        const <String, Object?>{'version': 1},
+      ),
+    ).called(1);
+    verifyNever(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'm.room.encryption',
+        '',
+        any(),
+      ),
+    );
   });
 
   test('timelineEvents currently returns an empty stream', () async {

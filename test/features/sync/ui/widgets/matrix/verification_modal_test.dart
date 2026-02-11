@@ -204,4 +204,139 @@ void main() {
 
     await tester.pump(const Duration(seconds: 30));
   });
+
+  testWidgets(
+    'tapping Accept transitions to awaiting other device state',
+    (tester) async {
+      final runner = MockKeyVerificationRunner();
+      final keyVerification = MockKeyVerification();
+      final emojis = List.generate(
+        8,
+        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
+      );
+
+      when(() => runner.lastStep).thenReturn('m.key.verification.key');
+      when(() => runner.emojis).thenReturn(emojis);
+      when(() => runner.keyVerification).thenReturn(keyVerification);
+      when(() => keyVerification.isDone).thenReturn(false);
+      when(runner.acceptEmojiVerification).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      controller.add(runner);
+      await tester.pump();
+
+      await tester.tap(find.text('Accept'));
+      await tester.pump();
+
+      verify(runner.acceptEmojiVerification).called(1);
+      expect(
+        find.text('Accept on other device to continue'),
+        findsWidgets,
+      );
+    },
+  );
+
+  testWidgets(
+    'shows accept verification button for key step without emojis',
+    (tester) async {
+      final runner = MockKeyVerificationRunner();
+      final keyVerification = MockKeyVerification();
+
+      when(() => runner.lastStep).thenReturn('m.key.verification.key');
+      when(() => runner.emojis).thenReturn(null);
+      when(() => runner.keyVerification).thenReturn(keyVerification);
+      when(() => keyVerification.isDone).thenReturn(false);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      controller.add(runner);
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('matrix_accept_verify')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'shows user ID under device name',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Pixel 7'), findsOneWidget);
+      expect(find.text('@user:server'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows device ID when display name is null',
+    (tester) async {
+      when(() => mockDeviceKeys.deviceDisplayName).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('DEVICE1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'manual start button works when no runner is present',
+    (tester) async {
+      when(() => mockMatrixService.verifyDevice(any()))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          VerificationModal(mockDeviceKeys),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      final startBtn = find.byKey(const Key('matrix_start_verify'));
+      expect(startBtn, findsOneWidget);
+
+      // Tap to retry manually
+      await tester.tap(startBtn);
+      await tester.pump();
+      verify(() => mockMatrixService.verifyDevice(mockDeviceKeys))
+          .called(greaterThan(1));
+    },
+  );
 }

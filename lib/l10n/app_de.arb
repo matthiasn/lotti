@@ -1126,6 +1126,19 @@
   "settingsMatrixCancelVerificationLabel": "Verifizierung abbrechen",
   "settingsMatrixContinueVerificationLabel": "Auf anderem Gerät akzeptieren, um fortzufahren",
   "settingsMatrixCount": "Anzahl",
+  "deleteDeviceLabel": "Gerät löschen",
+  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "settingsMatrixDeleteLabel": "Löschen",
   "settingsMatrixDiagnosticCopied": "Diagnoseinfos in die Zwischenablage kopiert",
   "settingsMatrixDiagnosticCopyButton": "In Zwischenablage kopieren",
