@@ -667,6 +667,52 @@ class MatrixService {
         session: _sessionManager,
         storage: _secureStorage,
       );
+
+  /// Changes the password for the currently logged-in user and updates
+  /// the stored configuration.
+  ///
+  /// If the password change succeeds on the server but persisting the new
+  /// config fails, attempts to rollback the server-side password. Both the
+  /// original persist error and any rollback failure are logged as critical
+  /// via [LoggingService.captureException].
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await _gateway.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
+    try {
+      final config = await loadConfig();
+      if (config != null) {
+        await setConfig(config.copyWith(password: newPassword));
+      }
+    } catch (persistError, persistStack) {
+      _loggingService.captureException(
+        persistError,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'changePassword.persist',
+        stackTrace: persistStack,
+      );
+      // Attempt to rollback the server-side password change.
+      try {
+        await _gateway.changePassword(
+          oldPassword: newPassword,
+          newPassword: oldPassword,
+        );
+      } catch (rollbackError, rollbackStack) {
+        _loggingService.captureException(
+          rollbackError,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'changePassword.rollback',
+          stackTrace: rollbackStack,
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
         config,
         session: _sessionManager,

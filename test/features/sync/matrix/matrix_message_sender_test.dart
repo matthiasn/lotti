@@ -1351,7 +1351,7 @@ void main() {
     expect(callbackCount, 0);
   });
 
-  test('returns false when attachment file is missing', () async {
+  test('skips missing attachment file gracefully', () async {
     when(
       () => room.sendTextEvent(
         any<String>(),
@@ -1407,13 +1407,22 @@ void main() {
       onSent: (_, __) {},
     );
 
-    expect(result, isFalse);
+    // Missing files are skipped gracefully — the journal entity is still sent
+    expect(result, isTrue);
     verify(
-      () => loggingService.captureException(
-        any<Object>(),
+      () => loggingService.captureEvent(
+        any<String>(
+          that: contains('skipping missing file'),
+        ),
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    // The JSON file is still sent as a file event, only the image is skipped
+    verify(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
       ),
     ).called(1);
   });

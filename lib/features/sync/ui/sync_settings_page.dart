@@ -4,6 +4,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/sync/ui/matrix_settings_modal.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -22,6 +23,7 @@ class SyncSettingsPage extends StatelessWidget {
           children: [
             // 1) Matrix sync setup modal (top-level)
             const MatrixSettingsCard(),
+            const ProvisionedSyncSettingsCard(),
             AnimatedModernSettingsCardWithIcon(
               title: context.messages.settingsMatrixMaintenanceTitle,
               subtitle: context.messages.settingsMatrixMaintenanceSubtitle,

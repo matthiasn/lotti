@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.854] - 2026-02-10
+## [0.9.855] - 2026-02-10
+### Added
+- Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle (homeserver, user, password, room ID), log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Includes full validation, step-by-step progress UI, error handling with retry, and a status page showing the connected account.
+
 ### Changed
 - Flexible Ratings Model: Session ratings are now driven by a catalog registry instead of hardcoded questions. Each rating dimension snapshots its question metadata (question text, input type, option labels) at save time, making stored ratings fully self-describing. Unknown catalogs (e.g. received via sync from a newer client) render in read-only mode with a graceful fallback chain: stored metadata, catalog lookup, then dimension key.
 

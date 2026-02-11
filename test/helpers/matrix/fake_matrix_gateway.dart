@@ -120,6 +120,12 @@ class FakeMatrixGateway implements MatrixSyncGateway {
       List<DeviceKeys>.from(_unverifiedDevices);
 
   @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {}
+
+  @override
   Future<void> dispose() async {
     disposed = true;
     await _loginStateController.close();

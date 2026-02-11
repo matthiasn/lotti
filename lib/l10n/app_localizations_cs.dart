@@ -2363,6 +2363,84 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptUserPromptLabel => 'Uživatelský prompt';
 
   @override
+  String get provisionedSyncConfigureButton => 'Konfigurovat';
+
+  @override
+  String get provisionedSyncCopiedToClipboard => 'Zkopírováno do schránky';
+
+  @override
+  String get provisionedSyncDisconnect => 'Odpojit';
+
+  @override
+  String get provisionedSyncDone => 'Synchronizace úspěšně nakonfigurována';
+
+  @override
+  String get provisionedSyncError => 'Konfigurace selhala';
+
+  @override
+  String get provisionedSyncErrorConfigurationFailed =>
+      'Při konfiguraci došlo k chybě. Zkuste to znovu.';
+
+  @override
+  String get provisionedSyncErrorLoginFailed =>
+      'Přihlášení selhalo. Zkontrolujte své přihlašovací údaje a zkuste to znovu.';
+
+  @override
+  String get provisionedSyncImportButton => 'Importovat';
+
+  @override
+  String get provisionedSyncImportHint => 'Vložte provizní kód sem';
+
+  @override
+  String get provisionedSyncImportTitle =>
+      'Importovat konfiguraci synchronizace';
+
+  @override
+  String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
+
+  @override
+  String get provisionedSyncJoiningRoom =>
+      'Připojování k synchronizační místnosti...';
+
+  @override
+  String get provisionedSyncLoggingIn => 'Přihlašování...';
+
+  @override
+  String get provisionedSyncReady =>
+      'Naskenujte tento QR kód na svém mobilním zařízení';
+
+  @override
+  String get provisionedSyncRetry => 'Zkusit znovu';
+
+  @override
+  String get provisionedSyncRotatingPassword => 'Zabezpečování účtu...';
+
+  @override
+  String get provisionedSyncScanButton => 'Naskenovat QR kód';
+
+  @override
+  String get provisionedSyncShowQr => 'Zobrazit QR kód pro spárování';
+
+  @override
+  String get provisionedSyncSubtitle =>
+      'Nastavit synchronizaci z provizního balíčku';
+
+  @override
+  String get provisionedSyncSummaryHomeserver => 'Server';
+
+  @override
+  String get provisionedSyncSummaryRoom => 'Místnost';
+
+  @override
+  String get provisionedSyncSummaryUser => 'Uživatel';
+
+  @override
+  String get provisionedSyncTitle => 'Provizní synchronizace';
+
+  @override
+  String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
+
+  @override
   String get referenceImageContinue => 'Pokračovat';
 
   @override

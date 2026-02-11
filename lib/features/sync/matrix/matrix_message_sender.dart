@@ -210,13 +210,23 @@ class MatrixMessageSender {
     Uint8List? bytes,
   }) async {
     try {
+      final file = File(fullPath);
+      if (bytes == null && !file.existsSync()) {
+        _loggingService.captureEvent(
+          'skipping missing file $relativePath (not found at $fullPath)',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg',
+        );
+        return true;
+      }
+
       _loggingService.captureEvent(
         'trying to send $relativePath file message to $room',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
 
-      final fileBytes = bytes ?? await File(fullPath).readAsBytes();
+      final fileBytes = bytes ?? await file.readAsBytes();
       final eventId = await room.sendFileEvent(
         MatrixFile(
           bytes: fileBytes,

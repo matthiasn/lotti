@@ -14,3 +14,23 @@ abstract class MatrixConfig with _$MatrixConfig {
   factory MatrixConfig.fromJson(Map<String, dynamic> json) =>
       _$MatrixConfigFromJson(json);
 }
+
+@Freezed(toStringOverride: false)
+abstract class SyncProvisioningBundle with _$SyncProvisioningBundle {
+  const factory SyncProvisioningBundle({
+    required int v,
+    required String homeServer,
+    required String user,
+    required String password,
+    required String roomId,
+  }) = _SyncProvisioningBundle;
+
+  const SyncProvisioningBundle._();
+
+  factory SyncProvisioningBundle.fromJson(Map<String, dynamic> json) =>
+      _$SyncProvisioningBundleFromJson(json);
+
+  @override
+  String toString() => 'SyncProvisioningBundle(v: $v, homeServer: $homeServer, '
+      'user: $user, password: <redacted>, roomId: $roomId)';
+}
