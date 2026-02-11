@@ -367,9 +367,43 @@ void main() {
       });
     });
 
+    group('Mistral Image Generation Model', () {
+      test('should have image generation model in mistralModels', () {
+        final imageGenModel = mistralModels.where(
+          (m) => m.outputModalities.contains(Modality.image),
+        );
+
+        expect(imageGenModel, isNotEmpty,
+            reason:
+                'Should have at least one image generation model in Mistral');
+
+        final model = imageGenModel.first;
+        expect(model.providerModelId, equals(ftueMistralImageModelId));
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.outputModalities, contains(Modality.image));
+        expect(model.isReasoningModel, isFalse);
+      });
+
+      test('image generation model should have valid configuration', () {
+        final imageGenModel = mistralModels.firstWhere(
+          (m) => m.outputModalities.contains(Modality.image),
+        );
+
+        expect(imageGenModel.name, contains('FLUX'));
+        expect(imageGenModel.description, isNotEmpty);
+        expect(
+            imageGenModel.providerModelId, equals('mistral-image-generation'));
+      });
+
+      test('ftueMistralImageModelId constant is valid', () {
+        expect(ftueMistralImageModelId, equals('mistral-image-generation'));
+        expect(findMistralKnownModel(ftueMistralImageModelId), isNotNull);
+      });
+    });
+
     group('Mistral Models', () {
-      test('should have Fast, Reasoning, and Audio models', () {
-        expect(mistralModels.length, greaterThanOrEqualTo(3));
+      test('should have Fast, Reasoning, Audio, and Image models', () {
+        expect(mistralModels.length, greaterThanOrEqualTo(4));
 
         final flashModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralFlashModelId,
@@ -461,12 +495,19 @@ void main() {
         // Verify audio model (Voxtral Small)
         expect(models.audio.providerModelId, equals(ftueMistralAudioModelId));
         expect(models.audio.inputModalities, contains(Modality.audio));
+
+        // Verify image model (FLUX via Agents API)
+        expect(models.image, isNotNull,
+            reason: 'Image model should be present');
+        expect(models.image!.providerModelId, equals(ftueMistralImageModelId));
+        expect(models.image!.outputModalities, contains(Modality.image));
       });
 
       test('FTUE model constants are valid Mistral model IDs', () {
         expect(findMistralKnownModel(ftueMistralFlashModelId), isNotNull);
         expect(findMistralKnownModel(ftueMistralReasoningModelId), isNotNull);
         expect(findMistralKnownModel(ftueMistralAudioModelId), isNotNull);
+        expect(findMistralKnownModel(ftueMistralImageModelId), isNotNull);
       });
     });
   });

@@ -68,6 +68,13 @@ The repository layer has been refactored for better separation of concerns:
   - Accumulates objects across chunks and ignores braces inside string literals
   - Returns decoded `Map<String,dynamic>` objects ready for adapter consumption
 
+- **`mistral_image_generation_repository.dart`**: Handles image generation via Mistral Agents API
+  - 3-step flow: create ephemeral agent → start conversation → download generated image
+  - Uses FLUX1.1 pro Ultra for image generation (EU-sovereign)
+  - Ephemeral agent cleanup after each generation
+  - Custom `MistralImageGenerationException` for error handling
+  - Configurable timeouts for each API step
+
 - **`whisper_inference_repository.dart`**: Handles audio transcription
   - Interfaces with locally running Whisper instances
   - Converts audio to transcription responses
@@ -346,6 +353,10 @@ The system supports multiple inference providers through a modular architecture:
   - Usage statistics tracking (prompt tokens, completion tokens, thoughts tokens, cached tokens)
   - Processing duration measurement for performance monitoring
   - **Image Generation**: Nano Banana Pro model for generating cover art images (16:9 aspect ratio, 2K resolution)
+- **Mistral**: EU-sovereign AI provider (Paris-based infrastructure)
+  - Text inference via OpenAI-compatible API
+  - Audio transcription via Voxtral models
+  - **Image Generation**: FLUX1.1 pro Ultra via Mistral Agents API (EU data sovereignty)
 - **OpenRouter**: Access to multiple models through unified API
 - **Nebius AI Studio**: Enterprise AI platform support
 - **Generic OpenAI-Compatible**: Any service implementing OpenAI's API specification
@@ -800,7 +811,9 @@ The system supports seven AI response types:
    - Uses `GeneratedPromptCard` UI with prominent copy button
 
 7. **Image Generation** (`AiResponseType.imageGeneration`)
-   - Generates cover art images directly using AI (Gemini Nano Banana Pro model)
+   - Generates cover art images directly using AI
+   - Supported providers: Gemini (Nano Banana Pro) and Mistral (FLUX1.1 pro Ultra via Agents API)
+   - Provider-agnostic: automatically detects any configured provider with an image-capable model
    - Triggered from audio entries linked to tasks via action menu
    - Uses task context and audio transcript to build image prompts
    - Produces 16:9 aspect ratio images at 2K resolution (1920x1080) suitable for task cover art
@@ -811,26 +824,31 @@ The system supports seven AI response types:
 
 ### Overview
 
-The AI system supports native image generation for creating task cover art. This feature uses Gemini's image generation model (Nano Banana Pro) to generate images based on task context and user voice descriptions.
+The AI system supports native image generation for creating task cover art. This feature is provider-agnostic — it automatically detects any configured provider that has a model with image output capability. Currently supported:
+
+- **Gemini**: Uses Nano Banana Pro model for direct image generation
+- **Mistral**: Uses FLUX1.1 pro Ultra via the Mistral Agents API (EU data sovereignty — all data processed in Europe)
 
 ### How It Works
 
 1. **Trigger**: User selects "Generate cover art" from an audio entry's action menu (when linked to a task)
-2. **Prompt Building**: System constructs a prompt from:
+2. **Provider Detection**: `ImageGenerationController` searches all configured providers for any with an image-capable model (`Modality.image` in output modalities)
+3. **Prompt Building**: System constructs a prompt from:
    - Audio transcript (user's verbal description of desired image)
    - Task title and status
    - System message from preconfigured cover art generation prompt
-3. **Generation**: Gemini image generation model creates the image
-4. **Review Modal**: User can:
+4. **Generation**: Routes to the appropriate provider-specific repository
+5. **Review Modal**: User can:
    - Accept the image as cover art
    - Edit the prompt and regenerate
    - Cancel without saving
-5. **Import**: Accepted images are saved as journal entries and set as the task's cover art
+6. **Import**: Accepted images are saved as journal entries and set as the task's cover art
 
 ### Implementation Components
 
 #### State Management
 - **`ImageGenerationController`**: Riverpod controller managing generation state
+  - Provider-agnostic lookup via `_getImageGenerationProviderAndModel()` — searches all configured providers
 - **`ImageGenerationState`**: Freezed union type with states:
   - `initial`: Idle state before generation
   - `generating`: In-progress with prompt
@@ -838,8 +856,9 @@ The AI system supports native image generation for creating task cover art. This
   - `error`: Failed with error message
 
 #### Repository Layer
+- **`CloudInferenceRepository.generateImage()`**: Routes to the correct provider-specific repository based on `InferenceProviderType`
 - **`GeminiInferenceRepository.generateImage()`**: Direct Gemini API call for image generation
-- **`CloudInferenceRepository.generateImage()`**: Routes to Gemini repository
+- **`MistralImageGenerationRepository.generateImage()`**: 3-step Agents API flow (create agent → start conversation → download image)
 - **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 16:9 aspect ratio and 2K resolution
 
 #### UI Components
@@ -858,7 +877,9 @@ The AI system supports native image generation for creating task cover art. This
 
 ### Model Configuration
 
-The Nano Banana Pro model is defined in `known_models.dart`:
+Image generation models are defined in `known_models.dart`:
+
+**Gemini** — Nano Banana Pro:
 ```dart
 const KnownModel(
   providerModelId: 'models/gemini-3-pro-image-preview',
@@ -866,10 +887,23 @@ const KnownModel(
   inputModalities: [Modality.text, Modality.image],
   outputModalities: [Modality.text, Modality.image],
   isReasoningModel: false,
-  description: 'High-quality image generation model for cover art and visual mnemonics. '
-      'Generates images directly from task context and voice descriptions.',
+  description: 'High-quality image generation model for cover art and visual mnemonics.',
 )
 ```
+
+**Mistral** — FLUX1.1 pro Ultra (via Agents API):
+```dart
+const KnownModel(
+  providerModelId: 'mistral-image-generation',
+  name: 'Mistral Image Generation (FLUX)',
+  inputModalities: [Modality.text],
+  outputModalities: [Modality.text, Modality.image],
+  isReasoningModel: false,
+  description: 'EU-sovereign image generation powered by FLUX1.1 pro Ultra.',
+)
+```
+
+Note: Mistral's image generation uses a different flow (Agents API with `image_generation` tool) rather than a direct model call. The `providerModelId` serves as a logical identifier; the actual model used for prompt interpretation is configurable (defaults to `mistral-medium-latest`).
 
 ### Preconfigured Prompt
 
@@ -1125,6 +1159,7 @@ The conversation layer enables:
 Each provider has custom exception types:
 - `ModelNotInstalledException`: Ollama model not installed
 - `WhisperTranscriptionException`: Audio transcription errors
+- `MistralImageGenerationException`: Mistral Agents API image generation errors (with status code and original error)
 - `InferenceError`: General inference failures
 
 ### Concurrency Protection

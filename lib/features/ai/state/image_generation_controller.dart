@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -53,7 +53,8 @@ typedef ImageGenerationParams = ({String entityId});
 ///
 /// This controller manages the state of image generation, including:
 /// - Building prompts from task context and audio descriptions
-/// - Calling the Gemini image generation API
+/// - Finding a configured provider with image generation capability
+///   (Gemini, Mistral, or any future provider)
 /// - Managing generation state (idle, generating, success, error)
 @riverpod
 class ImageGenerationController extends _$ImageGenerationController {
@@ -169,21 +170,19 @@ class ImageGenerationController extends _$ImageGenerationController {
         name: 'ImageGenerationController',
       );
 
-      // Get the Gemini provider with image generation capability
-      final provider = await _getImageGenerationProvider();
+      // Find a provider with an image-capable model
+      final result = await _getImageGenerationProviderAndModel();
 
       // Check if still mounted after async operation
       if (!ref.mounted) return;
 
-      if (provider == null) {
-        throw Exception('No Gemini provider configured for image generation');
+      if (result == null) {
+        throw Exception(
+          'No provider with image generation capability configured',
+        );
       }
 
-      // Get the image generation model
-      final model = _getImageGenerationModel();
-      if (model == null) {
-        throw Exception('Image generation model not found');
-      }
+      final (provider, model) = result;
 
       // Get the system message from the preconfigured prompt if not provided
       final effectiveSystemMessage =
@@ -260,25 +259,29 @@ class ImageGenerationController extends _$ImageGenerationController {
     state = const ImageGenerationState.initial();
   }
 
-  /// Gets the first available Gemini provider for image generation.
-  /// Uses repository directly to avoid autoDispose provider lifecycle issues.
-  Future<AiConfigInferenceProvider?> _getImageGenerationProvider() async {
+  /// Finds the first configured provider that has a model with image output
+  /// capability. Searches across all provider types (Gemini, Mistral, etc.).
+  Future<(AiConfigInferenceProvider, AiConfigModel)?>
+      _getImageGenerationProviderAndModel() async {
     final repository = ref.read(aiConfigRepositoryProvider);
-    final providers =
+    final allProviders =
         await repository.getConfigsByType(AiConfigType.inferenceProvider);
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
 
-    return providers.whereType<AiConfigInferenceProvider>().firstWhere(
-          (p) => p.inferenceProviderType == InferenceProviderType.gemini,
-          orElse: () => throw Exception('No Gemini provider found'),
-        );
-  }
+    for (final provider
+        in allProviders.whereType<AiConfigInferenceProvider>()) {
+      final imageModel = allModels
+          .whereType<AiConfigModel>()
+          .where((m) => m.inferenceProviderId == provider.id)
+          .where((m) => m.outputModalities.contains(Modality.image))
+          .firstOrNull;
 
-  /// Gets the image generation model (Nano Banana Pro).
-  KnownModel? _getImageGenerationModel() {
-    return geminiModels.firstWhere(
-      (m) => m.outputModalities.contains(Modality.image),
-      orElse: () => throw Exception('No image generation model found'),
-    );
+      if (imageModel != null) {
+        return (provider, imageModel);
+      }
+    }
+
+    return null;
   }
 
   /// Creates a PromptBuilderHelper with all required repositories.

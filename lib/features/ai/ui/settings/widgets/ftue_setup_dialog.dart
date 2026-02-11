@@ -47,12 +47,13 @@ class FtueSetupConfig {
   /// Default configuration for Mistral FTUE
   static const mistral = FtueSetupConfig(
     providerName: 'Mistral',
-    modelCount: 3,
+    modelCount: 4,
     modelDescription: 'Magistral Medium (reasoning), Mistral Small (fast), '
-        'Voxtral Small (audio)',
-    promptCount: 8,
+        'Voxtral Small (audio), FLUX (image)',
+    promptCount: 9,
     promptDescription:
-        'Optimized: Magistral for reasoning, Mistral Small for speed',
+        'Optimized: Magistral for reasoning, Mistral Small for speed, '
+        'FLUX for EU-sovereign image generation',
     categoryName: ftueMistralCategoryName,
   );
 

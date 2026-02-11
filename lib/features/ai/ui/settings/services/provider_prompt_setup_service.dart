@@ -1596,8 +1596,9 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for Mistral providers.
   ///
   /// This creates:
-  /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium, Audio/Voxtral Small)
-  /// 2. 8 prompts with appropriate model assignments (no image generation)
+  /// 1. Four models (Fast/Mistral Small, Reasoning/Magistral Medium,
+  ///    Audio/Voxtral Small, Image/FLUX via Agents API)
+  /// 2. 9 prompts with appropriate model assignments
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [MistralFtueResult] with details of what was created.
@@ -1637,6 +1638,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       flashModel: modelResult.flash,
       reasoningModel: modelResult.reasoning,
       audioModel: modelResult.audio,
+      imageModel: modelResult.image,
     );
 
     // Step 3: Create or update category with auto-selection
@@ -1647,6 +1649,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       flashModelId: modelResult.flash.id,
       reasoningModelId: modelResult.reasoning.id,
       audioModelId: modelResult.audio.id,
+      imageModelId: modelResult.image?.id,
     );
 
     return MistralFtueResult(
@@ -1660,7 +1663,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Ensures the three FTUE models exist for the given Mistral provider.
+  /// Ensures the FTUE models exist for the given Mistral provider.
   Future<_MistralFtueModelResult?> _ensureMistralFtueModelsExist({
     required AiConfigRepository repository,
     required String providerId,
@@ -1685,11 +1688,14 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       (known: knownModels.flash, id: ftueMistralFlashModelId),
       (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
       (known: knownModels.audio, id: ftueMistralAudioModelId),
+      if (knownModels.image != null)
+        (known: knownModels.image!, id: ftueMistralImageModelId),
     ];
 
     AiConfigModel? flashModel;
     AiConfigModel? reasoningModel;
     AiConfigModel? audioModel;
+    AiConfigModel? imageModel;
 
     for (final config in modelConfigs) {
       // Check if model with same providerModelId already exists
@@ -1719,6 +1725,8 @@ extension MistralFtueSetup on ProviderPromptSetupService {
           reasoningModel = model;
         case ftueMistralAudioModelId:
           audioModel = model;
+        case ftueMistralImageModelId:
+          imageModel = model;
       }
     }
 
@@ -1730,6 +1738,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       flash: flashModel,
       reasoning: reasoningModel,
       audio: audioModel,
+      image: imageModel,
       created: created,
       verified: verified,
     );
@@ -1741,6 +1750,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     required AiConfigModel flashModel,
     required AiConfigModel reasoningModel,
     required AiConfigModel audioModel,
+    AiConfigModel? imageModel,
   }) async {
     final created = <AiConfigPrompt>[];
     final allPrompts = <AiConfigPrompt>[];
@@ -1760,10 +1770,19 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     final promptConfigs = _getMistralFtuePromptConfigs();
 
     for (final config in promptConfigs) {
+      // Skip image prompts if no image model is available
+      if (config.modelVariant == 'image' && imageModel == null) {
+        skipped++;
+        continue;
+      }
+
+      // Safe to force-unwrap imageModel: the guard above skips 'image'
+      // configs when imageModel is null.
       final model = switch (config.modelVariant) {
         'flash' => flashModel,
         'reasoning' => reasoningModel,
         'audio' => audioModel,
+        'image' => imageModel!,
         _ => flashModel,
       };
 
@@ -1815,7 +1834,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// - Magistral Medium (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
   /// - Mistral Small (Flash): Task Summary, Image Analysis (fast processing)
   /// - Voxtral Small (Audio): Audio transcription tasks
-  /// Note: No image generation model available for Mistral
+  /// - Mistral Image Generation (Image): Cover art generation (EU-sovereign)
   List<FtuePromptConfig> _getMistralFtuePromptConfigs() {
     return const [
       // Audio Transcription -> Audio model (dedicated transcription)
@@ -1874,7 +1893,12 @@ extension MistralFtueSetup on ProviderPromptSetupService {
         promptName: 'Image Prompt Mistral Magistral',
       ),
 
-      // Note: No cover art generation - Mistral has no image generation model
+      // Cover Art Generation -> Image model (EU-sovereign image generation)
+      FtuePromptConfig(
+        template: coverArtGenerationPrompt,
+        modelVariant: 'image',
+        promptName: 'Cover Art Mistral FLUX',
+      ),
     ];
   }
 
@@ -1885,6 +1909,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     required String flashModelId,
     required String reasoningModelId,
     required String audioModelId,
+    String? imageModelId,
   }) async {
     const categoryName = ftueMistralCategoryName;
 
@@ -1896,6 +1921,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       prompts,
       flashModelId: flashModelId,
       reasoningModelId: reasoningModelId,
+      imageModelId: imageModelId,
       audioModelId: audioModelId,
     );
 
@@ -1939,6 +1965,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     required String flashModelId,
     required String reasoningModelId,
     required String audioModelId,
+    String? imageModelId,
   }) {
     final map = <AiResponseType, List<String>>{};
 
@@ -1990,7 +2017,13 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       map[AiResponseType.imagePromptGeneration] = [imagePrompt];
     }
 
-    // Note: No image generation - Mistral has no image generation model
+    // Image Generation -> Image model (FLUX via Agents API)
+    if (imageModelId != null) {
+      final imageGen = findPromptId('cover_art_generation', imageModelId);
+      if (imageGen != null) {
+        map[AiResponseType.imageGeneration] = [imageGen];
+      }
+    }
 
     return map;
   }
@@ -2004,11 +2037,13 @@ class _MistralFtueModelResult {
     required this.audio,
     required this.created,
     required this.verified,
+    this.image,
   });
 
   final AiConfigModel flash;
   final AiConfigModel reasoning;
   final AiConfigModel audio;
+  final AiConfigModel? image;
   final List<AiConfigModel> created;
   final List<AiConfigModel> verified;
 }

@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/providers/gemini_inference_repository_provider
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/mistral_image_generation_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
@@ -26,6 +27,8 @@ class CloudInferenceRepository {
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
+        _mistralImageRepository =
+            MistralImageGenerationRepository(httpClient: httpClient),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
         _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
         _openAiTranscriptionRepository =
@@ -35,6 +38,7 @@ class CloudInferenceRepository {
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final MistralInferenceRepository _mistralRepository;
+  final MistralImageGenerationRepository _mistralImageRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
@@ -534,12 +538,14 @@ class CloudInferenceRepository {
   /// Parameters:
   /// - [prompt]: The text prompt describing the image to generate.
   /// - [model]: The model ID (e.g., 'models/gemini-3-pro-image-preview').
-  /// - [provider]: The inference provider configuration (must be Gemini).
+  /// - [provider]: The inference provider configuration (Gemini or Mistral).
   /// - [systemMessage]: Optional system instruction for guiding generation.
-  /// - [referenceImages]: Optional list of reference images for visual context.
+  /// - [referenceImages]: Optional list of reference images for visual context
+  ///   (only supported by Gemini).
   ///
   /// Returns a [GeneratedImage] containing the image bytes and MIME type.
-  /// Throws an exception if the provider doesn't support image generation.
+  /// Throws [UnsupportedError] if the provider doesn't support image
+  /// generation.
   Future<GeneratedImage> generateImage({
     required String prompt,
     required String model,
@@ -547,12 +553,6 @@ class CloudInferenceRepository {
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
   }) async {
-    if (provider.inferenceProviderType != InferenceProviderType.gemini) {
-      throw UnsupportedError(
-        'Image generation is only supported for Gemini providers',
-      );
-    }
-
     developer.log(
       'CloudInferenceRepository.generateImage called with:\n'
       '  model: $model\n'
@@ -562,13 +562,44 @@ class CloudInferenceRepository {
       name: 'CloudInferenceRepository',
     );
 
-    return _geminiRepository.generateImage(
-      prompt: prompt,
-      model: model,
-      provider: provider,
-      systemMessage: systemMessage,
-      referenceImages: referenceImages,
-    );
+    switch (provider.inferenceProviderType) {
+      case InferenceProviderType.gemini:
+        return _geminiRepository.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          systemMessage: systemMessage,
+          referenceImages: referenceImages,
+        );
+
+      case InferenceProviderType.mistral:
+        if (referenceImages != null && referenceImages.isNotEmpty) {
+          developer.log(
+            'Mistral image generation does not support reference images. '
+            '${referenceImages.length} reference image(s) will be ignored.',
+            name: 'CloudInferenceRepository',
+          );
+        }
+        return _mistralImageRepository.generateImage(
+          prompt: prompt,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          systemMessage: systemMessage,
+        );
+
+      case InferenceProviderType.anthropic:
+      case InferenceProviderType.genericOpenAi:
+      case InferenceProviderType.nebiusAiStudio:
+      case InferenceProviderType.openAi:
+      case InferenceProviderType.openRouter:
+      case InferenceProviderType.ollama:
+      case InferenceProviderType.voxtral:
+      case InferenceProviderType.whisper:
+        throw UnsupportedError(
+          'Image generation is not supported for '
+          '${provider.inferenceProviderType}',
+        );
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2276,7 +2277,171 @@ void main() {
       ).called(1);
     });
 
-    test('throws UnsupportedError for non-Gemini provider', () async {
+    test('routes to MistralImageGenerationRepository for Mistral provider',
+        () async {
+      final mistralProvider = AiConfigInferenceProvider(
+        id: 'mistral-provider',
+        name: 'Mistral',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-mistral-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+
+      const agentId = 'agent-123';
+      const fileId = 'file-456';
+      final imageBytes = [0x89, 0x50, 0x4E, 0x47];
+
+      // Mock the 3-step Mistral flow via HTTP client
+      var postCallCount = 0;
+      when(
+        () => mockHttpClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async {
+        postCallCount++;
+        if (postCallCount == 1) {
+          // Agent creation
+          return http.Response(jsonEncode({'id': agentId}), 200);
+        }
+        // Conversation
+        return http.Response(
+          jsonEncode({
+            'outputs': [
+              {
+                'content': [
+                  {'type': 'tool_file', 'file_id': fileId},
+                ],
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      // File download
+      when(
+        () => mockHttpClient.get(
+          any(),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer(
+        (_) async => http.Response.bytes(
+          Uint8List.fromList(imageBytes),
+          200,
+        ),
+      );
+
+      // Agent cleanup
+      when(
+        () => mockHttpClient.delete(
+          any(),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer((_) async => http.Response('{}', 200));
+
+      final result = await repository.generateImage(
+        prompt: 'Generate a cover art',
+        model: 'mistral-image-generation',
+        provider: mistralProvider,
+        systemMessage: 'Create art',
+      );
+
+      expect(result.bytes, equals(imageBytes));
+      expect(result.mimeType, equals('image/png'));
+
+      // Verify it did NOT route to Gemini
+      verifyNever(
+        () => mockGeminiRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      );
+    });
+
+    test(
+        'Mistral image generation does not pass reference images '
+        '(FLUX limitation)', () async {
+      final mistralProvider = AiConfigInferenceProvider(
+        id: 'mistral-provider',
+        name: 'Mistral',
+        baseUrl: 'https://api.mistral.ai/v1',
+        apiKey: 'test-mistral-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+
+      const agentId = 'agent-789';
+      const fileId = 'file-012';
+
+      var postCallCount = 0;
+      when(
+        () => mockHttpClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async {
+        postCallCount++;
+        if (postCallCount == 1) {
+          return http.Response(jsonEncode({'id': agentId}), 200);
+        }
+        return http.Response(
+          jsonEncode({
+            'outputs': [
+              {
+                'content': [
+                  {'type': 'tool_file', 'file_id': fileId},
+                ],
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      when(
+        () => mockHttpClient.get(
+          any(),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer(
+        (_) async => http.Response.bytes(Uint8List.fromList([1, 2, 3]), 200),
+      );
+
+      when(
+        () => mockHttpClient.delete(
+          any(),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer((_) async => http.Response('{}', 200));
+
+      final referenceImages = [
+        const ProcessedReferenceImage(
+          base64Data: 'data',
+          mimeType: 'image/png',
+          originalId: 'ref-1',
+        ),
+      ];
+
+      // Even though reference images are provided, Mistral route ignores them
+      final result = await repository.generateImage(
+        prompt: 'Generate with references',
+        model: 'mistral-image-generation',
+        provider: mistralProvider,
+        referenceImages: referenceImages,
+      );
+
+      expect(result.bytes, equals([1, 2, 3]));
+      expect(result.mimeType, equals('image/png'));
+    });
+
+    test('throws UnsupportedError for unsupported provider', () async {
       final ollamaProvider = AiConfigInferenceProvider(
         id: 'ollama-provider',
         name: 'Ollama',
@@ -2295,7 +2460,7 @@ void main() {
         throwsA(isA<UnsupportedError>().having(
           (e) => e.message,
           'message',
-          contains('only supported for Gemini providers'),
+          contains('not supported for'),
         )),
       );
     });
@@ -2483,7 +2648,7 @@ void main() {
         throwsA(isA<UnsupportedError>().having(
           (e) => e.message,
           'message',
-          contains('only supported for Gemini providers'),
+          contains('not supported for'),
         )),
       );
     });

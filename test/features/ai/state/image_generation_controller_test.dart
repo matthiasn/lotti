@@ -38,6 +38,32 @@ class MockLoggingService extends Mock implements LoggingService {}
 class FakeAiConfigInferenceProvider extends Fake
     implements AiConfigInferenceProvider {}
 
+/// Creates an [AiConfigModel] with image output modality linked to [provider].
+AiConfigModel createTestImageModel(AiConfigInferenceProvider provider) {
+  return AiConfigModel(
+    id: '${provider.id}-image-model',
+    name: 'Test Image Model',
+    inferenceProviderId: provider.id,
+    providerModelId: 'models/gemini-3-pro-image-preview',
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text, Modality.image],
+    isReasoningModel: false,
+    createdAt: DateTime(2025),
+    description: 'Test image model',
+  );
+}
+
+/// Mocks [repo] to return [provider] and an image-capable model for it.
+void mockImageProvider(
+  MockAiConfigRepository repo,
+  AiConfigInferenceProvider provider,
+) {
+  when(() => repo.getConfigsByType(AiConfigType.inferenceProvider))
+      .thenAnswer((_) async => [provider]);
+  when(() => repo.getConfigsByType(AiConfigType.model))
+      .thenAnswer((_) async => [createTestImageModel(provider)]);
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
@@ -416,8 +442,7 @@ void main() {
       const prompt = 'Generate a beautiful sunset';
       final imageBytes = [1, 2, 3, 4, 5];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -466,8 +491,7 @@ void main() {
       const entityId = 'test-entity';
       const prompt = 'Generate a beautiful sunset';
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -510,13 +534,16 @@ void main() {
       );
     });
 
-    test('generateImage errors when no Gemini provider is configured',
+    test('generateImage errors when no image-capable provider is configured',
         () async {
       const entityId = 'test-entity';
       const prompt = 'Generate a beautiful sunset';
 
-      // Return empty list - no providers
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
+      // Return empty list - no providers or models
+      when(() =>
+              mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => []);
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.model))
           .thenAnswer((_) async => []);
 
       when(
@@ -544,7 +571,10 @@ void main() {
         generating: (_) => fail('Should be error'),
         success: (_) => fail('Should be error'),
         error: (s) {
-          expect(s.errorMessage, contains('No Gemini provider'));
+          expect(
+            s.errorMessage,
+            contains('No provider with image generation capability'),
+          );
         },
       );
     });
@@ -643,8 +673,7 @@ void main() {
       const modifiedPrompt = 'Modified prompt';
       final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -689,8 +718,7 @@ void main() {
       const prompt = 'Test prompt';
       final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -735,8 +763,7 @@ void main() {
       const prompt = 'Test prompt';
       final imageBytes = [1, 2, 3];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -910,9 +937,8 @@ void main() {
       when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
           .thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
 
-      // Mock: AI config to return Gemini provider
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      // Mock: AI config to return Gemini provider with image model
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       // Mock: Cloud repo to generate image
       when(
@@ -997,9 +1023,8 @@ void main() {
         ),
       ).thenReturn(null);
 
-      // Mock AI config returns provider so generation can proceed
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      // Mock AI config returns provider with image model so generation can proceed
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       final imageBytes = [1, 2, 3];
       when(
@@ -1044,8 +1069,7 @@ void main() {
         ),
       ];
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -1118,8 +1142,7 @@ void main() {
       when(() => mockAiInputRepo.buildLinkedTasksJson(taskId))
           .thenAnswer((_) async => '{}');
 
-      when(() => mockAiConfigRepo.getConfigsByType(any<AiConfigType>()))
-          .thenAnswer((_) async => [testGeminiProvider]);
+      mockImageProvider(mockAiConfigRepo, testGeminiProvider);
 
       when(
         () => mockCloudRepo.generateImage(
@@ -1152,6 +1175,284 @@ void main() {
           referenceImages: refImages,
         ),
       ).called(1);
+    });
+  });
+
+  group('ImageGenerationController provider-agnostic lookup', () {
+    late MockCloudInferenceRepository mockCloudRepo;
+    late MockAiConfigRepository mockAiConfigRepo;
+    late MockLoggingService mockLoggingService;
+    late ProviderContainer container;
+
+    final testDate = DateTime(2025);
+
+    final testMistralProvider = AiConfigInferenceProvider(
+      id: 'mistral-provider',
+      name: 'Mistral',
+      baseUrl: 'https://api.mistral.ai/v1',
+      apiKey: 'test-key',
+      createdAt: testDate,
+      inferenceProviderType: InferenceProviderType.mistral,
+    );
+
+    final testGeminiProvider = AiConfigInferenceProvider(
+      id: 'gemini-provider',
+      name: 'Gemini',
+      baseUrl: 'https://generativelanguage.googleapis.com',
+      apiKey: 'test-key',
+      createdAt: testDate,
+      inferenceProviderType: InferenceProviderType.gemini,
+    );
+
+    final mistralImageModel = AiConfigModel(
+      id: 'mistral-image-model',
+      name: 'Mistral Image Generation (FLUX)',
+      inferenceProviderId: testMistralProvider.id,
+      providerModelId: 'mistral-image-generation',
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text, Modality.image],
+      isReasoningModel: false,
+      createdAt: testDate,
+      description: 'FLUX image generation',
+    );
+
+    final geminiImageModel = AiConfigModel(
+      id: 'gemini-image-model',
+      name: 'Nano Banana Pro',
+      inferenceProviderId: testGeminiProvider.id,
+      providerModelId: 'models/gemini-3-pro-image-preview',
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text, Modality.image],
+      isReasoningModel: false,
+      createdAt: testDate,
+      description: 'Gemini image generation',
+    );
+
+    setUp(() {
+      mockCloudRepo = MockCloudInferenceRepository();
+      mockAiConfigRepo = MockAiConfigRepository();
+      mockLoggingService = MockLoggingService();
+
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+      container = ProviderContainer(
+        overrides: [
+          cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepo),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+    });
+
+    test('finds Mistral provider with image-capable model', () async {
+      const entityId = 'test-entity';
+      const prompt = 'Generate cover art';
+      final imageBytes = [1, 2, 3];
+
+      when(() =>
+              mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [testMistralProvider]);
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => [mistralImageModel]);
+
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      await notifier.generateImage(prompt: prompt);
+
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: entityId),
+      );
+      expect(finalState, isA<ImageGenerationSuccess>());
+
+      // Verify the Mistral provider was passed to the cloud repo
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: prompt,
+          model: 'mistral-image-generation',
+          provider: testMistralProvider,
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).called(1);
+    });
+
+    test('prefers first provider with image-capable model', () async {
+      const entityId = 'test-entity';
+      const prompt = 'Generate cover art';
+      final imageBytes = [1, 2, 3];
+
+      // Both providers configured; Gemini listed first
+      when(() =>
+              mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [testGeminiProvider, testMistralProvider]);
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => [geminiImageModel, mistralImageModel]);
+
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      await notifier.generateImage(prompt: prompt);
+
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: entityId),
+      );
+      expect(finalState, isA<ImageGenerationSuccess>());
+
+      // Should use Gemini since it's listed first
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: prompt,
+          model: 'models/gemini-3-pro-image-preview',
+          provider: testGeminiProvider,
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).called(1);
+    });
+
+    test('skips provider without image-capable model', () async {
+      const entityId = 'test-entity';
+      const prompt = 'Generate cover art';
+      final imageBytes = [1, 2, 3];
+
+      // Non-image model for the first provider
+      final mistralTextModel = AiConfigModel(
+        id: 'mistral-text-model',
+        name: 'Mistral Small',
+        inferenceProviderId: testMistralProvider.id,
+        providerModelId: 'mistral-small-2501',
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        createdAt: testDate,
+        description: 'Text-only model',
+      );
+
+      when(() =>
+              mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [testMistralProvider, testGeminiProvider]);
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => [mistralTextModel, geminiImageModel]);
+
+      when(
+        () => mockCloudRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any<AiConfigInferenceProvider>(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer(
+        (_) async => GeneratedImage(bytes: imageBytes, mimeType: 'image/png'),
+      );
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      await notifier.generateImage(prompt: prompt);
+
+      // Should skip Mistral (no image model) and use Gemini
+      verify(
+        () => mockCloudRepo.generateImage(
+          prompt: prompt,
+          model: 'models/gemini-3-pro-image-preview',
+          provider: testGeminiProvider,
+          systemMessage: any(named: 'systemMessage'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).called(1);
+    });
+
+    test('errors when providers exist but none have image models', () async {
+      const entityId = 'test-entity';
+      const prompt = 'Generate cover art';
+
+      final textOnlyModel = AiConfigModel(
+        id: 'text-model',
+        name: 'Text Model',
+        inferenceProviderId: testGeminiProvider.id,
+        providerModelId: 'gemini-2.0-flash',
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        createdAt: testDate,
+        description: 'Text-only model',
+      );
+
+      when(() =>
+              mockAiConfigRepo.getConfigsByType(AiConfigType.inferenceProvider))
+          .thenAnswer((_) async => [testGeminiProvider]);
+      when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => [textOnlyModel]);
+
+      when(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      final notifier = container.read(
+        imageGenerationControllerProvider(entityId: entityId).notifier,
+      );
+
+      await notifier.generateImage(prompt: prompt);
+
+      final finalState = container.read(
+        imageGenerationControllerProvider(entityId: entityId),
+      );
+      expect(finalState, isA<ImageGenerationError>());
+
+      finalState.map(
+        initial: (_) => fail('Should be error'),
+        generating: (_) => fail('Should be error'),
+        success: (_) => fail('Should be error'),
+        error: (s) {
+          expect(
+            s.errorMessage,
+            contains('No provider with image generation capability'),
+          );
+        },
+      );
     });
   });
 }

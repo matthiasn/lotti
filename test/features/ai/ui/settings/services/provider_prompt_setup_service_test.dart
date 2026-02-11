@@ -1723,14 +1723,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, equals(3));
+      expect(result!.modelsCreated, equals(4));
       expect(result!.modelsVerified, equals(0));
-      expect(result!.promptsCreated, equals(8));
+      expect(result!.promptsCreated, equals(9));
       expect(result!.promptsSkipped, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 3 models + 8 prompts = 11 saves
-      verify(() => mockRepository.saveConfig(any())).called(11);
+      // 4 models + 9 prompts = 13 saves
+      verify(() => mockRepository.saveConfig(any())).called(13);
     });
 
     testWidgets('should verify existing models and skip creation',
@@ -1794,7 +1794,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, equals(0));
+      // 3 existing models verified + 1 new image model created
+      expect(result!.modelsCreated, equals(1));
       expect(result!.modelsVerified, equals(3));
     });
 
@@ -1873,7 +1874,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(7));
+      expect(result!.promptsCreated, equals(8));
     });
 
     testWidgets('should update existing category instead of creating new one',

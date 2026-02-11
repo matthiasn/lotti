@@ -496,8 +496,8 @@ const List<KnownModel> voxtralModels = [
 /// Mistral models - Mistral AI cloud models
 ///
 /// These models run on Mistral's cloud API (api.mistral.ai) and include
-/// language models, reasoning models, and audio transcription capabilities.
-/// Audio files are automatically converted to WAV format before upload.
+/// language models, reasoning models, audio transcription, and image generation.
+/// All data stays within Mistral's EU infrastructure (Paris).
 const List<KnownModel> mistralModels = [
   // Fast model - efficient for quick tasks
   KnownModel(
@@ -531,6 +531,17 @@ const List<KnownModel> mistralModels = [
     description: 'High-accuracy cloud transcription model. '
         'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
         'Audio is automatically converted to WAV format.',
+  ),
+  // Image generation model (via Agents API + FLUX)
+  KnownModel(
+    providerModelId: 'mistral-image-generation',
+    name: 'Mistral Image Generation (FLUX)',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text, Modality.image],
+    isReasoningModel: false,
+    description: 'EU-sovereign image generation powered by FLUX1.1 pro Ultra. '
+        'Uses Mistral Agents API for cover art generation. '
+        'All data stays within EU infrastructure.',
   ),
 ];
 
@@ -649,6 +660,7 @@ const ftueMistralColor = Color(0xFFFF7000);
 const ftueMistralFlashModelId = 'mistral-small-2501';
 const ftueMistralReasoningModelId = 'magistral-medium-2509';
 const ftueMistralAudioModelId = 'voxtral-small-2507';
+const ftueMistralImageModelId = 'mistral-image-generation';
 
 /// Finds a KnownModel by its provider model ID from the mistralModels list.
 /// Returns null if not found.
@@ -657,23 +669,25 @@ KnownModel? findMistralKnownModel(String providerModelId) {
       .firstWhereOrNull((model) => model.providerModelId == providerModelId);
 }
 
-/// Returns the three KnownModel configurations needed for Mistral FTUE.
+/// Returns the KnownModel configurations needed for Mistral FTUE.
 /// - Flash model (Mistral Small) for fast processing tasks
 /// - Reasoning model (Magistral Medium) for complex reasoning tasks
 /// - Audio model (Voxtral Small) for transcription
-/// Note: Mistral does not have a native image generation model.
+/// - Image model (FLUX via Agents API) for EU-sovereign image generation
 ({
   KnownModel flash,
   KnownModel reasoning,
   KnownModel audio,
+  KnownModel? image,
 })? getMistralFtueKnownModels() {
   final flash = findMistralKnownModel(ftueMistralFlashModelId);
   final reasoning = findMistralKnownModel(ftueMistralReasoningModelId);
   final audio = findMistralKnownModel(ftueMistralAudioModelId);
+  final image = findMistralKnownModel(ftueMistralImageModelId);
 
   if (flash == null || reasoning == null || audio == null) {
     return null;
   }
 
-  return (flash: flash, reasoning: reasoning, audio: audio);
+  return (flash: flash, reasoning: reasoning, audio: audio, image: image);
 }

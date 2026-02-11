@@ -219,8 +219,8 @@ void main() {
       );
 
       expect(find.text('What will be created:'), findsOneWidget);
-      expect(find.text('3 Models'), findsOneWidget);
-      expect(find.text('8 Prompts'), findsOneWidget);
+      expect(find.text('4 Models'), findsOneWidget);
+      expect(find.text('9 Prompts'), findsOneWidget);
       expect(find.text('1 Category'), findsOneWidget);
     });
 
@@ -235,12 +235,16 @@ void main() {
 
       expect(
         find.text(
-            'Magistral Medium (reasoning), Mistral Small (fast), Voxtral Small (audio)'),
+          'Magistral Medium (reasoning), Mistral Small (fast), '
+          'Voxtral Small (audio), FLUX (image)',
+        ),
         findsOneWidget,
       );
       expect(
         find.text(
-            'Optimized: Magistral for reasoning, Mistral Small for speed'),
+          'Optimized: Magistral for reasoning, Mistral Small for speed, '
+          'FLUX for EU-sovereign image generation',
+        ),
         findsOneWidget,
       );
       expect(find.text('Test Category Mistral Enabled'), findsOneWidget);

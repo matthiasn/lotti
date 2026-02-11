@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.855" date="2026-02-10">
       <description>
-        <p>Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle, log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Also includes flexible ratings model improvements where session ratings are now driven by a catalog registry instead of hardcoded questions.</p>
+        <p>Matrix Provisioning Wizard: New sync onboarding flow that lets a desktop device paste or scan a Base64-encoded provisioning bundle, log in, join the sync room, rotate the password, and display a QR code with updated credentials for a mobile device to scan and complete setup. Mistral Image Generation: Added Mistral as an alternative image generation provider for EU data sovereignty, using the Agents API with FLUX1.1 pro Ultra. Also includes flexible ratings model improvements where session ratings are now driven by a catalog registry instead of hardcoded questions.</p>
       </description>
     </release>
     <release version="0.9.852" date="2026-02-09">
