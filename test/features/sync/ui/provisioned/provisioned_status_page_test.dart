@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
+import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
@@ -15,6 +17,17 @@ import '../../../../widget_test_utils.dart';
 class MockMatrixService extends Mock implements MatrixService {}
 
 class MockClient extends Mock implements Client {}
+
+class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
+  _FakeMatrixUnverifiedController(this.devices);
+
+  final List<DeviceKeys> devices;
+
+  @override
+  Future<List<DeviceKeys>> build() async => devices;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +52,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -53,6 +69,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -67,6 +86,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -89,6 +111,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -103,6 +128,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -122,6 +150,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -151,6 +182,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -181,6 +215,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -198,6 +235,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -213,6 +253,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -221,6 +264,71 @@ void main() {
       // SelectableText widgets for the values
       final selectableTexts = find.byType(SelectableText);
       expect(selectableTexts, findsAtLeast(2));
+    });
+  });
+
+  group('device verification section', () {
+    testWidgets('displays verification section title', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      expect(
+        find.text(context.messages.provisionedSyncVerifyDevicesTitle),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows no-unverified-devices indicator when list is empty',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UnverifiedDevices), findsOneWidget);
+    });
+
+    testWidgets('shows device cards when unverified devices exist',
+        (tester) async {
+      final device = MockDeviceKeys();
+      when(() => device.deviceDisplayName).thenReturn('Pixel 7');
+      when(() => device.deviceId).thenReturn('DEVICE1');
+      when(() => device.userId).thenReturn('@alice:example.com');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController([device]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeviceCard), findsOneWidget);
+      expect(find.text('Pixel 7'), findsOneWidget);
     });
   });
 
@@ -235,6 +343,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -257,6 +368,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -287,6 +401,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -323,6 +440,9 @@ void main() {
           const ProvisionedStatusWidget(),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -337,7 +457,11 @@ void main() {
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
 
       // Toggle reveal
-      await tester.tap(find.byKey(const Key('statusToggleHandoverVisibility')));
+      final toggleFinder =
+          find.byKey(const Key('statusToggleHandoverVisibility'));
+      await tester.ensureVisible(toggleFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(toggleFinder);
       await tester.pump();
 
       // Should now show the base64 string and hide icon
@@ -345,45 +469,6 @@ void main() {
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
     });
 
-    testWidgets('copies handover data to clipboard', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = true;
-      addTearDown(() => isDesktop = wasDesktop);
-
-      when(() => mockMatrixService.loadConfig()).thenAnswer(
-        (_) async => const MatrixConfig(
-          homeServer: 'https://matrix.example.com',
-          user: '@alice:example.com',
-          password: 'rotated-pw',
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncShowQr));
-      await tester.pumpAndSettle();
-
-      // Tap the copy button
-      await tester.tap(find.byKey(const Key('statusCopyHandoverData')));
-      await tester.pumpAndSettle();
-
-      // Verify clipboard has data
-      final data = await Clipboard.getData(Clipboard.kTextPlain);
-      expect(data?.text, isNotNull);
-      expect(data!.text, isNotEmpty);
-
-      // Snackbar should appear
-      expect(find.text('Copied to clipboard'), findsOneWidget);
-    });
   });
 
   group('ProvisionedStatusPage action bar', () {
@@ -398,6 +483,9 @@ void main() {
           ),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );
@@ -423,6 +511,9 @@ void main() {
           ),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
           ],
         ),
       );

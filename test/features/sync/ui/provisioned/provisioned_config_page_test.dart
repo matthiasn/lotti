@@ -245,6 +245,77 @@ void main() {
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
 
+    testWidgets(
+      'auto-triggers verification modal when unverified devices exist',
+      (tester) async {
+        final mockDevice = MockDeviceKeys();
+        when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
+        when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
+        when(() => mockDevice.userId).thenReturn('@alice:example.com');
+
+        when(() => mockMatrixService.getUnverifiedDevices())
+            .thenReturn([mockDevice]);
+        when(() => mockMatrixService.verifyDevice(mockDevice))
+            .thenAnswer((_) async {});
+        when(() => mockMatrixService.keyVerificationStream)
+            .thenAnswer((_) => const Stream.empty());
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.done(),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Before the 3s delay, no modal should be shown
+        expect(find.byType(VerificationModal), findsNothing);
+
+        // Advance past the 3 second delay
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+
+        // VerificationModal should be displayed in a bottom sheet
+        expect(find.byType(VerificationModal), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not trigger verification when no unverified devices',
+      (tester) async {
+        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              provisioningControllerProvider.overrideWith(
+                () => _FakeProvisioningController(
+                  const ProvisioningState.done(),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Advance past the 3 second delay
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump();
+
+        // No verification modal should be shown
+        expect(find.byType(VerificationModal), findsNothing);
+      },
+    );
+
     testWidgets('shows error and retry button in error state', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -224,15 +226,13 @@ class _ReadyViewState extends State<_ReadyView> {
               icon: const Icon(Icons.copy),
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
+                final copiedMessage =
+                    context.messages.provisionedSyncCopiedToClipboard;
                 await Clipboard.setData(
                   ClipboardData(text: widget.handoverBase64),
                 );
                 messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.messages.provisionedSyncCopiedToClipboard,
-                    ),
-                  ),
+                  SnackBar(content: Text(copiedMessage)),
                 );
               },
             ),
@@ -251,17 +251,23 @@ class _DoneView extends ConsumerStatefulWidget {
 }
 
 class _DoneViewState extends ConsumerState<_DoneView> {
+  Timer? _delayTimer;
   bool _verificationTriggered = false;
 
   @override
   void initState() {
     super.initState();
-    _autoTriggerVerification();
+    // Wait for Matrix SDK to sync device keys from server before checking
+    _delayTimer = Timer(const Duration(seconds: 3), _triggerVerification);
   }
 
-  Future<void> _autoTriggerVerification() async {
-    // Wait for Matrix SDK to sync device keys from server
-    await Future<void>.delayed(const Duration(seconds: 3));
+  @override
+  void dispose() {
+    _delayTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _triggerVerification() async {
     if (!mounted || _verificationTriggered) return;
 
     final matrixService = ref.read(matrixServiceProvider);
