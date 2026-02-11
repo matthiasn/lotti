@@ -468,43 +468,42 @@ void main() {
       expect(find.text('\u2022' * 24), findsNothing);
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
     });
-
   });
 
-    testWidgets('QR button stays when config is null', (tester) async {
-      final wasDesktop = isDesktop;
-      isDesktop = true;
-      addTearDown(() => isDesktop = wasDesktop);
+  testWidgets('QR button stays when config is null', (tester) async {
+    final wasDesktop = isDesktop;
+    isDesktop = true;
+    addTearDown(() => isDesktop = wasDesktop);
 
-      when(() => mockMatrixService.loadConfig()).thenAnswer(
-        (_) async => null,
-      );
+    when(() => mockMatrixService.loadConfig()).thenAnswer(
+      (_) async => null,
+    );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProvisionedStatusWidget(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixUnverifiedControllerProvider.overrideWith(
-              () => _FakeMatrixUnverifiedController(const []),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ProvisionedStatusWidget(),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController(const []),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
 
-      final context = tester.element(find.byType(ProvisionedStatusWidget));
-      await tester.tap(find.text(context.messages.provisionedSyncShowQr));
-      await tester.pumpAndSettle();
+    final context = tester.element(find.byType(ProvisionedStatusWidget));
+    await tester.tap(find.text(context.messages.provisionedSyncShowQr));
+    await tester.pumpAndSettle();
 
-      // regenerateHandover returns null, so QR should not appear
-      expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
-      // Button should still be visible for retry
-      expect(
-        find.text(context.messages.provisionedSyncShowQr),
-        findsOneWidget,
-      );
-    });
+    // regenerateHandover returns null, so QR should not appear
+    expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
+    // Button should still be visible for retry
+    expect(
+      find.text(context.messages.provisionedSyncShowQr),
+      findsOneWidget,
+    );
+  });
 
   group('ProvisionedStatusPage action bar', () {
     testWidgets('back button navigates to page 0', (tester) async {

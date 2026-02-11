@@ -230,6 +230,75 @@ void main() {
     await inviteFuture;
   });
 
+  test('invite stream ignores invites targeted at other users', () async {
+    when(() => client.userID).thenReturn('@me:server');
+
+    final invites = <RoomInviteEvent>[];
+    final sub = gateway.invites.listen(invites.add);
+
+    // Invite targeted at a different user — should be ignored
+    roomStateController.add(
+      (
+        roomId: '!room:server',
+        state: StrippedStateEvent.fromJson(
+          {
+            'type': 'm.room.member',
+            'sender': '@admin:server',
+            'state_key': '@other:server',
+            'content': {'membership': 'invite'},
+          },
+        ),
+      ),
+    );
+
+    // Give the event time to propagate
+    await Future<void>.delayed(Duration.zero);
+
+    expect(invites, isEmpty);
+
+    // Invite targeted at this client — should be emitted
+    roomStateController.add(
+      (
+        roomId: '!room:server',
+        state: StrippedStateEvent.fromJson(
+          {
+            'type': 'm.room.member',
+            'sender': '@admin:server',
+            'state_key': '@me:server',
+            'content': {'membership': 'invite'},
+          },
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(Duration.zero);
+
+    expect(invites, hasLength(1));
+    expect(invites.first.roomId, '!room:server');
+
+    await sub.cancel();
+  });
+
+  test('createRoom handles null room from getRoomById', () async {
+    when(
+      () => client.createRoom(
+        visibility: Visibility.private,
+        name: 'Room',
+        invite: <String>[],
+        preset: CreateRoomPreset.trustedPrivateChat,
+      ),
+    ).thenAnswer((_) async => '!room:server');
+    when(() => client.getRoomById('!room:server')).thenReturn(null);
+
+    final roomId = await gateway.createRoom(
+      name: 'Room',
+      inviteUserIds: [],
+    );
+
+    expect(roomId, '!room:server');
+    // enableEncryption should not be called since room is null
+  });
+
   test('timelineEvents currently returns an empty stream', () async {
     await expectLater(gateway.timelineEvents('!room:server'), emitsDone);
   });
