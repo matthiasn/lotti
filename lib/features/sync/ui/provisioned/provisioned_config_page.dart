@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -105,7 +107,10 @@ class ProvisionedConfigWidget extends ConsumerWidget {
         step: 3,
         totalSteps: 3,
       ),
-      ready: (handoverBase64) => _ReadyView(handoverBase64: handoverBase64),
+      ready: (handoverBase64) => _ReadyView(
+        handoverBase64: handoverBase64,
+        pageIndexNotifier: pageIndexNotifier,
+      ),
       done: () => const _DoneView(),
       error: (error) => _ErrorView(
         error: error,
@@ -154,17 +159,89 @@ class _ProgressStep extends StatelessWidget {
   }
 }
 
-class _ReadyView extends StatefulWidget {
-  const _ReadyView({required this.handoverBase64});
+class _ReadyView extends ConsumerStatefulWidget {
+  const _ReadyView({
+    required this.handoverBase64,
+    required this.pageIndexNotifier,
+  });
 
   final String handoverBase64;
+  final ValueNotifier<int> pageIndexNotifier;
 
   @override
-  State<_ReadyView> createState() => _ReadyViewState();
+  ConsumerState<_ReadyView> createState() => _ReadyViewState();
 }
 
-class _ReadyViewState extends State<_ReadyView> {
+class _ReadyViewState extends ConsumerState<_ReadyView> {
   bool _revealed = false;
+  bool _autoAdvancedToStatus = false;
+  bool _advanceCheckInFlight = false;
+  StreamSubscription<KeyVerificationRunner>? _outgoingSub;
+  StreamSubscription<KeyVerificationRunner>? _incomingSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeVerificationStreams();
+  }
+
+  @override
+  void dispose() {
+    _outgoingSub?.cancel();
+    _incomingSub?.cancel();
+    super.dispose();
+  }
+
+  void _subscribeVerificationStreams() {
+    final matrixService = ref.read(matrixServiceProvider);
+
+    Future<bool> waitUntilNoUnverifiedDevices() async {
+      const attempts = 20;
+      const delay = Duration(milliseconds: 350);
+
+      for (var i = 0; i < attempts; i++) {
+        if (!mounted) return false;
+        ref.invalidate(matrixUnverifiedControllerProvider);
+        if (matrixService.getUnverifiedDevices().isEmpty) {
+          return true;
+        }
+        await Future<void>.delayed(delay);
+      }
+
+      if (!mounted) return false;
+      ref.invalidate(matrixUnverifiedControllerProvider);
+      return matrixService.getUnverifiedDevices().isEmpty;
+    }
+
+    Future<void> maybeAdvance(KeyVerificationRunner runner) async {
+      final isDone = runner.lastStep == 'm.key.verification.done' ||
+          runner.keyVerification.isDone;
+      if (!isDone ||
+          _autoAdvancedToStatus ||
+          _advanceCheckInFlight ||
+          !isDesktop) {
+        return;
+      }
+
+      _advanceCheckInFlight = true;
+      try {
+        final noUnverifiedDevices = await waitUntilNoUnverifiedDevices();
+        if (!mounted || _autoAdvancedToStatus || !noUnverifiedDevices) return;
+
+        _autoAdvancedToStatus = true;
+        widget.pageIndexNotifier.value = 2;
+      } finally {
+        _advanceCheckInFlight = false;
+      }
+    }
+
+    _outgoingSub = matrixService.keyVerificationStream.listen((runner) {
+      unawaited(maybeAdvance(runner));
+    });
+    _incomingSub = matrixService.incomingKeyVerificationRunnerStream.listen(
+      (runner) => unawaited(maybeAdvance(runner)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +356,9 @@ class _DoneViewState extends ConsumerState<_DoneView> {
         isScrollControlled: true,
         builder: (_) => VerificationModal(unverifiedDevices.first),
       );
+      if (mounted) {
+        ref.invalidate(matrixUnverifiedControllerProvider);
+      }
     }
   }
 

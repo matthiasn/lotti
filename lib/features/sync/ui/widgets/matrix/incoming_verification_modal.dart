@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -29,6 +30,7 @@ class _IncomingVerificationModalState
     extends ConsumerState<IncomingVerificationModal> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
   bool _awaitingOtherDevice = false;
+  bool _didScheduleUnverifiedRefresh = false;
 
   Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
     if (runner == null || _awaitingOtherDevice) return;
@@ -46,6 +48,23 @@ class _IncomingVerificationModalState
   @override
   Widget build(BuildContext context) {
     final pop = Navigator.of(context).pop;
+
+    Future<void> refreshUnverifiedDevices() async {
+      const attempts = 12;
+      const retryDelay = Duration(milliseconds: 400);
+
+      for (var i = 0; i < attempts; i++) {
+        ref.invalidate(matrixUnverifiedControllerProvider);
+        if (_matrixService.getUnverifiedDevices().isEmpty) {
+          break;
+        }
+        await Future<void>.delayed(retryDelay);
+        if (!mounted) return;
+      }
+
+      if (!mounted) return;
+      ref.invalidate(matrixUnverifiedControllerProvider);
+    }
 
     void closeModal() {
       Navigator.of(context).pop();
@@ -70,6 +89,11 @@ class _IncomingVerificationModalState
 
         final isDone =
             isLastStepDone || (runner?.keyVerification.isDone ?? false);
+
+        if (isDone && !_didScheduleUnverifiedRefresh) {
+          _didScheduleUnverifiedRefresh = true;
+          unawaited(refreshUnverifiedDevices());
+        }
 
         return SingleChildScrollView(
           child: Padding(
@@ -161,6 +185,7 @@ class _IncomingVerificationModalState
                     children: [
                       LottiPrimaryButton(
                         onPressed: () {
+                          unawaited(refreshUnverifiedDevices());
                           runner?.stopTimer();
                           pop();
                         },

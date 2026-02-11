@@ -52,6 +52,7 @@ void main() {
     when(() => mockMatrixService.keyVerificationStream)
         .thenAnswer((_) => controller.stream);
     when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => mockDeviceKeys.userId).thenReturn('@user:server');
     when(() => mockDeviceKeys.deviceDisplayName).thenReturn('Pixel 7');
     when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');

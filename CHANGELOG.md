@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Emoji Verification Flow: SAS verification now reacts to SDK `onUpdate`/`isDone` state changes, triggers a post-verification device-key refresh, and forces a sync rescan so sync resumes without restarting desktop or mobile.
 - Verification UX: Both outgoing and incoming verification modals now provide clearer "waiting for other device" feedback during confirmation and transition more reliably to the success state.
+- Verification Status Refresh: After SAS verification completes, the app now retries unverified-device refresh for a short window so the stale "unverified" badge clears without manual refresh, and desktop provisioning auto-advances from the QR step to the final status page once trust state is updated.
 - Provisioned Sync Disconnect: Disconnect now uses an explicit confirmation dialog (`Cancel` + destructive confirm) and closes the status modal after successful deletion.
 
 ### Changed
