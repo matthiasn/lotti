@@ -328,6 +328,18 @@ class MatrixStreamCatchUpCoordinator {
   /// Runs catch-up and returns true on success, false on failure.
   Future<bool> _attachCatchUp() async {
     try {
+      final roomId = _roomManager.currentRoomId;
+      if (roomId == null) {
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            _withInstance('No configured room for catch-up'),
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          );
+        }
+        return false;
+      }
+
       // Wait for SDK sync to complete before catch-up.
       // This ensures the SDK has fetched the latest events from the server.
       // Applies to ALL catch-up scenarios: initial, resume, wake, reconnect.
@@ -339,8 +351,7 @@ class MatrixStreamCatchUpCoordinator {
       );
 
       final room = _roomManager.currentRoom;
-      final roomId = _roomManager.currentRoomId;
-      if (room == null || roomId == null) {
+      if (room == null) {
         if (_collectMetrics) {
           _loggingService.captureEvent(
             _withInstance('No active room for catch-up'),

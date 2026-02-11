@@ -118,8 +118,22 @@ Future<void> listenForKeyVerificationRequests({
   required LoggingService loggingService,
   Stream<KeyVerification>? requests,
 }) async {
+  await listenForKeyVerificationRequestsWithSubscription(
+    service: service,
+    loggingService: loggingService,
+    requests: requests,
+  );
+}
+
+Future<StreamSubscription<KeyVerification>?>
+    listenForKeyVerificationRequestsWithSubscription({
+  required MatrixService service,
+  required LoggingService loggingService,
+  Stream<KeyVerification>? requests,
+}) async {
   try {
-    (requests ?? service.client.onKeyVerificationRequest.stream).listen((
+    final subscription =
+        (requests ?? service.client.onKeyVerificationRequest.stream).listen((
       KeyVerification keyVerification,
     ) {
       service.incomingKeyVerificationRunner = KeyVerificationRunner(
@@ -136,6 +150,7 @@ Future<void> listenForKeyVerificationRequests({
       );
       service.incomingKeyVerificationController.add(keyVerification);
     });
+    return subscription;
   } catch (e, stackTrace) {
     DevLogger.error(
       name: 'KeyVerificationRunner',
@@ -149,6 +164,7 @@ Future<void> listenForKeyVerificationRequests({
       subDomain: 'listen',
       stackTrace: stackTrace,
     );
+    return null;
   }
 }
 

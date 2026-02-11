@@ -217,6 +217,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     // live scans or marker advancement to avoid skipping backlog.
     if (_roomManager.currentRoom == null) {
       final hydrateStart = clock.now();
+      final hasConfiguredRoom = _roomManager.currentRoomId != null;
       try {
         await _roomManager.hydrateRoomSnapshot(client: _sessionManager.client);
       } catch (e, st) {
@@ -227,17 +228,22 @@ class MatrixStreamConsumer implements SyncPipeline {
           stackTrace: st,
         );
       }
-      // Wait deterministically for room readiness with a bounded timeout.
-      // Total wait ~10s (50 x 200ms). This avoids races where the live scan
-      // would start before the room becomes available and skip backlog.
-      for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+      // Wait only when a room is already configured. During fresh provisioning
+      // there is no persisted room yet, and waiting here adds unnecessary
+      // startup latency before the room is joined and saved.
+      if (hasConfiguredRoom) {
+        // Total wait ~10s (50 x 200ms). This avoids races where the live scan
+        // would start before the room becomes available and skip backlog.
+        for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
       }
       final hydrateElapsed =
           clock.now().difference(hydrateStart).inMilliseconds;
       _loggingService.captureEvent(
         _withInstance(
-          'start.hydrateRoom.ready=${_roomManager.currentRoom != null} after ${hydrateElapsed}ms',
+          'start.hydrateRoom.ready=${_roomManager.currentRoom != null} '
+          'configured=$hasConfiguredRoom after ${hydrateElapsed}ms',
         ),
         domain: syncLoggingDomain,
         subDomain: 'start',

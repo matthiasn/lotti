@@ -56,7 +56,11 @@ void main() {
     pageIndexNotifier = ValueNotifier(1);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+    when(
+      () => mockMatrixService.login(
+        waitForLifecycle: any(named: 'waitForLifecycle'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});

@@ -297,6 +297,7 @@ class MatrixService {
   MatrixStreamConsumer? _pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<KeyVerification>? _keyVerificationRequestSubscription;
   // Optional seam for tests to inject a connectivity stream.
   final Stream<List<ConnectivityResult>>? connectivityStream;
 
@@ -462,7 +463,11 @@ class MatrixService {
     );
   }
 
-  Future<bool> login() => _syncEngine.connect(shouldAttemptLogin: true);
+  Future<bool> login({bool waitForLifecycle = true}) =>
+      _syncEngine.connectWithLifecycleOption(
+        shouldAttemptLogin: true,
+        waitForLifecycle: waitForLifecycle,
+      );
 
   Future<bool> connect() => _syncEngine.connect(shouldAttemptLogin: false);
 
@@ -471,7 +476,29 @@ class MatrixService {
     return room?.id ?? roomId;
   }
 
-  Future<void> saveRoom(String roomId) => _roomManager.saveRoomId(roomId);
+  Future<void> saveRoom(String roomId) async {
+    await _roomManager.saveRoomId(roomId);
+
+    // When provisioning saves the room after login, the pipeline may already
+    // be active but not yet attached to this room. Re-start bindings and force
+    // a catch-up in the background so receiving starts immediately.
+    final pipeline = _pipeline;
+    if (pipeline == null) return;
+
+    unawaited(() async {
+      try {
+        await pipeline.start();
+        await pipeline.forceRescan(includeCatchUp: true);
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'saveRoom.bootstrap',
+          stackTrace: stackTrace,
+        );
+      }
+    }());
+  }
 
   bool isLoggedIn() => _sessionManager.isLoggedIn();
 
@@ -603,17 +630,24 @@ class MatrixService {
   Stream<KeyVerification> getIncomingKeyVerificationStream() =>
       incomingKeyVerificationController.stream;
 
-  Future<void> startKeyVerificationListener() =>
-      listenForKeyVerificationRequests(
-        service: this,
-        loggingService: _loggingService,
-      );
+  Future<void> startKeyVerificationListener() async {
+    if (_keyVerificationRequestSubscription != null) {
+      return;
+    }
+    _keyVerificationRequestSubscription =
+        await listenForKeyVerificationRequestsWithSubscription(
+      service: this,
+      loggingService: _loggingService,
+    );
+  }
 
   Future<void> logout() async {
     await _syncEngine.logout();
   }
 
   Future<void> dispose() async {
+    await _keyVerificationRequestSubscription?.cancel();
+    _keyVerificationRequestSubscription = null;
     await messageCountsController.close();
     await keyVerificationController.close();
     await incomingKeyVerificationRunnerController.close();

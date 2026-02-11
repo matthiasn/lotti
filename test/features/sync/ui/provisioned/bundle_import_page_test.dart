@@ -49,7 +49,11 @@ void main() {
     pageIndexNotifier = ValueNotifier(0);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+    when(
+      () => mockMatrixService.login(
+        waitForLifecycle: any(named: 'waitForLifecycle'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
@@ -180,7 +184,7 @@ void main() {
 
       // Verify configureFromBundle was triggered
       verify(() => mockMatrixService.setConfig(any())).called(1);
-      verify(() => mockMatrixService.login()).called(1);
+      verify(() => mockMatrixService.login(waitForLifecycle: false)).called(1);
     });
 
     testWidgets('displays error text in TextField for invalid JSON',

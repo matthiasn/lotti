@@ -49,7 +49,11 @@ void main() {
     mockMatrixService = MockMatrixService();
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
-    when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+    when(
+      () => mockMatrixService.login(
+        waitForLifecycle: any(named: 'waitForLifecycle'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => testBundle.roomId);
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
@@ -308,7 +312,9 @@ void main() {
 
         // Verify the service was called
         verify(() => mockMatrixService.setConfig(any())).called(1);
-        verify(() => mockMatrixService.login()).called(1);
+        verify(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).called(1);
         verify(() => mockMatrixService.joinRoom(testBundle.roomId)).called(1);
         verify(() => mockMatrixService.saveRoom(testBundle.roomId)).called(1);
         verify(
@@ -350,7 +356,9 @@ void main() {
       });
 
       test('sets error state when login fails', () async {
-        when(() => mockMatrixService.login()).thenAnswer((_) async => false);
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => false);
 
         await container
             .read(provisioningControllerProvider.notifier)
@@ -441,7 +449,9 @@ void main() {
         expect(states[2], const ProvisioningState.done());
 
         verify(() => mockMatrixService.setConfig(any())).called(1);
-        verify(() => mockMatrixService.login()).called(1);
+        verify(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).called(1);
         verify(() => mockMatrixService.joinRoom(testBundle.roomId)).called(1);
         verifyNever(
           () => mockMatrixService.changePassword(
@@ -498,7 +508,9 @@ void main() {
 
     group('retry', () {
       test('retries the last configuration after error', () async {
-        when(() => mockMatrixService.login()).thenAnswer((_) async => false);
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => false);
 
         final controller =
             container.read(provisioningControllerProvider.notifier);
@@ -519,7 +531,9 @@ void main() {
             );
 
         // Fix the mock so login succeeds on retry
-        when(() => mockMatrixService.login()).thenAnswer((_) async => true);
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => true);
 
         await controller.retry();
 

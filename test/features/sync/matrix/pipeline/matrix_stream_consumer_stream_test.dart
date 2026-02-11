@@ -4060,6 +4060,85 @@ void main() {
   });
 
   group('SDK sync wait before catch-up', () {
+    test('skips sync wait when no room is configured', () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+
+        final capturedLogs = <String>[];
+        when(() => logger.captureEvent(
+              captureAny<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).thenAnswer((inv) {
+          capturedLogs.add(inv.positionalArguments.first.toString());
+        });
+        when(() => logger.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            )).thenReturn(null);
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => session.timelineEvents)
+            .thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => roomManager.currentRoomId).thenReturn(null);
+        when(() => roomManager.hydrateRoomSnapshot(
+              client: any<Client>(named: 'client'),
+            )).thenAnswer((_) async {});
+        when(() => settingsDb.itemByKey(lastReadMatrixEventId))
+            .thenAnswer((_) async => null);
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: false,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
+        );
+
+        var startDone = false;
+        unawaited(consumer.initialize());
+        async.flushMicrotasks();
+        unawaited(consumer.start().then((_) => startDone = true));
+        async.flushMicrotasks();
+        expect(
+          startDone,
+          isTrue,
+          reason:
+              'start() should not wait for room readiness when no room is configured',
+        );
+
+        unawaited(consumer.forceRescan(includeCatchUp: true));
+        async.flushMicrotasks();
+
+        verifyNever(() => client.onSync);
+        expect(
+          capturedLogs
+              .any((l) => l.contains('No configured room for catch-up')),
+          isTrue,
+        );
+
+        consumer.dispose();
+        async.flushMicrotasks();
+      });
+    });
+
     test('waits for sync completion before catch-up and logs synced=true', () {
       fakeAsync((async) {
         final session = MockMatrixSessionManager();

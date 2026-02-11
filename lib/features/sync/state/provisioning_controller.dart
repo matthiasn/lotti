@@ -106,13 +106,13 @@ class ProvisioningController extends _$ProvisioningController {
         password: bundle.password,
       );
       await matrixService.setConfig(newConfig);
-      final loggedIn = await matrixService.login();
+      final loggedIn = await matrixService.login(waitForLifecycle: false);
       if (!loggedIn) {
         // Restore previous config and reconnect so the user does not end up
         // disconnected after a failed provisioning attempt.
         if (oldConfig != null) {
           await matrixService.setConfig(oldConfig);
-          await matrixService.login();
+          await matrixService.login(waitForLifecycle: false);
         } else {
           await matrixService.deleteConfig();
         }
