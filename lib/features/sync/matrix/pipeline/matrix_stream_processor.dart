@@ -383,8 +383,10 @@ class MatrixStreamProcessor {
       // Skip duplicate attachment work if we've already seen this eventId.
       // Keep processing for sync payload events to ensure apply/retry semantics.
       final dup = _isDuplicateAndRecordSeen(eventId);
-      final isSelfOrigin = e.senderId == _clientProvider().userID;
-      final suppressed = _sentEventRegistry.consume(eventId) || isSelfOrigin;
+      // With a single shared Matrix user, senderId is always our own userID.
+      // Rely solely on the sent-event registry to suppress events this device
+      // sent, so that messages from the other device are processed normally.
+      final suppressed = _sentEventRegistry.consume(eventId);
       if (suppressed) {
         suppressedIds.add(eventId);
         _metrics.incSelfEventsSuppressed();
