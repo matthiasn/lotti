@@ -1,10 +1,13 @@
 OS := $(shell uname -s)
 FLUTTER_CMD :=
+DART_CMD :=
 
 ifeq ($(OS), Darwin)
 	FLUTTER_CMD := fvm flutter
+	DART_CMD := fvm dart
 else
 	FLUTTER_CMD := flutter
+	DART_CMD := dart
 endif
 
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
@@ -30,17 +33,17 @@ junit_test:
 slow_boundaries: deps
 	@mkdir -p reports
 	$(FLUTTER_CMD) test -r json --file-reporter json:reports/tests.json
-	dart run test/tool/analyze_test_timings.dart reports/tests.json $(THRESH)
+	$(DART_CMD) run test/tool/analyze_test_timings.dart reports/tests.json $(THRESH)
 
 .PHONY: junit_upload
 junit_upload:
-	dart pub global activate junitreport
-	dart pub global run junitreport:tojunit --input TEST-report.jsonl --output junit.xml
+	$(DART_CMD) pub global activate junitreport
+	$(DART_CMD) pub global run junitreport:tojunit --input TEST-report.jsonl --output junit.xml
 	./.buildkite/junit_upload.sh
 
 .PHONY: integration_test
 integration_test:
-	 flutter test integration_test
+	 $(FLUTTER_CMD) test integration_test
 
 .PHONY: clean
 clean:
@@ -50,13 +53,9 @@ clean:
 deps:
 	$(FLUTTER_CMD) pub get
 
-.PHONY: enable_arb_tools
-enable_arb_tools:
-	dart pub global activate arb_utils
-
 .PHONY: sort_arb_files
-sort_arb_files: enable_arb_tools
-	find lib/l10n/ -type f -exec dart pub global run arb_utils:sort -i {} \;
+sort_arb_files:
+	find lib/l10n/ -type f -name '*.arb' -exec $(DART_CMD) run arb_utils sort -i {} \;
 
 .PHONY: l10n
 l10n: deps
@@ -79,11 +78,11 @@ coverage: test coverage_report
 
 .PHONY: build_runner
 build_runner: deps
-	dart run build_runner build --delete-conflicting-outputs
+	$(DART_CMD) run build_runner build --delete-conflicting-outputs
 
 .PHONY: watch
 watch: l10n
-	dart run build_runner watch --delete-conflicting-outputs
+	$(DART_CMD) run build_runner watch --delete-conflicting-outputs
 
 .PHONY: activate_fluttium
 activate_fluttium:
@@ -237,7 +236,7 @@ all: ios macos
 
 .PHONY: splash
 splash:
-	dart run flutter_native_splash:create
+	$(DART_CMD) run flutter_native_splash:create
 
 .PHONY: icons
 icons:
