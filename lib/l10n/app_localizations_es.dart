@@ -2457,8 +2457,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pega el código de aprovisionamiento aquí';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importar configuración de sincronización';
+  String get provisionedSyncImportTitle => 'Configurar sincronización';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Pegar desde el portapapeles';
+
+  @override
+  String get provisionedSyncBundleImported =>
+      'Código de aprovisionamiento importado';
 
   @override
   String get provisionedSyncInvalidBundle =>

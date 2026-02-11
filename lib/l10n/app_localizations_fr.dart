@@ -2463,8 +2463,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Colle le code de provisionnement ici';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importer la configuration de synchronisation';
+  String get provisionedSyncImportTitle => 'Configurer la synchronisation';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
+
+  @override
+  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
 
   @override
   String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';

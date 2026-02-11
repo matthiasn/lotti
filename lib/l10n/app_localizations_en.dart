@@ -2370,7 +2370,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncImportHint => 'Paste provisioning code here';
 
   @override
-  String get provisionedSyncImportTitle => 'Import Sync Configuration';
+  String get provisionedSyncImportTitle => 'Sync Setup';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
+
+  @override
+  String get provisionedSyncBundleImported => 'Provisioning code imported';
 
   @override
   String get provisionedSyncInvalidBundle => 'Invalid provisioning code';

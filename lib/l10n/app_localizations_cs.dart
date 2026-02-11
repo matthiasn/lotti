@@ -2392,8 +2392,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncImportHint => 'Vložte provizní kód sem';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importovat konfiguraci synchronizace';
+  String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
+
+  @override
+  String get provisionedSyncBundleImported => 'Provizní kód importován';
 
   @override
   String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';

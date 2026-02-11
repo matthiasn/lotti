@@ -170,8 +170,7 @@ class _IncomingVerificationModalState
                             onPressed: () async {
                               closeModal();
                             },
-                            label: context
-                                .messages.settingsMatrixCancelVerificationLabel,
+                            label: context.messages.settingsMatrixCancel,
                             isDestructive: true,
                           ),
                         ),

@@ -2418,7 +2418,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncImportHint => 'Bereitstellungscode hier einfügen';
 
   @override
-  String get provisionedSyncImportTitle => 'Sync-Konfiguration importieren';
+  String get provisionedSyncImportTitle => 'Sync einrichten';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
+
+  @override
+  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
 
   @override
   String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';

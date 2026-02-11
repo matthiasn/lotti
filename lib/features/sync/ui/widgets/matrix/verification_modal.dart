@@ -230,8 +230,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                               await runner?.cancelVerification();
                               pop();
                             },
-                            label: context
-                                .messages.settingsMatrixCancelVerificationLabel,
+                            label: context.messages.settingsMatrixCancel,
                             isDestructive: true,
                           ),
                         ),

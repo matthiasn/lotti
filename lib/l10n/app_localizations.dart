@@ -4370,8 +4370,20 @@ abstract class AppLocalizations {
   /// No description provided for @provisionedSyncImportTitle.
   ///
   /// In en, this message translates to:
-  /// **'Import Sync Configuration'**
+  /// **'Sync Setup'**
   String get provisionedSyncImportTitle;
+
+  /// No description provided for @provisionedSyncPasteClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get provisionedSyncPasteClipboard;
+
+  /// No description provided for @provisionedSyncBundleImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Provisioning code imported'**
+  String get provisionedSyncBundleImported;
 
   /// No description provided for @provisionedSyncInvalidBundle.
   ///

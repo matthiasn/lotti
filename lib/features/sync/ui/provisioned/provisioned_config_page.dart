@@ -30,7 +30,7 @@ SliverWoltModalSheetPage provisionedConfigPage({
     context: context,
     showCloseButton: true,
     stickyActionBar: _ConfigActionBar(pageIndexNotifier: pageIndexNotifier),
-    title: context.messages.provisionedSyncImportTitle,
+    title: context.messages.provisionedSyncTitle,
     padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
     child: ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
   );
@@ -63,9 +63,9 @@ class _ConfigActionBar extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Flexible(
-              child: OutlinedButton(
+              child: LottiSecondaryButton(
                 onPressed: () => pageIndexNotifier.value = 0,
-                child: Text(context.messages.settingsMatrixPreviousPage),
+                label: context.messages.settingsMatrixPreviousPage,
               ),
             ),
             const SizedBox(width: 8),

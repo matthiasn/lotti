@@ -57,13 +57,13 @@ class _StatusActionBar extends ConsumerWidget {
             const Spacer(),
             const SizedBox(width: 8),
             Flexible(
-              child: OutlinedButton(
+              child: LottiSecondaryButton(
                 onPressed: () {
                   // Keep notifier state predictable for future multi-step flows.
                   pageIndexNotifier.value = 0;
                   Navigator.of(context).pop();
                 },
-                child: Text(context.messages.tasksLabelsDialogClose),
+                label: context.messages.tasksLabelsDialogClose,
               ),
             ),
           ],
@@ -87,9 +87,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _AutoVerificationLauncher(),
-          const SyncFlowSection(
-            child: DiagnosticInfoButton(),
-          ),
+          const DiagnosticInfoButton(),
           const SizedBox(height: 16),
           SyncFlowSection(
             child: Column(
@@ -109,34 +107,32 @@ class ProvisionedStatusWidget extends ConsumerWidget {
             const _HandoverQrSection(),
           ],
           const SizedBox(height: 16),
-          SyncFlowSection(
-            child: LottiSecondaryButton(
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: Text(messages.syncDeleteConfigQuestion),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        child: Text(messages.settingsMatrixCancel),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        child: Text(messages.syncDeleteConfigConfirm),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed ?? false) {
-                  await matrixService.deleteConfig();
-                  if (!context.mounted) return;
-                  ref.read(provisioningControllerProvider.notifier).reset();
-                  await Navigator.of(context).maybePop();
-                }
-              },
-              label: messages.provisionedSyncDisconnect,
-            ),
+          LottiSecondaryButton(
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text(messages.syncDeleteConfigQuestion),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: Text(messages.settingsMatrixCancel),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      child: Text(messages.syncDeleteConfigConfirm),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed ?? false) {
+                await matrixService.deleteConfig();
+                if (!context.mounted) return;
+                ref.read(provisioningControllerProvider.notifier).reset();
+                await Navigator.of(context).maybePop();
+              }
+            },
+            label: messages.provisionedSyncDisconnect,
           ),
         ],
       ),
@@ -257,11 +253,9 @@ class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
       }
 
       if (_loadAttempted) {
-        return SyncFlowSection(
-          child: LottiSecondaryButton(
-            onPressed: _generate,
-            label: messages.provisionedSyncShowQr,
-          ),
+        return LottiSecondaryButton(
+          onPressed: _generate,
+          label: messages.provisionedSyncShowQr,
         );
       }
 

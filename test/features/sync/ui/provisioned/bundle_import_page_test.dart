@@ -57,6 +57,10 @@ void main() {
     when(() => mockMatrixService.joinRoom(any()))
         .thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
+    when(() => mockMatrixService.clearPersistedRoom())
+        .thenAnswer((_) async {});
+    when(() => mockMatrixService.getRoom())
+        .thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),
@@ -371,8 +375,7 @@ void main() {
       expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
     });
 
-    testWidgets('replaces bundle after re-import with different data',
-        (tester) async {
+    testWidgets('hides import form after successful import', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
@@ -389,25 +392,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('@alice:example.com'), findsOneWidget);
-
-      // Import second bundle with different user
-      const otherBundle = SyncProvisioningBundle(
-        v: 1,
-        homeServer: 'https://matrix.example.com',
-        user: '@bob:example.com',
-        password: 'other-secret',
-        roomId: '!room456:example.com',
+      expect(find.byType(TextField), findsNothing);
+      expect(
+        find.text(context.messages.provisionedSyncImportButton),
+        findsNothing,
       );
-      final otherBase64 =
-          base64UrlEncode(utf8.encode(jsonEncode(otherBundle.toJson())));
-
-      await tester.enterText(find.byType(TextField), otherBase64);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('@bob:example.com'), findsOneWidget);
-      expect(find.text('@alice:example.com'), findsNothing);
     });
   });
 }

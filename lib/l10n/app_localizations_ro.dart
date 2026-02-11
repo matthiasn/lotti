@@ -2410,8 +2410,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncImportHint => 'Lipește codul de provizionare aici';
 
   @override
-  String get provisionedSyncImportTitle =>
-      'Importă configurația de sincronizare';
+  String get provisionedSyncImportTitle => 'Configurează sincronizarea';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Lipește din clipboard';
+
+  @override
+  String get provisionedSyncBundleImported => 'Cod de provizionare importat';
 
   @override
   String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';

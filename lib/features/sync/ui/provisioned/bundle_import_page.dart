@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -83,103 +85,160 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
     _importBundle(code);
   }
 
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData('text/plain');
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty) return;
+    _textController.text = text;
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final availableWidth = MediaQuery.of(context).size.width - 100;
     final camDimension = max(availableWidth, 200).toDouble();
+    final hasDecodedBundle = _decodedBundle != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SyncFlowSection(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                messages.provisionedSyncImportHint,
-                style: context.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _textController,
-                decoration: InputDecoration(
-                  hintText: messages.provisionedSyncImportHint,
-                  errorText: _errorText,
-                  border: const OutlineInputBorder(),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: hasDecodedBundle
+              ? Column(
+                  key: const ValueKey('bundle_import_decoded'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
+                          color: context.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          messages.provisionedSyncBundleImported,
+                          style: context.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _BundleSummaryCard(bundle: _decodedBundle!),
+                    const SizedBox(height: 16),
+                    LottiPrimaryButton(
+                      onPressed: () {
+                        ref
+                            .read(provisioningControllerProvider.notifier)
+                            .configureFromBundle(
+                              _decodedBundle!,
+                              rotatePassword: isDesktop,
+                            );
+                        widget.pageIndexNotifier.value = 1;
+                      },
+                      label: messages.provisionedSyncConfigureButton,
+                    ),
+                  ],
+                )
+              : Column(
+                  key: const ValueKey('bundle_import_input'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          messages.provisionedSyncImportHint,
+                          style: context.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _textController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: context.colorScheme.surfaceContainer,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            errorText: _errorText,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                color: context.colorScheme.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          onChanged: (_) {
+                            setState(() {
+                              _errorText = null;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        if (isDesktop)
+                          LottiSecondaryButton(
+                            onPressed: _pasteFromClipboard,
+                            icon: Icons.content_paste,
+                            label: messages.provisionedSyncPasteClipboard,
+                          ),
+                        if (isMobile)
+                          Expanded(
+                            child: LottiSecondaryButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showScanner = !_showScanner;
+                                  _lastScannedCode = null;
+                                });
+                              },
+                              icon: Icons.qr_code_scanner,
+                              label: messages.provisionedSyncScanButton,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LottiPrimaryButton(
+                            onPressed: _textController.text.trim().isEmpty
+                                ? null
+                                : () => _importBundle(_textController.text),
+                            label: messages.provisionedSyncImportButton,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isMobile && _showScanner) ...[
+                      const SizedBox(height: 16),
+                      SyncFlowSection(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            height: camDimension,
+                            width: camDimension,
+                            child: MobileScanner(
+                              controller: _ensureScannerController(),
+                              onDetect: _handleBarcode,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                onChanged: (_) {
-                  setState(() {
-                    _errorText = null;
-                  });
-                },
-              ),
-            ],
-          ),
         ),
-        const SizedBox(height: 16),
-        SyncFlowSection(
-          child: Row(
-            children: [
-              Expanded(
-                child: LottiPrimaryButton(
-                  onPressed: _textController.text.trim().isEmpty
-                      ? null
-                      : () => _importBundle(_textController.text),
-                  label: messages.provisionedSyncImportButton,
-                ),
-              ),
-              if (isMobile) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showScanner = !_showScanner;
-                        _lastScannedCode = null;
-                      });
-                    },
-                    icon: const Icon(Icons.qr_code_scanner),
-                    label: Text(messages.provisionedSyncScanButton),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (isMobile && _showScanner) ...[
-          const SizedBox(height: 16),
-          SyncFlowSection(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                height: camDimension,
-                width: camDimension,
-                child: MobileScanner(
-                  controller: _ensureScannerController(),
-                  onDetect: _handleBarcode,
-                ),
-              ),
-            ),
-          ),
-        ],
-        if (_decodedBundle != null) ...[
-          const SizedBox(height: 24),
-          _BundleSummaryCard(bundle: _decodedBundle!),
-          const SizedBox(height: 16),
-          LottiPrimaryButton(
-            onPressed: () {
-              ref
-                  .read(provisioningControllerProvider.notifier)
-                  .configureFromBundle(
-                    _decodedBundle!,
-                    rotatePassword: isDesktop,
-                  );
-              widget.pageIndexNotifier.value = 1;
-            },
-            label: messages.provisionedSyncConfigureButton,
-          ),
-        ],
       ],
     );
   }
