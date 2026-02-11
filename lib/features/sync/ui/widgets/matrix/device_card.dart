@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -78,14 +79,25 @@ class DeviceCard extends ConsumerWidget {
             const SizedBox(height: 10),
             LottiPrimaryButton(
               onPressed: () async {
-                await showModalBottomSheet<void>(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) {
-                    return VerificationModal(deviceKeys);
-                  },
+                final lock = ref.read(
+                  matrixVerificationModalLockProvider.notifier,
                 );
-                refreshListCallback();
+                if (!lock.tryAcquire()) return;
+
+                try {
+                  await showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    showDragHandle: true,
+                    builder: (_) {
+                      return VerificationModal(deviceKeys);
+                    },
+                  );
+                } finally {
+                  lock.release();
+                  refreshListCallback();
+                }
               },
               label: context.messages.settingsMatrixVerifyLabel,
             ),

@@ -488,7 +488,7 @@ class MatrixService {
     unawaited(() async {
       try {
         await pipeline.start();
-        await pipeline.forceRescan(includeCatchUp: true);
+        await pipeline.forceRescan();
       } catch (error, stackTrace) {
         _loggingService.captureException(
           error,

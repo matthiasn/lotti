@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';

@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
-import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -52,25 +53,29 @@ class _ConfigActionBar extends ConsumerWidget {
       error: (_) => false,
     );
 
-    return Padding(
-      padding: WoltModalConfig.pagePadding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: OutlinedButton(
-              onPressed: () => pageIndexNotifier.value = 0,
-              child: Text(context.messages.settingsMatrixPreviousPage),
+    return ColoredBox(
+      color: context.colorScheme.surface,
+      child: Padding(
+        padding: WoltModalConfig.pagePadding,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: OutlinedButton(
+                onPressed: () => pageIndexNotifier.value = 0,
+                child: Text(context.messages.settingsMatrixPreviousPage),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: LottiPrimaryButton(
-              onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
-              label: context.messages.settingsMatrixNextPage,
+            const SizedBox(width: 8),
+            Flexible(
+              child: LottiPrimaryButton(
+                onPressed:
+                    isComplete ? () => pageIndexNotifier.value = 2 : null,
+                label: context.messages.settingsMatrixNextPage,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -350,14 +355,22 @@ class _DoneViewState extends ConsumerState<_DoneView> {
     final matrixService = ref.read(matrixServiceProvider);
     final unverifiedDevices = matrixService.getUnverifiedDevices();
     if (unverifiedDevices.isNotEmpty && mounted) {
+      final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+      if (!lock.tryAcquire()) return;
       setState(() => _verificationTriggered = true);
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        builder: (_) => VerificationModal(unverifiedDevices.first),
-      );
-      if (mounted) {
-        ref.invalidate(matrixUnverifiedControllerProvider);
+      try {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          showDragHandle: true,
+          builder: (_) => VerificationModal(unverifiedDevices.first),
+        );
+      } finally {
+        if (mounted) {
+          ref.invalidate(matrixUnverifiedControllerProvider);
+        }
+        lock.release();
       }
     }
   }

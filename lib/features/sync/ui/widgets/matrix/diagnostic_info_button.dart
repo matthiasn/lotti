@@ -45,7 +45,8 @@ class DiagnosticInfoButton extends ConsumerWidget {
                     );
                   }
                 },
-                child: Text(context.messages.settingsMatrixDiagnosticCopyButton),
+                child:
+                    Text(context.messages.settingsMatrixDiagnosticCopyButton),
               ),
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),

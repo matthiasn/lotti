@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,6 +20,12 @@ class MockMatrixService extends Mock implements MatrixService {}
 class MockClient extends Mock implements Client {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
+
+class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 
 class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
   _FakeMatrixUnverifiedController(this.devices);
@@ -35,6 +42,10 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockClient mockClient;
 
+  setUpAll(() {
+    registerFallbackValue(_FakeDeviceKeys());
+  });
+
   setUp(() {
     mockMatrixService = MockMatrixService();
     mockClient = MockClient();
@@ -43,6 +54,10 @@ void main() {
     when(() => mockClient.userID).thenReturn('@alice:example.com');
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
+    when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+    when(() => mockMatrixService.keyVerificationStream)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
   });
 
   group('ProvisionedStatusWidget', () {
@@ -354,9 +369,15 @@ void main() {
     testWidgets('shows device cards when unverified devices exist',
         (tester) async {
       final device = MockDeviceKeys();
+      final keyVerification = MockKeyVerification();
+      final runner = MockKeyVerificationRunner();
       when(() => device.deviceDisplayName).thenReturn('Pixel 7');
       when(() => device.deviceId).thenReturn('DEVICE1');
       when(() => device.userId).thenReturn('@alice:example.com');
+      when(() => keyVerification.isDone).thenReturn(false);
+      when(() => runner.lastStep).thenReturn('');
+      when(() => runner.keyVerification).thenReturn(keyVerification);
+      when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -372,7 +393,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DeviceCard), findsOneWidget);
-      expect(find.text('Pixel 7'), findsOneWidget);
+      expect(find.text('Pixel 7'), findsWidgets);
     });
   });
 

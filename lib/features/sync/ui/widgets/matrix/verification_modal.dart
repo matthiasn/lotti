@@ -29,6 +29,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
   KeyVerificationRunner? _runner;
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
+  bool _verificationStartInFlight = false;
 
   @override
   void dispose() {
@@ -36,7 +37,39 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
     super.dispose();
   }
 
-  void startVerification() => _matrixService.verifyDevice(widget.deviceKeys);
+  Future<void> startVerification({bool retry = false}) async {
+    if (_verificationStartInFlight) return;
+    _verificationStartInFlight = true;
+    try {
+      final maxAttempts = retry ? 5 : 1;
+      var delay = const Duration(milliseconds: 350);
+
+      for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        if (!mounted) return;
+        final activeRunner = _matrixService.keyVerificationRunner;
+        if (activeRunner != null && !activeRunner.keyVerification.isDone) {
+          return;
+        }
+
+        try {
+          await _matrixService.verifyDevice(widget.deviceKeys);
+          return;
+        } catch (_) {
+          // Keep retrying in auto mode; manual fallback remains available.
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await Future<void>.delayed(delay);
+          delay *= 2;
+        }
+      }
+    } finally {
+      _verificationStartInFlight = false;
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
 
   Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
     if (runner == null || _awaitingOtherDevice) return;
@@ -53,8 +86,8 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
 
   @override
   void initState() {
-    startVerification();
     super.initState();
+    unawaited(startVerification(retry: true));
   }
 
   @override
@@ -137,7 +170,9 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                 if (runner == null)
                   LottiPrimaryButton(
                     key: const Key('matrix_start_verify'),
-                    onPressed: startVerification,
+                    onPressed: _verificationStartInFlight
+                        ? null
+                        : () => unawaited(startVerification()),
                     label:
                         context.messages.settingsMatrixStartVerificationLabel,
                   ),

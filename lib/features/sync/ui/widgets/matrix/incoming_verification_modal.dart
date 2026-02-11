@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -31,6 +32,18 @@ class _IncomingVerificationModalState
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
+  bool _didAutoAcceptVerification = false;
+
+  Future<void> _autoAcceptIncoming(KeyVerificationRunner runner) async {
+    try {
+      await runner.acceptVerification();
+    } catch (_) {
+      // Keep the manual "Verify" button available as fallback.
+      if (mounted) {
+        _didAutoAcceptVerification = false;
+      }
+    }
+  }
 
   Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
     if (runner == null || _awaitingOtherDevice) return;
@@ -93,6 +106,14 @@ class _IncomingVerificationModalState
         if (isDone && !_didScheduleUnverifiedRefresh) {
           _didScheduleUnverifiedRefresh = true;
           unawaited(refreshUnverifiedDevices());
+        }
+
+        if (!isDone &&
+            emojis == null &&
+            runner != null &&
+            !_didAutoAcceptVerification) {
+          _didAutoAcceptVerification = true;
+          unawaited(_autoAcceptIncoming(runner));
         }
 
         return SingleChildScrollView(
@@ -225,12 +246,26 @@ class _IncomingVerificationWrapperState
         .getIncomingKeyVerificationStream()
         .listen((keyVerification) {
       if (mounted) {
-        showModalBottomSheet<void>(
-          context: context,
-          builder: (context) {
-            return IncomingVerificationModal(keyVerification);
-          },
-        );
+        final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+        if (!lock.tryAcquire()) return;
+        unawaited(() async {
+          try {
+            await showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              showDragHandle: true,
+              builder: (context) {
+                return IncomingVerificationModal(keyVerification);
+              },
+            );
+          } finally {
+            if (mounted) {
+              ref.invalidate(matrixUnverifiedControllerProvider);
+            }
+            lock.release();
+          }
+        }());
       }
     });
   }

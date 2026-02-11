@@ -4,6 +4,7 @@ import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/status_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -18,28 +19,31 @@ SliverWoltModalSheetPage unverifiedDevicesPage({
   return ModalUtils.modalSheetPage(
     context: context,
     showCloseButton: true,
-    stickyActionBar: Padding(
-      padding: WoltModalConfig.pagePadding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: LottiSecondaryButton(
-              label: context.messages.settingsMatrixPreviousPage,
-              onPressed: () =>
-                  pageIndexNotifier.value = pageIndexNotifier.value - 1,
+    stickyActionBar: ColoredBox(
+      color: context.colorScheme.surface,
+      child: Padding(
+        padding: WoltModalConfig.pagePadding,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: LottiSecondaryButton(
+                label: context.messages.settingsMatrixPreviousPage,
+                onPressed: () =>
+                    pageIndexNotifier.value = pageIndexNotifier.value - 1,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: LottiPrimaryButton(
-              onPressed: () =>
-                  pageIndexNotifier.value = pageIndexNotifier.value + 1,
-              label: context.messages.settingsMatrixNextPage,
-              icon: MdiIcons.arrowRight,
+            const SizedBox(width: 8),
+            Flexible(
+              child: LottiPrimaryButton(
+                onPressed: () =>
+                    pageIndexNotifier.value = pageIndexNotifier.value + 1,
+                label: context.messages.settingsMatrixNextPage,
+                icon: MdiIcons.arrowRight,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
     title: context.messages.settingsMatrixUnverifiedDevicesPage,

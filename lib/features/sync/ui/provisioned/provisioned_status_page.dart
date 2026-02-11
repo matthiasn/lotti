@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
+import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
+import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
@@ -11,6 +16,7 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:matrix/matrix.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -35,25 +41,28 @@ class _StatusActionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: WoltModalConfig.pagePadding,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Flexible(
-            child: OutlinedButton(
-              onPressed: () => pageIndexNotifier.value = 0,
-              child: Text(context.messages.settingsMatrixPreviousPage),
+    return ColoredBox(
+      color: context.colorScheme.surface,
+      child: Padding(
+        padding: WoltModalConfig.pagePadding,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: OutlinedButton(
+                onPressed: () => pageIndexNotifier.value = 0,
+                child: Text(context.messages.settingsMatrixPreviousPage),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.messages.tasksLabelsDialogClose),
+            const SizedBox(width: 8),
+            Flexible(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.messages.tasksLabelsDialogClose),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -72,6 +81,7 @@ class ProvisionedStatusWidget extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const _AutoVerificationLauncher(),
         const SizedBox(height: 20),
         _StatusInfoRow(
           label: messages.provisionedSyncSummaryUser,
@@ -114,8 +124,9 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                 ],
               ),
             );
-            if (confirmed == true && context.mounted) {
+            if (confirmed ?? false) {
               await matrixService.deleteConfig();
+              if (!context.mounted) return;
               ref.read(provisioningControllerProvider.notifier).reset();
               await Navigator.of(context).maybePop();
             }
@@ -124,6 +135,65 @@ class ProvisionedStatusWidget extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+class _AutoVerificationLauncher extends ConsumerStatefulWidget {
+  const _AutoVerificationLauncher();
+
+  @override
+  ConsumerState<_AutoVerificationLauncher> createState() =>
+      _AutoVerificationLauncherState();
+}
+
+class _AutoVerificationLauncherState
+    extends ConsumerState<_AutoVerificationLauncher> {
+  bool _launchInFlight = false;
+  String? _lastAutoLaunchedDeviceId;
+
+  Future<void> _maybeLaunch(List<DeviceKeys> devices) async {
+    if (!mounted || _launchInFlight || devices.isEmpty) return;
+    final target = devices.first;
+    final targetId = target.deviceId;
+
+    if (_lastAutoLaunchedDeviceId == targetId) return;
+    final lock = ref.read(matrixVerificationModalLockProvider.notifier);
+    if (!lock.tryAcquire()) return;
+
+    _launchInFlight = true;
+    _lastAutoLaunchedDeviceId = targetId;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (_) => VerificationModal(target),
+      );
+    } finally {
+      if (mounted) {
+        ref.invalidate(matrixUnverifiedControllerProvider);
+      }
+      lock.release();
+      _launchInFlight = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unverifiedDevices =
+        ref.watch(matrixUnverifiedControllerProvider).value ?? [];
+
+    if (unverifiedDevices.isEmpty) {
+      _lastAutoLaunchedDeviceId = null;
+      return const SizedBox.shrink();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_maybeLaunch(unverifiedDevices));
+    });
+
+    return const SizedBox.shrink();
   }
 }
 
