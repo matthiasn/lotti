@@ -80,7 +80,7 @@ def make_args(**overrides) -> argparse.Namespace:
         "admin_user": "admin",
         "admin_password": "admin_secret",
         "username": "lotti_user",
-        "display_name": "Lotti Sync",
+        "display_name": "",
         "output_file": None,
         "verbose": False,
     }

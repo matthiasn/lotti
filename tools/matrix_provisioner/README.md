@@ -56,7 +56,7 @@ python provision.py \
 | `--admin-password` | No | Admin password (default: reads `MATRIX_ADMIN_PASSWORD` env var, or prompts interactively) |
 | `--username` | Yes | Localpart for the new user (e.g. `lotti_sync_user42`) |
 | `--output-file` | Yes | File path to write the provisioning bundle to |
-| `--display-name` | No | Display name (default: "Lotti Sync") |
+| `--display-name` | No | Display name (default: `Lotti Sync (<username>)`) |
 | `--verbose` | No | Print decoded JSON (password redacted) to stderr for debugging |
 
 ### Output

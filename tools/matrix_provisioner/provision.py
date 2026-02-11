@@ -30,6 +30,11 @@ def _encode_mxid_for_path(mxid: str) -> str:
     return quote(mxid, safe="")
 
 
+def _encode_room_id_for_path(room_id: str) -> str:
+    """URL-encode a Matrix room ID for use in a URL path segment."""
+    return quote(room_id, safe="")
+
+
 async def _deactivate_user(
     client: httpx.AsyncClient,
     admin_headers: dict,
@@ -117,7 +122,8 @@ async def provision(
         # Step 3: Create user
         user_mxid = f"@{args.username}:{server_name}"
         encoded_mxid = _encode_mxid_for_path(user_mxid)
-        display_name = args.display_name
+        display_name = args.display_name or f"Lotti Sync ({args.username})"
+        room_name = f"Lotti Sync ({args.username})"
 
         log(f"Creating user {user_mxid}...")
         resp = await client.put(
@@ -155,7 +161,7 @@ async def provision(
                 headers=user_headers,
                 json={
                     "visibility": "private",
-                    "name": "Lotti Sync",
+                    "name": room_name,
                     "preset": "trusted_private_chat",
                     "creation_content": {"m.federate": False},
                     "initial_state": [
@@ -177,6 +183,34 @@ async def provision(
             resp.raise_for_status()
             room_id = resp.json()["room_id"]
             log(f"Room created: {room_id}")
+
+            # Step 5b: Explicitly enforce critical room state. Some homeserver
+            # versions/setups can ignore parts of initial_state.
+            encoded_room_id = _encode_room_id_for_path(room_id)
+
+            log("Enforcing room encryption state...")
+            resp = await client.put(
+                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.room.encryption",
+                headers=user_headers,
+                json={"algorithm": "m.megolm.v1.aes-sha2"},
+            )
+            resp.raise_for_status()
+
+            log("Setting room name...")
+            resp = await client.put(
+                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.room.name",
+                headers=user_headers,
+                json={"name": room_name},
+            )
+            resp.raise_for_status()
+
+            log("Setting Lotti sync marker state...")
+            resp = await client.put(
+                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.lotti.sync_room",
+                headers=user_headers,
+                json={"version": 1},
+            )
+            resp.raise_for_status()
         except Exception:
             await _deactivate_user(client, admin_headers, user_mxid)
             raise
@@ -256,8 +290,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--display-name",
-        default="Lotti Sync",
-        help='Display name for the new user (default: "Lotti Sync")',
+        default="",
+        help='Display name for the new user (default: "Lotti Sync (<username>)")',
     )
     parser.add_argument(
         "--output-file",
