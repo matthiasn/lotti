@@ -6,11 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
 ## [0.9.857] - 2026-02-12
 ### Changed
 - Removed M4A-to-WAV audio conversion for Mistral — all providers now accept M4A natively. Eliminates FFmpeg dependency and file size quota issues.
 - Updated Voxtral model description to reflect Voxtral Transcribe 2 capabilities with support for 13 languages and up to 1 GB / 3 hours per file.
-
 
 ## [0.9.856] - 2026-02-11
 ### Fixed
@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Flexible Ratings Model: Session ratings are now driven by a catalog registry instead of hardcoded questions. Each rating dimension snapshots its question metadata (question text, input type, option labels) at save time, making stored ratings fully self-describing. Unknown catalogs (e.g. received via sync from a newer client) render in read-only mode with a graceful fallback chain: stored metadata, catalog lookup, then dimension key.
 - Matrix Sync Room Creation: Sync rooms are now created with encryption state in the initial room creation request (instead of relying on a later room snapshot), and room names now include the creating username for easier server-side identification.
+
 
 ## [0.9.852] - 2026-02-09
 ### Fixed
