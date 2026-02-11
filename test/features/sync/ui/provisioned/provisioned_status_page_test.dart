@@ -175,6 +175,50 @@ void main() {
       verify(() => mockMatrixService.deleteConfig()).called(1);
     });
 
+    testWidgets('disconnect closes route after confirmation', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const Scaffold(
+                        body: ProvisionedStatusWidget(),
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open Sync Status'),
+              ),
+            ),
+          ),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => _FakeMatrixUnverifiedController(const []),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Sync Status'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProvisionedStatusWidget), findsOneWidget);
+
+      final context = tester.element(find.byType(ProvisionedStatusWidget));
+      await tester.tap(find.text(context.messages.provisionedSyncDisconnect));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(context.messages.syncDeleteConfigConfirm));
+      await tester.pumpAndSettle();
+
+      verify(() => mockMatrixService.deleteConfig()).called(1);
+      expect(find.byType(ProvisionedStatusWidget), findsNothing);
+      expect(find.text('Open Sync Status'), findsOneWidget);
+    });
+
     testWidgets('disconnect does not call deleteConfig when cancelled',
         (tester) async {
       await tester.pumpWidget(
@@ -200,8 +244,8 @@ void main() {
         findsOneWidget,
       );
 
-      // Dismiss the dialog by tapping outside (scrim)
-      await tester.tapAt(Offset.zero);
+      // Tap cancel in confirmation dialog
+      await tester.tap(find.text(context.messages.settingsMatrixCancel));
       await tester.pumpAndSettle();
 
       verifyNever(() => mockMatrixService.deleteConfig());

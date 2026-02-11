@@ -133,7 +133,7 @@ void main() {
     controller.add(runner);
     await tester.pump();
 
-    expect(find.text('They match'), findsOneWidget);
+    expect(find.text('Accept'), findsOneWidget);
     final cancelFinder = find.byKey(const Key('matrix_cancel_verification'));
     expect(cancelFinder, findsOneWidget);
 

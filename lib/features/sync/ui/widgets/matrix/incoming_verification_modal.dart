@@ -28,6 +28,20 @@ class IncomingVerificationModal extends ConsumerStatefulWidget {
 class _IncomingVerificationModalState
     extends ConsumerState<IncomingVerificationModal> {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);
+  bool _awaitingOtherDevice = false;
+
+  Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
+    if (runner == null || _awaitingOtherDevice) return;
+    setState(() => _awaitingOtherDevice = true);
+    try {
+      await runner.acceptEmojiVerification();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _awaitingOtherDevice = false);
+      }
+      rethrow;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,9 +93,16 @@ class _IncomingVerificationModalState
                 if (!isDone && emojis == null)
                   LottiPrimaryButton(
                     onPressed: runner?.acceptVerification,
-                    label: 'Verify Session',
+                    label: context.messages.settingsMatrixVerifyLabel,
                   ),
                 if (!isDone && emojis != null) ...[
+                  if (_awaitingOtherDevice)
+                    Text(
+                      context.messages.settingsMatrixContinueVerificationLabel,
+                      style: context.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  if (_awaitingOtherDevice) const SizedBox(height: 12),
                   Text(
                     context.messages.settingsMatrixVerifyIncomingConfirm,
                     style: context.textTheme.bodyLarge,
@@ -108,8 +129,13 @@ class _IncomingVerificationModalState
                       const SizedBox(width: 8),
                       Flexible(
                         child: LottiPrimaryButton(
-                          onPressed: runner?.acceptEmojiVerification,
-                          label: 'They match',
+                          onPressed: _awaitingOtherDevice
+                              ? null
+                              : () => _acceptEmojiVerification(runner),
+                          label: _awaitingOtherDevice
+                              ? context.messages
+                                  .settingsMatrixContinueVerificationLabel
+                              : context.messages.settingsMatrixAccept,
                         ),
                       ),
                     ],

@@ -10,8 +10,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:lotti/widgets/modal/modal_action_sheet.dart';
-import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -100,22 +98,26 @@ class ProvisionedStatusWidget extends ConsumerWidget {
         const SizedBox(height: 16),
         LottiSecondaryButton(
           onPressed: () async {
-            const deleteKey = 'deleteKey';
-            final result = await showModalActionSheet<String>(
+            final confirmed = await showDialog<bool>(
               context: context,
-              title: messages.syncDeleteConfigQuestion,
-              actions: [
-                ModalSheetAction(
-                  icon: Icons.warning,
-                  label: messages.syncDeleteConfigConfirm,
-                  key: deleteKey,
-                  isDestructiveAction: true,
-                ),
-              ],
+              builder: (dialogContext) => AlertDialog(
+                title: Text(messages.syncDeleteConfigQuestion),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(messages.settingsMatrixCancel),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: Text(messages.syncDeleteConfigConfirm),
+                  ),
+                ],
+              ),
             );
-            if (result == deleteKey && context.mounted) {
+            if (confirmed == true && context.mounted) {
               await matrixService.deleteConfig();
               ref.read(provisioningControllerProvider.notifier).reset();
+              await Navigator.of(context).maybePop();
             }
           },
           label: messages.provisionedSyncDisconnect,

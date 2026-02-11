@@ -516,6 +516,48 @@ class MatrixService {
         service: this,
       );
 
+  /// Runs post-verification recovery so sync resumes without app restart.
+  ///
+  /// This refreshes cached device keys/trust and nudges the pipeline with a
+  /// catch-up rescan to pick up pending encrypted events immediately.
+  Future<void> onVerificationCompleted({required String source}) async {
+    _loggingService.captureEvent(
+      'verification.completed source=$source',
+      domain: 'MATRIX_SERVICE',
+      subDomain: 'verification',
+    );
+
+    if (!isLoggedIn()) return;
+
+    try {
+      final userId = client.userID;
+      if (userId != null) {
+        await client.updateUserDeviceKeys(additionalUsers: {userId});
+      } else {
+        await client.updateUserDeviceKeys();
+      }
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'verification.updateUserDeviceKeys',
+        stackTrace: stackTrace,
+      );
+    }
+
+    try {
+      await _syncEngine.lifecycleCoordinator.reconcileLifecycleState();
+      await forceRescan();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'verification.forceRescan',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<void> deleteDevice(DeviceKeys deviceKeys) async {
     final deviceId = deviceKeys.deviceId;
 
