@@ -2449,18 +2449,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncErrorConfigurationFailed =>
-      'Une erreur est survenue lors de la configuration. Veuillez réessayer.';
+      'Une erreur est survenue lors de la configuration. Réessaie.';
 
   @override
   String get provisionedSyncErrorLoginFailed =>
-      'Échec de la connexion. Veuillez vérifier vos identifiants et réessayer.';
+      'Échec de la connexion. Vérifie tes identifiants et réessaie.';
 
   @override
   String get provisionedSyncImportButton => 'Importer';
 
   @override
   String get provisionedSyncImportHint =>
-      'Collez le code de provisionnement ici';
+      'Colle le code de provisionnement ici';
 
   @override
   String get provisionedSyncImportTitle =>
@@ -2478,7 +2478,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncReady =>
-      'Scannez ce code QR sur votre appareil mobile';
+      'Scanne ce code QR sur ton appareil mobile';
 
   @override
   String get provisionedSyncRetry => 'Réessayer';

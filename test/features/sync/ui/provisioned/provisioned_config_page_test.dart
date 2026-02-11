@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -9,7 +10,9 @@ import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart'
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -422,6 +425,131 @@ void main() {
       // Now the handover text should be visible
       expect(find.text('dGVzdC1oYW5kb3Zlci1kYXRh'), findsOneWidget);
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
+    });
+
+    testWidgets('copy button copies handover data to clipboard',
+        (tester) async {
+      // Set up a mock clipboard channel
+      String? clipboardText;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            final args = call.arguments as Map<dynamic, dynamic>;
+            clipboardText = args['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(
+                const ProvisioningState.ready('dGVzdC1oYW5kb3Zlci1kYXRh'),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final copyFinder = find.byKey(const Key('copyHandoverData'));
+      await tester.ensureVisible(copyFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(copyFinder);
+      await tester.pumpAndSettle();
+
+      expect(clipboardText, 'dGVzdC1oYW5kb3Zlci1kYXRh');
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      expect(
+        find.text(context.messages.provisionedSyncCopiedToClipboard),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('retry button invokes controller retry in error state',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(
+                const ProvisioningState.error(ProvisioningError.loginFailed),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(ProvisionedConfigWidget));
+      final retryFinder = find.text(context.messages.provisionedSyncRetry);
+      expect(retryFinder, findsOneWidget);
+
+      // Tap retry — should not throw
+      await tester.tap(retryFinder);
+      await tester.pump();
+    });
+
+    testWidgets('shows 2-step progress on mobile for loggingIn state',
+        (tester) async {
+      final wasDesktop = isDesktop;
+      isDesktop = false;
+      addTearDown(() => isDesktop = wasDesktop);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(
+                const ProvisioningState.loggingIn(),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+    });
+
+    testWidgets('shows 2-step progress on mobile for joiningRoom state',
+        (tester) async {
+      final wasDesktop = isDesktop;
+      isDesktop = false;
+      addTearDown(() => isDesktop = wasDesktop);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => _FakeProvisioningController(
+                const ProvisioningState.joiningRoom(),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('2 / 2'), findsOneWidget);
     });
   });
 

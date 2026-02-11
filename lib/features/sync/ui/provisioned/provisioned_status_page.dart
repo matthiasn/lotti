@@ -217,11 +217,13 @@ class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
               icon: const Icon(Icons.copy),
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
+                final copiedMessage =
+                    context.messages.provisionedSyncCopiedToClipboard;
                 await Clipboard.setData(
                   ClipboardData(text: _handoverBase64!),
                 );
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Copied to clipboard')),
+                  SnackBar(content: Text(copiedMessage)),
                 );
               },
             ),

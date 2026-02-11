@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -312,6 +313,94 @@ void main() {
         find.text(context.messages.provisionedSyncSummaryRoom),
         findsOneWidget,
       );
+    });
+  });
+
+  group('mobile scanner', () {
+    testWidgets('shows scan button on mobile', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = false;
+      isMobile = true;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(BundleImportWidget));
+      expect(
+        find.text(context.messages.provisionedSyncScanButton),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
+    });
+
+    testWidgets('hides scan button on desktop', (tester) async {
+      final wasDesktop = isDesktop;
+      final wasMobile = isMobile;
+      isDesktop = true;
+      isMobile = false;
+      addTearDown(() {
+        isDesktop = wasDesktop;
+        isMobile = wasMobile;
+      });
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
+    });
+
+    testWidgets('replaces bundle after re-import with different data',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+          overrides: defaultOverrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Import first bundle
+      await tester.enterText(find.byType(TextField), validBase64);
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(BundleImportWidget));
+      await tester.tap(find.text(context.messages.provisionedSyncImportButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('@alice:example.com'), findsOneWidget);
+
+      // Import second bundle with different user
+      const otherBundle = SyncProvisioningBundle(
+        v: 1,
+        homeServer: 'https://matrix.example.com',
+        user: '@bob:example.com',
+        password: 'other-secret',
+        roomId: '!room456:example.com',
+      );
+      final otherBase64 =
+          base64UrlEncode(utf8.encode(jsonEncode(otherBundle.toJson())));
+
+      await tester.enterText(find.byType(TextField), otherBase64);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(context.messages.provisionedSyncImportButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('@bob:example.com'), findsOneWidget);
+      expect(find.text('@alice:example.com'), findsNothing);
     });
   });
 }
