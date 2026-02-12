@@ -51,6 +51,26 @@ Basic UI smoke test that creates a journal entry through the UI.
 - Navigation failures
 - Basic widget rendering issues
 
+### 4. Matrix Actor Isolate Network Test (`matrix_actor_isolate_network_test.dart`)
+
+**What it tests:**
+- Actor-style isolate command handling (`SendPort`/`ReceivePort`)
+- Real network I/O from the worker isolate against Matrix docker endpoint
+- Basic protocol response validation from `/_matrix/client/versions`
+- Password login from the worker isolate against `/_matrix/client/v3/login` when
+  `TEST_USER1` and `TEST_PASSWORD` are provided
+- Runtime-parity two-user flow from the worker isolate using the Matrix SDK
+  client path (`createMatrixClient` + `MatrixSdkGateway`) when `TEST_USER1`,
+  `TEST_USER2`, and `TEST_PASSWORD` are provided:
+  connect, login, create room, invite, join, complete SAS emoji verification,
+  send message, verify receipt via SDK sync + timeline APIs
+
+**Problems this catches:**
+- Isolate network/runtime regressions
+- Regressions where isolate behavior diverges from runtime Matrix SDK behavior
+- Actor message-loop shutdown/cleanup bugs
+- Environment-level connectivity regressions to the local Matrix server
+
 ## Infrastructure
 
 ### Docker Services
@@ -76,7 +96,14 @@ The Matrix tests require a Docker Compose environment with:
    ./run_matrix_tests.sh
    ```
 
-3. **Run with simulated bad network:**
+3. **Run the Matrix actor isolate network test:**
+   ```shell
+   ./run_matrix_actor_isolate_test.sh
+   ```
+   This script creates two temporary Matrix users in docker and passes
+   `TEST_USER1`/`TEST_USER2`/`TEST_PASSWORD` to the test.
+
+4. **Run with simulated bad network:**
    ```shell
    # Set up Toxiproxy
    ./setup_toxiproxy_docker.sh
