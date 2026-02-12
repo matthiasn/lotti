@@ -497,7 +497,7 @@ const List<KnownModel> voxtralModels = [
 ///
 /// These models run on Mistral's cloud API (api.mistral.ai) and include
 /// language models, reasoning models, and audio transcription capabilities.
-/// Audio files are automatically converted to WAV format before upload.
+/// Audio files (M4A, MP3, WAV, FLAC, OGG) are sent natively without conversion.
 const List<KnownModel> mistralModels = [
   // Fast model - efficient for quick tasks
   KnownModel(
@@ -521,16 +521,16 @@ const List<KnownModel> mistralModels = [
     description: 'Frontier-class multimodal reasoning model with 128k context. '
         'Supports function calling, vision, and document AI.',
   ),
-  // Audio transcription model
+  // Audio transcription model — uses /v1/audio/transcriptions endpoint
   KnownModel(
-    providerModelId: 'voxtral-small-2507',
-    name: 'Voxtral Small',
+    providerModelId: 'voxtral-mini-latest',
+    name: 'Voxtral Mini Transcribe',
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     description: 'High-accuracy cloud transcription model. '
-        'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
-        'Audio is automatically converted to WAV format.',
+        'Supports M4A, MP3, WAV, FLAC, and OGG up to 1 GB. '
+        'Up to 3 hours of audio with 13 languages (auto-detected).',
   ),
 ];
 
@@ -648,7 +648,7 @@ const ftueMistralColor = Color(0xFFFF7000);
 /// Model IDs used for Mistral FTUE automation
 const ftueMistralFlashModelId = 'mistral-small-2501';
 const ftueMistralReasoningModelId = 'magistral-medium-2509';
-const ftueMistralAudioModelId = 'voxtral-small-2507';
+const ftueMistralAudioModelId = 'voxtral-mini-latest';
 
 /// Finds a KnownModel by its provider model ID from the mistralModels list.
 /// Returns null if not found.
@@ -660,7 +660,7 @@ KnownModel? findMistralKnownModel(String providerModelId) {
 /// Returns the three KnownModel configurations needed for Mistral FTUE.
 /// - Flash model (Mistral Small) for fast processing tasks
 /// - Reasoning model (Magistral Medium) for complex reasoning tasks
-/// - Audio model (Voxtral Small) for transcription
+/// - Audio model (Voxtral Mini Transcribe) for transcription
 /// Note: Mistral does not have a native image generation model.
 ({
   KnownModel flash,

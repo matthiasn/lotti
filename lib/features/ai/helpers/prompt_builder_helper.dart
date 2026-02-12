@@ -697,10 +697,12 @@ class PromptBuilderHelper {
     return task?.data.languageCode;
   }
 
-  /// Build speech dictionary prompt text for a given entity.
-  /// Returns formatted text with dictionary terms from the entity's category
-  /// (or linked task's category), or empty string if no dictionary is available.
-  Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
+  /// Returns raw speech dictionary terms for a given entity's category
+  /// (or linked task's category), or an empty list if none are available.
+  ///
+  /// This is used both for prompt text injection (chat completions) and for
+  /// Mistral's `context_bias` parameter (transcription endpoint).
+  Future<List<String>> getSpeechDictionaryTerms(JournalEntity entity) async {
     // First check if the entity itself has a category
     var categoryId = entity.meta.categoryId;
     var source = 'entity';
@@ -719,7 +721,7 @@ class PromptBuilderHelper {
         'Speech dictionary: no category found for entity ${entity.id}',
         name: 'PromptBuilderHelper',
       );
-      return '';
+      return [];
     }
 
     // Get the category from cache service
@@ -734,7 +736,7 @@ class PromptBuilderHelper {
         'Speech dictionary: error getting category $categoryId: $e',
         name: 'PromptBuilderHelper',
       );
-      return '';
+      return [];
     }
 
     if (category == null) {
@@ -742,7 +744,7 @@ class PromptBuilderHelper {
         'Speech dictionary: category $categoryId not found in cache',
         name: 'PromptBuilderHelper',
       );
-      return '';
+      return [];
     }
 
     // Get the speech dictionary
@@ -752,14 +754,24 @@ class PromptBuilderHelper {
         'Speech dictionary: category "${category.name}" has no dictionary',
         name: 'PromptBuilderHelper',
       );
-      return '';
+      return [];
     }
 
     developer.log(
-      'Speech dictionary: injecting ${dictionary.length} terms from '
+      'Speech dictionary: found ${dictionary.length} terms from '
       '$source category "${category.name}": ${dictionary.join(", ")}',
       name: 'PromptBuilderHelper',
     );
+
+    return dictionary;
+  }
+
+  /// Build speech dictionary prompt text for a given entity.
+  /// Returns formatted text with dictionary terms from the entity's category
+  /// (or linked task's category), or empty string if no dictionary is available.
+  Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
+    final dictionary = await getSpeechDictionaryTerms(entity);
+    if (dictionary.isEmpty) return '';
 
     // Format the dictionary terms as prompt text
     // Escape quotes, backslashes, and newlines for safety

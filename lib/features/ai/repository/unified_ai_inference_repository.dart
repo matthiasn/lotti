@@ -45,7 +45,6 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/dev_log.dart';
-import 'package:lotti/utils/audio_format_converter.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -502,8 +501,7 @@ class UnifiedAiInferenceRepository {
 
   /// Prepare audio if required.
   ///
-  /// For Mistral cloud provider, M4A files are converted to WAV format
-  /// since the Mistral API only accepts WAV or MP3.
+  /// All providers now accept M4A natively — no format conversion needed.
   Future<PreparedAudio?> _prepareAudio(
     AiConfigPrompt promptConfig,
     JournalEntity entity,
@@ -522,46 +520,10 @@ class UnifiedAiInferenceRepository {
     if (entity is! JournalAudio) return null;
 
     final fullPath = await AudioUtils.getFullAudioPath(entity);
-
-    // Only Mistral specifically requires WAV format - convert M4A to WAV for Mistral.
-    // Other providers (OpenAI, Gemini) accept M4A bytes labeled as mp3.
-    final isM4aFile = AudioFormatConverterService.isM4aFile(fullPath);
-    final needsWavConversion =
-        provider.inferenceProviderType == InferenceProviderType.mistral &&
-            isM4aFile;
-
-    if (needsWavConversion) {
-      developer.log(
-        'Converting M4A to WAV for ${provider.inferenceProviderType}',
-        name: 'UnifiedAiInferenceRepository',
-      );
-
-      final audioConverter = ref.read(audioFormatConverterProvider);
-      final result = await audioConverter.convertM4aToWav(fullPath);
-
-      if (!result.success || result.outputPath == null) {
-        throw AudioConversionException(result.error);
-      }
-
-      try {
-        final wavFile = File(result.outputPath!);
-        final bytes = await wavFile.readAsBytes();
-        return PreparedAudio(
-          base64: base64Encode(bytes),
-          format: ChatCompletionMessageInputAudioFormat.wav,
-        );
-      } finally {
-        // Clean up temp WAV file
-        await audioConverter.deleteConvertedFile(result.outputPath);
-      }
-    }
-
-    // No conversion needed - read original file
     final file = File(fullPath);
     final bytes = await file.readAsBytes();
 
-    // Label as mp3 (most providers accept M4A bytes labeled as mp3)
-    // Actual MP3 files are also labeled as mp3
+    // All providers accept M4A bytes labeled as mp3
     return PreparedAudio(
       base64: base64Encode(bytes),
       format: ChatCompletionMessageInputAudioFormat.mp3,
@@ -591,6 +553,11 @@ class UnifiedAiInferenceRepository {
         name: 'UnifiedAiInferenceRepository',
       );
 
+      // Extract speech dictionary terms for context biasing
+      // (used by Mistral's transcription endpoint as context_bias)
+      final speechDictionaryTerms =
+          await promptBuilderHelper.getSpeechDictionaryTerms(entity);
+
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,
@@ -601,6 +568,8 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
         stream: isAiStreamingEnabled,
         audioFormat: preparedAudio.format,
+        speechDictionaryTerms:
+            speechDictionaryTerms.isNotEmpty ? speechDictionaryTerms : null,
       );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks

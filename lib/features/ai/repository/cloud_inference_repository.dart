@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/providers/ollama_inference_repository_provider
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
@@ -26,6 +27,8 @@ class CloudInferenceRepository {
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
         _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
+        _mistralTranscriptionRepository =
+            MistralTranscriptionRepository(httpClient: httpClient),
         _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
         _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
         _openAiTranscriptionRepository =
@@ -35,6 +38,7 @@ class CloudInferenceRepository {
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final MistralInferenceRepository _mistralRepository;
+  final MistralTranscriptionRepository _mistralTranscriptionRepository;
   final WhisperInferenceRepository _whisperRepository;
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
@@ -310,6 +314,7 @@ class CloudInferenceRepository {
     bool stream = true,
     ChatCompletionMessageInputAudioFormat audioFormat =
         ChatCompletionMessageInputAudioFormat.mp3,
+    List<String>? speechDictionaryTerms,
   }) {
     final client = overrideClient ??
         OpenAIClient(
@@ -358,10 +363,25 @@ class CloudInferenceRepository {
       );
     }
 
+    // For Mistral transcription models, use the dedicated transcription endpoint.
+    // Mistral's /v1/audio/transcriptions accepts M4A natively via multipart.
+    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
+        MistralTranscriptionRepository.isMistralTranscriptionModel(model)) {
+      developer.log(
+        'Using Mistral transcription endpoint for model: $model',
+        name: 'CloudInferenceRepository',
+      );
+      return _mistralTranscriptionRepository.transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        contextBias: speechDictionaryTerms,
+      );
+    }
+
     // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
     // OpenAI-compatible chat completions format with audio content parts.
-    // Note: Audio must be converted to WAV format before calling this method
-    // (handled by UnifiedAiInferenceRepository._prepareAudio).
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
@@ -369,7 +389,6 @@ class CloudInferenceRepository {
       );
     }
 
-    // Use the audio format as prepared by _prepareAudio (wav or mp3)
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(

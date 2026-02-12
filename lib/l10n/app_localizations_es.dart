@@ -424,7 +424,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiProviderGenericOpenAiName => 'Compatible con OpenAI';
 
   @override
-  String get aiProviderMistralDescription => 'API en la nube de Mistral AI';
+  String get aiProviderMistralDescription =>
+      'API en la nube de Mistral AI con transcripción de audio nativa';
 
   @override
   String get aiProviderMistralName => 'Mistral';
@@ -457,7 +458,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiProviderVoxtralDescription =>
-      'Transcripción Voxtral local (hasta 30 min de audio, 9 idiomas)';
+      'Transcripción Voxtral local (hasta 30 min de audio, 13 idiomas)';
 
   @override
   String get aiProviderVoxtralName => 'Voxtral (local)';

@@ -68,10 +68,20 @@ The repository layer has been refactored for better separation of concerns:
   - Accumulates objects across chunks and ignores braces inside string literals
   - Returns decoded `Map<String,dynamic>` objects ready for adapter consumption
 
-- **`whisper_inference_repository.dart`**: Handles audio transcription
-  - Interfaces with locally running Whisper instances
-  - Converts audio to transcription responses
-  - Custom `WhisperTranscriptionException` for error handling
+- **`transcription_repository.dart`**: Base class for all transcription repositories
+  - Shared `executeTranscription()` template with timeout handling, response parsing, error wrapping
+  - Used by Whisper, OpenAI, and Mistral transcription repositories
+
+- **`transcription_exception.dart`**: Unified `TranscriptionException` with provider field
+
+- **`whisper_inference_repository.dart`**: Handles audio transcription via local Whisper
+  - Extends `TranscriptionRepository` — sends JSON POST to `/v1/audio/transcriptions`
+
+- **`openai_transcription_repository.dart`**: Handles OpenAI transcription models
+  - Extends `TranscriptionRepository` — sends multipart/form-data to OpenAI endpoint
+
+- **`mistral_transcription_repository.dart`**: Handles Mistral Voxtral transcription
+  - Extends `TranscriptionRepository` — sends multipart/form-data to Mistral endpoint
 
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 
@@ -1124,7 +1134,7 @@ The conversation layer enables:
 
 Each provider has custom exception types:
 - `ModelNotInstalledException`: Ollama model not installed
-- `WhisperTranscriptionException`: Audio transcription errors
+- `TranscriptionException`: Audio transcription errors (unified across providers, with `provider` field)
 - `InferenceError`: General inference failures
 
 ### Concurrency Protection
