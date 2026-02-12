@@ -122,14 +122,19 @@ void main() {
           ttl: const Duration(seconds: 5),
           maxEntries: 8,
         );
+        // Use a generous cooldown; actual waiting uses deterministic time
+        // advancement so the exact value doesn't affect test duration.
+        const cooldown = Duration(milliseconds: 300);
         final cb = CircuitBreaker(
           failureThreshold: 2,
-          cooldown: const Duration(milliseconds: 120),
+          cooldown: cooldown,
         );
 
         var attempts = 0;
         var openedCircuit = false;
         var finalStatus = 0;
+        // Track time explicitly to avoid flaky wall-clock dependence.
+        var now = DateTime.fromMillisecondsSinceEpoch(0);
 
         while (attempts < 5) {
           attempts++;
@@ -145,15 +150,13 @@ void main() {
             }
 
             final nextAttempts = retry.attempts('loopback') + 1;
-            retry.scheduleNext(
-              'loopback',
-              nextAttempts,
-              DateTime.now().add(const Duration(milliseconds: 30)),
-            );
-            final openedNow = cb.recordFailures(1, DateTime.now());
+            now = now.add(const Duration(milliseconds: 30));
+            retry.scheduleNext('loopback', nextAttempts, now);
+            final openedNow = cb.recordFailures(1, now);
             openedCircuit = openedCircuit || openedNow;
-            if (cb.isOpen(DateTime.now())) {
-              await Future<void>.delayed(const Duration(milliseconds: 130));
+            if (cb.isOpen(now)) {
+              // Advance tracked time past the cooldown deterministically.
+              now = now.add(cooldown + const Duration(milliseconds: 1));
             }
           } finally {
             client.close(force: true);
