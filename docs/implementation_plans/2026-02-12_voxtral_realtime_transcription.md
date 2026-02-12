@@ -34,7 +34,7 @@ The model appears alongside other audio-capable models in the configuration.
 
 ### How realtime vs batch is decided
 
-The `RealtimeTranscriptionService` does **not** go through `CloudInferenceRepository.generateWithAudio()` — that routing chain is HTTP request-response only. Instead, the service directly queries `AiConfigRepository` for audio-capable models, filters for realtime models using `MistralRealtimeTranscriptionRepository.isRealtimeModel()`, and uses the matched provider's API key and base URL to open a WebSocket.
+The `RealtimeTranscriptionService` does **not** go through `CloudInferenceRepository.generateWithAudio()` — that routing chain is HTTP request-response only. Instead, the service directly queries `AiConfigRepository` for audio-capable models, filters for models where the provider is `InferenceProviderType.mistral` **and** `MistralRealtimeTranscriptionRepository.isRealtimeModel()` matches the model ID. Both conditions are required to prevent misrouting if another provider happens to have a similarly named model. The matched provider's API key and base URL are used to open a WebSocket.
 
 The UI shows recording mode options based on what is actually configured:
 - **Both batch and realtime models configured:** User can toggle between modes (default: batch).
@@ -129,6 +129,9 @@ class AudioConverterChannel {
       return result ?? false;
     } on MissingPluginException {
       // Platform has no native implementation — fall back to WAV
+      return false;
+    } on PlatformException {
+      // Native code returned FlutterError (conversion failed) — fall back to WAV
       return false;
     }
   }
@@ -339,7 +342,7 @@ This keeps the algorithm isolated from recording/controller concerns and makes i
 - `macos/Runner/AudioConverter.swift` — macOS native implementation
 - `ios/Runner/AudioConverter.swift` — iOS native implementation (shared logic)
 
-**Dart side:** `AudioConverterChannel` class with a single static method `convertWavToM4a({required String inputPath, required String outputPath})` returning `Future<bool>`. Channel name: `com.matthiasn.lotti/audio_converter`. The method **catches `MissingPluginException`** and returns `false` — this is how unsupported platforms (Linux, Windows, Android) gracefully fall back to keeping the WAV file without crashing.
+**Dart side:** `AudioConverterChannel` class with a single static method `convertWavToM4a({required String inputPath, required String outputPath})` returning `Future<bool>`. Channel name: `com.matthiasn.lotti/audio_converter`. The method catches both `MissingPluginException` (no native implementation on this platform) and `PlatformException` (native code returned `FlutterError` on conversion failure), returning `false` in both cases for graceful WAV fallback.
 
 **Swift side (shared logic for iOS and macOS):**
 1. Register the channel in `AppDelegate.swift` (both platforms)
@@ -349,14 +352,14 @@ This keeps the algorithm isolated from recording/controller concerns and makes i
    - Use `AVAudioConverter` to transcode buffers
    - Return `true` on success, `FlutterError` on failure
 
-**Fallback:** On platforms without a native implementation (Linux, Windows, Android for now), `invokeMethod` throws `MissingPluginException`. The Dart wrapper catches this and returns `false`. The service keeps the WAV as-is. Follow-up plans will add Android (`MediaCodec`) and Linux (GStreamer) implementations using the same channel contract.
+**Fallback:** On platforms without a native implementation (Linux, Windows, Android for now), `invokeMethod` throws `MissingPluginException`. On native conversion failure (bad file, disk full, etc.), Swift returns `FlutterError` which surfaces as `PlatformException`. The Dart wrapper catches both and returns `false`. The service moves the temp WAV to the final location as-is. Follow-up plans will add Android (`MediaCodec`) and Linux (GStreamer) implementations using the same channel contract.
 
 **New test file:** `test/features/ai/util/audio_converter_channel_test.dart`
 - Mock the `MethodChannel` using `TestDefaultBinaryMessengerBinding`
 - Test successful conversion returns `true`
-- Test native failure (FlutterError) returns `false`
+- Test `PlatformException` (native `FlutterError`) returns `false`
 - Test `MissingPluginException` (unsupported platform) returns `false`, no crash
-- Test null result returns `false`
+- Test null result from native returns `false`
 
 **Register in AppDelegate:**
 - `macos/Runner/AppDelegate.swift` — register channel, call `AudioConverter.register(with:)`
@@ -391,7 +394,11 @@ class RealtimeTranscriptionService {
 
   // --- Provider resolution ---
   // Queries AiConfigRepository for audio-capable models
-  // Filters for models where MistralRealtimeTranscriptionRepository.isRealtimeModel()
+  // Filters for models where:
+  //   1. provider.inferenceProviderType == InferenceProviderType.mistral
+  //   2. MistralRealtimeTranscriptionRepository.isRealtimeModel(model.providerModelId)
+  // Both conditions required — prevents misrouting if another provider has
+  // a similarly named model ID.
   // Resolves the matching provider's API key and base URL
 
   Stream<String> startRealtimeTranscription({
@@ -437,11 +444,18 @@ class RealtimeTranscriptionService {
 }
 ```
 
-**Audio file pipeline:** Accumulate PCM bytes in a `BytesBuilder`. On stop, prepend a 44-byte WAV header (RIFF + fmt + data chunks for PCM16 mono 16kHz) and write to a temp file. Then convert to M4A via `AudioConverterChannel.convertWavToM4a()` and delete the temp WAV. The final M4A is written to the same location batch recordings use, consistent with the sync pipeline.
+**Audio file pipeline:** Accumulate PCM bytes in a `BytesBuilder`. On stop:
+1. Write temp WAV (44-byte header + PCM data) to a **service-managed temp file** (`Directory.systemTemp`), completely independent of the controller's `_tempDir`
+2. Attempt M4A conversion via `AudioConverterChannel.convertWavToM4a()` with output path at the final recording location (same location batch recordings use)
+3. On success: delete temp WAV, return M4A path
+4. On failure: **move** temp WAV to the final recording location as the artifact, return WAV path
+
+Because the temp WAV lives in `Directory.systemTemp` (not the controller's `_tempDir`), the controller's `_cleanupInternal()` — which recursively deletes `_tempDir` — never touches it. The service is solely responsible for temp WAV cleanup.
 
 **New test file:** `test/features/ai_chat/services/realtime_transcription_service_test.dart`
 - Mock repository, PCM stream, and AiConfigRepository
-- Test provider resolution (finds realtime model, resolves provider with baseUrl)
+- Test provider resolution (finds realtime model with Mistral provider type, resolves provider with baseUrl)
+- Test provider resolution rejects realtime-named model on non-Mistral provider
 - Test stream forking (WebSocket receives chunks + BytesBuilder accumulates)
 - Test amplitude stream emits dBFS values
 - Test WAV file writing (correct header + PCM data) and M4A conversion call
