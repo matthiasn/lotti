@@ -652,7 +652,14 @@ class OutboxService {
       orElse: () {},
     );
 
-    final fileLength = attachment?.lengthSync() ?? 0;
+    var fileLength = 0;
+    if (attachment != null) {
+      try {
+        fileLength = await attachment!.length();
+      } catch (_) {
+        fileLength = 0;
+      }
+    }
     final embeddedLinksCount = msg.entryLinks?.length ?? 0;
 
     // Check for existing pending outbox item for this entry (merge logic)

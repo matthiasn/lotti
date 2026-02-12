@@ -244,9 +244,10 @@ class AttachmentIngestor {
       // Note: We don't validate the file's vector clock here because
       // SmartJournalEntityLoader.load() will do that validation and
       // re-download via DescriptorDownloader if the local file is stale.
-      if (file.existsSync()) {
+      // ignore: avoid_slow_async_io
+      if (await file.exists()) {
         try {
-          final len = file.lengthSync();
+          final len = await file.length();
           if (len > 0) {
             return false; // already present
           }

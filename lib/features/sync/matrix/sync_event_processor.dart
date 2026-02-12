@@ -342,10 +342,11 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       // No incoming vector clock: fetch if file is missing/empty, else read.
       var needsFetch = false;
       try {
-        if (!targetFile.existsSync()) {
+        // ignore: avoid_slow_async_io
+        if (!await targetFile.exists()) {
           needsFetch = true;
         } else {
-          final len = targetFile.lengthSync();
+          final len = await targetFile.length();
           needsFetch = len == 0;
         }
       } catch (_) {
@@ -433,8 +434,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     final fp = path.normalize(path.join(docDir.path, rpRel));
     final f = File(fp);
     try {
-      if (f.existsSync()) {
-        final len = f.lengthSync();
+      // ignore: avoid_slow_async_io
+      if (await f.exists()) {
+        final len = await f.length();
         if (len > 0) return; // present
       }
     } catch (e, st) {
