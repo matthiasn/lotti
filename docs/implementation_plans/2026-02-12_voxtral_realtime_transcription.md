@@ -87,18 +87,18 @@ Clear single-owner boundaries prevent double-cleanup races:
 - **Controller owns the recorder lifecycle.** It creates the `AudioRecorder`, calls `startStream()`, and is solely responsible for `recorder.dispose()` via `_cleanupInternal()`.
 - **Service borrows the PCM stream, not the recorder.** The service receives the `Stream<Uint8List>` returned by `startStream()` — it never holds a reference to the recorder itself. The service manages: the stream subscription (listening to PCM chunks), the WebSocket connection, the `BytesBuilder`, WAV → M4A conversion, and final audio file output.
 - **Stop sequence:** Controller calls `service.stop(stopRecorder: () => recorder.stop())`. The service cancels the stream subscription, invokes the callback to stop the recorder (mic off immediately), sends `endAudio`, awaits `transcription.done`, writes temp WAV, converts to M4A, deletes temp WAV. Then controller calls `_cleanupInternal()` to dispose the recorder instance. The `stopRecorder` callback pattern preserves single ownership — the controller provides the action, the service controls the timing.
-- **Service `dispose()`** only tears down what it owns: cancels stream subscription, closes WebSocket, writes any buffered audio (WAV → M4A if possible, WAV fallback otherwise). It does **not** touch the recorder.
+- **Service `dispose(discard)`** only tears down what it owns: cancels stream subscription, closes WebSocket. With `discard: false` (default, used by lifecycle/crash): saves buffered audio through the WAV → M4A pipeline. With `discard: true` (used by cancel): skips audio save entirely — no artifacts left behind. It does **not** touch the recorder.
 
 ## Audio File Pipeline: WAV → M4A Conversion
 
 The `record` package's `startStream()` produces raw PCM, not M4A. But we don't want to store or sync WAV files — only M4A. The pipeline:
 
 1. **During recording:** PCM chunks accumulate in a `BytesBuilder` in memory
-2. **On stop:** Write WAV to a **temp file** (controller's temp directory, not app support)
+2. **On stop:** Write WAV to a **service-managed temp file** in `Directory.systemTemp` (independent of the controller's `_tempDir` to avoid cleanup races)
 3. **Convert:** Call a native platform channel to transcode WAV → M4A using system frameworks (no FFmpeg needed)
 4. **Save:** The M4A is the final artifact — written to the same location batch recordings use
-5. **Delete:** The temp WAV is deleted immediately after successful conversion
-6. **Sync:** Only the M4A gets synced, consistent with batch mode
+5. **Delete:** The temp WAV is deleted immediately after successful conversion. On conversion failure, the WAV is moved to the final location as fallback.
+6. **Sync:** Only the final audio file (M4A normally, WAV on conversion failure) gets synced
 
 ### Native conversion (platform channel)
 
@@ -375,18 +375,29 @@ Orchestrates the recording + WebSocket streaming. Riverpod provider. This servic
 
 **Also modify:** `lib/features/ai_chat/services/audio_transcription_service.dart`
 
-The existing `AudioTranscriptionService` selects transcription models by filtering for `inputModalities.contains(Modality.audio)`. The new realtime model also has `Modality.audio` as input. Without a guard, the batch service could accidentally select the realtime model — which won't work since `CloudInferenceRepository.generateWithAudio()` has no WebSocket path. Add an exclusion filter:
+The existing `AudioTranscriptionService` selects transcription models by filtering for `inputModalities.contains(Modality.audio)`. The new realtime model also has `Modality.audio` as input. Without a guard, the batch service could accidentally select the realtime model — which won't work since `CloudInferenceRepository.generateWithAudio()` has no WebSocket path. Add a provider-scoped exclusion filter (consistent with the provider-type guard used in realtime resolution):
 
 ```dart
 final audioModels = models
     .whereType<AiConfigModel>()
     .where((m) => m.inputModalities.contains(Modality.audio))
-    .where((m) => !MistralRealtimeTranscriptionRepository.isRealtimeModel(
-        m.providerModelId))
+    .where((m) {
+      // Exclude Mistral realtime models from batch selection
+      final provider = providers
+          .whereType<AiConfigInferenceProvider>()
+          .where((p) => p.id == m.inferenceProviderId)
+          .firstOrNull;
+      if (provider == null) return true; // keep orphan models, fail later
+      return !(provider.inferenceProviderType == InferenceProviderType.mistral &&
+          MistralRealtimeTranscriptionRepository.isRealtimeModel(
+              m.providerModelId));
+    })
     .toList();
 ```
 
-**Test:** Update `test/features/ai_chat/services/audio_transcription_service_test.dart` to verify that a configured realtime model is excluded from batch selection.
+**Test:** Update `test/features/ai_chat/services/audio_transcription_service_test.dart`:
+- Verify Mistral realtime model is excluded from batch selection
+- Verify non-Mistral model with "transcribe-realtime" in name is **not** excluded (provider-scoped guard)
 
 ```
 class RealtimeTranscriptionService {
@@ -437,9 +448,12 @@ class RealtimeTranscriptionService {
     // 7. Disconnects WebSocket
     // 8. Returns RealtimeStopResult(transcript, audioFilePath)
 
-  void dispose()
-    // Defensive cleanup: cancel pcmStream subscription, send input_audio.end
-    // if connected, save any accumulated audio to WAV, close WebSocket.
+  void dispose({bool discard = false})
+    // Defensive cleanup: cancel pcmStream subscription, close WebSocket.
+    // If discard is false (default): send input_audio.end, write buffered
+    //   audio (WAV → M4A pipeline), then close WS. Used by lifecycle/crash.
+    // If discard is true: skip audio save entirely, just tear down.
+    //   Used by cancel() — user explicitly discarded the recording.
     // Does NOT touch the recorder — that's the controller's responsibility.
 }
 ```
@@ -504,7 +518,7 @@ Split into two sub-concerns:
    - Increments `_operationId` to invalidate in-flight state updates (same as existing cancel)
    - Cancels amplitude subscription
    - Calls `_recorder?.stop()` explicitly (mic off — matching existing cancel pattern at line 344)
-   - Calls `service.dispose()` (cancels stream, writes audio, closes WS — no waiting for `done`)
+   - Calls `service.dispose(discard: true)` — tears down stream and WS **without saving audio**, matching the discard semantics of current batch cancel. No leftover artifacts.
    - Calls `_cleanupInternal()` to dispose recorder instance
    - Discards transcript, cancels `_maxTimer`, returns to idle
 
@@ -579,6 +593,7 @@ const KnownModel(
   name: 'Voxtral Realtime',
   inputModalities: [Modality.audio],
   outputModalities: [Modality.text],
+  isReasoningModel: false,
   description: 'Real-time streaming transcription via WebSocket. '
       'Low-latency live subtitles (~2s delay). No diarization.',
 ),
