@@ -22,6 +22,7 @@ class ProviderConfig {
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
     InferenceProviderType.ollama: 'http://localhost:11434',
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
+    InferenceProviderType.qwenImage: 'http://localhost:11345',
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
     InferenceProviderType.voxtral: 'http://localhost:11344',
@@ -38,6 +39,7 @@ class ProviderConfig {
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',
     InferenceProviderType.ollama: 'Ollama (local)',
     InferenceProviderType.openAi: 'OpenAI',
+    InferenceProviderType.qwenImage: 'Qwen Image (local)',
     InferenceProviderType.anthropic: 'Anthropic',
     InferenceProviderType.openRouter: 'OpenRouter',
     InferenceProviderType.voxtral: 'Voxtral (local)',
@@ -50,6 +52,7 @@ class ProviderConfig {
   /// They are suitable for privacy-focused applications.
   static const Set<InferenceProviderType> noApiKeyRequired = {
     InferenceProviderType.ollama,
+    InferenceProviderType.qwenImage,
     InferenceProviderType.voxtral,
     InferenceProviderType.whisper,
   };

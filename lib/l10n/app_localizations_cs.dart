@@ -434,6 +434,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderQwenImageDescription =>
+      'Lokální generování obrázků z textu pomocí modelu Qwen Image';
+
+  @override
+  String get aiProviderQwenImageName => 'Qwen Image (lokální)';
+
+  @override
   String get aiProviderVoxtralDescription =>
       'Lokální přepis Voxtral (až 30 min zvuku, 9 jazyků)';
 

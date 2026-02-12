@@ -70,6 +70,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.genericOpenAi: genericOpenAiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
+  InferenceProviderType.qwenImage: qwenImageModels,
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
@@ -467,6 +468,24 @@ const List<KnownModel> whisperModels = [
 /// They use an OpenAI-compatible chat completions API with context support,
 /// allowing speech dictionaries and task context to be passed for improved accuracy.
 ///
+/// Qwen Image models - Local text-to-image generation
+///
+/// Uses the Qwen-Image diffusion model from Alibaba/Qwen (Apache 2.0).
+/// Runs locally via the qwen-image service. Desktop only.
+const List<KnownModel> qwenImageModels = [
+  KnownModel(
+    providerModelId: 'Qwen/Qwen-Image',
+    name: 'Qwen Image',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text, Modality.image],
+    isReasoningModel: false,
+    description:
+        'Local text-to-image generation model. '
+        'Generates high-quality images from text descriptions. '
+        'Runs entirely on your machine with no cloud dependency.',
+  ),
+];
+
 /// Note: Users must download these models using the service's model pull endpoint
 /// before they can be used in the application.
 const List<KnownModel> voxtralModels = [

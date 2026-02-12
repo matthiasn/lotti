@@ -171,6 +171,8 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modely OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderQwenImageDescription": "Lokální generování obrázků z textu pomocí modelu Qwen Image",
+  "aiProviderQwenImageName": "Qwen Image (lokální)",
   "aiProviderVoxtralDescription": "Lokální přepis Voxtral (až 30 min zvuku, 9 jazyků)",
   "aiProviderVoxtralName": "Voxtral (lokální)",
   "aiProviderWhisperDescription": "Lokální přepisování s Whisper a kompatibilní API OpenAI",

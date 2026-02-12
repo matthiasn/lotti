@@ -79,6 +79,10 @@ class ProviderChipConstants {
       dark: Color(0xFFFF8A65),
       light: Color(0xFFFF5722), // Deep Orange
     ),
+    InferenceProviderType.qwenImage: (
+      dark: Color(0xFFCE93D8),
+      light: Color(0xFF9C27B0), // Purple
+    ),
     InferenceProviderType.voxtral: (
       dark: Color(0xFFFF6B6B),
       light: Color(0xFFE53935), // Red/Coral

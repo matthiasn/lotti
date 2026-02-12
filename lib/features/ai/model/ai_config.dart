@@ -13,6 +13,7 @@ enum InferenceProviderType {
   openAi,
   openRouter,
   ollama,
+  qwenImage,
   voxtral,
   whisper,
 }

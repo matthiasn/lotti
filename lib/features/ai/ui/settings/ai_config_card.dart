@@ -290,6 +290,8 @@ class AiConfigCard extends ConsumerWidget {
           return Icons.hub;
         case InferenceProviderType.ollama:
           return Icons.computer;
+        case InferenceProviderType.qwenImage:
+          return Icons.brush;
         case InferenceProviderType.genericOpenAi:
           return Icons.cloud;
         case InferenceProviderType.nebiusAiStudio:

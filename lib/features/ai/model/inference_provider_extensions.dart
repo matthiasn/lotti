@@ -21,6 +21,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOpenRouterName;
       case InferenceProviderType.ollama:
         return context.messages.aiProviderOllamaName;
+      case InferenceProviderType.qwenImage:
+        return context.messages.aiProviderQwenImageName;
       case InferenceProviderType.whisper:
         return context.messages.aiProviderWhisperName;
       case InferenceProviderType.voxtral:
@@ -46,6 +48,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOpenRouterDescription;
       case InferenceProviderType.ollama:
         return context.messages.aiProviderOllamaDescription;
+      case InferenceProviderType.qwenImage:
+        return context.messages.aiProviderQwenImageDescription;
       case InferenceProviderType.whisper:
         return context.messages.aiProviderWhisperDescription;
       case InferenceProviderType.voxtral:
@@ -71,6 +75,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return Icons.assistant;
       case InferenceProviderType.ollama:
         return Icons.assistant;
+      case InferenceProviderType.qwenImage:
+        return Icons.brush;
       case InferenceProviderType.whisper:
         return Icons.mic;
       case InferenceProviderType.voxtral:

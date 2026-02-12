@@ -52,6 +52,7 @@ class PromptCapabilityFilter {
   static bool isLocalOnlyProviderType(InferenceProviderType providerType) {
     return providerType == InferenceProviderType.whisper ||
         providerType == InferenceProviderType.ollama ||
+        providerType == InferenceProviderType.qwenImage ||
         providerType == InferenceProviderType.voxtral;
   }
 

@@ -863,6 +863,18 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderQwenImageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Local text-to-image generation with Qwen Image model'**
+  String get aiProviderQwenImageDescription;
+
+  /// No description provided for @aiProviderQwenImageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Qwen Image (local)'**
+  String get aiProviderQwenImageName;
+
   /// No description provided for @aiProviderVoxtralDescription.
   ///
   /// In en, this message translates to:

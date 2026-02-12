@@ -171,6 +171,8 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modèles d'OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderQwenImageDescription": "Génération locale de texte en image avec le modèle Qwen Image",
+  "aiProviderQwenImageName": "Qwen Image (local)",
   "aiProviderVoxtralDescription": "Transcription Voxtral locale (jusqu'à 30 min d'audio, 9 langues)",
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcription Whisper locale avec API compatible OpenAI",

@@ -440,6 +440,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderQwenImageDescription =>
+      'Lokale Text-zu-Bild-Generierung mit Qwen Image Modell';
+
+  @override
+  String get aiProviderQwenImageName => 'Qwen Image (lokal)';
+
+  @override
   String get aiProviderVoxtralDescription =>
       'Lokale Voxtral-Transkription (bis zu 30 Min. Audio, 9 Sprachen)';
 
