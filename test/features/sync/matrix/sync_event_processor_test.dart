@@ -968,7 +968,56 @@ void main() {
       }
     });
 
-    // (SmartJournalEntityLoader local-read logging tests deferred)
+    test('fetches JSON when no VC and file exists but is empty', () async {
+      const relJson = '/text_entries/2024-01-01/empty_file.text.json';
+      // Create an empty file on disk
+      final normalized = stripLeadingSlashes(relJson);
+      final targetFile = File(path.join(tempDir.path, normalized));
+      await targetFile.create(recursive: true);
+      expect(targetFile.existsSync(), isTrue);
+      expect(targetFile.lengthSync(), 0);
+
+      final entity = JournalEntry(
+        meta: Metadata(
+          id: 'empty_file',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        entryText: const EntryText(plainText: 'refetched'),
+      );
+      final jsonBytes = utf8.encode(jsonEncode(entity.toJson()));
+
+      final index = AttachmentIndex();
+      final ev = MockEvent();
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.content).thenReturn({'relativePath': relJson});
+      when(ev.downloadAndDecryptAttachment).thenAnswer(
+        (_) async => MatrixFile(
+          bytes: Uint8List.fromList(jsonBytes),
+          name: 'empty_file.text.json',
+        ),
+      );
+      index.record(ev);
+
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: index,
+        loggingService: loggingService,
+      );
+
+      final loaded = await loader.load(jsonPath: relJson);
+      expect(
+        loaded.maybeMap(
+          journalEntry: (j) => j.entryText?.plainText,
+          orElse: () => null,
+        ),
+        'refetched',
+      );
+
+      // File should now have content
+      expect(targetFile.lengthSync(), greaterThan(0));
+    });
 
     test('ensures missing image media via AttachmentIndex', () async {
       // Arrange: JSON for an image entity exists, media file does not.

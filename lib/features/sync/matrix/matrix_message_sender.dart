@@ -211,7 +211,8 @@ class MatrixMessageSender {
   }) async {
     try {
       final file = File(fullPath);
-      if (bytes == null && !file.existsSync()) {
+      // ignore: avoid_slow_async_io
+      if (bytes == null && !await file.exists()) {
         _loggingService.captureEvent(
           'skipping missing file $relativePath (not found at $fullPath)',
           domain: 'MATRIX_SERVICE',

@@ -14,6 +14,11 @@ import 'package:path/path.dart' as p;
 class LoggingService {
   bool _enableLogging = !isTestEnv;
   final _dateFmt = DateFormat('yyyy-MM-dd');
+  static const Duration _fileFlushInterval = Duration(milliseconds: 500);
+  static const int _fileFlushLineThreshold = 40;
+  final List<String> _pendingFileLines = <String>[];
+  Timer? _fileFlushTimer;
+  Future<void> _fileDrain = Future<void>.value();
 
   void listenToConfigFlag() {
     getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
@@ -22,25 +27,80 @@ class LoggingService {
   }
 
   // --- Text file sink -----------------------------------------------------
-  Future<void> _appendToFile(String line) async {
+  Future<void> _appendToFile(
+    String line, {
+    bool forceFlush = false,
+  }) async {
+    if (isTestEnv) {
+      _appendToFileSync(line);
+      return;
+    }
+
+    _pendingFileLines.add(line);
+    final shouldFlushNow =
+        forceFlush || _pendingFileLines.length >= _fileFlushLineThreshold;
+
+    if (!shouldFlushNow) {
+      _fileFlushTimer ??= Timer(
+        _fileFlushInterval,
+        () {
+          _fileFlushTimer = null;
+          unawaited(_flushPendingLines());
+        },
+      );
+      return;
+    }
+
+    _fileFlushTimer?.cancel();
+    _fileFlushTimer = null;
+    await _flushPendingLines(forceFlush: forceFlush);
+  }
+
+  void _appendToFileSync(String line) {
     try {
       final dir = getDocumentsDirectory();
       final logDir = Directory(p.join(dir.path, 'logs'));
       final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
       final file = File(p.join(logDir.path, fileName));
-      if (isTestEnv) {
-        // Synchronous in tests to avoid timing flakes under parallel runners.
-        if (!logDir.existsSync()) {
-          logDir.createSync(recursive: true);
-        }
-        file.writeAsStringSync('$line\n', mode: FileMode.append, flush: true);
-      } else {
-        await logDir.create(recursive: true);
-        await file.writeAsString('$line\n', mode: FileMode.append, flush: true);
+      // Synchronous in tests to avoid timing flakes under parallel runners.
+      if (!logDir.existsSync()) {
+        logDir.createSync(recursive: true);
       }
+      file.writeAsStringSync('$line\n', mode: FileMode.append, flush: true);
     } catch (_) {
       // Swallow file-sink errors so logging never interferes with app flows.
     }
+  }
+
+  Future<void> _flushPendingLines({
+    bool forceFlush = false,
+  }) async {
+    if (_pendingFileLines.isEmpty) {
+      return;
+    }
+
+    final lines = List<String>.from(_pendingFileLines);
+    _pendingFileLines.clear();
+
+    _fileDrain = _fileDrain.then((_) async {
+      try {
+        final dir = getDocumentsDirectory();
+        final logDir = Directory(p.join(dir.path, 'logs'));
+        final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
+        final file = File(p.join(logDir.path, fileName));
+        await logDir.create(recursive: true);
+        final payload = '${lines.join('\n')}\n';
+        await file.writeAsString(
+          payload,
+          mode: FileMode.append,
+          flush: forceFlush,
+        );
+      } catch (_) {
+        // Swallow file-sink errors so logging never interferes with app flows.
+      }
+    });
+
+    await _fileDrain;
   }
 
   String _formatLine({
@@ -100,7 +160,7 @@ class LoggingService {
           subDomain: 'event.write',
           message: diag,
         );
-        unawaited(_appendToFile(line));
+        unawaited(_appendToFile(line, forceFlush: true));
       } catch (fileErr, fileSt) {
         // Last resort: surface both the original DB error and the fallback
         // file error to the console so bootstrap failures are not invisible.
@@ -130,7 +190,10 @@ class LoggingService {
     }
 
     // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(line);
+    await _appendToFile(
+      line,
+      forceFlush: level == InsightLevel.error,
+    );
   }
 
   void captureEvent(
@@ -196,7 +259,7 @@ class LoggingService {
           subDomain: 'exception.write',
           message: diag,
         );
-        unawaited(_appendToFile(line));
+        unawaited(_appendToFile(line, forceFlush: true));
       } catch (fileErr, fileSt) {
         DevLogger.error(
           name: 'LoggingService',
@@ -223,7 +286,7 @@ class LoggingService {
     }
 
     // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(line);
+    await _appendToFile(line, forceFlush: true);
   }
 
   void captureException(

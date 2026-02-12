@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
@@ -488,6 +489,165 @@ void main() {
       expect(logEntry.level, equals('ERROR'));
       expect(logEntry.domain, equals('ERROR_TEST'));
       expect(logEntry.message, equals('error level event'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Buffered file writing (non-test-env path)
+  // ---------------------------------------------------------------------------
+  group('buffered file writing (non-test env)', () {
+    late Directory bufferedTempDocs;
+    late MockLoggingDb bufferedLoggingDb;
+    late MockJournalDb bufferedJournalDb;
+    late LoggingService bufferedLogging;
+
+    setUp(() async {
+      // Switch to non-test env to exercise buffered path
+      platform.isTestEnv = false;
+
+      bufferedTempDocs =
+          Directory.systemTemp.createTempSync('logging_svc_buf_test_');
+      addTearDown(() {
+        platform.isTestEnv = true;
+        if (bufferedTempDocs.existsSync()) {
+          bufferedTempDocs.deleteSync(recursive: true);
+        }
+      });
+
+      DevLogger.capturedLogs.clear();
+
+      await getIt.reset();
+      getIt
+        ..registerSingleton<Directory>(bufferedTempDocs)
+        ..registerSingleton<LoggingService>(LoggingService());
+
+      bufferedLoggingDb = MockLoggingDb();
+      bufferedJournalDb = MockJournalDb();
+      getIt
+        ..registerSingleton<LoggingDb>(bufferedLoggingDb)
+        ..registerSingleton<JournalDb>(bufferedJournalDb);
+
+      when(() => bufferedJournalDb.watchConfigFlag(enableLoggingFlag))
+          .thenAnswer((_) => Stream<bool>.value(true));
+      when(() => bufferedLoggingDb.log(any())).thenAnswer((_) async => 1);
+
+      bufferedLogging = getIt<LoggingService>()..listenToConfigFlag();
+      await Future<void>.delayed(Duration.zero);
+    });
+
+    String logPath0() => p.join(
+          bufferedTempDocs.path,
+          'logs',
+          'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+        );
+
+    test('timer flush writes buffered lines after interval', () async {
+      bufferedLogging.captureEvent(
+        'buffered line',
+        domain: 'BUF_TEST',
+      );
+
+      // Give the async DB write time to settle
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // File should not exist yet (below threshold, timer not fired)
+      expect(File(logPath0()).existsSync(), isFalse);
+
+      // Wait for the flush timer to fire (500ms interval + margin)
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      final file = File(logPath0());
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      expect(content, contains('[INFO] BUF_TEST: buffered line'));
+    });
+
+    test('force flush writes immediately for error level', () async {
+      bufferedLogging.captureEvent(
+        'error event',
+        domain: 'ERR_FLUSH',
+        level: InsightLevel.error,
+      );
+
+      // Give the async write chain time to complete
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final file = File(logPath0());
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      expect(content, contains('[ERROR] ERR_FLUSH: error event'));
+    });
+
+    test('threshold flush triggers when enough lines accumulate', () async {
+      // Send exactly _fileFlushLineThreshold (40) events to trigger threshold
+      for (var i = 0; i < 40; i++) {
+        bufferedLogging.captureEvent(
+          'line $i',
+          domain: 'THRESHOLD',
+        );
+      }
+
+      // Give the async write chain time to complete
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final file = File(logPath0());
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      // Verify first and last lines are present
+      expect(content, contains('[INFO] THRESHOLD: line 0'));
+      expect(content, contains('[INFO] THRESHOLD: line 39'));
+    });
+
+    test('captureException force-flushes in non-test env', () async {
+      bufferedLogging.captureException(
+        'exc in buffered mode',
+        domain: 'EXC_BUF',
+      );
+
+      // Give the async write chain time to complete
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final file = File(logPath0());
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      expect(content, contains('[ERROR] EXC_BUF: exc in buffered mode'));
+    });
+
+    test('flushPendingLines is no-op when no pending lines', () async {
+      // captureEvent with logging disabled => nothing queued
+      final svc = LoggingService();
+      // Don't call listenToConfigFlag, so _enableLogging stays false
+
+      svc.captureEvent('should be skipped', domain: 'NOOP');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // No log file created since nothing was logged
+      expect(File(logPath0()).existsSync(), isFalse);
+    });
+
+    test('timer cancels when force flush arrives before timer fires', () async {
+      // Queue a non-force event to start the timer
+      bufferedLogging.captureEvent(
+        'queued line',
+        domain: 'CANCEL_TIMER',
+      );
+
+      // Immediately queue a force-flush event (error level)
+      bufferedLogging.captureEvent(
+        'forced line',
+        domain: 'CANCEL_TIMER',
+        level: InsightLevel.error,
+      );
+
+      // Give the async write chain time to complete
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      final file = File(logPath0());
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      // Both lines should be flushed together
+      expect(content, contains('[INFO] CANCEL_TIMER: queued line'));
+      expect(content, contains('[ERROR] CANCEL_TIMER: forced line'));
     });
   });
 }

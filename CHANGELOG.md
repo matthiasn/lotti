@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verification UX: Both outgoing and incoming verification modals now provide clearer "waiting for other device" feedback during confirmation and transition more reliably to the success state.
 - Verification Status Refresh: After SAS verification completes, the app now retries unverified-device refresh for a short window so the stale "unverified" badge clears without manual refresh, and desktop provisioning auto-advances from the QR step to the final status page once trust state is updated.
 - Provisioned Sync Disconnect: Disconnect now uses an explicit confirmation dialog (`Cancel` + destructive confirm) and closes the status modal after successful deletion.
+- Logging Performance: Sync-related logging no longer forces a disk flush for every non-test log line. File writes are now buffered and batched, with forced flush reserved for error-level paths.
 
 ### Changed
 - Sync Onboarding: The legacy manual Matrix setup wizard was removed from Settings, leaving provisioning as the single onboarding path while keeping emoji/SAS verification available from the provisioned flow.

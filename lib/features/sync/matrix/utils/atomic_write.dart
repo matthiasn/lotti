@@ -34,7 +34,8 @@ Future<void> atomicWriteBytes({
     String? bakPath;
     var movedAside = false;
     try {
-      if (File(filePath).existsSync()) {
+      // ignore: avoid_slow_async_io
+      if (await File(filePath).exists()) {
         bakPath = '$filePath.bak.${DateTime.now().microsecondsSinceEpoch}';
         try {
           await File(filePath).rename(bakPath);
