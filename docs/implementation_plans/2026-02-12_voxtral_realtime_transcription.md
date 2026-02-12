@@ -47,9 +47,9 @@ The UI shows recording mode options based on what is actually configured:
 The WS URL is **derived from the provider's `baseUrl`**, not hardcoded. The default Mistral base URL is `https://api.mistral.ai/v1` (from `provider_config.dart:21`), which already includes the `/v1` path segment.
 
 **Derivation rules:**
-1. Strip any trailing `/v1` or `/v1/` from the base URL to get the host root (e.g. `https://api.mistral.ai/v1` → `https://api.mistral.ai`)
-2. Replace scheme: `https` → `wss`, `http` → `ws`
-3. Append the fixed realtime path: `/v1/audio/transcriptions/realtime`
+1. Normalize the base URL by removing any trailing `/v1` or `/v1/` (prevents double `/v1/v1/` paths, e.g. `https://api.mistral.ai/v1` → `https://api.mistral.ai`)
+2. Replace the scheme: `https` → `wss`, `http` → `ws`
+3. Append the fixed path: `/v1/audio/transcriptions/realtime`
 
 **Examples:**
 - `https://api.mistral.ai/v1` → `wss://api.mistral.ai/v1/audio/transcriptions/realtime`
@@ -230,7 +230,7 @@ class RealtimeStopResult {
 
 A standalone class (not extending `TranscriptionRepository`, since the base class is designed for HTTP request-response, not WebSocket streams).
 
-```
+```dart
 class MistralRealtimeTranscriptionRepository {
   // Constructor accepts optional WebSocketChannel factory for testability
 
@@ -399,7 +399,7 @@ final audioModels = models
 - Verify Mistral realtime model is excluded from batch selection
 - Verify non-Mistral model with "transcribe-realtime" in name is **not** excluded (provider-scoped guard)
 
-```
+```dart
 class RealtimeTranscriptionService {
   RealtimeTranscriptionService(this.ref);
 
@@ -566,7 +566,7 @@ Changes to `InputArea.build()`:
 
 2. Add a mode toggle for the mic button:
    - When idle with no text: show mic icon (batch) or a "live mic" icon (real-time)
-   - Toggle between modes via long-press or a small switch/chip near the input area
+   - Toggle between modes via a visible switch/chip near the input area (prioritizing discoverability over a hidden long-press gesture)
    - **Only show toggle when both batch and realtime models are configured.** If only one type exists, show just that mode's icon (no toggle). If neither exists, show the tune icon (existing `requiresModelSelection` behavior).
    - Store preference in a **separate `keepAlive` Riverpod provider** (e.g. `realtimeModePreferenceProvider`), not in the `autoDispose` controller state. This ensures the preference survives widget rebuilds and navigation. For cross-session persistence, back it with `SharedPreferences`.
 
@@ -645,6 +645,7 @@ Add equivalent translations in all ARB files. Run `make l10n` and `make sort_arb
 ---
 
 ## Files to Create
+
 | File | Purpose |
 |------|---------|
 | `lib/features/ai/model/realtime_transcription_event.dart` | Plain Dart data models for WS events |
@@ -660,6 +661,7 @@ Add equivalent translations in all ARB files. Run `make l10n` and `make sort_arb
 | `test/features/ai_chat/services/realtime_transcription_service_test.dart` | Service tests |
 
 ## Files to Modify
+
 | File | Changes |
 |------|---------|
 | `pubspec.yaml` | Promote `web_socket_channel` to direct dependency |
