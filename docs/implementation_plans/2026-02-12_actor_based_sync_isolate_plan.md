@@ -5,6 +5,7 @@
 - Move Matrix sync execution off the UI isolate into a dedicated worker isolate.
 - Use an actor model: single mailbox, serialized command handling, explicit event stream back to UI.
 - Keep Matrix SDK objects isolate-local and exchange only serializable DTOs.
+- Move both inbound and outbound sync orchestration into the actor path.
 - Maintain runtime parity (including SAS verification behavior) with production Matrix client paths.
 
 ## Goals
@@ -33,6 +34,14 @@
   - initialize vodozemac (`vod.init()`) in the worker isolate
   - avoid eager SAS derivation while protocol state is not ready
   - keep acceptance/emoji checks state-aware
+- Additional isolate-integration learnings from `integration_test/matrix_actor_isolate_network_test.dart`:
+  - use an explicit actor readiness handshake (`readyPort` -> `commandPort`) before first command dispatch
+  - keep command protocol map-based with per-request `replyTo` ports for strict request/response correlation
+  - poll/sync in bounded loops with explicit timeouts; never assume one sync tick is sufficient
+  - accept incoming verification only from valid early steps (`request`/`ready`/`start`)
+  - require SAS emoji convergence before `acceptSas`, then allow incoming-side fallback acceptance if needed
+  - discover peer device keys from either side (user1->user2 or user2->user1) to avoid initiator bias
+  - isolate-local SDK DB roots per actor instance prevent cross-run state contamination
 
 ## Architecture
 
@@ -50,14 +59,14 @@
 
 - Actor owns all non-thread-safe sync resources:
   - Matrix `Client`, room/timeline handles, key verification objects, retry state, backoff timers.
-- UI owns presentation state only.
-- Cross-isolate data must be plain JSON-like maps / DTO classes with primitive fields and lists/maps.
+- Actor owns `SyncDatabase` exclusively (outbox, sequence log, inbound apply journal).
+- UI owns presentation state plus durable app DBs (`JournalDb`, `SettingsDb`).
+- Cross-isolate command/event payloads must be plain JSON-like maps / DTO classes with primitive fields and lists/maps.
 - Never pass SDK objects, streams, controllers, DB handles, or closures across isolates.
 - **Explicit v1 ownership decision (feasibility):**
-  - Phase 1-2: actor owns network/crypto/sync decisioning; UI isolate remains durable DB writer.
-  - Phase 3+: DB write ownership can move into actor only behind a dedicated storage abstraction and
-    parity test gates.
-  - Until DB ownership moves, actor MUST NOT advance durable sync markers unless UI acks apply.
+  - actor owns network/crypto/sync decisioning, outbound orchestration, and `SyncDatabase` writes.
+  - UI isolate remains owner of `JournalDb` / `SettingsDb` writes for this project phase.
+  - actor MUST NOT advance durable sync markers unless UI acks successful apply into app DBs.
 
 ### Actor Mailbox Contract (v1)
 
@@ -67,6 +76,9 @@
   - `type` (string command type)
   - `payload` (map)
   - `replyTo` (`SendPort`) for direct ack/result
+- Transport layering rule:
+  - `SyncActorEnvelope` is transport-only and may carry transferable primitives (`SendPort`).
+  - command/event DTO payloads remain JSON-only and are independently encoded/validated.
 - Command categories:
   - lifecycle: `init`, `start`, `stop`, `dispose`, `ping`
   - auth/session: `login`, `logout`, `setConfig`
@@ -111,6 +123,9 @@
   - **interactive (medium):** `login`, `joinRoom`, `sendSyncMessage`, verification commands
   - **background (low):** `forceRescan`, `retryNow`, periodic maintenance
 - Long-running background jobs are cancellable; control commands preempt by setting cancellation flags.
+- Preemption is cooperative only:
+  - each long-running command must define cancellation checkpoints and a command timeout/deadline
+  - if blocked in non-cancellable SDK/network await, control commands are queued and executed at the next checkpoint
 - Every command gets fast ack (`accepted` / `rejected`) before completion event.
 
 ## Failure and Recovery
@@ -130,7 +145,7 @@
   - detects actor exit
   - restarts actor with last known config and checkpoint
   - emits degraded-state event until rehydration complete
-- Persist minimal checkpoint data in main isolate or durable store:
+- Persist minimal checkpoint data in actor-owned durable store (`SyncDatabase`) and host config:
   - sync room id
   - last processed marker ids/tokens (if available)
   - pending outbox descriptors
@@ -143,15 +158,19 @@
   - retry state (`attempt`, `nextEligibleAt`) per retriable operation
   - sent-event suppression window snapshot (event ids + expiry timestamps)
   - active verification session metadata (transaction id, peer, step) or explicit canceled marker
+  - highest actor-journal-applied `applySeq` and pending batch ids (for reconciliation after actor restart)
+- SAS restart policy (fail-closed):
+  - if actor restarts during active SAS, mark verification as canceled and require re-negotiation
+  - never assume SAS session can be resumed from app-level metadata alone
 
 ## Data Boundaries and Persistence
 
 - Keep heavy sync processing in actor.
 - UI isolate applies only coarse-grained updates from actor events.
-- If DB access remains in UI isolate initially:
-  - actor emits validated “apply” DTOs
-  - UI applies writes via existing DB services
-  - later phase may move DB writes into actor if safe and beneficial
+- DB boundary for this plan:
+  - actor writes only `SyncDatabase`
+  - UI writes only `JournalDb` / `SettingsDb`
+  - actor emits validated “apply” DTOs; UI applies via existing DB services and replies with ack/nack
 
 ### Apply/Ack Protocol (Phase 1-2, DB in UI)
 
@@ -165,9 +184,80 @@
   - never commit `proposedMarker` before matching `applyAck`
   - on timeout/no-ack, retry same `applySeq` (exact same payload)
   - on `applyNack`, enter `recovering` and request diagnostics
+- Nack policy:
+  - UI MUST return explicit `applyNack` on apply failures (no silent failure/timeout-as-error path)
+  - actor treats timeout as transport failure only; semantic apply failures are represented by `applyNack`
 - Idempotency:
   - every operation includes stable `opId`
-  - UI deduplicates by `opId` if replayed after restart
+  - UI deduplicates by `opId` using durable app-DB storage (not `SyncDatabase`) for restart-safe replay handling
+
+### Durable Apply Journal (Required for Retryable DB Effects)
+
+- Actor persists every inbound `applyBatch` to `SyncDatabase` before requesting apply in app DBs.
+- Proposed storage:
+  - `inbound_apply_batches` table:
+    - `applySeq` (unique, monotonic)
+    - `batchId` (unique)
+    - `operationsJson` (serialized deterministic operations payload)
+    - `proposedMarkerJson` (nullable)
+    - `status` (`pending`, `applying`, `applied`, `failed`)
+    - `attemptCount`, `lastError`, `createdAt`, `updatedAt`, `lastAttemptAt`
+  - `inbound_apply_ops` (or equivalent durable dedupe index):
+    - `opId` (unique)
+    - `applySeq`
+    - optional per-op status/metadata for diagnostics
+  - main-isolate app DB dedupe table (`JournalDb`):
+    - `sync_apply_op_dedupe`:
+      - `opId` (primary key)
+      - `applySeq`
+      - `appliedAt`
+    - written in the same transaction as app DB effects
+- Apply execution flow:
+  1. actor persists batch as `pending` in `SyncDatabase`
+  2. actor emits `applyBatch` to UI (with `applySeq`, `batchId`, `operations`, `proposedMarker`)
+  3. UI applies operations transactionally to `JournalDb` / `SettingsDb`
+  4. UI replies `applyAck` or `applyNack` (including error metadata on nack)
+  5. actor marks `applied`/`failed` in `SyncDatabase`; marker advancement only after `applyAck`
+- Restart/recovery flow:
+  - on actor startup, load unapplied batches (`pending|failed|applying`) in `applySeq` order
+  - actor re-emits batches; UI replays effects idempotently using `opId` dedupe
+  - actor advances sync markers only once a batch is durably `applied` in actor-owned journal
+- Actor/UI contract addition:
+  - actor may resend same `applySeq`; UI must treat replays as idempotent and return consistent ack outcome
+  - actor short-circuits resend if its journal already marks `applySeq` as `applied`
+  - actor must not advance durable sync marker beyond the highest actor-journal-applied `applySeq`
+- Dedupe retention policy:
+  - main-isolate dedupe rows are pruned by checkpoint watermark plus a 30-day safety window
+  - rows newer than 30 days are retained regardless of watermark to protect delayed/replayed batches
+
+### Two-DB Saga State Machine (Explicit Invariants)
+
+| State (`inbound_apply_batches.status`) | Owner | Meaning | Allowed Next States |
+| --- | --- | --- | --- |
+| `pending` | actor | batch persisted in `SyncDatabase`, not yet in-flight to UI apply | `applying`, `failed` |
+| `applying` | actor/UI | batch dispatched to UI for `JournalDb`/`SettingsDb` transaction | `applied`, `failed`, `pending` (timeout rollback) |
+| `failed` | actor | last apply attempt failed or timed out, retryable unless classified fatal | `pending`, `applying` |
+| `applied` | actor | UI confirmed durable apply into app DBs; marker can advance | terminal |
+
+- Saga invariants:
+  - `applySeq` ordering invariant:
+    - actor MUST dispatch and finalize batches in ascending `applySeq`; no out-of-order marker advancement.
+  - Ack safety invariant:
+    - actor records `applied` only after receiving `applyAck` for the same `applySeq` and `batchId`.
+  - Idempotency invariant:
+    - replay of an already-applied `applySeq` MUST be a no-op in app DB effects.
+  - Single-writer invariant:
+    - only actor mutates `inbound_apply_batches` / `inbound_apply_ops`; UI reports outcome via ack/nack only.
+  - Crash-recovery invariant:
+    - actor restart must recover from `pending|applying|failed` and eventually converge to `applied` or stable `failed` with diagnostics.
+
+### Verification Trust Gate (Fail-Closed)
+
+- Actor is source of truth for per-device verification trust state.
+- Outbound send policy:
+  - verified trust: send normally
+  - unknown/unverified/regressed trust: block send or queue in outbox with explicit reason until trust is restored
+- Never silently downgrade to unverified send behavior.
 
 ## Migration Strategy (Phased)
 
@@ -185,6 +275,8 @@
 ### Phase 1: Lifecycle + Session Parity
 
 - Move `init/login/logout/start/stop` flows into actor.
+- Move outbound orchestration into actor (`flushOutbox`, retry scheduling, connectivity/login nudges).
+- Move `SyncDatabase` access behind actor-owned APIs; UI stops direct `SyncDatabase` mutations in actor mode.
 - Keep current sync service path as fallback.
 - Validate startup/shutdown and reconnect semantics.
 - Add supervisor restart flow with checkpoint restore and epoch increment.
@@ -194,6 +286,7 @@
 - Actor handles room create/join/invite/send text.
 - Mirror current behavior for sync room discovery and state updates.
 - Ensure outbox ack semantics remain monotonic and idempotent.
+- Include SAS verification commands in actor path for production trust parity.
 - Use Apply/Ack for all DB effects while UI still owns durable writes.
 
 ### Phase 3: Sync Pipeline Ownership
@@ -201,14 +294,12 @@
 - Move force-rescan/retry/catch-up orchestration into actor.
 - Preserve ordering and sent-event suppression guarantees.
 - Integrate connectivity signal handling in actor.
-- Optional sub-phase 3b: migrate DB writes into actor behind `SyncStore` abstraction only if:
-  - actor-path parity tests pass
-  - crash-recovery replay tests pass
-  - performance targets are met
+- Keep `JournalDb` / `SettingsDb` apply on UI isolate with Apply/Ack barrier for this project phase.
+- Any migration of app DB writes into actor is explicitly out-of-scope for this plan and requires a separate design doc.
 
-### Phase 4: SAS and Verification Ownership
+### Phase 4: Verification Hardening + UX Parity
 
-- Move verification command handling completely into actor.
+- Harden verification recovery/fail-closed behavior under crash/restart paths.
 - Publish verification runner state snapshots to UI.
 - Preserve current UX behavior with actor-fed state.
 
@@ -227,6 +318,7 @@
 - retry/backoff behavior with fake time
 - supervisor restart and in-flight request handling
 - Apply/Ack replay and idempotency (`applySeq`, `opId`) behavior
+- durable apply-journal state transitions and restart replay ordering
 - command priority/preemption (control over background)
 
 ### Integration Tests
@@ -236,10 +328,15 @@
   - SDK room flow
   - SDK SAS flow
   - send/receive parity
+  - actor startup handshake semantics (ready before command send)
+  - two-sided device-discovery and SAS step-guard behavior
+  - actor mode enforces single outbound owner (no parallel legacy outbox sender activity)
 - failure injection:
   - kill actor mid-sync and verify restart/recovery
   - simulated network degradation/reconnect
   - replay same `applySeq` after forced restart and verify no duplicate DB effects
+  - kill actor during SAS and verify re-negotiation is required before trusted send resumes
+  - crash host after journal persist but before DB commit; verify replay resumes and applies once
 
 ### Regression Tests
 
@@ -267,8 +364,8 @@
 - Actor command latency (non-network) p95 under 30ms.
 - No regression in end-to-end sync correctness metrics (message loss/duplication/order).
 - Measurement method:
-  - baseline: current non-actor path over 3 scripted runs (same docker setup)
-  - actor path: same 3 scripted runs
+  - baseline: current non-actor path over at least 10 scripted runs (same docker setup)
+  - actor path: same run count and workload seed
   - compare:
     - dropped-frame clusters during sync windows
     - p95 command latency for `sendSyncMessage`, `getHealth`, `forceRescan`
@@ -283,24 +380,32 @@
   - **Mitigation:** idempotent apply keys and persisted last-applied markers.
 - **Risk:** SAS protocol races in asynchronous actor flow.
   - **Mitigation:** state-aware verification sequencing and guarded SAS derivation.
+- **Risk:** trust regression after restart allows unverified outbound sends.
+  - **Mitigation:** fail-closed trust gate; require re-verification on unknown state.
 - **Risk:** rollout instability.
   - **Mitigation:** feature-flagged rollout with quick fallback.
 
 ## Concrete First Vertical Slice
 
 - Implement actor commands:
-  - `init`, `login`, `start`, `createRoom`, `joinRoom`, `sendSyncMessage`, `getHealth`, `stop`
+  - `init`, `login`, `start`, `createRoom`, `joinRoom`, `sendSyncMessage`,
+    `startSas`, `acceptVerification`, `acceptSas`, `cancelVerification`, `getHealth`, `stop`
 - Wire UI host adapter for request/response and events.
 - Add one end-to-end integration test path:
   - spawn actor -> login two users -> room setup -> SAS -> send/receive -> stop.
 - Include Apply/Ack plumbing in this slice (even if batch contains one operation) to avoid rework.
+- Include trust gate behavior in this slice:
+  - unverified/unknown trust blocks or queues send
+  - trusted send resumes only after SAS success
 
 ## Rollout Checklist
 
 - [ ] DTO contract finalized and documented
 - [ ] actor host + supervisor implemented
 - [ ] feature flag integrated in sync entrypoint
+- [ ] actor mode enforces single-owner rules (`SyncDatabase` actor-only, app DBs UI-only)
 - [ ] phase-1 integration tests green locally and CI
+- [ ] fail-closed trust-gate behavior validated in restart scenarios
 - [ ] observability dashboards for actor metrics
 - [ ] staged rollout with rollback playbook
 - [ ] restart/replay/idempotency tests green
@@ -327,6 +432,7 @@
 - acceptance:
   - invalid/missing fields rejected with structured error codes
   - unknown `schemaVersion` returns `UNSUPPORTED_SCHEMA`
+  - transport envelope tests cover `SendPort` transferability separately from JSON payload tests
 
 ### 0.2 Apply/Ack Contract (Skeleton)
 
@@ -336,11 +442,15 @@
     - `lib/features/sync/actor/protocol/sync_apply_ack.dart`
   - fields:
     - `applySeq`, `batchId`, `operations`, `proposedMarker`, `opId`
-- [ ] Implement UI-side dedupe helper by `opId` (in-memory first; durable hook later):
+- [ ] Add durable apply-journal persistence in `SyncDatabase`:
+  - add table(s) for inbound apply batches and op dedupe index
+  - wire repository/service for journal write/replay/mark-applied
+- [ ] Implement main-isolate dedupe helper by `opId` with durable app-DB persistence for restart-safe replay:
   - file:
     - `lib/features/sync/actor/host/sync_apply_dedupe.dart`
 - acceptance:
   - replaying same `applySeq` causes no duplicate side effects in tests
+  - crash/restart between `pending` and `applied` replays correctly and eventually acks
 
 ### 0.3 Actor Core (No Matrix Yet)
 
@@ -354,8 +464,10 @@
 - [ ] Implement baseline commands:
   - `ping`, `getHealth`, `init`, `stop`
 - [ ] Implement command priority queues and cancellable background job token.
+- [ ] Add per-command timeout/deadline policy + cooperative cancellation checkpoints.
 - acceptance:
   - control command preemption tests pass (`stop` responds while low-priority job active)
+  - non-cancellable SDK/network waits are bounded by timeout policies
 
 ### 0.4 UI Host Adapter
 
@@ -386,10 +498,11 @@
   - primary candidate files:
     - `lib/get_it.dart`
     - `lib/main.dart`
+- [ ] In actor mode, disable legacy UI-owned outbox runner/schedulers to prevent dual-send ownership.
 - [ ] Keep legacy non-actor path intact and default.
 - acceptance:
   - app starts with flag off (current behavior unchanged)
-  - app starts with flag on (actor host initialized)
+  - app starts with flag on (actor host initialized, no duplicate outbox runners)
 
 ### 0.6 Compatibility Layer (No Behavior Change)
 
