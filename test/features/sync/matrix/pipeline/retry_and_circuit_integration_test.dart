@@ -1,5 +1,5 @@
-import 'dart:isolate';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/retry_and_circuit.dart';

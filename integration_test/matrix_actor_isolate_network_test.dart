@@ -335,10 +335,8 @@ Future<void> _matrixNetworkActor(SendPort readyPort) async {
             await gateway1.client.sync();
             await gateway2.client.sync();
             if (incomingVerification.lastStep == requestStep ||
-                incomingVerification.lastStep ==
-                    'm.key.verification.ready' ||
-                incomingVerification.lastStep ==
-                    'm.key.verification.start') {
+                incomingVerification.lastStep == 'm.key.verification.ready' ||
+                incomingVerification.lastStep == 'm.key.verification.start') {
               break;
             }
             await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -475,6 +473,7 @@ void main() {
             final sdkDbRoot =
                 await Directory.systemTemp.createTemp('matrix_sdk_actor_');
             addTearDown(() async {
+              // ignore: avoid_slow_async_io
               if (await sdkDbRoot.exists()) {
                 await sdkDbRoot.delete(recursive: true);
               }
