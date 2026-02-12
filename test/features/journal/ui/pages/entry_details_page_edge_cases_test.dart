@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -118,16 +117,6 @@ void main() {
 
       when(mockTimeService.getStream)
           .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableWater,
-        ]),
-      );
 
       when(
         () => mockJournalDb.getMeasurementsByType(

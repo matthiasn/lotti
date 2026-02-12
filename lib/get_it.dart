@@ -162,10 +162,16 @@ Future<void> registerSingletons() async {
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
-    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService());
+
+  final entitiesCacheService = EntitiesCacheService(
+    journalDb: getIt<JournalDb>(),
+    updateNotifications: getIt<UpdateNotifications>(),
+  );
+  await entitiesCacheService.init();
+  getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
   final aiConfigRepository = AiConfigRepository(AiConfigDb());
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);

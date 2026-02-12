@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
@@ -17,8 +14,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -40,10 +35,8 @@ void main() {
     mockTagsService = mockTagsServiceWithTags([]);
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(mockJournalDb.watchDashboards).thenAnswer(
-      (_) => Stream<List<DashboardDefinition>>.fromIterable([
-        [testDashboardConfig, emptyTestDashboardConfig],
-      ]),
+    when(mockJournalDb.getAllDashboards).thenAnswer(
+      (_) async => [testDashboardConfig, emptyTestDashboardConfig],
     );
 
     when(mockTagsService.watchTags).thenAnswer(
@@ -106,13 +99,10 @@ void main() {
       dashboardId: testDashboardConfig.id,
     );
 
-    // Use a StreamController to control when data is emitted
-    final habitController = StreamController<HabitDefinition?>.broadcast();
-    addTearDown(habitController.close);
-
-    // Update the mock to use the StreamController for this specific habit
-    when(() => mockJournalDb.watchHabitById(habitWithDashboard.id))
-        .thenAnswer((_) => habitController.stream);
+    // Stub getHabitById to return the habit with dashboard set
+    // (notificationDrivenItemStream fetches via getHabitById)
+    when(() => mockJournalDb.getHabitById(habitWithDashboard.id))
+        .thenAnswer((_) async => habitWithDashboard);
 
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
@@ -120,15 +110,6 @@ void main() {
       ),
     );
 
-    // Pump to build the widget and set up listeners
-    await tester.pump();
-
-    // Now emit the habit data after listeners are set up
-    habitController.add(habitWithDashboard);
-
-    // Allow time for async state updates
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
 
     // Find and tap the close icon

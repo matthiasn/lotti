@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-12
 **Prerequisite for**: [Actor-Based Sync Isolate Plan](2026-02-12_actor_based_sync_isolate_plan.md)
-**Status**: Draft — v5 (post-fourth feasibility review)
+**Status**: In Progress — Steps 1–9 complete, Steps 10–14 remaining
 
 ## Context
 
@@ -90,7 +90,7 @@ implementation.
 
 ---
 
-## Step 1: Add Entity-Type Notification Constants
+## Step 1: Add Entity-Type Notification Constants [DONE]
 
 **File**: `lib/services/db_notification.dart`
 
@@ -112,7 +112,7 @@ const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 
 ---
 
-## Step 2: Fire Type-Specific Notifications on ALL Write Paths
+## Step 2: Fire Type-Specific Notifications on ALL Write Paths [DONE]
 
 This step must cover every row in the notification coverage matrix above.
 
@@ -300,7 +300,7 @@ notifications are fired for every write path.
 
 ---
 
-## Step 3: Create Notification-Driven Stream Helper
+## Step 3: Create Notification-Driven Stream Helper [DONE]
 
 **New file**: `lib/services/notification_stream.dart`
 
@@ -497,7 +497,7 @@ Stream<Map<K, V>> notificationDrivenMapStream<K, V>({
 
 ---
 
-## Step 4: API Normalization — Add Missing One-Shot Query Methods
+## Step 4: API Normalization — Add Missing One-Shot Query Methods [DONE]
 
 **File**: `lib/database/database.dart`
 
@@ -581,7 +581,7 @@ Future<DashboardDefinition?> getDashboardById(String id) async {
 
 ---
 
-## Step 5: Migrate SettingsDb Internal Dependencies
+## Step 5: Migrate SettingsDb Internal Dependencies [DONE]
 
 **File**: `lib/database/settings_db.dart`
 
@@ -642,7 +642,7 @@ query path instead.
 
 ---
 
-## Step 6: Migrate Sync Maintenance Repository `.first` Calls
+## Step 6: Migrate Sync Maintenance Repository `.first` Calls [DONE]
 
 **File**: `lib/features/sync/repository/sync_maintenance_repository.dart`
 
@@ -662,7 +662,7 @@ instead of watch stubs.
 
 ---
 
-## Step 7: Migrate EntitiesCacheService
+## Step 7: Migrate EntitiesCacheService [DONE]
 
 **File**: `lib/services/entities_cache_service.dart`
 
@@ -801,7 +801,7 @@ notifications coalesce correctly. Temporarily keep `LABELS_UPDATED` assertion.
 
 ---
 
-## Step 8: Migrate Repositories
+## Step 8: Migrate Repositories [DONE]
 
 All repository notification streams include `privateToggleNotification` alongside their
 type key, because the underlying drift queries filter by the private config flag.
@@ -852,7 +852,7 @@ type key, because the underlying drift queries filter by the private config flag
 
 ---
 
-## Step 9: Migrate State Controllers
+## Step 9: Migrate State Controllers [DONE]
 
 Most controllers consume repository streams, so after Step 8 they automatically get
 notification-driven streams. Verify each one works:
@@ -910,7 +910,7 @@ stream interface is preserved.
 
 ---
 
-## Step 10: Migrate Widgets (StreamBuilder → Notification-Driven)
+## Step 10: Migrate Widgets (StreamBuilder → Notification-Driven) [IN PROGRESS]
 
 All these widgets use `StreamBuilder` with Drift watch() streams. Replace the stream
 source with `notificationDrivenStream()` or `notificationDrivenItemStream()`.
@@ -940,7 +940,7 @@ All paths in `lib/features/settings/ui/pages/` and `lib/features/journal/ui/widg
 
 ---
 
-## Step 11: Migrate TagsService
+## Step 11: Migrate TagsService [TODO]
 
 **File**: `lib/services/tags_service.dart`
 
@@ -999,7 +999,7 @@ await `init()`.
 
 ---
 
-## Step 12: Migrate ThemingController Settings Watch
+## Step 12: Migrate ThemingController Settings Watch [TODO]
 
 **File**: `lib/features/theming/state/theming_controller.dart`
 
@@ -1055,7 +1055,7 @@ settings arrive from sync.
 
 ---
 
-## Step 13: Remove `LABELS_UPDATED` Dual-Emit
+## Step 13: Remove `LABELS_UPDATED` Dual-Emit [TODO]
 
 After all consumers have been migrated from `LABELS_UPDATED` to `labelsNotification`:
 
@@ -1065,7 +1065,7 @@ After all consumers have been migrated from `LABELS_UPDATED` to `labelsNotificat
 
 ---
 
-## Step 14: Remove Drift watch() Methods
+## Step 14: Remove Drift watch() Methods [TODO]
 
 ### JournalDb
 
@@ -1104,7 +1104,7 @@ Remove stubs for deleted watch methods. Fix resulting compilation errors in test
 
 ---
 
-## Step 15: Update Tests
+## Step 15: Update Tests [ONGOING]
 
 For each migrated file, update the corresponding test file:
 

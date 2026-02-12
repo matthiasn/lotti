@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,6 +15,8 @@ import '../../../../test_helper.dart';
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockEntitiesCacheService mockCacheService;
@@ -33,23 +36,22 @@ void main() {
     mockCacheService = MockEntitiesCacheService();
     mockJournalDb = MockJournalDb();
 
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream.empty());
+
     // Mock JournalDb methods
-    when(() => mockJournalDb.watchCategories()).thenAnswer(
-      (_) => Stream<List<CategoryDefinition>>.fromIterable([
-        [testCategory]
-      ]),
+    when(() => mockJournalDb.getAllCategories()).thenAnswer(
+      (_) async => [testCategory],
     );
 
     getIt
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockCacheService)
       ..registerSingleton<JournalDb>(mockJournalDb);
   });
 
-  tearDown(() {
-    getIt
-      ..unregister<EntitiesCacheService>()
-      ..unregister<JournalDb>();
-  });
+  tearDown(getIt.reset);
 
   Widget createTestWidget({
     required void Function(String?) setCategory,

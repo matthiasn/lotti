@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,19 +17,20 @@ void main() {
 
   group('TagsService Tests', () {
     late MockJournalDb mockJournalDb;
-    late StreamController<List<TagEntity>> tagsController;
+    late MockUpdateNotifications mockUpdateNotifications;
+    late StreamController<Set<String>> notificationsController;
     late TagsService tagsService;
 
     setUp(() {
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-
       mockJournalDb = MockJournalDb();
-      tagsController = StreamController<List<TagEntity>>.broadcast();
+      mockUpdateNotifications = MockUpdateNotifications();
+      notificationsController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => tagsController.stream);
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => notificationsController.stream);
+
+      when(() => mockJournalDb.getAllTags())
+          .thenAnswer((_) async => <TagEntity>[]);
 
       when(() => mockJournalDb.getMatchingTags(
             any(),
@@ -36,18 +38,22 @@ void main() {
             inactive: any(named: 'inactive'),
           )).thenAnswer((_) async => []);
 
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
-
-      tagsService = TagsService();
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
     });
 
     tearDown(() async {
-      await tagsController.close();
+      await notificationsController.close();
+      await getIt.reset();
     });
 
     test('constructor initializes and populates tagsById from stream', () {
       fakeAsync((async) {
-        tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         expect(tagsService.tagsById.length, 3);
@@ -59,7 +65,10 @@ void main() {
 
     test('getTagById returns correct tag', () {
       fakeAsync((async) {
-        tagsController.add([testStoryTag1, testPersonTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1, testPersonTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         final result = tagsService.getTagById(testStoryTag1.id);
@@ -69,7 +78,10 @@ void main() {
 
     test('getTagById returns null for non-existing id', () {
       fakeAsync((async) {
-        tagsController.add([testStoryTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         final result = tagsService.getTagById('non-existing-id');
@@ -77,17 +89,22 @@ void main() {
       });
     });
 
-    test('tagsById updates when stream emits new data', () {
+    test('tagsById updates when notification triggers re-fetch', () {
       fakeAsync((async) {
         // Initial data
-        tagsController.add([testStoryTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         expect(tagsService.tagsById.length, 1);
         expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
 
-        // Update with new data
-        tagsController.add([testPersonTag1, testTag1]);
+        // Update data and trigger re-fetch via notification
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testPersonTag1, testTag1]);
+        notificationsController.add({tagsNotification});
         async.flushMicrotasks();
 
         // Cache should be replaced with new data
@@ -100,7 +117,10 @@ void main() {
 
     test('getFilteredStoryTagIds returns only story tags', () {
       fakeAsync((async) {
-        tagsController.add([testStoryTag1, testPersonTag1, testTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         final result = tagsService.getFilteredStoryTagIds([
@@ -117,15 +137,23 @@ void main() {
     });
 
     test('getFilteredStoryTagIds handles null tag list', () {
-      final result = tagsService.getFilteredStoryTagIds(null);
+      fakeAsync((async) {
+        tagsService = TagsService();
+        async.flushMicrotasks();
 
-      expect(result, isEmpty);
+        final result = tagsService.getFilteredStoryTagIds(null);
+        expect(result, isEmpty);
+      });
     });
 
     test('getFilteredStoryTagIds handles empty tag list', () {
-      final result = tagsService.getFilteredStoryTagIds([]);
+      fakeAsync((async) {
+        tagsService = TagsService();
+        async.flushMicrotasks();
 
-      expect(result, isEmpty);
+        final result = tagsService.getFilteredStoryTagIds([]);
+        expect(result, isEmpty);
+      });
     });
 
     test('getFilteredStoryTagIds handles multiple story tags', () {
@@ -139,7 +167,10 @@ void main() {
           vectorClock: null,
         );
 
-        tagsController.add([testStoryTag1, testStoryTag2, testPersonTag1]);
+        when(() => mockJournalDb.getAllTags()).thenAnswer(
+            (_) async => [testStoryTag1, testStoryTag2, testPersonTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         final result = tagsService.getFilteredStoryTagIds([
@@ -156,7 +187,10 @@ void main() {
 
     test('getFilteredStoryTagIds handles non-existent tag IDs', () {
       fakeAsync((async) {
-        tagsController.add([testStoryTag1]);
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testStoryTag1]);
+
+        tagsService = TagsService();
         async.flushMicrotasks();
 
         final result = tagsService.getFilteredStoryTagIds([
@@ -170,16 +204,20 @@ void main() {
     });
 
     test('setClipboard stores entry ID', () {
-      const entryId = 'test-entry-id';
+      fakeAsync((async) {
+        tagsService = TagsService();
+        async.flushMicrotasks();
 
-      tagsService.setClipboard(entryId);
-
-      // We can't directly access _clipboardCopiedId, but we can verify
-      // it's set by calling getClipboard
-      expect(() => tagsService.setClipboard(entryId), returnsNormally);
+        const entryId = 'test-entry-id';
+        tagsService.setClipboard(entryId);
+        expect(() => tagsService.setClipboard(entryId), returnsNormally);
+      });
     });
 
     test('getClipboard returns tags from clipboard entry', () async {
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
+
       const clipboardEntryId = 'clipboard-entry-id';
       final entryWithTags = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(
@@ -199,15 +237,19 @@ void main() {
     });
 
     test('getClipboard returns empty list when clipboard is not set', () async {
-      final result = await tagsService.getClipboard();
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
 
+      final result = await tagsService.getClipboard();
       expect(result, isEmpty);
     });
 
     test('getClipboard returns empty list when clipboard entry not found',
         () async {
-      const clipboardEntryId = 'non-existent-entry-id';
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
 
+      const clipboardEntryId = 'non-existent-entry-id';
       when(() => mockJournalDb.journalEntityById(clipboardEntryId))
           .thenAnswer((_) async => null);
 
@@ -218,6 +260,9 @@ void main() {
     });
 
     test('getClipboard handles entry without tags', () async {
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
+
       const clipboardEntryId = 'clipboard-entry-id';
       final entryWithoutTags = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(tagIds: null),
@@ -233,6 +278,9 @@ void main() {
     });
 
     test('getMatchingTags delegates to database', () async {
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
+
       final matchingTags = [testStoryTag1, testTag1];
 
       when(() => mockJournalDb.getMatchingTags(
@@ -253,6 +301,9 @@ void main() {
     });
 
     test('getMatchingTags uses default limit', () async {
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
+
       when(() => mockJournalDb.getMatchingTags(
             'test',
             limit: 1000,
@@ -267,6 +318,9 @@ void main() {
     });
 
     test('getMatchingTags with inactive flag', () async {
+      tagsService = TagsService();
+      await Future<void>.delayed(Duration.zero);
+
       when(() => mockJournalDb.getMatchingTags(
             'test',
             limit: 50,
@@ -282,18 +336,16 @@ void main() {
           )).called(1);
     });
 
-    test('watchTags delegates to database', () {
-      final stream = tagsService.watchTags();
+    test('watchTags returns the internal notification-driven stream', () {
+      fakeAsync((async) {
+        tagsService = TagsService();
+        async.flushMicrotasks();
 
-      expect(stream, isNotNull);
-      // Called twice: once in constructor, once in watchTags
-      verify(() => mockJournalDb.watchTags()).called(2);
-    });
+        final stream = tagsService.watchTags();
 
-    test('watchTags returns same stream as constructor', () {
-      final stream = tagsService.watchTags();
-
-      expect(stream, tagsService.stream);
+        expect(stream, isNotNull);
+        expect(stream, tagsService.stream);
+      });
     });
   });
 }

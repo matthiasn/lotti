@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'habits_repository.g.dart';
@@ -75,12 +76,20 @@ class HabitsRepositoryImpl implements HabitsRepository {
 
   @override
   Stream<List<HabitDefinition>> watchHabitDefinitions() {
-    return _journalDb.watchHabitDefinitions();
+    return notificationDrivenStream(
+      notifications: _updateNotifications,
+      notificationKeys: {habitsNotification, privateToggleNotification},
+      fetcher: _journalDb.getAllHabitDefinitions,
+    );
   }
 
   @override
   Stream<HabitDefinition?> watchHabitById(String id) {
-    return _journalDb.watchHabitById(id);
+    return notificationDrivenItemStream(
+      notifications: _updateNotifications,
+      notificationKeys: {habitsNotification, privateToggleNotification},
+      fetcher: () => _journalDb.getHabitById(id),
+    );
   }
 
   @override
@@ -110,7 +119,11 @@ class HabitsRepositoryImpl implements HabitsRepository {
 
   @override
   Stream<List<DashboardDefinition>> watchDashboards() {
-    return _journalDb.watchDashboards();
+    return notificationDrivenStream(
+      notifications: _updateNotifications,
+      notificationKeys: {dashboardsNotification, privateToggleNotification},
+      fetcher: _journalDb.getAllDashboards,
+    );
   }
 
   @override

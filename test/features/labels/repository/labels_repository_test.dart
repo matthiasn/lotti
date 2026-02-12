@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +22,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final baseTime = DateTime.utc(1970);
@@ -52,6 +55,7 @@ void main() {
   late MockJournalDb journalDb;
   late MockEntitiesCacheService cacheService;
   late MockLoggingService loggingService;
+  late MockUpdateNotifications updateNotifications;
   late LabelsRepository repository;
 
   Metadata buildMetadata({List<String>? labelIds}) {
@@ -77,12 +81,14 @@ void main() {
     journalDb = MockJournalDb();
     cacheService = MockEntitiesCacheService();
     loggingService = MockLoggingService();
+    updateNotifications = MockUpdateNotifications();
 
     repository = LabelsRepository(
       persistenceLogic,
       journalDb,
       cacheService,
       loggingService,
+      updateNotifications,
     );
   });
 

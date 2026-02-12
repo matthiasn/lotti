@@ -105,8 +105,7 @@ void main() {
         vectorClock: null,
         inactive: false,
       );
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value([testTag]));
+      when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => [testTag]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -148,8 +147,8 @@ void main() {
         vectorClock: null,
         inactive: true,
       );
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value([deletedTag, inactiveTag]));
+      when(() => mockJournalDb.getAllTags())
+          .thenAnswer((_) async => [deletedTag, inactiveTag]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -183,8 +182,8 @@ void main() {
 
     test('syncMeasurables enqueues measurables for sync', () async {
       final testMeasurable = FakeMeasurableDataType(id: '1');
-      when(() => mockJournalDb.watchMeasurableDataTypes())
-          .thenAnswer((_) => Stream.value([testMeasurable]));
+      when(() => mockJournalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [testMeasurable]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -212,9 +211,8 @@ void main() {
           FakeMeasurableDataType(id: '2', deletedAt: DateTime.now());
       final activeMeasurable = FakeMeasurableDataType(id: '3');
 
-      when(() => mockJournalDb.watchMeasurableDataTypes()).thenAnswer(
-        (_) => Stream.value([deletedMeasurable, activeMeasurable]),
-      );
+      when(() => mockJournalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [deletedMeasurable, activeMeasurable]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -247,8 +245,8 @@ void main() {
 
     test('syncCategories enqueues categories for sync', () async {
       final testCategory = FakeCategoryDefinition(id: '1');
-      when(() => mockJournalDb.watchCategories())
-          .thenAnswer((_) => Stream.value([testCategory]));
+      when(() => mockJournalDb.getAllCategories())
+          .thenAnswer((_) async => [testCategory]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -276,8 +274,8 @@ void main() {
           FakeCategoryDefinition(id: '2', deletedAt: DateTime.now());
       final activeCategory = FakeCategoryDefinition(id: '3');
 
-      when(() => mockJournalDb.watchCategories())
-          .thenAnswer((_) => Stream.value([deletedCategory, activeCategory]));
+      when(() => mockJournalDb.getAllCategories())
+          .thenAnswer((_) async => [deletedCategory, activeCategory]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -310,8 +308,8 @@ void main() {
 
     test('syncDashboards enqueues dashboards for sync', () async {
       final testDashboard = FakeDashboardDefinition(id: '1');
-      when(() => mockJournalDb.watchDashboards())
-          .thenAnswer((_) => Stream.value([testDashboard]));
+      when(() => mockJournalDb.getAllDashboards())
+          .thenAnswer((_) async => [testDashboard]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -339,8 +337,8 @@ void main() {
           FakeDashboardDefinition(id: '2', deletedAt: DateTime.now());
       final activeDashboard = FakeDashboardDefinition(id: '3');
 
-      when(() => mockJournalDb.watchDashboards())
-          .thenAnswer((_) => Stream.value([deletedDashboard, activeDashboard]));
+      when(() => mockJournalDb.getAllDashboards())
+          .thenAnswer((_) async => [deletedDashboard, activeDashboard]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -373,8 +371,8 @@ void main() {
 
     test('syncHabits enqueues habits for sync', () async {
       final testHabit = FakeHabitDefinition(id: '1');
-      when(() => mockJournalDb.watchHabitDefinitions())
-          .thenAnswer((_) => Stream.value([testHabit]));
+      when(() => mockJournalDb.getAllHabitDefinitions())
+          .thenAnswer((_) async => [testHabit]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -401,8 +399,8 @@ void main() {
           FakeHabitDefinition(id: '2', deletedAt: DateTime.now());
       final activeHabit = FakeHabitDefinition(id: '3');
 
-      when(() => mockJournalDb.watchHabitDefinitions())
-          .thenAnswer((_) => Stream.value([deletedHabit, activeHabit]));
+      when(() => mockJournalDb.getAllHabitDefinitions())
+          .thenAnswer((_) async => [deletedHabit, activeHabit]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -555,8 +553,8 @@ void main() {
         vectorClock: null,
         private: false,
       );
-      when(() => mockJournalDb.watchLabelDefinitions())
-          .thenAnswer((_) => Stream.value([label]));
+      when(() => mockJournalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [label]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -599,8 +597,8 @@ void main() {
         private: false,
       );
 
-      when(() => mockJournalDb.watchLabelDefinitions())
-          .thenAnswer((_) => Stream.value([deleted, active]));
+      when(() => mockJournalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [deleted, active]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -622,8 +620,7 @@ void main() {
 
     group('syncTags', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.watchTags())
-            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+        when(() => mockJournalDb.getAllTags()).thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncTags(),
@@ -643,8 +640,8 @@ void main() {
 
     group('syncMeasurables', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.watchMeasurableDataTypes())
-            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+        when(() => mockJournalDb.getAllMeasurableDataTypes())
+            .thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncMeasurables(),
@@ -664,8 +661,7 @@ void main() {
 
     group('syncCategories', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.watchCategories())
-            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+        when(() => mockJournalDb.getAllCategories()).thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncCategories(),
@@ -685,8 +681,7 @@ void main() {
 
     group('syncDashboards', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.watchDashboards())
-            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+        when(() => mockJournalDb.getAllDashboards()).thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncDashboards(),
@@ -706,8 +701,8 @@ void main() {
 
     group('syncHabits', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.watchHabitDefinitions())
-            .thenAnswer((_) => Stream.fromFuture(Future.error(testException)));
+        when(() => mockJournalDb.getAllHabitDefinitions())
+            .thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncHabits(),
@@ -731,7 +726,7 @@ void main() {
       final totals = await syncMaintenanceRepository.fetchTotalsForSteps({});
 
       expect(totals, isEmpty);
-      verifyNever(() => mockJournalDb.watchTags());
+      verifyNever(() => mockJournalDb.getAllTags());
       verifyZeroInteractions(mockAiConfigRepository);
     });
 
@@ -754,20 +749,19 @@ void main() {
         vectorClock: null,
         inactive: false,
       );
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value([tagOne, tagTwo]));
-      when(() => mockJournalDb.watchMeasurableDataTypes()).thenAnswer(
-        (_) => Stream.value([FakeMeasurableDataType(id: 'm-1')]),
-      );
-      when(() => mockJournalDb.watchCategories()).thenAnswer(
-        (_) => Stream.value([FakeCategoryDefinition(id: 'c-1')]),
-      );
-      when(() => mockJournalDb.watchDashboards()).thenAnswer(
-        (_) => Stream.value([FakeDashboardDefinition(id: 'd-1')]),
-      );
-      when(() => mockJournalDb.watchHabitDefinitions()).thenAnswer(
-        (_) => Stream.value(
-            [FakeHabitDefinition(id: 'h-1'), FakeHabitDefinition(id: 'h-2')]),
+      when(() => mockJournalDb.getAllTags())
+          .thenAnswer((_) async => [tagOne, tagTwo]);
+      when(() => mockJournalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [FakeMeasurableDataType(id: 'm-1')]);
+      when(() => mockJournalDb.getAllCategories())
+          .thenAnswer((_) async => [FakeCategoryDefinition(id: 'c-1')]);
+      when(() => mockJournalDb.getAllDashboards())
+          .thenAnswer((_) async => [FakeDashboardDefinition(id: 'd-1')]);
+      when(() => mockJournalDb.getAllHabitDefinitions()).thenAnswer(
+        (_) async => [
+          FakeHabitDefinition(id: 'h-1'),
+          FakeHabitDefinition(id: 'h-2'),
+        ],
       );
 
       final providerConfig = AiConfig.inferenceProvider(
@@ -830,11 +824,11 @@ void main() {
         SyncStep.aiSettings: 3,
       });
 
-      verify(() => mockJournalDb.watchTags()).called(1);
-      verify(() => mockJournalDb.watchMeasurableDataTypes()).called(1);
-      verify(() => mockJournalDb.watchCategories()).called(1);
-      verify(() => mockJournalDb.watchDashboards()).called(1);
-      verify(() => mockJournalDb.watchHabitDefinitions()).called(1);
+      verify(() => mockJournalDb.getAllTags()).called(1);
+      verify(() => mockJournalDb.getAllMeasurableDataTypes()).called(1);
+      verify(() => mockJournalDb.getAllCategories()).called(1);
+      verify(() => mockJournalDb.getAllDashboards()).called(1);
+      verify(() => mockJournalDb.getAllHabitDefinitions()).called(1);
       verify(
         () => mockAiConfigRepository
             .getConfigsByType(AiConfigType.inferenceProvider),
@@ -849,7 +843,7 @@ void main() {
 
     test('logs and rethrows when fetching totals fails', () async {
       final exception = Exception('tag fetch failed');
-      when(() => mockJournalDb.watchTags()).thenThrow(exception);
+      when(() => mockJournalDb.getAllTags()).thenThrow(exception);
 
       await expectLater(
         syncMaintenanceRepository.fetchTotalsForSteps({SyncStep.tags}),
@@ -922,8 +916,7 @@ void main() {
       final progressUpdates = <double>[];
 
       // Mock the fetch function
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -981,8 +974,7 @@ void main() {
       final detailedProgress = <List<int>>[];
 
       // Mock the fetch function
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -1034,8 +1026,8 @@ void main() {
         vectorClock: null,
         inactive: false,
       );
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value([deletedTag, activeTag]));
+      when(() => mockJournalDb.getAllTags())
+          .thenAnswer((_) async => [deletedTag, activeTag]);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -1052,8 +1044,7 @@ void main() {
       final progressUpdates = <double>[];
 
       // Mock the fetch function
-      when(() => mockJournalDb.watchTags())
-          .thenAnswer((_) => Stream.value(testTags));
+      when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
       when(() => mockOutboxService.enqueueMessage(any()))
           .thenAnswer((_) async {});
 
@@ -1069,7 +1060,7 @@ void main() {
 
     test('handles errors correctly', () async {
       // Mock the fetch function to throw an error
-      when(() => mockJournalDb.watchTags()).thenThrow(Exception('Test error'));
+      when(() => mockJournalDb.getAllTags()).thenThrow(Exception('Test error'));
 
       // Test the sync
       await expectLater(

@@ -5,6 +5,8 @@ import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/utils.dart';
 import 'package:lotti/widgets/create/add_tag_actions.dart';
@@ -36,7 +38,11 @@ class TagsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefinitionsListPage<TagEntity>(
-      stream: getIt<JournalDb>().watchTags(),
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {tagsNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllTags,
+      ),
       floatingActionButton: const RadialAddTagButtons(),
       title: context.messages.settingsTagsTitle,
       getName: (tag) => tag.tag,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
@@ -32,10 +31,6 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNotificationService = MockNotificationService();
     mockTagsService = mockTagsServiceWithTags([]);
-
-    when(mockJournalDb.watchDashboards).thenAnswer(
-      (_) => Stream<List<DashboardDefinition>>.fromIterable([[]]),
-    );
 
     when(mockTagsService.watchTags).thenAnswer(
       (_) => Stream<List<TagEntity>>.fromIterable([[]]),

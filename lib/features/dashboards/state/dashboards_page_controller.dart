@@ -5,15 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/notification_stream.dart';
 
 /// Stream provider for all active dashboards from database.
 final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
   final db = getIt<JournalDb>();
-  return db.watchDashboards().map(
-        (dashboards) => dashboards.where((d) => d.active).toList(),
-      );
+  return notificationDrivenStream(
+    notifications: getIt<UpdateNotifications>(),
+    notificationKeys: {dashboardsNotification, privateToggleNotification},
+    fetcher: () async =>
+        (await db.getAllDashboards()).where((d) => d.active).toList(),
+  );
 });
 
 /// Stateful provider for selected category IDs used for filtering dashboards.
@@ -43,7 +48,11 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
 final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
   final db = getIt<JournalDb>();
-  return db.watchCategories();
+  return notificationDrivenStream(
+    notifications: getIt<UpdateNotifications>(),
+    notificationKeys: {categoriesNotification, privateToggleNotification},
+    fetcher: db.getAllCategories,
+  );
 });
 
 /// Provider for a single dashboard by ID that reacts to dashboard changes.

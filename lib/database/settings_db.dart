@@ -31,7 +31,7 @@ class SettingsDb extends _$SettingsDb {
   }
 
   Future<void> removeSettingsItem(String configKey) async {
-    final existing = await watchSettingsItemByKey(configKey).first;
+    final existing = await settingsItemByKey(configKey).get();
     if (existing.isNotEmpty) {
       await delete(settings).delete(existing.first);
     }
@@ -42,12 +42,10 @@ class SettingsDb extends _$SettingsDb {
   }
 
   Future<String?> itemByKey(String configKey) async {
-    final existing = await watchSettingsItemByKey(configKey).first;
-
+    final existing = await settingsItemByKey(configKey).get();
     if (existing.isNotEmpty) {
       return existing.first.value;
-    } else {
-      return null;
     }
+    return null;
   }
 }

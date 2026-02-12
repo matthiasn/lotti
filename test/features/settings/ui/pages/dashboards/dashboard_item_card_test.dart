@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +17,8 @@ class MockTagsService extends Mock implements TagsService {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 void main() {
   group('DashboardItemCard', () {
     late MockTagsService mockTagsService;
@@ -25,6 +28,10 @@ void main() {
       mockTagsService = MockTagsService();
       mockJournalDb = MockJournalDb();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       // Register mocks with GetIt
       if (getIt.isRegistered<TagsService>()) {
         getIt.unregister<TagsService>();
@@ -32,8 +39,12 @@ void main() {
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
       }
+      if (getIt.isRegistered<UpdateNotifications>()) {
+        getIt.unregister<UpdateNotifications>();
+      }
 
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb);
     });
@@ -61,8 +72,8 @@ void main() {
           ) as MeasurableDataType,
         ];
 
-        when(() => mockJournalDb.watchMeasurableDataTypes())
-            .thenAnswer((_) => Stream.value(measurableTypes));
+        when(() => mockJournalDb.getAllMeasurableDataTypes())
+            .thenAnswer((_) async => measurableTypes);
 
         var updateCalled = false;
         DashboardItem? updatedItem;
@@ -122,8 +133,8 @@ void main() {
           ) as MeasurableDataType,
         ];
 
-        when(() => mockJournalDb.watchMeasurableDataTypes())
-            .thenAnswer((_) => Stream.value(measurableTypes));
+        when(() => mockJournalDb.getAllMeasurableDataTypes())
+            .thenAnswer((_) async => measurableTypes);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -148,8 +159,8 @@ void main() {
           aggregationType: AggregationType.dailySum,
         );
 
-        when(() => mockJournalDb.watchMeasurableDataTypes())
-            .thenAnswer((_) => Stream.value([]));
+        when(() => mockJournalDb.getAllMeasurableDataTypes())
+            .thenAnswer((_) async => []);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -258,8 +269,8 @@ void main() {
           private: false,
         ) as HabitDefinition;
 
-        when(() => mockJournalDb.watchHabitById('test-habit-id'))
-            .thenAnswer((_) => Stream.value(habitDefinition));
+        when(() => mockJournalDb.getHabitById('test-habit-id'))
+            .thenAnswer((_) async => habitDefinition);
 
         await tester.pumpWidget(
           WidgetTestBench(
@@ -284,8 +295,8 @@ void main() {
           habitId: 'non-existent-habit',
         );
 
-        when(() => mockJournalDb.watchHabitById('non-existent-habit'))
-            .thenAnswer((_) => Stream.value(null));
+        when(() => mockJournalDb.getHabitById('non-existent-habit'))
+            .thenAnswer((_) async => null);
 
         await tester.pumpWidget(
           WidgetTestBench(

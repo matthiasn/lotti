@@ -39,7 +39,6 @@ void main() {
     late MockPersistenceLogic mockPersistenceLogic;
     late MockNotificationService mockNotificationService;
     late MockUpdateNotifications mockUpdateNotifications;
-    late StreamController<HabitDefinition?> habitStreamController;
     late StreamController<List<TagEntity>> tagsStreamController;
     late StreamController<Set<String>> updateStreamController;
 
@@ -49,13 +48,11 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockNotificationService = MockNotificationService();
       mockUpdateNotifications = MockUpdateNotifications();
-      habitStreamController = StreamController<HabitDefinition?>.broadcast();
       tagsStreamController = StreamController<List<TagEntity>>.broadcast();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockJournalDb.watchHabitById(any())).thenAnswer(
-        (_) => habitStreamController.stream,
-      );
+      when(() => mockJournalDb.getHabitById(any()))
+          .thenAnswer((_) async => null);
       when(mockTagsService.watchTags).thenAnswer(
         (_) => tagsStreamController.stream,
       );
@@ -75,7 +72,6 @@ void main() {
     });
 
     tearDown(() async {
-      await habitStreamController.close();
       await tagsStreamController.close();
       await updateStreamController.close();
       await getIt.reset();
@@ -98,6 +94,9 @@ void main() {
     });
 
     test('loads existing habit from database', () async {
+      when(() => mockJournalDb.getHabitById(habitFlossing.id))
+          .thenAnswer((_) async => habitFlossing);
+
       final completer = Completer<void>();
 
       final container = ProviderContainer();
@@ -116,9 +115,6 @@ void main() {
       container.read(
         habitSettingsControllerProvider(habitFlossing.id).notifier,
       );
-
-      // Emit habit from stream
-      habitStreamController.add(habitFlossing);
 
       await completer.future.timeout(const Duration(milliseconds: 100));
 
@@ -346,6 +342,10 @@ void main() {
     });
 
     test('does not update from DB when form is dirty', () async {
+      // Initially return null, then return habit on refetch
+      when(() => mockJournalDb.getHabitById(habitFlossing.id))
+          .thenAnswer((_) async => null);
+
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -358,11 +358,15 @@ void main() {
         habitSettingsControllerProvider(habitFlossing.id).notifier,
       );
 
+      await Future<void>.delayed(Duration.zero);
+
       // Mark form as dirty
       controller.setDirty();
 
-      // Emit habit from stream
-      habitStreamController.add(habitFlossing);
+      // Update stub and trigger notification to simulate DB change
+      when(() => mockJournalDb.getHabitById(habitFlossing.id))
+          .thenAnswer((_) async => habitFlossing);
+      updateStreamController.add({habitsNotification});
 
       // Give time for stream to process
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -382,6 +386,10 @@ void main() {
       final habitWithDefaultStory = habitFlossing.copyWith(
         defaultStoryId: testStoryTag1.id,
       );
+
+      when(() => mockJournalDb.getHabitById(habitWithDefaultStory.id))
+          .thenAnswer((_) async => habitWithDefaultStory);
+
       final completer = Completer<void>();
 
       final container = ProviderContainer();
@@ -400,10 +408,7 @@ void main() {
         habitSettingsControllerProvider(habitWithDefaultStory.id).notifier,
       );
 
-      // Emit habit first
-      habitStreamController.add(habitWithDefaultStory);
-
-      // Small delay to let habit update
+      // Small delay to let habit load from initial fetch
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       // Then emit tags
@@ -483,7 +488,6 @@ void main() {
       container.read(habitSettingsControllerProvider(testHabitId).notifier);
 
       // Emit values to ensure subscriptions are active
-      habitStreamController.add(null);
       tagsStreamController.add([]);
       await Future<void>.delayed(Duration.zero);
 
@@ -491,7 +495,6 @@ void main() {
       container.dispose();
 
       // Should not throw - streams should be properly cleaned up
-      habitStreamController.add(null);
       tagsStreamController.add([]);
     });
 
@@ -501,6 +504,9 @@ void main() {
         defaultStoryId: testStoryTag1.id,
       );
       final completer = Completer<void>();
+
+      when(() => mockJournalDb.getHabitById(habitWithStory.id))
+          .thenAnswer((_) async => habitWithStory);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -518,9 +524,10 @@ void main() {
         habitSettingsControllerProvider(habitWithStory.id).notifier,
       );
 
-      // Set up habit with story
-      habitStreamController.add(habitWithStory);
+      // Small delay to let habit load from initial fetch
       await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // Emit tags so defaultStory can resolve
       tagsStreamController.add([testStoryTag1]);
 
       await completer.future.timeout(const Duration(milliseconds: 100));
@@ -531,9 +538,11 @@ void main() {
       );
       expect(state.defaultStory, isNotNull);
 
-      // Now emit a habit without defaultStoryId
+      // Now change stub to return habit without defaultStoryId and fire notification
       final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
-      habitStreamController.add(habitWithoutStory);
+      when(() => mockJournalDb.getHabitById(habitWithStory.id))
+          .thenAnswer((_) async => habitWithoutStory);
+      updateStreamController.add({habitsNotification});
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 

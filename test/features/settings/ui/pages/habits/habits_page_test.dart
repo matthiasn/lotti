@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -21,13 +21,16 @@ void main() {
     setUp(() {
       mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
 
-      when(mockJournalDb.watchCategories).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness],
-        ]),
+      when(mockJournalDb.getAllCategories).thenAnswer(
+        (_) async => [categoryMindfulness],
       );
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
 

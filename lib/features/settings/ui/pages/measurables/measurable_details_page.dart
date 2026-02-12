@@ -10,6 +10,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
@@ -229,8 +231,12 @@ class EditMeasurablePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _db.watchMeasurableDataTypeById(measurableId),
+    return StreamBuilder<MeasurableDataType?>(
+      stream: notificationDrivenItemStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {measurablesNotification, privateToggleNotification},
+        fetcher: () => _db.getMeasurableDataTypeById(measurableId),
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<MeasurableDataType?> snapshot,

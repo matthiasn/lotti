@@ -2,7 +2,6 @@
 
 import 'dart:io';
 
-import 'package:async/async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -177,13 +176,13 @@ void main() {
     expect(filtered.map((task) => task.meta.id), contains('task-sync'));
   });
 
-  test('soft-deleted labels disappear from watch streams', () async {
+  test('soft-deleted labels disappear from getAllLabelDefinitions', () async {
     final focusLabel = buildLabel('label-focus', 'Focus', '#FF0000');
     await upsertLabel(db, focusLabel);
 
-    final queue = StreamQueue(db.watchLabelDefinitions());
-    final first = await queue.next;
-    expect(first.any((label) => label.id == focusLabel.id), isTrue);
+    final first = await db.getAllLabelDefinitions();
+    expect(first.any((LabelDefinition label) => label.id == focusLabel.id),
+        isTrue);
 
     final deleted = focusLabel.copyWith(
       deletedAt: DateTime(2024, 1, 2),
@@ -191,17 +190,16 @@ void main() {
     );
     await upsertLabel(db, deleted);
 
-    final second = await queue.next;
-    expect(second.any((label) => label.id == focusLabel.id), isFalse);
-    await queue.cancel();
+    final second = await db.getAllLabelDefinitions();
+    expect(second.any((LabelDefinition label) => label.id == focusLabel.id),
+        isFalse);
   });
 
-  test('label rename propagates via watchLabelDefinitionById stream', () async {
+  test('label rename is reflected in getLabelDefinitionById', () async {
     final focusLabel = buildLabel('label-focus', 'Focus', '#FF0000');
     await upsertLabel(db, focusLabel);
 
-    final queue = StreamQueue(db.watchLabelDefinitionById(focusLabel.id));
-    final first = await queue.next;
+    final first = await db.getLabelDefinitionById(focusLabel.id);
     expect(first?.name, 'Focus');
 
     final renamed = focusLabel.copyWith(
@@ -210,27 +208,41 @@ void main() {
     );
     await upsertLabel(db, renamed);
 
-    final second = await queue.next;
+    final second = await db.getLabelDefinitionById(focusLabel.id);
     expect(second?.name, 'Laser focus');
-    await queue.cancel();
   });
 
-  test('private flag updates emit new values mid-session', () async {
-    final privateLabel = buildLabel('label-private', 'Stealth', '#222222')
+  test('private label hidden from getLabelDefinitionById without config flag',
+      () async {
+    final publicLabel = buildLabel('label-public', 'Visible', '#222222')
         .copyWith(private: false);
-    await upsertLabel(db, privateLabel);
+    await upsertLabel(db, publicLabel);
 
-    final queue = StreamQueue(db.watchLabelDefinitionById(privateLabel.id));
-    await queue.next; // initial snapshot
+    // Public label is visible
+    final found = await db.getLabelDefinitionById(publicLabel.id);
+    expect(found?.name, 'Visible');
 
-    final updated = privateLabel.copyWith(
+    // Mark label as private
+    final privateVersion = publicLabel.copyWith(
       private: true,
       updatedAt: DateTime(2024, 1, 2),
     );
-    await upsertLabel(db, updated);
+    await upsertLabel(db, privateVersion);
 
-    final next = await queue.next;
-    expect(next?.private, isTrue);
-    await queue.cancel();
+    // Without the 'private' config flag enabled, private labels are hidden
+    final hidden = await db.getLabelDefinitionById(publicLabel.id);
+    expect(hidden, isNull);
+
+    // Enable private config flag so private labels become visible
+    await db.upsertConfigFlag(
+      const ConfigFlag(
+        name: 'private',
+        description: 'Show private',
+        status: true,
+      ),
+    );
+
+    final visible = await db.getLabelDefinitionById(publicLabel.id);
+    expect(visible?.private, isTrue);
   });
 }

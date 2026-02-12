@@ -7,6 +7,8 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart'
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 
 class HabitSummary extends StatelessWidget {
   HabitSummary(
@@ -30,7 +32,11 @@ class HabitSummary extends StatelessWidget {
     final data = habitCompletion.data;
 
     return StreamBuilder<HabitDefinition?>(
-      stream: _db.watchHabitById(data.habitId),
+      stream: notificationDrivenItemStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {habitsNotification, privateToggleNotification},
+        fetcher: () => _db.getHabitById(data.habitId),
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<HabitDefinition?> typeSnapshot,

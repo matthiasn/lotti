@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -893,7 +894,10 @@ class SyncEventProcessor {
       journalEntity.meta.id,
       vcB ?? syncMessage.vectorClock,
     );
-    _updateNotifications.notify(journalEntity.affectedIds, fromSync: true);
+    _updateNotifications.notify(
+      {...journalEntity.affectedIds, labelUsageNotification},
+      fromSync: true,
+    );
 
     // Record in sequence log for gap detection (self-healing sync)
     if (_sequenceLogService != null &&
@@ -1055,9 +1059,24 @@ class SyncEventProcessor {
         );
       case SyncEntityDefinition(entityDefinition: final entityDefinition):
         await journalDb.upsertEntityDefinition(entityDefinition);
+        final typeNotification = switch (entityDefinition) {
+          CategoryDefinition() => categoriesNotification,
+          HabitDefinition() => habitsNotification,
+          DashboardDefinition() => dashboardsNotification,
+          MeasurableDataType() => measurablesNotification,
+          LabelDefinition() => labelsNotification,
+        };
+        _updateNotifications.notify(
+          {entityDefinition.id, typeNotification},
+          fromSync: true,
+        );
         return null;
       case SyncTagEntity(tagEntity: final tagEntity):
         await journalDb.upsertTagEntity(tagEntity);
+        _updateNotifications.notify(
+          {tagEntity.id, tagsNotification},
+          fromSync: true,
+        );
         return null;
       case SyncAiConfig(aiConfig: final aiConfig):
         await _aiConfigRepository.saveConfig(
@@ -1116,6 +1135,11 @@ class SyncEventProcessor {
           await _settingsDb.saveSettingsItem(
             themePrefsUpdatedAtKey,
             updatedAt.toString(),
+          );
+
+          _updateNotifications.notify(
+            {settingsNotification},
+            fromSync: true,
           );
 
           _loggingService.captureEvent(

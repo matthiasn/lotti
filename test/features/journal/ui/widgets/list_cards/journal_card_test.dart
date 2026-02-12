@@ -28,6 +28,7 @@ import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -99,17 +100,9 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   }
 }
 
-class MockJournalDb extends Mock implements JournalDb {
-  @override
-  Stream<HabitDefinition?> watchHabitById(String habitId) {
-    return Stream.value(habitFlossing);
-  }
+class MockJournalDb extends Mock implements JournalDb {}
 
-  @override
-  Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
-    return Stream.value([]);
-  }
-}
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockNavService mockNavService;
@@ -128,12 +121,23 @@ void main() {
     // Create temp directory for tests
     final tempDir = Directory.systemTemp.createTempSync('journal_card_test');
 
+    final mockJournalDb = MockJournalDb();
+    when(() => mockJournalDb.getHabitById(any()))
+        .thenAnswer((_) async => habitFlossing);
+    when(mockJournalDb.getAllMeasurableDataTypes)
+        .thenAnswer((_) async => <MeasurableDataType>[]);
+
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream.empty());
+
     getIt
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<Directory>(tempDir)
-      ..registerSingleton<JournalDb>(MockJournalDb());
+      ..registerSingleton<JournalDb>(mockJournalDb);
   });
 
   tearDown(() async {

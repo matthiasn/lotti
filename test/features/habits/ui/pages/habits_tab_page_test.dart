@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -65,12 +64,6 @@ void main() {
         habitFlossing,
         habitFlossingDueLater,
       ]);
-
-      when(mockJournalDb.watchCategories).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness],
-        ]),
-      );
 
       when(
         () => mockEntitiesCacheService.getHabitById(

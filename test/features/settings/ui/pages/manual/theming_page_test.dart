@@ -7,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,6 +19,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockUserActivityService extends Mock implements UserActivityService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockSettingsDb mockSettingsDb;
@@ -36,6 +39,10 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUserActivityService = MockUserActivityService();
     mockLoggingService = MockLoggingService();
+
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream.empty());
 
     when(() => mockSettingsDb.itemByKey('theme'))
         .thenAnswer((_) async => 'Grey Law');
@@ -62,6 +69,7 @@ void main() {
       ),
     ).thenAnswer((_) {});
 
+    GetIt.I.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
     GetIt.I.registerSingleton<SettingsDb>(mockSettingsDb);
     GetIt.I.registerSingleton<JournalDb>(mockJournalDb);
     GetIt.I.registerSingleton<UserActivityService>(mockUserActivityService);

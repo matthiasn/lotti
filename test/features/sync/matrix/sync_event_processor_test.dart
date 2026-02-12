@@ -523,7 +523,7 @@ void main() {
         .called(1);
     verify(
       () => updateNotifications.notify(
-        fallbackJournalEntity.affectedIds,
+        {...fallbackJournalEntity.affectedIds, labelUsageNotification},
         fromSync: true,
       ),
     ).called(1);
@@ -562,7 +562,7 @@ void main() {
         .called(1);
     verify(
       () => updateNotifications.notify(
-        fallbackJournalEntity.affectedIds,
+        {...fallbackJournalEntity.affectedIds, labelUsageNotification},
         fromSync: true,
       ),
     ).called(1);

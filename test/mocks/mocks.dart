@@ -99,9 +99,7 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   final mock = MockJournalDb();
   when(mock.close).thenAnswer((_) async {});
 
-  when(mock.watchMeasurableDataTypes).thenAnswer(
-    (_) => Stream<List<MeasurableDataType>>.fromIterable([dataTypes]),
-  );
+  when(mock.getAllMeasurableDataTypes).thenAnswer((_) async => dataTypes);
 
   when(
     () => mock.getJournalEntities(
@@ -130,9 +128,8 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   ).thenAnswer((_) async => <JournalEntity>[]);
 
   for (final dataType in dataTypes) {
-    when(() => mock.watchMeasurableDataTypeById(dataType.id)).thenAnswer(
-      (_) => Stream<MeasurableDataType>.fromIterable([dataType]),
-    );
+    when(() => mock.getMeasurableDataTypeById(dataType.id))
+        .thenAnswer((_) async => dataType);
   }
 
   return mock;
@@ -144,20 +141,15 @@ MockJournalDb mockJournalDbWithHabits(
   final mock = MockJournalDb();
   when(mock.close).thenAnswer((_) async {});
 
-  when(mock.watchHabitDefinitions).thenAnswer(
-    (_) => Stream<List<HabitDefinition>>.fromIterable([habitDefinitions]),
-  );
+  when(mock.getAllHabitDefinitions).thenAnswer((_) async => habitDefinitions);
 
-  // Default fallback for any habit ID - returns empty stream (for create flow)
-  when(() => mock.watchHabitById(any())).thenAnswer(
-    (_) => Stream<HabitDefinition?>.fromIterable([null]),
-  );
+  // Default fallback for getHabitById
+  when(() => mock.getHabitById(any())).thenAnswer((_) async => null);
 
   // Override with specific stubs for known habits
   for (final habitDefinition in habitDefinitions) {
-    when(() => mock.watchHabitById(habitDefinition.id)).thenAnswer(
-      (_) => Stream<HabitDefinition>.fromIterable([habitDefinition]),
-    );
+    when(() => mock.getHabitById(habitDefinition.id))
+        .thenAnswer((_) async => habitDefinition);
   }
 
   return mock;

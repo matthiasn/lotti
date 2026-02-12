@@ -52,6 +52,13 @@ Future<void> tearDownTestGetIt() async {
 /// Unlike setUpTestGetIt, this does NOT reset GetIt - it only registers
 /// missing services. Safe to call in tests that have their own setup.
 void ensureThemingServicesRegistered() {
+  if (!getIt.isRegistered<UpdateNotifications>()) {
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream.empty());
+    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+  }
+
   if (!getIt.isRegistered<SettingsDb>()) {
     final mockSettingsDb = MockSettingsDb();
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);

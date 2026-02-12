@@ -46,16 +46,6 @@ void main() {
       ).thenAnswer((_) => measurableWater);
 
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableWater,
-        ]),
-      );
-
-      when(
         () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
@@ -142,12 +132,6 @@ void main() {
     testWidgets(
         'create measurement page is displayed with selected measurable type '
         'if only one exists', (tester) async {
-      when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
-        (_) => Stream<List<MeasurableDataType>>.fromIterable([
-          [measurableWater],
-        ]),
-      );
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(

@@ -5,7 +5,9 @@ import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_definition_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/notification_stream.dart';
 
 class DashboardSettingsPage extends StatelessWidget {
   const DashboardSettingsPage({super.key});
@@ -13,7 +15,11 @@ class DashboardSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefinitionsListPage<DashboardDefinition>(
-      stream: getIt<JournalDb>().watchDashboards(),
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {dashboardsNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllDashboards,
+      ),
       floatingActionButton: FloatingAddIcon(
         createFn: () => beamToNamed('/settings/dashboards/create'),
         semanticLabel: 'Add Dashboard',
