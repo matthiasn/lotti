@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.859] - 2026-02-13
+### Changed
+- Removed artificial 200ms delay from sync outbox message enqueueing, improving outbox throughput.
+- Reduced user-activity idle threshold from 3s to 1.2s so the outbox resumes sending sooner after user interaction.
+
 ## [0.9.858] - 2026-02-13
 ### Changed
 - Replaced Drift table-watcher streams with notification-driven streams for categories, habits, dashboards, measurables, labels, tags, and settings. Eliminates redundant DB polling and prepares for isolate-based sync.
