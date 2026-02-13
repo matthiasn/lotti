@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Pensando...",
   "aiAssistantTitle": "Asistente de IA",
   "aiAssistantTranscribeAudio": "Transcribir audio",
+  "aiBatchToggleTooltip": "Cambiar a grabación estándar",
   "aiConfigApiKeyEmptyError": "La clave API no puede estar vacía",
   "aiConfigApiKeyFieldLabel": "Clave API",
   "aiConfigAssociatedModelsRemoved": "{count} modelo{count, plural, =1{} other{s}} asociado{count, plural, =1{} other{s}} eliminado{count, plural, =1{} other{s}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcripción Whisper local con API compatible con OpenAI",
   "aiProviderWhisperName": "Whisper (local)",
+  "aiRealtimeToggleTooltip": "Cambiar a transcripción en vivo",
+  "aiRealtimeTranscribing": "Transcripción en vivo...",
+  "aiRealtimeTranscriptionError": "Transcripción en vivo desconectada. Audio guardado para procesamiento por lotes.",
   "aiResponseDeleteCancel": "Cancelar",
   "aiResponseDeleteConfirm": "Eliminar",
   "aiResponseDeleteError": "Error al eliminar la respuesta AI. Por favor, inténtalo de nuevo.",
@@ -335,6 +339,19 @@
   "backfillToggleTitle": "Relleno automático",
   "basicSettings": "Ajustes básicos",
   "cancelButton": "Cancelar",
+  "chatInputCancelRealtime": "Cancelar (Esc)",
+  "chatInputCancelRecording": "Cancelar grabación (Esc)",
+  "chatInputConfigureModel": "Configurar modelo",
+  "chatInputHintDefault": "Pregunta sobre tus tareas y productividad...",
+  "chatInputHintSelectModel": "Selecciona un modelo para empezar a chatear",
+  "chatInputListening": "Escuchando...",
+  "chatInputPleaseWait": "Espera...",
+  "chatInputProcessing": "Procesando...",
+  "chatInputRecordVoice": "Grabar mensaje de voz",
+  "chatInputSendTooltip": "Enviar mensaje",
+  "chatInputStartRealtime": "Iniciar transcripción en vivo",
+  "chatInputStopRealtime": "Detener transcripción en vivo",
+  "chatInputStopTranscribe": "Detener y transcribir",
   "categoryActiveDescription": "Las categorías inactivas no aparecerán en las listas de selección",
   "categoryAiModelDescription": "Controlar qué prompts AI se pueden usar con esta categoría",
   "categoryAutomaticPromptsDescription": "Configurar prompts que se ejecutan automáticamente para diferentes tipos de contenido",
@@ -653,6 +670,19 @@
   "dashboardPrivateLabel": "Privado:",
   "defaultLanguage": "Idioma predeterminado",
   "deleteButton": "Eliminar",
+  "deleteDeviceLabel": "Eliminar dispositivo",
+  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Hecho",
   "doneButton": "Listo",
   "editMenuTitle": "Editar",
@@ -968,6 +998,7 @@
   "promptUsePreconfiguredButton": "Usar prompt preconfigurado",
   "promptUserPromptHint": "Introducir el prompt del usuario...",
   "promptUserPromptLabel": "Prompt del usuario",
+  "provisionedSyncBundleImported": "Código de aprovisionamiento importado",
   "provisionedSyncConfigureButton": "Configurar",
   "provisionedSyncCopiedToClipboard": "Copiado al portapapeles",
   "provisionedSyncDisconnect": "Desconectar",
@@ -978,11 +1009,10 @@
   "provisionedSyncImportButton": "Importar",
   "provisionedSyncImportHint": "Pega el código de aprovisionamiento aquí",
   "provisionedSyncImportTitle": "Configurar sincronización",
-  "provisionedSyncPasteClipboard": "Pegar desde el portapapeles",
-  "provisionedSyncBundleImported": "Código de aprovisionamiento importado",
   "provisionedSyncInvalidBundle": "Código de aprovisionamiento no válido",
   "provisionedSyncJoiningRoom": "Uniéndose a la sala de sincronización...",
   "provisionedSyncLoggingIn": "Iniciando sesión...",
+  "provisionedSyncPasteClipboard": "Pegar desde el portapapeles",
   "provisionedSyncReady": "Escanea este código QR en tu dispositivo móvil",
   "provisionedSyncRetry": "Reintentar",
   "provisionedSyncRotatingPassword": "Asegurando la cuenta...",
@@ -1126,19 +1156,6 @@
   "settingsMatrixCancelVerificationLabel": "Cancelar verificación",
   "settingsMatrixContinueVerificationLabel": "Aceptar en el otro dispositivo para continuar",
   "settingsMatrixCount": "Cantidad",
-  "deleteDeviceLabel": "Eliminar dispositivo",
-  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Eliminar",
   "settingsMatrixDiagnosticCopied": "Información de diagnóstico copiada al portapapeles",
   "settingsMatrixDiagnosticCopyButton": "Copiar al portapapeles",

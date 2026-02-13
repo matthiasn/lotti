@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Se gândește...",
   "aiAssistantTitle": "Asistent AI",
   "aiAssistantTranscribeAudio": "Transcrie audio",
+  "aiBatchToggleTooltip": "Comutare la înregistrare standard",
   "aiConfigApiKeyEmptyError": "Cheia API nu poate fi goală",
   "aiConfigApiKeyFieldLabel": "Cheie API",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 model asociat eliminat} other{{count} modele asociate eliminate}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcriere Whisper locală cu API compatibil OpenAI",
   "aiProviderWhisperName": "Whisper (local)",
+  "aiRealtimeToggleTooltip": "Comutare la transcriere în direct",
+  "aiRealtimeTranscribing": "Transcriere în direct...",
+  "aiRealtimeTranscriptionError": "Transcriere în direct deconectată. Audio salvat pentru procesare în lot.",
   "aiResponseDeleteCancel": "Anulează",
   "aiResponseDeleteConfirm": "Șterge",
   "aiResponseDeleteError": "Eșec la ștergerea răspunsului AI. Vă rugăm să încercați din nou.",
@@ -335,6 +339,19 @@
   "backfillToggleTitle": "Completare automată",
   "basicSettings": "Setări de bază",
   "cancelButton": "Anulează",
+  "chatInputCancelRealtime": "Anulează (Esc)",
+  "chatInputCancelRecording": "Anulează înregistrarea (Esc)",
+  "chatInputConfigureModel": "Configurează modelul",
+  "chatInputHintDefault": "Întreabă despre sarcinile și productivitatea ta...",
+  "chatInputHintSelectModel": "Selectează un model pentru a începe conversația",
+  "chatInputListening": "Ascultă...",
+  "chatInputPleaseWait": "Așteaptă...",
+  "chatInputProcessing": "Se procesează...",
+  "chatInputRecordVoice": "Înregistrează mesaj vocal",
+  "chatInputSendTooltip": "Trimite mesajul",
+  "chatInputStartRealtime": "Pornește transcrierea în timp real",
+  "chatInputStopRealtime": "Oprește transcrierea în timp real",
+  "chatInputStopTranscribe": "Oprește și transcrie",
   "categoryActiveDescription": "Categoriile inactive nu vor apărea în listele de selecție",
   "categoryAiModelDescription": "Controlați ce prompturi AI pot fi folosite cu această categorie",
   "categoryAutomaticPromptsDescription": "Configurați prompturi care se execută automat pentru diferite tipuri de conținut",
@@ -653,6 +670,19 @@
   "dashboardPrivateLabel": "Privat:",
   "defaultLanguage": "Limbă implicită",
   "deleteButton": "Șterge",
+  "deleteDeviceLabel": "Șterge dispozitivul",
+  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Gata",
   "doneButton": "Gata",
   "editMenuTitle": "Editează",
@@ -968,6 +998,7 @@
   "promptUsePreconfiguredButton": "Folosește prompt preconfigurat",
   "promptUserPromptHint": "Introduceți promptul utilizatorului...",
   "promptUserPromptLabel": "Prompt utilizator",
+  "provisionedSyncBundleImported": "Cod de provizionare importat",
   "provisionedSyncConfigureButton": "Configurează",
   "provisionedSyncCopiedToClipboard": "Copiat în clipboard",
   "provisionedSyncDisconnect": "Deconectează",
@@ -978,11 +1009,10 @@
   "provisionedSyncImportButton": "Importă",
   "provisionedSyncImportHint": "Lipește codul de provizionare aici",
   "provisionedSyncImportTitle": "Configurează sincronizarea",
-  "provisionedSyncPasteClipboard": "Lipește din clipboard",
-  "provisionedSyncBundleImported": "Cod de provizionare importat",
   "provisionedSyncInvalidBundle": "Cod de provizionare invalid",
   "provisionedSyncJoiningRoom": "Se alătură camerei de sincronizare...",
   "provisionedSyncLoggingIn": "Conectare în curs...",
+  "provisionedSyncPasteClipboard": "Lipește din clipboard",
   "provisionedSyncReady": "Scanează acest cod QR pe dispozitivul tău mobil",
   "provisionedSyncRetry": "Reîncearcă",
   "provisionedSyncRotatingPassword": "Securizarea contului...",
@@ -1126,19 +1156,6 @@
   "settingsMatrixCancelVerificationLabel": "Anulează verificarea",
   "settingsMatrixContinueVerificationLabel": "Acceptați pe celălalt dispozitiv pentru a continua",
   "settingsMatrixCount": "Număr",
-  "deleteDeviceLabel": "Șterge dispozitivul",
-  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Șterge",
   "settingsMatrixDiagnosticCopied": "Informațiile de diagnostic au fost copiate în clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copiază în clipboard",

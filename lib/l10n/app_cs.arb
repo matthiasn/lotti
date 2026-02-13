@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Přemýšlím...",
   "aiAssistantTitle": "AI asistent",
   "aiAssistantTranscribeAudio": "Přepsat zvuk",
+  "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
   "aiConfigApiKeyEmptyError": "API klíč nemůže být prázdný",
   "aiConfigApiKeyFieldLabel": "API klíč",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 přiřazený model odebrán} other{{count} přiřazených modelů odebráno}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (lokální)",
   "aiProviderWhisperDescription": "Lokální přepisování s Whisper a kompatibilní API OpenAI",
   "aiProviderWhisperName": "Whisper (lokální)",
+  "aiRealtimeToggleTooltip": "Přepnout na živý přepis",
+  "aiRealtimeTranscribing": "Živý přepis...",
+  "aiRealtimeTranscriptionError": "Živý přepis odpojen. Zvuk uložen pro dávkové zpracování.",
   "aiResponseDeleteCancel": "Zrušit",
   "aiResponseDeleteConfirm": "Smazat",
   "aiResponseDeleteError": "Nepodařilo se smazat odpověď AI. Prosím, zkuste to znovu.",
@@ -335,6 +339,19 @@
   "backfillToggleTitle": "Automatické zpětné doplňování",
   "basicSettings": "Základní nastavení",
   "cancelButton": "Zrušit",
+  "chatInputCancelRealtime": "Zrušit (Esc)",
+  "chatInputCancelRecording": "Zrušit nahrávání (Esc)",
+  "chatInputConfigureModel": "Konfigurovat model",
+  "chatInputHintDefault": "Ptejte se na své úkoly a produktivitu...",
+  "chatInputHintSelectModel": "Vyberte model pro zahájení chatu",
+  "chatInputListening": "Naslouchám...",
+  "chatInputPleaseWait": "Čekejte prosím...",
+  "chatInputProcessing": "Zpracování...",
+  "chatInputRecordVoice": "Nahrát hlasovou zprávu",
+  "chatInputSendTooltip": "Odeslat zprávu",
+  "chatInputStartRealtime": "Spustit živý přepis",
+  "chatInputStopRealtime": "Zastavit živý přepis",
+  "chatInputStopTranscribe": "Zastavit a přepsat",
   "categoryActiveDescription": "Neaktivní kategorie se nebudou zobrazovat ve výběrových seznamech",
   "categoryAiModelDescription": "Určete, které AI výzvy lze použít s touto kategorií",
   "categoryAutomaticPromptsDescription": "Nastavte výzvy, které se automaticky spouštějí pro různé typy obsahu",
@@ -653,6 +670,19 @@
   "dashboardPrivateLabel": "Soukromý:",
   "defaultLanguage": "Výchozí jazyk",
   "deleteButton": "Smazat",
+  "deleteDeviceLabel": "Odstranit zařízení",
+  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Hotovo",
   "doneButton": "Hotovo",
   "editMenuTitle": "Upravit",
@@ -968,6 +998,7 @@
   "promptUsePreconfiguredButton": "Použít přednastavený prompt",
   "promptUserPromptHint": "Zadejte uživatelský prompt...",
   "promptUserPromptLabel": "Uživatelský prompt",
+  "provisionedSyncBundleImported": "Provizní kód importován",
   "provisionedSyncConfigureButton": "Konfigurovat",
   "provisionedSyncCopiedToClipboard": "Zkopírováno do schránky",
   "provisionedSyncDisconnect": "Odpojit",
@@ -978,11 +1009,10 @@
   "provisionedSyncImportButton": "Importovat",
   "provisionedSyncImportHint": "Vložte provizní kód sem",
   "provisionedSyncImportTitle": "Nastavit synchronizaci",
-  "provisionedSyncPasteClipboard": "Vložit ze schránky",
-  "provisionedSyncBundleImported": "Provizní kód importován",
   "provisionedSyncInvalidBundle": "Neplatný provizní kód",
   "provisionedSyncJoiningRoom": "Připojování k synchronizační místnosti...",
   "provisionedSyncLoggingIn": "Přihlašování...",
+  "provisionedSyncPasteClipboard": "Vložit ze schránky",
   "provisionedSyncReady": "Naskenujte tento QR kód na svém mobilním zařízení",
   "provisionedSyncRetry": "Zkusit znovu",
   "provisionedSyncRotatingPassword": "Zabezpečování účtu...",
@@ -1126,19 +1156,6 @@
   "settingsMatrixCancelVerificationLabel": "Zrušit ověření",
   "settingsMatrixContinueVerificationLabel": "Přijměte na jiném zařízení pro pokračování",
   "settingsMatrixCount": "Počet",
-  "deleteDeviceLabel": "Odstranit zařízení",
-  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Odstranit",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixEnterValidUrl": "Zadejte platnou URL",

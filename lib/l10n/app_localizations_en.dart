@@ -103,6 +103,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Transcribe audio';
 
   @override
+  String get aiBatchToggleTooltip => 'Switch to standard recording';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API key cannot be empty';
 
   @override
@@ -445,6 +448,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Switch to live transcription';
+
+  @override
+  String get aiRealtimeTranscribing => 'Live transcription...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Live transcription disconnected. Audio saved for batch processing.';
+
+  @override
   String get aiResponseDeleteCancel => 'Cancel';
 
   @override
@@ -750,6 +763,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancel';
+
+  @override
+  String get chatInputCancelRealtime => 'Cancel (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Cancel recording (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Configure model';
+
+  @override
+  String get chatInputHintDefault => 'Ask about your tasks and productivity...';
+
+  @override
+  String get chatInputHintSelectModel => 'Select a model to start chatting';
+
+  @override
+  String get chatInputListening => 'Listening...';
+
+  @override
+  String get chatInputPleaseWait => 'Please wait...';
+
+  @override
+  String get chatInputProcessing => 'Processing...';
+
+  @override
+  String get chatInputRecordVoice => 'Record voice message';
+
+  @override
+  String get chatInputSendTooltip => 'Send message';
+
+  @override
+  String get chatInputStartRealtime => 'Start live transcription';
+
+  @override
+  String get chatInputStopRealtime => 'Stop live transcription';
+
+  @override
+  String get chatInputStopTranscribe => 'Stop and transcribe';
 
   @override
   String get categoryActiveDescription =>
@@ -1474,6 +1526,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteButton => 'Delete';
+
+  @override
+  String get deleteDeviceLabel => 'Delete device';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Device $deviceName deleted successfully';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Failed to delete device: $error';
+  }
 
   @override
   String get done => 'Done';
@@ -2342,6 +2407,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptUserPromptLabel => 'User Prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Provisioning code imported';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configure';
 
   @override
@@ -2374,12 +2442,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Sync Setup';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
-
-  @override
-  String get provisionedSyncBundleImported => 'Provisioning code imported';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Invalid provisioning code';
 
   @override
@@ -2387,6 +2449,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Logging in...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
 
   @override
   String get provisionedSyncReady => 'Scan this QR code on your mobile device';
@@ -2807,19 +2872,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Count';
-
-  @override
-  String get deleteDeviceLabel => 'Delete device';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Device $deviceName deleted successfully';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Failed to delete device: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Delete';

@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Denke nach...",
   "aiAssistantTitle": "KI-Assistent",
   "aiAssistantTranscribeAudio": "Audio transkribieren",
+  "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
   "aiConfigApiKeyEmptyError": "API-Schlüssel darf nicht leer sein",
   "aiConfigApiKeyFieldLabel": "API-Schlüssel",
   "aiConfigAssociatedModelsRemoved": "{count} zugehörige{count, plural, =1{s Modell} other{ Modelle}} entfernt",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (lokal)",
   "aiProviderWhisperDescription": "Lokale Whisper-Transkription mit OpenAI-kompatibler API",
   "aiProviderWhisperName": "Whisper (lokal)",
+  "aiRealtimeToggleTooltip": "Zur Live-Transkription wechseln",
+  "aiRealtimeTranscribing": "Live-Transkription...",
+  "aiRealtimeTranscriptionError": "Live-Transkription getrennt. Audio für Stapelverarbeitung gespeichert.",
   "aiResponseDeleteCancel": "Abbrechen",
   "aiResponseDeleteConfirm": "Löschen",
   "aiResponseDeleteError": "KI-Antwort konnte nicht gelöscht werden. Bitte versuche es erneut.",
@@ -335,6 +339,19 @@
   "backfillToggleTitle": "Automatische Nachfüllung",
   "basicSettings": "Grundeinstellungen",
   "cancelButton": "Abbrechen",
+  "chatInputCancelRealtime": "Abbrechen (Esc)",
+  "chatInputCancelRecording": "Aufnahme abbrechen (Esc)",
+  "chatInputConfigureModel": "Modell konfigurieren",
+  "chatInputHintDefault": "Fragen zu deinen Aufgaben und Produktivität...",
+  "chatInputHintSelectModel": "Wähle ein Modell zum Chatten",
+  "chatInputListening": "Hört zu...",
+  "chatInputPleaseWait": "Bitte warten...",
+  "chatInputProcessing": "Verarbeitung...",
+  "chatInputRecordVoice": "Sprachnachricht aufnehmen",
+  "chatInputSendTooltip": "Nachricht senden",
+  "chatInputStartRealtime": "Live-Transkription starten",
+  "chatInputStopRealtime": "Live-Transkription beenden",
+  "chatInputStopTranscribe": "Stoppen und transkribieren",
   "categoryActiveDescription": "Inaktive Kategorien erscheinen nicht in Auswahllisten",
   "categoryAiModelDescription": "Steuere, welche AI-Prompts mit dieser Kategorie verwendet werden können",
   "categoryAutomaticPromptsDescription": "Prompts konfigurieren, die automatisch für verschiedene Inhaltstypen ausgeführt werden",
@@ -653,6 +670,19 @@
   "dashboardPrivateLabel": "Privat:",
   "defaultLanguage": "Standardsprache",
   "deleteButton": "Löschen",
+  "deleteDeviceLabel": "Gerät löschen",
+  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Fertig",
   "doneButton": "Fertig",
   "editMenuTitle": "Bearbeiten",
@@ -968,6 +998,7 @@
   "promptUsePreconfiguredButton": "Vorkonfigurierten Prompt verwenden",
   "promptUserPromptHint": "Benutzer-Prompt eingeben...",
   "promptUserPromptLabel": "Benutzer-Prompt",
+  "provisionedSyncBundleImported": "Bereitstellungscode importiert",
   "provisionedSyncConfigureButton": "Konfigurieren",
   "provisionedSyncCopiedToClipboard": "In die Zwischenablage kopiert",
   "provisionedSyncDisconnect": "Trennen",
@@ -978,11 +1009,10 @@
   "provisionedSyncImportButton": "Importieren",
   "provisionedSyncImportHint": "Bereitstellungscode hier einfügen",
   "provisionedSyncImportTitle": "Sync einrichten",
-  "provisionedSyncPasteClipboard": "Aus Zwischenablage einfügen",
-  "provisionedSyncBundleImported": "Bereitstellungscode importiert",
   "provisionedSyncInvalidBundle": "Ungültiger Bereitstellungscode",
   "provisionedSyncJoiningRoom": "Sync-Raum beitreten...",
   "provisionedSyncLoggingIn": "Anmeldung läuft...",
+  "provisionedSyncPasteClipboard": "Aus Zwischenablage einfügen",
   "provisionedSyncReady": "Scanne diesen QR-Code auf deinem Mobilgerät",
   "provisionedSyncRetry": "Erneut versuchen",
   "provisionedSyncRotatingPassword": "Konto wird gesichert...",
@@ -1126,19 +1156,6 @@
   "settingsMatrixCancelVerificationLabel": "Verifizierung abbrechen",
   "settingsMatrixContinueVerificationLabel": "Auf anderem Gerät akzeptieren, um fortzufahren",
   "settingsMatrixCount": "Anzahl",
-  "deleteDeviceLabel": "Gerät löschen",
-  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Löschen",
   "settingsMatrixDiagnosticCopied": "Diagnoseinfos in die Zwischenablage kopiert",
   "settingsMatrixDiagnosticCopyButton": "In Zwischenablage kopieren",

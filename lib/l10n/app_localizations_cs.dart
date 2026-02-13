@@ -103,6 +103,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Přepsat zvuk';
 
   @override
+  String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API klíč nemůže být prázdný';
 
   @override
@@ -449,6 +452,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokální)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Přepnout na živý přepis';
+
+  @override
+  String get aiRealtimeTranscribing => 'Živý přepis...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Živý přepis odpojen. Zvuk uložen pro dávkové zpracování.';
+
+  @override
   String get aiResponseDeleteCancel => 'Zrušit';
 
   @override
@@ -760,6 +773,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get cancelButton => 'Zrušit';
+
+  @override
+  String get chatInputCancelRealtime => 'Zrušit (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Zrušit nahrávání (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Konfigurovat model';
+
+  @override
+  String get chatInputHintDefault => 'Ptejte se na své úkoly a produktivitu...';
+
+  @override
+  String get chatInputHintSelectModel => 'Vyberte model pro zahájení chatu';
+
+  @override
+  String get chatInputListening => 'Naslouchám...';
+
+  @override
+  String get chatInputPleaseWait => 'Čekejte prosím...';
+
+  @override
+  String get chatInputProcessing => 'Zpracování...';
+
+  @override
+  String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
+
+  @override
+  String get chatInputSendTooltip => 'Odeslat zprávu';
+
+  @override
+  String get chatInputStartRealtime => 'Spustit živý přepis';
+
+  @override
+  String get chatInputStopRealtime => 'Zastavit živý přepis';
+
+  @override
+  String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
   String get categoryActiveDescription =>
@@ -1485,6 +1537,19 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get deleteButton => 'Smazat';
+
+  @override
+  String get deleteDeviceLabel => 'Odstranit zařízení';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Zařízení $deviceName bylo úspěšně odstraněno';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Zařízení se nepodařilo odstranit: $error';
+  }
 
   @override
   String get done => 'Hotovo';
@@ -2364,6 +2429,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptUserPromptLabel => 'Uživatelský prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Provizní kód importován';
+
+  @override
   String get provisionedSyncConfigureButton => 'Konfigurovat';
 
   @override
@@ -2396,12 +2464,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
-
-  @override
-  String get provisionedSyncBundleImported => 'Provizní kód importován';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
 
   @override
@@ -2410,6 +2472,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Přihlašování...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
 
   @override
   String get provisionedSyncReady =>
@@ -2833,19 +2898,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Počet';
-
-  @override
-  String get deleteDeviceLabel => 'Odstranit zařízení';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Zařízení $deviceName bylo úspěšně odstraněno';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Zařízení se nepodařilo odstranit: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Odstranit';

@@ -35,7 +35,8 @@ lib/features/ai_chat/
         ├── waveform_bars.dart          # Live waveform visualization of mic input
         └── thinking_parser.dart        # Streaming-friendly reasoning parser
 ├── services/
-│   └── audio_transcription_service.dart # Gemini-based audio transcription
+│   ├── audio_transcription_service.dart  # Batch audio transcription (Gemini, etc.)
+│   └── realtime_transcription_service.dart # Real-time WebSocket transcription orchestrator
 ```
 
 ## 💡 Key Features
@@ -56,7 +57,8 @@ lib/features/ai_chat/
 - **One‑tap Recording**: Tap the mic to start recording; see a live waveform
 - **Accessible Controls**: Cancel (Esc shortcut) or Stop and transcribe
 - **Smart Transcription**: Uses Gemini 2.5 Flash when available; falls back to the first audio‑capable model for the configured Gemini provider
-- **Flexible Send**: If a model is selected, the transcript auto‑sends; otherwise it’s inserted into the input field for review
+- **Flexible Send**: If a model is selected, the transcript auto‑sends; otherwise it's inserted into the input field for review
+- **Real‑Time Mode**: When a Mistral Voxtral realtime model is configured, a mode toggle appears next to the mic button. In live mode, transcription text appears with ~2s latency while recording. Audio is saved as M4A via native platform channel conversion (iOS/macOS). App backgrounding gracefully stops the session.
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
@@ -213,11 +215,18 @@ Comprehensive test suite covering all components:
 5. **Real-time Responses**: Watch AI responses stream as formatted Markdown
 6. **Session Management**: Continue conversations or start new chats
 
-### Voice Flow
+### Voice Flow (Batch)
 1. **Start**: Tap the mic when the input is empty
 2. **Recording**: Waveform appears; use Cancel (or Esc) or Stop
 3. **Processing**: Spinner shows while transcribing; input disabled
-4. **Result**: Transcript is auto‑sent if a model is selected, otherwise it’s inserted into the input field
+4. **Result**: Transcript is auto‑sent if a model is selected, otherwise it's inserted into the input field
+
+### Voice Flow (Real-Time)
+1. **Toggle**: When both batch and realtime models are configured, tap the mode toggle (waveform icon) next to the mic button
+2. **Start**: Tap the filled mic/waveform button to begin live transcription
+3. **Recording**: Waveform + live transcript text appear simultaneously; text updates with ~2s latency
+4. **Stop/Cancel**: Stop finalizes the transcript (waits for `transcription.done`); Cancel discards everything
+5. **Result**: Same as batch — auto-sends or inserts into the input field
 
 ### Example Interactions
 ```
