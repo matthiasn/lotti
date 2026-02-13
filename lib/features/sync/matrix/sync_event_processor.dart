@@ -537,7 +537,24 @@ class SyncEventProcessor {
       final raw = event.text;
       final decoded = utf8.decode(base64.decode(raw));
       final messageJson = json.decode(decoded) as Map<String, dynamic>;
-      final syncMessage = SyncMessage.fromJson(messageJson);
+      final SyncMessage syncMessage;
+      try {
+        syncMessage = SyncMessage.fromJson(messageJson);
+        // Rethrow anything that isn't a deserialization error.
+        // ArgumentError comes from $enumDecode for unknown enum values,
+        // FormatException from malformed JSON sub-fields.
+      } catch (e) {
+        if (e is! ArgumentError && e is! FormatException) {
+          rethrow;
+        }
+        _loggingService.captureEvent(
+          'skipping undeserializable sync message: $e '
+          'eventId=${event.eventId}',
+          domain: 'MATRIX_SYNC',
+          subDomain: 'skipUnrecoverable',
+        );
+        return;
+      }
 
       // Skip old backfill requests. For responses, only skip when the sequence
       // log shows no outstanding missing/requested entry for that counter.
