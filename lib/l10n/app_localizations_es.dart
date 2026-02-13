@@ -106,6 +106,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Transcribir audio';
 
   @override
+  String get aiBatchToggleTooltip => 'Cambiar a grabación estándar';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'La clave API no puede estar vacía';
 
   @override
@@ -471,6 +474,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Cambiar a transcripción en vivo';
+
+  @override
+  String get aiRealtimeTranscribing => 'Transcripción en vivo...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Transcripción en vivo desconectada. Audio guardado para procesamiento por lotes.';
+
+  @override
   String get aiResponseDeleteCancel => 'Cancelar';
 
   @override
@@ -790,6 +803,47 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get cancelButton => 'Cancelar';
+
+  @override
+  String get chatInputCancelRealtime => 'Cancelar (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Cancelar grabación (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Configurar modelo';
+
+  @override
+  String get chatInputHintDefault =>
+      'Pregunta sobre tus tareas y productividad...';
+
+  @override
+  String get chatInputHintSelectModel =>
+      'Selecciona un modelo para empezar a chatear';
+
+  @override
+  String get chatInputListening => 'Escuchando...';
+
+  @override
+  String get chatInputPleaseWait => 'Espera...';
+
+  @override
+  String get chatInputProcessing => 'Procesando...';
+
+  @override
+  String get chatInputRecordVoice => 'Grabar mensaje de voz';
+
+  @override
+  String get chatInputSendTooltip => 'Enviar mensaje';
+
+  @override
+  String get chatInputStartRealtime => 'Iniciar transcripción en vivo';
+
+  @override
+  String get chatInputStopRealtime => 'Detener transcripción en vivo';
+
+  @override
+  String get chatInputStopTranscribe => 'Detener y transcribir';
 
   @override
   String get categoryActiveDescription =>

@@ -53,7 +53,7 @@
     </release>
     <release version="0.9.859" date="2026-02-13">
       <description>
-          <p>Sync Outbox Tuning: Removed artificial 200ms per-message delay from outbox enqueueing and reduced the user-activity idle threshold from 3s to 1.2s, improving sync throughput and responsiveness.</p>
+          <p>Real-Time Transcription: Added live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles during recording. A mode toggle lets users switch between standard recording and live transcription. Native WAV-to-M4A conversion via platform channels on iOS and macOS. Also improved sync outbox throughput by removing artificial 200ms per-message delay and reducing the idle threshold from 3s to 1.2s.</p>
       </description>
     </release>
     <release version="0.9.858" date="2026-02-13">

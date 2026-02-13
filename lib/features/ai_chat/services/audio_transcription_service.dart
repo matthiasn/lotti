@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
@@ -52,13 +53,24 @@ class AudioTranscriptionService {
     final models = await modelsFuture;
     final providers = await providersFuture;
 
-    // Find all audio-capable models across all providers
+    // Find all audio-capable models, excluding realtime-only models that
+    // require WebSocket streaming (handled by RealtimeTranscriptionService).
+    final allProviders = providers.whereType<AiConfigInferenceProvider>();
     final audioModels = models
         .whereType<AiConfigModel>()
         .where(
           (m) => m.inputModalities.contains(Modality.audio),
         )
-        .toList();
+        .where((m) {
+      final provider =
+          allProviders.where((p) => p.id == m.inferenceProviderId).firstOrNull;
+      if (provider == null) return true; // keep orphan models, fail later
+      return !(provider.inferenceProviderType ==
+              InferenceProviderType.mistral &&
+          MistralRealtimeTranscriptionRepository.isRealtimeModel(
+            m.providerModelId,
+          ));
+    }).toList();
 
     if (audioModels.isEmpty) {
       throw Exception('No audio-capable models configured');

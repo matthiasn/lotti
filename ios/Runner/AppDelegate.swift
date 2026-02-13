@@ -12,7 +12,8 @@ import Flutter
         }
         
         let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
-        
+
+        AudioConverter.register(with: self.registrar(forPlugin: "AudioConverter")!)
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }

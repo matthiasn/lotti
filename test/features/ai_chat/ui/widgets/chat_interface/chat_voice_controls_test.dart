@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 class _FakeRecorderController extends ChatRecorderController {
   _FakeRecorderController();
@@ -22,6 +24,13 @@ void main() {
               .overrideWith(_FakeRecorderController.new),
         ],
         child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatVoiceControls(
               onCancel: _noop,
@@ -50,6 +59,13 @@ void main() {
               .overrideWith(_FakeRecorderController.new),
         ],
         child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatVoiceControls(
               onCancel: () => cancelCalled = true,
@@ -79,6 +95,13 @@ void main() {
               .overrideWith(_FakeRecorderController.new),
         ],
         child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatVoiceControls(
               onCancel: () => cancelCalled = true,

@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -85,6 +87,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -117,6 +126,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -155,6 +171,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -196,6 +219,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -237,6 +267,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -272,6 +309,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -309,6 +353,13 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatModalPage(),
             ),
@@ -343,6 +394,13 @@ void main() {
                 .overrideWith(_StreamingChatController.new),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ChatModalPage()),
           ),
         ),
@@ -375,6 +433,13 @@ void main() {
                 .overrideWith(_IdleChatController.new),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ChatModalPage()),
           ),
         ),

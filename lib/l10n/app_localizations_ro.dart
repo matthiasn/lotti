@@ -103,6 +103,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Transcrie audio';
 
   @override
+  String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'Cheia API nu poate fi goală';
 
   @override
@@ -450,6 +453,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Comutare la transcriere în direct';
+
+  @override
+  String get aiRealtimeTranscribing => 'Transcriere în direct...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Transcriere în direct deconectată. Audio salvat pentru procesare în lot.';
+
+  @override
   String get aiResponseDeleteCancel => 'Anulează';
 
   @override
@@ -761,6 +774,47 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get cancelButton => 'Anulează';
+
+  @override
+  String get chatInputCancelRealtime => 'Anulează (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Anulează înregistrarea (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Configurează modelul';
+
+  @override
+  String get chatInputHintDefault =>
+      'Întreabă despre sarcinile și productivitatea ta...';
+
+  @override
+  String get chatInputHintSelectModel =>
+      'Selectează un model pentru a începe conversația';
+
+  @override
+  String get chatInputListening => 'Ascultă...';
+
+  @override
+  String get chatInputPleaseWait => 'Așteaptă...';
+
+  @override
+  String get chatInputProcessing => 'Se procesează...';
+
+  @override
+  String get chatInputRecordVoice => 'Înregistrează mesaj vocal';
+
+  @override
+  String get chatInputSendTooltip => 'Trimite mesajul';
+
+  @override
+  String get chatInputStartRealtime => 'Pornește transcrierea în timp real';
+
+  @override
+  String get chatInputStopRealtime => 'Oprește transcrierea în timp real';
+
+  @override
+  String get chatInputStopTranscribe => 'Oprește și transcrie';
 
   @override
   String get categoryActiveDescription =>

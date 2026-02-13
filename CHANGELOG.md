@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `background` and `readPool` parameters to `openDbConnection()` and forwarded directory providers to JournalDb, SettingsDb, and SyncDatabase constructors, preparing for actor-based sync isolate.
 
 ## [0.9.859] - 2026-02-13
+### Added
+- Real-time transcription via Mistral Voxtral WebSocket API with live subtitles during recording (~2s latency).
+- Mode toggle in chat input area to switch between standard recording and live transcription when both models are configured.
+- Native WAV-to-M4A audio conversion via platform channels on iOS and macOS.
+
 ### Changed
 - Removed artificial 200ms delay from sync outbox message enqueueing, improving outbox throughput.
 - Reduced user-activity idle threshold from 3s to 1.2s so the outbox resumes sending sooner after user interaction.

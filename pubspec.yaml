@@ -120,6 +120,7 @@ dependencies:
   uuid: ^4.3.3
   vector_math: any
   visibility_detector: ^0.4.0+2
+  web_socket_channel: ^3.0.0
   wechat_assets_picker: ^10.1.0
   widgetbook: ^3.7.1
   window_manager: ^0.5.0
@@ -165,6 +166,7 @@ dev_dependencies:
   plugin_platform_interface: any
   riverpod_generator: ^4.0.0
   riverpod_lint: ^3.1.0
+  stream_channel: any
   url_launcher_platform_interface: any
   very_good_analysis: ^10.2.0
 

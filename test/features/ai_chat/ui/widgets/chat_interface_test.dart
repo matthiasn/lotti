@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -103,6 +105,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -154,6 +163,13 @@ void main() {
         await setupTestWidget(
           tester,
           const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatInterface(categoryId: 'test-category'),
             ),
@@ -199,6 +215,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -231,6 +254,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -288,6 +318,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -351,6 +388,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -387,6 +431,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -427,6 +478,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -474,6 +532,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -516,6 +581,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -545,6 +617,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -574,6 +653,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -600,6 +686,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -650,6 +743,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -719,6 +819,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -758,6 +865,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -809,6 +923,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -870,6 +991,13 @@ void main() {
                 .overrideWith((_) async => []),
           ],
           child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatInterface(
                 categoryId: 'test-category',
@@ -948,6 +1076,13 @@ void main() {
         await setupTestWidget(
           tester,
           const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatInterface(categoryId: 'test-category'),
             ),
@@ -1005,6 +1140,13 @@ void main() {
         await setupTestWidget(
           tester,
           const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ChatInterface(categoryId: 'test-category'),
             ),
@@ -1049,6 +1191,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),
@@ -1087,6 +1236,13 @@ void main() {
       await setupTestWidget(
         tester,
         const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ChatInterface(categoryId: 'test-category'),
           ),

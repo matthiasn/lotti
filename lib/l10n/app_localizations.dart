@@ -293,6 +293,12 @@ abstract class AppLocalizations {
   /// **'Transcribe audio'**
   String get aiAssistantTranscribeAudio;
 
+  /// No description provided for @aiBatchToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to standard recording'**
+  String get aiBatchToggleTooltip;
+
   /// No description provided for @aiConfigApiKeyEmptyError.
   ///
   /// In en, this message translates to:
@@ -887,6 +893,24 @@ abstract class AppLocalizations {
   /// **'Whisper (local)'**
   String get aiProviderWhisperName;
 
+  /// No description provided for @aiRealtimeToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to live transcription'**
+  String get aiRealtimeToggleTooltip;
+
+  /// No description provided for @aiRealtimeTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Live transcription...'**
+  String get aiRealtimeTranscribing;
+
+  /// No description provided for @aiRealtimeTranscriptionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Live transcription disconnected. Audio saved for batch processing.'**
+  String get aiRealtimeTranscriptionError;
+
   /// No description provided for @aiResponseDeleteCancel.
   ///
   /// In en, this message translates to:
@@ -1426,6 +1450,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancelButton;
+
+  /// No description provided for @chatInputCancelRealtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel (Esc)'**
+  String get chatInputCancelRealtime;
+
+  /// No description provided for @chatInputCancelRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel recording (Esc)'**
+  String get chatInputCancelRecording;
+
+  /// No description provided for @chatInputConfigureModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure model'**
+  String get chatInputConfigureModel;
+
+  /// No description provided for @chatInputHintDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your tasks and productivity...'**
+  String get chatInputHintDefault;
+
+  /// No description provided for @chatInputHintSelectModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a model to start chatting'**
+  String get chatInputHintSelectModel;
+
+  /// No description provided for @chatInputListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening...'**
+  String get chatInputListening;
+
+  /// No description provided for @chatInputPleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait...'**
+  String get chatInputPleaseWait;
+
+  /// No description provided for @chatInputProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get chatInputProcessing;
+
+  /// No description provided for @chatInputRecordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Record voice message'**
+  String get chatInputRecordVoice;
+
+  /// No description provided for @chatInputSendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get chatInputSendTooltip;
+
+  /// No description provided for @chatInputStartRealtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start live transcription'**
+  String get chatInputStartRealtime;
+
+  /// No description provided for @chatInputStopRealtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop live transcription'**
+  String get chatInputStopRealtime;
+
+  /// No description provided for @chatInputStopTranscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and transcribe'**
+  String get chatInputStopTranscribe;
 
   /// No description provided for @categoryActiveDescription.
   ///
