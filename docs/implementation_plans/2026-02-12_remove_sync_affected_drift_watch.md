@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-12
 **Prerequisite for**: [Actor-Based Sync Isolate Plan](2026-02-12_actor_based_sync_isolate_plan.md)
-**Status**: In Progress — Steps 1–9 complete, Steps 10–14 remaining
+**Status**: Nearly Complete — Steps 1–13 and 15 done. Step 14 mostly done (JournalDb watch methods removed); only `SettingsDb.watchSettingsItemByKey()` remains to be removed along with its test/mock references.
 
 ## Context
 
@@ -315,9 +315,12 @@ notifications are fired for every write path.
    single key). This allows definition streams to listen for both their type key AND
    `privateToggleNotification`, so toggling the private flag triggers a re-fetch.
 
-3. **Fetch serialization**: If a notification arrives while a previous fetch is in
-   progress, skip the in-flight notification rather than queuing — the next notification
-   will refresh anyway.
+3. **Fetch serialization via `pendingRefetch` coalescing**: If a notification arrives
+   while a fetch is in progress, the helper sets a `pendingRefetch` flag instead of
+   starting a concurrent fetch. Multiple notifications during a single in-flight fetch
+   are coalesced into one: after the current fetch completes, exactly one additional
+   refetch executes (picking up whatever the latest DB state is). This guarantees
+   data freshness without unbounded queuing or redundant parallel fetches.
 
 4. **Error strategy**: Catch errors from the fetcher. On error, emit the error to the
    stream (so StreamBuilder shows error state) but do NOT close the stream — continue
@@ -338,152 +341,79 @@ notifications are fired for every write path.
 import 'dart:async';
 import 'package:lotti/services/db_notification.dart';
 
+/// Generic helper that creates a broadcast stream which fetches data on first
+/// listen and re-fetches whenever a matching notification arrives.
+///
+/// Fetches are serialized: if a notification arrives while a fetch is in
+/// progress, one additional fetch is queued and executed after the current one
+/// completes.
+Stream<R> _notificationDrivenStream<R>({
+  required UpdateNotifications notifications,
+  required Set<String> notificationKeys,
+  required Future<R> Function() fetcher,
+}) {
+  late StreamController<R> controller;
+  StreamSubscription<Set<String>>? sub;
+  var fetching = false;
+  var pendingRefetch = false;
+
+  Future<void> doFetch() async {
+    if (fetching) {
+      pendingRefetch = true;
+      return;
+    }
+    fetching = true;
+    try {
+      final result = await fetcher();
+      if (!controller.isClosed) controller.add(result);
+    } catch (e, st) {
+      if (!controller.isClosed) controller.addError(e, st);
+    } finally {
+      fetching = false;
+      if (pendingRefetch && !controller.isClosed) {
+        pendingRefetch = false;
+        await doFetch();
+      }
+    }
+  }
+
+  controller = StreamController<R>.broadcast(
+    onListen: () {
+      doFetch();
+      sub = notifications.updateStream.listen((ids) {
+        if (ids.any(notificationKeys.contains)) doFetch();
+      });
+    },
+    onCancel: () {
+      sub?.cancel();
+      sub = null;
+    },
+  );
+
+  return controller.stream;
+}
+
 /// Creates a broadcast stream that emits an initial fetch result then re-emits
 /// whenever any key in [notificationKeys] appears in the
 /// [UpdateNotifications] stream.
 ///
 /// The stream is broadcast-safe: multiple listeners can subscribe.
-/// Fetches are serialized: overlapping notifications are coalesced.
-Stream<List<T>> notificationDrivenStream<T>({
-  required UpdateNotifications notifications,
-  required Set<String> notificationKeys,
-  required Future<List<T>> Function() fetcher,
-}) {
-  late StreamController<List<T>> controller;
-  StreamSubscription<Set<String>>? sub;
-  var fetching = false;
-  var pendingRefetch = false;
-
-  Future<void> doFetch() async {
-    if (fetching) {
-      pendingRefetch = true;
-      return;
-    }
-    fetching = true;
-    try {
-      final result = await fetcher();
-      if (!controller.isClosed) controller.add(result);
-    } catch (e, st) {
-      if (!controller.isClosed) controller.addError(e, st);
-    } finally {
-      fetching = false;
-      if (pendingRefetch && !controller.isClosed) {
-        pendingRefetch = false;
-        await doFetch();
-      }
-    }
-  }
-
-  controller = StreamController<List<T>>.broadcast(
-    onListen: () {
-      doFetch(); // initial fetch
-      sub = notifications.updateStream.listen((ids) {
-        if (ids.any(notificationKeys.contains)) doFetch();
-      });
-    },
-    onCancel: () {
-      sub?.cancel();
-      sub = null;
-    },
-  );
-
-  return controller.stream;
-}
+Stream<List<T>> notificationDrivenStream<T>({...}) =>
+    _notificationDrivenStream<List<T>>(...);
 
 /// Single-item variant. Same broadcast/serialization semantics.
-Stream<T?> notificationDrivenItemStream<T>({
-  required UpdateNotifications notifications,
-  required Set<String> notificationKeys,
-  required Future<T?> Function() fetcher,
-}) {
-  late StreamController<T?> controller;
-  StreamSubscription<Set<String>>? sub;
-  var fetching = false;
-  var pendingRefetch = false;
-
-  Future<void> doFetch() async {
-    if (fetching) {
-      pendingRefetch = true;
-      return;
-    }
-    fetching = true;
-    try {
-      final result = await fetcher();
-      if (!controller.isClosed) controller.add(result);
-    } catch (e, st) {
-      if (!controller.isClosed) controller.addError(e, st);
-    } finally {
-      fetching = false;
-      if (pendingRefetch && !controller.isClosed) {
-        pendingRefetch = false;
-        await doFetch();
-      }
-    }
-  }
-
-  controller = StreamController<T?>.broadcast(
-    onListen: () {
-      doFetch();
-      sub = notifications.updateStream.listen((ids) {
-        if (ids.any(notificationKeys.contains)) doFetch();
-      });
-    },
-    onCancel: () {
-      sub?.cancel();
-      sub = null;
-    },
-  );
-
-  return controller.stream;
-}
+Stream<T?> notificationDrivenItemStream<T>({...}) =>
+    _notificationDrivenStream<T?>(...);
 
 /// Map variant for non-list data (e.g., label usage counts).
-Stream<Map<K, V>> notificationDrivenMapStream<K, V>({
-  required UpdateNotifications notifications,
-  required Set<String> notificationKeys,
-  required Future<Map<K, V>> Function() fetcher,
-}) {
-  late StreamController<Map<K, V>> controller;
-  StreamSubscription<Set<String>>? sub;
-  var fetching = false;
-  var pendingRefetch = false;
-
-  Future<void> doFetch() async {
-    if (fetching) {
-      pendingRefetch = true;
-      return;
-    }
-    fetching = true;
-    try {
-      final result = await fetcher();
-      if (!controller.isClosed) controller.add(result);
-    } catch (e, st) {
-      if (!controller.isClosed) controller.addError(e, st);
-    } finally {
-      fetching = false;
-      if (pendingRefetch && !controller.isClosed) {
-        pendingRefetch = false;
-        await doFetch();
-      }
-    }
-  }
-
-  controller = StreamController<Map<K, V>>.broadcast(
-    onListen: () {
-      doFetch();
-      sub = notifications.updateStream.listen((ids) {
-        if (ids.any(notificationKeys.contains)) doFetch();
-      });
-    },
-    onCancel: () {
-      sub?.cancel();
-      sub = null;
-    },
-  );
-
-  return controller.stream;
-}
+Stream<Map<K, V>> notificationDrivenMapStream<K, V>({...}) =>
+    _notificationDrivenStream<Map<K, V>>(...);
 ```
+
+**Implementation note**: The three public functions (`notificationDrivenStream`,
+`notificationDrivenItemStream`, `notificationDrivenMapStream`) are thin type-safe
+wrappers around the single private `_notificationDrivenStream<R>` generic helper,
+eliminating the code duplication that was in the original plan.
 
 **Tests**: `test/services/notification_stream_test.dart`:
 - Verify initial emission on first listen
@@ -910,7 +840,7 @@ stream interface is preserved.
 
 ---
 
-## Step 10: Migrate Widgets (StreamBuilder → Notification-Driven) [IN PROGRESS]
+## Step 10: Migrate Widgets (StreamBuilder → Notification-Driven) [DONE]
 
 All these widgets use `StreamBuilder` with Drift watch() streams. Replace the stream
 source with `notificationDrivenStream()` or `notificationDrivenItemStream()`.
@@ -940,7 +870,7 @@ All paths in `lib/features/settings/ui/pages/` and `lib/features/journal/ui/widg
 
 ---
 
-## Step 11: Migrate TagsService [TODO]
+## Step 11: Migrate TagsService [DONE]
 
 **File**: `lib/services/tags_service.dart`
 
@@ -999,7 +929,7 @@ await `init()`.
 
 ---
 
-## Step 12: Migrate ThemingController Settings Watch [TODO]
+## Step 12: Migrate ThemingController Settings Watch [DONE]
 
 **File**: `lib/features/theming/state/theming_controller.dart`
 
@@ -1055,17 +985,14 @@ settings arrive from sync.
 
 ---
 
-## Step 13: Remove `LABELS_UPDATED` Dual-Emit [TODO]
+## Step 13: Remove `LABELS_UPDATED` Dual-Emit [DONE]
 
-After all consumers have been migrated from `LABELS_UPDATED` to `labelsNotification`:
-
-1. Remove the dual-emit from `EntitiesCacheService`
-2. Update `entities_cache_service_test.dart:1218,1259` to assert `labelsNotification`
-3. Search codebase for any remaining `LABELS_UPDATED` references and migrate them
+The `LABELS_UPDATED` constant was fully replaced by `labelsNotification` during the
+migration. No references to `LABELS_UPDATED` remain in `lib/` or `test/`.
 
 ---
 
-## Step 14: Remove Drift watch() Methods [TODO]
+## Step 14: Remove Drift watch() Methods [PARTIAL — JournalDb done, SettingsDb remaining]
 
 ### JournalDb
 
@@ -1104,7 +1031,7 @@ Remove stubs for deleted watch methods. Fix resulting compilation errors in test
 
 ---
 
-## Step 15: Update Tests [ONGOING]
+## Step 15: Update Tests [DONE]
 
 For each migrated file, update the corresponding test file:
 
@@ -1183,3 +1110,48 @@ After all steps:
    loads correctly.
 7. Create/edit/delete entities from the app — lists refresh correctly.
 8. Simulate sync event — UI refreshes via UpdateNotifications path.
+
+---
+
+## Follow-Up Fixes (Post-Review)
+
+Additional issues identified and fixed after the initial implementation:
+
+### Sync deserialization error resilience
+
+**File**: `lib/features/sync/matrix/sync_event_processor.dart`
+
+Wrapped `SyncMessage.fromJson()` in a try-catch that catches `ArgumentError` (from
+`$enumDecode` for unknown enum values, e.g., a newer device sends `qwenImage` for
+`InferenceProviderType`) and `FormatException` (from malformed JSON sub-fields). These
+errors are logged and the message is skipped, preventing infinite retry loops for messages
+that can never be deserialized. Non-deserialization errors still rethrow through the outer
+catch.
+
+### Init ordering bugs
+
+1. **Config flag init order** (`lib/get_it.dart`): Moved `initConfigFlags()` to run before
+   `EntitiesCacheService.init()` so that the `private` flag is seeded (default `true`)
+   before `_loadPrivateFlag()` reads it. On fresh installs, the flag was previously read
+   as `false` (not found → default) instead of the intended `true`.
+
+2. **Theming sync race** (`lib/features/theming/state/theming_controller.dart`): Moved
+   `_watchThemePrefsUpdates()` to execute before `await _loadSelectedSchemes()` in
+   `_init()`. Sync notifications arriving during the async load window are no longer lost.
+
+### Late-subscriber replay
+
+**File**: `lib/services/tags_service.dart`
+
+Changed `watchTags()` from returning the raw broadcast stream to an `async*` generator
+that first yields the cached `tagsById` values (if non-empty), then yields the broadcast
+stream. Late subscribers now get the current cached state immediately.
+
+### Code deduplication
+
+**File**: `lib/services/notification_stream.dart`
+
+Extracted the duplicated fetch/serialization logic from `notificationDrivenStream`,
+`notificationDrivenItemStream`, and `notificationDrivenMapStream` into a single private
+generic helper `_notificationDrivenStream<R>`. The three public functions are now thin
+type-safe wrappers.
