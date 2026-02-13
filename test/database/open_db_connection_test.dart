@@ -102,6 +102,10 @@ void main() {
     final busyResult = await db.customSelect('PRAGMA busy_timeout').getSingle();
     expect(busyResult.read<int>('timeout'), 5000);
 
+    final syncResult = await db.customSelect('PRAGMA synchronous').getSingle();
+    // NORMAL = 1
+    expect(syncResult.read<int>('synchronous'), 1);
+
     await db.close();
   });
 }

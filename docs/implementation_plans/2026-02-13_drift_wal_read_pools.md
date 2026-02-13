@@ -145,7 +145,7 @@ test('openDbConnection enables WAL mode for file-based databases', () async {
   expect(walResult.read<String>('journal_mode'), 'wal');
 
   final busyResult = await db.customSelect('PRAGMA busy_timeout').getSingle();
-  expect(busyResult.read<int>('busy_timeout'), 5000);
+  expect(busyResult.read<int>('timeout'), 5000);
 
   final syncResult = await db.customSelect('PRAGMA synchronous').getSingle();
   expect(syncResult.read<int>('synchronous'), 1); // NORMAL = 1
