@@ -162,10 +162,19 @@ Future<void> registerSingletons() async {
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<TagsService>(TagsService())
-    ..registerSingleton<EntitiesCacheService>(EntitiesCacheService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService());
+
+  // Initialize config flags before constructing services that depend on them.
+  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+
+  final entitiesCacheService = EntitiesCacheService(
+    journalDb: getIt<JournalDb>(),
+    updateNotifications: getIt<UpdateNotifications>(),
+  );
+  await entitiesCacheService.init();
+  getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
   final aiConfigRepository = AiConfigRepository(AiConfigDb());
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
@@ -224,9 +233,6 @@ Future<void> registerSingletons() async {
     sequenceLogService: syncSequenceLogService,
     // backfillResponseHandler will be injected later to avoid circular dependency
   );
-  // Initialize config flags before constructing services that depend on them.
-  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
-
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   // Room discovery service for single-user multi-device flow

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,14 +28,19 @@ void main() {
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
       final mockPersistenceLogic = MockPersistenceLogic();
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      final settingsDb = MockSettingsDb();
       final secureStorageMock = MockSecureStorage();
 
       when(mockJournalDb.watchActiveConfigFlagNames).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([<String>{}]),
       );
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -43,20 +48,24 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(() => settingsDb.saveSettingsItem(any(), any()))
+          .thenAnswer((_) async => 1);
+
+      ensureThemingServicesRegistered();
+
       when(() => secureStorageMock.readValue(lastRouteKey))
           .thenAnswer((_) async => '/settings');
 
       when(() => secureStorageMock.writeValue(lastRouteKey, any()))
           .thenAnswer((_) async {});
 
-      when(mockJournalDb.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([
-          [
-            testStoryTag1,
-            testPersonTag1,
-            testTag1,
-          ]
-        ]),
+      when(mockJournalDb.getAllTags).thenAnswer(
+        (_) async => [
+          testStoryTag1,
+          testPersonTag1,
+          testTag1,
+        ],
       );
 
       when(() => mockJournalDb.upsertTagEntity(any()))

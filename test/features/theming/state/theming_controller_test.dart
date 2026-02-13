@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -27,6 +28,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockLoggingService extends Mock implements LoggingService {}
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -35,8 +38,9 @@ void main() {
     late MockSettingsDb settingsDb;
     late MockJournalDb journalDb;
     late MockLoggingService loggingService;
+    late MockUpdateNotifications mockUpdateNotifications;
     late StreamController<bool> tooltipController;
-    late StreamController<List<SettingsItem>> themePrefsController;
+    late StreamController<Set<String>> notificationsController;
     late ProviderContainer container;
 
     setUpAll(() {
@@ -59,9 +63,13 @@ void main() {
       settingsDb = MockSettingsDb();
       journalDb = MockJournalDb();
       loggingService = MockLoggingService();
+      mockUpdateNotifications = MockUpdateNotifications();
 
       tooltipController = StreamController<bool>.broadcast();
-      themePrefsController = StreamController<List<SettingsItem>>.broadcast();
+      notificationsController = StreamController<Set<String>>.broadcast();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => notificationsController.stream);
 
       // Setup default mock behaviors
       when(() => settingsDb.itemByKey(darkSchemeNameKey))
@@ -74,8 +82,6 @@ void main() {
           .thenAnswer((_) async => 1);
       when(() => journalDb.watchConfigFlag(enableTooltipFlag))
           .thenAnswer((_) => tooltipController.stream);
-      when(() => settingsDb.watchSettingsItemByKey(themePrefsUpdatedAtKey))
-          .thenAnswer((_) => themePrefsController.stream);
       when(() => outboxService.enqueueMessage(any<SyncMessage>()))
           .thenAnswer((_) async {});
       when(
@@ -88,6 +94,7 @@ void main() {
       ).thenAnswer((_) {});
 
       GetIt.I
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<OutboxService>(outboxService)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<JournalDb>(journalDb)
@@ -99,7 +106,7 @@ void main() {
     tearDown(() async {
       EasyDebounce.cancelAll();
       await tooltipController.close();
-      await themePrefsController.close();
+      await notificationsController.close();
       container.dispose();
       await GetIt.I.reset();
     });
@@ -280,15 +287,8 @@ void main() {
           clearInteractions(settingsDb);
           clearInteractions(outboxService);
 
-          // Emit change through stream
-          final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-          themePrefsController.add([
-            SettingsItem(
-              configKey: themePrefsUpdatedAtKey,
-              value: timestamp,
-              updatedAt: DateTime.now(),
-            ),
-          ]);
+          // Trigger reload via settings notification
+          notificationsController.add({settingsNotification});
 
           async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();
@@ -436,7 +436,7 @@ void main() {
         });
       });
 
-      test('handles error in theme prefs stream and logs it', () {
+      test('ignores notifications without settingsNotification key', () {
         fakeAsync((async) {
           final states = <ThemingState>[];
           container.listen(
@@ -448,21 +448,16 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Emit error through stream
-          themePrefsController.addError(Exception('Stream error'));
+          clearInteractions(settingsDb);
+
+          // Emit unrelated notification
+          notificationsController.add({'unrelated_notification'});
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Verify error was logged
-          verify(
-            () => loggingService.captureException(
-              any<Object>(),
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'theme_prefs_stream',
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-            ),
-          ).called(1);
+          // Verify settings were NOT reloaded
+          verifyNever(() => settingsDb.itemByKey(lightSchemeNameKey));
         });
       });
 
@@ -488,14 +483,8 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Emit change through stream to trigger reload
-          themePrefsController.add([
-            SettingsItem(
-              configKey: themePrefsUpdatedAtKey,
-              value: '12345',
-              updatedAt: DateTime.now(),
-            ),
-          ]);
+          // Trigger reload via settings notification
+          notificationsController.add({settingsNotification});
 
           async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();
@@ -558,14 +547,8 @@ void main() {
 
           clearInteractions(outboxService);
 
-          // Emit sync update (simulates receiving changes from another device)
-          themePrefsController.add([
-            SettingsItem(
-              configKey: themePrefsUpdatedAtKey,
-              value: DateTime.now().millisecondsSinceEpoch.toString(),
-              updatedAt: DateTime.now(),
-            ),
-          ]);
+          // Trigger reload via settings notification (simulates sync update)
+          notificationsController.add({settingsNotification});
 
           async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
@@ -654,7 +637,7 @@ void main() {
         });
       });
 
-      test('empty theme prefs update is ignored', () {
+      test('unrelated notification does not trigger theme reload', () {
         fakeAsync((async) {
           final states = <ThemingState>[];
           container.listen(
@@ -666,15 +649,17 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Emit empty list (should be ignored)
-          themePrefsController.add([]);
+          // Initial load completed
+          verify(() => settingsDb.itemByKey(lightSchemeNameKey)).called(1);
+
+          // Emit unrelated notification (should be ignored)
+          notificationsController.add({'some_other_notification'});
 
           async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();
 
-          // State should not have changed significantly
-          // (no new load triggered)
-          verify(() => settingsDb.itemByKey(lightSchemeNameKey)).called(1);
+          // No additional load triggered
+          verifyNever(() => settingsDb.itemByKey(lightSchemeNameKey));
         });
       });
     });

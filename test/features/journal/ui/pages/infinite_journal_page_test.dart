@@ -346,16 +346,6 @@ void main() {
       }
 
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableChocolate.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableChocolate,
-        ]),
-      );
-
-      when(
         () => mockEntitiesCacheService.getDataTypeById(
           measurableChocolate.id,
         ),
@@ -383,16 +373,6 @@ void main() {
           limit: 50,
         ),
       ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
-
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableChocolate.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableChocolate,
-        ]),
-      );
 
       when(
         () => mockJournalDb
@@ -437,16 +417,6 @@ void main() {
     testWidgets('page is rendered with measurement entry, aggregation none',
         (tester) async {
       when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableCoverage.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableCoverage,
-        ]),
-      );
-
-      when(
         () => mockEntitiesCacheService.getDataTypeById(
           measurableCoverage.id,
         ),
@@ -466,16 +436,6 @@ void main() {
           limit: 50,
         ),
       ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
-
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(
-          measurableCoverage.id,
-        ),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([
-          measurableCoverage,
-        ]),
-      );
 
       when(
         () =>

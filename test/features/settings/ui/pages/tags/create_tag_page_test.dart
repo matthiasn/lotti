@@ -5,6 +5,7 @@ import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,7 +32,13 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
       final mockOutboxService = MockOutboxService();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+      when(() => mockUpdateNotifications.notify(any())).thenReturn(null);
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)

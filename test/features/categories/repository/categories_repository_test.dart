@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
@@ -19,6 +20,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 void main() {
@@ -30,12 +33,19 @@ void main() {
     late MockPersistenceLogic mockPersistenceLogic;
     late MockJournalDb mockJournalDb;
     late MockEntitiesCacheService mockEntitiesCacheService;
+    late MockUpdateNotifications mockUpdateNotifications;
+    late StreamController<Set<String>> updateStreamController;
     late CategoryRepository repository;
 
     setUp(() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockJournalDb = MockJournalDb();
       mockEntitiesCacheService = MockEntitiesCacheService();
+      mockUpdateNotifications = MockUpdateNotifications();
+      updateStreamController = StreamController<Set<String>>.broadcast();
+
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => updateStreamController.stream);
 
       // Reset getIt and register mocks
       if (getIt.isRegistered<PersistenceLogic>()) {
@@ -57,10 +67,12 @@ void main() {
         mockPersistenceLogic,
         mockJournalDb,
         mockEntitiesCacheService,
+        mockUpdateNotifications,
       );
     });
 
-    tearDown(() {
+    tearDown(() async {
+      await updateStreamController.close();
       if (getIt.isRegistered<PersistenceLogic>()) {
         getIt.unregister<PersistenceLogic>();
       }
@@ -73,24 +85,24 @@ void main() {
     });
 
     group('watchCategories', () {
-      test('emits categories from database', () async {
+      test('emits categories from initial fetch', () async {
         final category1 =
             CategoryTestUtils.createTestCategory(name: 'Category 1');
         final category2 =
             CategoryTestUtils.createTestCategory(name: 'Category 2');
         final categories = [category1, category2];
 
-        when(() => mockJournalDb.watchCategories()).thenAnswer(
-          (_) => Stream.value(categories),
+        when(() => mockJournalDb.getAllCategories()).thenAnswer(
+          (_) async => categories,
         );
 
         final result = await repository.watchCategories().first;
 
         expect(result, equals(categories));
-        verify(() => mockJournalDb.watchCategories()).called(1);
+        verify(() => mockJournalDb.getAllCategories()).called(1);
       });
 
-      test('emits updated categories when database changes', () async {
+      test('emits updated categories on notification', () async {
         final category1 =
             CategoryTestUtils.createTestCategory(name: 'Category 1');
         final category2 =
@@ -98,80 +110,83 @@ void main() {
         final category3 =
             CategoryTestUtils.createTestCategory(name: 'Category 3');
 
-        final controller = StreamController<List<CategoryDefinition>>();
-        when(() => mockJournalDb.watchCategories()).thenAnswer(
-          (_) => controller.stream,
-        );
+        var callCount = 0;
+        when(() => mockJournalDb.getAllCategories()).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [category1, category2];
+          return [category1, category2, category3];
+        });
 
         final results = <List<CategoryDefinition>>[];
         final subscription = repository.watchCategories().listen(results.add);
 
-        controller.add([category1, category2]);
         await Future<void>.delayed(Duration.zero);
-        controller.add([category1, category2, category3]);
-        await Future<void>.delayed(Duration.zero);
+        expect(results, hasLength(1));
+        expect(results[0], hasLength(2));
+
+        updateStreamController.add({categoriesNotification});
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(results, hasLength(2));
-        expect(results[0], hasLength(2));
         expect(results[1], hasLength(3));
 
         await subscription.cancel();
-        await controller.close();
       });
     });
 
     group('watchCategory', () {
-      test('emits specific category from database', () async {
+      test('emits specific category from initial fetch', () async {
         final category = CategoryTestUtils.createTestCategory();
 
-        when(() => mockJournalDb.watchCategoryById(category.id)).thenAnswer(
-          (_) => Stream.value(category),
+        when(() => mockJournalDb.getCategoryById(category.id)).thenAnswer(
+          (_) async => category,
         );
 
         final result = await repository.watchCategory(category.id).first;
 
         expect(result, equals(category));
-        verify(() => mockJournalDb.watchCategoryById(category.id)).called(1);
+        verify(() => mockJournalDb.getCategoryById(category.id)).called(1);
       });
 
       test('emits null when category not found', () async {
-        when(() => mockJournalDb.watchCategoryById('non-existent-id'))
-            .thenAnswer(
-          (_) => Stream<CategoryDefinition?>.value(null),
-        );
+        when(() => mockJournalDb.getCategoryById('non-existent-id'))
+            .thenAnswer((_) async => null);
 
         final result = await repository.watchCategory('non-existent-id').first;
 
         expect(result, isNull);
       });
 
-      test('emits updated category when it changes', () async {
+      test('emits updated category on notification', () async {
         final categoryId = const Uuid().v4();
         final category1 = CategoryTestUtils.createTestCategory(
             id: categoryId, name: 'Original');
         final category2 = CategoryTestUtils.createTestCategory(
             id: categoryId, name: 'Updated');
 
-        final controller = StreamController<CategoryDefinition?>();
-        when(() => mockJournalDb.watchCategoryById(categoryId)).thenAnswer(
-          (_) => controller.stream,
-        );
+        var callCount = 0;
+        when(() => mockJournalDb.getCategoryById(categoryId))
+            .thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return category1;
+          return category2;
+        });
 
         final results = <CategoryDefinition?>[];
         final subscription =
             repository.watchCategory(categoryId).listen(results.add);
 
-        controller.add(category1);
         await Future<void>.delayed(Duration.zero);
-        controller.add(category2);
-        await Future<void>.delayed(Duration.zero);
+        expect(results, hasLength(1));
+        expect(results[0]?.name, equals('Original'));
+
+        updateStreamController.add({categoriesNotification});
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(results, hasLength(2));
-        expect(results[0]?.name, equals('Original'));
         expect(results[1]?.name, equals('Updated'));
 
         await subscription.cancel();
-        await controller.close();
       });
     });
 
@@ -428,13 +443,11 @@ void main() {
     group('error handling', () {
       test('watchCategories propagates errors from database', () async {
         final error = Exception('Database error');
-        when(() => mockJournalDb.watchCategories()).thenAnswer(
-          (_) => Stream<List<CategoryDefinition>>.error(error),
-        );
+        when(() => mockJournalDb.getAllCategories()).thenThrow(error);
 
         expect(
           repository.watchCategories(),
-          emitsError(error),
+          emitsError(isA<Exception>()),
         );
       });
 

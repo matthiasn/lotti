@@ -1,11 +1,17 @@
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 
 class TagsService {
   TagsService() {
     _db = getIt<JournalDb>();
-    stream = _db.watchTags();
+    stream = notificationDrivenStream(
+      notifications: getIt<UpdateNotifications>(),
+      notificationKeys: {tagsNotification, privateToggleNotification},
+      fetcher: _db.getAllTags,
+    );
 
     stream.listen((List<TagEntity> tagEntities) {
       tagsById.clear();
@@ -64,8 +70,11 @@ class TagsService {
     return _db.getMatchingTags(match, limit: limit, inactive: inactive);
   }
 
-  Stream<List<TagEntity>> watchTags() {
-    return _db.watchTags();
+  Stream<List<TagEntity>> watchTags() async* {
+    if (tagsById.isNotEmpty) {
+      yield tagsById.values.toList();
+    }
+    yield* stream;
   }
 
   // ignore: use_setters_to_change_properties

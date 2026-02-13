@@ -6,8 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:uuid/uuid.dart';
 
 final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
@@ -16,6 +18,7 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
     getIt<JournalDb>(),
     getIt<EntitiesCacheService>(),
     getIt<LoggingService>(),
+    getIt<UpdateNotifications>(),
   );
 });
 
@@ -25,20 +28,30 @@ class LabelsRepository {
     this._journalDb,
     this._entitiesCacheService,
     this._loggingService,
+    this._updateNotifications,
   );
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
   final EntitiesCacheService _entitiesCacheService;
   final LoggingService _loggingService;
+  final UpdateNotifications _updateNotifications;
   final _uuid = const Uuid();
 
   Stream<List<LabelDefinition>> watchLabels() {
-    return _journalDb.watchLabelDefinitions();
+    return notificationDrivenStream(
+      notifications: _updateNotifications,
+      notificationKeys: {labelsNotification, privateToggleNotification},
+      fetcher: _journalDb.getAllLabelDefinitions,
+    );
   }
 
   Stream<LabelDefinition?> watchLabel(String id) {
-    return _journalDb.watchLabelDefinitionById(id);
+    return notificationDrivenItemStream(
+      notifications: _updateNotifications,
+      notificationKeys: {labelsNotification, privateToggleNotification},
+      fetcher: () => _journalDb.getLabelDefinitionById(id),
+    );
   }
 
   Future<List<LabelDefinition>> getAllLabels() {

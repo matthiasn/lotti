@@ -380,6 +380,11 @@ void main() {
 
       await TagsRepository.upsertTagEntity(testStoryTag);
 
+      // The mock UpdateNotifications doesn't forward notify() calls, so
+      // TagsService.tagsById never refreshes. Populate it manually so that
+      // addTagsWithLinked → getFilteredStoryTagIds can resolve the story tag.
+      getIt<TagsService>().tagsById[testStoryTag.id] = testStoryTag;
+
       // expect tag in database when queried
       final exactMatch =
           await getIt<JournalDb>().getMatchingTags(testStoryTag.tag);
@@ -393,10 +398,10 @@ void main() {
       expect(partialMatch.any((t) => t.id == testStoryTag.id), isTrue);
       expect(partialMatch.any((t) => t.tag == testStoryTag.tag), isTrue);
 
-      // expect tag in database when watching tags
-      final watchedTags = await getIt<JournalDb>().watchTags().first;
-      expect(watchedTags.any((t) => t.id == testStoryTag.id), isTrue);
-      expect(watchedTags.any((t) => t.tag == testStoryTag.tag), isTrue);
+      // expect tag in database when fetching all tags
+      final allTags = await getIt<JournalDb>().getAllTags();
+      expect(allTags.any((t) => t.id == testStoryTag.id), isTrue);
+      expect(allTags.any((t) => t.tag == testStoryTag.tag), isTrue);
 
       // create linked comment entry
       const testText = 'test comment for task';
@@ -561,15 +566,8 @@ void main() {
 
       // measurable types can be retrieved
       expect(
-        (await getIt<JournalDb>().watchMeasurableDataTypes().first).toSet(),
+        (await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(),
         {measurableChocolate, measurableWater},
-      );
-
-      expect(
-        await getIt<JournalDb>()
-            .watchMeasurableDataTypeById(measurableChocolate.id)
-            .first,
-        measurableChocolate,
       );
 
       expect(
@@ -590,7 +588,7 @@ void main() {
       );
 
       expect(
-        (await getIt<JournalDb>().watchMeasurableDataTypes().first).toSet(),
+        (await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(),
         {measurableWater},
       );
     });
@@ -609,9 +607,8 @@ void main() {
       await getIt<PersistenceLogic>()
           .upsertDashboardDefinition(testDashboardConfig);
 
-      final created = await getIt<JournalDb>()
-          .watchDashboardById(testDashboardConfig.id)
-          .first;
+      final created =
+          await getIt<JournalDb>().getDashboardById(testDashboardConfig.id);
 
       expect(created, testDashboardConfig);
 
@@ -619,9 +616,8 @@ void main() {
       await getIt<PersistenceLogic>()
           .deleteDashboardDefinition(testDashboardConfig);
 
-      final item = await getIt<JournalDb>()
-          .watchDashboardById(testDashboardConfig.id)
-          .first;
+      final item =
+          await getIt<JournalDb>().getDashboardById(testDashboardConfig.id);
 
       expect(item, null);
 
@@ -648,12 +644,12 @@ void main() {
 
       // habit can be retrieved
       expect(
-        (await getIt<JournalDb>().watchHabitDefinitions().first).toSet(),
+        (await getIt<JournalDb>().getAllHabitDefinitions()).toSet(),
         {habitFlossing},
       );
 
       expect(
-        await getIt<JournalDb>().watchHabitById(habitFlossing.id).first,
+        await getIt<JournalDb>().getHabitById(habitFlossing.id),
         habitFlossing,
       );
 
@@ -663,7 +659,7 @@ void main() {
       );
 
       expect(
-        await getIt<JournalDb>().watchHabitById(habitFlossing.id).first,
+        await getIt<JournalDb>().getHabitById(habitFlossing.id),
         null,
       );
     });

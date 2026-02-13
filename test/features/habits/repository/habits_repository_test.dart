@@ -67,83 +67,66 @@ void main() {
 
   group('HabitsRepositoryImpl', () {
     group('watchHabitDefinitions', () {
-      test('returns stream from JournalDb', () async {
-        final controller = StreamController<List<HabitDefinition>>.broadcast();
-        when(mockJournalDb.watchHabitDefinitions)
-            .thenAnswer((_) => controller.stream);
+      test('emits habits from initial fetch', () async {
+        when(mockJournalDb.getAllHabitDefinitions)
+            .thenAnswer((_) async => [testHabit]);
 
-        final stream = repository.watchHabitDefinitions();
-        final future = stream.first;
-
-        controller.add([testHabit]);
-        final result = await future;
+        final result = await repository.watchHabitDefinitions().first;
 
         expect(result, hasLength(1));
         expect(result.first.id, 'habit-1');
         expect(result.first.name, 'Test Habit');
 
-        await controller.close();
-        verify(mockJournalDb.watchHabitDefinitions).called(1);
+        verify(mockJournalDb.getAllHabitDefinitions).called(1);
       });
 
-      test('emits multiple updates', () async {
-        final controller = StreamController<List<HabitDefinition>>.broadcast();
-        when(mockJournalDb.watchHabitDefinitions)
-            .thenAnswer((_) => controller.stream);
-
-        final stream = repository.watchHabitDefinitions();
-        final results = <List<HabitDefinition>>[];
-        final subscription = stream.listen(results.add);
-
-        controller.add([testHabit]);
-        await Future<void>.delayed(Duration.zero);
-
+      test('emits updated habits on notification', () async {
+        var callCount = 0;
         final updatedHabit = testHabit.copyWith(name: 'Updated Habit');
-        controller.add([testHabit, updatedHabit]);
+        when(mockJournalDb.getAllHabitDefinitions).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [testHabit];
+          return [testHabit, updatedHabit];
+        });
+
+        final results = <List<HabitDefinition>>[];
+        final subscription =
+            repository.watchHabitDefinitions().listen(results.add);
+
         await Future<void>.delayed(Duration.zero);
+        expect(results, hasLength(1));
+        expect(results[0], hasLength(1));
+
+        updateStreamController.add({habitsNotification});
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(results, hasLength(2));
-        expect(results[0], hasLength(1));
         expect(results[1], hasLength(2));
 
         await subscription.cancel();
-        await controller.close();
       });
     });
 
     group('watchHabitById', () {
-      test('returns stream for specific habit', () async {
-        final controller = StreamController<HabitDefinition?>.broadcast();
-        when(() => mockJournalDb.watchHabitById('habit-1'))
-            .thenAnswer((_) => controller.stream);
+      test('emits specific habit from initial fetch', () async {
+        when(() => mockJournalDb.getHabitById('habit-1'))
+            .thenAnswer((_) async => testHabit);
 
-        final stream = repository.watchHabitById('habit-1');
-        final future = stream.first;
-
-        controller.add(testHabit);
-        final result = await future;
+        final result = await repository.watchHabitById('habit-1').first;
 
         expect(result, isNotNull);
         expect(result!.id, 'habit-1');
 
-        await controller.close();
-        verify(() => mockJournalDb.watchHabitById('habit-1')).called(1);
+        verify(() => mockJournalDb.getHabitById('habit-1')).called(1);
       });
 
       test('returns null for non-existent habit', () async {
-        final controller = StreamController<HabitDefinition?>.broadcast();
-        when(() => mockJournalDb.watchHabitById('non-existent'))
-            .thenAnswer((_) => controller.stream);
+        when(() => mockJournalDb.getHabitById('non-existent'))
+            .thenAnswer((_) async => null);
 
-        final stream = repository.watchHabitById('non-existent');
-        final future = stream.first;
-
-        controller.add(null);
-        final result = await future;
+        final result = await repository.watchHabitById('non-existent').first;
 
         expect(result, isNull);
-
-        await controller.close();
       });
     });
 
@@ -260,23 +243,16 @@ void main() {
     });
 
     group('watchDashboards', () {
-      test('returns stream from JournalDb', () async {
-        final controller =
-            StreamController<List<DashboardDefinition>>.broadcast();
-        when(mockJournalDb.watchDashboards)
-            .thenAnswer((_) => controller.stream);
+      test('emits dashboards from initial fetch', () async {
+        when(mockJournalDb.getAllDashboards)
+            .thenAnswer((_) async => [testDashboard]);
 
-        final stream = repository.watchDashboards();
-        final future = stream.first;
-
-        controller.add([testDashboard]);
-        final result = await future;
+        final result = await repository.watchDashboards().first;
 
         expect(result, hasLength(1));
         expect(result.first.id, 'dashboard-1');
 
-        await controller.close();
-        verify(mockJournalDb.watchDashboards).called(1);
+        verify(mockJournalDb.getAllDashboards).called(1);
       });
     });
 

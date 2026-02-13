@@ -99,9 +99,7 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   final mock = MockJournalDb();
   when(mock.close).thenAnswer((_) async {});
 
-  when(mock.watchMeasurableDataTypes).thenAnswer(
-    (_) => Stream<List<MeasurableDataType>>.fromIterable([dataTypes]),
-  );
+  when(mock.getAllMeasurableDataTypes).thenAnswer((_) async => dataTypes);
 
   when(
     () => mock.getJournalEntities(
@@ -130,9 +128,8 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   ).thenAnswer((_) async => <JournalEntity>[]);
 
   for (final dataType in dataTypes) {
-    when(() => mock.watchMeasurableDataTypeById(dataType.id)).thenAnswer(
-      (_) => Stream<MeasurableDataType>.fromIterable([dataType]),
-    );
+    when(() => mock.getMeasurableDataTypeById(dataType.id))
+        .thenAnswer((_) async => dataType);
   }
 
   return mock;
@@ -144,20 +141,15 @@ MockJournalDb mockJournalDbWithHabits(
   final mock = MockJournalDb();
   when(mock.close).thenAnswer((_) async {});
 
-  when(mock.watchHabitDefinitions).thenAnswer(
-    (_) => Stream<List<HabitDefinition>>.fromIterable([habitDefinitions]),
-  );
+  when(mock.getAllHabitDefinitions).thenAnswer((_) async => habitDefinitions);
 
-  // Default fallback for any habit ID - returns empty stream (for create flow)
-  when(() => mock.watchHabitById(any())).thenAnswer(
-    (_) => Stream<HabitDefinition?>.fromIterable([null]),
-  );
+  // Default fallback for getHabitById
+  when(() => mock.getHabitById(any())).thenAnswer((_) async => null);
 
   // Override with specific stubs for known habits
   for (final habitDefinition in habitDefinitions) {
-    when(() => mock.watchHabitById(habitDefinition.id)).thenAnswer(
-      (_) => Stream<HabitDefinition>.fromIterable([habitDefinition]),
-    );
+    when(() => mock.getHabitById(habitDefinition.id))
+        .thenAnswer((_) async => habitDefinition);
   }
 
   return mock;
@@ -200,22 +192,7 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
 
-class MockSettingsDb extends Mock implements SettingsDb {
-  @override
-  Stream<List<SettingsItem>> watchSettingsItemByKey(String key) {
-    try {
-      final result =
-          super.noSuchMethod(Invocation.method(#watchSettingsItemByKey, [key]));
-      if (result is Stream<List<SettingsItem>>) {
-        return result;
-      }
-    } catch (_) {
-      // ignore and fall back
-    }
-    return Stream<List<SettingsItem>>.value(<SettingsItem>[])
-        .asBroadcastStream();
-  }
-}
+class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 

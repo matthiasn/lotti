@@ -5,6 +5,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -29,7 +30,12 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
     });

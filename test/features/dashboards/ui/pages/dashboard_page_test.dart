@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -41,12 +42,6 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      when(
-        () => mockJournalDb.watchMeasurableDataTypeById(any()),
-      ).thenAnswer(
-        (_) => Stream<MeasurableDataType>.fromIterable([]),
-      );
-
       final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
       final mockHealthImport = MockHealthImport();
@@ -57,7 +52,12 @@ void main() {
         ]),
       );
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
@@ -67,13 +67,12 @@ void main() {
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<UserActivityService>(UserActivityService());
 
-      when(
-        () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
-      ).thenAnswer(
-        (_) => Stream<DashboardDefinition>.fromIterable([testDashboardConfig]),
-      );
+      when(() => mockEntitiesCacheService.getDashboardById(
+            testDashboardConfig.id,
+          )).thenReturn(testDashboardConfig);
 
       // when(
       //   () => mockJournalDb.watchWorkouts(

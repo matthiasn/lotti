@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
@@ -17,8 +16,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,12 +39,6 @@ void main() {
     setUp(() {
       mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
 
-      when(mockJournalDb.watchCategories).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness],
-        ]),
-      );
-
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
       );
@@ -57,11 +48,8 @@ void main() {
         (_) => Future.value(),
       );
 
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig],
-        ]),
-      );
+      when(mockJournalDb.getAllDashboards)
+          .thenAnswer((_) async => [testDashboardConfig]);
 
       when(() => mockUpdateNotifications.updateStream)
           .thenAnswer((_) => const Stream<Set<String>>.empty());

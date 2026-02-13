@@ -7,6 +7,8 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart'
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -25,7 +27,11 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
     final controller = TextEditingController();
 
     return StreamBuilder<List<CategoryDefinition>>(
-      stream: getIt<JournalDb>().watchCategories(),
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {categoriesNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllCategories,
+      ),
       builder: (context, snapshot) {
         final categories = snapshot.data ?? <CategoryDefinition>[]
           ..sortBy((category) => category.name);

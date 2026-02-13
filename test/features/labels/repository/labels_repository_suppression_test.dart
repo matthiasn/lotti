@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,6 +16,8 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   setUpAll(() {
@@ -57,16 +60,20 @@ void main() {
     late MockEntitiesCacheService mockCache;
     late MockLoggingService mockLog;
 
+    late MockUpdateNotifications mockNotifications;
+
     setUp(() {
       mockDb = MockJournalDb();
       mockPl = MockPersistenceLogic();
       mockCache = MockEntitiesCacheService();
       mockLog = MockLoggingService();
+      mockNotifications = MockUpdateNotifications();
       repo = LabelsRepository(
         mockPl,
         mockDb,
         mockCache,
         mockLog,
+        mockNotifications,
       );
     });
 

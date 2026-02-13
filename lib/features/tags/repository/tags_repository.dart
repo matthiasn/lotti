@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -128,6 +129,7 @@ class TagsRepository {
 
   static Future<int> upsertTagEntity(TagEntity tagEntity) async {
     final linesAffected = await _journalDb.upsertTagEntity(tagEntity);
+    getIt<UpdateNotifications>().notify({tagEntity.id, tagsNotification});
     await outboxService.enqueueMessage(
       SyncMessage.tagEntity(
         tagEntity: tagEntity,

@@ -1005,20 +1005,15 @@ class JournalDb extends _$JournalDb {
     return res.first;
   }
 
-  Stream<List<MeasurableDataType>> watchMeasurableDataTypes() {
-    return activeMeasurableTypes().watch().map(measurableDataTypeStreamMapper);
-  }
-
-  Stream<MeasurableDataType?> watchMeasurableDataTypeById(String id) {
-    return measurableTypeById(id)
-        .watch()
-        .map(measurableDataTypeStreamMapper)
-        .map((List<MeasurableDataType> res) => res.firstOrNull);
-  }
-
   Future<MeasurableDataType?> getMeasurableDataTypeById(String id) async {
     final res = await measurableTypeById(id).get();
     return res.map(measurableDataType).firstOrNull;
+  }
+
+  Future<List<MeasurableDataType>> getAllMeasurableDataTypes() async {
+    return measurableDataTypeStreamMapper(
+      await activeMeasurableTypes().get(),
+    );
   }
 
   Future<List<JournalEntity>> getMeasurementsByType({
@@ -1175,55 +1170,6 @@ class JournalDb extends _$JournalDb {
     return conflictsById(id).watch();
   }
 
-  Stream<List<TagEntity>> watchTags() {
-    return allTagEntities().watch().map(tagStreamMapper);
-  }
-
-  Stream<List<DashboardDefinition>> watchDashboards() {
-    return allDashboards().watch().map(dashboardStreamMapper);
-  }
-
-  Stream<DashboardDefinition?> watchDashboardById(String id) {
-    return dashboardById(id)
-        .watch()
-        .map(dashboardStreamMapper)
-        .map((res) => res.firstOrNull);
-  }
-
-  Stream<List<HabitDefinition>> watchHabitDefinitions() {
-    return allHabitDefinitions().watch().map(habitDefinitionsStreamMapper);
-  }
-
-  Stream<List<CategoryDefinition>> watchCategories() {
-    return allCategoryDefinitions()
-        .watch()
-        .map(categoryDefinitionsStreamMapper);
-  }
-
-  Stream<List<LabelDefinition>> watchLabelDefinitions() {
-    return allLabelDefinitions().watch().map(labelDefinitionsStreamMapper);
-  }
-
-  Stream<Map<String, int>> watchLabelUsageCounts() {
-    final query = customSelect(
-      '''
-      SELECT label_id, COUNT(*) AS usage_count
-      FROM labeled
-      GROUP BY label_id
-      ''',
-      readsFrom: {labeled},
-    );
-
-    return query.watch().map((rows) {
-      final usage = <String, int>{};
-      for (final row in rows) {
-        final labelId = row.read<String>('label_id');
-        usage[labelId] = row.read<int>('usage_count');
-      }
-      return usage;
-    });
-  }
-
   /// Snapshot version of label usage statistics for prompt construction or one-off queries
   Future<Map<String, int>> getLabelUsageCounts() async {
     final query = customSelect(
@@ -1247,17 +1193,6 @@ class JournalDb extends _$JournalDb {
   Future<Map<String, int>> getLabelUsageCountsSnapshot() =>
       getLabelUsageCounts();
 
-  Stream<LabelDefinition?> watchLabelDefinitionById(String id) {
-    // For single-entity watches, do not filter by the global private flag.
-    // Settings and edit flows need to observe changes (including private toggles)
-    // for a specific label. We only exclude hard-deleted rows here.
-    final query = select(labelDefinitions)
-      ..where((t) => t.id.equals(id) & t.deleted.equals(false));
-    return query.watch().map(labelDefinitionsStreamMapper).map(
-          (List<LabelDefinition> res) => res.firstOrNull,
-        );
-  }
-
   Future<List<LabelDefinition>> getAllLabelDefinitions() async {
     final labels = await allLabelDefinitions().get();
     return labelDefinitionsStreamMapper(labels);
@@ -1268,18 +1203,39 @@ class JournalDb extends _$JournalDb {
     return labelDefinitionsStreamMapper(result).firstOrNull;
   }
 
-  Stream<CategoryDefinition?> watchCategoryById(String id) {
-    return categoryById(id)
-        .watch()
-        .map(categoryDefinitionsStreamMapper)
-        .map((List<CategoryDefinition> res) => res.firstOrNull);
+  Future<List<CategoryDefinition>> getAllCategories() async {
+    return categoryDefinitionsStreamMapper(
+      await allCategoryDefinitions().get(),
+    );
   }
 
-  Stream<HabitDefinition?> watchHabitById(String id) {
-    return habitById(id)
-        .watch()
-        .map(habitDefinitionsStreamMapper)
-        .map((List<HabitDefinition> res) => res.firstOrNull);
+  Future<List<HabitDefinition>> getAllHabitDefinitions() async {
+    return habitDefinitionsStreamMapper(
+      await allHabitDefinitions().get(),
+    );
+  }
+
+  Future<List<DashboardDefinition>> getAllDashboards() async {
+    return dashboardStreamMapper(await allDashboards().get());
+  }
+
+  Future<List<TagEntity>> getAllTags() async {
+    return tagStreamMapper(await allTagEntities().get());
+  }
+
+  Future<CategoryDefinition?> getCategoryById(String id) async {
+    final rows = await categoryById(id).get();
+    return categoryDefinitionsStreamMapper(rows).firstOrNull;
+  }
+
+  Future<HabitDefinition?> getHabitById(String id) async {
+    final rows = await habitById(id).get();
+    return habitDefinitionsStreamMapper(rows).firstOrNull;
+  }
+
+  Future<DashboardDefinition?> getDashboardById(String id) async {
+    final rows = await dashboardById(id).get();
+    return dashboardStreamMapper(rows).firstOrNull;
   }
 
   Future<List<TagEntity>> getMatchingTags(

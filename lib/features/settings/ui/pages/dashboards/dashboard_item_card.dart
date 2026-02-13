@@ -5,6 +5,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
@@ -86,7 +88,11 @@ class MeasurableItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<MeasurableDataType>>(
-      stream: getIt<JournalDb>().watchMeasurableDataTypes(),
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {measurablesNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<MeasurableDataType>> snapshot,
@@ -137,7 +143,11 @@ class HabitItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<HabitDefinition?>(
-      stream: getIt<JournalDb>().watchHabitById(habitItem.habitId),
+      stream: notificationDrivenItemStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {habitsNotification, privateToggleNotification},
+        fetcher: () => getIt<JournalDb>().getHabitById(habitItem.habitId),
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<HabitDefinition?> snapshot,

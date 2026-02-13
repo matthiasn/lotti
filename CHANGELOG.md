@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.858] - 2026-02-13
+### Changed
+- Replaced Drift table-watcher streams with notification-driven streams for categories, habits, dashboards, measurables, labels, tags, and settings. Eliminates redundant DB polling and prepares for isolate-based sync.
+- Deduplicated notification-driven stream helpers into a single generic implementation.
+
+### Fixed
+- Sync deserialization: unknown enum values from newer devices (e.g., new AI provider types) no longer cause infinite retry loops; unrecoverable `ArgumentError`/`FormatException` errors are logged and skipped.
+- Config flag init order: `initConfigFlags` now runs before `EntitiesCacheService.init()` so the private-entries flag reads its seeded default (`true`) on fresh installs instead of `false`.
+- Tags late-subscriber replay: `TagsService.watchTags()` now emits cached tags immediately for late subscribers instead of waiting for the next notification.
+- Theming sync race: `ThemingController` subscribes to setting notifications before the initial async load, preventing sync theme updates from being dropped during the init window.
+
 ## [0.9.857] - 2026-02-12
 ### Changed
 - Removed M4A-to-WAV audio conversion for Mistral — all providers now accept M4A natively. Eliminates FFmpeg dependency and file size quota issues.

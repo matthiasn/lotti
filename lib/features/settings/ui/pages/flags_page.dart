@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/gamey/gamey_settings_card.dart';
 
@@ -162,8 +163,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
                   trailing: Switch.adaptive(
                     value: flag.status,
                     onChanged: (bool status) {
-                      getIt<JournalDb>()
-                          .upsertConfigFlag(flag.copyWith(status: status));
+                      getIt<PersistenceLogic>()
+                          .setConfigFlag(flag.copyWith(status: status));
                     },
                   ),
                 ),

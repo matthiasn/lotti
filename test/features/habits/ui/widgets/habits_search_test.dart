@@ -29,8 +29,8 @@ void main() {
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockJournalDb.watchHabitDefinitions)
-        .thenAnswer((_) => definitionsController.stream);
+    when(mockJournalDb.getAllHabitDefinitions)
+        .thenAnswer((_) async => <HabitDefinition>[]);
 
     when(
       () => mockJournalDb.getHabitCompletionsInRange(

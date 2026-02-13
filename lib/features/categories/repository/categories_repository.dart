@@ -5,7 +5,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:uuid/uuid.dart';
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
@@ -13,6 +15,7 @@ final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
     getIt<PersistenceLogic>(),
     getIt<JournalDb>(),
     getIt<EntitiesCacheService>(),
+    getIt<UpdateNotifications>(),
   );
 });
 
@@ -21,19 +24,29 @@ class CategoryRepository {
     this._persistenceLogic,
     this._journalDb,
     this._entitiesCacheService,
+    this._updateNotifications,
   );
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
   final EntitiesCacheService _entitiesCacheService;
+  final UpdateNotifications _updateNotifications;
   final _uuid = const Uuid();
 
   Stream<List<CategoryDefinition>> watchCategories() {
-    return _journalDb.watchCategories();
+    return notificationDrivenStream(
+      notifications: _updateNotifications,
+      notificationKeys: {categoriesNotification, privateToggleNotification},
+      fetcher: _journalDb.getAllCategories,
+    );
   }
 
   Stream<CategoryDefinition?> watchCategory(String id) {
-    return _journalDb.watchCategoryById(id);
+    return notificationDrivenItemStream(
+      notifications: _updateNotifications,
+      notificationKeys: {categoriesNotification, privateToggleNotification},
+      fetcher: () => _journalDb.getCategoryById(id),
+    );
   }
 
   Future<CategoryDefinition?> getCategoryById(String id) async {

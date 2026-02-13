@@ -61,12 +61,9 @@ class VectorClockService {
   }
 
   Future<void> _getNextAvailableCounter() async {
-    final existing = await getIt<SettingsDb>()
-        .watchSettingsItemByKey(nextAvailableCounterKey)
-        .first;
-
-    if (existing.isNotEmpty) {
-      _nextAvailableCounter = int.parse(existing.first.value);
+    final value = await getIt<SettingsDb>().itemByKey(nextAvailableCounterKey);
+    if (value != null) {
+      _nextAvailableCounter = int.parse(value);
     } else {
       await setNextAvailableCounter(0);
     }

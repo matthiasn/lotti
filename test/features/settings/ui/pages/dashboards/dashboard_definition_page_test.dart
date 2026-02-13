@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/tags_service.dart';
@@ -43,21 +43,22 @@ void main() {
 
       final mockEntitiesCacheService = MockEntitiesCacheService();
 
-      when(mockJournalDb.watchCategories).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness],
-        ]),
+      when(mockJournalDb.getAllCategories).thenAnswer(
+        (_) async => [categoryMindfulness],
       );
 
-      when(mockJournalDb.watchHabitDefinitions).thenAnswer(
-        (_) => Stream<List<HabitDefinition>>.fromIterable([
-          [habitFlossing],
-        ]),
+      when(mockJournalDb.getAllHabitDefinitions).thenAnswer(
+        (_) async => [habitFlossing],
       );
 
       mockPersistenceLogic = MockPersistenceLogic();
 
+      final mockUpdateNotifications = MockUpdateNotifications();
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
+
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
@@ -382,10 +383,8 @@ void main() {
 
     testWidgets('dashboard definitions page is displayed with one test item',
         (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig],
       );
 
       await tester.pumpWidget(
@@ -402,7 +401,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      verify(mockJournalDb.watchDashboards).called(1);
+      verify(mockJournalDb.getAllDashboards).called(1);
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
@@ -410,16 +409,14 @@ void main() {
 
     testWidgets('dashboard definitions page is displayed with one test item',
         (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig],
       );
 
       when(
-        () => mockJournalDb.watchDashboardById(testDashboardConfig.id),
+        () => mockJournalDb.getDashboardById(testDashboardConfig.id),
       ).thenAnswer(
-        (_) => Stream<DashboardDefinition>.fromIterable([testDashboardConfig]),
+        (_) async => testDashboardConfig,
       );
 
       await tester.pumpWidget(

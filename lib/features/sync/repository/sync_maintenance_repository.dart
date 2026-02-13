@@ -58,7 +58,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<TagEntity> _tagSyncOperation =
       _createOperation<TagEntity>(
     step: SyncStep.tags,
-    fetchEntities: () => _journalDb.watchTags().first,
+    fetchEntities: _journalDb.getAllTags,
     enqueueEntity: (tag) => _outboxService.enqueueMessage(
       SyncMessage.tagEntity(
         tagEntity: tag,
@@ -71,7 +71,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
       _createOperation<MeasurableDataType>(
     step: SyncStep.measurables,
-    fetchEntities: () => _journalDb.watchMeasurableDataTypes().first,
+    fetchEntities: _journalDb.getAllMeasurableDataTypes,
     enqueueEntity: (measurable) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: measurable,
@@ -84,7 +84,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<CategoryDefinition> _categorySyncOperation =
       _createOperation<CategoryDefinition>(
     step: SyncStep.categories,
-    fetchEntities: () => _journalDb.watchCategories().first,
+    fetchEntities: _journalDb.getAllCategories,
     enqueueEntity: (category) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: category,
@@ -98,7 +98,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<LabelDefinition> _labelSyncOperation =
       _createOperation<LabelDefinition>(
     step: SyncStep.labels,
-    fetchEntities: () => _journalDb.watchLabelDefinitions().first,
+    fetchEntities: _journalDb.getAllLabelDefinitions,
     enqueueEntity: (label) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: label,
@@ -111,7 +111,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
       _createOperation<DashboardDefinition>(
     step: SyncStep.dashboards,
-    fetchEntities: () => _journalDb.watchDashboards().first,
+    fetchEntities: _journalDb.getAllDashboards,
     enqueueEntity: (dashboard) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: dashboard,
@@ -124,7 +124,7 @@ class SyncMaintenanceRepository {
   late final SyncOperation<HabitDefinition> _habitSyncOperation =
       _createOperation<HabitDefinition>(
     step: SyncStep.habits,
-    fetchEntities: () => _journalDb.watchHabitDefinitions().first,
+    fetchEntities: _journalDb.getAllHabitDefinitions,
     enqueueEntity: (habit) => _outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: habit,

@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/gamey/gamey_theme_builder.dart';
 import 'package:lotti/themes/theme.dart';
@@ -95,14 +96,14 @@ Stream<bool> enableTooltips(Ref ref) {
 /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
 @Riverpod(keepAlive: true)
 class ThemingController extends _$ThemingController {
-  StreamSubscription<List<SettingsItem>>? _themePrefsSubscription;
+  StreamSubscription<Set<String>>? _settingsNotificationSub;
   bool _isApplyingSyncedChanges = false;
   final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
 
   @override
   ThemingState build() {
     ref.onDispose(() {
-      _themePrefsSubscription?.cancel();
+      _settingsNotificationSub?.cancel();
       EasyDebounce.cancel(_debounceKey);
     });
 
@@ -119,6 +120,10 @@ class ThemingController extends _$ThemingController {
   }
 
   Future<void> _init() async {
+    // Subscribe to notifications before the initial load so that any sync
+    // updates arriving during the await window are not lost.
+    _watchThemePrefsUpdates();
+
     try {
       await _loadSelectedSchemes();
     } catch (e, st) {
@@ -130,40 +135,27 @@ class ThemingController extends _$ThemingController {
       );
       // Fallback is already set in build(), so we can continue
     }
-
-    _watchThemePrefsUpdates();
   }
 
   void _watchThemePrefsUpdates() {
-    _themePrefsSubscription = getIt<SettingsDb>()
-        .watchSettingsItemByKey(themePrefsUpdatedAtKey)
-        .listen(
-      (items) async {
-        if (items.isNotEmpty && !_isApplyingSyncedChanges) {
-          _isApplyingSyncedChanges = true;
-          try {
-            await _loadSelectedSchemes();
-          } catch (e, st) {
-            getIt<LoggingService>().captureException(
-              e,
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'theme_prefs_reload',
-              stackTrace: st,
-            );
-            // Keep current theme if reload fails
-          }
-          _isApplyingSyncedChanges = false;
+    _settingsNotificationSub =
+        getIt<UpdateNotifications>().updateStream.listen((ids) async {
+      if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
+        _isApplyingSyncedChanges = true;
+        try {
+          await _loadSelectedSchemes();
+        } catch (e, st) {
+          getIt<LoggingService>().captureException(
+            e,
+            domain: 'THEMING_CONTROLLER',
+            subDomain: 'theme_prefs_reload',
+            stackTrace: st,
+          );
+          // Keep current theme if reload fails
         }
-      },
-      onError: (Object e, StackTrace st) {
-        getIt<LoggingService>().captureException(
-          e,
-          domain: 'THEMING_CONTROLLER',
-          subDomain: 'theme_prefs_stream',
-          stackTrace: st,
-        );
-      },
-    );
+        _isApplyingSyncedChanges = false;
+      }
+    });
   }
 
   Future<void> _loadSelectedSchemes() async {

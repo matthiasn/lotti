@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +24,8 @@ class MockJournalDb extends Mock implements JournalDb {}
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final baseTime = DateTime.utc(1970);
@@ -52,6 +57,7 @@ void main() {
   late MockJournalDb journalDb;
   late MockEntitiesCacheService cacheService;
   late MockLoggingService loggingService;
+  late MockUpdateNotifications updateNotifications;
   late LabelsRepository repository;
 
   Metadata buildMetadata({List<String>? labelIds}) {
@@ -77,12 +83,14 @@ void main() {
     journalDb = MockJournalDb();
     cacheService = MockEntitiesCacheService();
     loggingService = MockLoggingService();
+    updateNotifications = MockUpdateNotifications();
 
     repository = LabelsRepository(
       persistenceLogic,
       journalDb,
       cacheService,
       loggingService,
+      updateNotifications,
     );
   });
 
@@ -723,4 +731,143 @@ void main() {
       expect(result, isEmpty);
     });
   });
+
+  group('watchLabels', () {
+    late StreamController<Set<String>> notificationsController;
+    late LabelsRepository repoWithRealNotifications;
+
+    setUp(() {
+      notificationsController = StreamController<Set<String>>.broadcast();
+      final realNotifications = _TestNotifications(notificationsController);
+
+      repoWithRealNotifications = LabelsRepository(
+        persistenceLogic,
+        journalDb,
+        cacheService,
+        loggingService,
+        realNotifications,
+      );
+    });
+
+    tearDown(() async {
+      await notificationsController.close();
+    });
+
+    test('emits initial labels on first listen', () async {
+      final label = LabelDefinition(
+        id: 'l-1',
+        name: 'Test',
+        color: '#FF0000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+      );
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [label]);
+
+      final result = await repoWithRealNotifications.watchLabels().first;
+
+      expect(result, [label]);
+    });
+
+    test('re-emits on labelsNotification', () async {
+      var fetchCount = 0;
+      when(() => journalDb.getAllLabelDefinitions()).thenAnswer((_) async {
+        fetchCount++;
+        return [
+          LabelDefinition(
+            id: 'l-$fetchCount',
+            name: 'Label $fetchCount',
+            color: '#FF0000',
+            createdAt: baseTime,
+            updatedAt: baseTime,
+            vectorClock: const VectorClock(<String, int>{}),
+          ),
+        ];
+      });
+
+      final emissions = <List<LabelDefinition>>[];
+      final sub = repoWithRealNotifications.watchLabels().listen(emissions.add);
+
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1));
+
+      notificationsController.add({labelsNotification});
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(2));
+      expect(emissions[1].first.id, 'l-2');
+
+      await sub.cancel();
+    });
+  });
+
+  group('watchLabel', () {
+    late StreamController<Set<String>> notificationsController;
+    late LabelsRepository repoWithRealNotifications;
+
+    setUp(() {
+      notificationsController = StreamController<Set<String>>.broadcast();
+      final realNotifications = _TestNotifications(notificationsController);
+
+      repoWithRealNotifications = LabelsRepository(
+        persistenceLogic,
+        journalDb,
+        cacheService,
+        loggingService,
+        realNotifications,
+      );
+    });
+
+    tearDown(() async {
+      await notificationsController.close();
+    });
+
+    test('emits single label on first listen', () async {
+      final label = LabelDefinition(
+        id: 'l-1',
+        name: 'Test',
+        color: '#FF0000',
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        vectorClock: const VectorClock(<String, int>{}),
+      );
+      when(() => journalDb.getLabelDefinitionById('l-1'))
+          .thenAnswer((_) async => label);
+
+      final result = await repoWithRealNotifications.watchLabel('l-1').first;
+
+      expect(result, label);
+    });
+
+    test('emits null for non-existent label', () async {
+      when(() => journalDb.getLabelDefinitionById('missing'))
+          .thenAnswer((_) async => null);
+
+      final result =
+          await repoWithRealNotifications.watchLabel('missing').first;
+
+      expect(result, isNull);
+    });
+  });
+}
+
+/// Lightweight [UpdateNotifications] backed by an external [StreamController].
+class _TestNotifications implements UpdateNotifications {
+  _TestNotifications(this._controller);
+  final StreamController<Set<String>> _controller;
+
+  @override
+  Stream<Set<String>> get updateStream => _controller.stream;
+
+  @override
+  void notify(Set<String> affectedIds, {bool fromSync = false}) {
+    _controller.add(affectedIds);
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _controller.close();
+  }
 }

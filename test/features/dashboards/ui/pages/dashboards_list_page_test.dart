@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,20 +29,16 @@ void main() {
       ]);
 
       final mockEntitiesCacheService = MockEntitiesCacheService();
+      final mockUpdateNotifications = MockUpdateNotifications();
 
-      when(mockJournalDb.watchCategories).thenAnswer(
-        (_) => Stream<List<CategoryDefinition>>.fromIterable([
-          [categoryMindfulness],
-        ]),
-      );
+      when(() => mockUpdateNotifications.updateStream)
+          .thenAnswer((_) => const Stream.empty());
 
-      when(mockJournalDb.watchHabitDefinitions).thenAnswer(
-        (_) => Stream<List<HabitDefinition>>.fromIterable([
-          [habitFlossing],
-        ]),
-      );
+      when(mockJournalDb.getAllCategories)
+          .thenAnswer((_) async => [categoryMindfulness]);
 
       getIt
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
@@ -51,13 +47,8 @@ void main() {
 
     testWidgets('dashboard list page is displayed with two test dashboards',
         (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [
-            testDashboardConfig,
-            emptyTestDashboardConfig,
-          ],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig, emptyTestDashboardConfig],
       );
 
       await tester.pumpWidget(
@@ -74,7 +65,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      verify(mockJournalDb.watchDashboards).called(1);
+      verify(mockJournalDb.getAllDashboards).called(1);
 
       // finds text in dashboard card
       expect(find.text(testDashboardName), findsOneWidget);
@@ -97,10 +88,8 @@ void main() {
         name: 'Alpha Dashboard',
       );
 
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [dashboardZ, dashboardA],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [dashboardZ, dashboardA],
       );
 
       await tester.pumpWidget(
@@ -131,10 +120,8 @@ void main() {
     });
 
     testWidgets('filter modal shows category chips', (tester) async {
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [testDashboardConfig],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig],
       );
 
       await tester.pumpWidget(
@@ -170,10 +157,8 @@ void main() {
         categoryId: null,
       );
 
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [dashboardWithCategory, dashboardWithoutCategory],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [dashboardWithCategory, dashboardWithoutCategory],
       );
 
       await tester.pumpWidget(
@@ -222,10 +207,8 @@ void main() {
         name: 'Inactive Dashboard',
       );
 
-      when(mockJournalDb.watchDashboards).thenAnswer(
-        (_) => Stream<List<DashboardDefinition>>.fromIterable([
-          [activeDashboard, inactiveDashboard],
-        ]),
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [activeDashboard, inactiveDashboard],
       );
 
       await tester.pumpWidget(

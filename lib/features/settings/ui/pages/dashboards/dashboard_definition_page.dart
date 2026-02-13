@@ -18,7 +18,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -148,7 +150,11 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
     final formKey = widget.formKey ?? _formKey;
 
     return StreamBuilder<List<HabitDefinition>>(
-      stream: getIt<JournalDb>().watchHabitDefinitions(),
+      stream: notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {habitsNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllHabitDefinitions,
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<List<HabitDefinition>> snapshot,
@@ -163,7 +169,14 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         ];
 
         return StreamBuilder<List<MeasurableDataType>>(
-          stream: _db.watchMeasurableDataTypes(),
+          stream: notificationDrivenStream(
+            notifications: getIt<UpdateNotifications>(),
+            notificationKeys: {
+              measurablesNotification,
+              privateToggleNotification,
+            },
+            fetcher: _db.getAllMeasurableDataTypes,
+          ),
           builder: (
             BuildContext context,
             AsyncSnapshot<List<MeasurableDataType>> snapshot,
@@ -545,8 +558,12 @@ class EditDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _db.watchDashboardById(dashboardId),
+    return StreamBuilder<DashboardDefinition?>(
+      stream: notificationDrivenItemStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {dashboardsNotification, privateToggleNotification},
+        fetcher: () => _db.getDashboardById(dashboardId),
+      ),
       builder: (
         BuildContext context,
         AsyncSnapshot<DashboardDefinition?> snapshot,

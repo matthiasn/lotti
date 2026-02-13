@@ -6,11 +6,10 @@ import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
-
-// Showcase is no longer used
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -25,6 +24,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late MockJournalDb mockDb;
   late MockUserActivityService mockUserActivityService;
+  late MockPersistenceLogic mockPersistenceLogic;
   final mockUpdateNotifications = MockUpdateNotifications();
 
   setUpAll(() {
@@ -34,6 +34,7 @@ void main() {
   setUp(() async {
     mockDb = MockJournalDb();
     mockUserActivityService = MockUserActivityService();
+    mockPersistenceLogic = MockPersistenceLogic();
 
     when(() => mockUpdateNotifications.updateStream).thenAnswer(
       (_) => Stream<Set<String>>.fromIterable([]),
@@ -73,10 +74,14 @@ void main() {
 
     when(() => mockUserActivityService.updateActivity()).thenReturn(null);
 
+    when(() => mockPersistenceLogic.setConfigFlag(any()))
+        .thenAnswer((_) async {});
+
     GetIt.I
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UserActivityService>(mockUserActivityService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
     // Ensure ThemingController dependencies are registered
     ensureThemingServicesRegistered();
@@ -150,8 +155,6 @@ void main() {
       );
       final updatedFlag = initialFlag.copyWith(status: false);
 
-      when(() => mockDb.upsertConfigFlag(any())).thenAnswer((_) async => 1);
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const FlagsPage(),
@@ -168,7 +171,7 @@ void main() {
           find.descendant(of: privateFlagCard, matching: find.byType(Switch)));
       await tester.pump();
 
-      verify(() => mockDb.upsertConfigFlag(updatedFlag)).called(1);
+      verify(() => mockPersistenceLogic.setConfigFlag(updatedFlag)).called(1);
     });
 
     testWidgets(

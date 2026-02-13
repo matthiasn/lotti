@@ -464,7 +464,7 @@ class PersistenceLogic {
         affectedIds.add(linkedId);
       }
 
-      _updateNotifications.notify(affectedIds);
+      _updateNotifications.notify({...affectedIds, labelUsageNotification});
 
       await getIt<NotificationService>().updateBadge();
 
@@ -720,6 +720,7 @@ class PersistenceLogic {
       _updateNotifications.notify({
         ...journalEntity.affectedIds,
         if (linkedId != null) linkedId,
+        labelUsageNotification,
       });
 
       await getIt<Fts5Db>().insertText(
@@ -760,7 +761,14 @@ class PersistenceLogic {
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
     final linesAffected =
         await _journalDb.upsertEntityDefinition(entityDefinition);
-    _updateNotifications.notify({entityDefinition.id});
+    final typeNotification = switch (entityDefinition) {
+      CategoryDefinition() => categoriesNotification,
+      HabitDefinition() => habitsNotification,
+      DashboardDefinition() => dashboardsNotification,
+      MeasurableDataType() => measurablesNotification,
+      LabelDefinition() => labelsNotification,
+    };
+    _updateNotifications.notify({entityDefinition.id, typeNotification});
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,
@@ -772,6 +780,7 @@ class PersistenceLogic {
 
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) async {
     final linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
+    _updateNotifications.notify({dashboard.id, dashboardsNotification});
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: dashboard,
@@ -786,6 +795,13 @@ class PersistenceLogic {
     }
 
     return linesAffected;
+  }
+
+  Future<void> setConfigFlag(ConfigFlag configFlag) async {
+    await _journalDb.upsertConfigFlag(configFlag);
+    if (configFlag.name == 'private') {
+      _updateNotifications.notify({privateToggleNotification});
+    }
   }
 
   Future<int> deleteDashboardDefinition(DashboardDefinition dashboard) async {

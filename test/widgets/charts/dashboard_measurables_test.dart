@@ -36,12 +36,6 @@ void main() {
 
       when(() => mockJournalDb.getConfigFlag(any()))
           .thenAnswer((_) async => false);
-
-      when(mockJournalDb.watchMeasurableDataTypes).thenAnswer(
-        (_) => Stream<List<MeasurableDataType>>.fromIterable([
-          [measurableWater],
-        ]),
-      );
     });
     tearDown(getIt.reset);
 

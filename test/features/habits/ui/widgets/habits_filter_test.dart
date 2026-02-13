@@ -35,9 +35,6 @@ void main() {
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockJournalDb.watchHabitDefinitions)
-        .thenAnswer((_) => definitionsController.stream);
-
     when(
       () => mockJournalDb.getHabitCompletionsInRange(
         rangeStart: any(named: 'rangeStart'),
