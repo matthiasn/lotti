@@ -55,6 +55,17 @@ Future<void> createDbBackup(String fileName) async {
       p.join(backupDir.path, '$_backupFilePrefix$ts$_backupFileExtension'));
 }
 
+/// Configures WAL mode and recommended pragmas on a freshly opened database.
+///
+/// Applied via the `setup` callback so that every connection (including
+/// read-pool isolates) inherits these settings.
+void _setupDatabase(Database database) {
+  database
+    ..execute('PRAGMA journal_mode = WAL;')
+    ..execute('PRAGMA busy_timeout = 5000;')
+    ..execute('PRAGMA synchronous = NORMAL;');
+}
+
 /// Opens a database connection with lazy initialization.
 ///
 /// Creates a [LazyDatabase] that initializes the actual database connection
@@ -63,6 +74,11 @@ Future<void> createDbBackup(String fileName) async {
 /// Parameters:
 /// - [fileName]: Name of the database file
 /// - [inMemoryDatabase]: If true, creates an in-memory database (default: false)
+/// - [background]: If true (default), runs the database in a background
+///   isolate via [NativeDatabase.createInBackground]. Set to false when
+///   opening from an actor isolate to avoid nested isolates.
+/// - [readPool]: Number of read-only isolates for offloading heavy reads
+///   (default: 0). Only effective when [background] is true.
 /// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///
@@ -79,6 +95,8 @@ Future<void> createDbBackup(String fileName) async {
 LazyDatabase openDbConnection(
   String fileName, {
   bool inMemoryDatabase = false,
+  bool background = true,
+  int readPool = 0,
   Future<Directory> Function()? documentsDirectoryProvider,
   Future<Directory> Function()? tempDirectoryProvider,
 }) {
@@ -118,8 +136,14 @@ LazyDatabase openDbConnection(
       );
     }
 
-    final database = NativeDatabase.createInBackground(file);
-
-    return database;
+    if (background) {
+      return NativeDatabase.createInBackground(
+        file,
+        setup: _setupDatabase,
+        readPool: readPool,
+      );
+    } else {
+      return NativeDatabase(file, setup: _setupDatabase);
+    }
   });
 }

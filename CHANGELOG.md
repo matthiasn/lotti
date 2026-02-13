@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.860] - 2026-02-13
+### Changed
+- Enabled SQLite WAL mode, busy_timeout (5s), and synchronous=NORMAL for all databases via setup callback. Prevents "Database is Locked" errors when multiple isolates access the same file.
+- Added read pool of 4 isolates to JournalDb for offloading heavy reads from the UI thread.
+- Added `background` and `readPool` parameters to `openDbConnection()` and forwarded directory providers to JournalDb, SettingsDb, and SyncDatabase constructors, preparing for actor-based sync isolate.
+
 ## [0.9.859] - 2026-02-13
 ### Changed
 - Removed artificial 200ms delay from sync outbox message enqueueing, improving outbox throughput.
