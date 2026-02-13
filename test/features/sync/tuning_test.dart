@@ -178,7 +178,7 @@ void main() {
         );
         expect(
           SyncTuning.outboxIdleThreshold,
-          const Duration(seconds: 3),
+          const Duration(milliseconds: 1200),
         );
       });
 

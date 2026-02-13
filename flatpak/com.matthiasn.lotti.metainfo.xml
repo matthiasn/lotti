@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.859" date="2026-02-13">
+      <description>
+          <p>Sync Outbox Tuning: Removed artificial 200ms per-message delay from outbox enqueueing and reduced the user-activity idle threshold from 3s to 1.2s, improving sync throughput and responsiveness.</p>
+      </description>
+    </release>
     <release version="0.9.858" date="2026-02-13">
       <description>
           <p>Notification-Driven Streams: Replaced Drift table-watcher streams with notification-driven streams for all entity types, eliminating redundant DB polling and preparing for isolate-based sync. Fixed sync deserialization so unknown enum values from newer devices are logged and skipped instead of retried indefinitely. Fixed config flag init order, late-subscriber tag replay, and theming sync race condition during controller initialization.</p>
