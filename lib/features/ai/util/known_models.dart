@@ -532,6 +532,16 @@ const List<KnownModel> mistralModels = [
         'Supports M4A, MP3, WAV, FLAC, and OGG up to 1 GB. '
         'Up to 3 hours of audio with 13 languages (auto-detected).',
   ),
+  // Real-time transcription model — uses WebSocket streaming endpoint
+  KnownModel(
+    providerModelId: 'voxtral-mini-transcribe-realtime-2602',
+    name: 'Voxtral Realtime',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description: 'Real-time streaming transcription via WebSocket. '
+        'Low-latency live subtitles (~2s delay). No diarization.',
+  ),
 ];
 
 /// Generates a unique model ID based on provider ID and model ID

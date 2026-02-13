@@ -80,8 +80,15 @@ The repository layer has been refactored for better separation of concerns:
 - **`openai_transcription_repository.dart`**: Handles OpenAI transcription models
   - Extends `TranscriptionRepository` — sends multipart/form-data to OpenAI endpoint
 
-- **`mistral_transcription_repository.dart`**: Handles Mistral Voxtral transcription
+- **`mistral_transcription_repository.dart`**: Handles Mistral Voxtral batch transcription
   - Extends `TranscriptionRepository` — sends multipart/form-data to Mistral endpoint
+
+- **`mistral_realtime_transcription_repository.dart`**: WebSocket client for Mistral's Voxtral real-time transcription API
+  - Standalone class (not extending `TranscriptionRepository` — WebSocket streams are a different paradigm from HTTP batch)
+  - Connects to `wss://api.mistral.ai/v1/audio/transcriptions/realtime` (derived from provider's base URL)
+  - Sends PCM 16-bit LE, 16kHz, mono audio as base64-encoded chunks
+  - Provides typed streams: `transcriptionDeltas`, `transcriptionDone`, `detectedLanguage`, `errors`
+  - `isRealtimeModel()` static method identifies realtime model IDs (contains `transcribe-realtime`)
 
 - **`ai_input_repository.dart`**: Prepares task data for AI processing
 

@@ -105,6 +105,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Audio transkribieren';
 
   @override
+  String get aiBatchToggleTooltip => 'Zur Standardaufnahme wechseln';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API-Schlüssel darf nicht leer sein';
 
   @override
@@ -455,6 +458,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (lokal)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Zur Live-Transkription wechseln';
+
+  @override
+  String get aiRealtimeTranscribing => 'Live-Transkription...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Live-Transkription getrennt. Audio für Stapelverarbeitung gespeichert.';
+
+  @override
   String get aiResponseDeleteCancel => 'Abbrechen';
 
   @override
@@ -767,6 +780,46 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cancelButton => 'Abbrechen';
+
+  @override
+  String get chatInputCancelRealtime => 'Abbrechen (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Aufnahme abbrechen (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Modell konfigurieren';
+
+  @override
+  String get chatInputHintDefault =>
+      'Fragen zu deinen Aufgaben und Produktivität...';
+
+  @override
+  String get chatInputHintSelectModel => 'Wähle ein Modell zum Chatten';
+
+  @override
+  String get chatInputListening => 'Hört zu...';
+
+  @override
+  String get chatInputPleaseWait => 'Bitte warten...';
+
+  @override
+  String get chatInputProcessing => 'Verarbeitung...';
+
+  @override
+  String get chatInputRecordVoice => 'Sprachnachricht aufnehmen';
+
+  @override
+  String get chatInputSendTooltip => 'Nachricht senden';
+
+  @override
+  String get chatInputStartRealtime => 'Live-Transkription starten';
+
+  @override
+  String get chatInputStopRealtime => 'Live-Transkription beenden';
+
+  @override
+  String get chatInputStopTranscribe => 'Stoppen und transkribieren';
 
   @override
   String get categoryActiveDescription =>
@@ -1502,6 +1555,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteButton => 'Löschen';
+
+  @override
+  String get deleteDeviceLabel => 'Gerät löschen';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Gerät $deviceName erfolgreich gelöscht';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Gerät konnte nicht gelöscht werden: $error';
+  }
 
   @override
   String get done => 'Fertig';
@@ -2389,6 +2455,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptUserPromptLabel => 'Benutzer-Prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
+
+  @override
   String get provisionedSyncConfigureButton => 'Konfigurieren';
 
   @override
@@ -2422,12 +2491,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Sync einrichten';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
-
-  @override
-  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
 
   @override
@@ -2435,6 +2498,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Anmeldung läuft...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
 
   @override
   String get provisionedSyncReady =>
@@ -2860,19 +2926,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Anzahl';
-
-  @override
-  String get deleteDeviceLabel => 'Gerät löschen';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Gerät $deviceName erfolgreich gelöscht';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Gerät konnte nicht gelöscht werden: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Löschen';

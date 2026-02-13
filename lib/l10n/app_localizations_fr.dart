@@ -106,6 +106,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Transcrire l\'audio';
 
   @override
+  String get aiBatchToggleTooltip => 'Passer à l\'enregistrement standard';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'La clé API ne peut pas être vide';
 
   @override
@@ -472,6 +475,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Passer à la transcription en direct';
+
+  @override
+  String get aiRealtimeTranscribing => 'Transcription en direct...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Transcription en direct déconnectée. Audio sauvegardé pour traitement par lots.';
+
+  @override
   String get aiResponseDeleteCancel => 'Annuler';
 
   @override
@@ -790,6 +803,47 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get cancelButton => 'Annuler';
+
+  @override
+  String get chatInputCancelRealtime => 'Annuler (Échap)';
+
+  @override
+  String get chatInputCancelRecording => 'Annuler l\'enregistrement (Échap)';
+
+  @override
+  String get chatInputConfigureModel => 'Configurer le modèle';
+
+  @override
+  String get chatInputHintDefault =>
+      'Posez des questions sur vos tâches et votre productivité...';
+
+  @override
+  String get chatInputHintSelectModel =>
+      'Sélectionnez un modèle pour commencer à discuter';
+
+  @override
+  String get chatInputListening => 'Écoute en cours...';
+
+  @override
+  String get chatInputPleaseWait => 'Veuillez patienter...';
+
+  @override
+  String get chatInputProcessing => 'Traitement...';
+
+  @override
+  String get chatInputRecordVoice => 'Enregistrer un message vocal';
+
+  @override
+  String get chatInputSendTooltip => 'Envoyer le message';
+
+  @override
+  String get chatInputStartRealtime => 'Démarrer la transcription en direct';
+
+  @override
+  String get chatInputStopRealtime => 'Arrêter la transcription en direct';
+
+  @override
+  String get chatInputStopTranscribe => 'Arrêter et transcrire';
 
   @override
   String get categoryActiveDescription =>
@@ -1532,6 +1586,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteButton => 'Supprimer';
+
+  @override
+  String get deleteDeviceLabel => 'Supprimer l\'appareil';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Appareil $deviceName supprimé avec succès';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Échec de suppression de l\'appareil : $error';
+  }
 
   @override
   String get done => 'Terminé';
@@ -2434,6 +2501,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt utilisateur';
 
   @override
+  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configurer';
 
   @override
@@ -2467,12 +2537,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Configurer la synchronisation';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
-
-  @override
-  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';
 
   @override
@@ -2481,6 +2545,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Connexion en cours...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
 
   @override
   String get provisionedSyncReady =>
@@ -2911,19 +2978,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Nombre';
-
-  @override
-  String get deleteDeviceLabel => 'Supprimer l\'appareil';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Appareil $deviceName supprimé avec succès';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Échec de suppression de l\'appareil : $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Supprimer';
