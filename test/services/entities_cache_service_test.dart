@@ -785,6 +785,103 @@ void main() {
     expect(cache.tagsById[tag.id], tag);
   });
 
+  test('serialized fetch coalesces rapid notifications', () async {
+    var measurableFetchCount = 0;
+    final completer = Completer<List<MeasurableDataType>>();
+
+    when(() => journalDb.getAllMeasurableDataTypes()).thenAnswer((_) async {
+      measurableFetchCount++;
+      if (measurableFetchCount == 1) {
+        // Initial fetch: return immediately
+        return [];
+      }
+      if (measurableFetchCount == 2) {
+        // Second fetch: block on completer
+        return completer.future;
+      }
+      // Third fetch (coalesced retry): return data
+      return [measurableWater];
+    });
+    when(() => journalDb.getAllCategories())
+        .thenAnswer((_) async => <CategoryDefinition>[]);
+    when(() => journalDb.getAllHabitDefinitions())
+        .thenAnswer((_) async => <HabitDefinition>[]);
+    when(() => journalDb.getAllDashboards())
+        .thenAnswer((_) async => <DashboardDefinition>[]);
+    when(() => journalDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => <LabelDefinition>[]);
+    when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
+    when(() => journalDb.getConfigFlag('private'))
+        .thenAnswer((_) async => false);
+
+    final cache = EntitiesCacheService(
+      journalDb: journalDb,
+      updateNotifications: notifications,
+    );
+    await cache.init();
+    expect(measurableFetchCount, 1);
+
+    // First notification triggers a fetch that blocks
+    notifications.emit({measurablesNotification});
+    await Future<void>.delayed(Duration.zero);
+    expect(measurableFetchCount, 2);
+
+    // Rapid notifications while fetch is in progress — should coalesce
+    notifications
+      ..emit({measurablesNotification})
+      ..emit({measurablesNotification})
+      ..emit({measurablesNotification});
+    await Future<void>.delayed(Duration.zero);
+
+    // Complete the blocking fetch
+    completer.complete([measurablePullUps]);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    // Should have done exactly 3 fetches: init + blocked + one coalesced retry
+    expect(measurableFetchCount, 3);
+    expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+  });
+
+  test('init loads all entity types in parallel', () async {
+    when(() => journalDb.getAllMeasurableDataTypes())
+        .thenAnswer((_) async => [measurableWater]);
+    when(() => journalDb.getAllCategories())
+        .thenAnswer((_) async => [categoryMindfulness]);
+    when(() => journalDb.getAllHabitDefinitions())
+        .thenAnswer((_) async => [habitFlossing]);
+    when(() => journalDb.getAllDashboards())
+        .thenAnswer((_) async => [testDashboardConfig]);
+    when(() => journalDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => [testLabelDefinition1]);
+    when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
+    when(() => journalDb.getConfigFlag('private'))
+        .thenAnswer((_) async => true);
+
+    final cache = EntitiesCacheService(
+      journalDb: journalDb,
+      updateNotifications: notifications,
+    );
+    await cache.init();
+
+    // Verify all entity types were loaded during init
+    expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+    expect(
+      cache.getCategoryById(categoryMindfulness.id),
+      categoryMindfulness,
+    );
+    expect(cache.getHabitById(habitFlossing.id), habitFlossing);
+    expect(
+      cache.getDashboardById(testDashboardConfig.id),
+      testDashboardConfig,
+    );
+    expect(
+      cache.getLabelById(testLabelDefinition1.id),
+      testLabelDefinition1,
+    );
+    expect(cache.showPrivateEntries, true);
+  });
+
   test('dispose cancels notification subscription', () async {
     final cache = await createCache();
     cache.dispose();

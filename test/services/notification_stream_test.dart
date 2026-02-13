@@ -236,6 +236,82 @@ void main() {
       await sub.cancel();
     });
 
+    test('pending refetch fires after error recovery', () async {
+      var fetchCount = 0;
+      final blockingCompleter = Completer<List<String>>();
+
+      final stream = notificationDrivenStream<String>(
+        notifications: notifications,
+        notificationKeys: {'TEST_KEY'},
+        fetcher: () async {
+          fetchCount++;
+          if (fetchCount == 1) {
+            return blockingCompleter.future;
+          }
+          if (fetchCount == 2) {
+            throw Exception('transient error');
+          }
+          return ['recovered_$fetchCount'];
+        },
+      );
+
+      final results = <List<String>>[];
+      final errors = <Object>[];
+      final sub = stream.listen(results.add, onError: errors.add);
+
+      // Initial fetch starts (blocked)
+      await Future<void>.delayed(Duration.zero);
+      expect(fetchCount, 1);
+
+      // Fire notification while initial fetch is blocked → sets pending
+      notifications.emit({'TEST_KEY'});
+      await Future<void>.delayed(Duration.zero);
+
+      // Complete the initial fetch → triggers pending refetch (which fails)
+      blockingCompleter.complete(['initial']);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, [
+        ['initial']
+      ]);
+      expect(errors, hasLength(1));
+      expect(fetchCount, 2);
+
+      // Fire another notification → stream is still alive after error
+      notifications.emit({'TEST_KEY'});
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, hasLength(2));
+      expect(results[1], ['recovered_3']);
+
+      await sub.cancel();
+    });
+
+    test('does not emit when controller is closed during fetch', () async {
+      final completer = Completer<List<String>>();
+      final stream = notificationDrivenStream<String>(
+        notifications: notifications,
+        notificationKeys: {'TEST_KEY'},
+        fetcher: () async => completer.future,
+      );
+
+      final results = <List<String>>[];
+      final sub = stream.listen(results.add);
+      await Future<void>.delayed(Duration.zero);
+
+      // Cancel subscription (triggers onCancel → closes controller)
+      await sub.cancel();
+
+      // Complete fetch after controller is closed → should not throw
+      completer.complete(['too_late']);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, isEmpty);
+    });
+
     test('cleans up subscription on cancel', () async {
       final stream = notificationDrivenStream<String>(
         notifications: notifications,
