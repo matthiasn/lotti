@@ -54,9 +54,6 @@ void main() {
         .thenAnswer((_) async => 'system');
     when(() => mockSettingsDb.saveSettingsItem(any(), any()))
         .thenAnswer((_) async => 1);
-    when(() => mockSettingsDb.watchSettingsItemByKey(any()))
-        .thenAnswer((_) => const Stream.empty());
-
     when(() => mockJournalDb.watchConfigFlag(enableTooltipFlag))
         .thenAnswer((_) => Stream.value(true));
 

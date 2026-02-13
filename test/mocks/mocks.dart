@@ -192,22 +192,7 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockVectorClockService extends Mock implements VectorClockService {}
 
-class MockSettingsDb extends Mock implements SettingsDb {
-  @override
-  Stream<List<SettingsItem>> watchSettingsItemByKey(String key) {
-    try {
-      final result =
-          super.noSuchMethod(Invocation.method(#watchSettingsItemByKey, [key]));
-      if (result is Stream<List<SettingsItem>>) {
-        return result;
-      }
-    } catch (_) {
-      // ignore and fall back
-    }
-    return Stream<List<SettingsItem>>.value(<SettingsItem>[])
-        .asBroadcastStream();
-  }
-}
+class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 

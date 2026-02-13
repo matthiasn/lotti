@@ -37,10 +37,6 @@ class SettingsDb extends _$SettingsDb {
     }
   }
 
-  Stream<List<SettingsItem>> watchSettingsItemByKey(String configKey) {
-    return settingsItemByKey(configKey).watch();
-  }
-
   Future<String?> itemByKey(String configKey) async {
     final existing = await settingsItemByKey(configKey).get();
     if (existing.isNotEmpty) {

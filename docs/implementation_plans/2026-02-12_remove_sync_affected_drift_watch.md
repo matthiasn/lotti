@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-12
 **Prerequisite for**: [Actor-Based Sync Isolate Plan](2026-02-12_actor_based_sync_isolate_plan.md)
-**Status**: Nearly Complete — Steps 1–13 and 15 done. Step 14 mostly done (JournalDb watch methods removed); only `SettingsDb.watchSettingsItemByKey()` remains to be removed along with its test/mock references.
+**Status**: Complete — all 15 steps done. No sync-affected Drift watch methods remain.
 
 ## Context
 

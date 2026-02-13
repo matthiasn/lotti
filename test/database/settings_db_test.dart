@@ -22,8 +22,6 @@ void main() {
     await db.removeSettingsItem('test_key');
 
     expect(await db.itemByKey('test_key'), isNull);
-    final observed = await db.watchSettingsItemByKey('test_key').first;
-    expect(observed, isEmpty);
   });
 
   test('removeSettingsItem handles non-existent key gracefully', () async {
@@ -35,20 +33,11 @@ void main() {
     expect(value, isNull);
   });
 
-  test('full lifecycle: save, observe, remove, verify empty', () async {
+  test('full lifecycle: save, read, remove, verify empty', () async {
     await db.saveSettingsItem('lifecycle', 'initial');
+    expect(await db.itemByKey('lifecycle'), 'initial');
 
-    final updates = db.watchSettingsItemByKey('lifecycle');
-    final expectation = expectLater(
-      updates,
-      emitsInOrder([
-        isA<List<SettingsItem>>()
-            .having((items) => items.single.value, 'value', 'initial'),
-        isEmpty,
-      ]),
-    );
     await db.removeSettingsItem('lifecycle');
-    await expectation;
     expect(await db.itemByKey('lifecycle'), isNull);
   });
 }
