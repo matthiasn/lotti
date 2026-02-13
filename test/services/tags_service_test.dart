@@ -336,15 +336,26 @@ void main() {
           )).called(1);
     });
 
-    test('watchTags returns the internal notification-driven stream', () {
+    test('watchTags emits cached tags for late subscribers', () {
       fakeAsync((async) {
+        final testTag = testStoryTag1;
+        when(() => mockJournalDb.getAllTags())
+            .thenAnswer((_) async => [testTag]);
+
         tagsService = TagsService();
         async.flushMicrotasks();
 
-        final stream = tagsService.watchTags();
+        // Tags are now cached in tagsById from the internal listener.
+        expect(tagsService.tagsById, isNotEmpty);
 
-        expect(stream, isNotNull);
-        expect(stream, tagsService.stream);
+        // A late subscriber should immediately receive cached tags,
+        // even though the broadcast stream's initial emission already fired.
+        final emissions = <List<TagEntity>>[];
+        tagsService.watchTags().listen(emissions.add);
+        async.flushMicrotasks();
+
+        expect(emissions, hasLength(1));
+        expect(emissions.first, contains(testTag));
       });
     });
   });

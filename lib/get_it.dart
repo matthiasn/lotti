@@ -166,6 +166,9 @@ Future<void> registerSingletons() async {
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService());
 
+  // Initialize config flags before constructing services that depend on them.
+  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+
   final entitiesCacheService = EntitiesCacheService(
     journalDb: getIt<JournalDb>(),
     updateNotifications: getIt<UpdateNotifications>(),
@@ -230,9 +233,6 @@ Future<void> registerSingletons() async {
     sequenceLogService: syncSequenceLogService,
     // backfillResponseHandler will be injected later to avoid circular dependency
   );
-  // Initialize config flags before constructing services that depend on them.
-  await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
-
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
   // Room discovery service for single-user multi-device flow

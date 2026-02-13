@@ -120,6 +120,10 @@ class ThemingController extends _$ThemingController {
   }
 
   Future<void> _init() async {
+    // Subscribe to notifications before the initial load so that any sync
+    // updates arriving during the await window are not lost.
+    _watchThemePrefsUpdates();
+
     try {
       await _loadSelectedSchemes();
     } catch (e, st) {
@@ -131,8 +135,6 @@ class ThemingController extends _$ThemingController {
       );
       // Fallback is already set in build(), so we can continue
     }
-
-    _watchThemePrefsUpdates();
   }
 
   void _watchThemePrefsUpdates() {

@@ -70,8 +70,11 @@ class TagsService {
     return _db.getMatchingTags(match, limit: limit, inactive: inactive);
   }
 
-  Stream<List<TagEntity>> watchTags() {
-    return stream;
+  Stream<List<TagEntity>> watchTags() async* {
+    if (tagsById.isNotEmpty) {
+      yield tagsById.values.toList();
+    }
+    yield* stream;
   }
 
   // ignore: use_setters_to_change_properties
