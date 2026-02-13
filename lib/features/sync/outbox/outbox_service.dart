@@ -238,7 +238,6 @@ class OutboxService {
 
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
       final hostHash = await _vectorClockService.getHostHash();
       final host = await _vectorClockService.getHost();
 
@@ -680,8 +679,8 @@ class OutboxService {
             oldMessage.vectorClock,
             // Also capture the current enqueue call's VC if it differs from
             // the latest. This handles the race condition where multiple
-            // enqueue calls are in flight due to the 200ms delay - each
-            // intermediate VC must be captured to prevent false gaps.
+            // enqueue calls are in flight concurrently - each intermediate
+            // VC must be captured to prevent false gaps.
             if (msg.vectorClock != null && msg.vectorClock != latestVc)
               msg.vectorClock,
             latestVc,
