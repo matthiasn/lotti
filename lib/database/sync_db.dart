@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
@@ -124,10 +125,14 @@ class SyncDatabase extends _$SyncDatabase {
   SyncDatabase({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
+    Future<Directory> Function()? documentsDirectoryProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
           openDbConnection(
             overriddenFilename ?? syncDbFileName,
             inMemoryDatabase: inMemoryDatabase,
+            documentsDirectoryProvider: documentsDirectoryProvider,
+            tempDirectoryProvider: tempDirectoryProvider,
           ),
         );
 

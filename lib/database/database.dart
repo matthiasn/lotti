@@ -37,10 +37,18 @@ class JournalDb extends _$JournalDb {
   JournalDb({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
+    int readPool = 4,
+    bool background = true,
+    Future<Directory> Function()? documentsDirectoryProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
           openDbConnection(
             overriddenFilename ?? journalDbFileName,
             inMemoryDatabase: inMemoryDatabase,
+            readPool: readPool,
+            background: background,
+            documentsDirectoryProvider: documentsDirectoryProvider,
+            tempDirectoryProvider: tempDirectoryProvider,
           ),
         );
 

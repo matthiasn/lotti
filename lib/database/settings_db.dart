@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
 
@@ -7,11 +9,18 @@ const settingsDbFileName = 'settings.sqlite';
 
 @DriftDatabase(include: {'settings_db.drift'})
 class SettingsDb extends _$SettingsDb {
-  SettingsDb({this.inMemoryDatabase = false})
-      : super(
+  SettingsDb({
+    this.inMemoryDatabase = false,
+    bool background = true,
+    Future<Directory> Function()? documentsDirectoryProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
+  }) : super(
           openDbConnection(
             settingsDbFileName,
             inMemoryDatabase: inMemoryDatabase,
+            background: background,
+            documentsDirectoryProvider: documentsDirectoryProvider,
+            tempDirectoryProvider: tempDirectoryProvider,
           ),
         );
 

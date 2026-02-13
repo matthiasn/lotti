@@ -53,4 +53,59 @@ void main() {
     expect(tempProviderCalled, isTrue);
     await db.close();
   });
+
+  test('openDbConnection enables WAL mode for file-based databases', () async {
+    final base = Directory.systemTemp.createTempSync('wal_test_');
+    addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+
+    final lazy = openDbConnection(
+      'test_wal.sqlite',
+      documentsDirectoryProvider: () async => base,
+      tempDirectoryProvider: () async => base,
+    );
+
+    final db = SyncDatabase.connect(DatabaseConnection(lazy));
+
+    final walResult = await db.customSelect('PRAGMA journal_mode').getSingle();
+    expect(walResult.read<String>('journal_mode'), 'wal');
+
+    final busyResult = await db.customSelect('PRAGMA busy_timeout').getSingle();
+    expect(busyResult.read<int>('timeout'), 5000);
+
+    final syncResult = await db.customSelect('PRAGMA synchronous').getSingle();
+    // NORMAL = 1
+    expect(syncResult.read<int>('synchronous'), 1);
+
+    await db.close();
+  });
+
+  test('openDbConnection with background=false uses NativeDatabase directly',
+      () async {
+    final base = Directory.systemTemp.createTempSync('wal_nobg_test_');
+    addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null);
+
+    final lazy = openDbConnection(
+      'test_nobg.sqlite',
+      background: false,
+      documentsDirectoryProvider: () async => base,
+      tempDirectoryProvider: () async => base,
+    );
+
+    final db = SyncDatabase.connect(DatabaseConnection(lazy));
+
+    // WAL pragmas should still be applied even without background isolate
+    final walResult = await db.customSelect('PRAGMA journal_mode').getSingle();
+    expect(walResult.read<String>('journal_mode'), 'wal');
+
+    final busyResult = await db.customSelect('PRAGMA busy_timeout').getSingle();
+    expect(busyResult.read<int>('timeout'), 5000);
+
+    final syncResult = await db.customSelect('PRAGMA synchronous').getSingle();
+    // NORMAL = 1
+    expect(syncResult.read<int>('synchronous'), 1);
+
+    await db.close();
+  });
 }
