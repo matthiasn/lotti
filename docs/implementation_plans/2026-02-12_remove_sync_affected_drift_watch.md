@@ -1169,7 +1169,7 @@ After each step:
 After all steps:
 1. Full test suite passes
 2. No sync-affected `watch()` calls remain in `lib/`:
-   ```
+   ```shell
    rg 'watchCategories|watchCategoryById|watchHabitDefinitions|watchHabitById|watchDashboards|watchDashboardById|watchLabelDefinitions|watchLabelDefinitionById|watchMeasurableDataTypes|watchMeasurableDataTypeById|watchTags\(\)|watchLabelUsageCounts|watchSettingsItemByKey' lib/
    ```
    Returns zero results.

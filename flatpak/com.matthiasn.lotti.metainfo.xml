@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.858" date="2026-02-13">
+      <description>
+          <p>Notification-Driven Streams: Replaced Drift table-watcher streams with notification-driven streams for all entity types, eliminating redundant DB polling and preparing for isolate-based sync. Fixed sync deserialization so unknown enum values from newer devices are logged and skipped instead of retried indefinitely. Fixed config flag init order, late-subscriber tag replay, and theming sync race condition during controller initialization.</p>
+      </description>
+    </release>
     <release version="0.9.857" date="2026-02-12">
       <description>
           <p>Native M4A Audio: Removed M4A-to-WAV conversion for Mistral transcription. All providers now accept M4A natively, eliminating the FFmpeg dependency and file size quota issues. Updated Voxtral model to reflect Transcribe V2 capabilities (13 languages, up to 1 GB / 3 hours per file).</p>
