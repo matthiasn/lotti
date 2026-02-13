@@ -82,7 +82,7 @@ class SyncTuning {
   static const Duration outboxSendTimeout = Duration(seconds: 20); // Matrix RTT
   static const Duration outboxWatchdogInterval = Duration(seconds: 10);
   static const Duration outboxDbNudgeDebounce = Duration(milliseconds: 50);
-  static const Duration outboxIdleThreshold = Duration(seconds: 3);
+  static const Duration outboxIdleThreshold = Duration(seconds: 1);
 
   // Live-scan / Catch-up coalescing
   static const Duration minLiveScanGap = Duration(seconds: 1);
