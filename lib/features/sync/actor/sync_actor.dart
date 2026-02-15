@@ -790,11 +790,14 @@ class SyncActorCommandHandler {
 /// Receives a [SendPort] on which it sends back the command port's [SendPort].
 /// Then listens for command maps and dispatches them to a
 /// [SyncActorCommandHandler].
-void syncActorEntrypoint(SendPort readyPort) {
+void syncActorEntrypoint(
+  SendPort readyPort, {
+  VodInitializer vodInitializer = vod.init,
+}) {
   final commandPort = ReceivePort();
   readyPort.send(commandPort.sendPort);
 
-  final handler = SyncActorCommandHandler();
+  final handler = SyncActorCommandHandler(vodInitializer: vodInitializer);
 
   commandPort.listen((dynamic raw) async {
     if (raw is! Map) return;
