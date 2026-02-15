@@ -34,6 +34,15 @@ typedef GatewayFactory = MatrixSdkGateway Function({
 /// Used for dependency injection in tests.
 typedef VodInitializer = Future<void> Function();
 
+/// Typedef for the Matrix client factory.
+///
+/// Used for dependency injection in tests.
+typedef MatrixClientFactory = Future<Client> Function({
+  required Directory documentsDirectory,
+  String? deviceDisplayName,
+  String? dbName,
+});
+
 /// Command handler that implements the sync actor's state machine.
 ///
 /// This class is designed to be testable without an isolate — tests can
@@ -42,14 +51,24 @@ typedef VodInitializer = Future<void> Function();
 class SyncActorCommandHandler {
   SyncActorCommandHandler({
     GatewayFactory? gatewayFactory,
+    MatrixClientFactory? createMatrixClientFactory,
     VodInitializer? vodInitializer,
+    Stream<SyncUpdate> Function(Client)? syncUpdateStreamFactory,
+    Stream<ToDeviceEvent> Function(Client)? toDeviceEventStreamFactory,
     bool enableLogging = true,
   })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
+        _createMatrixClientFactory =
+            createMatrixClientFactory ?? createMatrixClient,
         _vodInitializer = vodInitializer ?? vod.init,
+        _syncUpdateStreamFactory = syncUpdateStreamFactory,
+        _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
         _enableLogging = enableLogging;
 
   final GatewayFactory _gatewayFactory;
+  final MatrixClientFactory _createMatrixClientFactory;
   final VodInitializer _vodInitializer;
+  final Stream<SyncUpdate> Function(Client)? _syncUpdateStreamFactory;
+  final Stream<ToDeviceEvent> Function(Client)? _toDeviceEventStreamFactory;
   final bool _enableLogging;
 
   SyncActorState _state = SyncActorState.uninitialized;
@@ -63,6 +82,7 @@ class SyncActorCommandHandler {
   StreamSubscription<KeyVerification>? _verificationSub;
   StreamSubscription<LoginState>? _loginStateSub;
   StreamSubscription<ToDeviceEvent>? _toDeviceSub;
+  LoginState? _latestLoginState;
 
   // Diagnostic counters
   int _toDeviceEventCount = 0;
@@ -177,7 +197,7 @@ class SyncActorCommandHandler {
       _log('init: db root created at $dbRootPath');
 
       _log('init: creating matrix client');
-      final client = await createMatrixClient(
+      final client = await _createMatrixClientFactory(
         documentsDirectory: dbRoot,
         deviceDisplayName: deviceDisplayName,
         dbName: 'sync_actor_${deviceDisplayName.replaceAll(' ', '_')}',
@@ -202,9 +222,11 @@ class SyncActorCommandHandler {
       _log('init: logging in as $user');
       await _gateway!.login(config, deviceDisplayName: deviceDisplayName);
       _log('init: logged in, deviceId=${client.deviceID}');
+      _latestLoginState = LoginState.loggedIn;
 
       _loginStateSub = _gateway!.loginStateChanges.listen((loginState) {
         _log('event: loginStateChanged -> ${loginState.name}');
+        _latestLoginState = loginState;
         _emitEvent({
           'event': 'loginStateChanged',
           'loginState': loginState.name,
@@ -229,7 +251,8 @@ class SyncActorCommandHandler {
       });
 
       // Track all to-device events for diagnostics.
-      _toDeviceSub = _gateway!.client.onToDeviceEvent.stream.listen((event) {
+      final toDeviceStream = _toDeviceEventStreamFor(_gateway!.client);
+      _toDeviceSub = toDeviceStream.listen((event) {
         _toDeviceEventCount++;
         _log('event: toDevice type=${event.type} sender=${event.sender}');
         _emitEvent({
@@ -250,6 +273,8 @@ class SyncActorCommandHandler {
       _log('state: initializing -> syncing');
       _emitEvent({'event': 'ready'});
 
+      _latestLoginState ??= LoginState.loggedIn;
+
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
       _log('init FAILED: $e\n$stackTrace');
@@ -263,6 +288,7 @@ class SyncActorCommandHandler {
       await _toDeviceSub?.cancel();
       _toDeviceSub = null;
       await _gateway?.dispose();
+      _latestLoginState = null;
       _gateway = null;
       _eventPort = null;
 
@@ -297,7 +323,7 @@ class SyncActorCommandHandler {
 
     return _ok(requestId: requestId, extra: {
       'state': _state.name,
-      'loginState': client?.onLoginStateChanged.value?.name,
+      'loginState': _latestLoginState?.name,
       'encryptionEnabled': client?.encryptionEnabled ?? false,
       'deviceId': client?.deviceID,
       'userId': userId,
@@ -334,11 +360,21 @@ class SyncActorCommandHandler {
     }
     await _syncSub?.cancel();
     _syncSub = null;
-    _syncSub = client.onSync.stream.listen((_) {
+    final syncStream = _syncUpdateStreamFor(client);
+    _syncSub = syncStream.listen((_) {
       _syncCount++;
       _log('sync update #$_syncCount');
       _emitEvent({'event': 'syncUpdate'});
     });
+  }
+
+  Stream<SyncUpdate> _syncUpdateStreamFor(Client client) {
+    return _syncUpdateStreamFactory?.call(client) ?? client.onSync.stream;
+  }
+
+  Stream<ToDeviceEvent> _toDeviceEventStreamFor(Client client) {
+    return _toDeviceEventStreamFactory?.call(client) ??
+        client.onToDeviceEvent.stream;
   }
 
   Future<void> _pauseSyncLoop() async {
@@ -662,25 +698,30 @@ class SyncActorCommandHandler {
     _state = SyncActorState.stopping;
 
     _gateway?.client.backgroundSync = false;
-    await _syncSub?.cancel();
-    _syncSub = null;
 
     try {
+      await _syncSub?.cancel();
+      _syncSub = null;
+
       await _verificationSub?.cancel();
+      _verificationSub = null;
       await _loginStateSub?.cancel();
+      _loginStateSub = null;
       await _toDeviceSub?.cancel();
+      _toDeviceSub = null;
       await _gateway?.dispose();
     } catch (e, stackTrace) {
       _log('stop: cleanup error (continuing): $e\n$stackTrace');
+    } finally {
+      _syncSub = null;
+      _verificationSub = null;
+      _loginStateSub = null;
+      _toDeviceSub = null;
+      _gateway = null;
+      _eventPort = null;
+      _outgoingVerification = null;
+      _incomingVerification = null;
     }
-
-    _verificationSub = null;
-    _loginStateSub = null;
-    _toDeviceSub = null;
-    _gateway = null;
-    _eventPort = null;
-    _outgoingVerification = null;
-    _incomingVerification = null;
 
     _state = SyncActorState.disposed;
     _log('state: stopping -> disposed');

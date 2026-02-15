@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -8,8 +9,12 @@ import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
+
+abstract interface class CachedStreamController<T> {
+  T? get value;
+  Stream<T> get stream;
+}
 
 class MockClient extends Mock implements Client {}
 
@@ -23,6 +28,9 @@ class MockKeyVerification extends Mock implements KeyVerification {}
 
 class MockSyncUpdate extends Mock implements SyncUpdate {}
 
+class MockLoginStateController extends Mock
+    implements CachedStreamController<LoginState> {}
+
 /// Creates a [SyncActorCommandHandler] with a mock gateway factory.
 ///
 /// The [onGatewayCreated] callback receives the mock gateway after creation,
@@ -33,43 +41,40 @@ SyncActorCommandHandler createTestHandler({
   bool enableLogging = false,
   Stream<LoginState>? loginStateChanges,
   Stream<KeyVerification>? keyVerificationRequests,
-  CachedStreamController<SyncUpdate>? onSyncController,
-  CachedStreamController<ToDeviceEvent>? toDeviceEventController,
+  Stream<SyncUpdate>? syncUpdateStream,
+  Stream<ToDeviceEvent>? toDeviceEventStream,
 }) {
   late MockMatrixSdkGateway mockGateway;
-  late MockClient mockClient;
+  final mockClient = MockClient();
+  final defaultLoginStateController = MockLoginStateController();
+  final defaultSyncUpdateStreamController =
+      StreamController<SyncUpdate>.broadcast();
+  final defaultToDeviceStreamController =
+      StreamController<ToDeviceEvent>.broadcast();
 
   return SyncActorCommandHandler(
+    createMatrixClientFactory: ({
+      required Directory documentsDirectory,
+      String? deviceDisplayName,
+      String? dbName,
+    }) async {
+      return mockClient;
+    },
     gatewayFactory: ({
       required Client client,
       required SentEventRegistry sentEventRegistry,
     }) {
-      mockClient = MockClient();
       mockGateway = MockMatrixSdkGateway();
 
-      // Default stubs
-      when(() => mockGateway.connect(any())).thenAnswer((_) async {});
-      when(() => mockGateway.login(any(),
-              deviceDisplayName: any(named: 'deviceDisplayName')))
-          .thenAnswer((_) async => LoginResponse.fromJson({
-                'user_id': '@test:localhost',
-                'device_id': 'DEV',
-                'access_token': 'tok'
-              }));
-      when(() => mockGateway.loginStateChanges)
-          .thenAnswer((_) => loginStateChanges ?? const Stream.empty());
-      when(() => mockGateway.keyVerificationRequests)
-          .thenAnswer((_) => keyVerificationRequests ?? const Stream.empty());
-      when(() => mockGateway.client).thenReturn(mockClient);
-      when(() => mockGateway.dispose()).thenAnswer((_) async {});
-
-      when(() => mockClient.onLoginStateChanged).thenAnswer(
-        (_) => CachedStreamController(LoginState.loggedIn),
+      when(() => defaultLoginStateController.value)
+          .thenReturn(LoginState.loggedIn);
+      when(() => defaultLoginStateController.stream).thenAnswer(
+        (_) => loginStateChanges ?? const Stream.empty(),
       );
-      final onSync = onSyncController ?? CachedStreamController<SyncUpdate>();
-      when(() => mockClient.onSync).thenAnswer((_) => onSync);
+
       when(() => mockClient.userID).thenReturn('@test:localhost');
       when(() => mockClient.deviceID).thenReturn('DEV');
+      // ignore: unnecessary_lambdas
       when(() => mockClient.abortSync()).thenAnswer((_) async {});
       when(() => mockClient.syncPending).thenReturn(false);
       when(() => mockClient.encryptionEnabled).thenReturn(false);
@@ -77,11 +82,29 @@ SyncActorCommandHandler createTestHandler({
           .thenReturn(<String, DeviceKeysList>{});
       when(() => mockClient.userOwnsEncryptionKeys(any()))
           .thenAnswer((_) async => false);
-      final toDeviceController =
-          toDeviceEventController ?? CachedStreamController<ToDeviceEvent>();
-      when(() => mockClient.onToDeviceEvent)
-          .thenAnswer((_) => toDeviceController);
       when(() => mockClient.userDeviceKeysLoading).thenAnswer((_) async {});
+      // ignore: unnecessary_lambdas
+      when(() => mockClient.dispose()).thenAnswer((_) async {});
+
+      // Default stubs
+      when(() => mockGateway.connect(any())).thenAnswer((_) async {});
+      when(() => mockGateway.login(any(),
+              deviceDisplayName: any(named: 'deviceDisplayName')))
+          .thenAnswer((_) async {
+        return LoginResponse.fromJson({
+          'user_id': '@test:localhost',
+          'device_id': 'DEV',
+          'access_token': 'tok',
+        });
+      });
+      when(() => mockGateway.loginStateChanges)
+          .thenAnswer((_) => defaultLoginStateController.stream);
+      when(() => mockGateway.keyVerificationRequests)
+          .thenAnswer((_) => keyVerificationRequests ?? const Stream.empty());
+      when(() => mockGateway.client).thenReturn(mockClient);
+      when(() => mockGateway.dispose()).thenAnswer((_) async {
+        await mockClient.dispose();
+      });
 
       onGatewayCreated?.call(mockGateway, mockClient);
       // Ensure identity fields are always available even when callbacks configure
@@ -91,6 +114,10 @@ SyncActorCommandHandler createTestHandler({
 
       return mockGateway;
     },
+    syncUpdateStreamFactory: (Client _) =>
+        syncUpdateStream ?? defaultSyncUpdateStreamController.stream,
+    toDeviceEventStreamFactory: (Client _) =>
+        toDeviceEventStream ?? defaultToDeviceStreamController.stream,
     vodInitializer: () async {},
     enableLogging: enableLogging,
   );
@@ -492,12 +519,11 @@ void main() {
       });
 
       test('wires event streams and emits updates', () async {
-        late MockClient capturedClient;
         final loginStateController = StreamController<LoginState>.broadcast();
         final verificationController =
             StreamController<KeyVerification>.broadcast();
-        final onSyncController = CachedStreamController<SyncUpdate>();
-        final toDeviceController = CachedStreamController<ToDeviceEvent>();
+        final onSyncController = StreamController<SyncUpdate>.broadcast();
+        final toDeviceController = StreamController<ToDeviceEvent>.broadcast();
         final mockVerification = MockKeyVerification();
 
         when(() => mockVerification.lastStep)
@@ -510,10 +536,9 @@ void main() {
         handler = createTestHandler(
           loginStateChanges: loginStateController.stream,
           keyVerificationRequests: verificationController.stream,
-          onSyncController: onSyncController,
-          toDeviceEventController: toDeviceController,
+          syncUpdateStream: onSyncController.stream,
+          toDeviceEventStream: toDeviceController.stream,
           onGatewayCreated: (g, c) {
-            capturedClient = c;
             when(() => c.userOwnsEncryptionKeys(any())).thenAnswer(
               (_) async => true,
             );
@@ -539,7 +564,6 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         final health = await handler.handleCommand(_cmd('getHealth'));
-        verify(() => capturedClient.onToDeviceEvent).called(1);
         final syncCount = health['syncCount'];
         expect(syncCount, isA<int>());
         expect(syncCount, greaterThanOrEqualTo(3));
