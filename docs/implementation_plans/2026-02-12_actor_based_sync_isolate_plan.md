@@ -86,59 +86,33 @@ The current inbound sync path is DB-heavy on the UI isolate:
   writes to `SyncDatabase` are acceptable because the actor does NOT touch `SyncDatabase`
   in any phase of this plan. There is no concurrent-write conflict.
 
-**Why this works (with caveats):**
-SQLite supports multiple connections to the same file. With WAL mode (the default for
-Drift's `NativeDatabase`), readers don't block writers and writers don't block readers.
-The actor's connection and the UI's connection coexist safely.
+**Why this works:**
+SQLite supports multiple connections to the same file. WAL mode is explicitly enabled via
+`PRAGMA journal_mode = WAL` in the `setup` callback (see `common.dart:_setupDatabase()`),
+along with `busy_timeout = 5000` and `synchronous = NORMAL`. This ensures readers don't
+block writers and writers don't block readers. The actor's connection and the UI's
+connection coexist safely. See commit `13fc72f18` and
+`docs/implementation_plans/2026-02-13_drift_wal_read_pools.md` for details.
 
-**Critical limitation — Drift `watch()` streams are per-connection.** Drift's reactive
-`watch()` method (used by `watchCategories()`, `watchHabitDefinitions()`,
-`watchLabelDefinitions()`, `watchSettingsItemByKey()`, etc.) only fires when writes occur
-through the **same** `DatabaseConnection`. A write from the actor's separate connection
-does NOT trigger `watch()` streams on the UI's connection.
+**Drift `watch()` cross-connection limitation — RESOLVED.** All sync-affected Drift
+`watch()` methods (`watchCategories()`, `watchHabitDefinitions()`, `watchDashboards()`,
+`watchMeasurableDataTypes()`, `watchLabelDefinitions()`, `watchTags()`,
+`watchLabelUsageCounts()`, `watchSettingsItemByKey()`) have been removed and replaced with
+`UpdateNotifications`-driven streams via `notificationDrivenStream()` (see
+`docs/implementation_plans/2026-02-12_remove_sync_affected_drift_watch.md`).
 
-**Affected features** (non-exhaustive, all use `.watch()` on `JournalDb` or `SettingsDb`):
-- Categories: `categories_repository.dart:31` → `_journalDb.watchCategories()`
-- Habits: `habits_repository.dart:77` → `_journalDb.watchHabitDefinitions()`
-- Labels: `labels_repository.dart:36` → `_journalDb.watchLabelDefinitions()`
-- Theming: `theming_controller.dart:138` → `settingsDb.watchSettingsItemByKey()`
-- Dashboards: `database.dart:1183` → `allDashboards().watch()`
-- Measurables: `database.dart:1009` → `activeMeasurableTypes().watch()`
-- Config flags: `database.dart:819,962` → `listConfigFlags().watch()`
-- Label usage counts: `database.dart:1217` → `query.watch()`
+This means **all UI refresh is now driven through `UpdateNotifications`** with type-specific
+notification constants (`categoriesNotification`, `habitsNotification`,
+`dashboardsNotification`, `measurablesNotification`, `labelsNotification`,
+`tagsNotification`, `settingsNotification`, `labelUsageNotification`,
+`privateToggleNotification`). The actor simply needs to include the appropriate type
+notification keys in its `entitiesChanged` events, and the host feeds them into
+`UpdateNotifications.notify()`. No `markTablesUpdated()` or `DriftIsolate` workaround
+is needed.
 
-**This means the plan's claim that "all UI refresh is driven through `UpdateNotifications`"
-is incorrect.** Many features bypass `UpdateNotifications` and rely directly on Drift's
-reactive queries.
-
-**Resolution options (to be decided during Phase 4):**
-1. **Notify Drift's query executor after actor writes.** After the host receives an
-   `entitiesChanged` event, it could call `journalDb.markTablesUpdated(affectedTables)`
-   (Drift's `StreamQueryStore.markUpdated()` method) on the UI's connection. This would
-   trigger `watch()` streams even though the write happened on a different connection.
-   This is Drift's documented mechanism for cross-connection invalidation.
-2. **Migrate all sync-affected UI features to `UpdateNotifications`.** Replace
-   `watch*()` usage with manual re-fetch triggered by `UpdateNotifications`. This is a
-   large refactor and fights against Drift's natural reactive model.
-3. **Share a single DB connection using `DriftIsolate`.** Instead of independent
-   connections, use Drift's built-in isolate support (`DriftIsolate`) which multiplexes
-   queries across isolates on a single connection. This would make `watch()` work
-   automatically but changes the connection architecture.
-
-**Recommendation**: Option 1 is the least invasive. Drift provides
-`database.markTablesAsUpdated([table1, table2])` (documented API) which triggers
-re-evaluation of all active `watch()` streams on those tables. The host would need to know
-which tables were affected (the actor includes table names in the `entitiesChanged` event),
-then call `markTablesAsUpdated()` on the UI's `JournalDb` / `SettingsDb` instance. This
-preserves the current `watch()` pattern across the entire codebase while working correctly
-with cross-connection writes.
-
-Option 3 (`serializableConnection`) is also viable — Drift's `serializableConnection()`
-method explicitly supports sharing a single DB connection across isolates via
-`SendPort`-compatible handles. This would eliminate the need for `markTablesAsUpdated()`
-entirely since `watch()` streams would automatically fire. However, it changes the
-connection architecture and introduces serialization overhead for every query. Evaluate
-during Phase 4 if Option 1 proves insufficient.
+**Local-only watches are unaffected**: `watchConfigFlag()`, `watchActiveConfigFlagNames()`,
+and `watchOutboxCount()` (from `SyncDatabase`) remain as Drift `watch()` calls. These are
+single-connection and never modified by the sync actor.
 
 **No apply/ack protocol needed.** The actor writes directly to the DBs and sends a
 lightweight notification. This eliminates the entire apply/ack complexity from the plan.
@@ -228,36 +202,19 @@ back via `entitiesChanged` events → `UpdateNotifications.notify()`.
   `documentsDirectoryProvider` parameter — this bypasses `path_provider` (a platform channel)
   and uses the known path directly. See `lib/database/common.dart:79`.
 
-  **Current gap**: `JournalDb` and `SettingsDb` constructors call `openDbConnection()`
-  without forwarding a `documentsDirectoryProvider`. `JournalDb({inMemoryDatabase, overriddenFilename})`
-  and `SettingsDb({inMemoryDatabase})` both call `openDbConnection(fileName, inMemoryDatabase: ...)`
-  with no directory override. **The actor cannot use these constructors as-is in a spawned
-  isolate** — `openDbConnection()` will fall back to `findDocumentsDirectory()` which calls
-  `getApplicationDocumentsDirectory()` (a platform channel, unavailable in isolates).
+  **RESOLVED (commit `13fc72f18`)**: `JournalDb`, `SettingsDb`, and `SyncDatabase`
+  constructors now accept `documentsDirectoryProvider`, `tempDirectoryProvider`,
+  `background`, and (for `JournalDb`) `readPool` parameters, all forwarded to
+  `openDbConnection()`. The actor passes `() async => Directory(dbRootPath)` for
+  documents and a temp provider, and `background: false` to avoid nested isolates.
+  UI-side callers continue to omit the parameters (existing behavior, uses
+  `path_provider` fallback).
 
-  **Required change (Phase 4 prerequisite)**: Add `documentsDirectoryProvider` and
-  `tempDirectoryProvider` parameters to both `JournalDb` and `SettingsDb` constructors
-  and forward them to `openDbConnection()`.
-  Example: `JournalDb({..., Future<Directory> Function()? documentsDirectoryProvider, Future<Directory> Function()? tempDirectoryProvider})`.
-  The actor passes `() async => Directory(dbRootPath)` for documents and a temp provider.
-  UI-side callers continue to omit the parameters (existing behavior, uses `path_provider`
-  fallback).
-
-  **Additional `openDbConnection` issues for isolate use** (all in `common.dart`):
-  - `getTemporaryDirectory()` (line 111) — `path_provider` platform channel, used to set
-    `sqlite3.tempDirectory`. Actor must provide `tempDirectoryProvider` or the call will
-    crash in the isolate. The parameter already exists on `openDbConnection()`.
-  - `applyWorkaroundToOpenSqlite3OnOldAndroidVersions()` (line 106) — from
-    `sqlite3_flutter_libs`, a Flutter plugin. Only called on Android. Actor must either
-    skip this call (it may already have been called by the main isolate during app startup)
-    or handle the error gracefully. Investigate during Phase 4.
-  - `NativeDatabase.createInBackground(file)` (line 121) — spawns its own managed isolate.
-    Calling this from the actor isolate creates **nested isolates** (isolate within isolate).
-    While Dart supports nested isolates, this adds unnecessary overhead since the actor
-    isolate is already a dedicated worker. **The actor should use `NativeDatabase(file)`
-    directly** instead of `createInBackground()`. This requires either a separate
-    `openDbConnectionSync()` function for actor use, or adding a `background` flag to
-    `openDbConnection()`.
+  **Remaining issue for isolate use**:
+  - `applyWorkaroundToOpenSqlite3OnOldAndroidVersions()` — from `sqlite3_flutter_libs`,
+    a Flutter plugin. Only called on Android. The main isolate calls it at startup; the
+    actor isolate should skip it (already applied process-wide). The `background: false`
+    path still calls it — may need a guard for actor use on Android.
 
 ### Host Bridge Contract (Platform APIs)
 
@@ -336,7 +293,7 @@ Events are maps sent via the actor's event `SendPort` (set during init):
 | `loginStateChanged` | `loginState` | SDK login state change |
 | `syncUpdate` | — | SDK sync tick completed |
 | `verificationState` | `step`, `emojis?`, `isDone`, `isCanceled` | Verification progress |
-| `entitiesChanged` | `ids` (`List<String>` of entity IDs), `tables` (`List<String>` of affected table names) | Affected IDs after DB writes; host converts `ids` to `Set<String>` and feeds to `UpdateNotifications.notify(ids, fromSync: true)`. Host also calls `journalDb.markTablesUpdated(tables)` and/or `settingsDb.markTablesUpdated(tables)` to trigger Drift `watch()` streams on the UI's connection. Wire format uses `List<String>` (not `Set`) because `Set` is not a guaranteed safe isolate transfer type. |
+| `entitiesChanged` | `ids` (`List<String>` of entity IDs), `notificationKeys` (`List<String>` of type notification constants, e.g. `categoriesNotification`, `habitsNotification`) | Affected IDs and type keys after DB writes; host converts to `Set<String>` combining both `ids` and `notificationKeys`, then feeds to `UpdateNotifications.notify(combinedSet, fromSync: true)`. This triggers all notification-driven streams that match the type keys (see `lib/services/notification_stream.dart`). Wire format uses `List<String>` (not `Set`) because `Set` is not a guaranteed safe isolate transfer type. |
 | `error` | `message`, `code`, `fatal` | Actor-level error |
 
 ### DB Write + Notification Flow (No Apply/Ack Protocol)
@@ -350,22 +307,21 @@ Actor isolate                              Host (main isolate)
 1. Receive Matrix event
 2. Decrypt, parse, validate
 3. Write to JournalDb (own connection)
-4. Send `entitiesChanged` event ─────────> 5a. UpdateNotifications.notify(ids, fromSync: true)
-   with affected entity IDs                    (debounced 1s broadcast to Riverpod providers)
-   and affected table names                5b. journalDb.markTablesUpdated(tables)
-                                               (triggers Drift watch() streams on UI connection)
-                                           5c. settingsDb.markTablesUpdated(tables)
-                                               (triggers SettingsDb watch() streams if applicable)
+4. Send `entitiesChanged` event ─────────> 5. UpdateNotifications.notify(
+   with affected entity IDs                      {ids + notificationKeys},
+   and type notification keys                    fromSync: true,
+                                               )
+                                               (debounced 1s broadcast to all
+                                               notification-driven streams)
 ```
 
-This uses two complementary notification mechanisms:
-- **`UpdateNotifications`** (`lib/services/db_notification.dart`) — existing broadcast
-  stream that Riverpod data providers subscribe to. Handles entity-level refresh.
-- **`markTablesUpdated()`** — Drift's built-in cross-connection invalidation. Triggers
-  `watch()` streams on the UI's DB connection for tables that the actor modified. This is
-  necessary because Drift's reactive queries only fire when writes occur on the same
-  connection — actor writes on a separate connection are invisible to the UI's `watch()`
-  streams without this explicit notification.
+This uses a single notification mechanism:
+- **`UpdateNotifications`** (`lib/services/db_notification.dart`) — broadcast stream
+  that all UI consumers subscribe to. Entity-level providers match on entity IDs.
+  Type-level providers (categories, habits, dashboards, etc.) match on type notification
+  keys (`categoriesNotification`, `habitsNotification`, etc.) via
+  `notificationDrivenStream()` (`lib/services/notification_stream.dart`).
+  `EntitiesCacheService` also refreshes its in-memory caches on matching type keys.
 
 **Idempotency**: `JournalDb.updateJournalEntity()` already handles vector clock comparison
 and skips writes when the local version is newer. No additional dedup logic needed.
@@ -634,47 +590,43 @@ isolate without any platform-channel or `getIt` dependencies. This is pure infra
 work that can be done independently of actor code — it modifies the existing DB layer to
 be isolate-safe while keeping all existing callers working.
 
-**This phase is explicitly broken out because it is blocking** — Phase 4 cannot begin until
-these changes land, and they touch shared infrastructure that should be reviewed and tested
-independently.
+**Status**: Tasks 1 & 2 completed in commit `13fc72f18` (WAL mode & read pools). Only
+Task 3 (getIt coupling) remains before Phase 4 can begin.
 
-#### Task 1: Add `documentsDirectoryProvider` + `tempDirectoryProvider` to DB constructors
+#### Task 1: Add `documentsDirectoryProvider` + `tempDirectoryProvider` to DB constructors [DONE]
 
-Modify `JournalDb` and `SettingsDb` constructors to accept and forward these parameters to
-`openDbConnection()`. The parameters are optional — existing callers are unaffected.
+**Completed in commit `13fc72f18`** (`docs/implementation_plans/2026-02-13_drift_wal_read_pools.md`).
 
-**Files changed:**
-- `lib/database/database.dart` — `JournalDb` constructor
-- `lib/database/settings_db.dart` — `SettingsDb` constructor
+`JournalDb`, `SettingsDb`, and `SyncDatabase` constructors now accept
+`documentsDirectoryProvider` and `tempDirectoryProvider` and forward them to
+`openDbConnection()`. `JournalDb` also accepts `readPool` (default 4) and `background`.
 
 **Acceptance criteria:**
-- [ ] `JournalDb({..., documentsDirectoryProvider, tempDirectoryProvider})` forwards to
+- [x] `JournalDb({..., documentsDirectoryProvider, tempDirectoryProvider})` forwards to
   `openDbConnection()`
-- [ ] `SettingsDb({..., documentsDirectoryProvider, tempDirectoryProvider})` forwards to
+- [x] `SettingsDb({..., documentsDirectoryProvider, tempDirectoryProvider})` forwards to
   `openDbConnection()`
-- [ ] Existing callers (main isolate) continue to work with no changes
-- [ ] New unit test: construct `JournalDb` with custom `documentsDirectoryProvider` pointing
-  to a temp directory, verify DB opens and queries work
-- [ ] Analyzer zero warnings
+- [x] Existing callers (main isolate) continue to work with no changes
+- [x] WAL pragma verification test added (`test/database/open_db_connection_test.dart`)
+- [x] Analyzer zero warnings
 
-#### Task 2: Add isolate-safe `openDbConnection` variant (no `createInBackground`)
+#### Task 2: Add isolate-safe `openDbConnection` variant (no `createInBackground`) [DONE]
 
-Add an `isolate` flag (or new function `openDbConnectionDirect()`) to `common.dart` that
-uses `NativeDatabase(file)` instead of `NativeDatabase.createInBackground(file)`. The actor
-uses this variant since it's already in a dedicated worker isolate — nested isolates are
-unnecessary overhead.
+**Completed in commit `13fc72f18`.**
 
-Also handle `applyWorkaroundToOpenSqlite3OnOldAndroidVersions()` — on Android, skip it in
-the isolate variant (main isolate already called it during app startup).
+Added `background` parameter (default `true`) to `openDbConnection()`. When `false`, uses
+`NativeDatabase(file, setup: _setupDatabase)` directly instead of `createInBackground()`.
+Also added `readPool` parameter for read-pool isolates (used by `JournalDb` with default 4).
 
-**Files changed:**
-- `lib/database/common.dart`
+WAL mode, `busy_timeout = 5000`, and `synchronous = NORMAL` are applied to all connections
+via the `_setupDatabase` callback, including read-pool isolates and `background: false`
+connections.
 
 **Acceptance criteria:**
-- [ ] New `openDbConnection(..., background: false)` or `openDbConnectionDirect(...)` uses
-  `NativeDatabase(file)` instead of `createInBackground()`
-- [ ] Existing callers continue to use `createInBackground()` (default behavior)
-- [ ] Analyzer zero warnings
+- [x] `openDbConnection(..., background: false)` uses `NativeDatabase(file)` directly
+- [x] Existing callers continue to use `createInBackground()` (default behavior)
+- [x] Tests verify WAL pragmas for both `background: true` and `background: false`
+- [x] Analyzer zero warnings
 
 #### Task 3: Resolve `getIt` coupling in `JournalDb.updateJournalEntity()`
 
@@ -715,10 +667,10 @@ This is where the **entire inbound pipeline moves off main thread**:
 - `SettingsDb.saveSettingsItem()` — direct writes
 - Read marker advancement
 
-**On the main thread (two notification paths):**
-- `UpdateNotifications.notify(ids, fromSync: true)` — entity-level refresh
-- `journalDb.markTablesUpdated(tables)` / `settingsDb.markTablesUpdated(tables)` — triggers
-  Drift `watch()` streams on the UI's connection for tables the actor modified
+**On the main thread (single notification path):**
+- `UpdateNotifications.notify({...ids, ...notificationKeys}, fromSync: true)` — entity-level
+  and type-level refresh via notification-driven streams (all sync-affected Drift `watch()`
+  methods have been removed and replaced with `UpdateNotifications`-driven streams)
 
 #### Production code additions
 
@@ -731,20 +683,21 @@ lib/features/sync/actor/
   Phase 3.5 isolate-safe constructors.
 - Actor processes inbound Matrix events → deserializes → validates → writes to DB.
 - After each batch of writes, actor emits `entitiesChanged` event with the list of affected
-  entity IDs and affected table names.
-- Host receives `entitiesChanged` and:
-  1. Calls `UpdateNotifications.notify(ids.toSet(), fromSync: true)`.
-  2. Calls `journalDb.markTablesUpdated(tables)` to trigger Drift `watch()` streams.
-  3. Calls `settingsDb.markTablesUpdated(tables)` if settings tables were affected.
+  entity IDs and type-specific notification keys (e.g., `categoriesNotification`,
+  `habitsNotification`, `settingsNotification`).
+- Host receives `entitiesChanged` and calls
+  `UpdateNotifications.notify({...ids, ...notificationKeys}, fromSync: true)`.
+  This triggers all notification-driven streams that match the type keys.
 - No apply/ack handshake. No cross-isolate DTOs for DB operations.
 
 #### Acceptance criteria
 
 - [ ] Integration test: send from device A → actor writes to DB → `entitiesChanged` event
   received by host → entity appears in DB when read from host's connection
-- [ ] Integration test: Drift `watch()` stream on host's DB connection fires after actor write
-  (via `markTablesUpdated`)
-- [ ] Unit tests: inbound processing logic, vector clock handling, entity ID collection
+- [ ] Integration test: host receives type notification keys in `entitiesChanged` event and
+  can feed them to `UpdateNotifications` for UI refresh
+- [ ] Unit tests: inbound processing logic, vector clock handling, entity ID collection,
+  correct notification key selection per entity type
 - [ ] Analyzer zero warnings
 
 ### Phase 5: Feature Flag + Host Provider + Supervisor + Bootstrap Gate
@@ -876,10 +829,10 @@ The actor MAY import from:
   calls to `getIt<LoggingService>()` in `updateJournalEntity()` and
   `saveJournalEntityJson()` → `getIt<Directory>()` will crash. See Phase 4 prerequisites.
 - `lib/database/settings_db.dart` (`SettingsDb`) — actor creates its own instance
-- `lib/database/common.dart` (`openDbConnection`) — **must use isolate-safe code path**:
-  actor must provide `documentsDirectoryProvider` + `tempDirectoryProvider` to bypass
-  platform channels, and use `NativeDatabase()` instead of `createInBackground()` to avoid
-  nested isolates. See Phase 4 prerequisites.
+- `lib/database/common.dart` (`openDbConnection`) — actor uses `background: false` to
+  avoid nested isolates, and provides `documentsDirectoryProvider` +
+  `tempDirectoryProvider` to bypass platform channels. These parameters were added in
+  commit `13fc72f18`.
 - ~~`lib/features/sync/matrix/key_verification_runner.dart`~~ **REMOVED from allowed list.**
   This file imports `package:lotti/features/sync/matrix.dart` (the barrel file), which
   re-exports `matrix_service.dart`, `session_manager.dart`, `sync_engine.dart`,
@@ -914,13 +867,13 @@ The actor MAY import from:
 | Actor restart loses in-flight sends | v1 accepts this; durable outbox in phase 6 |
 | Legacy producers still running in actor mode | Must gate construction of both `OutboxService` AND `MatrixService` (both have constructor side effects). Must also handle downstream wiring: `main.dart` provider overrides, `beamer_app.dart` login gate listener, UI providers. Verified by test. |
 | Actor can't access platform channels | Host bridge contract; all platform data flows via commands |
-| Concurrent DB writes from two isolates | SQLite WAL mode; writes serialized by SQLite; reads non-blocking |
-| UI doesn't see DB changes from actor | Two notification paths: (1) `UpdateNotifications.notify()` for entity-level Riverpod refresh, (2) `markTablesUpdated()` on UI's `JournalDb`/`SettingsDb` to trigger Drift `watch()` streams. Both needed — many features use Drift reactive queries directly, not `UpdateNotifications`. |
+| Concurrent DB writes from two isolates | SQLite WAL mode explicitly enabled via `_setupDatabase()` callback (commit `13fc72f18`); `busy_timeout = 5000` prevents transient lock errors; writes serialized by SQLite; reads non-blocking |
+| UI doesn't see DB changes from actor | **RESOLVED.** All sync-affected Drift `watch()` methods have been removed and replaced with `UpdateNotifications`-driven streams (see `2026-02-12_remove_sync_affected_drift_watch.md`). The actor includes type notification keys in `entitiesChanged` events; the host feeds them to `UpdateNotifications.notify()`. Single notification path — no `markTablesUpdated()` needed. |
 | `JournalDb` methods use `getIt` globals | Must inject dependencies or use lower-level DB methods in actor; addressed in Phase 4 prerequisites |
-| DB constructors don't accept directory provider | Must add `documentsDirectoryProvider` and `tempDirectoryProvider` parameters to `JournalDb`/`SettingsDb`; addressed in Phase 4 prerequisites |
-| `NativeDatabase.createInBackground()` in actor isolate | Creates nested isolates (unnecessary overhead). Actor should use `NativeDatabase()` directly; requires new `openDbConnectionSync()` or flag on existing `openDbConnection()` |
-| `common.dart` calls `getTemporaryDirectory()` (platform channel) | Actor must provide `tempDirectoryProvider` parameter to bypass; parameter already exists on `openDbConnection()` |
-| `common.dart` calls `applyWorkaroundToOpenSqlite3OnOldAndroidVersions()` (Flutter plugin) | Android-only; may already be applied by main isolate at startup; actor can skip or catch the error |
+| DB constructors don't accept directory provider | **RESOLVED.** Commit `13fc72f18` added `documentsDirectoryProvider` and `tempDirectoryProvider` to `JournalDb`, `SettingsDb`, and `SyncDatabase` constructors. |
+| `NativeDatabase.createInBackground()` in actor isolate | **RESOLVED.** Commit `13fc72f18` added `background: false` parameter to `openDbConnection()` which uses `NativeDatabase()` directly. |
+| `common.dart` calls `getTemporaryDirectory()` (platform channel) | **RESOLVED.** Actor provides `tempDirectoryProvider` parameter via the updated `openDbConnection()` signature. |
+| `common.dart` calls `applyWorkaroundToOpenSqlite3OnOldAndroidVersions()` (Flutter plugin) | Android-only; main isolate calls it at startup; actor isolate should skip it (already applied process-wide). The `background: false` path still calls it — may need a guard for actor use. |
 | Sync UI providers hardwired to `matrixServiceProvider` | Actor-backed provider replacements or passive `MatrixService` wrapper; addressed in Phase 5 |
 | `key_verification_runner.dart` imports legacy barrel | Removed from allowed imports; actor rewrites verification handling from scratch in Phase 2 |
 
