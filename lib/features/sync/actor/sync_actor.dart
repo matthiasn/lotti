@@ -12,7 +12,9 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
-const _defaultVerificationPeerDiscoveryAttempts = 24;
+const _maxVerificationPeerDiscoveryAttempts = 8;
+const _defaultVerificationPeerDiscoveryAttempts =
+    _maxVerificationPeerDiscoveryAttempts;
 const _defaultVerificationPeerDiscoveryInterval = Duration(milliseconds: 500);
 const _verificationPeerDiscoveryCooldown = Duration(seconds: 1);
 
@@ -656,9 +658,6 @@ class SyncActorCommandHandler {
 
     final peerUserId = peerDevice.userId;
     final roomIdValue = roomId as String;
-    if (roomIdValue.isEmpty) {
-      throw Exception('roomId must be a non-empty string');
-    }
 
     final client = _gateway!.client;
     final encryption = client.encryption;
@@ -716,7 +715,6 @@ class SyncActorCommandHandler {
         client,
         userId,
         additionalUsers: <String>{userId},
-        maxAttempts: 1,
       );
 
       try {
@@ -751,44 +749,22 @@ class SyncActorCommandHandler {
   Future<void> _updateUserDeviceKeysBestEffort(
     Client client,
     String userId, {
-    Set<String>? additionalUsers,
-    int maxAttempts = 3,
+    required Set<String> additionalUsers,
   }) async {
-    Object? lastError;
-    StackTrace? lastStackTrace;
-
-    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        if (additionalUsers == null) {
-          await client
-              .updateUserDeviceKeys()
-              .timeout(const Duration(seconds: 3));
-        } else {
-          await client
-              .updateUserDeviceKeys(additionalUsers: additionalUsers)
-              .timeout(const Duration(seconds: 3));
-        }
-        return;
-      } catch (error, stackTrace) {
-        lastError = error;
-        lastStackTrace = stackTrace;
-        if (attempt < maxAttempts) {
-          await Future<void>.delayed(Duration(milliseconds: 100 * attempt));
-        }
-      }
-    }
-
-    if (lastError != null) {
-      final scope = additionalUsers == null ? 'all' : 'additional';
+    try {
+      await client
+          .updateUserDeviceKeys(additionalUsers: additionalUsers)
+          .timeout(const Duration(seconds: 3));
+    } catch (error, stackTrace) {
       _log(
         'verification key refresh failed '
-        '(scope=$scope user=$userId): $lastError\n$lastStackTrace',
+        '(scope=additional user=$userId): $error\n$stackTrace',
       );
       _emitEvent({
         'event': 'verificationKeyRefreshError',
-        'scope': scope,
+        'scope': 'additional',
         'userId': userId,
-        'error': lastError.toString(),
+        'error': error.toString(),
       });
     }
   }
@@ -914,9 +890,10 @@ class SyncActorCommandHandler {
 
     unawaited(_refreshPeerDeviceKeys(userId));
 
-    final discoveryAttempts = _verificationPeerDiscoveryAttempts > 8
-        ? 8
-        : _verificationPeerDiscoveryAttempts;
+    final discoveryAttempts =
+        _verificationPeerDiscoveryAttempts > _maxVerificationPeerDiscoveryAttempts
+            ? _maxVerificationPeerDiscoveryAttempts
+            : _verificationPeerDiscoveryAttempts;
 
     for (var attempt = 0; attempt < discoveryAttempts; attempt++) {
       final remoteUnverifiedDevices = gateway
