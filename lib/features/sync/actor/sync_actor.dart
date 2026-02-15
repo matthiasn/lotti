@@ -387,11 +387,6 @@ class SyncActorCommandHandler {
       emitEvent: _emitEvent,
     );
 
-    final joinedRooms = gateway.client.rooms;
-    if (joinedRooms.isNotEmpty) {
-      _outboundQueue!.updateSyncRoomId(joinedRooms.first.id);
-    }
-
     _kickOutboxQueue();
   }
 
@@ -561,13 +556,15 @@ class SyncActorCommandHandler {
     _outboxPumpActive = true;
     try {
       while (true) {
-        if (_outboundQueue == null || _state == SyncActorState.disposed ||
+        if (_outboundQueue == null ||
+            _state == SyncActorState.disposed ||
             _state == SyncActorState.stopping) {
           return;
         }
 
         final nextDelay = await queue.drain();
-        if (_outboundQueue == null || _state == SyncActorState.disposed ||
+        if (_outboundQueue == null ||
+            _state == SyncActorState.disposed ||
             _state == SyncActorState.stopping) {
           return;
         }
@@ -744,7 +741,12 @@ class SyncActorCommandHandler {
 
     final connected = command['connected'];
     if (connected is! bool) {
-      return _paramError('connected', connected, requestId: requestId);
+      return _paramError(
+        'connected',
+        connected,
+        requestId: requestId,
+        expectedTypeName: 'bool',
+      );
     }
 
     _outboundQueue?.updateConnectivity(isConnected: connected);
@@ -1148,6 +1150,7 @@ class SyncActorCommandHandler {
     String key,
     Object? value, {
     String? requestId,
+    String expectedTypeName = 'String',
   }) {
     if (value == null) {
       return _error(
@@ -1157,7 +1160,7 @@ class SyncActorCommandHandler {
       );
     }
     return _error(
-      'Parameter "$key" must be a String, got ${value.runtimeType}',
+      'Parameter "$key" must be a $expectedTypeName, got ${value.runtimeType}',
       requestId: requestId,
       errorCode: 'INVALID_PARAMETER',
     );

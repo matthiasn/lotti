@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
+import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -184,8 +185,16 @@ class OutboundQueue {
     }
 
     final joinedRooms = _gateway.client.rooms;
-    if (joinedRooms.isNotEmpty) {
-      return joinedRooms.first.id;
+    final syncMarkedRooms = joinedRooms.where((room) {
+      try {
+        return room.getState(lottiSyncRoomStateType) != null;
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+
+    if (syncMarkedRooms.length == 1) {
+      return syncMarkedRooms.single.id;
     }
 
     return null;
