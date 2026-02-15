@@ -53,6 +53,30 @@ void _testActorEntrypoint(SendPort readyPort) {
   });
 }
 
+void _testActorInvalidResponseEntrypoint(SendPort readyPort) {
+  final commandPort = ReceivePort();
+  readyPort.send(commandPort.sendPort);
+
+  commandPort.listen((dynamic raw) {
+    if (raw is! Map) return;
+
+    final command = raw.cast<String, Object?>();
+    final cmd = command['command'] as String?;
+    final replyTo = command['replyTo'] as SendPort?;
+
+    switch (cmd) {
+      case 'ping':
+        replyTo?.send('not-a-map');
+      case 'emitRawEvent':
+        final eventPort = command['eventPort'] as SendPort?;
+        eventPort?.send(123);
+        replyTo?.send(<String, Object?>{'ok': true});
+      default:
+        replyTo?.send(<String, Object?>{'ok': false, 'error': 'bad'});
+    }
+  });
+}
+
 void main() {
   group('SyncActorHost', () {
     late SyncActorHost host;
@@ -93,6 +117,17 @@ void main() {
       expect(response['errorCode'], 'TIMEOUT');
     });
 
+    test('returns type error for non-map response', () async {
+      host = await SyncActorHost.spawn(
+        entrypoint: _testActorInvalidResponseEntrypoint,
+      );
+
+      final response = await host.send('ping');
+
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('Invalid response type'));
+    });
+
     test('event stream delivers events', () async {
       host = await SyncActorHost.spawn(entrypoint: _testActorEntrypoint);
 
@@ -119,6 +154,26 @@ void main() {
       expect(event['event'], 'testEvent');
       expect(event['data'], 'hello');
 
+      await sub.cancel();
+    });
+
+    test('ignores non-map events from actor', () async {
+      host = await SyncActorHost.spawn(
+        entrypoint: _testActorInvalidResponseEntrypoint,
+      );
+      final eventPortResponse = await host.send(
+        'emitRawEvent',
+        payload: {'eventPort': host.eventSendPort},
+      );
+      expect(eventPortResponse['ok'], isTrue);
+
+      final events = <Map<String, Object?>>[];
+      final sub = host.events.listen(events.add);
+
+      await host
+          .send('emitRawEvent', payload: {'eventPort': host.eventSendPort});
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(events, isEmpty);
       await sub.cancel();
     });
 
