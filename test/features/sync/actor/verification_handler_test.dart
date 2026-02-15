@@ -222,9 +222,8 @@ void main() {
       when(() => outgoing.onUpdate = any()).thenReturn(null);
       when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
 
-      final handler = VerificationHandler(onStateChanged: (_) {});
-
-      handler.trackOutgoing(outgoing);
+      final handler = VerificationHandler(onStateChanged: (_) {})
+        ..trackOutgoing(outgoing);
       await handler.dispose();
 
       verify(outgoing.cancel).called(1);

@@ -13,7 +13,7 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
 const _maxVerificationPeerDiscoveryAttempts = 8;
-const _defaultVerificationPeerDiscoveryAttempts =
+const int _defaultVerificationPeerDiscoveryAttempts =
     _maxVerificationPeerDiscoveryAttempts;
 const _defaultVerificationPeerDiscoveryInterval = Duration(milliseconds: 500);
 const _verificationPeerDiscoveryCooldown = Duration(seconds: 1);

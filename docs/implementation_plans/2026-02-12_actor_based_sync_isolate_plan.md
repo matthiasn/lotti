@@ -560,7 +560,7 @@ dispatch — while preserving durable offline persistence in `SyncDatabase`.
 
 #### Production code additions
 
-```
+```text
 lib/features/sync/actor/
   outbound_queue.dart          # SyncDatabase-backed claim/send/retry dispatcher
 ```

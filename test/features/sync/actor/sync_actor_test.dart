@@ -8,10 +8,9 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/encryption/key_verification_manager.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -45,15 +44,6 @@ class MockKeyVerificationManager extends Mock
 
 class MockLoginStateController extends Mock
     implements CachedStreamController<LoginState> {}
-
-class MockSyncUpdateController extends Mock
-    implements CachedStreamController<SyncUpdate> {}
-
-class MockToDeviceEventController extends Mock
-    implements CachedStreamController<ToDeviceEvent> {}
-
-class MockTimelineEventController extends Mock
-    implements CachedStreamController<Event> {}
 
 /// Creates a [SyncActorCommandHandler] with a mock gateway factory.
 ///
