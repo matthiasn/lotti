@@ -75,48 +75,59 @@ class SyncActorCommandHandler {
   Future<Map<String, Object?>> handleCommand(
     Map<String, Object?> command,
   ) async {
-    final cmd = command['command'] as String?;
-    final requestId = command['requestId'] as String?;
-
-    if (cmd == null) {
-      return _error('Missing command field', requestId: requestId);
+    final rawCommand = command['command'];
+    if (rawCommand == null) {
+      return _error('Missing command field');
     }
+    if (rawCommand is! String) {
+      final requestId = command['requestId'];
+      final requestIdValue = requestId is String ? requestId : null;
+      return _error(
+        'Invalid command type: expected String',
+        errorCode: 'INVALID_PARAMETER',
+        requestId: requestIdValue,
+      );
+    }
+
+    final cmd = rawCommand;
+    final dynamic requestId = command['requestId'];
+    final requestIdValue = requestId is String ? requestId : null;
 
     _log('command: $cmd (state=${_state.name})');
 
     switch (cmd) {
       case 'ping':
-        return _ok(requestId: requestId);
+        return _ok(requestId: requestIdValue);
       case 'getHealth':
-        return _handleGetHealth(requestId: requestId);
+        return _handleGetHealth(requestId: requestIdValue);
       case 'stop':
-        return _handleStop(requestId: requestId);
+        return _handleStop(requestId: requestIdValue);
       case 'init':
-        return _handleInit(command, requestId: requestId);
+        return _handleInit(command, requestId: requestIdValue);
       case 'startSync':
-        return _handleStartSync(requestId: requestId);
+        return _handleStartSync(requestId: requestIdValue);
       case 'stopSync':
-        return _handleStopSync(requestId: requestId);
+        return _handleStopSync(requestId: requestIdValue);
       case 'createRoom':
-        return _handleCreateRoom(command, requestId: requestId);
+        return _handleCreateRoom(command, requestId: requestIdValue);
       case 'joinRoom':
-        return _handleJoinRoom(command, requestId: requestId);
+        return _handleJoinRoom(command, requestId: requestIdValue);
       case 'sendText':
-        return _handleSendText(command, requestId: requestId);
+        return _handleSendText(command, requestId: requestIdValue);
       case 'startVerification':
-        return _handleStartVerification(requestId: requestId);
+        return _handleStartVerification(requestId: requestIdValue);
       case 'acceptVerification':
-        return _handleAcceptVerification(requestId: requestId);
+        return _handleAcceptVerification(requestId: requestIdValue);
       case 'acceptSas':
-        return _handleAcceptSas(requestId: requestId);
+        return _handleAcceptSas(requestId: requestIdValue);
       case 'cancelVerification':
-        return _handleCancelVerification(requestId: requestId);
+        return _handleCancelVerification(requestId: requestIdValue);
       case 'getVerificationState':
-        return _handleGetVerificationState(requestId: requestId);
+        return _handleGetVerificationState(requestId: requestIdValue);
       default:
         return _error(
           'Unknown command: $cmd',
-          requestId: requestId,
+          requestId: requestIdValue,
           errorCode: 'UNKNOWN_COMMAND',
         );
     }
@@ -218,7 +229,7 @@ class SyncActorCommandHandler {
       });
 
       // Track all to-device events for diagnostics.
-      _toDeviceSub = client.onToDeviceEvent.stream.listen((event) {
+      _toDeviceSub = _gateway!.client.onToDeviceEvent.stream.listen((event) {
         _toDeviceEventCount++;
         _log('event: toDevice type=${event.type} sender=${event.sender}');
         _emitEvent({
@@ -376,12 +387,10 @@ class SyncActorCommandHandler {
     Duration baseDelay = const Duration(milliseconds: 250),
     bool Function(Object)? isRetryable,
   }) async {
-    Object? lastError;
-    for (var attempt = 0; attempt < maxRetries; attempt++) {
+    for (var attempt = 0;; attempt++) {
       try {
         return await operation();
       } on Object catch (e, stackTrace) {
-        lastError = e;
         if (isRetryable == null || !isRetryable(e)) {
           Error.throwWithStackTrace(e, stackTrace);
         }
@@ -396,15 +405,6 @@ class SyncActorCommandHandler {
         );
       }
     }
-
-    final error = lastError;
-    if (error is Exception) {
-      throw error;
-    }
-    if (error is Error) {
-      throw error;
-    }
-    throw Exception('$error');
   }
 
   Future<Map<String, Object?>> _handleStopSync({String? requestId}) async {
@@ -793,22 +793,46 @@ class SyncActorCommandHandler {
 void syncActorEntrypoint(
   SendPort readyPort, {
   VodInitializer vodInitializer = vod.init,
+  bool enableLogging = false,
 }) {
   final commandPort = ReceivePort();
   readyPort.send(commandPort.sendPort);
 
-  final handler = SyncActorCommandHandler(vodInitializer: vodInitializer);
+  final handler = SyncActorCommandHandler(
+    vodInitializer: vodInitializer,
+    enableLogging: enableLogging,
+  );
 
   commandPort.listen((dynamic raw) async {
     if (raw is! Map) return;
 
     SendPort? replyTo;
     try {
-      final command = raw.cast<String, Object?>();
-      replyTo = command['replyTo'] as SendPort?;
+      replyTo = raw['replyTo'] is SendPort ? raw['replyTo'] as SendPort : null;
 
+      if (replyTo == null) {
+        return;
+      }
+
+      final command = <String, Object?>{};
+      for (final entry in raw.entries) {
+        if (entry.key is String) {
+          command[entry.key as String] = entry.value as Object?;
+        }
+      }
+
+      if (!command.containsKey('command')) {
+        replyTo.send(
+          <String, Object?>{
+            'ok': false,
+            'error': 'Missing command field',
+            'errorCode': 'MISSING_PARAMETER',
+          },
+        );
+        return;
+      }
       final response = await handler.handleCommand(command);
-      replyTo?.send(response);
+      replyTo.send(response);
     } catch (e, stackTrace) {
       debugPrint('[SyncActor] entrypoint error: $e\n$stackTrace');
       replyTo?.send(<String, Object?>{

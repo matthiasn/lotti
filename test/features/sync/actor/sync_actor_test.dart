@@ -21,14 +21,6 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
 
-class MockToDeviceEvent extends Mock implements ToDeviceEvent {}
-
-class MockToDeviceEventController extends Mock
-    implements CachedStreamController<ToDeviceEvent> {}
-
-class MockCachedStreamController<T> extends Mock
-    implements CachedStreamController<T> {}
-
 class MockSyncUpdate extends Mock implements SyncUpdate {}
 
 /// Creates a [SyncActorCommandHandler] with a mock gateway factory.
@@ -145,7 +137,6 @@ void main() {
       ),
     );
     registerFallbackValue(MockDeviceKeys());
-
   });
 
   group('SyncActorCommandHandler', () {
@@ -501,21 +492,13 @@ void main() {
       });
 
       test('wires event streams and emits updates', () async {
+        late MockClient capturedClient;
         final loginStateController = StreamController<LoginState>.broadcast();
         final verificationController =
             StreamController<KeyVerification>.broadcast();
-        final onSyncController = MockCachedStreamController<SyncUpdate>();
-        final onSyncStreamController = StreamController<SyncUpdate>.broadcast();
-        final toDeviceStreamController = StreamController<ToDeviceEvent>();
-        final toDeviceController = MockToDeviceEventController();
-        when(() => toDeviceController.stream).thenAnswer(
-          (_) => toDeviceStreamController.stream,
-        );
-        when(() => onSyncController.stream).thenAnswer(
-          (_) => onSyncStreamController.stream,
-        );
+        final onSyncController = CachedStreamController<SyncUpdate>();
+        final toDeviceController = CachedStreamController<ToDeviceEvent>();
         final mockVerification = MockKeyVerification();
-        final mockToDeviceEvent = MockToDeviceEvent();
 
         when(() => mockVerification.lastStep)
             .thenReturn('m.key.verification.ready');
@@ -523,8 +506,6 @@ void main() {
         when(() => mockVerification.isDone).thenReturn(false);
         when(() => mockVerification.sasEmojis)
             .thenReturn(<KeyVerificationEmoji>[]);
-        when(() => mockToDeviceEvent.type).thenReturn('mock.to.device');
-        when(() => mockToDeviceEvent.sender).thenReturn('@sender:localhost');
 
         handler = createTestHandler(
           loginStateChanges: loginStateController.stream,
@@ -532,744 +513,764 @@ void main() {
           onSyncController: onSyncController,
           toDeviceEventController: toDeviceController,
           onGatewayCreated: (g, c) {
+            capturedClient = c;
             when(() => c.userOwnsEncryptionKeys(any())).thenAnswer(
               (_) async => true,
             );
             when(() => c.userDeviceKeys).thenReturn({});
           },
-          enableLogging: true,
         );
         await handler.handleCommand(_initPayload());
 
         loginStateController.add(LoginState.loggedIn);
         verificationController.add(mockVerification);
-        toDeviceStreamController.add(mockToDeviceEvent);
-        onSyncStreamController..add(MockSyncUpdate())
-        ..add(MockSyncUpdate())
-        ..add(MockSyncUpdate());
+        toDeviceController.add(
+          ToDeviceEvent(
+            sender: '@sender:localhost',
+            type: 'mock.to.device',
+            content: const <String, dynamic>{},
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        onSyncController
+          ..add(MockSyncUpdate())
+          ..add(MockSyncUpdate())
+          ..add(MockSyncUpdate());
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         final health = await handler.handleCommand(_cmd('getHealth'));
-        expect((health['syncCount'] as int), greaterThanOrEqualTo(3));
-        expect(health['toDeviceEventCount'], isA<int>());
+        verify(() => capturedClient.onToDeviceEvent).called(1);
+        final syncCount = health['syncCount'];
+        expect(syncCount, isA<int>());
+        expect(syncCount, greaterThanOrEqualTo(3));
+        expect(health['toDeviceEventCount'], equals(1));
         final healthWithToDevice =
             await handler.handleCommand(_cmd('getHealth'));
-        expect(healthWithToDevice['toDeviceEventCount'], isA<int>());
+        expect(healthWithToDevice['toDeviceEventCount'], equals(1));
         final verificationState =
             await handler.handleCommand(_cmd('getVerificationState'));
         expect(verificationState['hasIncoming'], isTrue);
 
-          await handler.handleCommand(_cmd('stop'));
-        });
-      });
-
-      group('syncActorEntrypoint', () {
-        Future<Map<String, Object?>> sendCommand(
-          SendPort commandPort,
-          Map<String, Object?> command,
-        ) async {
-          final responsePort = ReceivePort();
-          command['replyTo'] = responsePort.sendPort;
-          commandPort.send(command);
-          final response = await responsePort.first;
-          responsePort.close();
-          return Map<String, Object?>.from(response as Map);
-        }
-
-        test('handles sync actor init attempt and still exits', () async {
-          final readyPort = ReceivePort();
-          syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
-          final commandPort = (await readyPort.first) as SendPort;
-
-          final initResponse = await sendCommand(
-            commandPort,
-            _initPayload(
-              homeServer: 'http://127.0.0.1:9',
-              user: '@entrypoint:localhost',
-              password: 'pass',
-              dbRootPath: '/tmp/test_sync_actor_entrypoint',
-            ),
-          );
-          expect(initResponse['ok'], isFalse);
-          expect(initResponse['error'], contains('Init failed'));
-
-          final stopResponse = await sendCommand(commandPort, _cmd('stop'));
-          expect(stopResponse['ok'], isTrue);
-
-          readyPort.close();
-        });
+        await handler.handleCommand(_cmd('stop'));
       });
     });
 
-    group('startSync / stopSync', () {
-      test('startSync is idempotent while syncing', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
+    group('syncActorEntrypoint', () {
+      Future<Map<String, Object?>> sendCommand(
+        SendPort commandPort,
+        Map<String, Object?> command,
+      ) async {
+        final responsePort = ReceivePort();
+        command['replyTo'] = responsePort.sendPort;
+        commandPort.send(command);
+        final response = await responsePort.first;
+        responsePort.close();
+        return Map<String, Object?>.from(response as Map);
+      }
 
-        final response = await handler.handleCommand(_cmd('startSync'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.syncing);
+      test('handles sync actor init attempt and still exits', () async {
+        final readyPort = ReceivePort();
+        syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
+        final commandPort = (await readyPort.first) as SendPort;
+
+        final initResponse = await sendCommand(
+          commandPort,
+          _initPayload(
+            homeServer: 'http://127.0.0.1:9',
+            user: '@entrypoint:localhost',
+            dbRootPath: '/tmp/test_sync_actor_entrypoint',
+          ),
+        );
+        expect(initResponse['ok'], isFalse);
+        expect(initResponse['error'], contains('Init failed'));
+
+        final stopResponse = await sendCommand(commandPort, _cmd('stop'));
+        expect(stopResponse['ok'], isTrue);
+
+        readyPort.close();
       });
 
-      test('stopSync transitions back to idle', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-        await handler.handleCommand(_cmd('startSync'));
+      test('returns validation error when command type is invalid', () async {
+        final readyPort = ReceivePort();
+        syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
+        final commandPort = (await readyPort.first) as SendPort;
 
-        final response = await handler.handleCommand(_cmd('stopSync'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.idle);
-      });
+        final responsePort = ReceivePort();
+        commandPort.send(
+          <Object, Object?>{
+            'command': 123,
+            'replyTo': responsePort.sendPort,
+          },
+        );
 
-      test('startSync rejected in stopped state', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-        await handler.handleCommand(_cmd('startSync'));
-        await handler.handleCommand(_cmd('stopSync'));
+        final response = await responsePort.first;
+        responsePort.close();
+        readyPort.close();
 
-        final response = await handler.handleCommand(_cmd('startSync'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.syncing);
+        expect(response, isA<Map<Object?, Object?>>());
+        final responseMap = Map<String, Object?>.from(response as Map);
+        expect(responseMap['ok'], isFalse);
+        expect(responseMap['error'],
+            contains('Invalid command type: expected String'));
+        expect(responseMap['errorCode'], 'INVALID_PARAMETER');
       });
     });
+  });
 
-    group('createRoom', () {
-      test('delegates to gateway in idle state', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+  group('startSync / stopSync', () {
+    test('startSync is idempotent while syncing', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
 
-        when(
-          () => gateway.createRoom(
-            name: any(named: 'name'),
-            inviteUserIds: any(named: 'inviteUserIds'),
-          ),
-        ).thenAnswer((_) async => '!room:localhost');
-
-        final response = await handler.handleCommand(
-          _cmd('createRoom', {
-            'name': 'Test Room',
-            'inviteUserIds': <String>['@user2:localhost'],
-          }),
-        );
-
-        expect(response['ok'], isTrue);
-        expect(response['roomId'], '!room:localhost');
-      });
-
-      test('returns error when gateway createRoom fails', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
-
-        when(
-          () => gateway.createRoom(
-            name: any(named: 'name'),
-            inviteUserIds: any(named: 'inviteUserIds'),
-          ),
-        ).thenThrow(Exception('create failed'));
-
-        final response = await handler.handleCommand(
-          _cmd('createRoom', {'name': 'Test Room'}),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('createRoom failed'));
-      });
+      final response = await handler.handleCommand(_cmd('startSync'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.syncing);
     });
 
-    group('joinRoom', () {
-      test('delegates to gateway in idle state', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+    test('stopSync transitions back to idle', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+      await handler.handleCommand(_cmd('startSync'));
 
-        when(() => gateway.joinRoom(any())).thenAnswer((_) async {});
-
-        final response = await handler.handleCommand(
-          _cmd('joinRoom', {'roomId': '!room:localhost'}),
-        );
-
-        expect(response['ok'], isTrue);
-      });
-
-      test('returns error when gateway joinRoom fails', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
-
-        when(() => gateway.joinRoom(any())).thenThrow(
-          Exception('join failed'),
-        );
-
-        final response = await handler.handleCommand(
-          _cmd('joinRoom', {'roomId': '!room:localhost'}),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('joinRoom failed'));
-      });
+      final response = await handler.handleCommand(_cmd('stopSync'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.idle);
     });
 
-    group('sendText', () {
-      test('delegates while idle without pausing sync', () async {
-        late MockMatrixSdkGateway gateway;
-        late MockClient client;
+    test('startSync rejected in stopped state', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+      await handler.handleCommand(_cmd('startSync'));
+      await handler.handleCommand(_cmd('stopSync'));
 
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-            client = c;
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await handler.handleCommand(_cmd('stopSync'));
-        expect(handler.state, SyncActorState.idle);
+      final response = await handler.handleCommand(_cmd('startSync'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.syncing);
+    });
+  });
 
-        when(
-          () => gateway.sendText(
-            roomId: any(named: 'roomId'),
-            message: any(named: 'message'),
-            messageType: any(named: 'messageType'),
-            displayPendingEvent: false,
-          ),
-        ).thenAnswer((_) async => r'$idleEvent');
+  group('createRoom', () {
+    test('delegates to gateway in idle state', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
 
-        final response = await handler.handleCommand(
-          _cmd('sendText', {
-            'roomId': '!room:localhost',
-            'message': 'hello world',
-            'requestId': 'idle-send',
-          }),
-        );
+      when(
+        () => gateway.createRoom(
+          name: any(named: 'name'),
+          inviteUserIds: any(named: 'inviteUserIds'),
+        ),
+      ).thenAnswer((_) async => '!room:localhost');
 
-        expect(response['ok'], isTrue);
-        expect(response['requestId'], 'idle-send');
-        expect(response['eventId'], r'$idleEvent');
-        verifyNever(() => client.abortSync());
-      });
+      final response = await handler.handleCommand(
+        _cmd('createRoom', {
+          'name': 'Test Room',
+          'inviteUserIds': <String>['@user2:localhost'],
+        }),
+      );
 
-      test('delegates to gateway and returns eventId', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+      expect(response['ok'], isTrue);
+      expect(response['roomId'], '!room:localhost');
+    });
 
-        when(
-          () => gateway.sendText(
-            roomId: any(named: 'roomId'),
-            message: any(named: 'message'),
-            messageType: any(named: 'messageType'),
-            displayPendingEvent: false,
-          ),
-        ).thenAnswer((_) async => r'$event123');
+    test('returns error when gateway createRoom fails', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
 
-        final response = await handler.handleCommand(
-          _cmd('sendText', {
-            'roomId': '!room:localhost',
-            'message': 'hello world',
-          }),
-        );
+      when(
+        () => gateway.createRoom(
+          name: any(named: 'name'),
+          inviteUserIds: any(named: 'inviteUserIds'),
+        ),
+      ).thenThrow(Exception('create failed'));
 
-        expect(response['ok'], isTrue);
-        expect(response['eventId'], r'$event123');
-      });
+      final response = await handler.handleCommand(
+        _cmd('createRoom', {'name': 'Test Room'}),
+      );
 
-      test('retries on retryable errors before succeeding', () async {
-        late MockMatrixSdkGateway gateway;
-        var attempt = 0;
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('createRoom failed'));
+    });
+  });
 
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+  group('joinRoom', () {
+    test('delegates to gateway in idle state', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
 
-        when(
-          () => gateway.sendText(
-            roomId: any(named: 'roomId'),
-            message: any(named: 'message'),
-            messageType: any(named: 'messageType'),
-            displayPendingEvent: false,
-          ),
-        ).thenAnswer((_) async {
-          if (attempt < 2) {
-            attempt++;
-            throw Exception('SqliteFfiException(21): bad');
-          }
-          return r'$event456';
-        });
+      when(() => gateway.joinRoom(any())).thenAnswer((_) async {});
 
-        final response = await handler.handleCommand(
-          _cmd('sendText', {
-            'roomId': '!room:localhost',
-            'message': 'hello world',
-          }),
-        );
+      final response = await handler.handleCommand(
+        _cmd('joinRoom', {'roomId': '!room:localhost'}),
+      );
 
-        expect(response['ok'], isTrue);
-        expect(response['eventId'], r'$event456');
-        expect(attempt, 2);
-      });
+      expect(response['ok'], isTrue);
+    });
 
-      test('returns error after exhausting retryable errors', () async {
-        late MockMatrixSdkGateway gateway;
-        var attempt = 0;
+    test('returns error when gateway joinRoom fails', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
 
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+      when(() => gateway.joinRoom(any())).thenThrow(
+        Exception('join failed'),
+      );
 
-        when(
-          () => gateway.sendText(
-            roomId: any(named: 'roomId'),
-            message: any(named: 'message'),
-            messageType: any(named: 'messageType'),
-            displayPendingEvent: false,
-          ),
-        ).thenAnswer((_) async {
+      final response = await handler.handleCommand(
+        _cmd('joinRoom', {'roomId': '!room:localhost'}),
+      );
+
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('joinRoom failed'));
+    });
+  });
+
+  group('sendText', () {
+    test('delegates while idle without pausing sync', () async {
+      late MockMatrixSdkGateway gateway;
+      late MockClient client;
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+          client = c;
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await handler.handleCommand(_cmd('stopSync'));
+      expect(handler.state, SyncActorState.idle);
+
+      when(
+        () => gateway.sendText(
+          roomId: any(named: 'roomId'),
+          message: any(named: 'message'),
+          messageType: any(named: 'messageType'),
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async => r'$idleEvent');
+
+      final response = await handler.handleCommand(
+        _cmd('sendText', {
+          'roomId': '!room:localhost',
+          'message': 'hello world',
+          'requestId': 'idle-send',
+        }),
+      );
+
+      expect(response['ok'], isTrue);
+      expect(response['requestId'], 'idle-send');
+      expect(response['eventId'], r'$idleEvent');
+      verifyNever(() => client.abortSync());
+    });
+
+    test('delegates to gateway and returns eventId', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
+
+      when(
+        () => gateway.sendText(
+          roomId: any(named: 'roomId'),
+          message: any(named: 'message'),
+          messageType: any(named: 'messageType'),
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async => r'$event123');
+
+      final response = await handler.handleCommand(
+        _cmd('sendText', {
+          'roomId': '!room:localhost',
+          'message': 'hello world',
+        }),
+      );
+
+      expect(response['ok'], isTrue);
+      expect(response['eventId'], r'$event123');
+    });
+
+    test('retries on retryable errors before succeeding', () async {
+      late MockMatrixSdkGateway gateway;
+      var attempt = 0;
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
+
+      when(
+        () => gateway.sendText(
+          roomId: any(named: 'roomId'),
+          message: any(named: 'message'),
+          messageType: any(named: 'messageType'),
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async {
+        if (attempt < 2) {
           attempt++;
-          throw Exception(
-              'SqliteFfiException(21): bad parameter or other API misuse');
-        });
-
-        final response = await handler.handleCommand(
-          _cmd('sendText', {
-            'roomId': '!room:localhost',
-            'message': 'hello world',
-          }),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('sendText failed'));
-        expect(attempt, greaterThanOrEqualTo(5));
+          throw Exception('SqliteFfiException(21): bad');
+        }
+        return r'$event456';
       });
 
-      test('returns error when gateway sendText fails', () async {
-        late MockMatrixSdkGateway gateway;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-          },
-        );
-        await handler.handleCommand(_initPayload());
+      final response = await handler.handleCommand(
+        _cmd('sendText', {
+          'roomId': '!room:localhost',
+          'message': 'hello world',
+        }),
+      );
 
-        when(
-          () => gateway.sendText(
-            roomId: any(named: 'roomId'),
-            message: any(named: 'message'),
-            messageType: any(named: 'messageType'),
-            displayPendingEvent: false,
-          ),
-        ).thenThrow(Exception('send failed'));
-
-        final response = await handler.handleCommand(
-          _cmd('sendText', {
-            'roomId': '!room:localhost',
-            'message': 'hello world',
-          }),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('sendText failed'));
-      });
+      expect(response['ok'], isTrue);
+      expect(response['eventId'], r'$event456');
+      expect(attempt, 2);
     });
 
-    group('verification', () {
-      test('startVerification returns started false when no peer device',
-          () async {
-        late MockClient client;
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            client = c;
-            when(() => c.userDeviceKeys).thenReturn({});
-            when(() => c.userOwnsEncryptionKeys(any()))
-                .thenAnswer((_) async => true);
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        expect(client.userID, '@test:localhost');
+    test('returns error after exhausting retryable errors', () async {
+      late MockMatrixSdkGateway gateway;
+      var attempt = 0;
 
-        final response = await handler.handleCommand(_cmd('startVerification'));
-        expect(response['ok'], isTrue);
-        expect(response['started'], isFalse);
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
+
+      when(
+        () => gateway.sendText(
+          roomId: any(named: 'roomId'),
+          message: any(named: 'message'),
+          messageType: any(named: 'messageType'),
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async {
+        attempt++;
+        throw Exception(
+            'SqliteFfiException(21): bad parameter or other API misuse');
       });
 
-      test('startVerification starts verification for unverified device',
-          () async {
-        late MockMatrixSdkGateway gateway;
-        var callbackCalled = false;
-        late MockDeviceKeysList keysList;
-        final remoteDevice = MockDeviceKeys();
-        final verification = MockKeyVerification();
+      final response = await handler.handleCommand(
+        _cmd('sendText', {
+          'roomId': '!room:localhost',
+          'message': 'hello world',
+        }),
+      );
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-        when(verification.acceptSas).thenAnswer((_) async {});
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            callbackCalled = true;
-            gateway = g;
-            keysList = MockDeviceKeysList();
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-            when(() => g.startKeyVerification(any()))
-                .thenAnswer((_) async => verification);
-          },
-        );
-        final initResponse = await handler.handleCommand(_initPayload());
-        expect(initResponse['ok'], isTrue, reason: '$initResponse');
-        expect(callbackCalled, isTrue);
-        final preState = await handler.handleCommand(_cmd('getHealth'));
-        final deviceKeys = preState['deviceKeys'] as Map<String, Object?>?;
-        expect(preState['userId'], '@test:localhost');
-        expect(preState['state'], 'syncing');
-        expect(deviceKeys, isNotNull);
-        expect(deviceKeys!['count'], 1);
-
-        final response = await handler.handleCommand(_cmd('startVerification'));
-        final state = await handler.handleCommand(_cmd('getVerificationState'));
-        final sasResponse = await handler.handleCommand(_cmd('acceptSas'));
-
-        expect(response['ok'], isTrue);
-        expect(response['started'], isTrue);
-        expect(state['hasOutgoing'], isTrue);
-        expect(sasResponse['ok'], isTrue);
-        verify(() => gateway.startKeyVerification(any())).called(1);
-      });
-
-      test('acceptVerification returns error when no incoming verification',
-          () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-
-        final response =
-            await handler.handleCommand(_cmd('acceptVerification'));
-        expect(response['ok'], isFalse);
-        expect(
-          response['error'],
-          contains('No incoming verification'),
-        );
-      });
-
-      test('acceptVerification succeeds with incoming verification', () async {
-        final verification = MockKeyVerification();
-
-        when(verification.acceptVerification).thenAnswer((_) async {});
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            when(() => g.keyVerificationRequests)
-                .thenAnswer((_) => Stream<KeyVerification>.value(verification));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await Future<void>.delayed(Duration.zero);
-        final response =
-            await handler.handleCommand(_cmd('acceptVerification'));
-
-        expect(response['ok'], isTrue);
-        verify(verification.acceptVerification).called(1);
-      });
-
-      test('acceptVerification returns error when accept fails', () async {
-        final verification = MockKeyVerification();
-
-        when(verification.acceptVerification)
-            .thenThrow(Exception('accept failed'));
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            when(() => g.keyVerificationRequests)
-                .thenAnswer((_) => Stream<KeyVerification>.value(verification));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await Future<void>.delayed(Duration.zero);
-        final response =
-            await handler.handleCommand(_cmd('acceptVerification'));
-
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('acceptVerification failed'));
-      });
-
-      test('startVerification returns error when key verification fails',
-          () async {
-        late MockMatrixSdkGateway gateway;
-        final keysList = MockDeviceKeysList();
-        final remoteDevice = MockDeviceKeys();
-        final verification = MockKeyVerification();
-
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
-            when(() => g.startKeyVerification(any()))
-                .thenThrow(Exception('verification failed'));
-          },
-        );
-
-        await handler.handleCommand(_initPayload());
-        final response = await handler.handleCommand(
-          _cmd(
-            'startVerification',
-            {'requestId': 'start-verification-fail'},
-          ),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['requestId'], 'start-verification-fail');
-        expect(response['error'], contains('startVerification failed'));
-        expect(response['stackTrace'], isNotNull);
-      });
-
-      test('acceptSas returns error when no active verification', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-
-        final response = await handler.handleCommand(_cmd('acceptSas'));
-        expect(response['ok'], isFalse);
-        expect(response['error'], contains('No active verification'));
-      });
-
-      test('acceptSas returns error when active verification fails', () async {
-        final verification = MockKeyVerification();
-
-        when(verification.acceptSas).thenThrow(Exception('acceptSas failed'));
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            when(() => g.keyVerificationRequests)
-                .thenAnswer((_) => Stream<KeyVerification>.value(verification));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await Future<void>.delayed(Duration.zero);
-        final response = await handler.handleCommand(
-          _cmd('acceptSas', {'requestId': 'accept-sas-fail'}),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['requestId'], 'accept-sas-fail');
-        expect(response['error'], contains('acceptSas failed'));
-      });
-
-      test('cancelVerification cancels active incoming verification', () async {
-        final verification = MockKeyVerification();
-
-        when(verification.cancel).thenAnswer((_) async {});
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            when(() => g.keyVerificationRequests)
-                .thenAnswer((_) => Stream<KeyVerification>.value(verification));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await Future<void>.delayed(Duration.zero);
-        final response =
-            await handler.handleCommand(_cmd('cancelVerification'));
-        final state = await handler.handleCommand(_cmd('getVerificationState'));
-
-        expect(response['ok'], isTrue);
-        expect(state['hasIncoming'], isFalse);
-        verify(verification.cancel).called(1);
-      });
-
-      test('cancelVerification succeeds with no active verification', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-
-        final response =
-            await handler.handleCommand(_cmd('cancelVerification'));
-        expect(response['ok'], isTrue);
-      });
-
-      test('cancelVerification returns error when cancel throws', () async {
-        final verification = MockKeyVerification();
-
-        when(verification.cancel).thenThrow(Exception('cancel failed'));
-        when(() => verification.lastStep)
-            .thenReturn('m.key.verification.ready');
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            when(() => g.keyVerificationRequests)
-                .thenAnswer((_) => Stream<KeyVerification>.value(verification));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-        await Future<void>.delayed(Duration.zero);
-
-        final response = await handler.handleCommand(
-          _cmd('cancelVerification', {'requestId': 'cancel-verification-fail'}),
-        );
-
-        expect(response['ok'], isFalse);
-        expect(response['requestId'], 'cancel-verification-fail');
-        expect(response['error'], contains('cancelVerification failed'));
-      });
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('sendText failed'));
+      expect(attempt, greaterThanOrEqualTo(5));
     });
+
+    test('returns error when gateway sendText fails', () async {
+      late MockMatrixSdkGateway gateway;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+        },
+      );
+      await handler.handleCommand(_initPayload());
+
+      when(
+        () => gateway.sendText(
+          roomId: any(named: 'roomId'),
+          message: any(named: 'message'),
+          messageType: any(named: 'messageType'),
+          displayPendingEvent: false,
+        ),
+      ).thenThrow(Exception('send failed'));
+
+      final response = await handler.handleCommand(
+        _cmd('sendText', {
+          'roomId': '!room:localhost',
+          'message': 'hello world',
+        }),
+      );
+
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('sendText failed'));
+    });
+  });
+
+  group('verification', () {
+    test('startVerification returns started false when no peer device',
+        () async {
+      late MockClient client;
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          client = c;
+          when(() => c.userDeviceKeys).thenReturn({});
+          when(() => c.userOwnsEncryptionKeys(any()))
+              .thenAnswer((_) async => true);
+          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      expect(client.userID, '@test:localhost');
+
+      final response = await handler.handleCommand(_cmd('startVerification'));
+      expect(response['ok'], isTrue);
+      expect(response['started'], isFalse);
+    });
+
+    test('startVerification starts verification for unverified device',
+        () async {
+      late MockMatrixSdkGateway gateway;
+      var callbackCalled = false;
+      late MockDeviceKeysList keysList;
+      final remoteDevice = MockDeviceKeys();
+      final verification = MockKeyVerification();
+
+      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+      when(() => remoteDevice.verified).thenReturn(false);
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+      when(verification.acceptSas).thenAnswer((_) async {});
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          callbackCalled = true;
+          gateway = g;
+          keysList = MockDeviceKeysList();
+          when(() => c.userID).thenReturn('@test:localhost');
+          when(() => c.deviceID).thenReturn('DEV');
+          when(() => c.userDeviceKeys).thenReturn({
+            '@test:localhost': keysList,
+          });
+          when(() => keysList.deviceKeys).thenReturn(
+            <String, DeviceKeys>{'REMOTE': remoteDevice},
+          );
+          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+            return false;
+          });
+          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+          when(() => g.startKeyVerification(any()))
+              .thenAnswer((_) async => verification);
+        },
+      );
+      final initResponse = await handler.handleCommand(_initPayload());
+      expect(initResponse['ok'], isTrue, reason: '$initResponse');
+      expect(callbackCalled, isTrue);
+      final preState = await handler.handleCommand(_cmd('getHealth'));
+      final deviceKeys = preState['deviceKeys'] as Map<String, Object?>?;
+      expect(preState['userId'], '@test:localhost');
+      expect(preState['state'], 'syncing');
+      expect(deviceKeys, isNotNull);
+      expect(deviceKeys!['count'], 1);
+
+      final response = await handler.handleCommand(_cmd('startVerification'));
+      final state = await handler.handleCommand(_cmd('getVerificationState'));
+      final sasResponse = await handler.handleCommand(_cmd('acceptSas'));
+
+      expect(response['ok'], isTrue);
+      expect(response['started'], isTrue);
+      expect(state['hasOutgoing'], isTrue);
+      expect(sasResponse['ok'], isTrue);
+      verify(() => gateway.startKeyVerification(any())).called(1);
+    });
+
+    test('acceptVerification returns error when no incoming verification',
+        () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+
+      final response = await handler.handleCommand(_cmd('acceptVerification'));
+      expect(response['ok'], isFalse);
+      expect(
+        response['error'],
+        contains('No incoming verification'),
+      );
+    });
+
+    test('acceptVerification succeeds with incoming verification', () async {
+      final verification = MockKeyVerification();
+
+      when(verification.acceptVerification).thenAnswer((_) async {});
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => g.keyVerificationRequests)
+              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await Future<void>.delayed(Duration.zero);
+      final response = await handler.handleCommand(_cmd('acceptVerification'));
+
+      expect(response['ok'], isTrue);
+      verify(verification.acceptVerification).called(1);
+    });
+
+    test('acceptVerification returns error when accept fails', () async {
+      final verification = MockKeyVerification();
+
+      when(verification.acceptVerification)
+          .thenThrow(Exception('accept failed'));
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => g.keyVerificationRequests)
+              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await Future<void>.delayed(Duration.zero);
+      final response = await handler.handleCommand(_cmd('acceptVerification'));
+
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('acceptVerification failed'));
+    });
+
+    test('startVerification returns error when key verification fails',
+        () async {
+      final keysList = MockDeviceKeysList();
+      final remoteDevice = MockDeviceKeys();
+      final verification = MockKeyVerification();
+
+      when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+      when(() => remoteDevice.verified).thenReturn(false);
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => c.userID).thenReturn('@test:localhost');
+          when(() => c.deviceID).thenReturn('DEV');
+          when(() => c.userDeviceKeys).thenReturn({
+            '@test:localhost': keysList,
+          });
+          when(() => keysList.deviceKeys).thenReturn(
+            <String, DeviceKeys>{'REMOTE': remoteDevice},
+          );
+          when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+            return false;
+          });
+          when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+          when(() => g.startKeyVerification(any()))
+              .thenThrow(Exception('verification failed'));
+        },
+      );
+
+      await handler.handleCommand(_initPayload());
+      final response = await handler.handleCommand(
+        _cmd(
+          'startVerification',
+          {'requestId': 'start-verification-fail'},
+        ),
+      );
+
+      expect(response['ok'], isFalse);
+      expect(response['requestId'], 'start-verification-fail');
+      expect(response['error'], contains('startVerification failed'));
+      expect(response['stackTrace'], isNotNull);
+    });
+
+    test('acceptSas returns error when no active verification', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+
+      final response = await handler.handleCommand(_cmd('acceptSas'));
+      expect(response['ok'], isFalse);
+      expect(response['error'], contains('No active verification'));
+    });
+
+    test('acceptSas returns error when active verification fails', () async {
+      final verification = MockKeyVerification();
+
+      when(verification.acceptSas).thenThrow(Exception('acceptSas failed'));
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => g.keyVerificationRequests)
+              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await Future<void>.delayed(Duration.zero);
+      final response = await handler.handleCommand(
+        _cmd('acceptSas', {'requestId': 'accept-sas-fail'}),
+      );
+
+      expect(response['ok'], isFalse);
+      expect(response['requestId'], 'accept-sas-fail');
+      expect(response['error'], contains('acceptSas failed'));
+    });
+
+    test('cancelVerification cancels active incoming verification', () async {
+      final verification = MockKeyVerification();
+
+      when(verification.cancel).thenAnswer((_) async {});
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => g.keyVerificationRequests)
+              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await Future<void>.delayed(Duration.zero);
+      final response = await handler.handleCommand(_cmd('cancelVerification'));
+      final state = await handler.handleCommand(_cmd('getVerificationState'));
+
+      expect(response['ok'], isTrue);
+      expect(state['hasIncoming'], isFalse);
+      verify(verification.cancel).called(1);
+    });
+
+    test('cancelVerification succeeds with no active verification', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+
+      final response = await handler.handleCommand(_cmd('cancelVerification'));
+      expect(response['ok'], isTrue);
+    });
+
+    test('cancelVerification returns error when cancel throws', () async {
+      final verification = MockKeyVerification();
+
+      when(verification.cancel).thenThrow(Exception('cancel failed'));
+      when(() => verification.lastStep).thenReturn('m.key.verification.ready');
+      when(() => verification.isDone).thenReturn(false);
+      when(() => verification.canceled).thenReturn(false);
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          when(() => g.keyVerificationRequests)
+              .thenAnswer((_) => Stream<KeyVerification>.value(verification));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+      await Future<void>.delayed(Duration.zero);
+
+      final response = await handler.handleCommand(
+        _cmd('cancelVerification', {'requestId': 'cancel-verification-fail'}),
+      );
+
+      expect(response['ok'], isFalse);
+      expect(response['requestId'], 'cancel-verification-fail');
+      expect(response['error'], contains('cancelVerification failed'));
+    });
+  });
 
   group('stop', () {
-      test('from uninitialized transitions to disposed', () async {
-        handler = createTestHandler();
-        final response = await handler.handleCommand(_cmd('stop'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.disposed);
-      });
-
-      test('from idle transitions to disposed', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-        expect(handler.state, SyncActorState.syncing);
-
-        final response = await handler.handleCommand(_cmd('stop'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.disposed);
-      });
-
-      test('from syncing transitions to disposed', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_initPayload());
-        await handler.handleCommand(_cmd('startSync'));
-        expect(handler.state, SyncActorState.syncing);
-
-        final response = await handler.handleCommand(_cmd('stop'));
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.disposed);
-      });
-
-      test('double stop rejected', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_cmd('stop'));
-        expect(handler.state, SyncActorState.disposed);
-
-        final response = await handler.handleCommand(_cmd('stop'));
-        expect(response['ok'], isFalse);
-        expect(response['errorCode'], 'INVALID_STATE');
-      });
-
-      test('ignores cleanup errors while stopping', () async {
-        late MockMatrixSdkGateway gateway;
-
-        handler = createTestHandler(
-          onGatewayCreated: (g, c) {
-            gateway = g;
-            when(() => g.dispose()).thenThrow(Exception('shutdown failed'));
-          },
-        );
-        await handler.handleCommand(_initPayload());
-
-        final response = await handler.handleCommand(_cmd('stop'));
-
-        expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.disposed);
-        verify(() => gateway.dispose()).called(1);
-      });
-
-      test('commands rejected after stop', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_cmd('stop'));
-
-        final response = await handler.handleCommand(_cmd('startSync'));
-        expect(response['ok'], isFalse);
-        expect(response['errorCode'], 'INVALID_STATE');
-      });
-
-      test('ping still works after stop', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_cmd('stop'));
-
-        final response = await handler.handleCommand(_cmd('ping'));
-        expect(response['ok'], isTrue);
-      });
-
-      test('getHealth works after stop', () async {
-        handler = createTestHandler();
-        await handler.handleCommand(_cmd('stop'));
-
-        final response = await handler.handleCommand(_cmd('getHealth'));
-        expect(response['ok'], isTrue);
-        expect(response['state'], 'disposed');
-      });
+    test('from uninitialized transitions to disposed', () async {
+      handler = createTestHandler();
+      final response = await handler.handleCommand(_cmd('stop'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.disposed);
     });
+
+    test('from idle transitions to disposed', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+      expect(handler.state, SyncActorState.syncing);
+
+      final response = await handler.handleCommand(_cmd('stop'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.disposed);
+    });
+
+    test('from syncing transitions to disposed', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_initPayload());
+      await handler.handleCommand(_cmd('startSync'));
+      expect(handler.state, SyncActorState.syncing);
+
+      final response = await handler.handleCommand(_cmd('stop'));
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.disposed);
+    });
+
+    test('double stop rejected', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_cmd('stop'));
+      expect(handler.state, SyncActorState.disposed);
+
+      final response = await handler.handleCommand(_cmd('stop'));
+      expect(response['ok'], isFalse);
+      expect(response['errorCode'], 'INVALID_STATE');
+    });
+
+    test('ignores cleanup errors while stopping', () async {
+      late MockMatrixSdkGateway gateway;
+
+      handler = createTestHandler(
+        onGatewayCreated: (g, c) {
+          gateway = g;
+          when(() => g.dispose()).thenThrow(Exception('shutdown failed'));
+        },
+      );
+      await handler.handleCommand(_initPayload());
+
+      final response = await handler.handleCommand(_cmd('stop'));
+
+      expect(response['ok'], isTrue);
+      expect(handler.state, SyncActorState.disposed);
+      verify(() => gateway.dispose()).called(1);
+    });
+
+    test('commands rejected after stop', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_cmd('stop'));
+
+      final response = await handler.handleCommand(_cmd('startSync'));
+      expect(response['ok'], isFalse);
+      expect(response['errorCode'], 'INVALID_STATE');
+    });
+
+    test('ping still works after stop', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_cmd('stop'));
+
+      final response = await handler.handleCommand(_cmd('ping'));
+      expect(response['ok'], isTrue);
+    });
+
+    test('getHealth works after stop', () async {
+      handler = createTestHandler();
+      await handler.handleCommand(_cmd('stop'));
+
+      final response = await handler.handleCommand(_cmd('getHealth'));
+      expect(response['ok'], isTrue);
+      expect(response['state'], 'disposed');
+    });
+  });
 }
