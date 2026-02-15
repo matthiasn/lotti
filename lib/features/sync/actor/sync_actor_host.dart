@@ -116,17 +116,26 @@ class SyncActorHost {
   /// Gracefully stops the actor and cleans up resources.
   Future<void> dispose() async {
     if (_disposed) return;
+    _disposed = true;
 
-    // Send stop before marking disposed so send() doesn't short-circuit.
+    // Send stop directly, bypassing the disposed check in send().
     try {
-      await send('stop', timeout: const Duration(seconds: 5));
+      final replyPort = ReceivePort();
+      _commandPort.send(<String, Object?>{
+        'command': 'stop',
+        'replyTo': replyPort.sendPort,
+      });
+      try {
+        await replyPort.first.timeout(const Duration(seconds: 5));
+      } finally {
+        replyPort.close();
+      }
     } catch (_) {
       // Ignore — we'll kill the isolate anyway.
-    } finally {
-      _disposed = true;
-      _isolate.kill(priority: Isolate.immediate);
-      _eventPort.close();
-      await _eventController.close();
     }
+
+    _isolate.kill(priority: Isolate.immediate);
+    _eventPort.close();
+    await _eventController.close();
   }
 }

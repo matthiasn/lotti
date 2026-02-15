@@ -609,9 +609,9 @@ class SyncActorCommandHandler {
   }
 
   void _log(String message) {
-    if (_enableLogging) {
-      debugPrint('[SyncActor] $message');
-    }
+    if (!_enableLogging) return;
+    debugPrint('[SyncActor] $message');
+    _emitEvent({'event': 'log', 'message': message});
   }
 
   void _emitEvent(Map<String, Object?> event) {

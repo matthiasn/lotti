@@ -74,10 +74,18 @@ void main() {
 
         // Subscribe to event streams early for diagnostic logging
         host1.events.listen((event) {
-          debugPrint('[TEST] host1 event: $event');
+          if (event['event'] == 'log') {
+            debugPrint('[SyncActor:A] ${event['message']}');
+          } else {
+            debugPrint('[TEST] host1 event: $event');
+          }
         });
         host2.events.listen((event) {
-          debugPrint('[TEST] host2 event: $event');
+          if (event['event'] == 'log') {
+            debugPrint('[SyncActor:B] ${event['message']}');
+          } else {
+            debugPrint('[TEST] host2 event: $event');
+          }
         });
 
         // --- ping both actors ---
