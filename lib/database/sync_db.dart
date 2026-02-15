@@ -11,6 +11,8 @@ part 'sync_db.g.dart';
 
 const syncDbFileName = 'sync.sqlite';
 
+final int _outboxSendingStatus = OutboxStatus.sending.index;
+
 /// Status for entries in the sync sequence log.
 /// Tracks whether an entry was received, is missing, or has been backfilled.
 enum SyncSequenceStatus {
@@ -125,12 +127,14 @@ class SyncDatabase extends _$SyncDatabase {
   SyncDatabase({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
+    bool background = true,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
           openDbConnection(
             overriddenFilename ?? syncDbFileName,
             inMemoryDatabase: inMemoryDatabase,
+            background: background,
             documentsDirectoryProvider: documentsDirectoryProvider,
             tempDirectoryProvider: tempDirectoryProvider,
           ),
@@ -164,6 +168,63 @@ class SyncDatabase extends _$SyncDatabase {
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
           ..limit(limit))
         .get();
+  }
+
+  Future<OutboxItem?> claimNextOutboxItem({
+    Duration leaseDuration = const Duration(minutes: 1),
+    DateTime? now,
+  }) async {
+    final effectiveNow = now ?? DateTime.now();
+    final reclaimWindow = effectiveNow.subtract(leaseDuration);
+
+    return transaction(() async {
+      final candidate = await (select(outbox)
+            ..where(
+              (t) =>
+                  (t.status.equals(OutboxStatus.pending.index)) |
+                  (t.status.equals(_outboxSendingStatus) &
+                      t.updatedAt.isSmallerThanValue(reclaimWindow)),
+            )
+            ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+            ..limit(1))
+          .getSingleOrNull();
+
+      if (candidate == null) {
+        return null;
+      }
+
+      final updated = await (update(outbox)
+            ..where(
+              (t) =>
+                  t.id.equals(candidate.id) &
+                  t.status.equals(candidate.status) &
+                  (candidate.status == _outboxSendingStatus
+                      ? t.updatedAt.equals(candidate.updatedAt)
+                      : const Constant(true)),
+            ))
+          .write(
+        OutboxCompanion(
+          status: Value(_outboxSendingStatus),
+          updatedAt: Value(effectiveNow),
+        ),
+      );
+
+      if (updated != 1) {
+        return null;
+      }
+
+      return OutboxItem(
+        id: candidate.id,
+        createdAt: candidate.createdAt,
+        updatedAt: effectiveNow,
+        status: _outboxSendingStatus,
+        retries: candidate.retries,
+        message: candidate.message,
+        subject: candidate.subject,
+        filePath: candidate.filePath,
+        outboxEntryId: candidate.outboxEntryId,
+      );
+    });
   }
 
   Stream<List<OutboxItem>> watchOutboxItems({
@@ -495,6 +556,7 @@ class SyncDatabase extends _$SyncDatabase {
     int maxRequestCount = 10,
     Duration? maxAge,
     int? maxPerHost,
+    DateTime? now,
   }) async {
     // Get all missing/requested entries respecting request count
     final baseQuery = select(syncSequenceLog)
@@ -510,7 +572,7 @@ class SyncDatabase extends _$SyncDatabase {
 
     // Apply age filter if specified
     if (maxAge != null) {
-      final cutoff = DateTime.now().subtract(maxAge);
+      final cutoff = (now ?? DateTime.now()).subtract(maxAge);
       entries = entries.where((e) => e.createdAt.isAfter(cutoff)).toList();
     }
 

@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -52,6 +53,8 @@ class MockLoginStateController extends Mock
 SyncActorCommandHandler createTestHandler({
   void Function(MockMatrixSdkGateway gateway, MockClient client)?
       onGatewayCreated,
+  SyncDatabase Function(String dbRootPath)? syncDatabaseFactory,
+  void Function(SyncDatabase db)? onSyncDatabaseCreated,
   bool enableLogging = false,
   int verificationPeerDiscoveryAttempts = 8,
   Duration verificationPeerDiscoveryInterval =
@@ -103,6 +106,7 @@ SyncActorCommandHandler createTestHandler({
       when(() => mockClient.userOwnsEncryptionKeys(any()))
           .thenAnswer((_) async => false);
       when(() => mockClient.userDeviceKeysLoading).thenAnswer((_) async {});
+      when(() => mockClient.rooms).thenReturn(<Room>[]);
       when(
         () => mockClient.updateUserDeviceKeys(
           additionalUsers: any(named: 'additionalUsers'),
@@ -147,6 +151,12 @@ SyncActorCommandHandler createTestHandler({
         toDeviceEventStream ?? defaultToDeviceStreamController.stream,
     timelineEventStreamFactory: (Client _) =>
         timelineEventStream ?? defaultTimelineEventStreamController.stream,
+    syncDatabaseFactory: (String dbRootPath) {
+      final db = syncDatabaseFactory?.call(dbRootPath) ??
+          SyncDatabase(inMemoryDatabase: true);
+      onSyncDatabaseCreated?.call(db);
+      return db;
+    },
     verificationPeerDiscoveryAttempts: verificationPeerDiscoveryAttempts,
     verificationPeerDiscoveryInterval: verificationPeerDiscoveryInterval,
     vodInitializer: () async {},
@@ -370,6 +380,49 @@ void main() {
             await handler.handleCommand(_cmd('nonExistentCommand'));
         expect(response['ok'], isFalse);
         expect(response['errorCode'], 'UNKNOWN_COMMAND');
+      });
+    });
+
+    group('outbox control commands', () {
+      test('connectivityChanged rejects non-bool connected', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('connectivityChanged', {'connected': 'true'}),
+        );
+
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'INVALID_PARAMETER');
+      });
+
+      test('connectivityChanged updates connectivity', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final disconnect = await handler.handleCommand(
+          _cmd('connectivityChanged', {'connected': false}),
+        );
+        expect(disconnect['ok'], isTrue);
+
+        final reconnect = await handler.handleCommand(
+          _cmd('connectivityChanged', {'connected': true}),
+        );
+        expect(reconnect['ok'], isTrue);
+      });
+
+      test('kickOutbox rejected when uninitialized', () async {
+        handler = createTestHandler();
+        final response = await handler.handleCommand(_cmd('kickOutbox'));
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'INVALID_STATE');
+      });
+
+      test('kickOutbox accepted when initialized', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+        final response = await handler.handleCommand(_cmd('kickOutbox'));
+        expect(response['ok'], isTrue);
       });
     });
 

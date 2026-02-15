@@ -326,25 +326,11 @@ This uses a single notification mechanism:
 **Idempotency**: `JournalDb.updateJournalEntity()` already handles vector clock comparison
 and skips writes when the local version is newer. No additional dedup logic needed.
 
-**Hidden `getIt` coupling in `JournalDb`**: The current `updateJournalEntity()` method
-(database.dart:358, :379) calls `getIt<LoggingService>()` directly for error reporting.
-It also calls `saveJournalEntityJson()` (database.dart:396 → file_utils.dart:78) which
-calls `getDocumentsDirectory()` (file_utils.dart:127) → `getIt<Directory>()`. These
-globals are NOT initialized in a spawned isolate. **The actor must address this before
-Phase 4 DB writes will work.** Options:
-1. **Inject dependencies** — add `LoggingService` and `Directory` parameters to `JournalDb`
-   (or to the methods that need them), and have the actor pass its own instances. This is
-   the cleanest approach but requires modifying `JournalDb`.
-2. **Initialize a minimal getIt in the actor isolate** — register just `LoggingService` and
-   `Directory` in the actor's isolate before creating `JournalDb`. Pragmatic but couples the
-   actor to the global service locator pattern.
-3. **Actor-local DB wrapper** — the actor wraps `JournalDb` and handles JSON serialization
-   and logging itself, calling only the lower-level `upsertJournalDbEntity()` instead of
-   `updateJournalEntity()`. This avoids the getIt calls but requires reimplementing the
-   vector clock comparison and JSON save logic.
-
-Decision: to be made during Phase 4 implementation. Phase 1-3 don't touch `JournalDb` writes,
-so this is not blocking until then.
+**Hidden `getIt` coupling in `JournalDb`**: `updateJournalEntity()` and JSON persistence
+were historically coupled to `getIt` for `LoggingService` and `Directory`, which is not
+suitable for isolate contexts. This was resolved in Phase 3.5 Task 3 by adding injectable
+`LoggingService?`/`Directory?` wiring in `JournalDb` and `saveJournalEntityJson()`, with
+main-isolate callers continuing to use `getIt` fallback.
 
 **Crash safety**: If the actor crashes mid-batch, the next sync cycle re-discovers the
 same Matrix events and re-applies them. The DB writes are individually idempotent.
@@ -585,9 +571,9 @@ lib/features/sync/actor/
 
 #### Acceptance criteria
 
-- [ ] Integration test: multi-message send from durable outbox, all received
+- [x] Integration test: multi-message send from durable outbox, all received
 - [ ] Integration test: actor restart resumes pending/in-flight outbox rows
-- [ ] Unit tests: claim/lease semantics prevent duplicate sends
+- [x] Unit tests: claim/lease semantics prevent duplicate sends
 - [ ] Unit tests: retry logic, backoff timing (fakeAsync), queue ordering
 - [ ] Unit tests: connectivity change triggers retry
 - [ ] Analyzer zero warnings
@@ -599,8 +585,9 @@ isolate without any platform-channel or `getIt` dependencies. This is pure infra
 work that can be done independently of actor code — it modifies the existing DB layer to
 be isolate-safe while keeping all existing callers working.
 
-**Status**: Tasks 1 & 2 completed in commit `13fc72f18` (WAL mode & read pools). Only
-Task 3 (getIt coupling) remains before Phase 4 can begin.
+**Status**: Tasks 1 & 2 completed in commit `13fc72f18` (WAL mode & read pools).  
+Task 3 (getIt coupling) is now implemented, so Phase 3.5 is complete and does not block
+Phase 4.
 
 #### Task 1: Add `documentsDirectoryProvider` + `tempDirectoryProvider` to DB constructors [DONE]
 
@@ -637,27 +624,30 @@ connections.
 - [x] Tests verify WAL pragmas for both `background: true` and `background: false`
 - [x] Analyzer zero warnings
 
-#### Task 3: Resolve `getIt` coupling in `JournalDb.updateJournalEntity()`
+#### Task 3: Resolve `getIt` coupling in `JournalDb.updateJournalEntity()` [DONE]
 
 The method calls `getIt<LoggingService>()` (database.dart:358, :379) and
 `saveJournalEntityJson()` → `getIt<Directory>()` (file_utils.dart:127). These must work
 without the main isolate's `getIt` registry.
 
-**Recommended approach**: Add optional `LoggingService?` and `Directory?` fields to
-`JournalDb`. The actor passes its own instances at construction; existing main-isolate code
-continues to use the `getIt` fallback.
+**Decision implemented**: Add optional `LoggingService?` and `Directory?` fields to
+`JournalDb` (constructor + fallback logger logic) and pass them during actor construction.
+This keeps main-isolate code unchanged via existing `getIt` fallback.
 
 **Files changed:**
 - `lib/database/database.dart` — add optional injected dependencies
 - `lib/utils/file_utils.dart` — make `saveJournalEntityJson` accept an explicit `Directory`
-  parameter (or extract the actor-compatible version)
-- Corresponding test files
+  parameter and route JSON path writes through injected directory when provided.
+- `test/database/journal_db_actor_isolate_test.dart` — unit test added for `getIt`-free
+  `updateJournalEntity()` usage.
+- `integration_test/matrix_actor_isolate_network_test.dart` — added durable outbox assertions
+  that validate per-host outbox DB isolation and send/receive completion counts.
 
 **Acceptance criteria:**
-- [ ] `updateJournalEntity()` works when called from a context without `getIt` initialized
+- [x] `updateJournalEntity()` works when called from a context without `getIt` initialized
   (verified by unit test)
-- [ ] Existing main-isolate callers continue to work with no changes
-- [ ] Analyzer zero warnings
+- [x] Existing main-isolate callers continue to work with no changes
+- [x] Analyzer zero warnings
 
 ### Phase 4: Inbound Processing + Direct DB Writes
 
@@ -834,9 +824,9 @@ The actor MAY import from:
 - `lib/database/database.dart` (`JournalDb`) — actor creates its own instance.
   **Caveat**: this file imports `flutter/foundation.dart` (for `@visibleForTesting`),
   `get_it.dart`, `logging_service.dart`, and `file_utils.dart`. These are compile-time safe
-  (annotations don't execute, imports don't trigger platform channels), but the runtime
-  calls to `getIt<LoggingService>()` in `updateJournalEntity()` and
-  `saveJournalEntityJson()` → `getIt<Directory>()` will crash. See Phase 4 prerequisites.
+  (annotations don't execute, imports don't trigger platform channels). Runtime `getIt`
+  usage is optional when a logger and documents directory are injected into the `JournalDb`
+  ctor (Task 3 implementation). Main-isolate callers still use the `getIt` fallback.
 - `lib/database/settings_db.dart` (`SettingsDb`) — actor creates its own instance
 - `lib/database/common.dart` (`openDbConnection`) — actor uses `background: false` to
   avoid nested isolates, and provides `documentsDirectoryProvider` +
