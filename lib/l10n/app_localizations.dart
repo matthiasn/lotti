@@ -1847,6 +1847,18 @@ abstract class AppLocalizations {
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
 
+  /// No description provided for @configFlagEnableSyncActor.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Sync Actor'**
+  String get configFlagEnableSyncActor;
+
+  /// No description provided for @configFlagEnableSyncActorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the isolate-based Sync Actor for synchronization to improve reliability and resilience during reconnects.'**
+  String get configFlagEnableSyncActorDescription;
+
   /// No description provided for @configFlagEnableNotifications.
   ///
   /// In en, this message translates to:

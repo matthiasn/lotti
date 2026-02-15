@@ -68,6 +68,11 @@ void main() {
             description: 'Enable AI streaming responses?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableSyncActorFlag,
+            description: 'Enable isolate-based sync actor?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -286,6 +291,45 @@ void main() {
         ),
       );
       expect(dailyOsSwitch.value, isTrue);
+    });
+
+    testWidgets(
+      'displays enableSyncActorFlag with correct icon, title, and description',
+      (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final syncActorCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableSyncActor,
+      );
+      expect(syncActorCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: syncActorCard,
+          matching: find.text(
+            context.messages.configFlagEnableSyncActorDescription,
+          ),
+        ),
+        findsOneWidget,
+      );
+
+      expect(find.byIcon(Icons.sync_rounded), findsAtLeastNWidgets(1));
+
+      final syncActorSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: syncActorCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(syncActorSwitch.value, isFalse);
     });
   });
 }

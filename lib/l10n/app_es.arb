@@ -422,6 +422,8 @@
   "configFlagEnableLoggingDescription": "Habilitar el registro detallado para fines de depuración. Esto puede afectar el rendimiento.",
   "configFlagEnableMatrix": "Habilitar sincronización Matrix",
   "configFlagEnableMatrixDescription": "Habilitar la integración de Matrix para sincronizar tus entradas entre dispositivos y con otros usuarios de Matrix.",
+  "configFlagEnableSyncActor": "Habilitar actor de sincronización",
+  "configFlagEnableSyncActorDescription": "Usa el actor de sincronización basado en aislamiento para mejorar la confiabilidad y la resiliencia durante las reconexiones.",
   "configFlagEnableNotifications": "¿Habilitar notificaciones?",
   "configFlagEnableNotificationsDescription": "Recibir notificaciones de recordatorios, actualizaciones y eventos importantes.",
   "configFlagEnableSessionRatings": "Habilitar calificaciones de sesión",

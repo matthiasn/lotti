@@ -998,6 +998,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.';
 
   @override
+  String get configFlagEnableSyncActor => 'Enable Sync Actor';
+
+  @override
+  String get configFlagEnableSyncActorDescription =>
+      'Use the isolate-based Sync Actor for synchronization to improve reliability and resilience during reconnects.';
+
+  @override
   String get configFlagEnableNotifications => 'Povolit oznámení?';
 
   @override

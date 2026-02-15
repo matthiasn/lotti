@@ -1002,6 +1002,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activează integrarea Matrix pentru a sincroniza intrările dvs. pe diferite dispozitive și cu alți utilizatori Matrix.';
 
   @override
+  String get configFlagEnableSyncActor => 'Activați actorul de sincronizare';
+
+  @override
+  String get configFlagEnableSyncActorDescription =>
+      'Utilizați actorul de sincronizare bazat pe izolare pentru a îmbunătăți fiabilitatea și reziliența în timpul reconectărilor.';
+
+  @override
   String get configFlagEnableNotifications =>
       'Activează notificările pe desktop?';
 

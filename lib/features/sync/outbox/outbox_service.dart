@@ -42,6 +42,10 @@ class OutboxService {
     int maxRetries = 10,
     MatrixService? matrixService,
     bool? ownsActivityGate,
+    bool autoStartRunner = true,
+    bool listenConnectivityChanges = true,
+    bool listenLoginStateChanges = true,
+    bool monitorOutboxCount = true,
     Future<void> Function(String path, String json)? saveJsonHandler,
     // Optional seams for testing/injection
     Stream<List<ConnectivityResult>>? connectivityStream,
@@ -82,43 +86,52 @@ class OutboxService {
           maxRetriesOverride: maxRetries,
         );
 
-    _startRunner();
+    if (autoStartRunner) {
+      _startRunner();
+    }
 
     // Connectivity regain: nudge the outbox to attempt sending. If the client
     // is not yet logged in, schedule a couple of bounded follow-up nudges and
     // rely on the login-state subscription to trigger a send once login
     // completes.
-    _connectivitySubscription =
-        (_connectivityStream ?? Connectivity().onConnectivityChanged)
-            .listen((List<ConnectivityResult> result) {
-      final regained = {
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-        ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty;
-      if (regained) {
-        _loggingService.captureEvent(
-          'connectivity.regained → enqueue',
-          domain: 'OUTBOX',
-          subDomain: 'connectivity',
-        );
-        if (!_isDisposed) {
-          unawaited(enqueueNextSendRequest(delay: Duration.zero));
-        }
-        // If not logged in yet, add bounded extra nudges.
-        final notLoggedIn =
-            _matrixService != null && !_matrixService!.isLoggedIn();
-        if (notLoggedIn) {
-          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 5)));
-        }
-      }
-    });
+    if (listenConnectivityChanges) {
+      _connectivitySubscription =
+          (_connectivityStream ?? Connectivity().onConnectivityChanged).listen((
+            List<ConnectivityResult> result,
+          ) {
+            final regained = {
+              ConnectivityResult.wifi,
+              ConnectivityResult.mobile,
+              ConnectivityResult.ethernet,
+            }.intersection(result.toSet()).isNotEmpty;
+            if (regained) {
+              _loggingService.captureEvent(
+                'connectivity.regained → enqueue',
+                domain: 'OUTBOX',
+                subDomain: 'connectivity',
+              );
+              if (!_isDisposed) {
+                unawaited(enqueueNextSendRequest(delay: Duration.zero));
+              }
+              // If not logged in yet, add bounded extra nudges.
+              final notLoggedIn =
+                  _matrixService != null && !_matrixService!.isLoggedIn();
+              if (notLoggedIn) {
+                unawaited(
+                  enqueueNextSendRequest(delay: const Duration(seconds: 1)),
+                );
+                unawaited(
+                  enqueueNextSendRequest(delay: const Duration(seconds: 5)),
+                );
+              }
+            }
+          });
+    }
 
     // Post-login nudge: if connectivity regain fired too early, ensure a
     // deterministic enqueue once the Matrix client reports logged in.
     final client = _matrixService?.client;
-    if (client != null) {
+    if (listenLoginStateChanges && client != null) {
       _loginSubscription = client.onLoginStateChanged.stream.listen((state) {
         if (state == LoginState.loggedIn) {
           _loggingService.captureEvent(
@@ -132,18 +145,22 @@ class OutboxService {
     }
 
     // DB-driven nudge: ensure new pending items kick the runner while online.
-    _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((count) {
-      if (_isDisposed || count <= 0) return;
-      // Light debounce via a short delay
-      unawaited(
-        enqueueNextSendRequest(delay: SyncTuning.outboxDbNudgeDebounce),
-      );
-      _loggingService.captureEvent(
-        'dbNudge count=$count → enqueue',
-        domain: 'OUTBOX',
-        subDomain: 'dbNudge',
-      );
-    });
+    if (monitorOutboxCount) {
+      _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((
+        count,
+      ) {
+        if (_isDisposed || count <= 0) return;
+        // Light debounce via a short delay.
+        unawaited(
+          enqueueNextSendRequest(delay: SyncTuning.outboxDbNudgeDebounce),
+        );
+        _loggingService.captureEvent(
+          'dbNudge count=$count → enqueue',
+          domain: 'OUTBOX',
+          subDomain: 'dbNudge',
+        );
+      });
+    }
   }
 
   final LoggingService _loggingService;
@@ -168,7 +185,7 @@ class OutboxService {
   /// a one-time toast informing the user.
   Stream<void> get notLoggedInGateStream => _loginGateEventsController.stream;
 
-  late ClientRunner<int> _clientRunner;
+  ClientRunner<int>? _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
   StreamSubscription<int>? _outboxCountSubscription;
@@ -216,7 +233,7 @@ class OutboxService {
         }
         final hasPending =
             (await _repository.fetchPending(limit: 1)).isNotEmpty;
-        final idleQueue = _clientRunner.queueSize == 0;
+        final idleQueue = _clientRunner?.queueSize == 0;
         if (hasPending && loggedIn && idleQueue) {
           _loggingService.captureEvent(
             'watchdog: pending+loggedIn idleQueue → enqueue',
@@ -497,7 +514,9 @@ class OutboxService {
     unawaited(
       Future<void>.delayed(adjustedDelay).then((_) {
         if (_isDisposed) return;
-        _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
+        final runner = _clientRunner;
+        if (runner == null) return;
+        runner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
         _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
       }),
     );
@@ -1006,7 +1025,7 @@ class OutboxService {
 
   Future<void> dispose() async {
     _isDisposed = true;
-    _clientRunner.close();
+    _clientRunner?.close();
     await _connectivitySubscription?.cancel();
     await _loginSubscription?.cancel();
     await _outboxCountSubscription?.cancel();

@@ -422,6 +422,8 @@
   "configFlagEnableLoggingDescription": "Activer la journalisation détaillée à des fins de débogage. Cela peut avoir un impact sur les performances.",
   "configFlagEnableMatrix": "Activer la synchronisation Matrix",
   "configFlagEnableMatrixDescription": "Activer l'intégration Matrix pour synchroniser tes entrées sur plusieurs appareils et avec d'autres utilisateurs Matrix.",
+  "configFlagEnableSyncActor": "Activer le Sync Actor",
+  "configFlagEnableSyncActorDescription": "Utiliser le Sync Actor basé sur des isolats pour améliorer la fiabilité et la résilience lors des reconnexions.",
   "configFlagEnableNotifications": "Activer les notifications ?",
   "configFlagEnableNotificationsDescription": "Recevoir des notifications pour les rappels, les mises à jour et les événements importants.",
   "configFlagEnableSessionRatings": "Activer les évaluations de session",

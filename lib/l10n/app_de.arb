@@ -422,6 +422,8 @@
   "configFlagEnableLoggingDescription": "Aktiviert die detaillierte Protokollierung für Debugging-Zwecke. Dies kann die Leistung beeinträchtigen.",
   "configFlagEnableMatrix": "Matrix-Synchronisation aktivieren",
   "configFlagEnableMatrixDescription": "Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.",
+  "configFlagEnableSyncActor": "Sync-Actor aktivieren",
+  "configFlagEnableSyncActorDescription": "Nutze den Isolate-basierten Sync-Actor für die Synchronisierung, um Zuverlässigkeit und Stabilität bei Wiederverbindungen zu verbessern.",
   "configFlagEnableNotifications": "Benachrichtigungen aktivieren?",
   "configFlagEnableNotificationsDescription": "Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.",
   "configFlagEnableSessionRatings": "Sitzungsbewertungen aktivieren",

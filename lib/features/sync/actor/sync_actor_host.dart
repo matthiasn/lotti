@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:get_it/get_it.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
+import 'package:lotti/services/db_notification.dart';
 
 /// UI-side host that manages the sync actor isolate.
 ///
@@ -46,7 +48,9 @@ class SyncActorHost {
 
     eventPort.listen((dynamic raw) {
       if (raw is Map) {
-        eventController.add(raw.cast<String, Object?>());
+        final event = raw.cast<String, Object?>();
+        _notifyFromSyncEvent(event);
+        eventController.add(event);
       }
     });
 
@@ -66,6 +70,32 @@ class SyncActorHost {
 
   /// Broadcast stream of event maps from the actor.
   Stream<Map<String, Object?>> get events => _eventController.stream;
+
+  static Set<String> _toStringSet(
+    Map<String, Object?> event,
+    String key,
+  ) {
+    final values = event[key];
+    if (values is! List) {
+      return {};
+    }
+    return values.whereType<String>().toSet();
+  }
+
+  static void _notifyFromSyncEvent(Map<String, Object?> event) {
+    if (event['event'] != 'entitiesChanged') {
+      return;
+    }
+
+    final ids = _toStringSet(event, 'ids');
+    final notificationKeys = _toStringSet(event, 'notificationKeys');
+    final affected = {...ids, ...notificationKeys};
+    if (affected.isEmpty || !GetIt.instance.isRegistered<UpdateNotifications>()) {
+      return;
+    }
+
+    GetIt.instance<UpdateNotifications>().notify(affected, fromSync: true);
+  }
 
   /// Sends a command to the actor and returns the response.
   ///

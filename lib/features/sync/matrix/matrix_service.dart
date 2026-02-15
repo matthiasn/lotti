@@ -73,6 +73,8 @@ class MatrixService {
     @visibleForTesting MatrixStreamConsumer? pipelineOverride,
     // Optional seam to inject connectivity changes (for tests)
     this.connectivityStream,
+    bool runStartupRescan = true,
+    bool listenConnectivityChanges = true,
   })  : _gateway = gateway,
         _loggingService = loggingService,
         _activityGate = activityGate,
@@ -141,31 +143,33 @@ class MatrixService {
       _pipeline = pipeline;
 
       _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
-      // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
-      // to avoid gaps if the consumer started before room readiness or network flakiness.
-      unawaited(() async {
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-        try {
-          _loggingService.captureEvent(
-            'service.forceRescan.startup includeCatchUp=true',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-          await pipeline.forceRescan();
-          _loggingService.captureEvent(
-            'service.forceRescan.startup.done',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan.startup',
-            stackTrace: st,
-          );
-        }
-      }());
+      if (runStartupRescan) {
+        // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
+        // to avoid gaps if the consumer started before room readiness or network flakiness.
+        unawaited(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          try {
+            _loggingService.captureEvent(
+              'service.forceRescan.startup includeCatchUp=true',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'forceRescan',
+            );
+            await pipeline.forceRescan();
+            _loggingService.captureEvent(
+              'service.forceRescan.startup.done',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'forceRescan',
+            );
+          } catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'forceRescan.startup',
+              stackTrace: st,
+            );
+          }
+        }());
+      }
 
       if (syncEngine != null) {
         if (pipelineOverride == null) {
@@ -210,69 +214,71 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    // On connectivity regain, nudge the pipeline with a catch-up + scan and
-    // record this as a signal for observability.
-    _connectivitySubscription =
-        (connectivityStream ?? Connectivity().onConnectivityChanged)
-            .listen((List<ConnectivityResult> result) {
-      if ({
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-        ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty) {
-        // Record connectivity as a signal for metrics/observability.
-        _pipeline?.recordConnectivitySignal();
+    if (listenConnectivityChanges) {
+      // On connectivity regain, nudge the pipeline with a catch-up + scan and
+      // record this as a signal for observability.
+      _connectivitySubscription =
+          (connectivityStream ?? Connectivity().onConnectivityChanged)
+              .listen((List<ConnectivityResult> result) {
+        if ({
+          ConnectivityResult.wifi,
+          ConnectivityResult.mobile,
+          ConnectivityResult.ethernet,
+        }.intersection(result.toSet()).isNotEmpty) {
+          // Record connectivity as a signal for metrics/observability.
+          _pipeline?.recordConnectivitySignal();
 
-        // Coalesce repeated connectivity events: only trigger a rescan when
-        // there isn't one in-flight and we haven't just run one.
-        if (_rescanInFlight) {
-          _loggingService.captureEvent(
-            'service.forceRescan.connectivity.coalesce inFlight=true',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-          return;
-        }
-        final now = DateTime.now();
-        if (_lastRescanAt != null &&
-            now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
-          _loggingService.captureEvent(
-            'service.forceRescan.connectivity.coalesce recent',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'forceRescan',
-          );
-          return;
-        }
-
-        _rescanInFlight = true;
-        unawaited(() async {
-          try {
+          // Coalesce repeated connectivity events: only trigger a rescan when
+          // there isn't one in-flight and we haven't just run one.
+          if (_rescanInFlight) {
             _loggingService.captureEvent(
-              'service.forceRescan.connectivity includeCatchUp=true',
+              'service.forceRescan.connectivity.coalesce inFlight=true',
               domain: 'MATRIX_SERVICE',
               subDomain: 'forceRescan',
             );
-            await _pipeline?.forceRescan();
-            _loggingService.captureEvent(
-              'service.forceRescan.connectivity.done',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan',
-            );
-          } catch (e, st) {
-            // Log exceptions to aid debugging, but do not crash.
-            _loggingService.captureException(
-              e,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'connectivity',
-              stackTrace: st,
-            );
-          } finally {
-            _lastRescanAt = DateTime.now();
-            _rescanInFlight = false;
+            return;
           }
-        }());
-      }
-    });
+          final now = DateTime.now();
+          if (_lastRescanAt != null &&
+              now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
+            _loggingService.captureEvent(
+              'service.forceRescan.connectivity.coalesce recent',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'forceRescan',
+            );
+            return;
+          }
+
+          _rescanInFlight = true;
+          unawaited(() async {
+            try {
+              _loggingService.captureEvent(
+                'service.forceRescan.connectivity includeCatchUp=true',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'forceRescan',
+              );
+              await _pipeline?.forceRescan();
+              _loggingService.captureEvent(
+                'service.forceRescan.connectivity.done',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'forceRescan',
+              );
+            } catch (e, st) {
+              // Log exceptions to aid debugging, but do not crash.
+              _loggingService.captureException(
+                e,
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'connectivity',
+                stackTrace: st,
+              );
+            } finally {
+              _lastRescanAt = DateTime.now();
+              _rescanInFlight = false;
+            }
+          }());
+        }
+      });
+    }
   }
 
   static const Duration _statsDebounceDuration = Duration(

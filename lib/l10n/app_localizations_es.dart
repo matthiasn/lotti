@@ -1032,6 +1032,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Habilitar la integración de Matrix para sincronizar tus entradas entre dispositivos y con otros usuarios de Matrix.';
 
   @override
+  String get configFlagEnableSyncActor => 'Habilitar actor de sincronización';
+
+  @override
+  String get configFlagEnableSyncActorDescription =>
+      'Usa el actor de sincronización basado en aislamiento para mejorar la confiabilidad y la resiliencia durante las reconexiones.';
+
+  @override
   String get configFlagEnableNotifications => '¿Habilitar notificaciones?';
 
   @override

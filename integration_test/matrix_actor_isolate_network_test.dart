@@ -4,11 +4,16 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/sync_actor_host.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:path/path.dart' as path;
 
 const _defaultMatrixServer = 'http://localhost:8008';
 const _testUser = String.fromEnvironment('TEST_USER');
@@ -98,11 +103,153 @@ bool _hasIncomingMessageEvent(
   );
 }
 
+Set<String> _toStringSet(Object? raw) {
+  if (raw is List) {
+    return raw.whereType<String>().toSet();
+  }
+  return <String>{};
+}
+
+bool _hasEntitiesChangedEventForIds(
+  List<Map<String, Object?>> events,
+  Set<String> expectedIds,
+) {
+  bool eventMatches(Map<String, Object?> event) {
+    if (event['event'] != 'entitiesChanged') {
+      return false;
+    }
+
+    final allIds = {
+      ..._toStringSet(event['ids']),
+      ..._toStringSet(event['notificationKeys']),
+    };
+    for (final id in allIds) {
+      if (expectedIds.contains(id)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return events.any(eventMatches);
+}
+
+bool _hasEntitiesChangedNotification(
+  List<Map<String, Object?>> events,
+  Set<String> expectedNotificationKeys,
+) {
+  bool eventMatches(Map<String, Object?> event) {
+    if (event['event'] != 'entitiesChanged') {
+      return false;
+    }
+
+    final keys = _toStringSet(event['notificationKeys']);
+    for (final key in keys) {
+      if (expectedNotificationKeys.contains(key)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return events.any(eventMatches);
+}
+
+Future<void> _seedJournalPayloadFiles({
+  required String payloadId,
+  required Directory dbRootA,
+  required Directory dbRootB,
+  required DateTime timestamp,
+}) async {
+  final payload = JournalEntity.journalEntry(
+    meta: Metadata(
+      id: payloadId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      starred: false,
+      private: false,
+    ),
+    entryText: EntryText(plainText: 'sync test payload $payloadId'),
+  );
+
+  final payloadJson = jsonEncode(payload.toJson());
+  final relativePath = path.join('sync_payloads', '$payloadId.json');
+  final fileA = File(path.join(dbRootA.path, relativePath));
+  final fileB = File(path.join(dbRootB.path, relativePath));
+
+  await fileA.parent.create(recursive: true);
+  await fileB.parent.create(recursive: true);
+  await fileA.writeAsString(payloadJson);
+  await fileB.writeAsString(payloadJson);
+}
+
+Future<Set<String>> _seedOutboxMessages({
+  required SyncDatabase outboxDb,
+  required Directory senderDbRoot,
+  required Directory receiverDbRoot,
+  required String prefix,
+  required int count,
+  required DateTime baseTime,
+}) async {
+  final payloadIds = <String>{};
+  for (var i = 1; i <= count; i++) {
+    final payloadId = '$prefix-$i';
+    final timestamp = baseTime.add(Duration(minutes: i));
+    await _seedJournalPayloadFiles(
+      payloadId: payloadId,
+      dbRootA: senderDbRoot,
+      dbRootB: receiverDbRoot,
+      timestamp: timestamp,
+    );
+
+    final syncMessageJson = jsonEncode(
+      SyncMessage.journalEntity(
+        id: payloadId,
+        status: SyncEntryStatus.initial,
+        vectorClock: const VectorClock({}),
+        jsonPath: path.join('sync_payloads', '$payloadId.json'),
+      ).toJson(),
+    );
+    await outboxDb.addOutboxItem(
+      OutboxCompanion(
+        status: Value(OutboxStatus.pending.index),
+        subject: Value('outbox subject $prefix $i'),
+        message: Value(syncMessageJson),
+        createdAt: Value(timestamp),
+        updatedAt: Value(timestamp),
+        retries: const Value(0),
+      ),
+    );
+
+    payloadIds.add(payloadId);
+  }
+
+  return payloadIds;
+}
+
+Future<bool> _journalContainsEntries({
+  required JournalDb journalDb,
+  required Set<String> ids,
+}) async {
+  for (final id in ids) {
+    final row = await journalDb.journalEntityById(id);
+    if (row == null) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool _shouldLogHostEvent(Map<String, Object?> event) {
   final name = event['event'];
   if (name == 'ready' ||
       name == 'verificationState' ||
-      name == 'incomingMessage') {
+      name == 'incomingMessage' ||
+      name == 'entitiesChanged' ||
+      name == 'sendAck' ||
+      name == 'sendFailed') {
     return true;
   }
   if (name == 'toDevice') {
@@ -633,6 +780,19 @@ void main() {
           '[TEST] Host1 incomingMessage event detected for DeviceB send',
         );
 
+        final host1JournalDb = JournalDb(
+          documentsDirectoryProvider: () async => dbRoot1,
+          tempDirectoryProvider: () async => dbRoot1,
+        );
+        final host2JournalDb = JournalDb(
+          documentsDirectoryProvider: () async => dbRoot2,
+          tempDirectoryProvider: () async => dbRoot2,
+        );
+        addTearDown(() async {
+          await host1JournalDb.close();
+          await host2JournalDb.close();
+        });
+
         const outboxItemCount = 3;
         final outboxDb1 = SyncDatabase(
           documentsDirectoryProvider: () async => dbRoot1,
@@ -644,39 +804,27 @@ void main() {
         );
         final outboxBaseTime = DateTime(2024, 2, 1, 12);
 
-        Future<void> seedOutbox(
-          SyncDatabase outboxDb,
-          String prefix,
-        ) async {
-          for (var i = 1; i <= outboxItemCount; i++) {
-            final syncMessageJson = jsonEncode(
-              SyncMessage.journalEntity(
-                id: '$prefix-$i',
-                status: SyncEntryStatus.initial,
-                vectorClock: const VectorClock({'test': 1}),
-                jsonPath: '/tmp/integration/$prefix-$i.json',
-              ).toJson(),
-            );
-            await outboxDb.addOutboxItem(
-              OutboxCompanion(
-                status: Value(OutboxStatus.pending.index),
-                subject: Value('outbox subject $prefix $i'),
-                message: Value(syncMessageJson),
-                createdAt: Value(outboxBaseTime.add(Duration(minutes: i))),
-                updatedAt: Value(outboxBaseTime.add(Duration(minutes: i))),
-                retries: const Value(0),
-              ),
-            );
-          }
-        }
+        final host1PayloadIds = await _seedOutboxMessages(
+          outboxDb: outboxDb1,
+          senderDbRoot: dbRoot1,
+          receiverDbRoot: dbRoot2,
+          prefix: 'phase3-outbox-host1',
+          count: outboxItemCount,
+          baseTime: outboxBaseTime,
+        );
+        final host2PayloadIds = await _seedOutboxMessages(
+          outboxDb: outboxDb2,
+          senderDbRoot: dbRoot2,
+          receiverDbRoot: dbRoot1,
+          prefix: 'phase3-outbox-host2',
+          count: outboxItemCount,
+          baseTime: outboxBaseTime,
+        );
 
         addTearDown(() async {
           await outboxDb1.close();
           await outboxDb2.close();
         });
-
-        await seedOutbox(outboxDb1, 'phase3-outbox-host1');
-        await seedOutbox(outboxDb2, 'phase3-outbox-host2');
 
         final host1EventsBaseline = host1Events.length;
         final host2EventsBaseline = host2Events.length;
@@ -697,7 +845,7 @@ void main() {
 
         await _waitUntil(
           message: 'Host1 did not send all durable outbox messages',
-          timeout: const Duration(seconds: 40),
+          timeout: const Duration(seconds: 90),
           condition: () async {
             final ackCount = host1Events
                 .skip(host1EventsBaseline)
@@ -709,16 +857,14 @@ void main() {
 
         await _waitUntil(
           message: 'Host2 did not receive all durable outbox messages',
-          timeout: const Duration(seconds: 40),
+          timeout: const Duration(seconds: 90),
           condition: () async {
             final deliveredCount = host2Events
                 .skip(host2EventsBaseline)
-                .where(
-                  (event) =>
-                      event['event'] == 'incomingMessage' &&
-                      event['roomId'] == roomId &&
-                      event['messageType'] == 'com.lotti.sync.message',
-                )
+                .where((event) => _hasEntitiesChangedEventForIds(
+                      [event],
+                      host1PayloadIds,
+                    ))
                 .length;
             return deliveredCount >= outboxItemCount;
           },
@@ -726,7 +872,7 @@ void main() {
 
         await _waitUntil(
           message: 'Host2 did not send all durable outbox messages',
-          timeout: const Duration(seconds: 40),
+          timeout: const Duration(seconds: 90),
           condition: () async {
             final ackCount = host2Events
                 .skip(host2EventsBaseline)
@@ -738,15 +884,15 @@ void main() {
 
         await _waitUntil(
           message: 'Host1 did not receive all durable outbox messages',
-          timeout: const Duration(seconds: 40),
+          timeout: const Duration(seconds: 90),
           condition: () async {
             final deliveredCount = host1Events
                 .skip(host1EventsBaseline)
                 .where(
-                  (event) =>
-                      event['event'] == 'incomingMessage' &&
-                      event['roomId'] == roomId &&
-                      event['messageType'] == 'com.lotti.sync.message',
+                  (event) => _hasEntitiesChangedEventForIds(
+                    [event],
+                    host2PayloadIds,
+                  ),
                 )
                 .length;
             return deliveredCount >= outboxItemCount;
@@ -766,12 +912,8 @@ void main() {
 
         final finalDeliveredCount = host2Events
             .skip(host2EventsBaseline)
-            .where(
-              (event) =>
-                  event['event'] == 'incomingMessage' &&
-                  event['roomId'] == roomId &&
-                  event['messageType'] == 'com.lotti.sync.message',
-            )
+            .where((event) =>
+                _hasEntitiesChangedEventForIds([event], host1PayloadIds))
             .length;
         expect(
           finalDeliveredCount,
@@ -793,18 +935,63 @@ void main() {
 
         final host1DeliveredCount = host1Events
             .skip(host1EventsBaseline)
-            .where(
-              (event) =>
-                  event['event'] == 'incomingMessage' &&
-                  event['roomId'] == roomId &&
-                  event['messageType'] == 'com.lotti.sync.message',
-            )
+            .where((event) =>
+                _hasEntitiesChangedEventForIds([event], host2PayloadIds))
             .length;
         expect(
           host1DeliveredCount,
           outboxItemCount,
           reason:
               'Expected $outboxItemCount durable incoming messages on host1, got $host1DeliveredCount',
+        );
+
+        expect(
+          _hasEntitiesChangedNotification(
+            host1Events
+                .skip(host1EventsBaseline)
+                .where((event) => event['event'] == 'entitiesChanged')
+                .toList(),
+            const {textEntryNotification},
+          ),
+          isTrue,
+          reason:
+              'Expected textEntryNotification in host1 entitiesChanged events',
+        );
+        expect(
+          _hasEntitiesChangedNotification(
+            host2Events
+                .skip(host2EventsBaseline)
+                .where((event) => event['event'] == 'entitiesChanged')
+                .toList(),
+            const {textEntryNotification},
+          ),
+          isTrue,
+          reason:
+              'Expected textEntryNotification in host2 entitiesChanged events',
+        );
+
+        await _waitUntil(
+          message:
+              'Host2 journal should contain inbound payload entries from Host1',
+          timeout: const Duration(seconds: 30),
+          condition: () async {
+            return _journalContainsEntries(
+              journalDb: host2JournalDb,
+              ids: host1PayloadIds,
+            );
+          },
+        );
+
+        await _waitUntil(
+          message:
+              'Host1 journal should contain inbound payload entries from Host2',
+          timeout: const Duration(seconds: 30),
+          condition: () async {
+            return _journalContainsEntries(
+              journalDb: host1JournalDb,
+              ids: host2PayloadIds,
+            );
+          },
         );
 
         debugPrint('[TEST] Checking encryption health of both hosts...');

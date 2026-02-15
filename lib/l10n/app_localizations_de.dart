@@ -1006,6 +1006,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviert die Matrix-Integration, um deine Einträge geräteübergreifend und mit anderen Matrix-Benutzern zu synchronisieren.';
 
   @override
+  String get configFlagEnableSyncActor => 'Sync-Actor aktivieren';
+
+  @override
+  String get configFlagEnableSyncActorDescription =>
+      'Nutze den Isolate-basierten Sync-Actor für die Synchronisierung, um Zuverlässigkeit und Stabilität bei Wiederverbindungen zu verbessern.';
+
+  @override
   String get configFlagEnableNotifications => 'Benachrichtigungen aktivieren?';
 
   @override

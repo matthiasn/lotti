@@ -234,6 +234,7 @@ Future<void> registerSingletons() async {
     // backfillResponseHandler will be injected later to avoid circular dependency
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
+  final useSyncActor = await journalDb.getConfigFlag(enableSyncActorFlag);
 
   // Room discovery service for single-user multi-device flow
   final discoveryService = SyncRoomDiscoveryService(
@@ -261,6 +262,8 @@ Future<void> registerSingletons() async {
     collectSyncMetrics: collectSyncMetrics,
     attachmentIndex: attachmentIndex,
     roomManager: roomManager,
+    runStartupRescan: !useSyncActor,
+    listenConnectivityChanges: !useSyncActor,
   );
 
   getIt
@@ -283,6 +286,10 @@ Future<void> registerSingletons() async {
         activityGate: userActivityGate,
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
+        autoStartRunner: !useSyncActor,
+        listenConnectivityChanges: !useSyncActor,
+        listenLoginStateChanges: !useSyncActor,
+        monitorOutboxCount: !useSyncActor,
       ),
     );
 
@@ -306,8 +313,10 @@ Future<void> registerSingletons() async {
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
 
-  // Start the backfill request service
-  backfillRequestService.start();
+  // Start the backfill request service (legacy path only).
+  if (!useSyncActor) {
+    backfillRequestService.start();
+  }
 
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
@@ -348,7 +357,9 @@ Future<void> registerSingletons() async {
     'AudioWaveformService',
   );
 
-  unawaited(getIt<MatrixService>().init());
+  if (!useSyncActor) {
+    unawaited(getIt<MatrixService>().init());
+  }
   getIt<LoggingService>().listenToConfigFlag();
 
   // Shared rate limiter for AI label assignment

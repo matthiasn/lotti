@@ -421,6 +421,8 @@
   "configFlagEnableLoggingDescription": "Enable detailed logging for debugging purposes. This may impact performance.",
   "configFlagEnableMatrix": "Enable Matrix sync",
   "configFlagEnableMatrixDescription": "Enable the Matrix integration to sync your entries across devices and with other Matrix users.",
+  "configFlagEnableSyncActor": "Enable Sync Actor",
+  "configFlagEnableSyncActorDescription": "Use the isolate-based Sync Actor for synchronization to improve reliability and resilience during reconnects.",
   "configFlagEnableNotifications": "Enable notifications?",
   "configFlagEnableNotificationsDescription": "Receive notifications for reminders, updates, and important events.",
   "configFlagEnableSessionRatings": "Enable Session Ratings",

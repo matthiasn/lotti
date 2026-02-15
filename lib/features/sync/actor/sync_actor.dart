@@ -5,11 +5,15 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/actor/inbound_processor.dart';
 import 'package:lotti/features/sync/actor/outbound_queue.dart';
 import 'package:lotti/features/sync/actor/verification_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -54,6 +58,14 @@ typedef MatrixClientFactory = Future<Client> Function({
 
 typedef TimelineEventStreamFactory = Stream<Event> Function(Client client);
 typedef SyncDatabaseFactory = SyncDatabase Function(String dbRootPath);
+typedef JournalDbFactory = JournalDb Function(String dbRootPath);
+typedef SettingsDbFactory = SettingsDb Function(String dbRootPath);
+typedef InboundProcessorFactory = InboundProcessor Function({
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required Directory documentsDirectory,
+  required InboundProcessorEventSink emitEvent,
+});
 typedef OutboundQueueFactory = OutboundQueue Function({
   required SyncDatabase syncDatabase,
   required MatrixSdkGateway gateway,
@@ -87,6 +99,9 @@ class SyncActorCommandHandler {
     bool enableLogging = true,
     SyncDatabaseFactory? syncDatabaseFactory,
     OutboundQueueFactory? outboundQueueFactory,
+    JournalDbFactory? journalDbFactory,
+    SettingsDbFactory? settingsDbFactory,
+    InboundProcessorFactory? inboundProcessorFactory,
   })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
         _createMatrixClientFactory =
             createMatrixClientFactory ?? createMatrixClient,
@@ -101,6 +116,24 @@ class SyncActorCommandHandler {
                   background: false,
                 )),
         _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new,
+        _journalDbFactory = journalDbFactory ??
+            ((String dbRootPath) {
+              final dbRootDirectory = Directory(dbRootPath);
+              return JournalDb(
+                documentsDirectoryProvider: () async => dbRootDirectory,
+                documentsDirectory: dbRootDirectory,
+                tempDirectoryProvider: () async => dbRootDirectory,
+                background: false,
+              );
+            }),
+        _settingsDbFactory = settingsDbFactory ??
+            ((String dbRootPath) => SettingsDb(
+                  documentsDirectoryProvider: () async => Directory(dbRootPath),
+                  tempDirectoryProvider: () async => Directory(dbRootPath),
+                  background: false,
+                )),
+        _inboundProcessorFactory =
+            inboundProcessorFactory ?? _defaultInboundProcessorFactory,
         _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
         _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
         _enableLogging = enableLogging;
@@ -116,6 +149,9 @@ class SyncActorCommandHandler {
   final Stream<ToDeviceEvent> Function(Client)? _toDeviceEventStreamFactory;
   final TimelineEventStreamFactory? _timelineEventStreamFactory;
   final SyncDatabaseFactory _syncDatabaseFactory;
+  final JournalDbFactory _journalDbFactory;
+  final SettingsDbFactory _settingsDbFactory;
+  final InboundProcessorFactory _inboundProcessorFactory;
   final OutboundQueueFactory _outboundQueueFactory;
   final int _verificationPeerDiscoveryAttempts;
   final Duration _verificationPeerDiscoveryInterval;
@@ -128,6 +164,9 @@ class SyncActorCommandHandler {
   StreamSubscription<KeyVerification>? _incomingVerificationSub;
   StreamSubscription<Event>? _timelineEventSub;
   SyncDatabase? _syncDatabase;
+  JournalDb? _journalDb;
+  SettingsDb? _settingsDb;
+  InboundProcessor? _inboundProcessor;
   OutboundQueue? _outboundQueue;
   SentEventRegistry? _sentEventRegistry;
   Timer? _outboxPumpTimer;
@@ -327,6 +366,7 @@ class SyncActorCommandHandler {
         // Keep this hot path lightweight; avoid DB-heavy key refresh work here.
       });
 
+      await _initializeInboundProcessor(dbRootPath);
       await _initializeOutboundQueue(dbRootPath);
 
       // Enable the background sync loop now that startup is complete.
@@ -356,6 +396,7 @@ class SyncActorCommandHandler {
       _toDeviceSub = null;
       await _timelineEventSub?.cancel();
       _timelineEventSub = null;
+      await _disposeInboundProcessor();
       await _disposeOutboundQueue();
       await _verificationHandler.dispose();
       await _gateway?.dispose();
@@ -388,6 +429,33 @@ class SyncActorCommandHandler {
     );
 
     _kickOutboxQueue();
+  }
+
+  Future<void> _initializeInboundProcessor(String dbRootPath) async {
+    final dbDir = Directory(dbRootPath);
+    final journalDb = _journalDbFactory(dbRootPath);
+    final settingsDb = _settingsDbFactory(dbRootPath);
+
+    _journalDb = journalDb;
+    _settingsDb = settingsDb;
+    _inboundProcessor = _inboundProcessorFactory(
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      documentsDirectory: dbDir,
+      emitEvent: _emitEvent,
+    );
+  }
+
+  Future<void> _disposeInboundProcessor() async {
+    final journalDb = _journalDb;
+    final settingsDb = _settingsDb;
+
+    _inboundProcessor = null;
+    _journalDb = null;
+    _settingsDb = null;
+
+    await journalDb?.close();
+    await settingsDb?.close();
   }
 
   Map<String, Object?> _handleGetHealth({String? requestId}) {
@@ -1010,6 +1078,7 @@ class SyncActorCommandHandler {
 
     try {
       await _syncSub?.cancel();
+      await _disposeInboundProcessor();
       await _disposeOutboundQueue();
 
       await _incomingVerificationSub?.cancel();
@@ -1085,6 +1154,11 @@ class SyncActorCommandHandler {
     }
 
     if (_sentEventRegistry?.consume(eventId) ?? false) {
+      return;
+    }
+
+    if (event.messageType == syncMessageType) {
+      unawaited(_inboundProcessor?.processTimelineEvent(event));
       return;
     }
 
@@ -1173,6 +1247,20 @@ class SyncActorCommandHandler {
     return MatrixSdkGateway(
       client: client,
       sentEventRegistry: sentEventRegistry,
+    );
+  }
+
+  static InboundProcessor _defaultInboundProcessorFactory({
+    required JournalDb journalDb,
+    required SettingsDb settingsDb,
+    required Directory documentsDirectory,
+    required InboundProcessorEventSink emitEvent,
+  }) {
+    return InboundProcessor(
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      documentsDirectory: documentsDirectory,
+      emitEvent: emitEvent,
     );
   }
 }
