@@ -327,17 +327,17 @@ void main() {
       expect(claimed, isNotNull);
       expect(claimed?.id, 2);
       final refreshed = await database.getOutboxItemById(2);
-      expect(refreshed?.status, 3);
+      expect(refreshed?.status, OutboxStatus.sending.index);
       expect(refreshed?.updatedAt.isAfter(DateTime(2024, 1, 1)), isTrue);
     });
 
     test('claimNextOutboxItem skips in-flight rows with active leases',
         () async {
-      final now = DateTime(2099, 1, 1, 12);
+      final now = DateTime(2024, 1, 2, 12);
       final database = db!;
       await database.addOutboxItem(
         OutboxCompanion(
-          status: const Value(3),
+          status: Value(OutboxStatus.sending.index),
           subject: const Value('inFlight'),
           message: const Value('{"id":"inFlight"}'),
           createdAt: Value(now),
@@ -356,13 +356,14 @@ void main() {
 
       final claimed = await database.claimNextOutboxItem(
         leaseDuration: const Duration(minutes: 5),
+        now: now,
       );
 
       expect(claimed, isNotNull);
       expect(claimed?.id, 2);
-      expect(claimed?.status, 3);
+      expect(claimed?.status, OutboxStatus.sending.index);
       final first = await database.getOutboxItemById(1);
-      expect(first?.status, 3);
+      expect(first?.status, OutboxStatus.sending.index);
     });
 
     test('claimNextOutboxItem reclaims stale in-flight rows', () async {
@@ -371,7 +372,7 @@ void main() {
       final database = db!;
       await database.addOutboxItem(
         OutboxCompanion(
-          status: const Value(3),
+          status: Value(OutboxStatus.sending.index),
           subject: const Value('stale'),
           message: const Value('{"id":"stale"}'),
           createdAt: Value(stale),
@@ -390,11 +391,12 @@ void main() {
 
       final claimed = await database.claimNextOutboxItem(
         leaseDuration: const Duration(minutes: 5),
+        now: now,
       );
 
       expect(claimed, isNotNull);
       expect(claimed?.id, 1);
-      expect(claimed?.status, 3);
+      expect(claimed?.status, OutboxStatus.sending.index);
     });
 
     test('updateOutboxItem can set status to error', () async {

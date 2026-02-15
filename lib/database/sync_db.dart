@@ -11,7 +11,7 @@ part 'sync_db.g.dart';
 
 const syncDbFileName = 'sync.sqlite';
 
-const int _outboxSendingStatus = 3;
+final int _outboxSendingStatus = OutboxStatus.sending.index;
 
 /// Status for entries in the sync sequence log.
 /// Tracks whether an entry was received, is missing, or has been backfilled.
@@ -172,9 +172,10 @@ class SyncDatabase extends _$SyncDatabase {
 
   Future<OutboxItem?> claimNextOutboxItem({
     Duration leaseDuration = const Duration(minutes: 1),
+    DateTime? now,
   }) async {
-    final now = DateTime.now();
-    final reclaimWindow = now.subtract(leaseDuration);
+    final effectiveNow = now ?? DateTime.now();
+    final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
       final candidate = await (select(outbox)
@@ -203,8 +204,8 @@ class SyncDatabase extends _$SyncDatabase {
             ))
           .write(
         OutboxCompanion(
-          status: const Value(_outboxSendingStatus),
-          updatedAt: Value(now),
+          status: Value(_outboxSendingStatus),
+          updatedAt: Value(effectiveNow),
         ),
       );
 
@@ -215,7 +216,7 @@ class SyncDatabase extends _$SyncDatabase {
       return OutboxItem(
         id: candidate.id,
         createdAt: candidate.createdAt,
-        updatedAt: now,
+        updatedAt: effectiveNow,
         status: _outboxSendingStatus,
         retries: candidate.retries,
         message: candidate.message,

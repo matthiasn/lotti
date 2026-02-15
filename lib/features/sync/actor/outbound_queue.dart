@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
-// ignore_for_file: use_setters_to_change_properties
 typedef OutboundQueueEventSink = void Function(Map<String, Object?> event);
 
 const String _syncMessageType = 'com.lotti.sync.message';
@@ -62,13 +61,13 @@ class OutboundQueue {
 
   /// Allows the host-side provider to update the active room when joins/creates
   /// change.
-  /// Allows the host-side provider to update the active room when joins/creates
-  /// change.
+  // ignore: use_setters_to_change_properties
   void updateSyncRoomId(String? roomId) {
     _syncRoomId = roomId;
   }
 
   /// Updates connectivity status so backpressure can be paused while offline.
+  // ignore: use_setters_to_change_properties
   void updateConnectivity({required bool isConnected}) {
     _connected = isConnected;
   }
@@ -98,6 +97,7 @@ class OutboundQueue {
 
     try {
       final payload = _decodeMessage(claimedItem);
+      // Envelope is base64-encoded JSON for matrix transport compatibility.
       final encoded = base64.encode(utf8.encode(json.encode(payload.toJson())));
 
       final eventId = await _gateway
@@ -129,7 +129,7 @@ class OutboundQueue {
       return hasMore ? Duration.zero : null;
     } catch (error) {
       final reason = _normalizeFailure(error);
-      final nextDelay = await _markFailed(claimedItem, reason: reason);
+      final nextDelay = await _markFailed(claimedItem);
       _emitEvent({
         'event': 'sendFailed',
         'itemId': claimedItem.id,
@@ -142,10 +142,7 @@ class OutboundQueue {
     }
   }
 
-  Future<Duration> _markFailed(
-    OutboxItem item, {
-    required String reason,
-  }) async {
+  Future<Duration> _markFailed(OutboxItem item) async {
     final nextRetries = item.retries + 1;
     final nextStatus = nextRetries >= _maxRetries
         ? OutboxStatus.error.index
@@ -162,7 +159,7 @@ class OutboundQueue {
     );
 
     if (_disposed || !_connected) return _errorDelay;
-    return reason.isEmpty ? _retryDelay : nextDelay;
+    return nextDelay;
   }
 
   SyncMessage _decodeMessage(OutboxItem item) {

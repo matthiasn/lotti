@@ -374,14 +374,20 @@ class SyncActorCommandHandler {
   }
 
   Future<void> _initializeOutboundQueue(String dbRootPath) async {
-    _syncDatabase = _syncDatabaseFactory(dbRootPath);
+    final database = _syncDatabaseFactory(dbRootPath);
+    final gateway = _gateway;
+    if (gateway == null) {
+      throw StateError('Gateway not initialized');
+    }
+
+    _syncDatabase = database;
     _outboundQueue = _outboundQueueFactory(
-      syncDatabase: _syncDatabase!,
-      gateway: _gateway!,
+      syncDatabase: database,
+      gateway: gateway,
       emitEvent: _emitEvent,
     );
 
-    final joinedRooms = _gateway!.client.rooms;
+    final joinedRooms = gateway.client.rooms;
     if (joinedRooms.isNotEmpty) {
       _outboundQueue!.updateSyncRoomId(joinedRooms.first.id);
     }
@@ -543,7 +549,8 @@ class SyncActorCommandHandler {
   }
 
   Future<void> _drainOutboxQueue() async {
-    if (_outboundQueue == null || _outboxPumpActive) {
+    final queue = _outboundQueue;
+    if (queue == null || _outboxPumpActive) {
       return;
     }
     if (_state == SyncActorState.disposed ||
@@ -554,7 +561,17 @@ class SyncActorCommandHandler {
     _outboxPumpActive = true;
     try {
       while (true) {
-        final nextDelay = await _outboundQueue!.drain();
+        if (_outboundQueue == null || _state == SyncActorState.disposed ||
+            _state == SyncActorState.stopping) {
+          return;
+        }
+
+        final nextDelay = await queue.drain();
+        if (_outboundQueue == null || _state == SyncActorState.disposed ||
+            _state == SyncActorState.stopping) {
+          return;
+        }
+
         if (nextDelay == null) {
           return;
         }

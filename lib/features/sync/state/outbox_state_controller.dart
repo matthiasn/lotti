@@ -10,6 +10,7 @@ enum OutboxStatus {
   pending,
   sent,
   error,
+  sending,
 }
 
 /// Enum representing the outbox connectivity state.

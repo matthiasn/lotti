@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-// ignore_for_file: avoid_redundant_argument_values, cascade_invocations,
-// directives_ordering
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -134,7 +132,7 @@ void main() {
         _buildOutbox(
           subject: 'first',
           message: _syncMessageJson('id1'),
-          createdAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024),
         ),
       );
 
@@ -173,7 +171,7 @@ void main() {
         _buildOutbox(
           subject: 'first',
           message: _syncMessageJson('id1'),
-          createdAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024),
         ),
       );
 
@@ -202,8 +200,7 @@ void main() {
         syncDatabase: db,
         gateway: gateway,
         emitEvent: events.add,
-      );
-      queue.updateSyncRoomId('!override:localhost');
+      )..updateSyncRoomId('!override:localhost');
 
       when(() => client.rooms).thenReturn([room]);
       when(() => gateway.sendText(
@@ -217,7 +214,7 @@ void main() {
         _buildOutbox(
           subject: 'first',
           message: _syncMessageJson('id1'),
-          createdAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024),
         ),
       );
 

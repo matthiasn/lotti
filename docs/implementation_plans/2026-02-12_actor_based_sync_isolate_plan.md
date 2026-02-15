@@ -571,9 +571,9 @@ lib/features/sync/actor/
 
 #### Acceptance criteria
 
-- [ ] Integration test: multi-message send from durable outbox, all received
+- [x] Integration test: multi-message send from durable outbox, all received
 - [ ] Integration test: actor restart resumes pending/in-flight outbox rows
-- [ ] Unit tests: claim/lease semantics prevent duplicate sends
+- [x] Unit tests: claim/lease semantics prevent duplicate sends
 - [ ] Unit tests: retry logic, backoff timing (fakeAsync), queue ordering
 - [ ] Unit tests: connectivity change triggers retry
 - [ ] Analyzer zero warnings

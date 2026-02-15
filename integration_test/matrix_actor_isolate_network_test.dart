@@ -678,10 +678,8 @@ void main() {
         await seedOutbox(outboxDb1, 'phase3-outbox-host1');
         await seedOutbox(outboxDb2, 'phase3-outbox-host2');
 
-        final outboxAckBaseline = host1Events.length;
-        final host2OutboxAckBaseline = host2Events.length;
-        final host1IncomingBaseline = host1Events.length;
-        final host2IncomingBaseline = host2Events.length;
+        final host1EventsBaseline = host1Events.length;
+        final host2EventsBaseline = host2Events.length;
 
         debugPrint('[TEST] Enqueued $outboxItemCount durable outbox rows');
         final host1KickResult = await host1.send('kickOutbox');
@@ -702,7 +700,7 @@ void main() {
           timeout: const Duration(seconds: 40),
           condition: () async {
             final ackCount = host1Events
-                .skip(outboxAckBaseline)
+                .skip(host1EventsBaseline)
                 .where((event) => event['event'] == 'sendAck')
                 .length;
             return ackCount >= outboxItemCount;
@@ -714,7 +712,7 @@ void main() {
           timeout: const Duration(seconds: 40),
           condition: () async {
             final deliveredCount = host2Events
-                .skip(host2IncomingBaseline)
+                .skip(host2EventsBaseline)
                 .where(
                   (event) =>
                       event['event'] == 'incomingMessage' &&
@@ -731,7 +729,7 @@ void main() {
           timeout: const Duration(seconds: 40),
           condition: () async {
             final ackCount = host2Events
-                .skip(host2OutboxAckBaseline)
+                .skip(host2EventsBaseline)
                 .where((event) => event['event'] == 'sendAck')
                 .length;
             return ackCount >= outboxItemCount;
@@ -743,7 +741,7 @@ void main() {
           timeout: const Duration(seconds: 40),
           condition: () async {
             final deliveredCount = host1Events
-                .skip(host1IncomingBaseline)
+                .skip(host1EventsBaseline)
                 .where(
                   (event) =>
                       event['event'] == 'incomingMessage' &&
@@ -756,7 +754,7 @@ void main() {
         );
 
         final finalAckCount = host1Events
-            .skip(outboxAckBaseline)
+            .skip(host1EventsBaseline)
             .where((event) => event['event'] == 'sendAck')
             .length;
         expect(
@@ -767,7 +765,7 @@ void main() {
         );
 
         final finalDeliveredCount = host2Events
-            .skip(host2IncomingBaseline)
+            .skip(host2EventsBaseline)
             .where(
               (event) =>
                   event['event'] == 'incomingMessage' &&
@@ -783,7 +781,7 @@ void main() {
         );
 
         final host2AckCount = host2Events
-            .skip(host2OutboxAckBaseline)
+            .skip(host2EventsBaseline)
             .where((event) => event['event'] == 'sendAck')
             .length;
         expect(
@@ -794,7 +792,7 @@ void main() {
         );
 
         final host1DeliveredCount = host1Events
-            .skip(host1IncomingBaseline)
+            .skip(host1EventsBaseline)
             .where(
               (event) =>
                   event['event'] == 'incomingMessage' &&

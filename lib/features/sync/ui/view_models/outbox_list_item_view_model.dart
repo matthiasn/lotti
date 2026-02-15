@@ -41,6 +41,7 @@ class OutboxListItemViewModel {
         OutboxStatus.pending => messages.outboxMonitorLabelPending,
         OutboxStatus.sent => messages.outboxMonitorLabelSent,
         OutboxStatus.error => messages.outboxMonitorLabelError,
+        OutboxStatus.sending => messages.outboxMonitorLabelPending,
       },
       locale,
     );
@@ -49,18 +50,21 @@ class OutboxListItemViewModel {
       OutboxStatus.pending => theme.colorScheme.tertiary,
       OutboxStatus.sent => theme.colorScheme.primary,
       OutboxStatus.error => theme.colorScheme.error,
+      OutboxStatus.sending => theme.colorScheme.tertiary,
     };
 
     final statusIcon = switch (status) {
       OutboxStatus.pending => Icons.schedule_rounded,
       OutboxStatus.sent => Icons.check_circle_outline_rounded,
       OutboxStatus.error => Icons.error_outline_rounded,
+      OutboxStatus.sending => Icons.sync_rounded,
     };
 
     final statusChipIcon = switch (status) {
       OutboxStatus.pending => Icons.pending_actions_rounded,
       OutboxStatus.sent => Icons.outbox_rounded,
       OutboxStatus.error => Icons.report_rounded,
+      OutboxStatus.sending => Icons.sync_rounded,
     };
 
     final retriesLabel = _buildRetriesLabel(
