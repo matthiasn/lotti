@@ -75,9 +75,12 @@ String relativeEntityPath(JournalEntity journalEntity) {
   );
 }
 
-Future<void> saveJournalEntityJson(JournalEntity journalEntity) async {
+Future<void> saveJournalEntityJson(
+  JournalEntity journalEntity, {
+  Directory? documentsDirectory,
+}) async {
   final json = jsonEncode(journalEntity);
-  final docDir = getDocumentsDirectory();
+  final docDir = documentsDirectory ?? getDocumentsDirectory();
   final path = entityPath(journalEntity, docDir);
   await saveJson(path, json);
 }

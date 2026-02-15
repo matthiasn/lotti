@@ -295,6 +295,108 @@ void main() {
       expect(results.last.createdAt, DateTime(2024, 4, 2));
     });
 
+    test('claimNextOutboxItem claims oldest eligible item', () async {
+      final database = db!;
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          subject: 'newest',
+          message: '{"id":"newest"}',
+          createdAt: DateTime(2024, 1, 3),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          subject: 'oldest',
+          message: '{"id":"oldest"}',
+          createdAt: DateTime(2024, 1, 1),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.sent,
+          subject: 'ignored',
+          message: '{"id":"ignored"}',
+          createdAt: DateTime(2024, 1, 2),
+        ),
+      );
+
+      final claimed = await database.claimNextOutboxItem();
+
+      expect(claimed, isNotNull);
+      expect(claimed?.id, 2);
+      final refreshed = await database.getOutboxItemById(2);
+      expect(refreshed?.status, 3);
+      expect(refreshed?.updatedAt.isAfter(DateTime(2024, 1, 1)), isTrue);
+    });
+
+    test('claimNextOutboxItem skips in-flight rows with active leases',
+        () async {
+      final now = DateTime(2099, 1, 1, 12);
+      final database = db!;
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: const Value(3),
+          subject: const Value('inFlight'),
+          message: const Value('{"id":"inFlight"}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          retries: const Value(0),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          subject: 'pending',
+          message: '{"id":"pending"}',
+          createdAt: DateTime(2024, 1, 2),
+        ),
+      );
+
+      final claimed = await database.claimNextOutboxItem(
+        leaseDuration: const Duration(minutes: 5),
+      );
+
+      expect(claimed, isNotNull);
+      expect(claimed?.id, 2);
+      expect(claimed?.status, 3);
+      final first = await database.getOutboxItemById(1);
+      expect(first?.status, 3);
+    });
+
+    test('claimNextOutboxItem reclaims stale in-flight rows', () async {
+      final now = DateTime(2024, 1, 1, 12);
+      final stale = now.subtract(const Duration(minutes: 10));
+      final database = db!;
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: const Value(3),
+          subject: const Value('stale'),
+          message: const Value('{"id":"stale"}'),
+          createdAt: Value(stale),
+          updatedAt: Value(stale),
+          retries: const Value(0),
+        ),
+      );
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          subject: 'newer',
+          message: '{"id":"newer"}',
+          createdAt: DateTime(2024, 1, 2),
+        ),
+      );
+
+      final claimed = await database.claimNextOutboxItem(
+        leaseDuration: const Duration(minutes: 5),
+      );
+
+      expect(claimed, isNotNull);
+      expect(claimed?.id, 1);
+      expect(claimed?.status, 3);
+    });
+
     test('updateOutboxItem can set status to error', () async {
       final database = db!;
       await database.addOutboxItem(
@@ -971,7 +1073,7 @@ void main() {
     test('respects maxAge limit', () async {
       final database = db!;
       const hostId = 'host-1';
-      final now = DateTime.now();
+      final now = DateTime(2024, 1, 3, 12);
 
       // Entry from 2 hours ago (should be included with 1 day limit)
       await database.recordSequenceEntry(
@@ -997,6 +1099,7 @@ void main() {
 
       final missing = await database.getMissingEntriesWithLimits(
         maxAge: const Duration(days: 1),
+        now: now,
       );
       expect(missing, hasLength(1));
       expect(missing.first.counter, 1);
@@ -1101,7 +1204,7 @@ void main() {
 
     test('combines all limits correctly', () async {
       final database = db!;
-      final now = DateTime.now();
+      final now = DateTime(2024, 1, 3, 12);
 
       // Recent entries for host-1 (10 entries)
       for (var i = 1; i <= 10; i++) {
@@ -1133,6 +1236,7 @@ void main() {
         limit: 5,
         maxAge: const Duration(days: 1),
         maxPerHost: 3,
+        now: now,
       );
 
       // Only host-1 entries (maxAge filters host-2)

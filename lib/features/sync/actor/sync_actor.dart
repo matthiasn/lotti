@@ -5,6 +5,8 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/actor/outbound_queue.dart';
 import 'package:lotti/features/sync/actor/verification_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
@@ -51,6 +53,19 @@ typedef MatrixClientFactory = Future<Client> Function({
 });
 
 typedef TimelineEventStreamFactory = Stream<Event> Function(Client client);
+typedef SyncDatabaseFactory = SyncDatabase Function(String dbRootPath);
+typedef OutboundQueueFactory = OutboundQueue Function({
+  required SyncDatabase syncDatabase,
+  required MatrixSdkGateway gateway,
+  required OutboundQueueEventSink emitEvent,
+  Duration leaseDuration,
+  Duration retryDelay,
+  Duration errorDelay,
+  int maxRetries,
+  Duration sendTimeout,
+  bool connected,
+  String? syncRoomId,
+});
 
 /// Command handler that implements the sync actor's state machine.
 ///
@@ -70,6 +85,8 @@ class SyncActorCommandHandler {
     Duration verificationPeerDiscoveryInterval =
         _defaultVerificationPeerDiscoveryInterval,
     bool enableLogging = true,
+    SyncDatabaseFactory? syncDatabaseFactory,
+    OutboundQueueFactory? outboundQueueFactory,
   })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
         _createMatrixClientFactory =
             createMatrixClientFactory ?? createMatrixClient,
@@ -77,6 +94,13 @@ class SyncActorCommandHandler {
         _syncUpdateStreamFactory = syncUpdateStreamFactory,
         _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
         _timelineEventStreamFactory = timelineEventStreamFactory,
+        _syncDatabaseFactory = syncDatabaseFactory ??
+            ((String dbRootPath) => SyncDatabase(
+                  documentsDirectoryProvider: () async => Directory(dbRootPath),
+                  tempDirectoryProvider: () async => Directory(dbRootPath),
+                  background: false,
+                )),
+        _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new,
         _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
         _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
         _enableLogging = enableLogging;
@@ -91,6 +115,8 @@ class SyncActorCommandHandler {
   final Stream<SyncUpdate> Function(Client)? _syncUpdateStreamFactory;
   final Stream<ToDeviceEvent> Function(Client)? _toDeviceEventStreamFactory;
   final TimelineEventStreamFactory? _timelineEventStreamFactory;
+  final SyncDatabaseFactory _syncDatabaseFactory;
+  final OutboundQueueFactory _outboundQueueFactory;
   final int _verificationPeerDiscoveryAttempts;
   final Duration _verificationPeerDiscoveryInterval;
   final bool _enableLogging;
@@ -101,7 +127,11 @@ class SyncActorCommandHandler {
   StreamSubscription<SyncUpdate>? _syncSub;
   StreamSubscription<KeyVerification>? _incomingVerificationSub;
   StreamSubscription<Event>? _timelineEventSub;
+  SyncDatabase? _syncDatabase;
+  OutboundQueue? _outboundQueue;
   SentEventRegistry? _sentEventRegistry;
+  Timer? _outboxPumpTimer;
+  bool _outboxPumpActive = false;
 
   // Verification state
   StreamSubscription<LoginState>? _loginStateSub;
@@ -161,6 +191,10 @@ class SyncActorCommandHandler {
         return _handleJoinRoom(command, requestId: requestIdValue);
       case 'sendText':
         return _handleSendText(command, requestId: requestIdValue);
+      case 'kickOutbox':
+        return _handleKickOutbox(requestId: requestIdValue);
+      case 'connectivityChanged':
+        return _handleConnectivityChanged(command, requestId: requestIdValue);
       case 'startVerification':
         return _handleStartVerification(
           command: command,
@@ -293,6 +327,8 @@ class SyncActorCommandHandler {
         // Keep this hot path lightweight; avoid DB-heavy key refresh work here.
       });
 
+      await _initializeOutboundQueue(dbRootPath);
+
       // Enable the background sync loop now that startup is complete.
       // The actor path starts syncing by default for parity with the current
       // non-actor lifecycle behavior; startSync/stopSync remain explicit
@@ -320,6 +356,7 @@ class SyncActorCommandHandler {
       _toDeviceSub = null;
       await _timelineEventSub?.cancel();
       _timelineEventSub = null;
+      await _disposeOutboundQueue();
       await _verificationHandler.dispose();
       await _gateway?.dispose();
       _latestLoginState = null;
@@ -334,6 +371,22 @@ class SyncActorCommandHandler {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<void> _initializeOutboundQueue(String dbRootPath) async {
+    _syncDatabase = _syncDatabaseFactory(dbRootPath);
+    _outboundQueue = _outboundQueueFactory(
+      syncDatabase: _syncDatabase!,
+      gateway: _gateway!,
+      emitEvent: _emitEvent,
+    );
+
+    final joinedRooms = _gateway!.client.rooms;
+    if (joinedRooms.isNotEmpty) {
+      _outboundQueue!.updateSyncRoomId(joinedRooms.first.id);
+    }
+
+    _kickOutboxQueue();
   }
 
   Map<String, Object?> _handleGetHealth({String? requestId}) {
@@ -478,6 +531,57 @@ class SyncActorCommandHandler {
     }
   }
 
+  void _kickOutboxQueue({Duration delay = Duration.zero}) {
+    if (_outboundQueue == null) {
+      return;
+    }
+
+    _outboxPumpTimer?.cancel();
+    _outboxPumpTimer = Timer(delay, () {
+      unawaited(_drainOutboxQueue());
+    });
+  }
+
+  Future<void> _drainOutboxQueue() async {
+    if (_outboundQueue == null || _outboxPumpActive) {
+      return;
+    }
+    if (_state == SyncActorState.disposed ||
+        _state == SyncActorState.stopping) {
+      return;
+    }
+
+    _outboxPumpActive = true;
+    try {
+      while (true) {
+        final nextDelay = await _outboundQueue!.drain();
+        if (nextDelay == null) {
+          return;
+        }
+        if (nextDelay != Duration.zero) {
+          _kickOutboxQueue(delay: nextDelay);
+          return;
+        }
+      }
+    } finally {
+      _outboxPumpActive = false;
+    }
+  }
+
+  Future<void> _disposeOutboundQueue() async {
+    _outboxPumpTimer?.cancel();
+    _outboxPumpTimer = null;
+    _outboxPumpActive = false;
+
+    final queue = _outboundQueue;
+    _outboundQueue = null;
+    queue?.dispose();
+
+    final db = _syncDatabase;
+    _syncDatabase = null;
+    await db?.close();
+  }
+
   Future<Map<String, Object?>> _handleStopSync({String? requestId}) async {
     if (_state == SyncActorState.idle) {
       return _ok(requestId: requestId);
@@ -515,6 +619,8 @@ class SyncActorCommandHandler {
         name: name,
         inviteUserIds: inviteUserIds,
       );
+      _outboundQueue?.updateSyncRoomId(roomId);
+      _kickOutboxQueue();
       _log('createRoom ok: $roomId');
       return _ok(requestId: requestId, extra: {'roomId': roomId});
     } catch (e, stackTrace) {
@@ -543,6 +649,8 @@ class SyncActorCommandHandler {
     try {
       _log('joinRoom: $roomId');
       await _gateway!.joinRoom(roomId);
+      _outboundQueue?.updateSyncRoomId(roomId);
+      _kickOutboxQueue();
       _log('joinRoom ok: $roomId');
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
@@ -598,6 +706,36 @@ class SyncActorCommandHandler {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  Future<Map<String, Object?>> _handleKickOutbox({String? requestId}) async {
+    if (_state != SyncActorState.idle && _state != SyncActorState.syncing) {
+      return _invalidState('kickOutbox', requestId: requestId);
+    }
+
+    _kickOutboxQueue();
+    return _ok(requestId: requestId);
+  }
+
+  Future<Map<String, Object?>> _handleConnectivityChanged(
+    Map<String, Object?> command, {
+    String? requestId,
+  }) async {
+    if (_state != SyncActorState.idle && _state != SyncActorState.syncing) {
+      return _invalidState('connectivityChanged', requestId: requestId);
+    }
+
+    final connected = command['connected'];
+    if (connected is! bool) {
+      return _paramError('connected', connected, requestId: requestId);
+    }
+
+    _outboundQueue?.updateConnectivity(isConnected: connected);
+    if (connected) {
+      _kickOutboxQueue();
+    }
+
+    return _ok(requestId: requestId);
   }
 
   Future<Map<String, Object?>> _handleStartVerification({
@@ -849,11 +987,11 @@ class SyncActorCommandHandler {
 
     _log('state: ${_state.name} -> stopping');
     _state = SyncActorState.stopping;
-
     _gateway?.client.backgroundSync = false;
 
     try {
       await _syncSub?.cancel();
+      await _disposeOutboundQueue();
 
       await _incomingVerificationSub?.cancel();
       await _loginStateSub?.cancel();
@@ -890,10 +1028,10 @@ class SyncActorCommandHandler {
 
     unawaited(_refreshPeerDeviceKeys(userId));
 
-    final discoveryAttempts =
-        _verificationPeerDiscoveryAttempts > _maxVerificationPeerDiscoveryAttempts
-            ? _maxVerificationPeerDiscoveryAttempts
-            : _verificationPeerDiscoveryAttempts;
+    final discoveryAttempts = _verificationPeerDiscoveryAttempts >
+            _maxVerificationPeerDiscoveryAttempts
+        ? _maxVerificationPeerDiscoveryAttempts
+        : _verificationPeerDiscoveryAttempts;
 
     for (var attempt = 0; attempt < discoveryAttempts; attempt++) {
       final remoteUnverifiedDevices = gateway

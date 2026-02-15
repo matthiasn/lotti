@@ -41,7 +41,11 @@ class JournalDb extends _$JournalDb {
     bool background = true,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
-  }) : super(
+    LoggingService? loggingService,
+    Directory? documentsDirectory,
+  })  : _loggingService = loggingService,
+        _documentsDirectory = documentsDirectory,
+        super(
           openDbConnection(
             overriddenFilename ?? journalDbFileName,
             inMemoryDatabase: inMemoryDatabase,
@@ -53,6 +57,8 @@ class JournalDb extends _$JournalDb {
         );
 
   bool inMemoryDatabase = false;
+  final LoggingService? _loggingService;
+  final Directory? _documentsDirectory;
 
   @override
   int get schemaVersion => 29;
@@ -363,7 +369,7 @@ class JournalDb extends _$JournalDb {
       try {
         status = await detectConflict(existing, updated);
       } catch (error, stackTrace) {
-        getIt<LoggingService>().captureException(
+        _captureException(
           error,
           domain: 'JOURNAL_DB',
           subDomain: 'detectConflict',
@@ -384,7 +390,7 @@ class JournalDb extends _$JournalDb {
           await resolveConflict(existingConflict);
         }
       } else if (status != null) {
-        getIt<LoggingService>().captureEvent(
+        _captureEvent(
           EnumToString.convertToString(status),
           domain: 'JOURNAL_DB',
           subDomain: 'Conflict status',
@@ -401,7 +407,10 @@ class JournalDb extends _$JournalDb {
     }
 
     if (applied) {
-      await saveJournalEntityJson(updated);
+      await saveJournalEntityJson(
+        updated,
+        documentsDirectory: _documentsDirectory,
+      );
       await addTagged(updated);
       await addLabeled(updated);
       return JournalUpdateResult.applied(rowsWritten: rowsWritten);
@@ -1438,5 +1447,53 @@ WHERE EXISTS (
       ],
     ).get();
     return result.isNotEmpty;
+  }
+
+  void _captureException(
+    Object error, {
+    required String domain,
+    required String subDomain,
+    required StackTrace? stackTrace,
+  }) {
+    final logger = _logger;
+    if (logger == null) {
+      return;
+    }
+
+    logger.captureException(
+      error,
+      domain: domain,
+      subDomain: subDomain,
+      stackTrace: stackTrace,
+    );
+  }
+
+  void _captureEvent(
+    String message, {
+    required String domain,
+    required String subDomain,
+  }) {
+    final logger = _logger;
+    if (logger == null) {
+      return;
+    }
+
+    logger.captureEvent(
+      message,
+      domain: domain,
+      subDomain: subDomain,
+    );
+  }
+
+  LoggingService? get _logger {
+    if (_loggingService != null) {
+      return _loggingService;
+    }
+
+    if (getIt.isRegistered<LoggingService>()) {
+      return getIt<LoggingService>();
+    }
+
+    return null;
   }
 }

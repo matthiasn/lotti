@@ -1,8 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/sync_actor_host.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 const _defaultMatrixServer = 'http://localhost:8008';
 const _testUser = String.fromEnvironment('TEST_USER');
@@ -209,11 +215,16 @@ void main() {
 
         // Spawn two actor hosts simulating two devices of the same user
         debugPrint('[TEST] Spawning actor hosts...');
+        final actors = <SyncActorHost>[];
         final host1 = await SyncActorHost.spawn();
         final host2 = await SyncActorHost.spawn();
+        actors
+          ..add(host1)
+          ..add(host2);
         addTearDown(() async {
-          await host1.dispose();
-          await host2.dispose();
+          for (final actor in actors) {
+            await actor.dispose();
+          }
         });
 
         // Subscribe to event streams early for diagnostic logging and assertions.
@@ -494,8 +505,8 @@ void main() {
           },
         );
 
-        expect(host1VerificationState, isNotNull);
-        expect(host2VerificationState, isNotNull);
+        expect(host1VerificationState, isNot(equals(null)));
+        expect(host2VerificationState, isNot(equals(null)));
         expect(
           _emojiFingerprint(host1VerificationState!),
           isNotEmpty,
@@ -542,8 +553,8 @@ void main() {
           direction:
               host2 == starterHost ? starterDirection : responderDirection,
         );
-        expect(host1VerificationDone, isNotNull);
-        expect(host2VerificationDone, isNotNull);
+        expect(host1VerificationDone, isNot(equals(null)));
+        expect(host2VerificationDone, isNot(equals(null)));
 
         final verificationStateEvents = host1Events
             .where((event) => event['event'] == 'verificationState')
@@ -620,6 +631,182 @@ void main() {
         );
         debugPrint(
           '[TEST] Host1 incomingMessage event detected for DeviceB send',
+        );
+
+        const outboxItemCount = 3;
+        final outboxDb1 = SyncDatabase(
+          documentsDirectoryProvider: () async => dbRoot1,
+          tempDirectoryProvider: () async => dbRoot1,
+        );
+        final outboxDb2 = SyncDatabase(
+          documentsDirectoryProvider: () async => dbRoot2,
+          tempDirectoryProvider: () async => dbRoot2,
+        );
+        final outboxBaseTime = DateTime(2024, 2, 1, 12);
+
+        Future<void> seedOutbox(
+          SyncDatabase outboxDb,
+          String prefix,
+        ) async {
+          for (var i = 1; i <= outboxItemCount; i++) {
+            final syncMessageJson = jsonEncode(
+              SyncMessage.journalEntity(
+                id: '$prefix-$i',
+                status: SyncEntryStatus.initial,
+                vectorClock: const VectorClock({'test': 1}),
+                jsonPath: '/tmp/integration/$prefix-$i.json',
+              ).toJson(),
+            );
+            await outboxDb.addOutboxItem(
+              OutboxCompanion(
+                status: Value(OutboxStatus.pending.index),
+                subject: Value('outbox subject $prefix $i'),
+                message: Value(syncMessageJson),
+                createdAt: Value(outboxBaseTime.add(Duration(minutes: i))),
+                updatedAt: Value(outboxBaseTime.add(Duration(minutes: i))),
+                retries: const Value(0),
+              ),
+            );
+          }
+        }
+
+        addTearDown(() async {
+          await outboxDb1.close();
+          await outboxDb2.close();
+        });
+
+        await seedOutbox(outboxDb1, 'phase3-outbox-host1');
+        await seedOutbox(outboxDb2, 'phase3-outbox-host2');
+
+        final outboxAckBaseline = host1Events.length;
+        final host2OutboxAckBaseline = host2Events.length;
+        final host1IncomingBaseline = host1Events.length;
+        final host2IncomingBaseline = host2Events.length;
+
+        debugPrint('[TEST] Enqueued $outboxItemCount durable outbox rows');
+        final host1KickResult = await host1.send('kickOutbox');
+        expect(
+          host1KickResult['ok'],
+          isTrue,
+          reason: 'host1 kickOutbox failed: $host1KickResult',
+        );
+        final host2KickResult = await host2.send('kickOutbox');
+        expect(
+          host2KickResult['ok'],
+          isTrue,
+          reason: 'host2 kickOutbox failed: $host2KickResult',
+        );
+
+        await _waitUntil(
+          message: 'Host1 did not send all durable outbox messages',
+          timeout: const Duration(seconds: 40),
+          condition: () async {
+            final ackCount = host1Events
+                .skip(outboxAckBaseline)
+                .where((event) => event['event'] == 'sendAck')
+                .length;
+            return ackCount >= outboxItemCount;
+          },
+        );
+
+        await _waitUntil(
+          message: 'Host2 did not receive all durable outbox messages',
+          timeout: const Duration(seconds: 40),
+          condition: () async {
+            final deliveredCount = host2Events
+                .skip(host2IncomingBaseline)
+                .where(
+                  (event) =>
+                      event['event'] == 'incomingMessage' &&
+                      event['roomId'] == roomId &&
+                      event['messageType'] == 'com.lotti.sync.message',
+                )
+                .length;
+            return deliveredCount >= outboxItemCount;
+          },
+        );
+
+        await _waitUntil(
+          message: 'Host2 did not send all durable outbox messages',
+          timeout: const Duration(seconds: 40),
+          condition: () async {
+            final ackCount = host2Events
+                .skip(host2OutboxAckBaseline)
+                .where((event) => event['event'] == 'sendAck')
+                .length;
+            return ackCount >= outboxItemCount;
+          },
+        );
+
+        await _waitUntil(
+          message: 'Host1 did not receive all durable outbox messages',
+          timeout: const Duration(seconds: 40),
+          condition: () async {
+            final deliveredCount = host1Events
+                .skip(host1IncomingBaseline)
+                .where(
+                  (event) =>
+                      event['event'] == 'incomingMessage' &&
+                      event['roomId'] == roomId &&
+                      event['messageType'] == 'com.lotti.sync.message',
+                )
+                .length;
+            return deliveredCount >= outboxItemCount;
+          },
+        );
+
+        final finalAckCount = host1Events
+            .skip(outboxAckBaseline)
+            .where((event) => event['event'] == 'sendAck')
+            .length;
+        expect(
+          finalAckCount,
+          outboxItemCount,
+          reason:
+              'Expected $outboxItemCount sendAck events, got $finalAckCount',
+        );
+
+        final finalDeliveredCount = host2Events
+            .skip(host2IncomingBaseline)
+            .where(
+              (event) =>
+                  event['event'] == 'incomingMessage' &&
+                  event['roomId'] == roomId &&
+                  event['messageType'] == 'com.lotti.sync.message',
+            )
+            .length;
+        expect(
+          finalDeliveredCount,
+          outboxItemCount,
+          reason:
+              'Expected $outboxItemCount durable incoming messages, got $finalDeliveredCount',
+        );
+
+        final host2AckCount = host2Events
+            .skip(host2OutboxAckBaseline)
+            .where((event) => event['event'] == 'sendAck')
+            .length;
+        expect(
+          host2AckCount,
+          outboxItemCount,
+          reason:
+              'Expected $outboxItemCount host2 sendAck events, got $host2AckCount',
+        );
+
+        final host1DeliveredCount = host1Events
+            .skip(host1IncomingBaseline)
+            .where(
+              (event) =>
+                  event['event'] == 'incomingMessage' &&
+                  event['roomId'] == roomId &&
+                  event['messageType'] == 'com.lotti.sync.message',
+            )
+            .length;
+        expect(
+          host1DeliveredCount,
+          outboxItemCount,
+          reason:
+              'Expected $outboxItemCount durable incoming messages on host1, got $host1DeliveredCount',
         );
 
         debugPrint('[TEST] Checking encryption health of both hosts...');
