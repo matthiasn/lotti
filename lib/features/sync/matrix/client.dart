@@ -13,17 +13,22 @@ Future<Client> createMatrixClient({
 }) async {
   final name = dbName ?? 'lotti_sync';
   final path = '${documentsDirectory.path}/matrix/$name.db';
+  final isActorClient = name.startsWith('sync_actor_');
 
-  // Always use the regular factory which creates a dedicated worker isolate
-  // to serialize all FFI calls. This is safe even inside spawned isolates
-  // (main → actor → FFI worker) since modern Dart supports nested isolates.
-  final dbFactory = createDatabaseFactoryFfi(ffiInit: sqfliteFfiInit);
+  sqfliteFfiInit();
+  final dbFactory = isActorClient
+      // Actor hosts already run inside spawned isolates. Avoid an additional
+      // FFI worker isolate hop for DB I/O here to reduce cross-isolate DB
+      // contention/misuse during crypto session reads.
+      ? databaseFactoryFfiNoIsolate
+      : createDatabaseFactoryFfi(ffiInit: sqfliteFfiInit);
 
   final database = await MatrixSdkDatabase.init(
     name,
     database: await dbFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
+        singleInstance: !isActorClient,
         onConfigure: (db) async {
           await db.execute('PRAGMA journal_mode = WAL');
           await db.execute('PRAGMA busy_timeout = 5000');

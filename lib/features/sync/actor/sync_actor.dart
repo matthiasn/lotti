@@ -5,11 +5,16 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/actor/verification_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+
+const _defaultVerificationPeerDiscoveryAttempts = 24;
+const _defaultVerificationPeerDiscoveryInterval = Duration(milliseconds: 500);
+const _verificationPeerDiscoveryCooldown = Duration(seconds: 1);
 
 /// States of the sync actor isolate.
 enum SyncActorState {
@@ -43,6 +48,8 @@ typedef MatrixClientFactory = Future<Client> Function({
   String? dbName,
 });
 
+typedef TimelineEventStreamFactory = Stream<Event> Function(Client client);
+
 /// Command handler that implements the sync actor's state machine.
 ///
 /// This class is designed to be testable without an isolate — tests can
@@ -55,6 +62,11 @@ class SyncActorCommandHandler {
     VodInitializer? vodInitializer,
     Stream<SyncUpdate> Function(Client)? syncUpdateStreamFactory,
     Stream<ToDeviceEvent> Function(Client)? toDeviceEventStreamFactory,
+    TimelineEventStreamFactory? timelineEventStreamFactory,
+    int verificationPeerDiscoveryAttempts =
+        _defaultVerificationPeerDiscoveryAttempts,
+    Duration verificationPeerDiscoveryInterval =
+        _defaultVerificationPeerDiscoveryInterval,
     bool enableLogging = true,
   })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
         _createMatrixClientFactory =
@@ -62,27 +74,40 @@ class SyncActorCommandHandler {
         _vodInitializer = vodInitializer ?? vod.init,
         _syncUpdateStreamFactory = syncUpdateStreamFactory,
         _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
+        _timelineEventStreamFactory = timelineEventStreamFactory,
+        _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
+        _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
         _enableLogging = enableLogging;
+
+  late final VerificationHandler _verificationHandler = VerificationHandler(
+    onStateChanged: _emitEvent,
+  );
 
   final GatewayFactory _gatewayFactory;
   final MatrixClientFactory _createMatrixClientFactory;
   final VodInitializer _vodInitializer;
   final Stream<SyncUpdate> Function(Client)? _syncUpdateStreamFactory;
   final Stream<ToDeviceEvent> Function(Client)? _toDeviceEventStreamFactory;
+  final TimelineEventStreamFactory? _timelineEventStreamFactory;
+  final int _verificationPeerDiscoveryAttempts;
+  final Duration _verificationPeerDiscoveryInterval;
   final bool _enableLogging;
 
   SyncActorState _state = SyncActorState.uninitialized;
   MatrixSdkGateway? _gateway;
   SendPort? _eventPort;
   StreamSubscription<SyncUpdate>? _syncSub;
+  StreamSubscription<KeyVerification>? _incomingVerificationSub;
+  StreamSubscription<Event>? _timelineEventSub;
+  SentEventRegistry? _sentEventRegistry;
 
   // Verification state
-  KeyVerification? _outgoingVerification;
-  KeyVerification? _incomingVerification;
-  StreamSubscription<KeyVerification>? _verificationSub;
   StreamSubscription<LoginState>? _loginStateSub;
   StreamSubscription<ToDeviceEvent>? _toDeviceSub;
   LoginState? _latestLoginState;
+
+  DateTime? _lastVerificationKeyRefresh;
+  Future<void>? _verificationKeyRefreshInFlight;
 
   // Diagnostic counters
   int _toDeviceEventCount = 0;
@@ -135,7 +160,10 @@ class SyncActorCommandHandler {
       case 'sendText':
         return _handleSendText(command, requestId: requestIdValue);
       case 'startVerification':
-        return _handleStartVerification(requestId: requestIdValue);
+        return _handleStartVerification(
+          command: command,
+          requestId: requestIdValue,
+        );
       case 'acceptVerification':
         return _handleAcceptVerification(requestId: requestIdValue);
       case 'acceptSas':
@@ -204,9 +232,10 @@ class SyncActorCommandHandler {
       );
       _log('init: matrix client created');
 
+      _sentEventRegistry = SentEventRegistry();
       _gateway = _gatewayFactory(
         client: client,
-        sentEventRegistry: SentEventRegistry(),
+        sentEventRegistry: _sentEventRegistry!,
       );
 
       final config = MatrixConfig(
@@ -233,33 +262,33 @@ class SyncActorCommandHandler {
         });
       });
 
-      _verificationSub =
+      _incomingVerificationSub =
           _gateway!.keyVerificationRequests.listen((verification) {
-        _incomingVerification = verification;
         _log(
           'event: incoming verification, '
           'step=${verification.lastStep}, '
           'isDone=${verification.isDone}',
         );
-        _emitEvent({
-          'event': 'verificationState',
-          'step': verification.lastStep,
-          'isDone': verification.isDone,
-          'isCanceled': verification.canceled,
-          'direction': 'incoming',
-        });
+        _verificationHandler.trackIncoming(verification);
       });
+
+      _timelineEventSub = _timelineEventStreamFor(_gateway!.client).listen(
+        _handleTimelineEvent,
+      );
 
       // Track all to-device events for diagnostics.
       final toDeviceStream = _toDeviceEventStreamFor(_gateway!.client);
       _toDeviceSub = toDeviceStream.listen((event) {
         _toDeviceEventCount++;
-        _log('event: toDevice type=${event.type} sender=${event.sender}');
+        final sender = event.sender;
+        final toDeviceType = event.type;
         _emitEvent({
           'event': 'toDevice',
-          'type': event.type,
-          'sender': event.sender,
+          'type': toDeviceType,
+          'sender': sender,
         });
+
+        // Keep this hot path lightweight; avoid DB-heavy key refresh work here.
       });
 
       // Enable the background sync loop now that startup is complete.
@@ -283,12 +312,16 @@ class SyncActorCommandHandler {
       // connections on repeated init attempts.
       await _loginStateSub?.cancel();
       _loginStateSub = null;
-      await _verificationSub?.cancel();
-      _verificationSub = null;
+      await _incomingVerificationSub?.cancel();
+      _incomingVerificationSub = null;
       await _toDeviceSub?.cancel();
       _toDeviceSub = null;
+      await _timelineEventSub?.cancel();
+      _timelineEventSub = null;
+      await _verificationHandler.dispose();
       await _gateway?.dispose();
       _latestLoginState = null;
+      _sentEventRegistry = null;
       _gateway = null;
       _eventPort = null;
 
@@ -566,19 +599,36 @@ class SyncActorCommandHandler {
   }
 
   Future<Map<String, Object?>> _handleStartVerification({
+    required Map<String, Object?> command,
     String? requestId,
   }) async {
     if (_state != SyncActorState.idle && _state != SyncActorState.syncing) {
       return _invalidState('startVerification', requestId: requestId);
     }
 
+    if (_verificationHandler.hasIncoming || _verificationHandler.hasOutgoing) {
+      return _ok(
+        requestId: requestId,
+        extra: {'started': false},
+      );
+    }
+
     try {
+      final roomId = command['roomId'];
+      if (roomId != null && roomId is! String) {
+        return _paramError('roomId', roomId, requestId: requestId);
+      }
+      if (roomId is String && roomId.isEmpty) {
+        return _paramError('roomId', roomId, requestId: requestId);
+      }
+
       final peerDevice = await _findUnverifiedPeerDevice();
       if (peerDevice == null) {
         return _ok(requestId: requestId, extra: {'started': false});
       }
 
-      _outgoingVerification = await _gateway!.startKeyVerification(peerDevice);
+      final verification = await _startVerification(peerDevice, roomId: roomId);
+      _verificationHandler.trackOutgoing(verification);
 
       return _ok(requestId: requestId, extra: {'started': true});
     } catch (e, stackTrace) {
@@ -590,6 +640,159 @@ class SyncActorCommandHandler {
     }
   }
 
+  Future<KeyVerification> _startVerification(
+    DeviceKeys peerDevice, {
+    Object? roomId,
+  }) async {
+    final clientUserId = _gateway!.client.userID;
+    final shouldUseDirectVerification =
+        roomId == null || peerDevice.userId == clientUserId;
+
+    if (shouldUseDirectVerification) {
+      final directVerification =
+          await _gateway!.startKeyVerification(peerDevice);
+      return _ensureVerificationRequestProgress(directVerification);
+    }
+
+    final peerUserId = peerDevice.userId;
+    final roomIdValue = roomId as String;
+    if (roomIdValue.isEmpty) {
+      throw Exception('roomId must be a non-empty string');
+    }
+
+    final client = _gateway!.client;
+    final encryption = client.encryption;
+    if (encryption == null) {
+      throw Exception('startKeyVerification requires enabled encryption');
+    }
+
+    final room = client.getRoomById(roomIdValue);
+    if (room == null) {
+      throw Exception('Room verification requires existing room $roomIdValue');
+    }
+
+    final verification = KeyVerification(
+      encryption: encryption,
+      room: room,
+      userId: peerUserId,
+    );
+
+    await verification.start();
+    return _ensureVerificationRequestProgress(verification);
+  }
+
+  Future<KeyVerification> _ensureVerificationRequestProgress(
+    KeyVerification verification,
+  ) async {
+    final wasStarted = verification.startedVerification;
+    await verification.openSSSS(skip: true);
+    if (!wasStarted && !verification.startedVerification) {
+      throw StateError('Verification request did not start');
+    }
+    return verification;
+  }
+
+  Future<void> _refreshPeerDeviceKeys(String userId) async {
+    final client = _gateway?.client;
+    if (client == null) return;
+
+    final inFlight = _verificationKeyRefreshInFlight;
+    if (inFlight != null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastRefresh = _lastVerificationKeyRefresh;
+    if (lastRefresh != null &&
+        now.difference(lastRefresh) < _verificationPeerDiscoveryCooldown) {
+      return;
+    }
+
+    Future<void> refreshTask() async {
+      _lastVerificationKeyRefresh = now;
+      final beforeCount = client.userDeviceKeys[userId]?.deviceKeys.length ?? 0;
+
+      await _updateUserDeviceKeysBestEffort(
+        client,
+        userId,
+        additionalUsers: <String>{userId},
+        maxAttempts: 1,
+      );
+
+      try {
+        final loading = client.userDeviceKeysLoading;
+        if (loading != null) {
+          await loading.timeout(const Duration(seconds: 2));
+        }
+      } catch (_) {
+        // Best-effort only.
+      }
+
+      final afterCount = client.userDeviceKeys[userId]?.deviceKeys.length ?? 0;
+      if (afterCount != beforeCount) {
+        _log(
+          'verification device keys updated for $userId: '
+          '$beforeCount -> $afterCount',
+        );
+      }
+    }
+
+    final inFlightTask = refreshTask();
+    _verificationKeyRefreshInFlight = inFlightTask;
+    try {
+      await inFlightTask;
+    } finally {
+      if (_verificationKeyRefreshInFlight == inFlightTask) {
+        _verificationKeyRefreshInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _updateUserDeviceKeysBestEffort(
+    Client client,
+    String userId, {
+    Set<String>? additionalUsers,
+    int maxAttempts = 3,
+  }) async {
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        if (additionalUsers == null) {
+          await client
+              .updateUserDeviceKeys()
+              .timeout(const Duration(seconds: 3));
+        } else {
+          await client
+              .updateUserDeviceKeys(additionalUsers: additionalUsers)
+              .timeout(const Duration(seconds: 3));
+        }
+        return;
+      } catch (error, stackTrace) {
+        lastError = error;
+        lastStackTrace = stackTrace;
+        if (attempt < maxAttempts) {
+          await Future<void>.delayed(Duration(milliseconds: 100 * attempt));
+        }
+      }
+    }
+
+    if (lastError != null) {
+      final scope = additionalUsers == null ? 'all' : 'additional';
+      _log(
+        'verification key refresh failed '
+        '(scope=$scope user=$userId): $lastError\n$lastStackTrace',
+      );
+      _emitEvent({
+        'event': 'verificationKeyRefreshError',
+        'scope': scope,
+        'userId': userId,
+        'error': lastError.toString(),
+      });
+    }
+  }
+
   Future<Map<String, Object?>> _handleAcceptVerification({
     String? requestId,
   }) async {
@@ -597,18 +800,16 @@ class SyncActorCommandHandler {
       return _invalidState('acceptVerification', requestId: requestId);
     }
 
-    final verification = _incomingVerification;
-    if (verification == null) {
-      return _error(
-        'No incoming verification to accept',
-        requestId: requestId,
-      );
-    }
-
     try {
-      await verification.acceptVerification();
+      await _verificationHandler.acceptVerification();
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
+      if (e is StateError) {
+        return _error(
+          'No incoming verification to accept',
+          requestId: requestId,
+        );
+      }
       return _error(
         'acceptVerification failed: $e',
         requestId: requestId,
@@ -622,17 +823,16 @@ class SyncActorCommandHandler {
       return _invalidState('acceptSas', requestId: requestId);
     }
 
-    // Accept SAS on whichever verification is active.
-    final verification = _outgoingVerification ?? _incomingVerification;
-    if (verification == null) {
-      return _error('No active verification for acceptSas',
-          requestId: requestId);
-    }
-
     try {
-      await verification.acceptSas();
+      await _verificationHandler.acceptSas();
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
+      if (e is StateError) {
+        return _error(
+          'No active verification for acceptSas',
+          requestId: requestId,
+        );
+      }
       return _error(
         'acceptSas failed: $e',
         requestId: requestId,
@@ -649,10 +849,7 @@ class SyncActorCommandHandler {
     }
 
     try {
-      await _outgoingVerification?.cancel();
-      await _incomingVerification?.cancel();
-      _outgoingVerification = null;
-      _incomingVerification = null;
+      await _verificationHandler.cancel();
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
       return _error(
@@ -666,27 +863,7 @@ class SyncActorCommandHandler {
   Map<String, Object?> _handleGetVerificationState({
     String? requestId,
   }) {
-    String emojisToString(Iterable<KeyVerificationEmoji>? emojis) {
-      if (emojis == null) return '';
-      try {
-        return emojis.map((e) => e.emoji).join(' ');
-      } catch (_) {
-        return '';
-      }
-    }
-
-    return _ok(requestId: requestId, extra: {
-      'hasOutgoing': _outgoingVerification != null,
-      'hasIncoming': _incomingVerification != null,
-      'outgoingStep': _outgoingVerification?.lastStep,
-      'incomingStep': _incomingVerification?.lastStep,
-      'outgoingEmojis': emojisToString(_outgoingVerification?.sasEmojis),
-      'incomingEmojis': emojisToString(_incomingVerification?.sasEmojis),
-      'outgoingDone': _outgoingVerification?.isDone ?? false,
-      'incomingDone': _incomingVerification?.isDone ?? false,
-      'outgoingCanceled': _outgoingVerification?.canceled ?? false,
-      'incomingCanceled': _incomingVerification?.canceled ?? false,
-    });
+    return _ok(requestId: requestId, extra: _verificationHandler.snapshot());
   }
 
   Future<Map<String, Object?>> _handleStop({String? requestId}) async {
@@ -702,21 +879,23 @@ class SyncActorCommandHandler {
     try {
       await _syncSub?.cancel();
 
-      await _verificationSub?.cancel();
+      await _incomingVerificationSub?.cancel();
       await _loginStateSub?.cancel();
       await _toDeviceSub?.cancel();
+      await _timelineEventSub?.cancel();
+      await _verificationHandler.dispose();
       await _gateway?.dispose();
     } catch (e, stackTrace) {
       _log('stop: cleanup error (continuing): $e\n$stackTrace');
     } finally {
       _syncSub = null;
-      _verificationSub = null;
+      _incomingVerificationSub = null;
       _loginStateSub = null;
       _toDeviceSub = null;
+      _timelineEventSub = null;
+      _sentEventRegistry = null;
       _gateway = null;
       _eventPort = null;
-      _outgoingVerification = null;
-      _incomingVerification = null;
     }
 
     _state = SyncActorState.disposed;
@@ -725,23 +904,64 @@ class SyncActorCommandHandler {
   }
 
   Future<DeviceKeys?> _findUnverifiedPeerDevice() async {
-    final client = _gateway?.client;
-    if (client == null) return null;
+    final gateway = _gateway;
+    final client = gateway?.client;
+    if (gateway == null || client == null) return null;
 
     final userId = client.userID;
-    if (userId == null) return null;
+    final ownDeviceId = client.deviceID;
+    if (userId == null || ownDeviceId == null) return null;
 
-    await client.userOwnsEncryptionKeys(userId);
-    await client.userDeviceKeysLoading;
+    unawaited(_refreshPeerDeviceKeys(userId));
 
-    final keysMap = client.userDeviceKeys[userId]?.deviceKeys;
-    if (keysMap == null || keysMap.isEmpty) return null;
+    final discoveryAttempts = _verificationPeerDiscoveryAttempts > 8
+        ? 8
+        : _verificationPeerDiscoveryAttempts;
 
-    for (final device in keysMap.values) {
-      if (device.deviceId == client.deviceID) continue;
-      if (!device.verified) return device;
+    for (var attempt = 0; attempt < discoveryAttempts; attempt++) {
+      final remoteUnverifiedDevices = gateway
+          .unverifiedDevices()
+          .where((device) => device.deviceId != ownDeviceId)
+          .toList();
+
+      if (remoteUnverifiedDevices.isNotEmpty) {
+        return remoteUnverifiedDevices.first;
+      }
+
+      if (attempt == discoveryAttempts - 1) return null;
+      await Future<void>.delayed(_verificationPeerDiscoveryInterval);
     }
+
     return null;
+  }
+
+  Stream<Event> _timelineEventStreamFor(Client client) {
+    return _timelineEventStreamFactory?.call(client) ??
+        client.onTimelineEvent.stream;
+  }
+
+  void _handleTimelineEvent(Event event) {
+    if (event.type != 'm.room.message') {
+      return;
+    }
+
+    final eventId = event.eventId;
+    if (eventId.isEmpty || event.room.id.isEmpty || event.senderId.isEmpty) {
+      return;
+    }
+
+    if (_sentEventRegistry?.consume(eventId) ?? false) {
+      return;
+    }
+
+    _emitEvent({
+      'event': 'incomingMessage',
+      'roomId': event.room.id,
+      'eventId': eventId,
+      'sender': event.senderId,
+      'text': event.text,
+      'messageType': event.messageType,
+    });
   }
 
   void _log(String message) {
