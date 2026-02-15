@@ -69,8 +69,9 @@ class SyncActorHost {
 
   /// Sends a command to the actor and returns the response.
   ///
-  /// Throws [TimeoutException] if the actor does not respond within
-  /// [timeout].
+  /// Returns a map with `ok: false` and `errorCode: 'TIMEOUT'` if the
+  /// actor does not respond within [timeout]. Returns `errorCode:
+  /// 'HOST_DISPOSED'` if called after [dispose].
   Future<Map<String, Object?>> send(
     String command, {
     Map<String, Object?>? payload,
@@ -87,8 +88,8 @@ class SyncActorHost {
     final replyPort = ReceivePort();
 
     _commandPort.send(<String, Object?>{
-      'command': command,
       ...?payload,
+      'command': command,
       'replyTo': replyPort.sendPort,
     });
 
@@ -115,17 +116,17 @@ class SyncActorHost {
   /// Gracefully stops the actor and cleans up resources.
   Future<void> dispose() async {
     if (_disposed) return;
-    _disposed = true;
 
-    // Best-effort stop command
+    // Send stop before marking disposed so send() doesn't short-circuit.
     try {
       await send('stop', timeout: const Duration(seconds: 5));
     } catch (_) {
       // Ignore — we'll kill the isolate anyway.
+    } finally {
+      _disposed = true;
+      _isolate.kill(priority: Isolate.immediate);
+      _eventPort.close();
+      await _eventController.close();
     }
-
-    _isolate.kill(priority: Isolate.immediate);
-    _eventPort.close();
-    await _eventController.close();
   }
 }

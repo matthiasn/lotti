@@ -43,11 +43,14 @@ class SyncActorCommandHandler {
   SyncActorCommandHandler({
     GatewayFactory? gatewayFactory,
     VodInitializer? vodInitializer,
+    bool enableLogging = true,
   })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
-        _vodInitializer = vodInitializer ?? vod.init;
+        _vodInitializer = vodInitializer ?? vod.init,
+        _enableLogging = enableLogging;
 
   final GatewayFactory _gatewayFactory;
   final VodInitializer _vodInitializer;
+  final bool _enableLogging;
 
   SyncActorState _state = SyncActorState.uninitialized;
   MatrixSdkGateway? _gateway;
@@ -127,20 +130,27 @@ class SyncActorCommandHandler {
       return _invalidState('init', requestId: requestId);
     }
 
-    for (final key in ['homeServer', 'user', 'password', 'dbRootPath']) {
-      final validationError =
-          _validateRequiredString(command, key, requestId: requestId);
-      if (validationError != null) return validationError;
+    final homeServer = command['homeServer'];
+    if (homeServer is! String) {
+      return _paramError('homeServer', homeServer, requestId: requestId);
+    }
+    final user = command['user'];
+    if (user is! String) {
+      return _paramError('user', user, requestId: requestId);
+    }
+    final password = command['password'];
+    if (password is! String) {
+      return _paramError('password', password, requestId: requestId);
+    }
+    final dbRootPath = command['dbRootPath'];
+    if (dbRootPath is! String) {
+      return _paramError('dbRootPath', dbRootPath, requestId: requestId);
     }
 
     _state = SyncActorState.initializing;
     _log('state: uninitialized -> initializing');
 
     try {
-      final homeServer = command['homeServer']! as String;
-      final user = command['user']! as String;
-      final password = command['password']! as String;
-      final dbRootPath = command['dbRootPath']! as String;
       final deviceDisplayName =
           command['deviceDisplayName'] as String? ?? 'SyncActor';
       final eventPort = command['eventPort'] as SendPort?;
@@ -230,6 +240,19 @@ class SyncActorCommandHandler {
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
       _log('init FAILED: $e\n$stackTrace');
+
+      // Clean up partially-initialized resources to avoid leaking DB
+      // connections on repeated init attempts.
+      await _loginStateSub?.cancel();
+      _loginStateSub = null;
+      await _verificationSub?.cancel();
+      _verificationSub = null;
+      await _toDeviceSub?.cancel();
+      _toDeviceSub = null;
+      await _gateway?.dispose();
+      _gateway = null;
+      _eventPort = null;
+
       _state = SyncActorState.uninitialized;
       return _error(
         'Init failed: $e',
@@ -316,12 +339,12 @@ class SyncActorCommandHandler {
       return _invalidState('createRoom', requestId: requestId);
     }
 
-    final nameError =
-        _validateRequiredString(command, 'name', requestId: requestId);
-    if (nameError != null) return nameError;
+    final name = command['name'];
+    if (name is! String) {
+      return _paramError('name', name, requestId: requestId);
+    }
 
     try {
-      final name = command['name']! as String;
       final inviteUserIds =
           (command['inviteUserIds'] as List<dynamic>?)?.cast<String>();
 
@@ -349,12 +372,12 @@ class SyncActorCommandHandler {
       return _invalidState('joinRoom', requestId: requestId);
     }
 
-    final roomIdError =
-        _validateRequiredString(command, 'roomId', requestId: requestId);
-    if (roomIdError != null) return roomIdError;
+    final roomId = command['roomId'];
+    if (roomId is! String) {
+      return _paramError('roomId', roomId, requestId: requestId);
+    }
 
     try {
-      final roomId = command['roomId']! as String;
       _log('joinRoom: $roomId');
       await _gateway!.joinRoom(roomId);
       _log('joinRoom ok: $roomId');
@@ -377,15 +400,16 @@ class SyncActorCommandHandler {
       return _invalidState('sendText', requestId: requestId);
     }
 
-    for (final key in ['roomId', 'message']) {
-      final validationError =
-          _validateRequiredString(command, key, requestId: requestId);
-      if (validationError != null) return validationError;
+    final roomId = command['roomId'];
+    if (roomId is! String) {
+      return _paramError('roomId', roomId, requestId: requestId);
+    }
+    final message = command['message'];
+    if (message is! String) {
+      return _paramError('message', message, requestId: requestId);
     }
 
     try {
-      final roomId = command['roomId']! as String;
-      final message = command['message']! as String;
       final messageType = command['messageType'] as String?;
 
       _log('sendText: room=$roomId msg=${message.length} chars');
@@ -542,11 +566,18 @@ class SyncActorCommandHandler {
     await _syncSub?.cancel();
     _syncSub = null;
 
-    await _verificationSub?.cancel();
-    await _loginStateSub?.cancel();
-    await _toDeviceSub?.cancel();
-    await _gateway?.dispose();
+    try {
+      await _verificationSub?.cancel();
+      await _loginStateSub?.cancel();
+      await _toDeviceSub?.cancel();
+      await _gateway?.dispose();
+    } catch (e, stackTrace) {
+      _log('stop: cleanup error (continuing): $e\n$stackTrace');
+    }
 
+    _verificationSub = null;
+    _loginStateSub = null;
+    _toDeviceSub = null;
     _gateway = null;
     _eventPort = null;
     _outgoingVerification = null;
@@ -578,7 +609,9 @@ class SyncActorCommandHandler {
   }
 
   void _log(String message) {
-    debugPrint('[SyncActor] $message');
+    if (_enableLogging) {
+      debugPrint('[SyncActor] $message');
+    }
   }
 
   void _emitEvent(Map<String, Object?> event) {
@@ -622,15 +655,12 @@ class SyncActorCommandHandler {
     );
   }
 
-  /// Returns a structured error if a required parameter is missing or has
-  /// the wrong type. Returns `null` when validation passes.
-  Map<String, Object?>? _validateRequiredString(
-    Map<String, Object?> command,
-    String key, {
+  /// Returns a structured error for a missing or wrongly-typed parameter.
+  Map<String, Object?> _paramError(
+    String key,
+    Object? value, {
     String? requestId,
   }) {
-    final value = command[key];
-    if (value is String) return null;
     if (value == null) {
       return _error(
         'Missing required parameter: $key',
@@ -670,12 +700,22 @@ void syncActorEntrypoint(SendPort readyPort) {
   commandPort.listen((dynamic raw) async {
     if (raw is! Map) return;
 
-    final command = raw.cast<String, Object?>();
-    final replyTo = command['replyTo'] as SendPort?;
+    SendPort? replyTo;
+    try {
+      final command = raw.cast<String, Object?>();
+      replyTo = command['replyTo'] as SendPort?;
 
-    final response = await handler.handleCommand(command);
-
-    replyTo?.send(response);
+      final response = await handler.handleCommand(command);
+      replyTo?.send(response);
+    } catch (e, stackTrace) {
+      debugPrint('[SyncActor] entrypoint error: $e\n$stackTrace');
+      replyTo?.send(<String, Object?>{
+        'ok': false,
+        'error': 'Internal actor error: $e',
+        'errorCode': 'INTERNAL_ERROR',
+        'stackTrace': '$stackTrace',
+      });
+    }
 
     if (handler.state == SyncActorState.disposed) {
       commandPort.close();

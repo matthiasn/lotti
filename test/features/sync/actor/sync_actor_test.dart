@@ -68,6 +68,7 @@ SyncActorCommandHandler createTestHandler({
       return mockGateway;
     },
     vodInitializer: () async {},
+    enableLogging: false,
   );
 }
 

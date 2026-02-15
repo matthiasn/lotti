@@ -137,7 +137,11 @@ void main() {
           isTrue,
           reason: 'createRoom: $createResult',
         );
-        final roomId = createResult['roomId']! as String;
+        final roomIdValue = createResult['roomId'];
+        if (roomIdValue is! String) {
+          fail('Expected roomId to be a String, got: $roomIdValue');
+        }
+        final roomId = roomIdValue;
 
         // Same user's second device joins the room
         debugPrint('[TEST] DeviceB joining room $roomId...');
