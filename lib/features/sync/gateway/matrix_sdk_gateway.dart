@@ -196,6 +196,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     String? messageType,
     bool parseCommands = false,
     bool parseMarkdown = false,
+    bool displayPendingEvent = true,
   }) async {
     final room = _client.getRoomById(roomId);
     final content = <String, dynamic>{
@@ -203,7 +204,10 @@ class MatrixSdkGateway implements MatrixSyncGateway {
       'body': message,
     };
 
-    final eventId = await room?.sendEvent(content);
+    final eventId = await room?.sendEvent(
+      content,
+      displayPendingEvent: displayPendingEvent,
+    );
     if (eventId == null) {
       throw Exception('Failed to send text message to room $roomId');
     }

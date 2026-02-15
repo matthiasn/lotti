@@ -58,12 +58,12 @@ Basic UI smoke test that creates a journal entry through the UI.
 - Real network I/O from the worker isolate against Matrix docker endpoint
 - Basic protocol response validation from `/_matrix/client/versions`
 - Password login from the worker isolate against `/_matrix/client/v3/login` when
-  `TEST_USER1` and `TEST_PASSWORD` are provided
-- Runtime-parity two-user flow from the worker isolate using the Matrix SDK
-  client path (`createMatrixClient` + `MatrixSdkGateway`) when `TEST_USER1`,
-  `TEST_USER2`, and `TEST_PASSWORD` are provided:
-  connect, login, create room, invite, join, complete SAS emoji verification,
-  send message, verify receipt via SDK sync + timeline APIs
+  `TEST_USER` and `TEST_PASSWORD` are provided
+- Runtime-parity single-user-across-devices flow from the worker isolate using the Matrix SDK
+  client path (`createMatrixClient` + `MatrixSdkGateway`) when `TEST_USER` and
+  `TEST_PASSWORD` are provided:
+  connect, login, create room, join (same user on second actor), send message, and verify actor
+  health telemetry. Init now starts background sync implicitly; a retry loop is used for message send during sync warm-up.
 
 **Problems this catches:**
 - Isolate network/runtime regressions

@@ -228,13 +228,15 @@ class SyncActorCommandHandler {
         });
       });
 
-      // Disable the SDK's automatic background sync that was started by
-      // client.init() inside gateway.connect(). The actor controls sync
-      // explicitly via the startSync / stopSync commands.
-      _gateway!.client.backgroundSync = false;
+      // Enable the background sync loop now that startup is complete.
+      // The actor path starts syncing by default for parity with the current
+      // non-actor lifecycle behavior; startSync/stopSync remain explicit
+      // control points for tests and teardown.
+      await _startSyncStreamListening();
+      _gateway!.client.backgroundSync = true;
 
-      _state = SyncActorState.idle;
-      _log('state: initializing -> idle');
+      _state = SyncActorState.syncing;
+      _log('state: initializing -> syncing');
       _emitEvent({'event': 'ready'});
 
       return _ok(requestId: requestId);
@@ -296,35 +298,125 @@ class SyncActorCommandHandler {
   }
 
   Future<Map<String, Object?>> _handleStartSync({String? requestId}) async {
+    if (_state == SyncActorState.syncing) {
+      return _ok(requestId: requestId);
+    }
+
     if (_state != SyncActorState.idle) {
       return _invalidState('startSync', requestId: requestId);
     }
 
-    final client = _gateway!.client;
-
-    // Subscribe to the SDK's sync stream to emit events and track counts.
-    _syncSub = client.onSync.stream.listen((_) {
-      _syncCount++;
-      _log('sync update #$_syncCount');
-      _emitEvent({'event': 'syncUpdate'});
-    });
+    await _startSyncStreamListening();
 
     // Enable the SDK's built-in background sync loop.
-    client.backgroundSync = true;
+    _gateway!.client.backgroundSync = true;
 
     _state = SyncActorState.syncing;
     _log('state: idle -> syncing');
     return _ok(requestId: requestId);
   }
 
+  Future<void> _startSyncStreamListening() async {
+    final client = _gateway?.client;
+    if (client == null) {
+      return;
+    }
+    await _syncSub?.cancel();
+    _syncSub = null;
+    _syncSub = client.onSync.stream.listen((_) {
+      _syncCount++;
+      _log('sync update #$_syncCount');
+      _emitEvent({'event': 'syncUpdate'});
+    });
+  }
+
+  Future<void> _pauseSyncLoop() async {
+    _gateway?.client.backgroundSync = false;
+    await _syncSub?.cancel();
+    _syncSub = null;
+  }
+
+  Future<void> _pauseSyncLoopForSend() async {
+    final client = _gateway?.client;
+    if (client == null) return;
+
+    client.backgroundSync = false;
+    await _pauseSyncLoop();
+    await client.abortSync();
+  }
+
+  Future<T> _sendWithTransientSyncPause<T>(
+      Future<T> Function() operation) async {
+    final wasSyncing = _state == SyncActorState.syncing;
+    if (!wasSyncing) {
+      return operation();
+    }
+
+    await _pauseSyncLoopForSend();
+    try {
+      return await operation();
+    } finally {
+      if (_state == SyncActorState.syncing) {
+        _gateway?.client.backgroundSync = true;
+        await _startSyncStreamListening();
+      }
+    }
+  }
+
+  bool _isRetryableSqliteError(Object error) {
+    final message = error.toString();
+    return message.contains('SqliteException(21)') ||
+        message.contains('SqliteFfiException') ||
+        message.contains('bad parameter or other API misuse');
+  }
+
+  Future<T> _runWithRetries<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 5,
+    Duration baseDelay = const Duration(milliseconds: 250),
+    bool Function(Object)? isRetryable,
+  }) async {
+    Object? lastError;
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await operation();
+      } on Object catch (e, stackTrace) {
+        lastError = e;
+        if (isRetryable == null || !isRetryable(e)) {
+          Error.throwWithStackTrace(e, stackTrace);
+        }
+        if (attempt >= maxRetries - 1) {
+          Error.throwWithStackTrace(e, stackTrace);
+        }
+
+        await Future<void>.delayed(
+          Duration(
+            milliseconds: baseDelay.inMilliseconds * (1 << attempt),
+          ),
+        );
+      }
+    }
+
+    final error = lastError;
+    if (error is Exception) {
+      throw error;
+    }
+    if (error is Error) {
+      throw error;
+    }
+    throw Exception('$error');
+  }
+
   Future<Map<String, Object?>> _handleStopSync({String? requestId}) async {
+    if (_state == SyncActorState.idle) {
+      return _ok(requestId: requestId);
+    }
+
     if (_state != SyncActorState.syncing) {
       return _invalidState('stopSync', requestId: requestId);
     }
 
-    _gateway!.client.backgroundSync = false;
-    await _syncSub?.cancel();
-    _syncSub = null;
+    await _pauseSyncLoop();
 
     _state = SyncActorState.idle;
     _log('state: syncing -> idle');
@@ -411,13 +503,20 @@ class SyncActorCommandHandler {
 
     try {
       final messageType = command['messageType'] as String?;
-
       _log('sendText: room=$roomId msg=${message.length} chars');
-      final eventId = await _gateway!.sendText(
-        roomId: roomId,
-        message: message,
-        messageType: messageType,
+
+      final eventId = await _runWithRetries(
+        () => _sendWithTransientSyncPause(
+          () => _gateway!.sendText(
+            roomId: roomId,
+            message: message,
+            messageType: messageType,
+            displayPendingEvent: false,
+          ),
+        ),
+        isRetryable: _isRetryableSqliteError,
       );
+
       _log('sendText ok: eventId=$eventId');
       return _ok(requestId: requestId, extra: {'eventId': eventId});
     } catch (e, stackTrace) {

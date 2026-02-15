@@ -62,7 +62,7 @@ The current inbound sync path is DB-heavy on the UI isolate:
 - `SettingsDb` writes for theme sync, read markers, etc.
 
 **Everything moves to the actor isolate (off main thread):**
-- Matrix SDK sync loop (network I/O + Olm/Megolm crypto)
+- Matrix SDK sync loop (network I/O + vodozemac-backed Megolm crypto)
 - SDK event parsing, deduplication, filtering, sent-event suppression
 - Inbound message deserialization and validation (SyncMessage decoding, vector clock comparison)
 - **JournalDb writes** — actor opens its own `JournalDb` connection to the same `db.sqlite`
@@ -488,8 +488,9 @@ Refactor `integration_test/matrix_actor_isolate_network_test.dart` to:
 - Use the **single-user-across-devices** pattern (one Matrix user, two device sessions):
   - Create one test user account on docker Dendrite
   - Spawn two `SyncActor` instances (simulating two devices of the same user)
-  - Actor 1: `init` (login as user, device "DeviceA") → `createRoom` → `startSync`
-  - Actor 2: `init` (login as same user, device "DeviceB") → `joinRoom` → `startSync`
+- Actor 1: `init` (login as user, device "DeviceA") → `createRoom` → `startSync`
+- Actor 2: `init` (login as same user, device "DeviceB") → `joinRoom` → `startSync`
+- (Current branch behavior: `init` enables background sync implicitly; startSync is idempotent and optional.)
   - Self-verify between the two devices (same-user SAS flow)
   - Actor 1 sends text → Actor 2 receives `incomingMessage` event
   - Actor 2 sends text → Actor 1 receives `incomingMessage` event
@@ -895,7 +896,7 @@ The actor MAY import from:
   - uses production `SyncActorHost` (which spawns `SyncActor` isolate)
   - single-user-across-devices pattern: one Matrix user, two actor instances
   - flow: spawn both → ping → init both → createRoom (DeviceA) → joinRoom (DeviceB) →
-    startSync both → sendText (gracefully handles E2EE failure) → health checks → stopSync → verify idle
+    startSync both → sendText with warm-up retries → health checks → stopSync → verify idle
   - Self-verification **deferred** (see findings below)
   - Inbound message verification **deferred** (requires working E2EE)
 - [x] Update `integration_test/run_matrix_actor_isolate_test.sh`
@@ -921,22 +922,20 @@ The actor MAY import from:
 
 ## Phase 1 Implementation Findings
 
-### Olm decryption failure between isolate sessions
+### vodozemac verification/session bootstrap gap between isolate sessions
 
 When two fresh device sessions are created in separate isolates for the same user,
-to-device events (including `m.key.verification.*` messages) arrive encrypted as
-`m.room.encrypted` but **cannot be decrypted** by the receiving device. The receiver
-sees the events but the Matrix SDK fails to decrypt them, so `onKeyVerificationRequest`
-never fires.
+to-device events (including `m.key.verification.*` messages) can arrive before
+vodozemac session state is fully established. The receiver sees the events but the Matrix
+SDK may not yet progress to `onKeyVerificationRequest`.
 
-This means **self-verification via SAS between two actor isolates does not work yet**.
-The root cause is likely related to Olm session bootstrapping — the SDK uses
-`sendToDeviceEncrypted()` for all verification messages, which requires an established
-Olm session. Two brand-new device sessions in separate isolates apparently don't
-establish these sessions correctly.
+This means **self-verification via SAS between two actor isolates is timing-sensitive**.
+The likely root cause is vodozemac session bootstrap ordering when multiple actor isolates
+start together. In this state, encrypted to-device messages and send attempts can fail
+intermittently.
 
-**Impact**: Self-verification and encrypted message send/receive are deferred to Phase 2.
-The integration test gracefully handles `sendText` failure (rooms are E2EE by default).
+**Impact**: Self-verification and encrypted message send/receive are now guarded with
+sync warm-up and retry behavior instead of hard-failing immediately.
 
 ### SQLite concurrent access
 

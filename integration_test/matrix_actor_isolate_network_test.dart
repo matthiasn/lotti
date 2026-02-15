@@ -7,6 +7,62 @@ import 'package:lotti/features/sync/actor/sync_actor_host.dart';
 const _defaultMatrixServer = 'http://localhost:8008';
 const _testUser = String.fromEnvironment('TEST_USER');
 const _testPassword = String.fromEnvironment('TEST_PASSWORD');
+const _maxSendRetries = 15;
+const _baseRetryDelay = Duration(milliseconds: 250);
+
+Future<void> _waitUntil({
+  required String message,
+  required Future<bool> Function() condition,
+  Duration timeout = const Duration(seconds: 20),
+  Duration interval = const Duration(milliseconds: 250),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (await condition()) {
+      return;
+    }
+    await Future<void>.delayed(interval);
+  }
+
+  fail('$message after ${timeout.inSeconds}s');
+}
+
+Future<Map<String, Object?>> _sendTextWithRetries({
+  required SyncActorHost host,
+  required String roomId,
+  required String message,
+}) async {
+  Object? lastError;
+  for (var attempt = 1; attempt <= _maxSendRetries; attempt++) {
+    debugPrint('[TEST] Sending text attempt $attempt/$_maxSendRetries...');
+    final sendResult = await host.send(
+      'sendText',
+      payload: {
+        'roomId': roomId,
+        'message': message,
+        'messageType': 'm.text',
+      },
+    );
+
+    if (sendResult['ok'] == true) {
+      return sendResult;
+    }
+
+    lastError = sendResult['error'];
+    debugPrint('[TEST] sendText attempt $attempt failed: $sendResult');
+
+    await Future<void>.delayed(Duration(
+      milliseconds: _baseRetryDelay.inMilliseconds +
+          (attempt * _baseRetryDelay.inMilliseconds ~/ 2),
+    ));
+  }
+
+  return {
+    'ok': false,
+    'error': lastError ?? 'sendText failed after retries',
+    'attempts': _maxSendRetries,
+  };
+}
 
 String get _matrixServer {
   const fromEnv = String.fromEnvironment('TEST_SERVER');
@@ -29,6 +85,15 @@ Future<bool> _isMatrixReachable(String baseUrl) async {
   } finally {
     client.close(force: true);
   }
+}
+
+int _deviceKeyCount(Map<String, Object?> health) {
+  final deviceKeys = health['deviceKeys'];
+  if (deviceKeys is! Map) {
+    return 0;
+  }
+  final count = deviceKeys['count'];
+  return count is int ? count : 0;
 }
 
 void main() {
@@ -168,41 +233,58 @@ void main() {
         }
         expect(joined, isTrue, reason: 'DeviceB failed to join room $roomId');
 
-        // --- send text from DeviceA (no sync loop needed) ---
-        debugPrint('[TEST] Sending text from DeviceA...');
-        const textPayload = 'actor host single-user payload';
-        final sendResult = await host1.send(
-          'sendText',
-          payload: {
-            'roomId': roomId,
-            'message': textPayload,
-            'messageType': 'm.text',
+        // --- wait for implicit sync bootstrap after init ---
+        debugPrint('[TEST] Allowing implicit sync bootstrapping...');
+        await _waitUntil(
+          message: 'DeviceA did not reach syncing state',
+          timeout: const Duration(seconds: 15),
+          interval: const Duration(milliseconds: 200),
+          condition: () async {
+            final health = await host1.send('getHealth');
+            return health['syncLoopActive'] == true;
           },
         );
-        debugPrint('[TEST] sendText result: $sendResult');
-        // The room is E2EE by default; sendText may fail if Megolm session
-        // is not yet established. Accept either outcome for now.
-        if (sendResult['ok'] == true) {
-          expect(sendResult['eventId'], isA<String>());
-          debugPrint('[TEST] Sent event: ${sendResult['eventId']}');
-        } else {
-          debugPrint(
-            '[TEST] sendText did not succeed '
-            '(expected with new E2EE sessions): '
-            '${sendResult['error']}',
-          );
-        }
+        await _waitUntil(
+          message: 'DeviceB did not reach syncing state',
+          timeout: const Duration(seconds: 15),
+          interval: const Duration(milliseconds: 200),
+          condition: () async {
+            final health = await host2.send('getHealth');
+            return health['syncLoopActive'] == true;
+          },
+        );
+        final healthAfterBootstrap1 = await host1.send('getHealth');
+        final healthAfterBootstrap2 = await host2.send('getHealth');
+        final host1DeviceKeys = _deviceKeyCount(healthAfterBootstrap1);
+        final host2DeviceKeys = _deviceKeyCount(healthAfterBootstrap2);
+        debugPrint(
+          '[TEST] device keys after bootstrap: host1=$host1DeviceKeys host2=$host2DeviceKeys',
+        );
 
-        // --- verify both devices are in idle state ---
-        debugPrint('[TEST] Checking health of both hosts...');
+        // --- send text from DeviceA with retry while sync is active ---
+        debugPrint('[TEST] Sending text from DeviceA...');
+        const textPayload = 'actor host single-user payload';
+        final sendResult = await _sendTextWithRetries(
+          host: host1,
+          roomId: roomId,
+          message: textPayload,
+        );
+        debugPrint('[TEST] sendText result: $sendResult');
+        expect(
+          sendResult['ok'],
+          isTrue,
+          reason: 'sendText failed after retries: $sendResult',
+        );
+        expect(sendResult['eventId'], isA<String>());
+        debugPrint('[TEST] Sent event: ${sendResult['eventId']}');
+
+        debugPrint('[TEST] Checking encryption health of both hosts...');
         final health1 = await host1.send('getHealth');
         debugPrint('[TEST] host1 health: $health1');
-        expect(health1['state'], 'idle');
         expect(health1['encryptionEnabled'], isTrue);
 
         final health2 = await host2.send('getHealth');
         debugPrint('[TEST] host2 health: $health2');
-        expect(health2['state'], 'idle');
         expect(health2['encryptionEnabled'], isTrue);
 
         debugPrint('[TEST] Test completed successfully');
@@ -210,11 +292,7 @@ void main() {
       timeout: const Timeout(Duration(minutes: 3)),
     );
 
-    // TODO(sync-actor): Add self-verification test once Olm session
-    // establishment between isolates is resolved. Investigation showed
-    // that to-device events arrive as m.room.encrypted but decryption
-    // fails — the receiver sees the events but can't decrypt them.
-    // This is likely related to Olm session bootstrapping between
-    // two fresh device sessions in separate isolates.
+    // TODO(sync-actor): Add self-verification test once vodozemac session
+    // bootstrapping between fresh isolates is stable.
   });
 }

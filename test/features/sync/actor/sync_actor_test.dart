@@ -62,6 +62,8 @@ SyncActorCommandHandler createTestHandler({
           .thenReturn(CachedStreamController<SyncUpdate>());
       when(() => mockClient.userID).thenReturn('@test:localhost');
       when(() => mockClient.deviceID).thenReturn('DEV');
+      when(() => mockClient.abortSync()).thenAnswer((_) async {});
+      when(() => mockClient.syncPending).thenReturn(false);
       when(() => mockClient.encryptionEnabled).thenReturn(false);
       when(() => mockClient.userDeviceKeys)
           .thenReturn(<String, DeviceKeysList>{});
@@ -181,7 +183,7 @@ void main() {
 
         final response = await handler.handleCommand(_cmd('getHealth'));
         expect(response['ok'], isTrue);
-        expect(response['state'], 'idle');
+        expect(response['state'], 'syncing');
         expect(response['userId'], '@test:localhost');
         final deviceKeys = response['deviceKeys'] as Map<String, Object?>?;
         if (deviceKeys == null) {
@@ -346,11 +348,11 @@ void main() {
     });
 
     group('init', () {
-      test('transitions to idle on success', () async {
+      test('transitions to syncing on success', () async {
         handler = createTestHandler();
         final response = await handler.handleCommand(_initPayload());
         expect(response['ok'], isTrue);
-        expect(handler.state, SyncActorState.idle);
+        expect(handler.state, SyncActorState.syncing);
       });
 
       test('returns error and disposes gateway on failure', () async {
@@ -374,20 +376,21 @@ void main() {
       test('double init rejected', () async {
         handler = createTestHandler();
         await handler.handleCommand(_initPayload());
-        expect(handler.state, SyncActorState.idle);
+        expect(handler.state, SyncActorState.syncing);
 
         final response = await handler.handleCommand(_initPayload());
         expect(response['ok'], isFalse);
         expect(response['errorCode'], 'INVALID_STATE');
       });
 
-      test('getHealth returns idle state and loginState after init', () async {
+      test('getHealth returns syncing state and loginState after init',
+          () async {
         handler = createTestHandler();
         await handler.handleCommand(_initPayload());
 
         final health = await handler.handleCommand(_cmd('getHealth'));
         expect(health['ok'], isTrue);
-        expect(health['state'], 'idle');
+        expect(health['state'], 'syncing');
         expect(health['loginState'], 'loggedIn');
       });
 
@@ -415,7 +418,7 @@ void main() {
     });
 
     group('startSync / stopSync', () {
-      test('startSync transitions to syncing', () async {
+      test('startSync is idempotent while syncing', () async {
         handler = createTestHandler();
         await handler.handleCommand(_initPayload());
 
@@ -434,14 +437,15 @@ void main() {
         expect(handler.state, SyncActorState.idle);
       });
 
-      test('startSync rejected in syncing state', () async {
+      test('startSync rejected in stopped state', () async {
         handler = createTestHandler();
         await handler.handleCommand(_initPayload());
         await handler.handleCommand(_cmd('startSync'));
+        await handler.handleCommand(_cmd('stopSync'));
 
         final response = await handler.handleCommand(_cmd('startSync'));
-        expect(response['ok'], isFalse);
-        expect(response['errorCode'], 'INVALID_STATE');
+        expect(response['ok'], isTrue);
+        expect(handler.state, SyncActorState.syncing);
       });
     });
 
@@ -554,6 +558,7 @@ void main() {
             roomId: any(named: 'roomId'),
             message: any(named: 'message'),
             messageType: any(named: 'messageType'),
+            displayPendingEvent: false,
           ),
         ).thenAnswer((_) async => r'$event123');
 
@@ -582,6 +587,7 @@ void main() {
             roomId: any(named: 'roomId'),
             message: any(named: 'message'),
             messageType: any(named: 'messageType'),
+            displayPendingEvent: false,
           ),
         ).thenThrow(Exception('send failed'));
 
@@ -664,7 +670,7 @@ void main() {
         final preState = await handler.handleCommand(_cmd('getHealth'));
         final deviceKeys = preState['deviceKeys'] as Map<String, Object?>?;
         expect(preState['userId'], '@test:localhost');
-        expect(preState['state'], 'idle');
+        expect(preState['state'], 'syncing');
         expect(deviceKeys, isNotNull);
         expect(deviceKeys!['count'], 1);
 
@@ -797,7 +803,7 @@ void main() {
       test('from idle transitions to disposed', () async {
         handler = createTestHandler();
         await handler.handleCommand(_initPayload());
-        expect(handler.state, SyncActorState.idle);
+        expect(handler.state, SyncActorState.syncing);
 
         final response = await handler.handleCommand(_cmd('stop'));
         expect(response['ok'], isTrue);
