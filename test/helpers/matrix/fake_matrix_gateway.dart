@@ -91,6 +91,7 @@ class FakeMatrixGateway implements MatrixSyncGateway {
     String? messageType,
     bool parseCommands = false,
     bool parseMarkdown = false,
+    bool displayPendingEvent = true,
   }) async {
     return 'fake-event';
   }

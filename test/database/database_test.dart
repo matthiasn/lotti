@@ -114,6 +114,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable session ratings?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableSyncActorFlag,
+    description: 'Enable Sync Actor (isolate-based sync)?',
+    status: false,
+  ),
 };
 
 void main() {

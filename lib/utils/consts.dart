@@ -12,5 +12,6 @@ const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
+const enableSyncActorFlag = 'enable_sync_actor';
 
 const kDefaultScrollAlignment = 0.3;

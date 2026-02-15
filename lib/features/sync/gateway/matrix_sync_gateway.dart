@@ -52,6 +52,7 @@ abstract class MatrixSyncGateway {
     String? messageType,
     bool parseCommands,
     bool parseMarkdown,
+    bool displayPendingEvent,
   });
 
   /// Sends a file event to the given room and returns the event ID.
