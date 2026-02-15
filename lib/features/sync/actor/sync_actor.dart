@@ -51,7 +51,7 @@ class SyncActorCommandHandler {
   SyncActorState _state = SyncActorState.uninitialized;
   MatrixSdkGateway? _gateway;
   SendPort? _eventPort;
-  bool _syncLoopActive = false;
+  StreamSubscription<SyncUpdate>? _syncSub;
 
   // Verification state
   KeyVerification? _outgoingVerification;
@@ -124,6 +124,12 @@ class SyncActorCommandHandler {
       return _invalidState('init', requestId: requestId);
     }
 
+    for (final key in ['homeServer', 'user', 'password', 'dbRootPath']) {
+      final validationError =
+          _validateRequiredString(command, key, requestId: requestId);
+      if (validationError != null) return validationError;
+    }
+
     _state = SyncActorState.initializing;
 
     try {
@@ -146,6 +152,7 @@ class SyncActorCommandHandler {
         documentsDirectory: dbRoot,
         deviceDisplayName: deviceDisplayName,
         dbName: 'sync_actor_${deviceDisplayName.replaceAll(' ', '_')}',
+        useNoIsolateFactory: true,
       );
 
       _gateway = _gatewayFactory(
@@ -191,13 +198,22 @@ class SyncActorCommandHandler {
         });
       });
 
+      // Disable the SDK's automatic background sync that was started by
+      // client.init() inside gateway.connect(). The actor controls sync
+      // explicitly via the startSync / stopSync commands.
+      _gateway!.client.backgroundSync = false;
+
       _state = SyncActorState.idle;
       _emitEvent({'event': 'ready'});
 
       return _ok(requestId: requestId);
-    } catch (e) {
+    } catch (e, stackTrace) {
       _state = SyncActorState.uninitialized;
-      return _error('Init failed: $e', requestId: requestId);
+      return _error(
+        'Init failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -228,7 +244,7 @@ class SyncActorCommandHandler {
       'deviceId': client?.deviceID,
       'userId': userId,
       'deviceKeys': deviceKeyInfo,
-      'syncLoopActive': _syncLoopActive,
+      'syncLoopActive': _state == SyncActorState.syncing,
       'syncCount': _syncCount,
       'toDeviceEventCount': _toDeviceEventCount,
     });
@@ -238,8 +254,19 @@ class SyncActorCommandHandler {
     if (_state != SyncActorState.idle) {
       return _invalidState('startSync', requestId: requestId);
     }
+
+    final client = _gateway!.client;
+
+    // Subscribe to the SDK's sync stream to emit events and track counts.
+    _syncSub = client.onSync.stream.listen((_) {
+      _syncCount++;
+      _emitEvent({'event': 'syncUpdate'});
+    });
+
+    // Enable the SDK's built-in background sync loop.
+    client.backgroundSync = true;
+
     _state = SyncActorState.syncing;
-    unawaited(_runSyncLoop());
     return _ok(requestId: requestId);
   }
 
@@ -247,7 +274,11 @@ class SyncActorCommandHandler {
     if (_state != SyncActorState.syncing) {
       return _invalidState('stopSync', requestId: requestId);
     }
-    _syncLoopActive = false;
+
+    _gateway!.client.backgroundSync = false;
+    await _syncSub?.cancel();
+    _syncSub = null;
+
     _state = SyncActorState.idle;
     return _ok(requestId: requestId);
   }
@@ -260,6 +291,10 @@ class SyncActorCommandHandler {
       return _invalidState('createRoom', requestId: requestId);
     }
 
+    final nameError =
+        _validateRequiredString(command, 'name', requestId: requestId);
+    if (nameError != null) return nameError;
+
     try {
       final name = command['name']! as String;
       final inviteUserIds =
@@ -270,8 +305,12 @@ class SyncActorCommandHandler {
         inviteUserIds: inviteUserIds,
       );
       return _ok(requestId: requestId, extra: {'roomId': roomId});
-    } catch (e) {
-      return _error('createRoom failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'createRoom failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -283,12 +322,20 @@ class SyncActorCommandHandler {
       return _invalidState('joinRoom', requestId: requestId);
     }
 
+    final roomIdError =
+        _validateRequiredString(command, 'roomId', requestId: requestId);
+    if (roomIdError != null) return roomIdError;
+
     try {
       final roomId = command['roomId']! as String;
       await _gateway!.joinRoom(roomId);
       return _ok(requestId: requestId);
-    } catch (e) {
-      return _error('joinRoom failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'joinRoom failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -298,6 +345,12 @@ class SyncActorCommandHandler {
   }) async {
     if (_state != SyncActorState.idle && _state != SyncActorState.syncing) {
       return _invalidState('sendText', requestId: requestId);
+    }
+
+    for (final key in ['roomId', 'message']) {
+      final validationError =
+          _validateRequiredString(command, key, requestId: requestId);
+      if (validationError != null) return validationError;
     }
 
     try {
@@ -311,8 +364,12 @@ class SyncActorCommandHandler {
         messageType: messageType,
       );
       return _ok(requestId: requestId, extra: {'eventId': eventId});
-    } catch (e) {
-      return _error('sendText failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'sendText failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -332,8 +389,12 @@ class SyncActorCommandHandler {
       _outgoingVerification = await _gateway!.startKeyVerification(peerDevice);
 
       return _ok(requestId: requestId, extra: {'started': true});
-    } catch (e) {
-      return _error('startVerification failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'startVerification failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -355,8 +416,12 @@ class SyncActorCommandHandler {
     try {
       await verification.acceptVerification();
       return _ok(requestId: requestId);
-    } catch (e) {
-      return _error('acceptVerification failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'acceptVerification failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -375,8 +440,12 @@ class SyncActorCommandHandler {
     try {
       await verification.acceptSas();
       return _ok(requestId: requestId);
-    } catch (e) {
-      return _error('acceptSas failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'acceptSas failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -393,8 +462,12 @@ class SyncActorCommandHandler {
       _outgoingVerification = null;
       _incomingVerification = null;
       return _ok(requestId: requestId);
-    } catch (e) {
-      return _error('cancelVerification failed: $e', requestId: requestId);
+    } catch (e, stackTrace) {
+      return _error(
+        'cancelVerification failed: $e',
+        requestId: requestId,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -430,7 +503,10 @@ class SyncActorCommandHandler {
     }
 
     _state = SyncActorState.stopping;
-    _syncLoopActive = false;
+
+    _gateway?.client.backgroundSync = false;
+    await _syncSub?.cancel();
+    _syncSub = null;
 
     await _verificationSub?.cancel();
     await _loginStateSub?.cancel();
@@ -444,26 +520,6 @@ class SyncActorCommandHandler {
 
     _state = SyncActorState.disposed;
     return _ok(requestId: requestId);
-  }
-
-  Future<void> _runSyncLoop() async {
-    _syncLoopActive = true;
-    final client = _gateway!.client;
-    while (_syncLoopActive && _state == SyncActorState.syncing) {
-      try {
-        await client.sync();
-        _syncCount++;
-        _emitEvent({'event': 'syncUpdate'});
-      } catch (e) {
-        _emitEvent({
-          'event': 'error',
-          'message': '$e',
-          'code': 'SYNC_ERROR',
-          'fatal': false,
-        });
-        await Future<void>.delayed(const Duration(seconds: 1));
-      }
-    }
   }
 
   Future<DeviceKeys?> _findUnverifiedPeerDevice() async {
@@ -505,12 +561,14 @@ class SyncActorCommandHandler {
     String message, {
     String? requestId,
     String? errorCode,
+    StackTrace? stackTrace,
   }) {
     return <String, Object?>{
       'ok': false,
       'error': message,
       if (errorCode != null) 'errorCode': errorCode,
       if (requestId != null) 'requestId': requestId,
+      if (stackTrace != null) 'stackTrace': '$stackTrace',
     };
   }
 
@@ -522,6 +580,29 @@ class SyncActorCommandHandler {
       'Command "$command" not valid in state ${_state.name}',
       requestId: requestId,
       errorCode: 'INVALID_STATE',
+    );
+  }
+
+  /// Returns a structured error if a required parameter is missing or has
+  /// the wrong type. Returns `null` when validation passes.
+  Map<String, Object?>? _validateRequiredString(
+    Map<String, Object?> command,
+    String key, {
+    String? requestId,
+  }) {
+    final value = command[key];
+    if (value is String) return null;
+    if (value == null) {
+      return _error(
+        'Missing required parameter: $key',
+        requestId: requestId,
+        errorCode: 'MISSING_PARAMETER',
+      );
+    }
+    return _error(
+      'Parameter "$key" must be a String, got ${value.runtimeType}',
+      requestId: requestId,
+      errorCode: 'INVALID_PARAMETER',
     );
   }
 

@@ -52,6 +52,8 @@ SyncActorCommandHandler createTestHandler({
 
       when(() => mockClient.onLoginStateChanged)
           .thenReturn(CachedStreamController(LoginState.loggedIn));
+      when(() => mockClient.onSync)
+          .thenReturn(CachedStreamController<SyncUpdate>());
       when(() => mockClient.userID).thenReturn('@test:localhost');
       when(() => mockClient.deviceID).thenReturn('DEV');
       when(() => mockClient.encryptionEnabled).thenReturn(false);
@@ -215,6 +217,84 @@ void main() {
         final response = await handler.handleCommand(<String, Object?>{});
         expect(response['ok'], isFalse);
         expect(response['error'], contains('Missing command field'));
+      });
+    });
+
+    group('parameter validation', () {
+      test('init rejects missing homeServer', () async {
+        handler = createTestHandler();
+        final response = await handler.handleCommand(<String, Object?>{
+          'command': 'init',
+          'user': '@test:localhost',
+          'password': 'pass',
+          'dbRootPath': '/tmp/test',
+        });
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'MISSING_PARAMETER');
+        expect(response['error'], contains('homeServer'));
+        expect(handler.state, SyncActorState.uninitialized);
+      });
+
+      test('init rejects wrong type for password', () async {
+        handler = createTestHandler();
+        final response = await handler.handleCommand(<String, Object?>{
+          'command': 'init',
+          'homeServer': 'http://localhost:8008',
+          'user': '@test:localhost',
+          'password': 123,
+          'dbRootPath': '/tmp/test',
+        });
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'INVALID_PARAMETER');
+        expect(response['error'], contains('password'));
+      });
+
+      test('createRoom rejects missing name', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('createRoom'),
+        );
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'MISSING_PARAMETER');
+        expect(response['error'], contains('name'));
+      });
+
+      test('joinRoom rejects missing roomId', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('joinRoom'),
+        );
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'MISSING_PARAMETER');
+        expect(response['error'], contains('roomId'));
+      });
+
+      test('sendText rejects missing roomId', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('sendText', {'message': 'hello'}),
+        );
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'MISSING_PARAMETER');
+        expect(response['error'], contains('roomId'));
+      });
+
+      test('sendText rejects missing message', () async {
+        handler = createTestHandler();
+        await handler.handleCommand(_initPayload());
+
+        final response = await handler.handleCommand(
+          _cmd('sendText', {'roomId': '!room:localhost'}),
+        );
+        expect(response['ok'], isFalse);
+        expect(response['errorCode'], 'MISSING_PARAMETER');
+        expect(response['error'], contains('message'));
       });
     });
 
