@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -78,6 +79,8 @@ class SyncActorCommandHandler {
       return _error('Missing command field', requestId: requestId);
     }
 
+    _log('command: $cmd (state=${_state.name})');
+
     switch (cmd) {
       case 'ping':
         return _ok(requestId: requestId);
@@ -131,6 +134,7 @@ class SyncActorCommandHandler {
     }
 
     _state = SyncActorState.initializing;
+    _log('state: uninitialized -> initializing');
 
     try {
       final homeServer = command['homeServer']! as String;
@@ -143,17 +147,21 @@ class SyncActorCommandHandler {
 
       _eventPort = eventPort;
 
+      _log('init: vodozemac init starting');
       await _vodInitializer();
+      _log('init: vodozemac init done');
 
       final dbRoot = Directory(dbRootPath);
       await dbRoot.create(recursive: true);
+      _log('init: db root created at $dbRootPath');
 
+      _log('init: creating matrix client');
       final client = await createMatrixClient(
         documentsDirectory: dbRoot,
         deviceDisplayName: deviceDisplayName,
         dbName: 'sync_actor_${deviceDisplayName.replaceAll(' ', '_')}',
-        useNoIsolateFactory: true,
       );
+      _log('init: matrix client created');
 
       _gateway = _gatewayFactory(
         client: client,
@@ -166,10 +174,16 @@ class SyncActorCommandHandler {
         password: password,
       );
 
+      _log('init: connecting to $homeServer');
       await _gateway!.connect(config);
+      _log('init: connected');
+
+      _log('init: logging in as $user');
       await _gateway!.login(config, deviceDisplayName: deviceDisplayName);
+      _log('init: logged in, deviceId=${client.deviceID}');
 
       _loginStateSub = _gateway!.loginStateChanges.listen((loginState) {
+        _log('event: loginStateChanged -> ${loginState.name}');
         _emitEvent({
           'event': 'loginStateChanged',
           'loginState': loginState.name,
@@ -179,6 +193,11 @@ class SyncActorCommandHandler {
       _verificationSub =
           _gateway!.keyVerificationRequests.listen((verification) {
         _incomingVerification = verification;
+        _log(
+          'event: incoming verification, '
+          'step=${verification.lastStep}, '
+          'isDone=${verification.isDone}',
+        );
         _emitEvent({
           'event': 'verificationState',
           'step': verification.lastStep,
@@ -191,6 +210,7 @@ class SyncActorCommandHandler {
       // Track all to-device events for diagnostics.
       _toDeviceSub = client.onToDeviceEvent.stream.listen((event) {
         _toDeviceEventCount++;
+        _log('event: toDevice type=${event.type} sender=${event.sender}');
         _emitEvent({
           'event': 'toDevice',
           'type': event.type,
@@ -204,10 +224,12 @@ class SyncActorCommandHandler {
       _gateway!.client.backgroundSync = false;
 
       _state = SyncActorState.idle;
+      _log('state: initializing -> idle');
       _emitEvent({'event': 'ready'});
 
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
+      _log('init FAILED: $e\n$stackTrace');
       _state = SyncActorState.uninitialized;
       return _error(
         'Init failed: $e',
@@ -260,6 +282,7 @@ class SyncActorCommandHandler {
     // Subscribe to the SDK's sync stream to emit events and track counts.
     _syncSub = client.onSync.stream.listen((_) {
       _syncCount++;
+      _log('sync update #$_syncCount');
       _emitEvent({'event': 'syncUpdate'});
     });
 
@@ -267,6 +290,7 @@ class SyncActorCommandHandler {
     client.backgroundSync = true;
 
     _state = SyncActorState.syncing;
+    _log('state: idle -> syncing');
     return _ok(requestId: requestId);
   }
 
@@ -280,6 +304,7 @@ class SyncActorCommandHandler {
     _syncSub = null;
 
     _state = SyncActorState.idle;
+    _log('state: syncing -> idle');
     return _ok(requestId: requestId);
   }
 
@@ -304,8 +329,10 @@ class SyncActorCommandHandler {
         name: name,
         inviteUserIds: inviteUserIds,
       );
+      _log('createRoom ok: $roomId');
       return _ok(requestId: requestId, extra: {'roomId': roomId});
     } catch (e, stackTrace) {
+      _log('createRoom FAILED: $e\n$stackTrace');
       return _error(
         'createRoom failed: $e',
         requestId: requestId,
@@ -328,9 +355,12 @@ class SyncActorCommandHandler {
 
     try {
       final roomId = command['roomId']! as String;
+      _log('joinRoom: $roomId');
       await _gateway!.joinRoom(roomId);
+      _log('joinRoom ok: $roomId');
       return _ok(requestId: requestId);
     } catch (e, stackTrace) {
+      _log('joinRoom FAILED: $e\n$stackTrace');
       return _error(
         'joinRoom failed: $e',
         requestId: requestId,
@@ -358,13 +388,16 @@ class SyncActorCommandHandler {
       final message = command['message']! as String;
       final messageType = command['messageType'] as String?;
 
+      _log('sendText: room=$roomId msg=${message.length} chars');
       final eventId = await _gateway!.sendText(
         roomId: roomId,
         message: message,
         messageType: messageType,
       );
+      _log('sendText ok: eventId=$eventId');
       return _ok(requestId: requestId, extra: {'eventId': eventId});
     } catch (e, stackTrace) {
+      _log('sendText FAILED: $e\n$stackTrace');
       return _error(
         'sendText failed: $e',
         requestId: requestId,
@@ -502,6 +535,7 @@ class SyncActorCommandHandler {
       return _invalidState('stop', requestId: requestId);
     }
 
+    _log('state: ${_state.name} -> stopping');
     _state = SyncActorState.stopping;
 
     _gateway?.client.backgroundSync = false;
@@ -519,6 +553,7 @@ class SyncActorCommandHandler {
     _incomingVerification = null;
 
     _state = SyncActorState.disposed;
+    _log('state: stopping -> disposed');
     return _ok(requestId: requestId);
   }
 
@@ -540,6 +575,10 @@ class SyncActorCommandHandler {
       if (!device.verified) return device;
     }
     return null;
+  }
+
+  void _log(String message) {
+    debugPrint('[SyncActor] $message');
   }
 
   void _emitEvent(Map<String, Object?> event) {

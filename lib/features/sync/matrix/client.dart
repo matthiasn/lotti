@@ -10,18 +10,14 @@ Future<Client> createMatrixClient({
   required Directory documentsDirectory,
   String? deviceDisplayName,
   String? dbName,
-  bool useNoIsolateFactory = false,
 }) async {
   final name = dbName ?? 'lotti_sync';
   final path = '${documentsDirectory.path}/matrix/$name.db';
 
-  // When running inside a spawned isolate (e.g. the sync actor), use
-  // databaseFactoryFfiNoIsolate to avoid nested worker isolates which
-  // cause SQLITE_MISUSE errors. On the main isolate the regular factory
-  // is preferred to keep DB work off the UI thread.
-  final dbFactory = useNoIsolateFactory
-      ? databaseFactoryFfiNoIsolate
-      : createDatabaseFactoryFfi(ffiInit: sqfliteFfiInit);
+  // Always use the regular factory which creates a dedicated worker isolate
+  // to serialize all FFI calls. This is safe even inside spawned isolates
+  // (main → actor → FFI worker) since modern Dart supports nested isolates.
+  final dbFactory = createDatabaseFactoryFfi(ffiInit: sqfliteFfiInit);
 
   final database = await MatrixSdkDatabase.init(
     name,
