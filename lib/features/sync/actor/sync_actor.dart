@@ -701,14 +701,10 @@ class SyncActorCommandHandler {
 
     try {
       await _syncSub?.cancel();
-      _syncSub = null;
 
       await _verificationSub?.cancel();
-      _verificationSub = null;
       await _loginStateSub?.cancel();
-      _loginStateSub = null;
       await _toDeviceSub?.cancel();
-      _toDeviceSub = null;
       await _gateway?.dispose();
     } catch (e, stackTrace) {
       _log('stop: cleanup error (continuing): $e\n$stackTrace');
