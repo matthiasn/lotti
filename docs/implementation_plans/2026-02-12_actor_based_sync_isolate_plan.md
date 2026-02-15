@@ -555,31 +555,39 @@ test/features/sync/actor/
 
 ### Phase 3: Outbound Pipeline
 
-**Goal**: Actor owns outbound send orchestration — retry, backoff, connectivity awareness.
-Completely separate from existing `OutboxService`.
+**Goal**: Actor owns outbound send execution — retry, backoff, and connectivity-aware
+dispatch — while preserving durable offline persistence in `SyncDatabase`.
 
 #### Production code additions
 
-```
+```text
 lib/features/sync/actor/
-  outbound_queue.dart          # In-memory send queue with retry
+  outbound_queue.dart          # SyncDatabase-backed claim/send/retry dispatcher
 ```
 
-- New command: `enqueueSend` (UI tells actor to send a sync payload)
+- Main isolate continues to enqueue outbound rows into `SyncDatabase` (existing durable path).
+- Actor opens its own `SyncDatabase` connection (same DB file, separate connection) and
+  consumes from the same outbox table.
+- Actor claims rows atomically (`pending -> in_flight`) with lease metadata to prevent
+  duplicate sends and support crash recovery.
+- Actor performs send + retry with exponential backoff and writes retry state back to DB
+  (`attempts`, `nextAttemptAt`, `lastError`, terminal `failed`).
 - New command: `connectivityChanged` (host forwards connectivity state)
-- Actor manages in-memory outbound queue with retry + exponential backoff.
+- Optional command: `kickOutbox` (host nudges actor after enqueue in tests/edge cases).
 - Actor events: `sendAck` (message sent successfully), `sendFailed` (permanent failure).
-- No `SyncDatabase` involvement — queue is in-memory and volatile.
-  (Durable outbox persistence is a later phase.)
+- `enqueueSend` command is not required for normal operation because enqueue happens via DB.
 
 #### Integration test additions
 
-- Test: enqueue multiple messages, verify all received by peer device.
+- Test: enqueue multiple messages in `SyncDatabase`, verify actor delivers all to peer device.
 - Test: actor retries after transient failure (simulate by pausing sync).
+- Test: rows survive actor restart and are resumed (durable offline behavior).
 
 #### Acceptance criteria
 
-- [ ] Integration test: multi-message send via enqueue, all received
+- [ ] Integration test: multi-message send from durable outbox, all received
+- [ ] Integration test: actor restart resumes pending/in-flight outbox rows
+- [ ] Unit tests: claim/lease semantics prevent duplicate sends
 - [ ] Unit tests: retry logic, backoff timing (fakeAsync), queue ordering
 - [ ] Unit tests: connectivity change triggers retry
 - [ ] Analyzer zero warnings
@@ -759,9 +767,9 @@ lib/features/sync/actor/
 - Vector clock handling (actor writes with full vector clock semantics)
 - Attachment send/receive
 - Sent-event suppression
-- Durable outbox (actor-owned table, replacing in-memory queue)
+- Outbox hardening (lease expiry, stuck in-flight recovery, observability)
 - Sequence log writes (actor-owned, replacing UI-side `SyncDatabase` sequence log)
-- Migrate `SyncDatabase` ownership to actor (requires separate design doc)
+- Optional: move enqueue writes into actor later if we want single-writer ownership
 - Performance comparison: frame drops, command latency, correctness
 - Remove legacy path once parity confirmed
 
@@ -776,7 +784,7 @@ lib/features/sync/actor/
   sync_actor_host.dart         # UI-side host: spawn, send, events, notification bridge
   sync_actor_supervisor.dart   # Restart policy (phase 5)
   verification_handler.dart    # SAS flow (phase 2)
-  outbound_queue.dart          # Send queue with retry (phase 3)
+  outbound_queue.dart          # SyncDatabase-backed outbox dispatcher (phase 3)
   inbound_processor.dart       # Inbound event processing + direct DB writes (phase 4)
 
 test/features/sync/actor/
@@ -851,8 +859,9 @@ The actor MAY import from:
 - **SAS during crash**: verification state is lost. Actor requires fresh SAS negotiation after
   restart (fail-closed).
 - **No durable actor state in v1**: actor is stateless between restarts. `JournalDb` /
-  `SettingsDb` writes are durable (SQLite), but actor-internal state (retry queues, sync
-  position) is lost on crash. The next sync cycle re-discovers events from Matrix timeline.
+  `SettingsDb` writes are durable (SQLite). Outbox rows are also durable in `SyncDatabase`,
+  but actor-internal transient state (timers, in-memory cursors, non-persisted sync position)
+  is lost on crash. On restart, the actor rebuilds runtime state from DB and Matrix timeline.
 - **Partial batch crash**: if the actor crashes mid-batch, some entities may be written but
   not all. On restart, the actor re-processes the same events. DB writes are idempotent
   (vector clock comparison), so re-applying is safe. The host receives `entitiesChanged`

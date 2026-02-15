@@ -10,6 +10,22 @@ const _testPassword = String.fromEnvironment('TEST_PASSWORD');
 const _maxSendRetries = 15;
 const _baseRetryDelay = Duration(milliseconds: 250);
 
+Future<bool> _hostHasIncomingVerification({
+  required SyncActorHost host,
+  Duration timeout = const Duration(seconds: 15),
+  Duration interval = const Duration(milliseconds: 250),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    final state = await host.send('getVerificationState');
+    if (state['hasIncoming'] == true) {
+      return true;
+    }
+    await Future<void>.delayed(interval);
+  }
+  return false;
+}
+
 Future<void> _waitUntil({
   required String message,
   required Future<bool> Function() condition,
@@ -25,6 +41,69 @@ Future<void> _waitUntil({
   }
 
   fail('$message after ${timeout.inSeconds}s');
+}
+
+Map<String, Object?>? _latestVerificationState(
+  List<Map<String, Object?>> events, {
+  required String direction,
+  String? requiredStep,
+  bool requireEmojis = false,
+}) {
+  for (var i = events.length - 1; i >= 0; i--) {
+    final event = events[i];
+    if (event['event'] != 'verificationState') {
+      continue;
+    }
+    if (event['direction'] != direction) {
+      continue;
+    }
+    if (requiredStep != null && event['step'] != requiredStep) {
+      continue;
+    }
+
+    final emojis = event['emojis'];
+    if (requireEmojis && (emojis is! List || emojis.isEmpty)) {
+      continue;
+    }
+
+    return event;
+  }
+  return null;
+}
+
+String _emojiFingerprint(Map<String, Object?> event) {
+  final emojis = event['emojis'];
+  if (emojis is! List) {
+    return '';
+  }
+  return emojis.whereType<String>().join('|');
+}
+
+bool _hasIncomingMessageEvent(
+  List<Map<String, Object?>> events, {
+  required String roomId,
+  required String text,
+}) {
+  return events.any(
+    (event) =>
+        event['event'] == 'incomingMessage' &&
+        event['roomId'] == roomId &&
+        event['text'] == text,
+  );
+}
+
+bool _shouldLogHostEvent(Map<String, Object?> event) {
+  final name = event['event'];
+  if (name == 'ready' ||
+      name == 'verificationState' ||
+      name == 'incomingMessage') {
+    return true;
+  }
+  if (name == 'toDevice') {
+    final type = event['type'];
+    return type is String && type.startsWith('m.key.verification.');
+  }
+  return false;
 }
 
 Future<Map<String, Object?>> _sendTextWithRetries({
@@ -137,20 +216,24 @@ void main() {
           await host2.dispose();
         });
 
-        // Subscribe to event streams early for diagnostic logging
-        host1.events.listen((event) {
-          if (event['event'] == 'log') {
-            debugPrint('[SyncActor:A] ${event['message']}');
-          } else {
+        // Subscribe to event streams early for diagnostic logging and assertions.
+        final host1Events = <Map<String, Object?>>[];
+        final host2Events = <Map<String, Object?>>[];
+        final host1EventSub = host1.events.listen((event) {
+          host1Events.add(event);
+          if (_shouldLogHostEvent(event)) {
             debugPrint('[TEST] host1 event: $event');
           }
         });
-        host2.events.listen((event) {
-          if (event['event'] == 'log') {
-            debugPrint('[SyncActor:B] ${event['message']}');
-          } else {
+        final host2EventSub = host2.events.listen((event) {
+          host2Events.add(event);
+          if (_shouldLogHostEvent(event)) {
             debugPrint('[TEST] host2 event: $event');
           }
+        });
+        addTearDown(() async {
+          await host1EventSub.cancel();
+          await host2EventSub.cancel();
         });
 
         // --- ping both actors ---
@@ -258,8 +341,214 @@ void main() {
         final host1DeviceKeys = _deviceKeyCount(healthAfterBootstrap1);
         final host2DeviceKeys = _deviceKeyCount(healthAfterBootstrap2);
         debugPrint(
+          '[TEST] host1 encryptionEnabled=${healthAfterBootstrap1['encryptionEnabled']} '
+          'deviceId=${healthAfterBootstrap1['deviceId']}',
+        );
+        debugPrint(
+          '[TEST] host2 encryptionEnabled=${healthAfterBootstrap2['encryptionEnabled']} '
+          'deviceId=${healthAfterBootstrap2['deviceId']}',
+        );
+        debugPrint(
           '[TEST] device keys after bootstrap: host1=$host1DeviceKeys host2=$host2DeviceKeys',
         );
+
+        debugPrint('[TEST] Allowing key cache and verification bootstrap...');
+        await _waitUntil(
+          message: 'Neither actor discovered a peer device key',
+          timeout: const Duration(seconds: 60),
+          interval: const Duration(milliseconds: 500),
+          condition: () async {
+            final host1Discovery = await host1.send('getHealth');
+            final host2Discovery = await host2.send('getHealth');
+            return _deviceKeyCount(host1Discovery) >= 2 ||
+                _deviceKeyCount(host2Discovery) >= 2;
+          },
+        );
+        debugPrint('[TEST] At least one actor detected a peer device key');
+
+        // --- start verification with a single-pass flow (no start/cancel churn) ---
+        var verificationStart = <String, Object?>{};
+        var verificationStarter = 'DeviceA';
+        var verificationResponder = 'DeviceB';
+        var starterHost = host1;
+        var responderHost = host2;
+        var verificationReady = false;
+
+        final response1 = await host1.send(
+          'startVerification',
+          payload: {'roomId': roomId},
+        );
+        debugPrint('[TEST] DeviceA startVerification attempt: $response1');
+        if (response1['ok'] == true && response1['started'] == true) {
+          final host2Incoming = await _hostHasIncomingVerification(
+            host: host2,
+            timeout: const Duration(seconds: 30),
+          );
+          if (host2Incoming) {
+            verificationStart = response1;
+            verificationStarter = 'DeviceA';
+            verificationResponder = 'DeviceB';
+            starterHost = host1;
+            responderHost = host2;
+            verificationReady = true;
+          }
+        }
+
+        if (!verificationReady) {
+          final response2 = await host2.send(
+            'startVerification',
+            payload: {'roomId': roomId},
+          );
+          debugPrint('[TEST] DeviceB startVerification attempt: $response2');
+          verificationStart = response2;
+          if (response2['ok'] == true && response2['started'] == true) {
+            final host1Incoming = await _hostHasIncomingVerification(
+              host: host1,
+              timeout: const Duration(seconds: 30),
+            );
+            if (host1Incoming) {
+              verificationStarter = 'DeviceB';
+              verificationResponder = 'DeviceA';
+              starterHost = host2;
+              responderHost = host1;
+              verificationReady = true;
+            }
+          }
+        }
+
+        if (!verificationReady) {
+          final health1 = await host1.send('getHealth');
+          final health2 = await host2.send('getHealth');
+          final verificationState1 = await host1.send('getVerificationState');
+          final verificationState2 = await host2.send('getVerificationState');
+          fail(
+            'Neither device could establish a verification request flow: '
+            'lastStart=$verificationStart '
+            'health1=$health1 health2=$health2 '
+            'state1=$verificationState1 state2=$verificationState2',
+          );
+        }
+
+        // --- start SAS verification across both devices ---
+        debugPrint('[TEST] Starting verification from $verificationStarter...');
+        expect(
+          verificationStart['ok'],
+          isTrue,
+          reason: 'startVerification failed: $verificationStart',
+        );
+        expect(
+          verificationStart['started'],
+          isTrue,
+          reason: 'startVerification did not start flow: $verificationStart',
+        );
+
+        await _waitUntil(
+          message:
+              '$verificationResponder did not receive verification request',
+          timeout: const Duration(seconds: 60),
+          condition: () async {
+            final state = await responderHost.send('getVerificationState');
+            return state['hasIncoming'] == true;
+          },
+        );
+
+        final acceptResponse = await responderHost.send('acceptVerification');
+        expect(
+          acceptResponse['ok'],
+          isTrue,
+          reason: 'acceptVerification failed: $acceptResponse',
+        );
+
+        Map<String, Object?>? host1VerificationState;
+        Map<String, Object?>? host2VerificationState;
+        final starterDirection =
+            verificationStarter == 'DeviceA' ? 'outgoing' : 'incoming';
+        final responderDirection =
+            verificationResponder == 'DeviceA' ? 'outgoing' : 'incoming';
+        await _waitUntil(
+          message: 'SAS events with matching emojis did not converge',
+          timeout: const Duration(seconds: 45),
+          condition: () async {
+            host1VerificationState = _latestVerificationState(
+              host1Events,
+              direction:
+                  host1 == starterHost ? starterDirection : responderDirection,
+              requiredStep: 'm.key.verification.key',
+              requireEmojis: true,
+            );
+            host2VerificationState = _latestVerificationState(
+              host2Events,
+              direction:
+                  host2 == starterHost ? starterDirection : responderDirection,
+              requiredStep: 'm.key.verification.key',
+              requireEmojis: true,
+            );
+
+            if (host1VerificationState == null ||
+                host2VerificationState == null) {
+              return false;
+            }
+
+            return _emojiFingerprint(host1VerificationState!) ==
+                _emojiFingerprint(host2VerificationState!);
+          },
+        );
+
+        expect(host1VerificationState, isNotNull);
+        expect(host2VerificationState, isNotNull);
+        expect(
+          _emojiFingerprint(host1VerificationState!),
+          isNotEmpty,
+          reason: 'No matched SAS emojis detected',
+        );
+        debugPrint(
+          '[TEST] SAS match: ${_emojiFingerprint(host1VerificationState!)}',
+        );
+
+        final acceptSasStarter = await starterHost.send('acceptSas');
+        expect(
+          acceptSasStarter['ok'],
+          isTrue,
+          reason: 'acceptSas failed on $verificationStarter: $acceptSasStarter',
+        );
+        final acceptSasResponder = await responderHost.send('acceptSas');
+        expect(
+          acceptSasResponder['ok'],
+          isTrue,
+          reason:
+              'acceptSas failed on $verificationResponder: $acceptSasResponder',
+        );
+
+        await _waitUntil(
+          message: 'Verification did not clear on both hosts',
+          timeout: const Duration(seconds: 30),
+          condition: () async {
+            final state1 = await host1.send('getVerificationState');
+            final state2 = await host2.send('getVerificationState');
+            return state1['hasIncoming'] == false &&
+                state1['hasOutgoing'] == false &&
+                state2['hasIncoming'] == false &&
+                state2['hasOutgoing'] == false;
+          },
+        );
+
+        final host1VerificationDone = _latestVerificationState(
+          host1Events,
+          direction:
+              host1 == starterHost ? starterDirection : responderDirection,
+        );
+        final host2VerificationDone = _latestVerificationState(
+          host2Events,
+          direction:
+              host2 == starterHost ? starterDirection : responderDirection,
+        );
+        expect(host1VerificationDone, isNotNull);
+        expect(host2VerificationDone, isNotNull);
+
+        final verificationStateEvents = host1Events
+            .where((event) => event['event'] == 'verificationState')
+            .toList();
+        expect(verificationStateEvents, isNotEmpty);
 
         // --- send text from DeviceA with retry while sync is active ---
         debugPrint('[TEST] Sending text from DeviceA...');
@@ -278,6 +567,61 @@ void main() {
         expect(sendResult['eventId'], isA<String>());
         debugPrint('[TEST] Sent event: ${sendResult['eventId']}');
 
+        await _waitUntil(
+          message: 'Host2 did not emit incomingMessage',
+          timeout: const Duration(seconds: 30),
+          condition: () async {
+            return _hasIncomingMessageEvent(
+              host2Events,
+              roomId: roomId,
+              text: textPayload,
+            );
+          },
+        );
+        expect(
+          _hasIncomingMessageEvent(
+            host2Events,
+            roomId: roomId,
+            text: textPayload,
+          ),
+          isTrue,
+        );
+        debugPrint(
+          '[TEST] Host2 incomingMessage event detected for DeviceA send',
+        );
+
+        // Send back from DeviceB to validate symmetrical inbound detection.
+        const textPayloadFromB = 'actor host single-user payload from B';
+        final sendResultFromB = await _sendTextWithRetries(
+          host: host2,
+          roomId: roomId,
+          message: textPayloadFromB,
+        );
+        debugPrint('[TEST] DeviceB send result: $sendResultFromB');
+        expect(sendResultFromB['ok'], isTrue);
+        await _waitUntil(
+          message: 'Host1 did not emit incomingMessage',
+          timeout: const Duration(seconds: 30),
+          condition: () async {
+            return _hasIncomingMessageEvent(
+              host1Events,
+              roomId: roomId,
+              text: textPayloadFromB,
+            );
+          },
+        );
+        expect(
+          _hasIncomingMessageEvent(
+            host1Events,
+            roomId: roomId,
+            text: textPayloadFromB,
+          ),
+          isTrue,
+        );
+        debugPrint(
+          '[TEST] Host1 incomingMessage event detected for DeviceB send',
+        );
+
         debugPrint('[TEST] Checking encryption health of both hosts...');
         final health1 = await host1.send('getHealth');
         debugPrint('[TEST] host1 health: $health1');
@@ -291,8 +635,5 @@ void main() {
       },
       timeout: const Timeout(Duration(minutes: 3)),
     );
-
-    // TODO(sync-actor): Add self-verification test once vodozemac session
-    // bootstrapping between fresh isolates is stable.
   });
 }
