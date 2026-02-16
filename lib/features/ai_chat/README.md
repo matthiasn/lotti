@@ -58,7 +58,7 @@ lib/features/ai_chat/
 - **Accessible Controls**: Cancel (Esc shortcut) or Stop and transcribe
 - **Smart Transcription**: Uses Gemini 2.5 Flash when available; falls back to the first audio‑capable model for the configured Gemini provider
 - **Flexible Send**: If a model is selected, the transcript auto‑sends; otherwise it's inserted into the input field for review
-- **Real‑Time Mode**: When a Mistral Voxtral realtime model is configured, a mode toggle appears next to the mic button. In live mode, transcription text appears with ~2s latency while recording. Audio is saved as M4A via native platform channel conversion (iOS/macOS). App backgrounding gracefully stops the session.
+- **Real‑Time Mode**: When both batch and realtime transcription models are configured, a mode toggle appears next to the mic button. In live mode, transcription text appears with ~2s latency while recording. Audio is saved as M4A via native platform channel conversion (iOS/macOS). App backgrounding gracefully stops the session.
 
 ### ✅ Sophisticated Data Processing
 - **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
