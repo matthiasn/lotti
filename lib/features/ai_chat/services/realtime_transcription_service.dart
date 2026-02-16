@@ -113,10 +113,15 @@ class RealtimeTranscriptionService {
 
         // Cap buffer to prevent OOM on long recordings. The WebSocket still
         // receives all audio for transcription — the buffer is only used for
-        // the saved audio file, so losing older audio is acceptable.
-        if (_pcmBuffer.length + chunk.length <= _maxPcmBufferBytes) {
-          _pcmBuffer.add(chunk);
+        // the saved audio file. When the buffer is full, trim oldest bytes
+        // so the saved file contains the most recent audio.
+        final newTotal = _pcmBuffer.length + chunk.length;
+        if (newTotal > _maxPcmBufferBytes) {
+          final excess = newTotal - _maxPcmBufferBytes;
+          final existing = _pcmBuffer.takeBytes();
+          _pcmBuffer.add(existing.sublist(excess));
         }
+        _pcmBuffer.add(chunk);
 
         if (!_amplitudeController.isClosed) {
           final dbfs = computeDbfsFromPcm16(chunk);
