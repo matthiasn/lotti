@@ -121,29 +121,12 @@ class MatrixMessageSender {
     );
 
     try {
-      // For journal entity messages, upload JSON (and attachments) first so
-      // descriptors are available before the text event is processed.
-      var outboundMessage = await _ensureOriginatingHostId(message);
-      if (outboundMessage is SyncJournalEntity) {
-        final normalized = await _sendJournalEntityPayload(
-          room: room,
-          message: outboundMessage,
-        );
-        if (normalized == null) {
-          return false;
-        }
-        outboundMessage = normalized;
-      }
-      if (outboundMessage is SyncEntryLink) {
-        final covered = VectorClock.mergeUniqueClocks(
-          [
-            ...?outboundMessage.coveredVectorClocks,
-            outboundMessage.entryLink.vectorClock,
-          ],
-        );
-        outboundMessage = outboundMessage.copyWith(
-          coveredVectorClocks: covered,
-        );
+      final outboundMessage = await prepareSyncMessageForSend(
+        message: message,
+        room: room,
+      );
+      if (outboundMessage == null) {
+        return false;
       }
 
       final encodedMessage = json.encode(outboundMessage);
@@ -200,6 +183,46 @@ class MatrixMessageSender {
         stackTrace: stackTrace,
       );
       return false;
+    }
+  }
+
+  Future<SyncMessage?> prepareSyncMessageForSend({
+    required SyncMessage message,
+    required Room room,
+  }) async {
+    try {
+      var outboundMessage = await _ensureOriginatingHostId(message);
+      if (outboundMessage is SyncJournalEntity) {
+        final normalized = await _sendJournalEntityPayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (normalized == null) {
+          return null;
+        }
+        outboundMessage = normalized;
+      }
+      if (outboundMessage is SyncEntryLink) {
+        final covered = VectorClock.mergeUniqueClocks(
+          [
+            ...?outboundMessage.coveredVectorClocks,
+            outboundMessage.entryLink.vectorClock,
+          ],
+        );
+        outboundMessage = outboundMessage.copyWith(
+          coveredVectorClocks: covered,
+        );
+      }
+
+      return outboundMessage;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'prepareSyncMessageForSend',
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 

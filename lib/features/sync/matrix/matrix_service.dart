@@ -316,6 +316,8 @@ class MatrixService {
 
   MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
 
+  MatrixMessageSender get messageSender => _messageSender;
+
   String? get syncRoomId => _roomManager.currentRoomId;
   Room? get syncRoom => _roomManager.currentRoom;
   Stream<SyncRoomInvite> get inviteRequests => _roomManager.inviteRequests;

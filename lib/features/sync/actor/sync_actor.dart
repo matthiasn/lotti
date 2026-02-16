@@ -327,8 +327,15 @@ class SyncActorCommandHandler {
       _log('init: connected');
 
       _log('init: logging in as $user');
-      await _gateway!.login(config, deviceDisplayName: deviceDisplayName);
+      final loginResponse = await _gateway!.login(
+        config,
+        deviceDisplayName: deviceDisplayName,
+      );
       _log('init: logged in, deviceId=${client.deviceID}');
+      final loginDeviceId = loginResponse?.deviceId;
+      final deviceId = (loginDeviceId != null && loginDeviceId.isNotEmpty)
+          ? loginDeviceId
+          : client.deviceID;
       _latestLoginState = LoginState.loggedIn;
 
       _loginStateSub = _gateway!.loginStateChanges.listen((loginState) {
@@ -387,7 +394,7 @@ class SyncActorCommandHandler {
 
       _latestLoginState ??= LoginState.loggedIn;
 
-      return _ok(requestId: requestId);
+      return _ok(requestId: requestId, extra: {'deviceId': deviceId});
     } catch (e, stackTrace) {
       _log('init FAILED: $e\n$stackTrace');
 
@@ -543,33 +550,6 @@ class SyncActorCommandHandler {
     _gateway?.client.backgroundSync = false;
     await _syncSub?.cancel();
     _syncSub = null;
-  }
-
-  Future<void> _pauseSyncLoopForSend() async {
-    final client = _gateway?.client;
-    if (client == null) return;
-
-    client.backgroundSync = false;
-    await _pauseSyncLoop();
-    await client.abortSync();
-  }
-
-  Future<T> _sendWithTransientSyncPause<T>(
-      Future<T> Function() operation) async {
-    final wasSyncing = _state == SyncActorState.syncing;
-    if (!wasSyncing) {
-      return operation();
-    }
-
-    await _pauseSyncLoopForSend();
-    try {
-      return await operation();
-    } finally {
-      if (_state == SyncActorState.syncing) {
-        _gateway?.client.backgroundSync = true;
-        await _startSyncStreamListening();
-      }
-    }
   }
 
   bool _isRetryableSqliteError(Object error) {
@@ -772,13 +752,11 @@ class SyncActorCommandHandler {
       _log('sendText: room=$roomId msg=${message.length} chars');
 
       final eventId = await _runWithRetries(
-        () => _sendWithTransientSyncPause(
-          () => _gateway!.sendText(
-            roomId: roomId,
-            message: message,
-            messageType: messageType,
-            displayPendingEvent: false,
-          ),
+        () => _gateway!.sendText(
+          roomId: roomId,
+          message: message,
+          messageType: messageType,
+          displayPendingEvent: false,
         ),
         isRetryable: _isRetryableSqliteError,
       );

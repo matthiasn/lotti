@@ -8,28 +8,27 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
 import 'package:lotti/features/sync/actor/sync_actor_host.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:matrix/matrix.dart';
 
 /// MatrixService wrapper that wires the sync actor isolate as a send path
 /// for outbound sync messages.
 ///
-/// The actor is treated as a best-effort transport optimization; if it fails to
-/// initialize or send a message, the service falls back to
-/// [MatrixService.sendMatrixMsg] for compatibility.
+/// The actor is the primary outbound transport path for sync messages.
 class ActorMatrixService extends MatrixService {
   ActorMatrixService({
     required MatrixSyncGateway gateway,
@@ -86,10 +85,19 @@ class ActorMatrixService extends MatrixService {
   final Directory _actorDatabaseDirectory;
   final String? _actorDeviceDisplayName;
   final LoggingService _loggingService;
-  static const Duration _hostPingTimeout = Duration(seconds: 3);
+  static const Duration _actorInitTimeout = Duration(minutes: 2);
 
   SyncActorHost? _actorHost;
   Future<bool>? _actorInitInProgress;
+  String? _actorDeviceId;
+
+  @override
+  List<DeviceKeys> getUnverifiedDevices() {
+    final devices = super.getUnverifiedDevices();
+    return devices
+        .where((device) => !_isActorDevice(device))
+        .toList(growable: false);
+  }
 
   @override
   Future<void> init() async {
@@ -121,7 +129,7 @@ class ActorMatrixService extends MatrixService {
       return true;
     }
 
-    return super.sendMatrixMsg(syncMessage, myRoomId: myRoomId);
+    return false;
   }
 
   @override
@@ -154,12 +162,6 @@ class ActorMatrixService extends MatrixService {
     SyncMessage syncMessage, {
     String? myRoomId,
   }) async {
-    if (syncMessage is SyncJournalEntity) {
-      // SyncJournalEntity payloads need attachment/json descriptor staging handled by
-      // MatrixMessageSender; keep legacy sender path for parity.
-      return false;
-    }
-
     if (getUnverifiedDevices().isNotEmpty) {
       return false;
     }
@@ -177,10 +179,26 @@ class ActorMatrixService extends MatrixService {
     if (targetRoomId == null) {
       return false;
     }
+    var room = client.getRoomById(targetRoomId);
+    if (room == null) {
+      await _joinActorRoom(targetRoomId);
+      room = client.getRoomById(targetRoomId);
+    }
+    if (room == null) {
+      return false;
+    }
+
+    final outboundMessage = await messageSender.prepareSyncMessageForSend(
+      message: syncMessage,
+      room: room,
+    );
+    if (outboundMessage == null) {
+      return false;
+    }
 
     final encodedMessage = base64.encode(
       utf8.encode(
-        json.encode(syncMessage.toJson()),
+        json.encode(outboundMessage.toJson()),
       ),
     );
 
@@ -207,6 +225,7 @@ class ActorMatrixService extends MatrixService {
       );
       return false;
     } catch (error, stackTrace) {
+      await _invalidateActorHostIfNotHealthy(actorHost, 'HOST_DISPOSED');
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
@@ -219,10 +238,7 @@ class ActorMatrixService extends MatrixService {
 
   Future<bool> _initializeSyncActor() async {
     if (_actorHost != null) {
-      if (await _isActorHostAlive(_actorHost!)) {
-        return true;
-      }
-      await _disposeActorHost();
+      return true;
     }
 
     final initInProgress = _actorInitInProgress;
@@ -246,6 +262,7 @@ class ActorMatrixService extends MatrixService {
   }
 
   Future<bool> _startSyncActor(MatrixConfig matrixConfiguration) async {
+    _actorDeviceId = null;
     SyncActorHost? host;
     try {
       host = await SyncActorHost.spawn(
@@ -260,10 +277,9 @@ class ActorMatrixService extends MatrixService {
         'user': matrixConfiguration.user,
         'password': matrixConfiguration.password,
         'dbRootPath': _actorDatabaseDirectory.path,
-        'deviceDisplayName':
-            _actorDeviceDisplayName ?? 'LottiSyncActor',
+        'deviceDisplayName': _actorDeviceDisplayName ?? 'LottiSyncActor',
         'eventPort': host.eventSendPort,
-      });
+      }, timeout: _actorInitTimeout);
 
       if (initResponse['ok'] != true) {
         _loggingService.captureEvent(
@@ -273,6 +289,13 @@ class ActorMatrixService extends MatrixService {
         );
         await host.dispose();
         return false;
+      }
+
+      final initActorDeviceId = initResponse['deviceId'];
+      if (initActorDeviceId is String && initActorDeviceId.isNotEmpty) {
+        _actorDeviceId = initActorDeviceId;
+      } else {
+        _actorDeviceId = null;
       }
 
       _actorHost = host;
@@ -304,18 +327,29 @@ class ActorMatrixService extends MatrixService {
       return;
     }
 
-    final joinResult = await actorHost.send('joinRoom', payload: <String, Object?>{
-      'roomId': room,
-    });
+    try {
+      final joinResult =
+          await actorHost.send('joinRoom', payload: <String, Object?>{
+        'roomId': room,
+      });
 
-    if (joinResult['ok'] != true) {
-      await _invalidateActorHostIfNotHealthy(
-        actorHost,
-        joinResult['errorCode'],
-      );
-      _loggingService.captureEvent(
-        'actor joinRoom failed for $room: ${joinResult['error']}',
+      if (joinResult['ok'] != true) {
+        await _invalidateActorHostIfNotHealthy(
+          actorHost,
+          joinResult['errorCode'],
+        );
+        _loggingService.captureEvent(
+          'actor joinRoom failed for $room: ${joinResult['error']}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'actor.joinRoom',
+        );
+      }
+    } catch (error, stackTrace) {
+      await _invalidateActorHostIfNotHealthy(actorHost, 'HOST_DISPOSED');
+      _loggingService.captureException(
+        error,
         domain: 'MATRIX_SERVICE',
+        stackTrace: stackTrace,
         subDomain: 'actor.joinRoom',
       );
     }
@@ -344,19 +378,11 @@ class ActorMatrixService extends MatrixService {
     incrementSentCountOf(sentType);
   }
 
-  Future<bool> _isActorHostAlive(SyncActorHost actorHost) async {
-    final response = await actorHost.send(
-      'ping',
-      timeout: _hostPingTimeout,
-    );
-    return response['ok'] == true;
-  }
-
   Future<void> _invalidateActorHostIfNotHealthy(
     SyncActorHost actorHost,
     Object? errorCode,
   ) async {
-    if ((errorCode == 'HOST_DISPOSED' || errorCode == 'TIMEOUT') &&
+    if (errorCode == 'HOST_DISPOSED' &&
         identical(actorHost, _actorHost)) {
       await _disposeActorHost();
     }
@@ -366,6 +392,45 @@ class ActorMatrixService extends MatrixService {
     final host = _actorHost;
     _actorHost = null;
     _actorInitInProgress = null;
+    _actorDeviceId = null;
     await host?.dispose();
+  }
+
+  bool _isActorDevice(DeviceKeys device) {
+    final actorDeviceId = _actorDeviceId;
+    final currentDeviceId = client.deviceID;
+    if (device.userId != client.userID) {
+      return false;
+    }
+
+    if (currentDeviceId != null &&
+        currentDeviceId.isNotEmpty &&
+        device.deviceId != null &&
+        device.deviceId == currentDeviceId) {
+      return true;
+    }
+
+    if (actorDeviceId != null &&
+        actorDeviceId.isNotEmpty &&
+        device.deviceId != null &&
+        device.deviceId == actorDeviceId) {
+      return true;
+    }
+
+    final actorDeviceDisplayName =
+        (_actorDeviceDisplayName?.trim().isNotEmpty == true
+                ? _actorDeviceDisplayName
+                : 'LottiSyncActor')
+            ?.trim()
+            .toLowerCase();
+    final deviceDisplayName = device.deviceDisplayName?.trim().toLowerCase();
+    if (actorDeviceDisplayName != null &&
+        actorDeviceDisplayName.isNotEmpty &&
+        deviceDisplayName != null &&
+        actorDeviceDisplayName == deviceDisplayName) {
+      return true;
+    }
+
+    return false;
   }
 }
