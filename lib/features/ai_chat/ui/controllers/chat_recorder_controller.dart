@@ -507,8 +507,21 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'startRealtime',
       );
     } catch (e) {
+      // Cancel realtime-specific subscriptions that may have been set up
+      // before the failure (e.g. amplitude subscription started before
+      // startRealtimeTranscription threw).
+      try {
+        await _realtimeAmpSub?.cancel();
+        _realtimeAmpSub = null;
+      } catch (_) {}
+      try {
+        await _realtimeDeltaSub?.cancel();
+        _realtimeDeltaSub = null;
+      } catch (_) {}
+
       if (ref.mounted) {
         state = state.copyWith(
+          status: ChatRecorderStatus.idle,
           error: 'Failed to start realtime recording: $e',
           errorType: ChatRecorderErrorType.startFailed,
         );
