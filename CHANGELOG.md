@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.861] - 2026-02-16
+### Changed
+- Upgraded Flutter to 3.41.1 (Dart 3.11.0).
+- Removed legacy `EXCLUDED_ARCHS[sdk=iphonesimulator*] = arm64` from iOS Podfile, fixing simulator builds on Xcode 26+.
+- Added `iphonesimulator` to `SUPPORTED_PLATFORMS` in Xcode project settings, restoring simulator destination discovery.
+
 ## [0.9.860] - 2026-02-13
 ### Changed
 - Enabled SQLite WAL mode, busy_timeout (5s), and synchronous=NORMAL for all databases via setup callback. Prevents "Database is Locked" errors when multiple isolates access the same file.

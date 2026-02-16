@@ -1074,7 +1074,7 @@ class SyncEventProcessor {
           syncMessage: msg,
           journalDb: journalDb,
         );
-      case SyncEntityDefinition(entityDefinition: final entityDefinition):
+      case SyncEntityDefinition(:final entityDefinition):
         await journalDb.upsertEntityDefinition(entityDefinition);
         final typeNotification = switch (entityDefinition) {
           CategoryDefinition() => categoriesNotification,
@@ -1088,30 +1088,30 @@ class SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncTagEntity(tagEntity: final tagEntity):
+      case SyncTagEntity(:final tagEntity):
         await journalDb.upsertTagEntity(tagEntity);
         _updateNotifications.notify(
           {tagEntity.id, tagsNotification},
           fromSync: true,
         );
         return null;
-      case SyncAiConfig(aiConfig: final aiConfig):
+      case SyncAiConfig(:final aiConfig):
         await _aiConfigRepository.saveConfig(
           aiConfig,
           fromSync: true,
         );
         return null;
-      case SyncAiConfigDelete(id: final id):
+      case SyncAiConfigDelete(:final id):
         await _aiConfigRepository.deleteConfig(
           id,
           fromSync: true,
         );
         return null;
       case SyncThemingSelection(
-          lightThemeName: final lightThemeName,
-          darkThemeName: final darkThemeName,
-          themeMode: final themeMode,
-          updatedAt: final updatedAt,
+          :final lightThemeName,
+          :final darkThemeName,
+          :final themeMode,
+          :final updatedAt,
         ):
         try {
           // Check if incoming update is newer than local
