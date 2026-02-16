@@ -62,21 +62,6 @@ class AudioConverter {
                     return
                 }
 
-                // AAC output format
-                guard let outputFormat = AVAudioFormat(
-                    standardFormatWithSampleRate: inputFormat.sampleRate,
-                    channels: inputFormat.channelCount
-                ) else {
-                    DispatchQueue.main.async {
-                        result(FlutterError(
-                            code: "FORMAT_ERROR",
-                            message: "Could not create output format",
-                            details: nil
-                        ))
-                    }
-                    return
-                }
-
                 let outputSettings: [String: Any] = [
                     AVFormatIDKey: kAudioFormatMPEG4AAC,
                     AVSampleRateKey: inputFormat.sampleRate,
