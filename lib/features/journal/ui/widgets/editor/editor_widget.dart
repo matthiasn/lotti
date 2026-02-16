@@ -158,6 +158,7 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                     cursorColor: context.colorScheme.onSurface,
                     selectionColor: context.colorScheme.primary.withAlpha(127),
                   ),
+                  // ignore: experimental_member_use
                   spaceShortcutEvents: [
                     formatHyphenToBulletList,
                     formatOrderedNumberToList,

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.861" date="2026-02-16">
+      <description>
+          <p>Flutter 3.41.1 Upgrade: Upgraded to Flutter 3.41.1 (Dart 3.11.0).</p>
+      </description>
+    </release>
     <release version="0.9.860" date="2026-02-13">
       <description>
           <p>WAL Mode &amp; Read Pools: Enabled SQLite WAL mode, busy_timeout (5s), and synchronous=NORMAL for all databases, preventing lock errors during multi-isolate access. Added a read pool of 4 isolates to JournalDb for offloading heavy reads. Added background and directory provider parameters to database constructors, preparing for actor-based sync.</p>
