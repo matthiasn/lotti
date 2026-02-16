@@ -335,6 +335,13 @@ class MatrixService {
   bool _statsDirty = false;
   String? _lastEmittedStatsSig;
 
+  void registerSentEvent({
+    required String eventId,
+    SentEventSource source = SentEventSource.text,
+  }) {
+    _sentEventRegistry.register(eventId, source: source);
+  }
+
   void _emitStatsNow() {
     // Prepare snapshot to avoid consumers mutating our internal map.
     final snapshot = MatrixStats(

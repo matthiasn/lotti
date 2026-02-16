@@ -97,6 +97,7 @@ class SyncActorCommandHandler {
     Duration verificationPeerDiscoveryInterval =
         _defaultVerificationPeerDiscoveryInterval,
     bool enableLogging = true,
+    bool processTimelineEvents = true,
     SyncDatabaseFactory? syncDatabaseFactory,
     OutboundQueueFactory? outboundQueueFactory,
     JournalDbFactory? journalDbFactory,
@@ -136,6 +137,7 @@ class SyncActorCommandHandler {
             inboundProcessorFactory ?? _defaultInboundProcessorFactory,
         _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
         _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
+        _processTimelineEvents = processTimelineEvents,
         _enableLogging = enableLogging;
 
   late final VerificationHandler _verificationHandler = VerificationHandler(
@@ -155,6 +157,7 @@ class SyncActorCommandHandler {
   final OutboundQueueFactory _outboundQueueFactory;
   final int _verificationPeerDiscoveryAttempts;
   final Duration _verificationPeerDiscoveryInterval;
+  final bool _processTimelineEvents;
   final bool _enableLogging;
 
   SyncActorState _state = SyncActorState.uninitialized;
@@ -347,9 +350,11 @@ class SyncActorCommandHandler {
         _verificationHandler.trackIncoming(verification);
       });
 
-      _timelineEventSub = _timelineEventStreamFor(_gateway!.client).listen(
-        _handleTimelineEvent,
-      );
+      if (_processTimelineEvents) {
+        _timelineEventSub = _timelineEventStreamFor(_gateway!.client).listen(
+          _handleTimelineEvent,
+        );
+      }
 
       // Track all to-device events for diagnostics.
       final toDeviceStream = _toDeviceEventStreamFor(_gateway!.client);
@@ -1274,6 +1279,7 @@ void syncActorEntrypoint(
   SendPort readyPort, {
   VodInitializer vodInitializer = vod.init,
   bool enableLogging = false,
+  bool processTimelineEvents = true,
 }) {
   final commandPort = ReceivePort();
   readyPort.send(commandPort.sendPort);
@@ -1281,6 +1287,7 @@ void syncActorEntrypoint(
   final handler = SyncActorCommandHandler(
     vodInitializer: vodInitializer,
     enableLogging: enableLogging,
+    processTimelineEvents: processTimelineEvents,
   );
 
   commandPort.listen((dynamic raw) async {

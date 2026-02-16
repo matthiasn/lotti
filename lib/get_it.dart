@@ -21,6 +21,7 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/actor/actor_matrix_service.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
@@ -234,7 +235,6 @@ Future<void> registerSingletons() async {
     // backfillResponseHandler will be injected later to avoid circular dependency
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
-  final useSyncActor = await journalDb.getConfigFlag(enableSyncActorFlag);
 
   // Room discovery service for single-user multi-device flow
   final discoveryService = SyncRoomDiscoveryService(
@@ -249,22 +249,45 @@ Future<void> registerSingletons() async {
     discoveryService: discoveryService,
   );
 
-  final matrixService = MatrixService(
-    gateway: matrixGateway,
-    loggingService: loggingService,
-    activityGate: userActivityGate,
-    messageSender: matrixMessageSender,
-    journalDb: journalDb,
-    settingsDb: settingsDb,
-    readMarkerService: readMarkerService,
-    eventProcessor: syncEventProcessor,
-    secureStorage: secureStorage,
-    collectSyncMetrics: collectSyncMetrics,
-    attachmentIndex: attachmentIndex,
-    roomManager: roomManager,
-    runStartupRescan: !useSyncActor,
-    listenConnectivityChanges: !useSyncActor,
+  final useSyncActor = await journalDb.getConfigFlag(enableSyncActorFlag);
+  final actorDatabaseDirectory = Directory(
+    '${documentsDirectory.path}/sync_actor',
   );
+  final MatrixService matrixService = useSyncActor
+      ? ActorMatrixService(
+          gateway: matrixGateway,
+          loggingService: loggingService,
+          activityGate: userActivityGate,
+          messageSender: matrixMessageSender,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          readMarkerService: readMarkerService,
+          eventProcessor: syncEventProcessor,
+          secureStorage: secureStorage,
+          attachmentIndex: attachmentIndex,
+          actorDatabaseDirectory: actorDatabaseDirectory,
+          collectSyncMetrics: collectSyncMetrics,
+          roomManager: roomManager,
+          runStartupRescan: true,
+          listenConnectivityChanges: true,
+        )
+      : MatrixService(
+          gateway: matrixGateway,
+          loggingService: loggingService,
+          activityGate: userActivityGate,
+          messageSender: matrixMessageSender,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          readMarkerService: readMarkerService,
+          eventProcessor: syncEventProcessor,
+          secureStorage: secureStorage,
+          collectSyncMetrics: collectSyncMetrics,
+          attachmentIndex: attachmentIndex,
+          roomManager: roomManager,
+          // Keep existing sync bootstrap behavior for fallback legacy pipeline.
+          runStartupRescan: true,
+          listenConnectivityChanges: true,
+        );
 
   getIt
     ..registerSingleton<MatrixSyncGateway>(matrixGateway)
@@ -286,10 +309,10 @@ Future<void> registerSingletons() async {
         activityGate: userActivityGate,
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
-        autoStartRunner: !useSyncActor,
-        listenConnectivityChanges: !useSyncActor,
-        listenLoginStateChanges: !useSyncActor,
-        monitorOutboxCount: !useSyncActor,
+        autoStartRunner: true,
+        listenConnectivityChanges: true,
+        listenLoginStateChanges: true,
+        monitorOutboxCount: true,
       ),
     );
 
@@ -313,10 +336,10 @@ Future<void> registerSingletons() async {
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
 
-  // Start the backfill request service (legacy path only).
-  if (!useSyncActor) {
-    backfillRequestService.start();
-  }
+  // Always run legacy backfill request service while actor mode is still a
+  // controlled rollout. The actor implementation is not yet responsible for
+  // this lifecycle in production builds.
+  backfillRequestService.start();
 
   getIt
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
@@ -357,9 +380,7 @@ Future<void> registerSingletons() async {
     'AudioWaveformService',
   );
 
-  if (!useSyncActor) {
-    unawaited(getIt<MatrixService>().init());
-  }
+  unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
 
   // Shared rate limiter for AI label assignment
