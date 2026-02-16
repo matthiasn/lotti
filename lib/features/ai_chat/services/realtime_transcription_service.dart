@@ -265,20 +265,11 @@ class RealtimeTranscriptionService {
 
     final header = ByteData(44)
       // RIFF header
-      ..setUint8(0, 0x52) // 'R'
-      ..setUint8(1, 0x49) // 'I'
-      ..setUint8(2, 0x46) // 'F'
-      ..setUint8(3, 0x46) // 'F'
+      ..setUint32(0, 0x52494646, Endian.big) // 'RIFF'
       ..setUint32(4, 36 + dataSize, Endian.little) // file size - 8
-      ..setUint8(8, 0x57) // 'W'
-      ..setUint8(9, 0x41) // 'A'
-      ..setUint8(10, 0x56) // 'V'
-      ..setUint8(11, 0x45) // 'E'
+      ..setUint32(8, 0x57415645, Endian.big) // 'WAVE'
       // fmt chunk
-      ..setUint8(12, 0x66) // 'f'
-      ..setUint8(13, 0x6D) // 'm'
-      ..setUint8(14, 0x74) // 't'
-      ..setUint8(15, 0x20) // ' '
+      ..setUint32(12, 0x666D7420, Endian.big) // 'fmt '
       ..setUint32(16, 16, Endian.little) // chunk size
       ..setUint16(20, 1, Endian.little) // PCM format
       ..setUint16(22, channels, Endian.little)
@@ -287,10 +278,7 @@ class RealtimeTranscriptionService {
       ..setUint16(32, blockAlign, Endian.little)
       ..setUint16(34, bitsPerSample, Endian.little)
       // data chunk
-      ..setUint8(36, 0x64) // 'd'
-      ..setUint8(37, 0x61) // 'a'
-      ..setUint8(38, 0x74) // 't'
-      ..setUint8(39, 0x61) // 'a'
+      ..setUint32(36, 0x64617461, Endian.big) // 'data'
       ..setUint32(40, dataSize, Endian.little);
 
     final file = File(path);
