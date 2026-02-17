@@ -671,7 +671,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get apiKeysSettingsPageTitle => 'AI-Inferenz-Anbieter';
 
   @override
+  String get audioRecordingCancel => 'ABBRECHEN';
+
+  @override
+  String get audioRecordingListening => 'Hört zu...';
+
+  @override
+  String get audioRecordingRealtime => 'Live-Transkription';
+
+  @override
+  String get audioRecordingStop => 'STOPP';
+
+  @override
   String get audioRecordings => 'Audioaufnahmen';
+
+  @override
+  String get audioRecordingStandard => 'Standard';
 
   @override
   String get automaticPrompts => 'Automatische Prompts';
@@ -782,46 +797,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get cancelButton => 'Abbrechen';
 
   @override
-  String get chatInputCancelRealtime => 'Abbrechen (Esc)';
-
-  @override
-  String get chatInputCancelRecording => 'Aufnahme abbrechen (Esc)';
-
-  @override
-  String get chatInputConfigureModel => 'Modell konfigurieren';
-
-  @override
-  String get chatInputHintDefault =>
-      'Fragen zu deinen Aufgaben und Produktivität...';
-
-  @override
-  String get chatInputHintSelectModel => 'Wähle ein Modell zum Chatten';
-
-  @override
-  String get chatInputListening => 'Hört zu...';
-
-  @override
-  String get chatInputPleaseWait => 'Bitte warten...';
-
-  @override
-  String get chatInputProcessing => 'Verarbeitung...';
-
-  @override
-  String get chatInputRecordVoice => 'Sprachnachricht aufnehmen';
-
-  @override
-  String get chatInputSendTooltip => 'Nachricht senden';
-
-  @override
-  String get chatInputStartRealtime => 'Live-Transkription starten';
-
-  @override
-  String get chatInputStopRealtime => 'Live-Transkription beenden';
-
-  @override
-  String get chatInputStopTranscribe => 'Stoppen und transkribieren';
-
-  @override
   String get categoryActiveDescription =>
       'Inaktive Kategorien erscheinen nicht in Auswahllisten';
 
@@ -873,6 +848,46 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Tippen zum Fortfahren';
+
+  @override
+  String get chatInputCancelRealtime => 'Abbrechen (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Aufnahme abbrechen (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Modell konfigurieren';
+
+  @override
+  String get chatInputHintDefault =>
+      'Fragen zu deinen Aufgaben und Produktivität...';
+
+  @override
+  String get chatInputHintSelectModel => 'Wähle ein Modell zum Chatten';
+
+  @override
+  String get chatInputListening => 'Hört zu...';
+
+  @override
+  String get chatInputPleaseWait => 'Bitte warten...';
+
+  @override
+  String get chatInputProcessing => 'Verarbeitung...';
+
+  @override
+  String get chatInputRecordVoice => 'Sprachnachricht aufnehmen';
+
+  @override
+  String get chatInputSendTooltip => 'Nachricht senden';
+
+  @override
+  String get chatInputStartRealtime => 'Live-Transkription starten';
+
+  @override
+  String get chatInputStopRealtime => 'Live-Transkription beenden';
+
+  @override
+  String get chatInputStopTranscribe => 'Stoppen und transkribieren';
 
   @override
   String get checklistAddItem => 'Neues Element hinzufügen';

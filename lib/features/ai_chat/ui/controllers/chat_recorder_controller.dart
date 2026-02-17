@@ -401,7 +401,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
     if (wasRealtime) {
       // Discard: tear down WebSocket and PCM stream without saving audio
-      await _realtimeService.dispose(discard: true);
+      await _realtimeService.dispose();
     }
 
     await _cleanupInternal();
@@ -791,12 +791,3 @@ class _AppLifecycleObserver extends WidgetsBindingObserver {
     }
   }
 }
-
-/// Whether a real-time transcription model is configured and available.
-///
-/// The UI uses this to decide whether to show the realtime mode toggle.
-final realtimeAvailableProvider = FutureProvider.autoDispose<bool>((ref) async {
-  final service = ref.watch(realtimeTranscriptionServiceProvider);
-  final config = await service.resolveRealtimeConfig();
-  return config != null;
-});

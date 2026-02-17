@@ -687,7 +687,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get apiKeysSettingsPageTitle => 'Fournisseurs d\'inférence AI';
 
   @override
+  String get audioRecordingCancel => 'ANNULER';
+
+  @override
+  String get audioRecordingListening => 'Écoute en cours...';
+
+  @override
+  String get audioRecordingRealtime => 'Transcription en direct';
+
+  @override
+  String get audioRecordingStop => 'ARRÊTER';
+
+  @override
   String get audioRecordings => 'Enregistrements audio';
+
+  @override
+  String get audioRecordingStandard => 'Standard';
 
   @override
   String get automaticPrompts => 'Prompts automatiques';
@@ -805,47 +820,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cancelButton => 'Annuler';
 
   @override
-  String get chatInputCancelRealtime => 'Annuler (Échap)';
-
-  @override
-  String get chatInputCancelRecording => 'Annuler l\'enregistrement (Échap)';
-
-  @override
-  String get chatInputConfigureModel => 'Configurer le modèle';
-
-  @override
-  String get chatInputHintDefault =>
-      'Posez des questions sur vos tâches et votre productivité...';
-
-  @override
-  String get chatInputHintSelectModel =>
-      'Sélectionnez un modèle pour commencer à discuter';
-
-  @override
-  String get chatInputListening => 'Écoute en cours...';
-
-  @override
-  String get chatInputPleaseWait => 'Veuillez patienter...';
-
-  @override
-  String get chatInputProcessing => 'Traitement...';
-
-  @override
-  String get chatInputRecordVoice => 'Enregistrer un message vocal';
-
-  @override
-  String get chatInputSendTooltip => 'Envoyer le message';
-
-  @override
-  String get chatInputStartRealtime => 'Démarrer la transcription en direct';
-
-  @override
-  String get chatInputStopRealtime => 'Arrêter la transcription en direct';
-
-  @override
-  String get chatInputStopTranscribe => 'Arrêter et transcrire';
-
-  @override
   String get categoryActiveDescription =>
       'Les catégories inactives n\'apparaîtront pas dans les listes de sélection';
 
@@ -897,6 +871,47 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Appuyez pour continuer';
+
+  @override
+  String get chatInputCancelRealtime => 'Annuler (Échap)';
+
+  @override
+  String get chatInputCancelRecording => 'Annuler l\'enregistrement (Échap)';
+
+  @override
+  String get chatInputConfigureModel => 'Configurer le modèle';
+
+  @override
+  String get chatInputHintDefault =>
+      'Posez des questions sur vos tâches et votre productivité...';
+
+  @override
+  String get chatInputHintSelectModel =>
+      'Sélectionnez un modèle pour commencer à discuter';
+
+  @override
+  String get chatInputListening => 'Écoute en cours...';
+
+  @override
+  String get chatInputPleaseWait => 'Veuillez patienter...';
+
+  @override
+  String get chatInputProcessing => 'Traitement...';
+
+  @override
+  String get chatInputRecordVoice => 'Enregistrer un message vocal';
+
+  @override
+  String get chatInputSendTooltip => 'Envoyer le message';
+
+  @override
+  String get chatInputStartRealtime => 'Démarrer la transcription en direct';
+
+  @override
+  String get chatInputStopRealtime => 'Arrêter la transcription en direct';
+
+  @override
+  String get chatInputStopTranscribe => 'Arrêter et transcrire';
 
   @override
   String get checklistAddItem => 'Ajouter un nouvel élément';

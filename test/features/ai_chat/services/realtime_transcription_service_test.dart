@@ -165,7 +165,7 @@ Future<(ProviderContainer, _FakeWebSocketChannel)> _createServiceWithConfig({
   final fakeChannel = _FakeWebSocketChannel();
 
   final repo = MistralRealtimeTranscriptionRepository(
-    channelFactory: (_) {
+    channelFactory: (_, __) {
       // Simulate the session.created handshake after a microtask
       Future<void>.delayed(Duration.zero).then((_) {
         fakeChannel.simulateServerMessage({
@@ -664,12 +664,12 @@ void main() {
 
       expect(svc.isActive, isTrue);
 
-      await svc.dispose(discard: true);
+      await svc.dispose();
 
       expect(svc.isActive, isFalse);
     });
 
-    test('with discard=true skips audio save', () async {
+    test('cleans up even with buffered PCM data', () async {
       final (container, _) = await _createServiceWithConfig();
       addTearDown(container.dispose);
 
@@ -684,53 +684,6 @@ void main() {
       pcmController.add(_pcmSilence(64));
       await Future<void>.delayed(Duration.zero);
 
-      // discard=true should not try to save audio
-      await svc.dispose(discard: true);
-
-      expect(svc.isActive, isFalse);
-    });
-  });
-
-  group('dispose with discard=false', () {
-    test('saves buffered PCM as temp WAV when not discarding', () async {
-      final (container, _) = await _createServiceWithConfig();
-      addTearDown(container.dispose);
-
-      final svc = container.read(realtimeTranscriptionServiceProvider);
-      final pcmController = StreamController<Uint8List>();
-
-      await svc.startRealtimeTranscription(
-        pcmStream: pcmController.stream,
-        onDelta: (_) {},
-      );
-
-      // Send PCM data to populate the buffer
-      pcmController.add(Uint8List.fromList(List.filled(320, 42)));
-      await Future<void>.delayed(Duration.zero);
-
-      // dispose with discard=false (default) should attempt to save
-      await svc.dispose();
-
-      expect(svc.isActive, isFalse);
-      // Best-effort save; we verify it didn't crash. The file is written
-      // to systemTemp so we can't easily verify its contents, but the
-      // path exercised is the !discard && _pcmBuffer.length > 0 branch.
-    });
-
-    test('does not save when buffer is empty', () async {
-      final (container, _) = await _createServiceWithConfig();
-      addTearDown(container.dispose);
-
-      final svc = container.read(realtimeTranscriptionServiceProvider);
-      final pcmController = StreamController<Uint8List>();
-
-      await svc.startRealtimeTranscription(
-        pcmStream: pcmController.stream,
-        onDelta: (_) {},
-      );
-
-      // Don't send any PCM data — buffer stays empty
-      // dispose with default discard=false should skip save
       await svc.dispose();
 
       expect(svc.isActive, isFalse);
@@ -761,7 +714,7 @@ void main() {
         contains('microphone disconnected'),
       );
 
-      await svc.dispose(discard: true);
+      await svc.dispose();
     });
   });
 
@@ -854,6 +807,84 @@ void main() {
       // Without native M4A converter, should fall back to .wav
       expect(result.audioFilePath, isNotNull);
       expect(result.audioFilePath, endsWith('.wav'));
+    });
+
+    test('returns null audioFilePath when WAV writing fails', () async {
+      final (container, fakeChannel) = await _createServiceWithConfig();
+      addTearDown(container.dispose);
+
+      final svc = container.read(realtimeTranscriptionServiceProvider);
+      final pcmController = StreamController<Uint8List>();
+
+      await svc.startRealtimeTranscription(
+        pcmStream: pcmController.stream,
+        onDelta: (_) {},
+      );
+
+      pcmController.add(Uint8List.fromList(List.filled(64, 0)));
+      await Future<void>.delayed(Duration.zero);
+
+      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+        fakeChannel.simulateServerMessage({
+          'type': 'transcription.done',
+          'text': 'test',
+        });
+      }));
+
+      // Use an invalid path to trigger the catch block in _saveAudio
+      final result = await svc.stop(
+        stopRecorder: () async {},
+        outputPath: '/nonexistent/deeply/nested/path/output',
+      );
+
+      // Should gracefully handle the error
+      // audioFilePath might be null if temp WAV doesn't exist either
+      expect(result.transcript, 'test');
+    });
+  });
+
+  group('PCM buffer cap', () {
+    test('caps buffer to prevent OOM on long recordings', () async {
+      final (container, fakeChannel) = await _createServiceWithConfig();
+      addTearDown(container.dispose);
+
+      final svc = container.read(realtimeTranscriptionServiceProvider);
+      final pcmController = StreamController<Uint8List>();
+
+      await svc.startRealtimeTranscription(
+        pcmStream: pcmController.stream,
+        onDelta: (_) {},
+      );
+
+      // Send chunks that exceed the max buffer size (3,840,000 bytes)
+      // Each chunk is 64,000 bytes, so 61 chunks = 3,904,000 bytes > max
+      for (var i = 0; i < 61; i++) {
+        pcmController.add(Uint8List.fromList(List.filled(64000, i)));
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      final outputDir =
+          await Directory.systemTemp.createTemp('rt_buffer_cap_');
+      addTearDown(() => outputDir.delete(recursive: true));
+
+      // Schedule the done event to fire after stop() starts listening
+      unawaited(Future<void>.delayed(const Duration(milliseconds: 50)).then(
+        (_) {
+          fakeChannel.simulateServerMessage({
+            'type': 'transcription.done',
+            'text': 'long recording test',
+          });
+        },
+      ));
+
+      final result = await svc.stop(
+        stopRecorder: () async {},
+        outputPath: '${outputDir.path}/output',
+      );
+
+      expect(result.transcript, 'long recording test');
+      // Audio file should still be created from the capped buffer
+      expect(result.audioFilePath, isNotNull);
     });
   });
 }

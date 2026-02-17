@@ -664,7 +664,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get apiKeysSettingsPageTitle => 'Furnizori de inferență AI';
 
   @override
+  String get audioRecordingCancel => 'ANULARE';
+
+  @override
+  String get audioRecordingListening => 'Se ascultă...';
+
+  @override
+  String get audioRecordingRealtime => 'Transcriere în direct';
+
+  @override
+  String get audioRecordingStop => 'STOP';
+
+  @override
   String get audioRecordings => 'Înregistrări audio';
+
+  @override
+  String get audioRecordingStandard => 'Standard';
 
   @override
   String get automaticPrompts => 'Prompturi automate';
@@ -776,47 +791,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get cancelButton => 'Anulează';
 
   @override
-  String get chatInputCancelRealtime => 'Anulează (Esc)';
-
-  @override
-  String get chatInputCancelRecording => 'Anulează înregistrarea (Esc)';
-
-  @override
-  String get chatInputConfigureModel => 'Configurează modelul';
-
-  @override
-  String get chatInputHintDefault =>
-      'Întreabă despre sarcinile și productivitatea ta...';
-
-  @override
-  String get chatInputHintSelectModel =>
-      'Selectează un model pentru a începe conversația';
-
-  @override
-  String get chatInputListening => 'Ascultă...';
-
-  @override
-  String get chatInputPleaseWait => 'Așteaptă...';
-
-  @override
-  String get chatInputProcessing => 'Se procesează...';
-
-  @override
-  String get chatInputRecordVoice => 'Înregistrează mesaj vocal';
-
-  @override
-  String get chatInputSendTooltip => 'Trimite mesajul';
-
-  @override
-  String get chatInputStartRealtime => 'Pornește transcrierea în timp real';
-
-  @override
-  String get chatInputStopRealtime => 'Oprește transcrierea în timp real';
-
-  @override
-  String get chatInputStopTranscribe => 'Oprește și transcrie';
-
-  @override
   String get categoryActiveDescription =>
       'Categoriile inactive nu vor apărea în listele de selecție';
 
@@ -868,6 +842,47 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Atingeți pentru a continua';
+
+  @override
+  String get chatInputCancelRealtime => 'Anulează (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Anulează înregistrarea (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Configurează modelul';
+
+  @override
+  String get chatInputHintDefault =>
+      'Întreabă despre sarcinile și productivitatea ta...';
+
+  @override
+  String get chatInputHintSelectModel =>
+      'Selectează un model pentru a începe conversația';
+
+  @override
+  String get chatInputListening => 'Ascultă...';
+
+  @override
+  String get chatInputPleaseWait => 'Așteaptă...';
+
+  @override
+  String get chatInputProcessing => 'Se procesează...';
+
+  @override
+  String get chatInputRecordVoice => 'Înregistrează mesaj vocal';
+
+  @override
+  String get chatInputSendTooltip => 'Trimite mesajul';
+
+  @override
+  String get chatInputStartRealtime => 'Pornește transcrierea în timp real';
+
+  @override
+  String get chatInputStopRealtime => 'Oprește transcrierea în timp real';
+
+  @override
+  String get chatInputStopTranscribe => 'Oprește și transcrie';
 
   @override
   String get checklistAddItem => 'Adaugă un element nou';

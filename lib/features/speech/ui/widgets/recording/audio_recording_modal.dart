@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/ui/app_fonts.dart';
@@ -64,6 +66,8 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
 
 class _AudioRecordingModalContentState
     extends ConsumerState<AudioRecordingModalContent> {
+  bool _useRealtimeMode = false;
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +89,8 @@ class _AudioRecordingModalContentState
     final theme = Theme.of(context);
     final state = ref.watch(audioRecorderControllerProvider);
     final controller = ref.read(audioRecorderControllerProvider.notifier);
+    final realtimeAvailable =
+        ref.watch(realtimeAvailableProvider).value ?? false;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -109,6 +115,15 @@ class _AudioRecordingModalContentState
               ),
             ),
 
+            // Live transcript display (realtime mode only)
+            if (state.isRealtimeMode &&
+                state.status == AudioRecorderStatus.recording)
+              _buildLiveTranscript(state, theme),
+
+            // Mode toggle (only when realtime is available and not recording)
+            if (realtimeAvailable && !_isRecording(state))
+              _buildModeToggle(context, theme),
+
             const SizedBox(height: 20),
 
             // Control buttons in a row
@@ -119,7 +134,7 @@ class _AudioRecordingModalContentState
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: _isRecording(state)
-                      ? _buildStopButton(context, _stop, theme)
+                      ? _buildStopButton(context, theme, state)
                       : _buildRecordButton(context, controller, theme),
                 ),
               ],
@@ -143,7 +158,14 @@ class _AudioRecordingModalContentState
 
   Future<void> _stop() async {
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    final createdId = await controller.stop();
+    final state = ref.read(audioRecorderControllerProvider);
+
+    final String? createdId;
+    if (state.isRealtimeMode) {
+      createdId = await controller.stopRealtime();
+    } else {
+      createdId = await controller.stop();
+    }
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -153,55 +175,192 @@ class _AudioRecordingModalContentState
     }
   }
 
-  Widget _buildStopButton(
-      BuildContext context, VoidCallback onTap, ThemeData theme) {
-    return GestureDetector(
-      key: const ValueKey('stop'),
-      onTap: onTap,
-      child: Container(
-        width: 120,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: theme.colorScheme.error,
-            width: 2,
+  Future<void> _cancel() async {
+    final controller = ref.read(audioRecorderControllerProvider.notifier);
+    await controller.cancelRealtime();
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Widget _buildLiveTranscript(AudioRecorderState state, ThemeData theme) {
+    final text = state.partialTranscript;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 120),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-        child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.6),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+          child: text == null || text.isEmpty
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.messages.audioRecordingListening,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
+                )
+              : SingleChildScrollView(
+                  reverse: true,
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'STOP',
-                style: TextStyle(
-                  color: theme.colorScheme.error,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModeToggle(BuildContext context, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            context.messages.audioRecordingStandard,
+            style: TextStyle(
+              color: !_useRealtimeMode
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight:
+                  !_useRealtimeMode ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          Switch.adaptive(
+            value: _useRealtimeMode,
+            onChanged: (value) => setState(() => _useRealtimeMode = value),
+          ),
+          Text(
+            context.messages.audioRecordingRealtime,
+            style: TextStyle(
+              color: _useRealtimeMode
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight:
+                  _useRealtimeMode ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStopButton(
+    BuildContext context,
+    ThemeData theme,
+    AudioRecorderState state,
+  ) {
+    return Row(
+      key: const ValueKey('stop_controls'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Cancel button (for realtime mode)
+        if (state.isRealtimeMode) ...[
+          GestureDetector(
+            onTap: _cancel,
+            child: Container(
+              width: 90,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  context.messages.audioRecordingCancel,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
+        // Stop button
+        GestureDetector(
+          onTap: _stop,
+          child: Container(
+            width: 120,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: theme.colorScheme.error,
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withValues(alpha: 0.6),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    context.messages.audioRecordingStop,
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -209,7 +368,13 @@ class _AudioRecordingModalContentState
       AudioRecorderController controller, ThemeData theme) {
     return GestureDetector(
       key: const ValueKey('record'),
-      onTap: () => controller.record(linkedId: widget.linkedId),
+      onTap: () {
+        if (_useRealtimeMode) {
+          controller.recordRealtime(linkedId: widget.linkedId);
+        } else {
+          controller.record(linkedId: widget.linkedId);
+        }
+      },
       child: Container(
         width: 120,
         height: 48,

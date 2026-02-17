@@ -2,10 +2,14 @@
 // Mirrors the functionality tested in recorder_cubit_test.dart
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
@@ -16,6 +20,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
+import 'package:record/record.dart' as rec;
 
 class MockLoggingService extends Mock implements LoggingService {}
 
@@ -31,6 +36,36 @@ class MockPlayerState extends Mock implements PlayerState {}
 class MockPlayerStream extends Mock implements PlayerStream {}
 
 class FakePlayable extends Fake implements Playable {}
+
+class MockRealtimeTranscriptionService extends Mock
+    implements RealtimeTranscriptionService {}
+
+class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
+
+// Fake config for realtimeAvailableProvider tests
+final ({
+  AiConfigModel model,
+  AiConfigInferenceProvider provider
+}) _fakeRealtimeConfig = (
+  provider: AiConfig.inferenceProvider(
+    id: 'test-provider',
+    baseUrl: 'https://api.mistral.ai',
+    apiKey: 'test-key',
+    name: 'Mistral',
+    createdAt: DateTime(2024),
+    inferenceProviderType: InferenceProviderType.mistral,
+  ) as AiConfigInferenceProvider,
+  model: AiConfig.model(
+    id: 'test-model',
+    name: 'Voxtral',
+    providerModelId: 'voxtral-mini-transcribe-realtime-2602',
+    inferenceProviderId: 'test-provider',
+    createdAt: DateTime(2024),
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+  ) as AiConfigModel,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +83,11 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakePlayable());
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(const Stream<Uint8List>.empty());
+    registerFallbackValue((String s) {});
+    registerFallbackValue(() async {});
+    registerFallbackValue(const rec.RecordConfig());
+    registerFallbackValue(StackTrace.current);
   });
 
   setUp(() {
@@ -1051,5 +1091,431 @@ void main() {
     // - UnifiedAiController (via triggerNewInferenceProvider)
     //
     // The integration tests provide better coverage with less brittleness.
+  });
+
+  group('AudioRecorderController - Realtime Transcription', () {
+    late MockRealtimeTranscriptionService mockRealtimeService;
+    late MockRecAudioRecorder mockRecorder;
+    late StreamController<double> realtimeAmplitudeController;
+    late StreamController<Uint8List> pcmStreamController;
+
+    setUp(() {
+      mockRealtimeService = MockRealtimeTranscriptionService();
+      mockRecorder = MockRecAudioRecorder();
+      realtimeAmplitudeController = StreamController<double>.broadcast();
+      pcmStreamController = StreamController<Uint8List>.broadcast();
+
+      // Mock recorder
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.startStream(any()))
+          .thenAnswer((_) async => pcmStreamController.stream);
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+
+      // Mock realtime service
+      when(() => mockRealtimeService.amplitudeStream)
+          .thenAnswer((_) => realtimeAmplitudeController.stream);
+
+      when(() => mockRealtimeService.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          )).thenAnswer((_) async {});
+
+      when(() => mockRealtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          )).thenAnswer((_) async => const RealtimeStopResult(
+            transcript: 'test transcript',
+            audioFilePath: '/tmp/audio/2026-02-17/test.m4a',
+          ));
+
+      when(() => mockRealtimeService.dispose()).thenAnswer((_) async {});
+
+      when(() => mockRealtimeService.resolveRealtimeConfig())
+          .thenAnswer((_) async => _fakeRealtimeConfig);
+
+      // Rebuild container with realtime overrides
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          audioRecorderRepositoryProvider.overrideWithValue(
+            mockAudioRecorderRepository,
+          ),
+          playerFactoryProvider.overrideWithValue(() => mockPlayer),
+          realtimeTranscriptionServiceProvider
+              .overrideWithValue(mockRealtimeService),
+          realtimeRecorderFactoryProvider.overrideWithValue(() => mockRecorder),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      await realtimeAmplitudeController.close();
+      await pcmStreamController.close();
+    });
+
+    group('recordRealtime - happy path', () {
+      test('sets state to recording with isRealtimeMode true', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.recordRealtime(linkedId: 'task-123');
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.recording);
+        expect(state.isRealtimeMode, isTrue);
+        expect(state.linkedId, 'task-123');
+        expect(state.partialTranscript, isNull);
+      });
+
+      test('starts PCM stream at 16kHz mono', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.recordRealtime();
+
+        final captured =
+            verify(() => mockRecorder.startStream(captureAny())).captured;
+        final config = captured.first as rec.RecordConfig;
+        expect(config.encoder, rec.AudioEncoder.pcm16bits);
+        expect(config.sampleRate, 16000);
+        expect(config.numChannels, 1);
+      });
+
+      test('calls startRealtimeTranscription on the service', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.recordRealtime();
+
+        verify(() => mockRealtimeService.startRealtimeTranscription(
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+            )).called(1);
+      });
+
+      test('onDelta accumulates into partialTranscript', () async {
+        void Function(String)? capturedOnDelta;
+
+        when(() => mockRealtimeService.startRealtimeTranscription(
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+            )).thenAnswer((invocation) async {
+          capturedOnDelta =
+              invocation.namedArguments[#onDelta] as void Function(String);
+        });
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        expect(capturedOnDelta, isNotNull);
+
+        capturedOnDelta!('Hello ');
+        expect(
+          container.read(audioRecorderControllerProvider).partialTranscript,
+          'Hello ',
+        );
+
+        capturedOnDelta!('world');
+        expect(
+          container.read(audioRecorderControllerProvider).partialTranscript,
+          'Hello world',
+        );
+      });
+
+      test('subscribes to amplitude stream for VU meter', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        // Emit an amplitude value
+        realtimeAmplitudeController.add(-30);
+
+        // Allow the stream event to propagate
+        await Future<void>.delayed(Duration.zero);
+
+        final state = container.read(audioRecorderControllerProvider);
+        // dBFS should have been updated from the amplitude stream
+        expect(state.dBFS, -30);
+      });
+    });
+
+    group('recordRealtime - permission denied', () {
+      test('logs and returns without changing state', () async {
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => false);
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.isRealtimeMode, isFalse);
+
+        verify(() => mockRecorder.dispose()).called(1);
+        verify(() => mockLoggingService.captureEvent(
+              any<String>(that: contains('No audio recording permission')),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+            )).called(1);
+      });
+    });
+
+    group('recordRealtime - error handling', () {
+      test('cleans up on startStream failure', () async {
+        when(() => mockRecorder.startStream(any()))
+            .thenThrow(Exception('Stream failed'));
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.isRealtimeMode, isFalse);
+
+        verify(() => mockLoggingService.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            )).called(1);
+      });
+
+      test('cleans up on service startRealtimeTranscription failure', () async {
+        when(() => mockRealtimeService.startRealtimeTranscription(
+              pcmStream: any(named: 'pcmStream'),
+              onDelta: any(named: 'onDelta'),
+            )).thenThrow(StateError('No config'));
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        // State should have been set to recording before the service call,
+        // but cleanup should reset it. However, the state is set before
+        // startRealtimeTranscription, so cleanup handles the reset.
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.isRealtimeMode, isFalse);
+      });
+    });
+
+    group('cancelRealtime', () {
+      test('resets state and disposes service', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        // Start realtime first so there's something to cancel
+        await controller.recordRealtime();
+        expect(
+          container.read(audioRecorderControllerProvider).isRealtimeMode,
+          isTrue,
+        );
+
+        await controller.cancelRealtime();
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.isRealtimeMode, isFalse);
+        expect(state.partialTranscript, isNull);
+
+        verify(() => mockRealtimeService.dispose()).called(1);
+      });
+
+      test('resets state even with no active session', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.cancelRealtime();
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.isRealtimeMode, isFalse);
+      });
+
+      test('logs cancellation event', () async {
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.recordRealtime();
+        await controller.cancelRealtime();
+
+        verify(
+          () => mockLoggingService.captureEvent(
+            any<String>(
+              that: contains('Realtime recording cancelled'),
+            ),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      });
+
+      test('catches and logs errors during cancellation', () async {
+        when(() => mockRealtimeService.dispose())
+            .thenThrow(Exception('dispose failed'));
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+
+        await controller.recordRealtime();
+        // Should not throw
+        await controller.cancelRealtime();
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('stopRealtime - error handling', () {
+      test('resets state and cleans up on error', () async {
+        // Make service.stop throw to trigger the catch block
+        when(() => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            )).thenThrow(Exception('stop failed'));
+
+        final controller =
+            container.read(audioRecorderControllerProvider.notifier);
+        await controller.recordRealtime();
+
+        final result = await controller.stopRealtime();
+
+        expect(result, isNull);
+
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.isRealtimeMode, isFalse);
+        expect(state.partialTranscript, isNull);
+        expect(state.progress, Duration.zero);
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: equals('stopRealtime'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('state model', () {
+      test('initial state has isRealtimeMode false', () {
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.isRealtimeMode, isFalse);
+      });
+
+      test('initial state has partialTranscript null', () {
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.partialTranscript, isNull);
+      });
+
+      test('state supports realtime fields via copyWith', () {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          vu: -20,
+          dBFS: -160,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+          isRealtimeMode: true,
+          partialTranscript: 'hello world',
+        );
+
+        expect(state.isRealtimeMode, isTrue);
+        expect(state.partialTranscript, 'hello world');
+
+        final updated = state.copyWith(
+          partialTranscript: 'hello world!',
+          isRealtimeMode: false,
+        );
+        expect(updated.partialTranscript, 'hello world!');
+        expect(updated.isRealtimeMode, isFalse);
+      });
+
+      test('preserves inference preferences with realtime fields', () {
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.recording,
+          vu: -20,
+          dBFS: -160,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+          isRealtimeMode: true,
+          enableSpeechRecognition: true,
+          enableTaskSummary: false,
+          enableChecklistUpdates: true,
+        );
+
+        expect(state.enableSpeechRecognition, isTrue);
+        expect(state.enableTaskSummary, isFalse);
+        expect(state.enableChecklistUpdates, isTrue);
+      });
+    });
+  });
+
+  group('realtimeAvailableProvider', () {
+    test('returns true when realtime config is available', () async {
+      final mockService = MockRealtimeTranscriptionService();
+      // ignore: unnecessary_lambdas
+      when(() => mockService.resolveRealtimeConfig())
+          .thenAnswer((_) async => _fakeRealtimeConfig);
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          realtimeTranscriptionServiceProvider.overrideWithValue(mockService),
+        ],
+      );
+      addTearDown(testContainer.dispose);
+
+      // Listen to keep the provider alive
+      final sub = testContainer.listen(
+        realtimeAvailableProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      // Wait for async resolution
+      await testContainer.read(realtimeAvailableProvider.future);
+
+      final result = testContainer.read(realtimeAvailableProvider);
+      expect(result.value, isTrue);
+    });
+
+    test('returns false when no realtime config', () async {
+      final mockService = MockRealtimeTranscriptionService();
+      // ignore: unnecessary_lambdas
+      when(() => mockService.resolveRealtimeConfig())
+          .thenAnswer((_) async => null);
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          realtimeTranscriptionServiceProvider.overrideWithValue(mockService),
+        ],
+      );
+      addTearDown(testContainer.dispose);
+
+      final sub = testContainer.listen(
+        realtimeAvailableProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await testContainer.read(realtimeAvailableProvider.future);
+
+      final result = testContainer.read(realtimeAvailableProvider);
+      expect(result.value, isFalse);
+    });
   });
 }

@@ -260,7 +260,7 @@ void main() {
       setUp(() {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
       });
 
@@ -319,7 +319,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(
@@ -363,7 +363,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(
@@ -396,7 +396,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(
@@ -501,7 +501,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(
@@ -529,7 +529,7 @@ void main() {
         Uri? capturedUri;
         final fakeChannel = _FakeWebSocketChannel();
         final repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) {
+          channelFactory: (uri, headers) {
             capturedUri = uri;
             return fakeChannel;
           },
@@ -559,7 +559,7 @@ void main() {
         fakeAsync((async) {
           final fakeChannel = _FakeWebSocketChannel();
           final repo = MistralRealtimeTranscriptionRepository(
-            channelFactory: (_) => fakeChannel,
+            channelFactory: (_, __) => fakeChannel,
           );
 
           TranscriptionException? caught;
@@ -587,7 +587,7 @@ void main() {
 
       test('wraps non-TranscriptionException from channel.ready', () async {
         final repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (_) => _FailingReadyChannel(),
+          channelFactory: (_, __) => _FailingReadyChannel(),
         );
         addTearDown(repo.dispose);
 
@@ -625,7 +625,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(
@@ -765,7 +765,7 @@ void main() {
       setUp(() async {
         fakeChannel = _FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (uri) => fakeChannel,
+          channelFactory: (uri, headers) => fakeChannel,
         );
 
         final connectFuture = repo.connect(

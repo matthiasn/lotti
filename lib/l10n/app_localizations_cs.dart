@@ -665,7 +665,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get apiKeysSettingsPageTitle => 'Poskytovatelé AI inferencí';
 
   @override
+  String get audioRecordingCancel => 'ZRUŠIT';
+
+  @override
+  String get audioRecordingListening => 'Naslouchám...';
+
+  @override
+  String get audioRecordingRealtime => 'Živý přepis';
+
+  @override
+  String get audioRecordingStop => 'STOP';
+
+  @override
   String get audioRecordings => 'Audiozáznamy';
+
+  @override
+  String get audioRecordingStandard => 'Standardní';
 
   @override
   String get automaticPrompts => 'Automatické výzvy';
@@ -775,45 +790,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get cancelButton => 'Zrušit';
 
   @override
-  String get chatInputCancelRealtime => 'Zrušit (Esc)';
-
-  @override
-  String get chatInputCancelRecording => 'Zrušit nahrávání (Esc)';
-
-  @override
-  String get chatInputConfigureModel => 'Konfigurovat model';
-
-  @override
-  String get chatInputHintDefault => 'Ptejte se na své úkoly a produktivitu...';
-
-  @override
-  String get chatInputHintSelectModel => 'Vyberte model pro zahájení chatu';
-
-  @override
-  String get chatInputListening => 'Naslouchám...';
-
-  @override
-  String get chatInputPleaseWait => 'Čekejte prosím...';
-
-  @override
-  String get chatInputProcessing => 'Zpracování...';
-
-  @override
-  String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
-
-  @override
-  String get chatInputSendTooltip => 'Odeslat zprávu';
-
-  @override
-  String get chatInputStartRealtime => 'Spustit živý přepis';
-
-  @override
-  String get chatInputStopRealtime => 'Zastavit živý přepis';
-
-  @override
-  String get chatInputStopTranscribe => 'Zastavit a přepsat';
-
-  @override
   String get categoryActiveDescription =>
       'Neaktivní kategorie se nebudou zobrazovat ve výběrových seznamech';
 
@@ -864,6 +840,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Klepněte pro pokračování';
+
+  @override
+  String get chatInputCancelRealtime => 'Zrušit (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Zrušit nahrávání (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Konfigurovat model';
+
+  @override
+  String get chatInputHintDefault => 'Ptejte se na své úkoly a produktivitu...';
+
+  @override
+  String get chatInputHintSelectModel => 'Vyberte model pro zahájení chatu';
+
+  @override
+  String get chatInputListening => 'Naslouchám...';
+
+  @override
+  String get chatInputPleaseWait => 'Čekejte prosím...';
+
+  @override
+  String get chatInputProcessing => 'Zpracování...';
+
+  @override
+  String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
+
+  @override
+  String get chatInputSendTooltip => 'Odeslat zprávu';
+
+  @override
+  String get chatInputStartRealtime => 'Spustit živý přepis';
+
+  @override
+  String get chatInputStopRealtime => 'Zastavit živý přepis';
+
+  @override
+  String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';

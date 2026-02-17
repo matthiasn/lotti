@@ -1214,7 +1214,7 @@ void main() {
           onDelta: any(named: 'onDelta'),
         ),
       ).thenAnswer((_) async {});
-      when(() => mockRealtime.dispose(discard: true)).thenAnswer((_) async {});
+      when(() => mockRealtime.dispose()).thenAnswer((_) async {});
 
       final container = ProviderContainer(overrides: [
         chatRecorderControllerProvider
@@ -1239,7 +1239,7 @@ void main() {
 
       state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
-      verify(() => mockRealtime.dispose(discard: true)).called(1);
+      verify(() => mockRealtime.dispose()).called(1);
     });
   });
 

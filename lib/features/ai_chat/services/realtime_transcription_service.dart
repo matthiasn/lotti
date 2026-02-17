@@ -119,9 +119,14 @@ class RealtimeTranscriptionService {
         if (newTotal > _maxPcmBufferBytes) {
           final excess = newTotal - _maxPcmBufferBytes;
           final existing = _pcmBuffer.takeBytes();
-          _pcmBuffer.add(existing.sublist(excess));
+          final kept = existing.length - excess;
+          final merged = Uint8List(kept + chunk.length)
+            ..setRange(0, kept, existing, excess)
+            ..setRange(kept, kept + chunk.length, chunk);
+          _pcmBuffer.add(merged);
+        } else {
+          _pcmBuffer.add(chunk);
         }
-        _pcmBuffer.add(chunk);
 
         if (!_amplitudeController.isClosed) {
           final dbfs = computeDbfsFromPcm16(chunk);
@@ -201,8 +206,8 @@ class RealtimeTranscriptionService {
     );
   }
 
-  /// Tears down resources and discards buffered audio (used by cancel).
-  Future<void> dispose({bool discard = false}) async {
+  /// Tears down resources without saving (used by cancel).
+  Future<void> dispose() async {
     await _pcmSubscription?.cancel();
     _pcmSubscription = null;
     await _deltaSubscription?.cancel();
@@ -270,11 +275,11 @@ class RealtimeTranscriptionService {
 
     final header = ByteData(44)
       // RIFF header
-      ..setUint32(0, 0x52494646, Endian.big) // 'RIFF'
+      ..setUint32(0, 0x52494646) // 'RIFF'
       ..setUint32(4, 36 + dataSize, Endian.little) // file size - 8
-      ..setUint32(8, 0x57415645, Endian.big) // 'WAVE'
+      ..setUint32(8, 0x57415645) // 'WAVE'
       // fmt chunk
-      ..setUint32(12, 0x666D7420, Endian.big) // 'fmt '
+      ..setUint32(12, 0x666D7420) // 'fmt '
       ..setUint32(16, 16, Endian.little) // chunk size
       ..setUint16(20, 1, Endian.little) // PCM format
       ..setUint16(22, channels, Endian.little)
@@ -283,7 +288,7 @@ class RealtimeTranscriptionService {
       ..setUint16(32, blockAlign, Endian.little)
       ..setUint16(34, bitsPerSample, Endian.little)
       // data chunk
-      ..setUint32(36, 0x64617461, Endian.big) // 'data'
+      ..setUint32(36, 0x64617461) // 'data'
       ..setUint32(40, dataSize, Endian.little);
 
     final file = File(path);
@@ -306,4 +311,15 @@ final Provider<RealtimeTranscriptionService>
     realtimeTranscriptionServiceProvider =
     Provider<RealtimeTranscriptionService>((ref) {
   return RealtimeTranscriptionService(ref);
+});
+
+/// Whether a real-time transcription model is configured and available.
+///
+/// Used by UI components (chat input area, audio recording modal) to decide
+/// whether to show the realtime mode toggle.
+// ignore: specify_nonobvious_property_types
+final realtimeAvailableProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final service = ref.watch(realtimeTranscriptionServiceProvider);
+  final config = await service.resolveRealtimeConfig();
+  return config != null;
 });

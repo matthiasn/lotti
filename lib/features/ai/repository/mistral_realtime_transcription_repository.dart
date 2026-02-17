@@ -22,15 +22,18 @@ class MistralRealtimeTranscriptionRepository {
   ///
   /// In production, [IOWebSocketChannel.connect] is used to support the
   /// `Authorization` header. Tests inject a factory that returns a fake
-  /// channel.
+  /// channel. The factory receives both the URL and the headers map so
+  /// custom implementations can forward authentication.
   MistralRealtimeTranscriptionRepository({
-    WebSocketChannel Function(Uri uri)? channelFactory,
+    WebSocketChannel Function(Uri uri, Map<String, String> headers)?
+        channelFactory,
   }) : _channelFactory = channelFactory;
 
   static const _providerName = 'Mistral Realtime';
   static const _logName = 'MistralRealtimeTranscription';
 
-  final WebSocketChannel Function(Uri uri)? _channelFactory;
+  final WebSocketChannel Function(Uri uri, Map<String, String> headers)?
+      _channelFactory;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _channelSubscription;
@@ -124,7 +127,7 @@ class MistralRealtimeTranscriptionRepository {
     try {
       final WebSocketChannel channel;
       if (_channelFactory != null) {
-        channel = _channelFactory!(wsUrl);
+        channel = _channelFactory!(wsUrl, headers);
       } else {
         channel = IOWebSocketChannel.connect(
           wsUrl,
