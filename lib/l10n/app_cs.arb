@@ -985,7 +985,7 @@
   "promptUsePreconfiguredButton": "Použít přednastavený prompt",
   "promptUserPromptHint": "Zadejte uživatelský prompt...",
   "promptUserPromptLabel": "Uživatelský prompt",
-  "provisionedSyncBundleImported": "Provizní kód importován",
+  "provisionedSyncBundleImported": "Synchronizační balíček importován",
   "provisionedSyncConfigureButton": "Konfigurovat",
   "provisionedSyncCopiedToClipboard": "Zkopírováno do schránky",
   "provisionedSyncDisconnect": "Odpojit",

@@ -2389,7 +2389,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptUserPromptLabel => 'Uživatelský prompt';
 
   @override
-  String get provisionedSyncBundleImported => 'Provizní kód importován';
+  String get provisionedSyncBundleImported =>
+      'Synchronizační balíček importován';
 
   @override
   String get provisionedSyncConfigureButton => 'Konfigurovat';
