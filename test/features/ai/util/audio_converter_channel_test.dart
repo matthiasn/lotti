@@ -8,6 +8,11 @@ void main() {
   const channel = MethodChannel('com.matthiasn.lotti/audio_converter');
 
   group('AudioConverterChannel', () {
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
     test('returns true on successful conversion', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
@@ -23,10 +28,6 @@ void main() {
         outputPath: '/tmp/output.m4a',
       );
       expect(result, isTrue);
-
-      // Clean up
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
 
     test('returns false on PlatformException', () async {
@@ -43,9 +44,6 @@ void main() {
         outputPath: '/tmp/output.m4a',
       );
       expect(result, isFalse);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
 
     test('returns false on MissingPluginException', () async {
@@ -59,9 +57,6 @@ void main() {
         outputPath: '/tmp/output.m4a',
       );
       expect(result, isFalse);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
 
     test('returns false when native returns null', () async {
@@ -75,9 +70,6 @@ void main() {
         outputPath: '/tmp/output.m4a',
       );
       expect(result, isFalse);
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
   });
 }

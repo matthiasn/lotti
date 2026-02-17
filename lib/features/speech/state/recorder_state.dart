@@ -15,7 +15,8 @@ enum AudioRecorderStatus {
   stopped,
 
   /// Recording is temporarily paused.
-  paused
+  paused,
+  initial
 }
 
 /// Immutable state model for the audio recording feature.

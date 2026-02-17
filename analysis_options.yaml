@@ -16,6 +16,7 @@ analyzer:
     - '**/*.g.dart'
     - '**/*.freezed.dart'
   errors:
+    included_file_warning: ignore
     invalid_annotation_target: ignore
   language:
     strict-raw-types: true

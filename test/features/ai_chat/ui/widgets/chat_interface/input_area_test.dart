@@ -713,6 +713,155 @@ void main() {
     expect(find.byIcon(Icons.mic), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
   });
+
+  testWidgets('mic tap in realtime mode calls startRealtime', (tester) async {
+    var startRealtimeCalled = false;
+    final mockRealtime = _MockRealtimeService();
+    when(mockRealtime.resolveRealtimeConfig).thenAnswer(
+      (_) async => (
+        provider: const _FakeProvider(),
+        model: const _FakeModel(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: TextEditingController(),
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (_) {},
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => _IdleControllerWithCallbacks(
+              onStartRealtimeCalled: () => startRealtimeCalled = true,
+            ),
+          ),
+          realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Toggle to realtime mode
+    await tester.tap(find.byIcon(Icons.graphic_eq));
+    await tester.pumpAndSettle();
+
+    // Tap the mic/graphic_eq button (now in realtime mode)
+    // In realtime mode the filled button shows graphic_eq icon
+    find.byType(IconButton);
+    // Find the filled IconButton.filled — it has the graphic_eq icon
+    await tester.tap(find.byIcon(Icons.graphic_eq).last);
+    await tester.pumpAndSettle();
+
+    expect(startRealtimeCalled, isTrue);
+  });
+
+  testWidgets('escape key during realtime recording calls cancel',
+      (tester) async {
+    var cancelCalled = false;
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: TextEditingController(),
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (_) {},
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => _RealtimeControllerWithCallbacks(
+              onCancelCalled: () => cancelCalled = true,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    await tester.pump();
+
+    // Simulate pressing Escape during realtime recording
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+
+    expect(cancelCalled, isTrue);
+  });
+
+  testWidgets('transcript auto-sends when canSend is true', (tester) async {
+    String? sentMessage;
+    final textController = TextEditingController();
+    final controller = _TranscriptEmittingController();
+
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: textController,
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: true,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (msg) => sentMessage = msg,
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(() => controller),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Simulate a transcript being produced (e.g., after stopRealtime)
+    controller.emitTranscript('Hello from realtime');
+    await tester.pumpAndSettle();
+
+    expect(sentMessage, 'Hello from realtime');
+    // Text field should be cleared after send
+    expect(textController.text, isEmpty);
+  });
+
+  testWidgets('transcript fills text field when canSend is false',
+      (tester) async {
+    String? sentMessage;
+    final textController = TextEditingController();
+    final controller = _TranscriptEmittingController();
+
+    await tester.pumpWidget(
+      wrap(
+        InputArea(
+          controller: textController,
+          scrollController: ScrollController(),
+          isLoading: false,
+          canSend: false,
+          requiresModelSelection: false,
+          categoryId: 'cat',
+          onSendMessage: (msg) => sentMessage = msg,
+        ),
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(() => controller),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Simulate a transcript being produced
+    controller.emitTranscript('Transcript text');
+    await tester.pumpAndSettle();
+
+    // Should NOT have sent a message
+    expect(sentMessage, isNull);
+    // Should have filled the text controller instead
+    expect(textController.text, 'Transcript text');
+  });
 }
 
 /// Test controller in recording state that tracks cancel/stop callbacks
@@ -834,5 +983,53 @@ class _ProcessingRecorderController extends ChatRecorderController {
       amplitudeHistory: const [],
       partialTranscript: _partialTranscript,
     );
+  }
+}
+
+/// Test controller that starts idle and tracks startRealtime calls
+class _IdleControllerWithCallbacks extends ChatRecorderController {
+  _IdleControllerWithCallbacks({
+    this.onStartRealtimeCalled,
+  });
+
+  final VoidCallback? onStartRealtimeCalled;
+
+  @override
+  ChatRecorderState build() {
+    return const ChatRecorderState(
+      status: ChatRecorderStatus.idle,
+      amplitudeHistory: [],
+    );
+  }
+
+  @override
+  Future<void> startRealtime() async {
+    onStartRealtimeCalled?.call();
+  }
+
+  @override
+  Future<void> start() async {}
+}
+
+/// Test controller that can emit a transcript to trigger the subscription
+class _TranscriptEmittingController extends ChatRecorderController {
+  @override
+  ChatRecorderState build() {
+    return const ChatRecorderState(
+      status: ChatRecorderStatus.idle,
+      amplitudeHistory: [],
+    );
+  }
+
+  void emitTranscript(String transcript) {
+    state = state.copyWith(
+      status: ChatRecorderStatus.idle,
+      transcript: transcript,
+    );
+  }
+
+  @override
+  void clearResult() {
+    state = state.copyWith();
   }
 }

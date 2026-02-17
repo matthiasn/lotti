@@ -28,6 +28,7 @@ class RealtimeStopResult {
     required this.transcript,
     this.audioFilePath,
     this.usedTranscriptFallback = false,
+    this.detectedLanguage,
   });
 
   /// Final transcript from `transcription.done`, or accumulated deltas
@@ -40,4 +41,7 @@ class RealtimeStopResult {
   /// True if `transcription.done` timed out and accumulated deltas were used
   /// as a best-effort fallback.
   final bool usedTranscriptFallback;
+
+  /// Language detected by the real-time transcription server, if reported.
+  final String? detectedLanguage;
 }

@@ -33,7 +33,6 @@ class InputArea extends ConsumerStatefulWidget {
 
 class InputAreaState extends ConsumerState<InputArea> {
   bool _hasText = false;
-  bool _useRealtimeMode = false;
   late final ProviderSubscription<ChatRecorderState> _transcriptSubscription;
 
   @override
@@ -252,20 +251,21 @@ class InputAreaState extends ConsumerState<InputArea> {
     final realtimeAvailable = realtimeAsync.value ?? false;
 
     if (realtimeAvailable) {
+      final useRealtime = recState.useRealtimeMode;
       // Both modes available — show mode toggle + mic button
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: Icon(
-              _useRealtimeMode ? Icons.mic : Icons.graphic_eq,
+              useRealtime ? Icons.mic : Icons.graphic_eq,
               size: 18,
               color: theme.colorScheme.onSurfaceVariant,
             ),
-            onPressed: () => setState(() {
-              _useRealtimeMode = !_useRealtimeMode;
-            }),
-            tooltip: _useRealtimeMode
+            onPressed: () => ref
+                .read(chatRecorderControllerProvider.notifier)
+                .toggleRealtimeMode(),
+            tooltip: useRealtime
                 ? context.messages.aiBatchToggleTooltip
                 : context.messages.aiRealtimeToggleTooltip,
             style: IconButton.styleFrom(
@@ -275,10 +275,10 @@ class InputAreaState extends ConsumerState<InputArea> {
           ),
           IconButton.filled(
             icon: Icon(
-              _useRealtimeMode ? Icons.graphic_eq : Icons.mic,
+              useRealtime ? Icons.graphic_eq : Icons.mic,
             ),
             onPressed: () {
-              if (_useRealtimeMode) {
+              if (useRealtime) {
                 ref
                     .read(chatRecorderControllerProvider.notifier)
                     .startRealtime();
@@ -286,7 +286,7 @@ class InputAreaState extends ConsumerState<InputArea> {
                 ref.read(chatRecorderControllerProvider.notifier).start();
               }
             },
-            tooltip: _useRealtimeMode
+            tooltip: useRealtime
                 ? context.messages.chatInputStartRealtime
                 : context.messages.chatInputRecordVoice,
           ),

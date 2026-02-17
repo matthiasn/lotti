@@ -682,13 +682,13 @@
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {"type": "String"}
     }
   },
   "deviceDeleteFailed": "Failed to delete device: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {"type": "String"}
     }
   },
   "done": "Done",

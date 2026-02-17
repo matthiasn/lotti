@@ -16,9 +16,6 @@ class _MockCloudRepo extends Mock implements CloudInferenceRepository {}
 const _pMistral = 'p-mistral-guard';
 const _pGemini = 'p-gemini-guard';
 
-// ignore: unused_element
-const _pOther = 'p-other-guard';
-
 void main() {
   late AiConfigDb sharedDb;
 
@@ -581,7 +578,10 @@ void main() {
     });
 
     test('throws when only realtime models exist (all excluded)', () async {
-      final aiRepo = AiConfigRepository(sharedDb);
+      // Use a fresh DB to avoid interference from configs saved by other tests.
+      final freshDb = AiConfigDb(inMemoryDatabase: true);
+      addTearDown(freshDb.close);
+      final aiRepo = AiConfigRepository(freshDb);
 
       await aiRepo.saveConfig(
         AiConfig.inferenceProvider(

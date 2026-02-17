@@ -177,10 +177,12 @@ class _AudioRecordingModalContentState
 
   Future<void> _cancel() async {
     final controller = ref.read(audioRecorderControllerProvider.notifier);
-    await controller.cancelRealtime();
-
-    if (mounted) {
-      Navigator.of(context).pop();
+    try {
+      await controller.cancelRealtime();
+    } finally {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 

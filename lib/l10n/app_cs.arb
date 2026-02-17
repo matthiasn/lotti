@@ -400,11 +400,15 @@
       }
     }
   },
+  "checklistItemArchiveUndo": "Zpět",
+  "checklistItemArchived": "Položka archivována",
   "checklistItemDelete": "Smazat položku kontrolního seznamu?",
   "checklistItemDeleteCancel": "Zrušit",
   "checklistItemDeleteConfirm": "Potvrdit",
   "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
+  "checklistItemDeleted": "Položka smazána",
   "checklistItemDrag": "Přetáhněte návrhy do kontrolního seznamu",
+  "checklistItemUnarchived": "Položka obnovena z archivu",
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
   "checklistNoSuggestionsTitle": "Žádné navrhované akční položky",
   "checklistNothingToExport": "Žádné položky k exportu",
@@ -679,13 +683,13 @@
   "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {"type": "String"}
     }
   },
   "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {"type": "String"}
     }
   },
   "done": "Hotovo",

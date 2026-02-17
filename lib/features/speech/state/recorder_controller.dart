@@ -406,9 +406,11 @@ class AudioRecorderController extends _$AudioRecorderController {
       // Subscribe to amplitude stream for VU meter
       _realtimeAmplitudeSub = service.amplitudeStream.listen((dbfs) {
         if (_disposed) return;
+        final startTime = _realtimeStartTime;
+        if (startTime == null) return;
         final vu = _calculateVu(dbfs);
         state = state.copyWith(
-          progress: DateTime.now().difference(_realtimeStartTime!),
+          progress: DateTime.now().difference(startTime),
           dBFS: dbfs,
           vu: vu,
         );
@@ -458,6 +460,10 @@ class AudioRecorderController extends _$AudioRecorderController {
   ///
   /// Returns the ID of the created journal entry, or null on error.
   Future<String?> stopRealtime() async {
+    // Capture metadata in locals before any cleanup nulls them (#6).
+    final modelName = _realtimeModelName;
+    final providerName = _realtimeProviderName;
+
     try {
       // Cancel amplitude subscription
       await _realtimeAmplitudeSub?.cancel();
@@ -542,8 +548,9 @@ class AudioRecorderController extends _$AudioRecorderController {
         await _saveRealtimeTranscript(
           journalAudio: journalAudio,
           transcript: result.transcript,
-          providerName: _realtimeProviderName ?? 'Mistral',
-          modelId: _realtimeModelName ?? 'voxtral-mini',
+          providerName: providerName ?? 'Mistral',
+          modelId: modelName ?? 'voxtral-mini',
+          detectedLanguage: result.detectedLanguage,
         );
       }
 
@@ -559,6 +566,9 @@ class AudioRecorderController extends _$AudioRecorderController {
           ),
         );
       }
+
+      _realtimeModelName = null;
+      _realtimeProviderName = null;
 
       _loggingService.captureEvent(
         'Realtime recording stopped: '
@@ -632,13 +642,14 @@ class AudioRecorderController extends _$AudioRecorderController {
     required String transcript,
     required String providerName,
     required String modelId,
+    String? detectedLanguage,
   }) async {
     final persistenceLogic = getIt<PersistenceLogic>();
     final audioTranscript = AudioTranscript(
       created: DateTime.now(),
       library: providerName,
       model: modelId,
-      detectedLanguage: '-',
+      detectedLanguage: detectedLanguage ?? '-',
       transcript: transcript,
     );
 

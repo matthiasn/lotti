@@ -33,6 +33,7 @@ class ChatRecorderState {
     this.partialTranscript,
     this.error,
     this.errorType,
+    this.useRealtimeMode = false,
   });
 
   const ChatRecorderState.initial()
@@ -41,7 +42,8 @@ class ChatRecorderState {
         transcript = null,
         partialTranscript = null,
         error = null,
-        errorType = null;
+        errorType = null,
+        useRealtimeMode = false;
 
   // Fields
   final ChatRecorderStatus status;
@@ -51,6 +53,10 @@ class ChatRecorderState {
   final String? error;
   final ChatRecorderErrorType? errorType;
 
+  /// Whether the user has selected realtime transcription mode.
+  /// Persists across widget rebuilds within the controller's lifetime.
+  final bool useRealtimeMode;
+
   // Methods
   ChatRecorderState copyWith({
     ChatRecorderStatus? status,
@@ -59,6 +65,7 @@ class ChatRecorderState {
     String? partialTranscript,
     String? error,
     ChatRecorderErrorType? errorType,
+    bool? useRealtimeMode,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
@@ -67,6 +74,7 @@ class ChatRecorderState {
       partialTranscript: partialTranscript,
       error: error,
       errorType: errorType,
+      useRealtimeMode: useRealtimeMode ?? this.useRealtimeMode,
     );
   }
 }
@@ -96,6 +104,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   final RealtimeTranscriptionService? _realtimeServiceOverride;
   late final AudioTranscriptionService _transcriptionService;
   late final RealtimeTranscriptionService _realtimeService;
+  _AppLifecycleObserver? _lifecycleObserver;
 
   @override
   ChatRecorderState build() {
@@ -104,13 +113,19 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     _realtimeService = _realtimeServiceOverride ??
         ref.read(realtimeTranscriptionServiceProvider);
 
-    // Register lifecycle observer for backgrounding during realtime recording
+    // Register lifecycle observer for backgrounding during realtime recording.
+    // Guard against duplicate registration if build() is called again.
+    if (_lifecycleObserver != null) {
+      WidgetsBinding.instance.removeObserver(_lifecycleObserver!);
+    }
     final observer = _AppLifecycleObserver(onPaused: _onAppPaused);
+    _lifecycleObserver = observer;
     WidgetsBinding.instance.addObserver(observer);
 
     // Clean up resources when the provider is disposed
     ref.onDispose(() {
       WidgetsBinding.instance.removeObserver(observer);
+      _lifecycleObserver = null;
       _maxTimer?.cancel();
       // Capture references before async cleanup
       final ampSub = _ampSub;
@@ -151,7 +166,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
   StreamSubscription<double>? _realtimeAmpSub;
-  StreamSubscription<String>? _realtimeDeltaSub;
   Timer? _maxTimer;
   Directory? _tempDir;
   String? _filePath;
@@ -365,17 +379,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (wasRealtime) {
       // Cancel realtime-specific subscriptions
       try {
-        await _realtimeDeltaSub?.cancel();
-        _realtimeDeltaSub = null;
-      } catch (e, s) {
-        getIt<LoggingService>().captureException(
-          e,
-          stackTrace: s,
-          domain: 'ChatRecorderController',
-          subDomain: 'cancel.deltaSub',
-        );
-      }
-      try {
         await _realtimeAmpSub?.cancel();
         _realtimeAmpSub = null;
       } catch (e, s) {
@@ -514,10 +517,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         await _realtimeAmpSub?.cancel();
         _realtimeAmpSub = null;
       } catch (_) {}
-      try {
-        await _realtimeDeltaSub?.cancel();
-        _realtimeDeltaSub = null;
-      } catch (_) {}
 
       if (ref.mounted) {
         state = state.copyWith(
@@ -549,8 +548,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     _maxTimer?.cancel();
 
     try {
-      await _realtimeDeltaSub?.cancel();
-      _realtimeDeltaSub = null;
       await _realtimeAmpSub?.cancel();
       _realtimeAmpSub = null;
     } catch (e, s) {
@@ -605,6 +602,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     } finally {
       await _cleanupInternal();
     }
+  }
+
+  /// Toggles between batch and realtime transcription mode.
+  void toggleRealtimeMode() {
+    if (!ref.mounted) return;
+    state = state.copyWith(useRealtimeMode: !state.useRealtimeMode);
   }
 
   void _onAppPaused() {

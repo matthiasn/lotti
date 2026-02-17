@@ -2,20 +2,24 @@
 // Mirrors the functionality tested in recorder_cubit_test.dart
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
@@ -41,6 +45,11 @@ class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
 class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
+
+class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockAutomaticPromptTrigger extends Mock
+    implements AutomaticPromptTrigger {}
 
 // Fake config for realtimeAvailableProvider tests
 final ({
@@ -88,6 +97,43 @@ void main() {
     registerFallbackValue(() async {});
     registerFallbackValue(const rec.RecordConfig());
     registerFallbackValue(StackTrace.current);
+    registerFallbackValue(
+      Metadata(
+        id: 'fallback',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024),
+      ),
+    );
+    registerFallbackValue(
+      AudioRecorderState(
+        status: AudioRecorderStatus.initial,
+        progress: Duration.zero,
+        vu: 0,
+        dBFS: -160,
+        showIndicator: false,
+        modalVisible: false,
+      ),
+    );
+    registerFallbackValue(
+      JournalAudio(
+        data: AudioData(
+          audioDirectory: '/',
+          duration: Duration.zero,
+          audioFile: 'f.m4a',
+          dateTo: DateTime(2024),
+          dateFrom: DateTime(2024),
+        ),
+        meta: Metadata(
+          id: 'fb',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+      ),
+    );
   });
 
   setUp(() {
@@ -1405,6 +1451,138 @@ void main() {
               that: equals('stopRealtime'),
             ),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('stopRealtime - happy path', () {
+      test('creates audio entry and saves transcript', () async {
+        // Set up GetIt dependencies for createAssetDirectory and
+        // SpeechRepository.createAudioEntry
+        final tempDir = await Directory.systemTemp.createTemp('rt_stop_');
+        addTearDown(() => tempDir.delete(recursive: true));
+
+        if (!getIt.isRegistered<Directory>()) {
+          getIt.registerSingleton<Directory>(tempDir);
+        }
+
+        final mockPersistence = MockPersistenceLogic();
+        if (!getIt.isRegistered<PersistenceLogic>()) {
+          getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+        }
+
+        // Mock PersistenceLogic methods
+        when(() => mockPersistence.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((_) async => Metadata(
+              id: 'test-entry-id',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ));
+        when(() => mockPersistence.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+            )).thenAnswer((_) async => true);
+        when(() => mockPersistence.updateMetadata(any()))
+            .thenAnswer((invocation) async {
+          final meta = invocation.positionalArguments[0] as Metadata;
+          return meta;
+        });
+        when(() => mockPersistence.updateDbEntity(any()))
+            .thenAnswer((_) async => true);
+
+        // Mock automatic prompt trigger
+        final mockTrigger = MockAutomaticPromptTrigger();
+        when(() => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              any(),
+              isLinkedToTask: any(named: 'isLinkedToTask'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+              skipTranscription: any(named: 'skipTranscription'),
+            )).thenAnswer((_) async {});
+
+        // Configure the stop result
+        when(() => mockRealtimeService.stop(
+              stopRecorder: any(named: 'stopRecorder'),
+              outputPath: any(named: 'outputPath'),
+            )).thenAnswer((_) async => const RealtimeStopResult(
+              transcript: 'realtime transcript text',
+              audioFilePath: '/tmp/audio.m4a',
+            ));
+
+        // Rebuild container with automatic prompt trigger override
+        container.dispose();
+        container = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
+            realtimeTranscriptionServiceProvider
+                .overrideWithValue(mockRealtimeService),
+            realtimeRecorderFactoryProvider
+                .overrideWithValue(() => mockRecorder),
+            automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+          ],
+        );
+
+        final controller = container
+            .read(audioRecorderControllerProvider.notifier)
+
+          // Set categoryId before recording (needed for triggerAutomaticPrompts)
+          ..setCategoryId('test-category');
+
+        // Start realtime recording first
+        await controller.recordRealtime(linkedId: 'task-id');
+
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.recording,
+        );
+
+        // Stop realtime recording
+        final entryId = await controller.stopRealtime();
+
+        // Verify entry was created
+        expect(entryId, 'test-entry-id');
+
+        // Verify state was reset
+        final state = container.read(audioRecorderControllerProvider);
+        expect(state.status, AudioRecorderStatus.stopped);
+        expect(state.modalVisible, isFalse);
+
+        // Verify transcript was saved via updateDbEntity
+        verify(() => mockPersistence.updateDbEntity(any())).called(1);
+
+        // Verify automatic prompts were triggered with skipTranscription: true
+        verify(() => mockTrigger.triggerAutomaticPrompts(
+              'test-entry-id',
+              'test-category',
+              any(),
+              isLinkedToTask: true,
+              linkedTaskId: 'task-id',
+              skipTranscription: true,
+            )).called(1);
+
+        // Verify logging
+        verify(
+          () => mockLoggingService.captureEvent(
+            any<String>(
+              that: contains('Realtime recording stopped'),
+            ),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: equals('stopRealtime'),
+            ),
           ),
         ).called(1);
       });

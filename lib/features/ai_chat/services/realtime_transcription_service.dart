@@ -36,6 +36,8 @@ class RealtimeTranscriptionService {
 
   StreamSubscription<Uint8List>? _pcmSubscription;
   StreamSubscription<String>? _deltaSubscription;
+  StreamSubscription<String>? _languageSubscription;
+  String? _detectedLanguage;
   bool _isActive = false;
 
   /// Stream of amplitude values (dBFS) computed from PCM chunks.
@@ -105,6 +107,7 @@ class RealtimeTranscriptionService {
     _isActive = true;
     _pcmBuffer.clear();
     _deltaBuffer.clear();
+    _detectedLanguage = null;
 
     // Subscribe to PCM stream: send to WebSocket + accumulate + compute dBFS
     _pcmSubscription = pcmStream.listen(
@@ -117,13 +120,20 @@ class RealtimeTranscriptionService {
         // so the saved file contains the most recent audio.
         final newTotal = _pcmBuffer.length + chunk.length;
         if (newTotal > _maxPcmBufferBytes) {
-          final excess = newTotal - _maxPcmBufferBytes;
           final existing = _pcmBuffer.takeBytes();
-          final kept = existing.length - excess;
-          final merged = Uint8List(kept + chunk.length)
-            ..setRange(0, kept, existing, excess)
-            ..setRange(kept, kept + chunk.length, chunk);
-          _pcmBuffer.add(merged);
+          if (chunk.length >= _maxPcmBufferBytes) {
+            // Single chunk exceeds max — keep only the tail of the chunk.
+            _pcmBuffer.add(
+              chunk.sublist(chunk.length - _maxPcmBufferBytes),
+            );
+          } else {
+            final excess = newTotal - _maxPcmBufferBytes;
+            final kept = existing.length - excess;
+            final merged = Uint8List(kept + chunk.length)
+              ..setRange(0, kept, existing, excess)
+              ..setRange(kept, kept + chunk.length, chunk);
+            _pcmBuffer.add(merged);
+          }
         } else {
           _pcmBuffer.add(chunk);
         }
@@ -147,6 +157,13 @@ class RealtimeTranscriptionService {
       (delta) {
         _deltaBuffer.write(delta);
         onDelta(delta);
+      },
+    );
+
+    // Track detected language for transcript metadata
+    _languageSubscription = _repository.detectedLanguage.listen(
+      (language) {
+        _detectedLanguage = language;
       },
     );
   }
@@ -175,7 +192,7 @@ class RealtimeTranscriptionService {
     await _repository.endAudio();
 
     // 4. Wait for transcription.done
-    var transcript = _deltaBuffer.toString();
+    String transcript;
     var usedFallback = false;
 
     try {
@@ -184,6 +201,10 @@ class RealtimeTranscriptionService {
       );
       transcript = done.text;
     } on TimeoutException {
+      // Read delta buffer *after* the timeout so any late-arriving deltas
+      // (from audio already in-flight when we cancelled the PCM subscription)
+      // are captured in the fallback transcript.
+      transcript = _deltaBuffer.toString();
       usedFallback = true;
       getIt<LoggingService>().captureEvent(
         'transcription.done timed out, using accumulated deltas '
@@ -192,6 +213,8 @@ class RealtimeTranscriptionService {
         subDomain: 'stop.timeout',
       );
     }
+
+    final detectedLanguage = _detectedLanguage;
 
     // 5. Write temp WAV and convert to M4A
     final audioFilePath = await _saveAudio(outputPath);
@@ -203,6 +226,7 @@ class RealtimeTranscriptionService {
       transcript: transcript,
       audioFilePath: audioFilePath,
       usedTranscriptFallback: usedFallback,
+      detectedLanguage: detectedLanguage,
     );
   }
 
@@ -212,6 +236,8 @@ class RealtimeTranscriptionService {
     _pcmSubscription = null;
     await _deltaSubscription?.cancel();
     _deltaSubscription = null;
+    await _languageSubscription?.cancel();
+    _languageSubscription = null;
 
     await _cleanup();
   }
@@ -303,6 +329,9 @@ class RealtimeTranscriptionService {
     _isActive = false;
     await _deltaSubscription?.cancel();
     _deltaSubscription = null;
+    await _languageSubscription?.cancel();
+    _languageSubscription = null;
+    _detectedLanguage = null;
     await _repository.disconnect();
   }
 }

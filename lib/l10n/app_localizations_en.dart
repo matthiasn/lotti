@@ -1558,12 +1558,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Delete device';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Device $deviceName deleted successfully';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Failed to delete device: $error';
   }
 

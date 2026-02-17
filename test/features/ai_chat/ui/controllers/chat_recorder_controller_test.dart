@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -99,6 +100,48 @@ class _ThrowOnCancelStream extends Stream<record.Amplitude> {
     final sub = _ThrowingCancelSubscription();
     // simulate immediate data then done
     onData?.call(record.Amplitude(current: -40, max: -30));
+    onDone?.call();
+    return sub;
+  }
+}
+
+class _ThrowingDoubleCancelSubscription implements StreamSubscription<double> {
+  @override
+  Future<void> cancel() => Future.error(Exception('amp cancel fail'));
+
+  @override
+  bool get isPaused => false;
+
+  @override
+  void onData(void Function(double data)? handleData) {}
+
+  @override
+  void onDone(void Function()? handleDone) {}
+
+  @override
+  void onError(Function? handleError) {}
+
+  @override
+  void pause([Future<void>? resumeSignal]) {}
+
+  @override
+  void resume() {}
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => Future.value(futureValue as E);
+}
+
+class _ThrowOnCancelDoubleStream extends Stream<double> {
+  @override
+  StreamSubscription<double> listen(
+    void Function(double event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    final sub = _ThrowingDoubleCancelSubscription();
+    // simulate immediate data then done
+    onData?.call(-40);
     onDone?.call();
     return sub;
   }
@@ -1268,7 +1311,7 @@ void main() {
     expect(state.error, isNull);
   });
 
-  test('stopAndTranscribe when filePath is null sets noAudioFile error',
+  test('stopAndTranscribe completes successfully with empty transcription',
       () async {
     final mockRecorder = _MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
@@ -1539,6 +1582,253 @@ void main() {
         container.read(chatRecorderControllerProvider).status,
         ChatRecorderStatus.realtimeRecording,
       );
+    });
+  });
+
+  group('max timer safety stop for realtime', () {
+    test('fires and calls stopRealtime after max duration', () async {
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
+          .thenAnswer((_) async => Stream<Uint8List>.empty());
+
+      final mockRealtime = _MockRealtimeService();
+      when(() => mockRealtime.amplitudeStream)
+          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockRealtime.stop(
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer(
+        (_) async => const RealtimeStopResult(
+          transcript: 'timer realtime transcript',
+          audioFilePath: '/tmp/audio.m4a',
+        ),
+      );
+
+      final container = ProviderContainer(overrides: [
+        chatRecorderControllerProvider
+            .overrideWith(() => ChatRecorderController(
+                  recorderFactory: () => mockRecorder,
+                  tempDirectoryProvider: () async => Directory.systemTemp,
+                  realtimeTranscriptionService: mockRealtime,
+                  config: const ChatRecorderConfig(maxSeconds: 1),
+                )),
+      ]);
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
+
+      final controller =
+          container.read(chatRecorderControllerProvider.notifier);
+      await controller.startRealtime();
+
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.realtimeRecording,
+      );
+
+      // Wait for the 1-second safety timer to fire + processing
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+      expect(state.transcript, 'timer realtime transcript');
+    });
+  });
+
+  group('_onAppPaused lifecycle', () {
+    test('stops realtime recording when app is paused', () async {
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
+          .thenAnswer((_) async => Stream<Uint8List>.empty());
+
+      final mockRealtime = _MockRealtimeService();
+      when(() => mockRealtime.amplitudeStream)
+          .thenAnswer((_) => Stream<double>.empty());
+      when(
+        () => mockRealtime.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockRealtime.stop(
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer(
+        (_) async => const RealtimeStopResult(
+          transcript: 'paused transcript',
+          audioFilePath: '/tmp/audio.m4a',
+        ),
+      );
+
+      final container = ProviderContainer(overrides: [
+        chatRecorderControllerProvider
+            .overrideWith(() => ChatRecorderController(
+                  recorderFactory: () => mockRecorder,
+                  tempDirectoryProvider: () async => Directory.systemTemp,
+                  realtimeTranscriptionService: mockRealtime,
+                )),
+      ]);
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
+
+      final controller =
+          container.read(chatRecorderControllerProvider.notifier);
+      await controller.startRealtime();
+
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.realtimeRecording,
+      );
+
+      // Simulate the app going to background
+      final binding = TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      // Allow async work to complete
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+      expect(state.transcript, 'paused transcript');
+
+      // Restore lifecycle state
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    });
+
+    test('does not stop when status is not realtimeRecording', () async {
+      final container = ProviderContainer(overrides: [
+        audioTranscriptionServiceProvider
+            .overrideWithValue(_MockTranscriptionService()),
+      ]);
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
+
+      // Controller is in idle state
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.idle,
+      );
+
+      // Simulate the app going to background
+      final binding = TestWidgetsFlutterBinding.instance;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Should still be idle — _onAppPaused should be a no-op
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.idle,
+      );
+
+      // Restore lifecycle state
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    });
+  });
+
+  group('cancel error paths for realtime subscriptions', () {
+    test('logs error when deltaSub.cancel throws during cancel', () async {
+      // Replace LoggingService with a mock to verify logging
+      if (getIt.isRegistered<LoggingService>()) {
+        getIt.unregister<LoggingService>();
+      }
+      final mockLogging = _MockLoggingService();
+      getIt.registerSingleton<LoggingService>(mockLogging);
+      when(
+        () => mockLogging.captureEvent(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          level: any<InsightLevel>(named: 'level'),
+          type: any<InsightType>(named: 'type'),
+        ),
+      ).thenReturn(null);
+      when(
+        () => mockLogging.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          level: any<InsightLevel>(named: 'level'),
+          type: any<InsightType>(named: 'type'),
+        ),
+      ).thenReturn(null);
+
+      final mockRecorder = _MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.startStream(any<record.RecordConfig>()))
+          .thenAnswer((_) async => Stream<Uint8List>.empty());
+
+      final mockRealtime = _MockRealtimeService();
+      when(() => mockRealtime.amplitudeStream)
+          .thenAnswer((_) => _ThrowOnCancelDoubleStream());
+      when(
+        () => mockRealtime.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockRealtime.dispose()).thenAnswer((_) async {});
+
+      final container = ProviderContainer(overrides: [
+        chatRecorderControllerProvider
+            .overrideWith(() => ChatRecorderController(
+                  recorderFactory: () => mockRecorder,
+                  tempDirectoryProvider: () async => Directory.systemTemp,
+                  realtimeTranscriptionService: mockRealtime,
+                )),
+      ]);
+      addTearDown(container.dispose);
+
+      final sub = container.listen(chatRecorderControllerProvider, (_, __) {});
+      addTearDown(sub.close);
+
+      final controller =
+          container.read(chatRecorderControllerProvider.notifier);
+      await controller.startRealtime();
+
+      // Cancel while subscriptions that throw on cancel exist
+      await controller.cancel();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.status, ChatRecorderStatus.idle);
+
+      // Verify that captureException was called for the cancel error
+      verify(
+        () => mockLogging.captureException(
+          any<dynamic>(),
+          domain: 'ChatRecorderController',
+          subDomain: any<String>(
+            named: 'subDomain',
+            that: contains('cancel'),
+          ),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+          level: any<InsightLevel>(named: 'level'),
+          type: any<InsightType>(named: 'type'),
+        ),
+      ).called(greaterThan(0));
     });
   });
 

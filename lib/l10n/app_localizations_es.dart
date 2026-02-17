@@ -1615,12 +1615,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deleteDeviceLabel => 'Eliminar dispositivo';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Dispositivo $deviceName eliminado correctamente';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Error al eliminar el dispositivo: $error';
   }
 

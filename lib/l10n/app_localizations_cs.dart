@@ -919,6 +919,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Položka archivována';
+
+  @override
+  String get checklistItemArchiveUndo => 'Zpět';
+
+  @override
   String get checklistItemDelete => 'Smazat položku kontrolního seznamu?';
 
   @override
@@ -928,10 +934,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Potvrdit';
 
   @override
+  String get checklistItemDeleted => 'Položka smazána';
+
+  @override
   String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
 
   @override
   String get checklistItemDrag => 'Přetáhněte návrhy do kontrolního seznamu';
+
+  @override
+  String get checklistItemUnarchived => 'Položka obnovena z archivu';
 
   @override
   String get checklistMarkdownCopied =>
@@ -1557,12 +1569,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odstranit zařízení';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Zařízení $deviceName bylo úspěšně odstraněno';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Zařízení se nepodařilo odstranit: $error';
   }
 

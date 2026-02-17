@@ -1618,12 +1618,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteDeviceLabel => 'Supprimer l\'appareil';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Appareil $deviceName supprimé avec succès';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Échec de suppression de l\'appareil : $error';
   }
 

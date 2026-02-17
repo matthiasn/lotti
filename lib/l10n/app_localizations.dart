@@ -2883,13 +2883,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Device {deviceName} deleted successfully'**
-  String deviceDeletedSuccess(Object deviceName);
+  String deviceDeletedSuccess(String deviceName);
 
   /// No description provided for @deviceDeleteFailed.
   ///
   /// In en, this message translates to:
   /// **'Failed to delete device: {error}'**
-  String deviceDeleteFailed(Object error);
+  String deviceDeleteFailed(String error);
 
   /// No description provided for @done.
   ///

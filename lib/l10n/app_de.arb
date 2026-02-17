@@ -683,13 +683,13 @@
   "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {"type": "String"}
     }
   },
   "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {"type": "String"}
     }
   },
   "done": "Fertig",

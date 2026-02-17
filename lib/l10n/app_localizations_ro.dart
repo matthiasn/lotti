@@ -1584,12 +1584,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Șterge dispozitivul';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Dispozitivul $deviceName a fost șters cu succes';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Ștergerea dispozitivului a eșuat: $error';
   }
 

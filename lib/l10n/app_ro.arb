@@ -683,13 +683,13 @@
   "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {"type": "String"}
     }
   },
   "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {"type": "String"}
     }
   },
   "done": "Gata",
