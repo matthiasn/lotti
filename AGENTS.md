@@ -113,4 +113,4 @@
 - Do no ever report that you're done with anything when not all tests pass. They must, as no PR can be merged when there are failing tests.
 - Use fvm when running any flutter command
 - Read test/README.md on every session start and keep it up to date when gaining relevant new information
-- 
+- Do not hoard code. We do not keep unused code around. Also, this is no library, there are no known mysterious callers for whom we would keep any code around.

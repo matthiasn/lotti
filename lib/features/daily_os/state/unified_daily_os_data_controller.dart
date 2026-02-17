@@ -254,21 +254,24 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final todayStart = clock.now().dayAtMidnight;
     final isFutureDate = dayStart.isAfter(todayStart);
 
-    // Fetch day plan, calendar entries, and due tasks in parallel
-    // For future dates: only fetch tasks due ON that specific day (hide overdue)
-    // For today/past: fetch tasks due on/before (includes overdue)
-    final results = await Future.wait([
-      _dayPlanRepository.getOrCreateDayPlan(_date),
-      db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd),
-      if (isFutureDate)
-        db.getTasksDueOn(_date)
-      else
-        db.getTasksDueOnOrBefore(_date),
-    ]);
+    // Fetch day plan, calendar entries, and due tasks in parallel.
+    // LAZY CREATION: Only read the day plan, never auto-create on navigation.
+    // This prevents sync conflicts when multiple devices open the same date.
+    // The plan is created on first user interaction (e.g., adding a block).
+    final dayPlanFuture = _dayPlanRepository.getDayPlan(_date);
+    final entriesFuture =
+        db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd);
+    final dueTasksFuture = isFutureDate
+        ? db.getTasksDueOn(_date)
+        : db.getTasksDueOnOrBefore(_date);
 
-    final dayPlan = results[0] as DayPlanEntry;
-    final entries = results[1] as List<JournalEntity>;
-    final dueTasks = results[2] as List<Task>;
+    final (existingPlan, entries, dueTasks) = await (
+      dayPlanFuture,
+      entriesFuture,
+      dueTasksFuture,
+    ).wait;
+
+    final dayPlan = existingPlan ?? _createEmptyDayPlan();
 
     // Fetch linked entries (parent tasks/journals) for each entry
     final entryIds = entries.map((e) => e.meta.id).toSet();
@@ -772,17 +775,24 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     return (latest + 1).clamp(1, 24);
   }
 
+  /// Creates a transient (non-persisted) empty day plan for display purposes.
+  ///
+  /// Uses the proper deterministic ID so that if the user later interacts
+  /// with this plan (e.g., adds a block), it can be persisted correctly
+  /// via [_saveDayPlan] without ID conflicts.
   DayPlanEntry _createEmptyDayPlan() {
+    final dayStart = _date.dayAtMidnight;
+    final now = clock.now();
     return DayPlanEntry(
       meta: Metadata(
-        id: '',
-        createdAt: _date,
-        updatedAt: _date,
-        dateFrom: _date,
-        dateTo: _date.add(const Duration(days: 1)),
+        id: dayPlanId(dayStart),
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: dayStart,
+        dateTo: dayStart.add(const Duration(days: 1)),
       ),
       data: DayPlanData(
-        planDate: _date,
+        planDate: dayStart,
         status: const DayPlanStatus.draft(),
       ),
     );
