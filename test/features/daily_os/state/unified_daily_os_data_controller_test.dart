@@ -213,7 +213,7 @@ void main() {
   group('UnifiedDailyOsDataController - Budget Progress', () {
     test('returns empty budgetProgress when no blocks defined', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -240,7 +240,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -272,7 +272,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // 1 hour entry for the work category
@@ -316,7 +316,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // 50 minutes recorded (10 minutes remaining)
@@ -355,7 +355,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Exactly 60 minutes recorded
@@ -394,7 +394,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // 90 minutes recorded (30 over budget)
@@ -432,7 +432,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -487,7 +487,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -524,7 +524,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -579,7 +579,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Time entry with NO category, but linked to a task WITH cat-work category
@@ -650,7 +650,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Entry has personal category, but is linked to work task
@@ -720,7 +720,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final zeroDurationEntry = createTestEntry(
@@ -766,7 +766,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -797,7 +797,7 @@ void main() {
 
     test('builds actual time slots from calendar entries', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -842,7 +842,7 @@ void main() {
 
     test('excludes zero-duration entries from actual slots', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -889,7 +889,7 @@ void main() {
 
     test('actual slots include linked parent reference', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final timeEntry = createTestEntry(
@@ -945,7 +945,7 @@ void main() {
     test('actual slots prefer task parent when rating and task are both linked',
         () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final timeEntry = createTestEntry(
@@ -1020,7 +1020,7 @@ void main() {
 
     test('actual slots ignore rating-only parent links', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final timeEntry = createTestEntry(
@@ -1093,7 +1093,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -1137,7 +1137,7 @@ void main() {
   group('UnifiedDailyOsDataController - Day Bounds Calculation', () {
     test('returns default bounds when no slots', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1165,7 +1165,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1184,7 +1184,7 @@ void main() {
 
     test('calculates start hour from earliest actual slot', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entry = createTestEntry(
@@ -1220,7 +1220,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1247,7 +1247,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1266,7 +1266,7 @@ void main() {
 
     test('calculates end hour from latest actual slot', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entry = createTestEntry(
@@ -1302,7 +1302,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1320,7 +1320,7 @@ void main() {
 
     test('handles midnight crossing - entry ends next day', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Entry that crosses midnight
@@ -1357,7 +1357,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -1385,7 +1385,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Actual entry starts earlier than planned
@@ -1423,7 +1423,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Actual entry ends later than planned
@@ -1469,7 +1469,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final entries = [
@@ -1521,7 +1521,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Time entry linked to a task
@@ -1590,7 +1590,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Two time entries linked to the same task
@@ -1670,7 +1670,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final timeEntry = createTestEntry(
@@ -1737,7 +1737,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       final timeEntry = createTestEntry(
@@ -1804,7 +1804,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Entries for two different tasks
@@ -1892,7 +1892,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Entry with NO links to tasks
@@ -1971,7 +1971,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2015,7 +2015,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
 
       // Time entry linked to task
@@ -2087,7 +2087,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2134,7 +2134,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2175,7 +2175,7 @@ void main() {
 
     test('ignores due tasks without category', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2232,7 +2232,7 @@ void main() {
         ),
       );
 
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(futureDateStart))
+      when(() => mockDayPlanRepository.getDayPlan(futureDateStart))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2323,7 +2323,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2400,7 +2400,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2455,7 +2455,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2501,7 +2501,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2546,7 +2546,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2598,7 +2598,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2649,7 +2649,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2698,7 +2698,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2743,7 +2743,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2798,7 +2798,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2856,7 +2856,7 @@ void main() {
           ),
         ],
       );
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(
         () => mockDb.sortedCalendarEntries(
@@ -2914,7 +2914,7 @@ void main() {
     }
 
     void setupBasicMocks(DayPlanEntry plan) {
-      when(() => mockDayPlanRepository.getOrCreateDayPlan(testDate))
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
           .thenAnswer((_) async => plan);
       when(() => mockDayPlanRepository.save(any()))
           .thenAnswer((invocation) async {
@@ -3329,6 +3329,277 @@ void main() {
         final status = savedPlan.data.status as DayPlanStatusNeedsReview;
         expect(status.previouslyAgreedAt, equals(agreedAt));
       });
+    });
+  });
+
+  group('UnifiedDailyOsDataController - Lazy Day Plan Creation', () {
+    void setupMocksForNoPlan() {
+      // getDayPlan returns null — no plan exists in DB
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
+          .thenAnswer((_) async => null);
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        return invocation.positionalArguments.first as DayPlanEntry;
+      });
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+    }
+
+    test('does not persist a day plan on navigation', () async {
+      setupMocksForNoPlan();
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      // UI receives a transient plan with correct ID
+      expect(result.dayPlan.meta.id, equals(planId));
+      expect(result.dayPlan.data.isDraft, isTrue);
+      expect(result.dayPlan.data.plannedBlocks, isEmpty);
+
+      // No save should have been called — plan is transient
+      verifyNever(() => mockDayPlanRepository.save(any()));
+    });
+
+    test('transient plan uses correct deterministic ID', () async {
+      setupMocksForNoPlan();
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      expect(result.dayPlan.meta.id, equals(dayPlanId(testDate)));
+      expect(
+        result.dayPlan.meta.dateFrom,
+        equals(testDate),
+      );
+      expect(
+        result.dayPlan.meta.dateTo,
+        equals(testDate.add(const Duration(days: 1))),
+      );
+    });
+
+    test('addPlannedBlock persists transient plan on first interaction',
+        () async {
+      setupMocksForNoPlan();
+
+      // After mutation, getDayPlan should return the saved plan
+      // so _fetchAllData finds it on refetch
+      DayPlanEntry? savedPlan;
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        savedPlan = invocation.positionalArguments.first as DayPlanEntry;
+        // On next getDayPlan call, return the saved plan
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => savedPlan);
+        return savedPlan!;
+      });
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      // Verify no save before interaction
+      verifyNever(() => mockDayPlanRepository.save(any()));
+
+      final newBlock = PlannedBlock(
+        id: 'block-1',
+        categoryId: 'cat-work',
+        startTime: DateTime(2026, 1, 15, 9),
+        endTime: DateTime(2026, 1, 15, 11),
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .addPlannedBlock(newBlock);
+
+      // Now the plan should have been saved
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      expect(captured, isNotEmpty);
+      final firstSave = captured.first as DayPlanEntry;
+      expect(firstSave.meta.id, equals(planId));
+      expect(firstSave.data.plannedBlocks.length, equals(1));
+      expect(firstSave.data.plannedBlocks.first.id, equals('block-1'));
+    });
+
+    test('agreeToPlan persists transient plan on first interaction', () async {
+      setupMocksForNoPlan();
+
+      DayPlanEntry? savedPlan;
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        savedPlan = invocation.positionalArguments.first as DayPlanEntry;
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => savedPlan);
+        return savedPlan!;
+      });
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      verifyNever(() => mockDayPlanRepository.save(any()));
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .agreeToPlan();
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      expect(captured, isNotEmpty);
+      final firstSave = captured.first as DayPlanEntry;
+      expect(firstSave.meta.id, equals(planId));
+      expect(firstSave.data.isAgreed, isTrue);
+    });
+
+    test('pinTask persists transient plan on first interaction', () async {
+      setupMocksForNoPlan();
+
+      DayPlanEntry? savedPlan;
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        savedPlan = invocation.positionalArguments.first as DayPlanEntry;
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => savedPlan);
+        return savedPlan!;
+      });
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      verifyNever(() => mockDayPlanRepository.save(any()));
+
+      const taskRef = PinnedTaskRef(
+        taskId: 'task-1',
+        categoryId: 'cat-work',
+      );
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .pinTask(taskRef);
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      expect(captured, isNotEmpty);
+      final firstSave = captured.first as DayPlanEntry;
+      expect(firstSave.meta.id, equals(planId));
+      expect(firstSave.data.pinnedTasks.length, equals(1));
+      expect(firstSave.data.pinnedTasks.first.taskId, equals('task-1'));
+    });
+
+    test('setDayLabel persists transient plan on first interaction', () async {
+      setupMocksForNoPlan();
+
+      DayPlanEntry? savedPlan;
+      when(() => mockDayPlanRepository.save(any()))
+          .thenAnswer((invocation) async {
+        savedPlan = invocation.positionalArguments.first as DayPlanEntry;
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => savedPlan);
+        return savedPlan!;
+      });
+
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      verifyNever(() => mockDayPlanRepository.save(any()));
+
+      await container
+          .read(unifiedDailyOsDataControllerProvider(date: testDate).notifier)
+          .setDayLabel('Focus Day');
+
+      final captured =
+          verify(() => mockDayPlanRepository.save(captureAny())).captured;
+      expect(captured, isNotEmpty);
+      final firstSave = captured.first as DayPlanEntry;
+      expect(firstSave.meta.id, equals(planId));
+      expect(firstSave.data.dayLabel, equals('Focus Day'));
+    });
+
+    test('existing plan is returned from DB without creating new one',
+        () async {
+      final existingPlan = DayPlanEntry(
+        meta: Metadata(
+          id: planId,
+          createdAt: DateTime(2026, 1, 14),
+          updatedAt: DateTime(2026, 1, 14),
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(days: 1)),
+        ),
+        data: DayPlanData(
+          planDate: testDate,
+          status: DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 14, 8)),
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'existing-block',
+              categoryId: 'cat-work',
+              startTime: DateTime(2026, 1, 15, 9),
+              endTime: DateTime(2026, 1, 15, 11),
+            ),
+          ],
+        ),
+      );
+
+      when(() => mockDayPlanRepository.getDayPlan(testDate))
+          .thenAnswer((_) async => existingPlan);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await container.read(
+        unifiedDailyOsDataControllerProvider(date: testDate).future,
+      );
+
+      // Should use the existing plan from DB, not create a new one
+      expect(result.dayPlan.meta.id, equals(planId));
+      expect(result.dayPlan.data.isAgreed, isTrue);
+      expect(result.dayPlan.data.plannedBlocks.length, equals(1));
+      expect(
+        result.dayPlan.data.plannedBlocks.first.id,
+        equals('existing-block'),
+      );
+
+      // No save should occur — plan already exists
+      verifyNever(() => mockDayPlanRepository.save(any()));
+    });
+
+    test('navigating to multiple dates does not create plans', () async {
+      // Set up two dates with no plans
+      final date1 = DateTime(2026, 1, 15);
+      final date2 = DateTime(2026, 1, 16);
+
+      when(() => mockDayPlanRepository.getDayPlan(date1))
+          .thenAnswer((_) async => null);
+      when(() => mockDayPlanRepository.getDayPlan(date2))
+          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      // Navigate to date1
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: date1).future,
+      );
+      // Navigate to date2
+      await container.read(
+        unifiedDailyOsDataControllerProvider(date: date2).future,
+      );
+
+      // No plan should have been persisted for either date
+      verifyNever(() => mockDayPlanRepository.save(any()));
     });
   });
 }
