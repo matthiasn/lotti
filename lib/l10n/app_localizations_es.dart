@@ -883,6 +883,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Elemento archivado';
+
+  @override
+  String get checklistItemArchiveUndo => 'Deshacer';
+
+  @override
   String get checklistItemDelete =>
       '¿Eliminar elemento de la lista de verificación?';
 
@@ -898,6 +904,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get checklistItemDrag =>
       'Arrastre las sugerencias a la lista de verificación';
+
+  @override
+  String get checklistItemUnarchived => 'Elemento restaurado';
 
   @override
   String get checklistMarkdownCopied =>
@@ -1529,6 +1538,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteButton => 'Eliminar';
+
+  @override
+  String get deleteDeviceLabel => 'Eliminar dispositivo';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispositivo $deviceName eliminado correctamente';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Error al eliminar el dispositivo: $error';
+  }
 
   @override
   String get done => 'Hecho';
@@ -2428,6 +2450,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt del usuario';
 
   @override
+  String get provisionedSyncBundleImported =>
+      'Código de aprovisionamiento importado';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configurar';
 
   @override
@@ -2461,13 +2487,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Configurar sincronización';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Pegar desde el portapapeles';
-
-  @override
-  String get provisionedSyncBundleImported =>
-      'Código de aprovisionamiento importado';
-
-  @override
   String get provisionedSyncInvalidBundle =>
       'Código de aprovisionamiento no válido';
 
@@ -2477,6 +2496,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Iniciando sesión...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Pegar desde el portapapeles';
 
   @override
   String get provisionedSyncReady =>
@@ -2904,19 +2926,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Cantidad';
-
-  @override
-  String get deleteDeviceLabel => 'Eliminar dispositivo';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Dispositivo $deviceName eliminado correctamente';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Error al eliminar el dispositivo: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Eliminar';

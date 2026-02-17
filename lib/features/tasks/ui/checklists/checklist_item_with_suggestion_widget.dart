@@ -20,6 +20,7 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
     required this.isChecked,
     required this.onChanged,
     this.hideCompleted = false,
+    this.isArchived = false,
     this.onTitleChange,
     this.showEditIcon = true,
     this.readOnly = false,
@@ -32,6 +33,7 @@ class ChecklistItemWithSuggestionWidget extends ConsumerStatefulWidget {
   final String title;
   final bool readOnly;
   final bool isChecked;
+  final bool isArchived;
   final bool hideCompleted;
   final bool showEditIcon;
   final BoolCallback onChanged;
@@ -54,9 +56,11 @@ class _ChecklistItemWithSuggestionWidgetState
   bool _showRow = true;
   Timer? _holdTimer;
 
-  bool get _shouldHide => widget.hideCompleted && widget.isChecked;
+  bool get _shouldHide =>
+      widget.hideCompleted && (widget.isChecked || widget.isArchived);
   bool _lastHideCompleted = false;
   bool _lastIsChecked = false;
+  bool _lastIsArchived = false;
 
   @override
   void initState() {
@@ -76,6 +80,7 @@ class _ChecklistItemWithSuggestionWidgetState
 
     _lastHideCompleted = widget.hideCompleted;
     _lastIsChecked = widget.isChecked;
+    _lastIsArchived = widget.isArchived;
     _showRow = !_shouldHide;
   }
 
@@ -84,11 +89,14 @@ class _ChecklistItemWithSuggestionWidgetState
     super.didUpdateWidget(oldWidget);
     final wasHideCompleted = _lastHideCompleted;
     final wasChecked = _lastIsChecked;
+    final wasArchived = _lastIsArchived;
     final isHideCompleted = widget.hideCompleted;
     final isChecked = widget.isChecked;
+    final isArchived = widget.isArchived;
 
     _lastHideCompleted = isHideCompleted;
     _lastIsChecked = isChecked;
+    _lastIsArchived = isArchived;
 
     // Case 1: item just got completed while hideCompleted is true
     // (Open-only mode, user just checked the box).
@@ -98,9 +106,16 @@ class _ChecklistItemWithSuggestionWidgetState
       return;
     }
 
-    // Case 2: filter toggled to hide completed items while this item was already
-    // completed. We hide it immediately without playing the completion fanfare.
-    if (!wasHideCompleted && isHideCompleted && isChecked) {
+    // Case 1b: item just got archived while hideCompleted is true.
+    if (!wasArchived && isArchived && isHideCompleted) {
+      _cancelTimers();
+      _startHideSequence();
+      return;
+    }
+
+    // Case 2: filter toggled to hide completed items while this item was
+    // already completed or archived. Hide immediately without fanfare.
+    if (!wasHideCompleted && isHideCompleted && (isChecked || isArchived)) {
       _cancelTimers();
       setState(() {
         _showRow = false;
@@ -119,6 +134,15 @@ class _ChecklistItemWithSuggestionWidgetState
 
     // Case 4: item was unchecked again.
     if (wasChecked && !isChecked) {
+      _cancelTimers();
+      setState(() {
+        _showRow = true;
+      });
+      return;
+    }
+
+    // Case 5: item was unarchived.
+    if (wasArchived && !isArchived) {
       _cancelTimers();
       setState(() {
         _showRow = true;
@@ -172,6 +196,7 @@ class _ChecklistItemWithSuggestionWidgetState
         ChecklistItemWidget(
           title: widget.title,
           isChecked: widget.isChecked,
+          isArchived: widget.isArchived,
           index: widget.index,
           onChanged: (checked) {
             widget.onChanged(checked);

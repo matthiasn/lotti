@@ -377,11 +377,14 @@
       }
     }
   },
+  "checklistItemArchived": "Item archived",
+  "checklistItemArchiveUndo": "Undo",
   "checklistItemDelete": "Delete checklist item?",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
   "checklistItemDeleteWarning": "This action cannot be undone.",
   "checklistItemDrag": "Drag suggestions into checklist",
+  "checklistItemUnarchived": "Item unarchived",
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistNoSuggestionsTitle": "No suggested Action Items",
   "checklistNothingToExport": "No items to export",
@@ -652,6 +655,19 @@
   "dashboardPrivateLabel": "Private:",
   "defaultLanguage": "Default Language",
   "deleteButton": "Delete",
+  "deleteDeviceLabel": "Delete device",
+  "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Failed to delete device: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Done",
   "doneButton": "Done",
   "editMenuTitle": "Edit",
@@ -967,6 +983,7 @@
   "promptUsePreconfiguredButton": "Use Preconfigured Prompt",
   "promptUserPromptHint": "Enter the user prompt...",
   "promptUserPromptLabel": "User Prompt",
+  "provisionedSyncBundleImported": "Provisioning code imported",
   "provisionedSyncConfigureButton": "Configure",
   "provisionedSyncCopiedToClipboard": "Copied to clipboard",
   "provisionedSyncDisconnect": "Disconnect",
@@ -977,11 +994,10 @@
   "provisionedSyncImportButton": "Import",
   "provisionedSyncImportHint": "Paste provisioning code here",
   "provisionedSyncImportTitle": "Sync Setup",
-  "provisionedSyncPasteClipboard": "Paste from clipboard",
-  "provisionedSyncBundleImported": "Provisioning code imported",
   "provisionedSyncInvalidBundle": "Invalid provisioning code",
   "provisionedSyncJoiningRoom": "Joining sync room...",
   "provisionedSyncLoggingIn": "Logging in...",
+  "provisionedSyncPasteClipboard": "Paste from clipboard",
   "provisionedSyncReady": "Scan this QR code on your mobile device",
   "provisionedSyncRetry": "Retry",
   "provisionedSyncRotatingPassword": "Securing account...",
@@ -1125,19 +1141,6 @@
   "settingsMatrixCancelVerificationLabel": "Cancel Verification",
   "settingsMatrixContinueVerificationLabel": "Accept on other device to continue",
   "settingsMatrixCount": "Count",
-  "deleteDeviceLabel": "Delete device",
-  "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Failed to delete device: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Delete",
   "settingsMatrixDiagnosticCopied": "Diagnostic info copied to clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copy to Clipboard",

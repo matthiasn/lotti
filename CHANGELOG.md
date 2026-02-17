@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.863] - 2026-02-17
+### Added
+- Archive swipe gesture for checklist items: swipe right to archive, preserving
+  historical context without marking items as completed. Archived items are
+  excluded from completion metrics and hidden in "Open" filter mode.
+
 ## [0.9.861] - 2026-02-16
 ### Changed
 - Upgraded Flutter to 3.41.1 (Dart 3.11.0).

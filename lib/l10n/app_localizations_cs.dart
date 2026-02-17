@@ -852,6 +852,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Položka archivována';
+
+  @override
+  String get checklistItemArchiveUndo => 'Zpět';
+
+  @override
   String get checklistItemDelete => 'Smazat položku kontrolního seznamu?';
 
   @override
@@ -865,6 +871,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checklistItemDrag => 'Přetáhněte návrhy do kontrolního seznamu';
+
+  @override
+  String get checklistItemUnarchived => 'Položka obnovena';
 
   @override
   String get checklistMarkdownCopied =>
@@ -1485,6 +1494,19 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get deleteButton => 'Smazat';
+
+  @override
+  String get deleteDeviceLabel => 'Odstranit zařízení';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Zařízení $deviceName bylo úspěšně odstraněno';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Zařízení se nepodařilo odstranit: $error';
+  }
 
   @override
   String get done => 'Hotovo';
@@ -2364,6 +2386,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptUserPromptLabel => 'Uživatelský prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Provizní kód importován';
+
+  @override
   String get provisionedSyncConfigureButton => 'Konfigurovat';
 
   @override
@@ -2396,12 +2421,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Nastavit synchronizaci';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
-
-  @override
-  String get provisionedSyncBundleImported => 'Provizní kód importován';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Neplatný provizní kód';
 
   @override
@@ -2410,6 +2429,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Přihlašování...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Vložit ze schránky';
 
   @override
   String get provisionedSyncReady =>
@@ -2833,19 +2855,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Počet';
-
-  @override
-  String get deleteDeviceLabel => 'Odstranit zařízení';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Zařízení $deviceName bylo úspěšně odstraněno';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Zařízení se nepodařilo odstranit: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Odstranit';

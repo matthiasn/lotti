@@ -14,6 +14,7 @@ class ChecklistItemWidget extends StatefulWidget {
     this.onTitleChange,
     this.showEditIcon = true,
     this.readOnly = false,
+    this.isArchived = false,
     this.onEdit,
     this.index = 0,
     super.key,
@@ -22,6 +23,7 @@ class ChecklistItemWidget extends StatefulWidget {
   final String title;
   final bool readOnly;
   final bool isChecked;
+  final bool isArchived;
   final bool showEditIcon;
   final BoolCallback onChanged;
   final VoidCallback? onEdit;
@@ -127,7 +129,7 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                   height: 32,
                   child: Checkbox(
                     value: _isChecked,
-                    onChanged: widget.readOnly
+                    onChanged: widget.readOnly || widget.isArchived
                         ? null
                         : (bool? value) {
                             final isChecked = value ?? false;
@@ -176,7 +178,9 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
                         overflow: TextOverflow.fade,
                         style: () {
                           final baseStyle = context.textTheme.bodyMedium;
-                          if (!_isChecked) return baseStyle;
+                          if (!_isChecked && !widget.isArchived) {
+                            return baseStyle;
+                          }
 
                           final strikethroughStyle = TextStyle(
                             decoration: TextDecoration.lineThrough,

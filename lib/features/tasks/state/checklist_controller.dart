@@ -388,7 +388,7 @@ class ChecklistCompletionController
       }
     }
 
-    final linkedChecklistItems = linkedIds
+    final activeItems = linkedIds
         .map(
           (itemId) => ref
               .read(
@@ -396,11 +396,11 @@ class ChecklistCompletionController
               .value,
         )
         .nonNulls
-        .where((item) => !item.isDeleted)
+        .where((item) => !item.isDeleted && !item.data.isArchived)
         .toList();
-    final totalCount = linkedChecklistItems.length;
+    final totalCount = activeItems.length;
     final completedCount =
-        linkedChecklistItems.where((item) => item.data.isChecked).length;
+        activeItems.where((item) => item.data.isChecked).length;
 
     return (completedCount: completedCount, totalCount: totalCount);
   }

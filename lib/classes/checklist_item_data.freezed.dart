@@ -17,6 +17,7 @@ mixin _$ChecklistItemData {
   String get title;
   bool get isChecked;
   List<String> get linkedChecklists;
+  bool get isArchived;
   String? get id;
 
   /// Create a copy of ChecklistItemData
@@ -40,17 +41,19 @@ mixin _$ChecklistItemData {
                 other.isChecked == isChecked) &&
             const DeepCollectionEquality()
                 .equals(other.linkedChecklists, linkedChecklists) &&
+            (identical(other.isArchived, isArchived) ||
+                other.isArchived == isArchived) &&
             (identical(other.id, id) || other.id == id));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, title, isChecked,
-      const DeepCollectionEquality().hash(linkedChecklists), id);
+      const DeepCollectionEquality().hash(linkedChecklists), isArchived, id);
 
   @override
   String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, id: $id)';
+    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id)';
   }
 }
 
@@ -64,6 +67,7 @@ abstract mixin class $ChecklistItemDataCopyWith<$Res> {
       {String title,
       bool isChecked,
       List<String> linkedChecklists,
+      bool isArchived,
       String? id});
 }
 
@@ -83,6 +87,7 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
     Object? title = null,
     Object? isChecked = null,
     Object? linkedChecklists = null,
+    Object? isArchived = null,
     Object? id = freezed,
   }) {
     return _then(_self.copyWith(
@@ -98,6 +103,10 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
           ? _self.linkedChecklists
           : linkedChecklists // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      isArchived: null == isArchived
+          ? _self.isArchived
+          : isArchived // ignore: cast_nullable_to_non_nullable
+              as bool,
       id: freezed == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -200,15 +209,15 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
     TResult Function(String title, bool isChecked,
-            List<String> linkedChecklists, String? id)?
+            List<String> linkedChecklists, bool isArchived, String? id)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _ChecklistItemData() when $default != null:
-        return $default(
-            _that.title, _that.isChecked, _that.linkedChecklists, _that.id);
+        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
+            _that.isArchived, _that.id);
       case _:
         return orElse();
     }
@@ -230,14 +239,14 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
     TResult Function(String title, bool isChecked,
-            List<String> linkedChecklists, String? id)
+            List<String> linkedChecklists, bool isArchived, String? id)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ChecklistItemData():
-        return $default(
-            _that.title, _that.isChecked, _that.linkedChecklists, _that.id);
+        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
+            _that.isArchived, _that.id);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -258,14 +267,14 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
     TResult? Function(String title, bool isChecked,
-            List<String> linkedChecklists, String? id)?
+            List<String> linkedChecklists, bool isArchived, String? id)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ChecklistItemData() when $default != null:
-        return $default(
-            _that.title, _that.isChecked, _that.linkedChecklists, _that.id);
+        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
+            _that.isArchived, _that.id);
       case _:
         return null;
     }
@@ -279,6 +288,7 @@ class _ChecklistItemData implements ChecklistItemData {
       {required this.title,
       required this.isChecked,
       required final List<String> linkedChecklists,
+      this.isArchived = false,
       this.id})
       : _linkedChecklists = linkedChecklists;
   factory _ChecklistItemData.fromJson(Map<String, dynamic> json) =>
@@ -297,6 +307,9 @@ class _ChecklistItemData implements ChecklistItemData {
     return EqualUnmodifiableListView(_linkedChecklists);
   }
 
+  @override
+  @JsonKey()
+  final bool isArchived;
   @override
   final String? id;
 
@@ -325,17 +338,19 @@ class _ChecklistItemData implements ChecklistItemData {
                 other.isChecked == isChecked) &&
             const DeepCollectionEquality()
                 .equals(other._linkedChecklists, _linkedChecklists) &&
+            (identical(other.isArchived, isArchived) ||
+                other.isArchived == isArchived) &&
             (identical(other.id, id) || other.id == id));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, title, isChecked,
-      const DeepCollectionEquality().hash(_linkedChecklists), id);
+      const DeepCollectionEquality().hash(_linkedChecklists), isArchived, id);
 
   @override
   String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, id: $id)';
+    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id)';
   }
 }
 
@@ -351,6 +366,7 @@ abstract mixin class _$ChecklistItemDataCopyWith<$Res>
       {String title,
       bool isChecked,
       List<String> linkedChecklists,
+      bool isArchived,
       String? id});
 }
 
@@ -370,6 +386,7 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
     Object? title = null,
     Object? isChecked = null,
     Object? linkedChecklists = null,
+    Object? isArchived = null,
     Object? id = freezed,
   }) {
     return _then(_ChecklistItemData(
@@ -385,6 +402,10 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
           ? _self._linkedChecklists
           : linkedChecklists // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      isArchived: null == isArchived
+          ? _self.isArchived
+          : isArchived // ignore: cast_nullable_to_non_nullable
+              as bool,
       id: freezed == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable

@@ -644,5 +644,94 @@ void main() {
       expect(editingColor, isNotNull);
       expect(animatedContainer.duration, const Duration(milliseconds: 150));
     });
+
+    testWidgets('applies strikethrough when isArchived is true',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Archived Item',
+            isChecked: false,
+            isArchived: true,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify strikethrough style is applied to the title text
+      final textWidget = find
+          .byType(Text)
+          .evaluate()
+          .map((e) => e.widget as Text)
+          .firstWhere((t) => t.data == 'Archived Item');
+      expect(
+        textWidget.style?.decoration,
+        equals(TextDecoration.lineThrough),
+      );
+    });
+
+    testWidgets('disables checkbox when isArchived is true', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Archived Item',
+            isChecked: false,
+            isArchived: true,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify the checkbox is disabled (onChanged is null)
+      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.onChanged, isNull);
+    });
+
+    testWidgets(
+        'applies strikethrough when both isArchived and isChecked are true',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Archived Checked Item',
+            isChecked: true,
+            isArchived: true,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify strikethrough style is applied
+      final textWidget = find
+          .byType(Text)
+          .evaluate()
+          .map((e) => e.widget as Text)
+          .firstWhere((t) => t.data == 'Archived Checked Item');
+      expect(
+        textWidget.style?.decoration,
+        equals(TextDecoration.lineThrough),
+      );
+
+      // Verify the checkbox is disabled
+      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.onChanged, isNull);
+    });
+
+    testWidgets('does not disable checkbox when isArchived is false',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: ChecklistItemWidget(
+            title: 'Normal Item',
+            isChecked: false,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      // Verify the checkbox is enabled (onChanged is not null)
+      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
+      expect(checkbox.onChanged, isNotNull);
+    });
   });
 }

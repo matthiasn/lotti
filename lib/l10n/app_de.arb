@@ -378,11 +378,14 @@
       }
     }
   },
+  "checklistItemArchived": "Element archiviert",
+  "checklistItemArchiveUndo": "Rückgängig",
   "checklistItemDelete": "Checklistenelement löschen?",
   "checklistItemDeleteCancel": "Abbrechen",
   "checklistItemDeleteConfirm": "Bestätigen",
   "checklistItemDeleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "checklistItemDrag": "Vorschläge in die Checkliste ziehen",
+  "checklistItemUnarchived": "Element wiederhergestellt",
   "checklistMarkdownCopied": "Checkliste als Markdown kopiert",
   "checklistNoSuggestionsTitle": "Keine vorgeschlagenen Aktionspunkte",
   "checklistNothingToExport": "Keine Einträge zum Exportieren",
@@ -653,6 +656,19 @@
   "dashboardPrivateLabel": "Privat:",
   "defaultLanguage": "Standardsprache",
   "deleteButton": "Löschen",
+  "deleteDeviceLabel": "Gerät löschen",
+  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Fertig",
   "doneButton": "Fertig",
   "editMenuTitle": "Bearbeiten",
@@ -968,6 +984,7 @@
   "promptUsePreconfiguredButton": "Vorkonfigurierten Prompt verwenden",
   "promptUserPromptHint": "Benutzer-Prompt eingeben...",
   "promptUserPromptLabel": "Benutzer-Prompt",
+  "provisionedSyncBundleImported": "Bereitstellungscode importiert",
   "provisionedSyncConfigureButton": "Konfigurieren",
   "provisionedSyncCopiedToClipboard": "In die Zwischenablage kopiert",
   "provisionedSyncDisconnect": "Trennen",
@@ -978,11 +995,10 @@
   "provisionedSyncImportButton": "Importieren",
   "provisionedSyncImportHint": "Bereitstellungscode hier einfügen",
   "provisionedSyncImportTitle": "Sync einrichten",
-  "provisionedSyncPasteClipboard": "Aus Zwischenablage einfügen",
-  "provisionedSyncBundleImported": "Bereitstellungscode importiert",
   "provisionedSyncInvalidBundle": "Ungültiger Bereitstellungscode",
   "provisionedSyncJoiningRoom": "Sync-Raum beitreten...",
   "provisionedSyncLoggingIn": "Anmeldung läuft...",
+  "provisionedSyncPasteClipboard": "Aus Zwischenablage einfügen",
   "provisionedSyncReady": "Scanne diesen QR-Code auf deinem Mobilgerät",
   "provisionedSyncRetry": "Erneut versuchen",
   "provisionedSyncRotatingPassword": "Konto wird gesichert...",
@@ -1126,19 +1142,6 @@
   "settingsMatrixCancelVerificationLabel": "Verifizierung abbrechen",
   "settingsMatrixContinueVerificationLabel": "Auf anderem Gerät akzeptieren, um fortzufahren",
   "settingsMatrixCount": "Anzahl",
-  "deleteDeviceLabel": "Gerät löschen",
-  "deviceDeletedSuccess": "Gerät {deviceName} erfolgreich gelöscht",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Gerät konnte nicht gelöscht werden: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Löschen",
   "settingsMatrixDiagnosticCopied": "Diagnoseinfos in die Zwischenablage kopiert",
   "settingsMatrixDiagnosticCopyButton": "In Zwischenablage kopieren",

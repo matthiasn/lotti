@@ -841,6 +841,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Item archived';
+
+  @override
+  String get checklistItemArchiveUndo => 'Undo';
+
+  @override
   String get checklistItemDelete => 'Delete checklist item?';
 
   @override
@@ -854,6 +860,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistItemDrag => 'Drag suggestions into checklist';
+
+  @override
+  String get checklistItemUnarchived => 'Item unarchived';
 
   @override
   String get checklistMarkdownCopied => 'Checklist copied as Markdown';
@@ -1474,6 +1483,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteButton => 'Delete';
+
+  @override
+  String get deleteDeviceLabel => 'Delete device';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Device $deviceName deleted successfully';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Failed to delete device: $error';
+  }
 
   @override
   String get done => 'Done';
@@ -2342,6 +2364,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptUserPromptLabel => 'User Prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Provisioning code imported';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configure';
 
   @override
@@ -2374,12 +2399,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Sync Setup';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
-
-  @override
-  String get provisionedSyncBundleImported => 'Provisioning code imported';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Invalid provisioning code';
 
   @override
@@ -2387,6 +2406,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Logging in...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Paste from clipboard';
 
   @override
   String get provisionedSyncReady => 'Scan this QR code on your mobile device';
@@ -2807,19 +2829,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Count';
-
-  @override
-  String get deleteDeviceLabel => 'Delete device';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Device $deviceName deleted successfully';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Failed to delete device: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Delete';

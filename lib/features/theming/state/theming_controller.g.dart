@@ -85,7 +85,7 @@ final class ThemingControllerProvider
   }
 }
 
-String _$themingControllerHash() => r'76346a10a5de2cda89e13a980968f6ccdda1c6ad';
+String _$themingControllerHash() => r'dc4b4ab562b21a0e77926da20b60da6323c6df18';
 
 /// Notifier managing the complete theming state.
 /// Marked as keepAlive since theme state should persist for the entire app lifecycle.

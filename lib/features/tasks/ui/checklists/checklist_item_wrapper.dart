@@ -75,13 +75,39 @@ class ChecklistItemWrapper extends ConsumerWidget {
             child: DraggableWidget(
               child: Dismissible(
                 key: Key(item.id),
-                dismissThresholds: const {DismissDirection.endToStart: 0.25},
+                dismissThresholds: const {
+                  DismissDirection.endToStart: 0.25,
+                  DismissDirection.startToEnd: 0.25,
+                },
                 onDismissed: (_) async {
                   await itemNotifier.delete();
                   // Also remove from parent checklist to trigger task update
                   await checklistNotifier.unlinkItem(itemId);
                 },
+                // Archive background (swipe right)
                 background: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ColoredBox(
+                      color: Colors.amber.shade700,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Icon(
+                            item.data.isArchived
+                                ? Icons.unarchive
+                                : Icons.archive,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Delete background (swipe left)
+                secondaryBackground: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -100,8 +126,38 @@ class ChecklistItemWrapper extends ConsumerWidget {
                     ),
                   ),
                 ),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) async {
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.startToEnd) {
+                    // Toggle archive state
+                    if (item.data.isArchived) {
+                      itemNotifier.unarchive();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.messages.checklistItemUnarchived,
+                          ),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    } else {
+                      itemNotifier.archive();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.messages.checklistItemArchived,
+                          ),
+                          duration: const Duration(seconds: 3),
+                          action: SnackBarAction(
+                            label: context.messages.checklistItemArchiveUndo,
+                            onPressed: itemNotifier.unarchive,
+                          ),
+                        ),
+                      );
+                    }
+                    // Don't dismiss — state update handles the visual change
+                    return false;
+                  }
+                  // Delete direction: show confirmation dialog
                   final result = await showDialog<bool>(
                     context: context,
                     builder: (context) {
@@ -129,6 +185,7 @@ class ChecklistItemWrapper extends ConsumerWidget {
                   itemId: item.id,
                   title: item.data.title,
                   isChecked: item.data.isChecked,
+                  isArchived: item.data.isArchived,
                   hideCompleted: hideIfChecked,
                   index: index,
                   onChanged: (checked) => ref

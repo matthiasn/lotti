@@ -247,6 +247,22 @@ Sorting:    [Drag ⋮⋮]  [Title]  [Progress] X/Y done
 - Inline text editing
 - Always-visible drag handle on LEFT (uses `ReorderableDragStartListener`)
 - Visual and animation details (2025‑10): background tint animates on check/edit; no behaviour changes
+- Archive state: when `isArchived = true`, text shows strikethrough and checkbox is disabled
+
+**ChecklistItemWrapper**: Wraps each checklist item with swipe gestures and drag‑and‑drop support:
+- **Swipe right** (startToEnd): Archive/unarchive toggle. Amber background with archive icon. Shows SnackBar with undo action on archive. Returns `false` from `confirmDismiss` so the item stays in place — the state update handles the visual change.
+- **Swipe left** (endToStart): Delete with confirmation dialog (unchanged from original behaviour).
+- Passes `isArchived` through to `ChecklistItemWithSuggestionWidget` for hide/strikethrough logic.
+
+##### Archive Feature (2026‑02)
+
+The archive state provides a middle ground between "completed" and "deleted":
+- **Data model**: `ChecklistItemData.isArchived` (`@Default(false)`, backward‑compatible).
+- **Semantics**: "Not relevant anymore" — the item is preserved but no longer counted.
+- **Completion metrics**: Archived items are excluded from both `totalCount` and `completedCount` in `ChecklistCompletionController`.
+- **Filter behaviour**: Archived items are hidden when the "Open" filter is active (same as completed items), but visible in "All" mode.
+- **Visual**: Strikethrough text + disabled checkbox, same as completed items.
+- **Undo**: After archiving, a SnackBar with "Undo" action appears for 3 seconds.
 
 **ChecklistItemWithSuggestionWidget**: Enhanced checklist item that supports AI-powered completion suggestions (new in 2025):
 - All features of regular checklist items

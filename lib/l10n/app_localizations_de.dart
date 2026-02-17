@@ -859,6 +859,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Element archiviert';
+
+  @override
+  String get checklistItemArchiveUndo => 'Rückgängig';
+
+  @override
   String get checklistItemDelete => 'Checklistenelement löschen?';
 
   @override
@@ -873,6 +879,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistItemDrag => 'Vorschläge in die Checkliste ziehen';
+
+  @override
+  String get checklistItemUnarchived => 'Element wiederhergestellt';
 
   @override
   String get checklistMarkdownCopied => 'Checkliste als Markdown kopiert';
@@ -1502,6 +1511,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteButton => 'Löschen';
+
+  @override
+  String get deleteDeviceLabel => 'Gerät löschen';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Gerät $deviceName erfolgreich gelöscht';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Gerät konnte nicht gelöscht werden: $error';
+  }
 
   @override
   String get done => 'Fertig';
@@ -2389,6 +2411,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get promptUserPromptLabel => 'Benutzer-Prompt';
 
   @override
+  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
+
+  @override
   String get provisionedSyncConfigureButton => 'Konfigurieren';
 
   @override
@@ -2422,12 +2447,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Sync einrichten';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
-
-  @override
-  String get provisionedSyncBundleImported => 'Bereitstellungscode importiert';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Ungültiger Bereitstellungscode';
 
   @override
@@ -2435,6 +2454,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Anmeldung läuft...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Aus Zwischenablage einfügen';
 
   @override
   String get provisionedSyncReady =>
@@ -2860,19 +2882,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Anzahl';
-
-  @override
-  String get deleteDeviceLabel => 'Gerät löschen';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Gerät $deviceName erfolgreich gelöscht';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Gerät konnte nicht gelöscht werden: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Löschen';

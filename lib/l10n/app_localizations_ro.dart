@@ -854,6 +854,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Element arhivat';
+
+  @override
+  String get checklistItemArchiveUndo => 'Anulează';
+
+  @override
   String get checklistItemDelete => 'Șterge elementul din lista de verificare?';
 
   @override
@@ -868,6 +874,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checklistItemDrag => 'Trage sugestiile în lista de verificare';
+
+  @override
+  String get checklistItemUnarchived => 'Element restaurat';
 
   @override
   String get checklistMarkdownCopied =>
@@ -1498,6 +1507,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteButton => 'Șterge';
+
+  @override
+  String get deleteDeviceLabel => 'Șterge dispozitivul';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Dispozitivul $deviceName a fost șters cu succes';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Ștergerea dispozitivului a eșuat: $error';
+  }
 
   @override
   String get done => 'Gata';
@@ -2382,6 +2404,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt utilizator';
 
   @override
+  String get provisionedSyncBundleImported => 'Cod de provizionare importat';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configurează';
 
   @override
@@ -2414,12 +2439,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Configurează sincronizarea';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Lipește din clipboard';
-
-  @override
-  String get provisionedSyncBundleImported => 'Cod de provizionare importat';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Cod de provizionare invalid';
 
   @override
@@ -2428,6 +2447,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Conectare în curs...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Lipește din clipboard';
 
   @override
   String get provisionedSyncReady =>
@@ -2853,19 +2875,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Număr';
-
-  @override
-  String get deleteDeviceLabel => 'Șterge dispozitivul';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Dispozitivul $deviceName a fost șters cu succes';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Ștergerea dispozitivului a eșuat: $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Șterge';
