@@ -12,6 +12,30 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+/// Creates the linked_entries table with the pre-v30 buggy index in a raw
+/// SQLite database. Required because the v30 migration expects this table
+/// to exist when it drops and recreates the index.
+void _createLinkedEntriesTable(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS linked_entries (
+      id TEXT NOT NULL UNIQUE,
+      from_id TEXT NOT NULL,
+      to_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      serialized TEXT NOT NULL,
+      hidden BOOLEAN DEFAULT FALSE,
+      created_at DATETIME,
+      updated_at DATETIME,
+      PRIMARY KEY (id),
+      UNIQUE(from_id, to_id, type)
+    )
+  ''');
+  sqlite.execute('''
+    CREATE INDEX IF NOT EXISTS idx_linked_entries_to_id_hidden
+      ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)
+  ''');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -107,6 +131,8 @@ void main() {
         )
       ''');
 
+      _createLinkedEntriesTable(sqlite);
+
       // Set schema version to 25
       sqlite.execute('PRAGMA user_version = 25');
 
@@ -173,6 +199,8 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+
+      _createLinkedEntriesTable(sqlite);
 
       // Set schema version to 26 without creating label tables
       sqlite.execute('PRAGMA user_version = 26');
@@ -281,6 +309,8 @@ void main() {
         DELETE FROM label_definitions WHERE id = 'label-orphaned'
       ''');
 
+      _createLinkedEntriesTable(sqlite);
+
       // Set schema version to 27
       sqlite.execute('PRAGMA user_version = 27');
       sqlite.dispose();
@@ -334,6 +364,7 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+      _createLinkedEntriesTable(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();
 
@@ -441,6 +472,7 @@ void main() {
         ''');
       }
 
+      _createLinkedEntriesTable(sqlite);
       sqlite.execute('PRAGMA user_version = 27');
       sqlite.dispose();
 
@@ -549,6 +581,7 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+      _createLinkedEntriesTable(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();
 

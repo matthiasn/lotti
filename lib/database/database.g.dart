@@ -5460,7 +5460,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
   late final Index idxLinkedEntriesToIdHidden = Index(
       'idx_linked_entries_to_id_hidden',
-      'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
+      'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
   Selectable<ConfigFlag> listConfigFlags() {
     return customSelect('SELECT * FROM config_flags',
         variables: [],

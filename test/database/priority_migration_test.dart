@@ -75,6 +75,27 @@ void main() {
         )
       ''');
 
+      // Create linked_entries table (needed for v30 migration)
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS linked_entries (
+          id TEXT NOT NULL UNIQUE,
+          from_id TEXT NOT NULL,
+          to_id TEXT NOT NULL,
+          type TEXT NOT NULL,
+          serialized TEXT NOT NULL,
+          hidden BOOLEAN DEFAULT FALSE,
+          created_at DATETIME,
+          updated_at DATETIME,
+          PRIMARY KEY (id),
+          UNIQUE(from_id, to_id, type)
+        )
+      ''');
+      // Create the buggy index that v30 migration will fix
+      sqlite.execute('''
+        CREATE INDEX idx_linked_entries_to_id_hidden
+          ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)
+      ''');
+
       // Insert a legacy task row (no priority columns exist yet)
       sqlite.execute("""
         INSERT INTO journal (id, serialized, created_at, updated_at, date_from, date_to, type, task, task_status)
