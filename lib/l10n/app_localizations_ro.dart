@@ -869,6 +869,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmă';
 
   @override
+  String get checklistItemDeleted => 'Element șters';
+
+  @override
   String get checklistItemDeleteWarning =>
       'Această acțiune nu poate fi anulată.';
 

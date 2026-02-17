@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -7,8 +9,15 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_item_with_suggestio
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/misc/countdown_snackbar_content.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+
+/// Duration for the archive SnackBar countdown.
+const kChecklistArchiveDuration = Duration(seconds: 2);
+
+/// Duration for the delete SnackBar countdown (longer, since delete is harder
+/// to reverse without undo).
+const kChecklistDeleteDuration = Duration(seconds: 5);
 
 class ChecklistItemWrapper extends ConsumerWidget {
   const ChecklistItemWrapper(
@@ -46,12 +55,13 @@ class ChecklistItemWrapper extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        // Capture notifiers before widget disposal
+        // Capture notifiers and messenger before widget disposal
         final itemNotifier = ref.read(provider.notifier);
         final checklistNotifier = ref.read(checklistControllerProvider((
           id: checklistId,
           taskId: taskId,
         )).notifier);
+        final messenger = ScaffoldMessenger.of(context);
 
         // Wrap in DropRegion to handle drops on this specific item
         // This enables both within-list reordering and cross-checklist moves
@@ -80,9 +90,31 @@ class ChecklistItemWrapper extends ConsumerWidget {
                   DismissDirection.startToEnd: 0.25,
                 },
                 onDismissed: (_) async {
-                  await itemNotifier.delete();
-                  // Also remove from parent checklist to trigger task update
+                  final deletedMessage = context.messages.checklistItemDeleted;
+                  final undoLabel = context.messages.checklistItemArchiveUndo;
+
+                  // Unlink visually but delay the actual delete so undo
+                  // can simply re-link without needing to restore data.
                   await checklistNotifier.unlinkItem(itemId);
+
+                  final deleteTimer = Timer(
+                    kChecklistDeleteDuration,
+                    () async {
+                      await itemNotifier.delete();
+                    },
+                  );
+
+                  showCountdownSnackBar(
+                    messenger,
+                    message: deletedMessage,
+                    duration: kChecklistDeleteDuration,
+                    actionLabel: undoLabel,
+                    onAction: () {
+                      deleteTimer.cancel();
+                      checklistNotifier.relinkItem(itemId);
+                      messenger.hideCurrentSnackBar();
+                    },
+                  );
                 },
                 // Archive background (swipe right)
                 background: ClipRRect(
@@ -131,55 +163,24 @@ class ChecklistItemWrapper extends ConsumerWidget {
                     // Toggle archive state
                     if (item.data.isArchived) {
                       itemNotifier.unarchive();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.messages.checklistItemUnarchived,
-                          ),
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
                     } else {
                       itemNotifier.archive();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.messages.checklistItemArchived,
-                          ),
-                          duration: const Duration(seconds: 3),
-                          action: SnackBarAction(
-                            label: context.messages.checklistItemArchiveUndo,
-                            onPressed: itemNotifier.unarchive,
-                          ),
-                        ),
+                      showCountdownSnackBar(
+                        messenger,
+                        message: context.messages.checklistItemArchived,
+                        duration: kChecklistArchiveDuration,
+                        actionLabel: context.messages.checklistItemArchiveUndo,
+                        onAction: () {
+                          itemNotifier.unarchive();
+                          messenger.hideCurrentSnackBar();
+                        },
                       );
                     }
                     // Don't dismiss — state update handles the visual change
                     return false;
                   }
-                  // Delete direction: show confirmation dialog
-                  final result = await showDialog<bool>(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text(context.messages.checklistItemDelete),
-                        content: Text(
-                          context.messages.checklistItemDeleteWarning,
-                        ),
-                        actions: [
-                          LottiTertiaryButton(
-                            label: context.messages.checklistItemDeleteCancel,
-                            onPressed: () => Navigator.of(context).pop(false),
-                          ),
-                          LottiTertiaryButton(
-                            label: context.messages.checklistItemDeleteConfirm,
-                            onPressed: () => Navigator.of(context).pop(true),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                  return result ?? false;
+                  // Delete direction: dismiss immediately, SnackBar in onDismissed
+                  return true;
                 },
                 child: ChecklistItemWithSuggestionWidget(
                   itemId: item.id,

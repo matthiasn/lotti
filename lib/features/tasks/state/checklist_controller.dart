@@ -263,6 +263,18 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     }
   }
 
+  /// Re-adds an item to the checklist's linked items (undo for [unlinkItem]).
+  Future<void> relinkItem(String checklistItemId) => updateChecklist(
+        (checklist) => checklist.copyWith(
+          data: checklist.data.copyWith(
+            linkedChecklistItems: [
+              ...checklist.data.linkedChecklistItems,
+              checklistItemId,
+            ],
+          ),
+        ),
+      );
+
   Future<void> unlinkItem(String checklistItemId) => updateChecklist(
         (checklist) => checklist.copyWith(
           data: checklist.data.copyWith(

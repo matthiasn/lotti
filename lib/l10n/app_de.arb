@@ -383,6 +383,7 @@
   "checklistItemDelete": "Checklistenelement löschen?",
   "checklistItemDeleteCancel": "Abbrechen",
   "checklistItemDeleteConfirm": "Bestätigen",
+  "checklistItemDeleted": "Element gelöscht",
   "checklistItemDeleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "checklistItemDrag": "Vorschläge in die Checkliste ziehen",
   "checklistItemUnarchived": "Element wiederhergestellt",

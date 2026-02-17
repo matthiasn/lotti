@@ -856,6 +856,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirm';
 
   @override
+  String get checklistItemDeleted => 'Item deleted';
+
+  @override
   String get checklistItemDeleteWarning => 'This action cannot be undone.';
 
   @override

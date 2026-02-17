@@ -382,6 +382,7 @@
   "checklistItemDelete": "Delete checklist item?",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
+  "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
   "checklistItemDrag": "Drag suggestions into checklist",
   "checklistItemUnarchived": "Item unarchived",

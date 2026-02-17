@@ -383,6 +383,7 @@
   "checklistItemDelete": "Smazat položku kontrolního seznamu?",
   "checklistItemDeleteCancel": "Zrušit",
   "checklistItemDeleteConfirm": "Potvrdit",
+  "checklistItemDeleted": "Položka smazána",
   "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
   "checklistItemDrag": "Přetáhněte návrhy do kontrolního seznamu",
   "checklistItemUnarchived": "Položka obnovena",

@@ -899,6 +899,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmar';
 
   @override
+  String get checklistItemDeleted => 'Elemento eliminado';
+
+  @override
   String get checklistItemDeleteWarning => 'Esta acción no se puede deshacer.';
 
   @override

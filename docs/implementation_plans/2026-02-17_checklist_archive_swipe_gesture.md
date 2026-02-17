@@ -61,7 +61,20 @@ Replace the current single-direction `Dismissible` (endToStart = delete) with a 
 - The background icon changes to `Icons.unarchive` for already-archived items
 
 **Delete swipe behavior:**
-- Unchanged from current implementation (confirmation dialog + soft delete)
+- `confirmDismiss` returns `true` immediately (no confirmation dialog)
+- `onDismissed` unlinks the item immediately (visual removal), then starts a `Timer` for delayed soft-delete
+- Shows a floating countdown SnackBar (5s) with "Undo" that cancels the timer and re-links the item
+
+**Unified SnackBar pattern (`CountdownSnackBarContent`):**
+All three swipe actions use the shared `showCountdownSnackBar` helper and `CountdownSnackBarContent` widget (`lib/widgets/misc/countdown_snackbar_content.dart`):
+- `LinearProgressIndicator` animates from full to empty over the duration (visual countdown)
+- `hideCurrentSnackBar()` replaces any visible SnackBar
+- `SnackBarBehavior.floating` with `padding: EdgeInsets.zero` (content manages its own padding)
+- Archive: 2-second countdown (`kChecklistArchiveDuration`) with "Undo" button
+- Delete: 5-second countdown (`kChecklistDeleteDuration`) with "Undo" button that cancels the pending delete and re-links
+- Unarchive: no SnackBar
+- Optional action button rendered inside the content (not `SnackBarAction`, which can prevent auto-dismiss)
+- Same shared widget is also used by `CorrectionUndoSnackbarContent` for the correction capture countdown
 
 ### Visual Appearance
 
@@ -109,14 +122,16 @@ An item that is "not relevant anymore" should not affect the completion percenta
 | File | Change | Status |
 |------|--------|--------|
 | `lib/features/tasks/state/checklist_item_controller.dart` | Added `archive()`, `unarchive()`, `_setArchived()` methods | Done |
-| `lib/features/tasks/state/checklist_controller.dart` | Excluded archived from completion counts in `_computeState()` | Done |
+| `lib/features/tasks/state/checklist_controller.dart` | Excluded archived from completion counts in `_computeState()`; added `relinkItem()` for delete undo | Done |
 
-Note: No repository changes were needed — `archive()`/`unarchive()` use the existing `updateChecklistItem()`.
+Note: No repository changes were needed — `archive()`/`unarchive()` use the existing `updateChecklistItem()`. `relinkItem()` re-adds an item to the checklist's linked items list (inverse of `unlinkItem()`).
 
 ### 3. UI Components
 | File | Change | Status |
 |------|--------|--------|
-| `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart` | Bidirectional `Dismissible` with archive (right) + delete (left), SnackBar with undo | Done |
+| `lib/features/tasks/ui/checklists/checklist_item_wrapper.dart` | Bidirectional `Dismissible` with archive (right, 2s SnackBar + undo) + delayed delete (left, 5s SnackBar + undo via Timer) | Done |
+| `lib/widgets/misc/countdown_snackbar_content.dart` | Shared `CountdownSnackBarContent` widget and `showCountdownSnackBar` helper (also used by correction capture) | Done |
+| `lib/features/tasks/ui/checklists/correction_undo_snackbar.dart` | Refactored to compose `CountdownSnackBarContent` for DRY progress indicator | Done |
 | `lib/features/tasks/ui/checklists/checklist_item_widget.dart` | Added `isArchived` param, disabled checkbox when archived, strikethrough when archived | Done |
 | `lib/features/tasks/ui/checklists/checklist_item_with_suggestion_widget.dart` | Added `isArchived` param, extended `_shouldHide`, tracked `_lastIsArchived` in `didUpdateWidget` | Done |
 
@@ -125,7 +140,7 @@ Note: `checklist_card_body.dart` did not need changes — the archive data flows
 ### 4. Localization
 | File | Entries Added | Status |
 |------|---------------|--------|
-| `lib/l10n/app_en.arb` | `checklistItemArchiveUndo`, `checklistItemArchived`, `checklistItemUnarchived` | Done |
+| `lib/l10n/app_en.arb` | `checklistItemArchiveUndo`, `checklistItemArchived`, `checklistItemDeleted`, `checklistItemUnarchived` | Done |
 | `lib/l10n/app_de.arb` | German translations | Done |
 | `lib/l10n/app_es.arb` | Spanish translations | Done |
 | `lib/l10n/app_fr.arb` | French translations | Done |
@@ -137,7 +152,8 @@ Note: `checklist_card_body.dart` did not need changes — the archive data flows
 |------|-------------|--------|
 | `test/features/tasks/state/checklist_item_controller_test.dart` | 3 tests: archive sets isArchived, unarchive clears it, archive preserves checked state | Done (7 total pass) |
 | `test/features/tasks/ui/checklists/checklist_item_widget_test.dart` | 4 tests: strikethrough when archived, disabled checkbox, both archived+checked, not disabled when not archived | Done (26 total pass) |
-| `test/features/tasks/ui/checklists/checklist_item_wrapper_test.dart` | 6 tests: archive swipe calls archive + shows snackbar, unarchive swipe, delete swipe shows dialog, both backgrounds configured, unarchive icon for archived items, isArchived passed through | Done (21 total pass) |
+| `test/features/tasks/ui/checklists/checklist_item_wrapper_test.dart` | 8 tests: archive swipe calls archive + shows snackbar, unarchive swipe, delete swipe returns true (no dialog), delayed delete with Timer, undo cancels timer + relinks, both backgrounds configured, isArchived passed through | Done (21 total pass) |
+| `test/widgets/misc/countdown_snackbar_content_test.dart` | 8 tests: progress indicator rendering, animation from 1→0, custom initialProgress, clamp, showCountdownSnackBar helper, action button, replacement | Done (8 total pass) |
 
 All 701 tests in `test/features/tasks/` pass.
 

@@ -874,6 +874,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Bestätigen';
 
   @override
+  String get checklistItemDeleted => 'Element gelöscht';
+
+  @override
   String get checklistItemDeleteWarning =>
       'Diese Aktion kann nicht rückgängig gemacht werden.';
 

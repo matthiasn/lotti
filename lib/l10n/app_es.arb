@@ -383,6 +383,7 @@
   "checklistItemDelete": "¿Eliminar elemento de la lista de verificación?",
   "checklistItemDeleteCancel": "Cancelar",
   "checklistItemDeleteConfirm": "Confirmar",
+  "checklistItemDeleted": "Elemento eliminado",
   "checklistItemDeleteWarning": "Esta acción no se puede deshacer.",
   "checklistItemDrag": "Arrastre las sugerencias a la lista de verificación",
   "checklistItemUnarchived": "Elemento restaurado",

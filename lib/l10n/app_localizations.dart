@@ -1613,6 +1613,12 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get checklistItemDeleteConfirm;
 
+  /// No description provided for @checklistItemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted'**
+  String get checklistItemDeleted;
+
   /// No description provided for @checklistItemDeleteWarning.
   ///
   /// In en, this message translates to:

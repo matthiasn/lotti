@@ -383,6 +383,7 @@
   "checklistItemDelete": "Supprimer l'élément de la liste de contrôle ?",
   "checklistItemDeleteCancel": "Annuler",
   "checklistItemDeleteConfirm": "Confirmer",
+  "checklistItemDeleted": "Élément supprimé",
   "checklistItemDeleteWarning": "Cette action ne peut pas être annulée.",
   "checklistItemDrag": "Faites glisser les suggestions dans la liste de contrôle",
   "checklistItemUnarchived": "Élément restauré",

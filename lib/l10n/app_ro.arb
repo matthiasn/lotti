@@ -383,6 +383,7 @@
   "checklistItemDelete": "Șterge elementul din lista de verificare?",
   "checklistItemDeleteCancel": "Anulează",
   "checklistItemDeleteConfirm": "Confirmă",
+  "checklistItemDeleted": "Element șters",
   "checklistItemDeleteWarning": "Această acțiune nu poate fi anulată.",
   "checklistItemDrag": "Trage sugestiile în lista de verificare",
   "checklistItemUnarchived": "Element restaurat",

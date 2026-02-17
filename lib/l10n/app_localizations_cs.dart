@@ -867,6 +867,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Potvrdit';
 
   @override
+  String get checklistItemDeleted => 'Položka smazána';
+
+  @override
   String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
 
   @override
