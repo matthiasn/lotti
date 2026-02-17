@@ -8,6 +8,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'migration_test_helper.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -74,6 +76,8 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
 
       // Insert a legacy task row (no priority columns exist yet)
       sqlite.execute("""

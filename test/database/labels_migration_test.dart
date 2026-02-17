@@ -12,6 +12,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'migration_test_helper.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -107,6 +109,8 @@ void main() {
         )
       ''');
 
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
+
       // Set schema version to 25
       sqlite.execute('PRAGMA user_version = 25');
 
@@ -173,6 +177,8 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
 
       // Set schema version to 26 without creating label tables
       sqlite.execute('PRAGMA user_version = 26');
@@ -281,6 +287,8 @@ void main() {
         DELETE FROM label_definitions WHERE id = 'label-orphaned'
       ''');
 
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
+
       // Set schema version to 27
       sqlite.execute('PRAGMA user_version = 27');
       sqlite.dispose();
@@ -334,6 +342,7 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();
 
@@ -441,6 +450,7 @@ void main() {
         ''');
       }
 
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 27');
       sqlite.dispose();
 
@@ -549,6 +559,7 @@ void main() {
           schema_version INTEGER DEFAULT 0
         )
       ''');
+      createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();
 

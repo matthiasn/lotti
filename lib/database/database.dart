@@ -61,7 +61,7 @@ class JournalDb extends _$JournalDb {
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration {
@@ -75,6 +75,21 @@ class JournalDb extends _$JournalDb {
       onUpgrade: (Migrator m, int from, int to) async {
         DevLogger.log(
             name: 'JournalDb', message: 'Migration from v$from to v$to');
+
+        if (!inMemoryDatabase) {
+          try {
+            await createDbBackup(journalDbFileName);
+            DevLogger.log(
+                name: 'JournalDb',
+                message: 'Database backup created before migration');
+          } catch (e, s) {
+            DevLogger.error(
+                name: 'JournalDb',
+                message: 'Failed to create backup before migration',
+                error: e,
+                stackTrace: s);
+          }
+        }
 
         if (from < 19) {
           await () async {
@@ -200,6 +215,21 @@ class JournalDb extends _$JournalDb {
             // Rebuild index to include priority rank
             await customStatement('DROP INDEX IF EXISTS idx_journal_tasks');
             await m.createIndex(idxJournalTasks);
+          }();
+        }
+
+        // v30: Fix copy-paste bug in idx_linked_entries_to_id_hidden
+        // which was indexing from_id instead of to_id
+        if (from < 30) {
+          await () async {
+            DevLogger.log(
+                name: 'JournalDb',
+                message:
+                    'Fixing idx_linked_entries_to_id_hidden to index to_id');
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_linked_entries_to_id_hidden',
+            );
+            await m.createIndex(idxLinkedEntriesToIdHidden);
           }();
         }
       },
