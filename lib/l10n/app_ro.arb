@@ -378,11 +378,15 @@
       }
     }
   },
+  "checklistItemArchived": "Element arhivat",
+  "checklistItemArchiveUndo": "Anulează",
   "checklistItemDelete": "Șterge elementul din lista de verificare?",
   "checklistItemDeleteCancel": "Anulează",
   "checklistItemDeleteConfirm": "Confirmă",
+  "checklistItemDeleted": "Element șters",
   "checklistItemDeleteWarning": "Această acțiune nu poate fi anulată.",
   "checklistItemDrag": "Trage sugestiile în lista de verificare",
+  "checklistItemUnarchived": "Element restaurat",
   "checklistMarkdownCopied": "Lista de verificare copiată ca Markdown",
   "checklistNoSuggestionsTitle": "Nu există sugestii de acțiuni",
   "checklistNothingToExport": "Nu există elemente de exportat",
@@ -653,6 +657,19 @@
   "dashboardPrivateLabel": "Privat:",
   "defaultLanguage": "Limbă implicită",
   "deleteButton": "Șterge",
+  "deleteDeviceLabel": "Șterge dispozitivul",
+  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Gata",
   "doneButton": "Gata",
   "editMenuTitle": "Editează",
@@ -968,6 +985,7 @@
   "promptUsePreconfiguredButton": "Folosește prompt preconfigurat",
   "promptUserPromptHint": "Introduceți promptul utilizatorului...",
   "promptUserPromptLabel": "Prompt utilizator",
+  "provisionedSyncBundleImported": "Cod de provizionare importat",
   "provisionedSyncConfigureButton": "Configurează",
   "provisionedSyncCopiedToClipboard": "Copiat în clipboard",
   "provisionedSyncDisconnect": "Deconectează",
@@ -978,11 +996,10 @@
   "provisionedSyncImportButton": "Importă",
   "provisionedSyncImportHint": "Lipește codul de provizionare aici",
   "provisionedSyncImportTitle": "Configurează sincronizarea",
-  "provisionedSyncPasteClipboard": "Lipește din clipboard",
-  "provisionedSyncBundleImported": "Cod de provizionare importat",
   "provisionedSyncInvalidBundle": "Cod de provizionare invalid",
   "provisionedSyncJoiningRoom": "Se alătură camerei de sincronizare...",
   "provisionedSyncLoggingIn": "Conectare în curs...",
+  "provisionedSyncPasteClipboard": "Lipește din clipboard",
   "provisionedSyncReady": "Scanează acest cod QR pe dispozitivul tău mobil",
   "provisionedSyncRetry": "Reîncearcă",
   "provisionedSyncRotatingPassword": "Securizarea contului...",
@@ -1126,19 +1143,6 @@
   "settingsMatrixCancelVerificationLabel": "Anulează verificarea",
   "settingsMatrixContinueVerificationLabel": "Acceptați pe celălalt dispozitiv pentru a continua",
   "settingsMatrixCount": "Număr",
-  "deleteDeviceLabel": "Șterge dispozitivul",
-  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Șterge",
   "settingsMatrixDiagnosticCopied": "Informațiile de diagnostic au fost copiate în clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copiază în clipboard",

@@ -378,11 +378,15 @@
       }
     }
   },
+  "checklistItemArchived": "Élément archivé",
+  "checklistItemArchiveUndo": "Annuler",
   "checklistItemDelete": "Supprimer l'élément de la liste de contrôle ?",
   "checklistItemDeleteCancel": "Annuler",
   "checklistItemDeleteConfirm": "Confirmer",
+  "checklistItemDeleted": "Élément supprimé",
   "checklistItemDeleteWarning": "Cette action ne peut pas être annulée.",
   "checklistItemDrag": "Faites glisser les suggestions dans la liste de contrôle",
+  "checklistItemUnarchived": "Élément restauré",
   "checklistMarkdownCopied": "Liste de contrôle copiée en Markdown",
   "checklistNoSuggestionsTitle": "Aucune suggestion d'action",
   "checklistNothingToExport": "Aucun élément à exporter",
@@ -653,6 +657,19 @@
   "dashboardPrivateLabel": "Privé :",
   "defaultLanguage": "Langue par défaut",
   "deleteButton": "Supprimer",
+  "deleteDeviceLabel": "Supprimer l'appareil",
+  "deviceDeletedSuccess": "Appareil {deviceName} supprimé avec succès",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Échec de suppression de l'appareil : {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Terminé",
   "doneButton": "Terminé",
   "editMenuTitle": "Modifier",
@@ -968,6 +985,7 @@
   "promptUsePreconfiguredButton": "Utiliser un prompt préconfiguré",
   "promptUserPromptHint": "Saisir le prompt utilisateur...",
   "promptUserPromptLabel": "Prompt utilisateur",
+  "provisionedSyncBundleImported": "Code de provisionnement importé",
   "provisionedSyncConfigureButton": "Configurer",
   "provisionedSyncCopiedToClipboard": "Copié dans le presse-papiers",
   "provisionedSyncDisconnect": "Déconnecter",
@@ -978,11 +996,10 @@
   "provisionedSyncImportButton": "Importer",
   "provisionedSyncImportHint": "Colle le code de provisionnement ici",
   "provisionedSyncImportTitle": "Configurer la synchronisation",
-  "provisionedSyncPasteClipboard": "Coller depuis le presse-papiers",
-  "provisionedSyncBundleImported": "Code de provisionnement importé",
   "provisionedSyncInvalidBundle": "Code de provisionnement invalide",
   "provisionedSyncJoiningRoom": "Rejoindre la salle de synchronisation...",
   "provisionedSyncLoggingIn": "Connexion en cours...",
+  "provisionedSyncPasteClipboard": "Coller depuis le presse-papiers",
   "provisionedSyncReady": "Scanne ce code QR sur ton appareil mobile",
   "provisionedSyncRetry": "Réessayer",
   "provisionedSyncRotatingPassword": "Sécurisation du compte...",
@@ -1126,19 +1143,6 @@
   "settingsMatrixCancelVerificationLabel": "Annuler la vérification",
   "settingsMatrixContinueVerificationLabel": "Accepter sur l'autre appareil pour continuer",
   "settingsMatrixCount": "Nombre",
-  "deleteDeviceLabel": "Supprimer l'appareil",
-  "deviceDeletedSuccess": "Appareil {deviceName} supprimé avec succès",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Échec de suppression de l'appareil : {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Supprimer",
   "settingsMatrixDiagnosticCopied": "Informations de diagnostic copiées dans le presse-papiers",
   "settingsMatrixDiagnosticCopyButton": "Copier dans le presse-papiers",

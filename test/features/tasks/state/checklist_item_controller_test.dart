@@ -307,5 +307,157 @@ void main() {
         );
       });
     });
+
+    group('archive and unarchive', () {
+      test('archive sets isArchived to true and keeps isChecked unchanged',
+          () async {
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // ignore: cascade_invocations
+        notifier.archive();
+
+        // Verify the state was updated with isArchived = true
+        final updatedState = container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+        );
+        expect(updatedState.value?.data.isArchived, isTrue);
+        expect(updatedState.value?.data.isChecked, isFalse);
+
+        // Verify the repository was called
+        verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(named: 'data'),
+            taskId: 'task-1',
+          ),
+        ).called(1);
+      });
+
+      test('unarchive sets isArchived to false', () async {
+        // Create an item that's already archived
+        final archivedItem = ChecklistItem(
+          meta: Metadata(
+            id: 'item-archived',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistItemData(
+            title: 'Archived Item',
+            isChecked: false,
+            isArchived: true,
+            linkedChecklists: ['checklist-1'],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('item-archived'))
+            .thenAnswer((_) async => archivedItem);
+
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistItemControllerProvider((
+            id: 'item-archived',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistItemControllerProvider((
+            id: 'item-archived',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // ignore: cascade_invocations
+        notifier.unarchive();
+
+        final updatedState = container.read(
+          checklistItemControllerProvider((
+            id: 'item-archived',
+            taskId: 'task-1',
+          )),
+        );
+        expect(updatedState.value?.data.isArchived, isFalse);
+      });
+
+      test('archive preserves checked state when item is checked', () async {
+        final checkedItem = ChecklistItem(
+          meta: Metadata(
+            id: 'item-checked',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+          ),
+          data: const ChecklistItemData(
+            title: 'Checked Item',
+            isChecked: true,
+            linkedChecklists: ['checklist-1'],
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('item-checked'))
+            .thenAnswer((_) async => checkedItem);
+
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // ignore: cascade_invocations
+        notifier.archive();
+
+        final updatedState = container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )),
+        );
+        // Both isArchived and isChecked should be true
+        expect(updatedState.value?.data.isArchived, isTrue);
+        expect(updatedState.value?.data.isChecked, isTrue);
+      });
+    });
   });
 }

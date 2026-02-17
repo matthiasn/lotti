@@ -247,6 +247,24 @@ Sorting:    [Drag ⋮⋮]  [Title]  [Progress] X/Y done
 - Inline text editing
 - Always-visible drag handle on LEFT (uses `ReorderableDragStartListener`)
 - Visual and animation details (2025‑10): background tint animates on check/edit; no behaviour changes
+- Archive state: when `isArchived = true`, text shows strikethrough and checkbox is disabled
+
+**ChecklistItemWrapper**: Wraps each checklist item with swipe gestures and drag‑and‑drop support:
+- **Swipe right** (startToEnd): Archive/unarchive toggle. Amber background with archive icon. Returns `false` from `confirmDismiss` so the item stays in place — the state update handles the visual change. Archiving shows a countdown SnackBar (2s) with "Undo". Unarchiving has no SnackBar.
+- **Swipe left** (endToStart): Delete with delayed execution. Item is unlinked immediately (visual removal), then a countdown SnackBar (5s) with "Undo" appears. If the user does not undo, the item is soft-deleted after the countdown. Undo cancels the pending delete and re-links the item.
+- Both countdown SnackBars use the shared `showCountdownSnackBar` helper and `CountdownSnackBarContent` widget (`lib/widgets/misc/countdown_snackbar_content.dart`) — floating, auto-dismissing with a visual progress indicator, replaces any current SnackBar. Action buttons are rendered inside the content (not as `SnackBarAction`) to ensure reliable auto-dismiss.
+- Passes `isArchived` through to `ChecklistItemWithSuggestionWidget` for hide/strikethrough logic.
+
+##### Archive Feature (2026‑02)
+
+The archive state provides a middle ground between "completed" and "deleted":
+- **Data model**: `ChecklistItemData.isArchived` (`@Default(false)`, backward‑compatible).
+- **Semantics**: "Not relevant anymore" — the item is preserved but no longer counted.
+- **Completion metrics**: Archived items are excluded from both `totalCount` and `completedCount` in `ChecklistCompletionController`.
+- **Filter behaviour**: Archived items are hidden when the "Open" filter is active (same as completed items), but visible in "All" mode.
+- **Visual**: Strikethrough text + disabled checkbox, same as completed items.
+- **Undo (archive)**: After archiving, a floating countdown SnackBar with "Undo" action appears for 2 seconds. Unarchiving does not show a SnackBar.
+- **Undo (delete)**: After delete swipe, the item is unlinked immediately for visual removal. A floating countdown SnackBar with "Undo" appears for 5 seconds. The actual soft-delete only executes after the countdown. Undo cancels the pending delete and re-links the item.
 
 **ChecklistItemWithSuggestionWidget**: Enhanced checklist item that supports AI-powered completion suggestions (new in 2025):
 - All features of regular checklist items

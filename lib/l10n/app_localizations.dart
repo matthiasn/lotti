@@ -1583,6 +1583,18 @@ abstract class AppLocalizations {
   /// **'Toggle checklist filter (current: {state})'**
   String checklistFilterToggleSemantics(String state);
 
+  /// No description provided for @checklistItemArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Item archived'**
+  String get checklistItemArchived;
+
+  /// No description provided for @checklistItemArchiveUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get checklistItemArchiveUndo;
+
   /// No description provided for @checklistItemDelete.
   ///
   /// In en, this message translates to:
@@ -1601,6 +1613,12 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get checklistItemDeleteConfirm;
 
+  /// No description provided for @checklistItemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted'**
+  String get checklistItemDeleted;
+
   /// No description provided for @checklistItemDeleteWarning.
   ///
   /// In en, this message translates to:
@@ -1612,6 +1630,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag suggestions into checklist'**
   String get checklistItemDrag;
+
+  /// No description provided for @checklistItemUnarchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Item unarchived'**
+  String get checklistItemUnarchived;
 
   /// No description provided for @checklistMarkdownCopied.
   ///
@@ -2716,6 +2740,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get deleteButton;
+
+  /// No description provided for @deleteDeviceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete device'**
+  String get deleteDeviceLabel;
+
+  /// No description provided for @deviceDeletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Device {deviceName} deleted successfully'**
+  String deviceDeletedSuccess(Object deviceName);
+
+  /// No description provided for @deviceDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete device: {error}'**
+  String deviceDeleteFailed(Object error);
 
   /// No description provided for @done.
   ///
@@ -4313,6 +4355,12 @@ abstract class AppLocalizations {
   /// **'User Prompt'**
   String get promptUserPromptLabel;
 
+  /// No description provided for @provisionedSyncBundleImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Provisioning code imported'**
+  String get provisionedSyncBundleImported;
+
   /// No description provided for @provisionedSyncConfigureButton.
   ///
   /// In en, this message translates to:
@@ -4373,18 +4421,6 @@ abstract class AppLocalizations {
   /// **'Sync Setup'**
   String get provisionedSyncImportTitle;
 
-  /// No description provided for @provisionedSyncPasteClipboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste from clipboard'**
-  String get provisionedSyncPasteClipboard;
-
-  /// No description provided for @provisionedSyncBundleImported.
-  ///
-  /// In en, this message translates to:
-  /// **'Provisioning code imported'**
-  String get provisionedSyncBundleImported;
-
   /// No description provided for @provisionedSyncInvalidBundle.
   ///
   /// In en, this message translates to:
@@ -4402,6 +4438,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logging in...'**
   String get provisionedSyncLoggingIn;
+
+  /// No description provided for @provisionedSyncPasteClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from clipboard'**
+  String get provisionedSyncPasteClipboard;
 
   /// No description provided for @provisionedSyncReady.
   ///
@@ -5176,24 +5218,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Count'**
   String get settingsMatrixCount;
-
-  /// No description provided for @deleteDeviceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete device'**
-  String get deleteDeviceLabel;
-
-  /// No description provided for @deviceDeletedSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Device {deviceName} deleted successfully'**
-  String deviceDeletedSuccess(Object deviceName);
-
-  /// No description provided for @deviceDeleteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete device: {error}'**
-  String deviceDeleteFailed(Object error);
 
   /// No description provided for @settingsMatrixDeleteLabel.
   ///

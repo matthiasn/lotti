@@ -378,11 +378,15 @@
       }
     }
   },
+  "checklistItemArchived": "Elemento archivado",
+  "checklistItemArchiveUndo": "Deshacer",
   "checklistItemDelete": "¿Eliminar elemento de la lista de verificación?",
   "checklistItemDeleteCancel": "Cancelar",
   "checklistItemDeleteConfirm": "Confirmar",
+  "checklistItemDeleted": "Elemento eliminado",
   "checklistItemDeleteWarning": "Esta acción no se puede deshacer.",
   "checklistItemDrag": "Arrastre las sugerencias a la lista de verificación",
+  "checklistItemUnarchived": "Elemento restaurado",
   "checklistMarkdownCopied": "Lista de verificación copiada como Markdown",
   "checklistNoSuggestionsTitle": "No hay elementos de acción sugeridos",
   "checklistNothingToExport": "No hay elementos para exportar",
@@ -653,6 +657,19 @@
   "dashboardPrivateLabel": "Privado:",
   "defaultLanguage": "Idioma predeterminado",
   "deleteButton": "Eliminar",
+  "deleteDeviceLabel": "Eliminar dispositivo",
+  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Hecho",
   "doneButton": "Listo",
   "editMenuTitle": "Editar",
@@ -968,6 +985,7 @@
   "promptUsePreconfiguredButton": "Usar prompt preconfigurado",
   "promptUserPromptHint": "Introducir el prompt del usuario...",
   "promptUserPromptLabel": "Prompt del usuario",
+  "provisionedSyncBundleImported": "Código de aprovisionamiento importado",
   "provisionedSyncConfigureButton": "Configurar",
   "provisionedSyncCopiedToClipboard": "Copiado al portapapeles",
   "provisionedSyncDisconnect": "Desconectar",
@@ -978,11 +996,10 @@
   "provisionedSyncImportButton": "Importar",
   "provisionedSyncImportHint": "Pega el código de aprovisionamiento aquí",
   "provisionedSyncImportTitle": "Configurar sincronización",
-  "provisionedSyncPasteClipboard": "Pegar desde el portapapeles",
-  "provisionedSyncBundleImported": "Código de aprovisionamiento importado",
   "provisionedSyncInvalidBundle": "Código de aprovisionamiento no válido",
   "provisionedSyncJoiningRoom": "Uniéndose a la sala de sincronización...",
   "provisionedSyncLoggingIn": "Iniciando sesión...",
+  "provisionedSyncPasteClipboard": "Pegar desde el portapapeles",
   "provisionedSyncReady": "Escanea este código QR en tu dispositivo móvil",
   "provisionedSyncRetry": "Reintentar",
   "provisionedSyncRotatingPassword": "Asegurando la cuenta...",
@@ -1126,19 +1143,6 @@
   "settingsMatrixCancelVerificationLabel": "Cancelar verificación",
   "settingsMatrixContinueVerificationLabel": "Aceptar en el otro dispositivo para continuar",
   "settingsMatrixCount": "Cantidad",
-  "deleteDeviceLabel": "Eliminar dispositivo",
-  "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Eliminar",
   "settingsMatrixDiagnosticCopied": "Información de diagnóstico copiada al portapapeles",
   "settingsMatrixDiagnosticCopyButton": "Copiar al portapapeles",

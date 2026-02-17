@@ -883,6 +883,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get checklistItemArchived => 'Élément archivé';
+
+  @override
+  String get checklistItemArchiveUndo => 'Annuler';
+
+  @override
   String get checklistItemDelete =>
       'Supprimer l\'élément de la liste de contrôle ?';
 
@@ -893,12 +899,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmer';
 
   @override
+  String get checklistItemDeleted => 'Élément supprimé';
+
+  @override
   String get checklistItemDeleteWarning =>
       'Cette action ne peut pas être annulée.';
 
   @override
   String get checklistItemDrag =>
       'Faites glisser les suggestions dans la liste de contrôle';
+
+  @override
+  String get checklistItemUnarchived => 'Élément restauré';
 
   @override
   String get checklistMarkdownCopied => 'Liste de contrôle copiée en Markdown';
@@ -1532,6 +1544,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteButton => 'Supprimer';
+
+  @override
+  String get deleteDeviceLabel => 'Supprimer l\'appareil';
+
+  @override
+  String deviceDeletedSuccess(Object deviceName) {
+    return 'Appareil $deviceName supprimé avec succès';
+  }
+
+  @override
+  String deviceDeleteFailed(Object error) {
+    return 'Échec de suppression de l\'appareil : $error';
+  }
 
   @override
   String get done => 'Terminé';
@@ -2434,6 +2459,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get promptUserPromptLabel => 'Prompt utilisateur';
 
   @override
+  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
+
+  @override
   String get provisionedSyncConfigureButton => 'Configurer';
 
   @override
@@ -2467,12 +2495,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncImportTitle => 'Configurer la synchronisation';
 
   @override
-  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
-
-  @override
-  String get provisionedSyncBundleImported => 'Code de provisionnement importé';
-
-  @override
   String get provisionedSyncInvalidBundle => 'Code de provisionnement invalide';
 
   @override
@@ -2481,6 +2503,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncLoggingIn => 'Connexion en cours...';
+
+  @override
+  String get provisionedSyncPasteClipboard => 'Coller depuis le presse-papiers';
 
   @override
   String get provisionedSyncReady =>
@@ -2911,19 +2936,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMatrixCount => 'Nombre';
-
-  @override
-  String get deleteDeviceLabel => 'Supprimer l\'appareil';
-
-  @override
-  String deviceDeletedSuccess(Object deviceName) {
-    return 'Appareil $deviceName supprimé avec succès';
-  }
-
-  @override
-  String deviceDeleteFailed(Object error) {
-    return 'Échec de suppression de l\'appareil : $error';
-  }
 
   @override
   String get settingsMatrixDeleteLabel => 'Supprimer';

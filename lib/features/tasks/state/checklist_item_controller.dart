@@ -69,6 +69,26 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     return res;
   }
 
+  void archive() => _setArchived(isArchived: true);
+
+  void unarchive() => _setArchived(isArchived: false);
+
+  void _setArchived({required bool isArchived}) {
+    final current = state.value;
+    final data = current?.data;
+    if (current != null && data != null) {
+      final updated = current.copyWith(
+        data: data.copyWith(isArchived: isArchived),
+      );
+      ref.read(checklistRepositoryProvider).updateChecklistItem(
+            checklistItemId: id,
+            data: updated.data,
+            taskId: taskId,
+          );
+      state = AsyncData(updated);
+    }
+  }
+
   void updateChecked({required bool checked}) {
     final current = state.value;
     final data = current?.data;

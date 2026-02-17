@@ -9,6 +9,7 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     required String title,
     required bool isChecked,
     required List<String> linkedChecklists,
+    @Default(false) bool isArchived,
     String? id,
   }) = _ChecklistItemData;
 

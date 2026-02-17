@@ -13,6 +13,7 @@ _ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
       linkedChecklists: (json['linkedChecklists'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),
+      isArchived: json['isArchived'] as bool? ?? false,
       id: json['id'] as String?,
     );
 
@@ -21,5 +22,6 @@ Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
       'title': instance.title,
       'isChecked': instance.isChecked,
       'linkedChecklists': instance.linkedChecklists,
+      'isArchived': instance.isArchived,
       'id': instance.id,
     };

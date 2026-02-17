@@ -378,11 +378,15 @@
       }
     }
   },
+  "checklistItemArchived": "Položka archivována",
+  "checklistItemArchiveUndo": "Zpět",
   "checklistItemDelete": "Smazat položku kontrolního seznamu?",
   "checklistItemDeleteCancel": "Zrušit",
   "checklistItemDeleteConfirm": "Potvrdit",
+  "checklistItemDeleted": "Položka smazána",
   "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
   "checklistItemDrag": "Přetáhněte návrhy do kontrolního seznamu",
+  "checklistItemUnarchived": "Položka obnovena",
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
   "checklistNoSuggestionsTitle": "Žádné navrhované akční položky",
   "checklistNothingToExport": "Žádné položky k exportu",
@@ -653,6 +657,19 @@
   "dashboardPrivateLabel": "Soukromý:",
   "defaultLanguage": "Výchozí jazyk",
   "deleteButton": "Smazat",
+  "deleteDeviceLabel": "Odstranit zařízení",
+  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {}
+    }
+  },
+  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
+  "@deviceDeleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "done": "Hotovo",
   "doneButton": "Hotovo",
   "editMenuTitle": "Upravit",
@@ -968,6 +985,7 @@
   "promptUsePreconfiguredButton": "Použít přednastavený prompt",
   "promptUserPromptHint": "Zadejte uživatelský prompt...",
   "promptUserPromptLabel": "Uživatelský prompt",
+  "provisionedSyncBundleImported": "Synchronizační balíček importován",
   "provisionedSyncConfigureButton": "Konfigurovat",
   "provisionedSyncCopiedToClipboard": "Zkopírováno do schránky",
   "provisionedSyncDisconnect": "Odpojit",
@@ -978,11 +996,10 @@
   "provisionedSyncImportButton": "Importovat",
   "provisionedSyncImportHint": "Vložte provizní kód sem",
   "provisionedSyncImportTitle": "Nastavit synchronizaci",
-  "provisionedSyncPasteClipboard": "Vložit ze schránky",
-  "provisionedSyncBundleImported": "Provizní kód importován",
   "provisionedSyncInvalidBundle": "Neplatný provizní kód",
   "provisionedSyncJoiningRoom": "Připojování k synchronizační místnosti...",
   "provisionedSyncLoggingIn": "Přihlašování...",
+  "provisionedSyncPasteClipboard": "Vložit ze schránky",
   "provisionedSyncReady": "Naskenujte tento QR kód na svém mobilním zařízení",
   "provisionedSyncRetry": "Zkusit znovu",
   "provisionedSyncRotatingPassword": "Zabezpečování účtu...",
@@ -1126,19 +1143,6 @@
   "settingsMatrixCancelVerificationLabel": "Zrušit ověření",
   "settingsMatrixContinueVerificationLabel": "Přijměte na jiném zařízení pro pokračování",
   "settingsMatrixCount": "Počet",
-  "deleteDeviceLabel": "Odstranit zařízení",
-  "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {}
-    }
-  },
-  "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
-  "@deviceDeleteFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
   "settingsMatrixDeleteLabel": "Odstranit",
   "settingsMatrixDone": "Hotovo",
   "settingsMatrixEnterValidUrl": "Zadejte platnou URL",

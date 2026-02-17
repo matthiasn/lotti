@@ -39,6 +39,8 @@ class MockChecklistItemController extends ChecklistItemController {
   ChecklistItem? _initialItem;
   final bool shouldDelete;
   bool deleteWasCalled = false;
+  bool archiveWasCalled = false;
+  bool unarchiveWasCalled = false;
 
   @override
   Future<ChecklistItem?> build() async => _initialItem;
@@ -50,6 +52,18 @@ class MockChecklistItemController extends ChecklistItemController {
       state = const AsyncValue.data(null);
     }
     return true;
+  }
+
+  @override
+  void archive() {
+    archiveWasCalled = true;
+    // Don't update state — avoids notifier reuse error in widget tests.
+    // State behavior is tested in controller unit tests.
+  }
+
+  @override
+  void unarchive() {
+    unarchiveWasCalled = true;
   }
 
   @override
@@ -79,6 +93,8 @@ class MockChecklistController extends ChecklistController {
 
   bool unlinkItemWasCalled = false;
   String? unlinkedItemId;
+  bool relinkItemWasCalled = false;
+  String? relinkedItemId;
 
   @override
   Future<Checklist?> build() async => null;
@@ -87,6 +103,12 @@ class MockChecklistController extends ChecklistController {
   Future<void> unlinkItem(String itemId) async {
     unlinkItemWasCalled = true;
     unlinkedItemId = itemId;
+  }
+
+  @override
+  Future<void> relinkItem(String itemId) async {
+    relinkItemWasCalled = true;
+    relinkedItemId = itemId;
   }
 }
 
@@ -244,14 +266,15 @@ void main() {
       // Make JournalDb return the deleted item for this test
       final journalDb = getIt<JournalDb>();
 
+      final deletedAt = DateTime(2024);
       final deletedItem = ChecklistItem(
         meta: Metadata(
           id: testItemId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          deletedAt: DateTime.now(), // Marked as deleted
+          createdAt: deletedAt,
+          updatedAt: deletedAt,
+          dateFrom: deletedAt,
+          dateTo: deletedAt,
+          deletedAt: deletedAt, // Marked as deleted
         ),
         data: const ChecklistItemData(
           title: 'Deleted Item',
@@ -287,7 +310,7 @@ void main() {
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
-    testWidgets('has dismissible widget with correct configuration',
+    testWidgets('has dismissible widget with bidirectional configuration',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -310,23 +333,28 @@ void main() {
       // Find the Dismissible widget
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
 
-      // Verify dismissible settings
-      expect(dismissible.direction, DismissDirection.endToStart);
-      expect(
-          dismissible.dismissThresholds, {DismissDirection.endToStart: 0.25});
+      // Verify bidirectional dismissible settings
+      expect(dismissible.dismissThresholds, {
+        DismissDirection.endToStart: 0.25,
+        DismissDirection.startToEnd: 0.25,
+      });
       expect(dismissible.confirmDismiss, isNotNull);
       expect(dismissible.onDismissed, isNotNull);
+      // Verify both backgrounds are set (archive + delete)
+      expect(dismissible.background, isNotNull);
+      expect(dismissible.secondaryBackground, isNotNull);
 
       // Verify the widget is properly configured
       expect(find.byType(ChecklistItemWrapper), findsOneWidget);
     });
 
-    testWidgets('onDismissed callback calls both delete and unlinkItem',
+    testWidgets('onDismissed unlinks immediately and delays delete',
         (tester) async {
-      // This test verifies that the onDismissed callback properly calls both methods
-      // which is the main fix we made to ensure task updates are triggered
+      // This test verifies the delayed-deletion pattern:
+      // 1. Unlink immediately (visual removal)
+      // 2. Start Timer for actual delete (5s)
+      // 3. Show countdown SnackBar with undo
 
-      // Pre-construct mocks with known params from the test
       final mockItemController = MockChecklistItemController(
         (id: testItemId, taskId: testTaskId),
         item: testItem,
@@ -358,20 +386,92 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Find the Dismissible widget and get its onDismissed callback
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
-
-      // The onDismissed callback should exist
       expect(dismissible.onDismissed, isNotNull);
 
-      // Invoke onDismissed and allow async work to settle
+      // Invoke onDismissed and let async work + SnackBar entry complete
       dismissible.onDismissed?.call(DismissDirection.endToStart);
-      await tester.pumpAndSettle();
+      await tester.pump(); // process microtasks from async callback
+      await tester.pump(); // render SnackBar frame
 
-      // Verify both delete and unlink were called
-      expect(mockItemController.deleteWasCalled, isTrue);
+      // Unlink should be called immediately
       expect(mockChecklistController.unlinkItemWasCalled, isTrue);
       expect(mockChecklistController.unlinkedItemId, testItemId);
+
+      // Delete should NOT be called yet (delayed by Timer)
+      expect(mockItemController.deleteWasCalled, isFalse);
+
+      // Verify floating SnackBar is shown for delete with undo
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Advance past the delete duration to trigger the Timer
+      await tester.pump(kChecklistDeleteDuration);
+
+      // Now delete should have been called
+      expect(mockItemController.deleteWasCalled, isTrue);
+    });
+
+    testWidgets('delete undo cancels timer and relinks item', (tester) async {
+      final mockItemController = MockChecklistItemController(
+        (id: testItemId, taskId: testTaskId),
+        item: testItem,
+        shouldDelete: true,
+      );
+      final mockChecklistController = MockChecklistController(
+        (id: testChecklistId, taskId: testTaskId),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider.overrideWith(
+              () => mockItemController,
+            ),
+            checklistControllerProvider.overrideWith(
+              () => mockChecklistController,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Trigger delete dismiss — use pump() to avoid advancing past Timer
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      dismissible.onDismissed?.call(DismissDirection.endToStart);
+      await tester.pump(); // process microtasks
+      await tester.pump(); // render SnackBar
+
+      // SnackBar should be visible with undo button
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Find the undo TextButton inside the SnackBar and invoke directly
+      // (floating SnackBar overlays can be obscured in test hit-testing)
+      final snackBarFinder = find.byType(SnackBar);
+      final undoButton = find.descendant(
+        of: snackBarFinder,
+        matching: find.byType(TextButton),
+      );
+      expect(undoButton, findsOneWidget);
+
+      // Invoke onPressed directly to bypass hit-test overlay issues
+      tester.widget<TextButton>(undoButton).onPressed?.call();
+      await tester.pump();
+
+      // Relink should have been called
+      expect(mockChecklistController.relinkItemWasCalled, isTrue);
+      expect(mockChecklistController.relinkedItemId, testItemId);
+
+      // Advance past the delete duration — delete should NOT fire (timer cancelled)
+      await tester.pump(kChecklistDeleteDuration);
+      expect(mockItemController.deleteWasCalled, isFalse);
     });
 
     testWidgets('properly captures notifiers before disposal', (tester) async {
@@ -541,7 +641,7 @@ void main() {
       expect(operations, [DropOperation.move]);
     });
 
-    testWidgets('confirmDismiss shows delete confirmation dialog',
+    testWidgets('confirmDismiss returns true immediately for delete direction',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -564,61 +664,13 @@ void main() {
       // Find the Dismissible widget
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
 
-      // Call confirmDismiss to trigger the dialog
-      final confirmFuture =
-          dismissible.confirmDismiss!(DismissDirection.endToStart);
-      await tester.pump();
+      // Delete direction returns true immediately (no dialog)
+      final result =
+          await dismissible.confirmDismiss!(DismissDirection.endToStart);
+      expect(result, isTrue);
 
-      // Verify dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
-
-      // Find all buttons (cancel is first, confirm is last)
-      final buttons = find.byType(TextButton);
-      await tester.tap(buttons.first);
-      await tester.pumpAndSettle();
-
-      // Verify dialog returned false
-      expect(await confirmFuture, isFalse);
-    });
-
-    testWidgets('confirmDismiss returns true when user confirms',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemOverrideWithBuild(testItem),
-            checklistOverrideWithBuild(null),
-          ],
-          child: const WidgetTestBench(
-            child: ChecklistItemWrapper(
-              testItemId,
-              checklistId: testChecklistId,
-              taskId: testTaskId,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Find the Dismissible widget
-      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
-
-      // Call confirmDismiss to trigger the dialog
-      final confirmFuture =
-          dismissible.confirmDismiss!(DismissDirection.endToStart);
-      await tester.pump();
-
-      // Verify dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
-
-      // Find all buttons and tap the last one (confirm button)
-      final buttons = find.byType(TextButton);
-      await tester.tap(buttons.last);
-      await tester.pumpAndSettle();
-
-      // Verify dialog returned true
-      expect(await confirmFuture, isTrue);
+      // No dialog should be shown
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
     // TODO(riverpod3): These animation tests require stateful mock controllers
@@ -739,6 +791,239 @@ void main() {
 
       final dropRegion = tester.widget<DropRegion>(find.byType(DropRegion));
       expect(dropRegion.formats, Formats.standardFormats);
+    });
+
+    testWidgets('archive swipe (startToEnd) calls archive and shows snackbar',
+        (tester) async {
+      final mockItemController = MockChecklistItemController(
+        (id: testItemId, taskId: testTaskId),
+        item: testItem,
+      );
+      final mockChecklistController = MockChecklistController(
+        (id: testChecklistId, taskId: testTaskId),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider.overrideWith(
+              () => mockItemController,
+            ),
+            checklistControllerProvider.overrideWith(
+              () => mockChecklistController,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Get the confirmDismiss callback
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      final result = await dismissible.confirmDismiss!(
+        DismissDirection.startToEnd,
+      );
+
+      // Single pump to show the SnackBar without triggering a full rebuild
+      // cycle that would reuse the mock notifier instance.
+      await tester.pump();
+
+      // confirmDismiss should return false (item stays in place)
+      expect(result, isFalse);
+      // archive should have been called
+      expect(mockItemController.archiveWasCalled, isTrue);
+      // delete should NOT have been called
+      expect(mockItemController.deleteWasCalled, isFalse);
+
+      // Verify SnackBar is shown with undo action
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    testWidgets('archive swipe on already-archived item calls unarchive',
+        (tester) async {
+      final archivedItem = ChecklistItem(
+        meta: Metadata(
+          id: testItemId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistItemData(
+          title: 'Archived Item',
+          isChecked: false,
+          isArchived: true,
+          linkedChecklists: [],
+        ),
+      );
+
+      final mockItemController = MockChecklistItemController(
+        (id: testItemId, taskId: testTaskId),
+        item: archivedItem,
+      );
+      final mockChecklistController = MockChecklistController(
+        (id: testChecklistId, taskId: testTaskId),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider.overrideWith(
+              () => mockItemController,
+            ),
+            checklistControllerProvider.overrideWith(
+              () => mockChecklistController,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Get the confirmDismiss callback
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      final result = await dismissible.confirmDismiss!(
+        DismissDirection.startToEnd,
+      );
+
+      // Single pump — avoid full settle which triggers notifier reuse error
+      await tester.pump();
+
+      // confirmDismiss should return false
+      expect(result, isFalse);
+      // unarchive should have been called (not archive)
+      expect(mockItemController.unarchiveWasCalled, isTrue);
+      expect(mockItemController.archiveWasCalled, isFalse);
+    });
+
+    testWidgets('delete swipe (endToStart) returns true without showing dialog',
+        (tester) async {
+      final mockItemController = MockChecklistItemController(
+        (id: testItemId, taskId: testTaskId),
+        item: testItem,
+      );
+      final mockChecklistController = MockChecklistController(
+        (id: testChecklistId, taskId: testTaskId),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider.overrideWith(
+              () => mockItemController,
+            ),
+            checklistControllerProvider.overrideWith(
+              () => mockChecklistController,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Get the confirmDismiss callback for delete direction
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      final result = await dismissible.confirmDismiss!(
+        DismissDirection.endToStart,
+      );
+
+      // Returns true immediately — no dialog
+      expect(result, isTrue);
+
+      // archive/unarchive should NOT have been called
+      expect(mockItemController.archiveWasCalled, isFalse);
+      expect(mockItemController.unarchiveWasCalled, isFalse);
+    });
+
+    testWidgets(
+        'Dismissible has both background and secondaryBackground configured',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(testItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify both backgrounds are set on the Dismissible widget
+      final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
+      expect(dismissible.background, isNotNull);
+      expect(dismissible.secondaryBackground, isNotNull);
+    });
+
+    testWidgets('passes isArchived to ChecklistItemWithSuggestionWidget',
+        (tester) async {
+      final archivedItem = ChecklistItem(
+        meta: Metadata(
+          id: testItemId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        data: const ChecklistItemData(
+          title: 'Archived Item',
+          isChecked: false,
+          isArchived: true,
+          linkedChecklists: [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemOverrideWithBuild(archivedItem),
+            checklistOverrideWithBuild(null),
+          ],
+          child: const WidgetTestBench(
+            child: ChecklistItemWrapper(
+              testItemId,
+              checklistId: testChecklistId,
+              taskId: testTaskId,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify isArchived is passed through
+      final suggestionWidget = tester.widget<ChecklistItemWithSuggestionWidget>(
+        find.byType(ChecklistItemWithSuggestionWidget),
+      );
+      expect(suggestionWidget.isArchived, isTrue);
     });
   });
 }
