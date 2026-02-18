@@ -611,16 +611,19 @@ void main() {
       expect(content, contains('[ERROR] EXC_BUF: exc in buffered mode'));
     });
 
-    test('flushPendingLines is no-op when no pending lines', () async {
-      // captureEvent with logging disabled => nothing queued
-      final svc = LoggingService();
-      // Don't call listenToConfigFlag, so _enableLogging stays false
+    test('flushPendingLines is no-op when no pending lines', () {
+      fakeAsync((async) {
+        // captureEvent with logging disabled => nothing queued
+        final svc = LoggingService();
+        // Don't call listenToConfigFlag, so _enableLogging stays false
 
-      svc.captureEvent('should be skipped', domain: 'NOOP');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        svc.captureEvent('should be skipped', domain: 'NOOP');
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
 
-      // No log file created since nothing was logged
-      expect(File(logPath0()).existsSync(), isFalse);
+        // No log file created since nothing was logged
+        expect(File(logPath0()).existsSync(), isFalse);
+      });
     });
 
     test('timer cancels when force flush arrives before timer fires', () async {

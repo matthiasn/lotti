@@ -86,12 +86,17 @@ void main() {
   late AttachmentIndex attachmentIndex;
   late _MockClient client;
 
-  Future<MatrixService> createService({
+  /// Creates a [MatrixService] with all mocks wired up.
+  ///
+  /// This is synchronous — callers running inside `fakeAsync` must
+  /// `async.elapse(...)` and `clearInteractions(pipeline)` themselves
+  /// so the eager `forceRescan` task completes before assertions.
+  MatrixService createService({
     bool collectMetrics = true,
     Stream<List<ConnectivityResult>>? connectivity,
     Map<String, int> metricsSnapshot = const {'dbApplied': 4},
     Map<String, String> diagnostics = const {'nextRetry': 'soon'},
-  }) async {
+  }) {
     final connectivityStream =
         connectivity ?? const Stream<List<ConnectivityResult>>.empty();
 
@@ -112,7 +117,7 @@ void main() {
     when(() => roomManager.dispose()).thenAnswer((_) async {});
     when(() => activityGate.dispose()).thenAnswer((_) async {});
 
-    final service = MatrixService(
+    return MatrixService(
       gateway: gateway,
       loggingService: logging,
       activityGate: activityGate,
@@ -129,10 +134,14 @@ void main() {
       attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
     );
-    // Allow the eager forceRescan task to run before assertions.
-    await Future<void>.delayed(const Duration(milliseconds: 350));
+  }
+
+  /// Elapses fake time past the eager `forceRescan` that fires on
+  /// construction, then clears all recorded interactions so tests
+  /// start with a clean slate.
+  void settleServiceStartup(FakeAsync async) {
+    async.elapse(const Duration(milliseconds: 350));
     clearInteractions(pipeline);
-    return service;
   }
 
   setUp(() {
@@ -152,84 +161,86 @@ void main() {
     client = _MockClient();
   });
 
-  test('getV2Metrics returns null when metrics collection disabled', () async {
-    MatrixService? service;
+  test('getV2Metrics returns null when metrics collection disabled', () {
     fakeAsync((async) {
-      unawaited(createService(collectMetrics: false).then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      final service = createService(collectMetrics: false);
+      settleServiceStartup(async);
+
+      unawaited(
+        service.getSyncMetrics().then((metrics) {
+          expect(metrics, isNull);
+        }),
+      );
+      async.flushMicrotasks();
     });
-
-    final metrics = await service!.getSyncMetrics();
-
-    expect(metrics, isNull);
   });
 
-  test('getV2Metrics returns metrics when collection enabled', () async {
-    MatrixService? service;
+  test('getV2Metrics returns metrics when collection enabled', () {
     fakeAsync((async) {
-      unawaited(createService(
+      final service = createService(
         metricsSnapshot: const {'dbApplied': 7, 'failures': 0},
-      ).then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      );
+      settleServiceStartup(async);
+
+      unawaited(
+        service.getSyncMetrics().then((metrics) {
+          expect(metrics, isA<SyncMetrics>());
+          expect(metrics?.dbApplied, 7);
+        }),
+      );
+      async.flushMicrotasks();
     });
-
-    final metrics = await service!.getSyncMetrics();
-
-    expect(metrics, isA<SyncMetrics>());
-    expect(metrics?.dbApplied, 7);
   });
 
-  test('forceV2Rescan forwards includeCatchUp flag to pipeline', () async {
-    MatrixService? service;
+  test('forceV2Rescan forwards includeCatchUp flag to pipeline', () {
     fakeAsync((async) {
-      unawaited(createService().then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      final service = createService();
+      settleServiceStartup(async);
+
+      unawaited(service.forceRescan(includeCatchUp: false));
+      async.flushMicrotasks();
+
+      verify(() => pipeline.forceRescan(includeCatchUp: false)).called(1);
     });
-
-    await service!.forceRescan(includeCatchUp: false);
-
-    verify(() => pipeline.forceRescan(includeCatchUp: false)).called(1);
   });
 
-  test('retryV2Now triggers pipeline retry', () async {
-    MatrixService? service;
+  test('retryV2Now triggers pipeline retry', () {
     fakeAsync((async) {
-      unawaited(createService().then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      final service = createService();
+      settleServiceStartup(async);
+
+      unawaited(service.retryNow());
+      async.flushMicrotasks();
+
+      verify(() => pipeline.retryNow()).called(1);
     });
-
-    await service!.retryNow();
-
-    verify(() => pipeline.retryNow()).called(1);
   });
 
-  test('saveRoom bootstraps pipeline start + catch-up in background', () async {
-    MatrixService? service;
+  test('saveRoom bootstraps pipeline start + catch-up in background', () {
     fakeAsync((async) {
-      unawaited(createService().then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      final service = createService();
+      settleServiceStartup(async);
+
+      unawaited(service.saveRoom('!room:server'));
+      async.elapse(const Duration(milliseconds: 10));
+
+      verify(() => roomManager.saveRoomId('!room:server')).called(1);
+      verify(() => pipeline.start()).called(1);
+      verify(() => pipeline.forceRescan(includeCatchUp: true)).called(1);
     });
-
-    await service!.saveRoom('!room:server');
-    await Future<void>.delayed(const Duration(milliseconds: 10));
-
-    verify(() => roomManager.saveRoomId('!room:server')).called(1);
-    verify(() => pipeline.start()).called(1);
-    verify(() => pipeline.forceRescan(includeCatchUp: true)).called(1);
   });
 
   test('connectivity change calls recordConnectivitySignal before forceRescan',
-      () async {
+      () {
     fakeAsync((async) {
       final connectivityController =
           StreamController<List<ConnectivityResult>>.broadcast();
       addTearDown(connectivityController.close);
 
-      MatrixService? service;
-      unawaited(createService(
+      final service = createService(
         connectivity: connectivityController.stream,
-      ).then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      );
+      settleServiceStartup(async);
 
       // Stub methods to track ordering
       when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
@@ -247,43 +258,44 @@ void main() {
       ]);
 
       // Clean up
-      unawaited(service!.dispose());
+      unawaited(service.dispose());
       async.flushMicrotasks();
     });
   });
 
-  test('getSyncDiagnosticsText joins metrics and diagnostics strings',
-      () async {
-    MatrixService? service;
+  test('getSyncDiagnosticsText joins metrics and diagnostics strings', () {
     fakeAsync((async) {
-      unawaited(createService(
+      final service = createService(
         metricsSnapshot: const {'dbApplied': 3, 'failures': 1},
         diagnostics: const {'nextRetry': '42s'},
-      ).then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      );
+      settleServiceStartup(async);
+
+      unawaited(
+        service.getSyncDiagnosticsText().then((text) {
+          expect(text, contains('dbApplied=3'));
+          expect(text, contains('failures=1'));
+          expect(text, contains('nextRetry=42s'));
+        }),
+      );
+      async.flushMicrotasks();
     });
-
-    final text = await service!.getSyncDiagnosticsText();
-
-    expect(text, contains('dbApplied=3'));
-    expect(text, contains('failures=1'));
-    expect(text, contains('nextRetry=42s'));
   });
 
   test('dispose releases owned dependencies', () async {
-    MatrixService? service;
+    late MatrixService service;
     fakeAsync((async) {
-      unawaited(createService().then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      service = createService();
+      settleServiceStartup(async);
     });
 
-    await service!.dispose();
+    await service.dispose();
 
     verify(() => sessionManager.dispose()).called(1);
     verify(() => roomManager.dispose()).called(1);
   });
 
-  test('discoverExistingSyncRooms delegates to room manager', () async {
+  test('discoverExistingSyncRooms delegates to room manager', () {
     final candidates = [
       const SyncRoomCandidate(
         roomId: '!room1:server',
@@ -298,15 +310,18 @@ void main() {
     when(() => roomManager.discoverExistingSyncRooms())
         .thenAnswer((_) async => candidates);
 
-    MatrixService? service;
     fakeAsync((async) {
-      unawaited(createService().then((s) => service = s));
-      async.elapse(const Duration(milliseconds: 350));
+      final service = createService();
+      settleServiceStartup(async);
+
+      unawaited(
+        service.discoverExistingSyncRooms().then((result) {
+          expect(result, equals(candidates));
+        }),
+      );
+      async.flushMicrotasks();
+
+      verify(() => roomManager.discoverExistingSyncRooms()).called(1);
     });
-
-    final result = await service!.discoverExistingSyncRooms();
-
-    expect(result, equals(candidates));
-    verify(() => roomManager.discoverExistingSyncRooms()).called(1);
   });
 }

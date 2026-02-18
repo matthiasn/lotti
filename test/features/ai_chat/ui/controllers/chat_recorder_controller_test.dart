@@ -179,13 +179,11 @@ void main() {
     getIt.registerSingleton<LoggingService>(_FakeLoggingService());
   });
 
-  tearDown(() async {
+  tearDown(() {
     // Clean up GetIt state to prevent cross-test contamination
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
-    // Allow async cleanup to complete
-    await Future<void>.delayed(const Duration(milliseconds: 50));
   });
 
   test('start() without permission sets errorType and message', () async {
@@ -389,7 +387,7 @@ void main() {
     // Dispose the controller (simulates provider disposal)
     sub.close();
     container.dispose();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await pumpEventQueue();
 
     // Directory is cleaned up after dispose
     expect(await tempSubdir.exists(), isFalse);
@@ -438,11 +436,11 @@ void main() {
     expect(await file.exists(), isTrue);
 
     // Wait for amplitude events to be processed and state to change to recording
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await pumpEventQueue();
 
     await controller.cancel();
     // Give cleanup some time to complete
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await pumpEventQueue();
 
     expect(await file.exists(), isFalse,
         reason: 'Audio file should be deleted');
@@ -824,7 +822,7 @@ void main() {
 
     // Emit some amplitude data to simulate active recording
     amplitudeController.add(record.Amplitude(current: -40, max: -30));
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     final tempSubdir = Directory('${baseTemp.path}/lotti_chat_rec');
     expect(await tempSubdir.exists(), isTrue);
@@ -836,12 +834,11 @@ void main() {
     sub.close();
     container.dispose();
 
-    // Wait for cleanup with polling - use longer timeout for parallel test runs
-    var attempts = 0;
-    const maxAttempts = 50; // 5 seconds total timeout for CI/parallel scenarios
-    while (await tempSubdir.exists() && attempts < maxAttempts) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      attempts++;
+    // Wait for cleanup by pumping the event queue multiple times to allow
+    // the unawaited cleanup future chain to complete
+    for (var i = 0; i < 10; i++) {
+      await pumpEventQueue();
+      if (!await tempSubdir.exists()) break;
     }
 
     // Temp directory should be cleaned up by onDispose
@@ -910,11 +907,11 @@ void main() {
     final transcribeFuture = controller.stopAndTranscribe();
 
     // Allow the stream to be set up
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     // Emit first chunk
     streamController.add('Hello ');
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     var state = container.read(chatRecorderControllerProvider);
     expect(state.status, ChatRecorderStatus.processing);
@@ -922,7 +919,7 @@ void main() {
 
     // Emit second chunk
     streamController.add('world');
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     state = container.read(chatRecorderControllerProvider);
     expect(state.partialTranscript, 'Hello world');
@@ -1020,18 +1017,18 @@ void main() {
 
     // Start transcription but don't await (it will hang)
     unawaited(controller.stopAndTranscribe());
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     // Emit partial transcript
     neverEndingController.add('Partial');
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     var state = container.read(chatRecorderControllerProvider);
     expect(state.partialTranscript, 'Partial');
 
     // Cancel should clear partialTranscript
     await controller.cancel();
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await pumpEventQueue();
 
     state = container.read(chatRecorderControllerProvider);
     expect(state.status, ChatRecorderStatus.idle);
@@ -1465,29 +1462,35 @@ void main() {
   group('max timer safety stop', () {
     test('fires and calls stopAndTranscribe for batch recording', () async {
       final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+      // Pre-create subdirectory to minimize real I/O during fakeAsync
+      await Directory('${baseTemp.path}/lotti_chat_rec')
+          .create(recursive: true);
+
       final mockRecorder = _MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.onAmplitudeChanged(any()))
           .thenAnswer((_) => Stream<record.Amplitude>.empty());
+      // Avoid real file I/O in recorder mock — file existence is not needed
+      // since transcription service is mocked
       when(() => mockRecorder.start(any<record.RecordConfig>(),
-          path: any(named: 'path'))).thenAnswer((invocation) async {
-        final path = invocation.namedArguments[#path] as String;
-        await File(path).create(recursive: true);
-      });
+          path: any(named: 'path'))).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
       final mockSvc = _MockTranscriptionService();
       when(() => mockSvc.transcribeStream(any()))
           .thenAnswer((_) => Stream.value('timer transcript'));
 
+      // Use maxSeconds: 0 so the safety timer fires immediately (zero-duration
+      // Timer), which can be triggered by pumping the event queue instead of
+      // waiting real wall-clock time.
       final container = ProviderContainer(overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(mockSvc),
         chatRecorderControllerProvider
             .overrideWith(() => ChatRecorderController(
                   recorderFactory: () => mockRecorder,
                   tempDirectoryProvider: () async => baseTemp,
-                  config: const ChatRecorderConfig(maxSeconds: 1),
+                  config: const ChatRecorderConfig(maxSeconds: 0),
                 )),
       ]);
       addTearDown(container.dispose);
@@ -1504,8 +1507,11 @@ void main() {
         ChatRecorderStatus.recording,
       );
 
-      // Wait for the 1-second timer to fire + processing
-      await Future<void>.delayed(const Duration(seconds: 2));
+      // Pump the event queue to let the zero-duration safety timer fire
+      // and the subsequent stopAndTranscribe processing complete.
+      for (var i = 0; i < 10; i++) {
+        await pumpEventQueue();
+      }
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
@@ -1617,13 +1623,16 @@ void main() {
         ),
       );
 
+      // Use maxSeconds: 0 so the safety timer fires immediately (zero-duration
+      // Timer), allowing pumpEventQueue to trigger it without real wall-clock
+      // waits.
       final container = ProviderContainer(overrides: [
         chatRecorderControllerProvider
             .overrideWith(() => ChatRecorderController(
                   recorderFactory: () => mockRecorder,
                   tempDirectoryProvider: () async => Directory.systemTemp,
                   realtimeTranscriptionService: mockRealtime,
-                  config: const ChatRecorderConfig(maxSeconds: 1),
+                  config: const ChatRecorderConfig(maxSeconds: 0),
                 )),
       ]);
       addTearDown(container.dispose);
@@ -1640,8 +1649,11 @@ void main() {
         ChatRecorderStatus.realtimeRecording,
       );
 
-      // Wait for the 1-second safety timer to fire + processing
-      await Future<void>.delayed(const Duration(seconds: 2));
+      // Pump the event queue to let the zero-duration safety timer fire
+      // and the subsequent stopRealtime processing complete.
+      for (var i = 0; i < 10; i++) {
+        await pumpEventQueue();
+      }
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
@@ -1706,7 +1718,9 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
       // Allow async work to complete
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      for (var i = 0; i < 10; i++) {
+        await pumpEventQueue();
+      }
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
@@ -1735,7 +1749,7 @@ void main() {
       // Simulate the app going to background
       final binding = TestWidgetsFlutterBinding.instance;
       binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Should still be idle — _onAppPaused should be a no-op
       expect(
