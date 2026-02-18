@@ -500,19 +500,18 @@ class AudioRecorderController extends _$AudioRecorderController {
       _realtimeRecorder = null;
       _realtimeStartTime = null;
 
-      // Determine actual file name from the result path
+      // Only create an AudioNote when an actual audio file was produced.
+      // audioFilePath is null when no PCM data was captured (e.g. very short
+      // recording), and using a fabricated path would create a broken reference.
       final audioFilePath = result.audioFilePath;
-      final actualFileName = audioFilePath != null
-          ? audioFilePath.split('/').last
-          : '$fileName.m4a';
-
-      // Create AudioNote for the journal entry
-      final audioNote = AudioNote(
-        createdAt: created,
-        audioFile: actualFileName,
-        audioDirectory: relativePath,
-        duration: duration,
-      );
+      final audioNote = audioFilePath != null
+          ? AudioNote(
+              createdAt: created,
+              audioFile: audioFilePath.split('/').last,
+              audioDirectory: relativePath,
+              duration: duration,
+            )
+          : null;
 
       // Preserve inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
@@ -532,12 +531,14 @@ class AudioRecorderController extends _$AudioRecorderController {
         enableChecklistUpdates: enableChecklistUpdates,
       );
 
-      // Create the journal audio entry
-      final journalAudio = await SpeechRepository.createAudioEntry(
-        audioNote,
-        linkedId: _linkedId,
-        categoryId: _categoryId,
-      );
+      // Create the journal audio entry (only when we have an actual audio file)
+      final journalAudio = audioNote != null
+          ? await SpeechRepository.createAudioEntry(
+              audioNote,
+              linkedId: _linkedId,
+              categoryId: _categoryId,
+            )
+          : null;
 
       final wasLinkedToTask = _linkedId != null;
       final linkedTaskId = _linkedId;
@@ -565,7 +566,7 @@ class AudioRecorderController extends _$AudioRecorderController {
             _categoryId!,
             isLinkedToTask: wasLinkedToTask,
             linkedTaskId: linkedTaskId,
-            skipTranscription: true,
+            realtimeTranscriptProvided: true,
           ),
         );
       }
@@ -592,6 +593,10 @@ class AudioRecorderController extends _$AudioRecorderController {
       );
       _dbfsBuffer.clear();
       await _cleanupRealtime();
+      try {
+        await ref.read(realtimeTranscriptionServiceProvider).dispose();
+      } catch (_) {}
+      ref.invalidate(realtimeTranscriptionServiceProvider);
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
@@ -609,10 +614,10 @@ class AudioRecorderController extends _$AudioRecorderController {
     try {
       await _cleanupRealtime();
 
-      // Invalidate the provider so the next recordRealtime() gets a fresh
-      // instance. Using dispose() on the singleton would leave it in a
-      // broken state (nulled subscriptions) while the provider still
-      // holds the same reference.
+      // Dispose the service to tear down WebSocket and subscriptions,
+      // then invalidate the provider so the next recordRealtime() gets
+      // a fresh instance.
+      await ref.read(realtimeTranscriptionServiceProvider).dispose();
       ref.invalidate(realtimeTranscriptionServiceProvider);
 
       _dbfsBuffer.clear();
@@ -713,7 +718,7 @@ class AudioRecorderController extends _$AudioRecorderController {
     String categoryId, {
     required bool isLinkedToTask,
     String? linkedTaskId,
-    bool skipTranscription = false,
+    bool realtimeTranscriptProvided = false,
   }) async {
     final trigger = ref.read(automaticPromptTriggerProvider);
     await trigger.triggerAutomaticPrompts(
@@ -722,7 +727,7 @@ class AudioRecorderController extends _$AudioRecorderController {
       state,
       isLinkedToTask: isLinkedToTask,
       linkedTaskId: linkedTaskId,
-      skipTranscription: skipTranscription,
+      realtimeTranscriptProvided: realtimeTranscriptProvided,
     );
   }
 }

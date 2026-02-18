@@ -1188,7 +1188,7 @@ void main() {
 
       var recordRealtimeCalled = false;
       final idleState = AudioRecorderState(
-        status: AudioRecorderStatus.initial,
+        status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
         vu: 0,
         dBFS: -160,
@@ -1311,7 +1311,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   Future<String?> stopRealtime() async {
     onStopRealtimeCalled?.call();
     state = fixedState.copyWith(
-      status: AudioRecorderStatus.initial,
+      status: AudioRecorderStatus.stopped,
       modalVisible: false,
     );
     return null;
@@ -1321,7 +1321,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   Future<void> cancelRealtime() async {
     onCancelRealtimeCalled?.call();
     state = fixedState.copyWith(
-      status: AudioRecorderStatus.initial,
+      status: AudioRecorderStatus.stopped,
       modalVisible: false,
     );
   }

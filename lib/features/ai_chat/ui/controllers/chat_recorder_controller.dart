@@ -760,6 +760,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       state = ChatRecorderState(
         status: state.status,
         amplitudeHistory: state.amplitudeHistory,
+        useRealtimeMode: state.useRealtimeMode,
       );
     }
   }

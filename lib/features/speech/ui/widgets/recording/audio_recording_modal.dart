@@ -160,18 +160,24 @@ class _AudioRecordingModalContentState
     final controller = ref.read(audioRecorderControllerProvider.notifier);
     final state = ref.read(audioRecorderControllerProvider);
 
-    final String? createdId;
-    if (state.isRealtimeMode) {
-      createdId = await controller.stopRealtime();
-    } else {
-      createdId = await controller.stop();
-    }
+    try {
+      final String? createdId;
+      if (state.isRealtimeMode) {
+        createdId = await controller.stopRealtime();
+      } else {
+        createdId = await controller.stop();
+      }
 
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
-    if (widget.linkedId == null && createdId != null) {
-      beamToNamed('/journal/$createdId');
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      if (widget.linkedId == null && createdId != null) {
+        beamToNamed('/journal/$createdId');
+      }
+    } catch (_) {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 

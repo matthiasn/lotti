@@ -108,7 +108,7 @@ void main() {
     );
     registerFallbackValue(
       AudioRecorderState(
-        status: AudioRecorderStatus.initial,
+        status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
         vu: 0,
         dBFS: -160,
@@ -1366,9 +1366,9 @@ void main() {
         expect(state.isRealtimeMode, isFalse);
         expect(state.partialTranscript, isNull);
 
-        // dispose() should NOT be called — the provider is invalidated instead
-        // so the singleton remains usable for future sessions
-        verifyNever(() => mockRealtimeService.dispose());
+        // dispose() is called to tear down WebSocket/subscriptions before
+        // the provider is invalidated for a fresh instance next time
+        verify(() => mockRealtimeService.dispose()).called(1);
       });
 
       test('resets state even with no active session', () async {
@@ -1515,7 +1515,7 @@ void main() {
               any(),
               isLinkedToTask: any(named: 'isLinkedToTask'),
               linkedTaskId: any(named: 'linkedTaskId'),
-              skipTranscription: any(named: 'skipTranscription'),
+              realtimeTranscriptProvided: any(named: 'realtimeTranscriptProvided'),
             )).thenAnswer((_) async {});
 
         // Configure the stop result
@@ -1571,14 +1571,14 @@ void main() {
         // Verify transcript was saved via updateDbEntity
         verify(() => mockPersistence.updateDbEntity(any())).called(1);
 
-        // Verify automatic prompts were triggered with skipTranscription: true
+        // Verify automatic prompts were triggered with realtimeTranscriptProvided: true
         verify(() => mockTrigger.triggerAutomaticPrompts(
               'test-entry-id',
               'test-category',
               any(),
               isLinkedToTask: true,
               linkedTaskId: 'task-id',
-              skipTranscription: true,
+              realtimeTranscriptProvided: true,
             )).called(1);
 
         // Verify logging

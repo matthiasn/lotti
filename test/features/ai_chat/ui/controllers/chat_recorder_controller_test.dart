@@ -155,6 +155,8 @@ void main() {
     registerFallbackValue(const Duration(milliseconds: 50));
     registerFallbackValue(Stream<Uint8List>.empty());
     registerFallbackValue((String s) {});
+    registerFallbackValue(InsightLevel.info);
+    registerFallbackValue(InsightType.log);
     // Fallback for provider matcher in mocktail
     registerFallbackValue(
       AiConfig.inferenceProvider(
