@@ -1030,6 +1030,9 @@ class _TranscriptEmittingController extends ChatRecorderController {
 
   @override
   void clearResult() {
-    state = state.copyWith();
+    state = ChatRecorderState(
+      status: state.status,
+      amplitudeHistory: state.amplitudeHistory,
+    );
   }
 }
