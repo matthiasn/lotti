@@ -532,8 +532,9 @@ void main() {
         onDelta: (_) {},
       );
 
-      // Schedule done event for stop
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      // Schedule done event with small delay so stop() is already listening
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'done',
@@ -568,7 +569,8 @@ void main() {
         onDelta: (_) {},
       );
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'ok',
@@ -601,7 +603,8 @@ void main() {
       );
       expect(svc.isActive, isTrue);
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'done',
@@ -633,7 +636,8 @@ void main() {
 
       // Don't send any PCM data — buffer remains empty
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': '',
@@ -739,7 +743,8 @@ void main() {
       pcmController.add(pcmData);
       await Future<void>.delayed(Duration.zero);
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'test',
@@ -792,7 +797,8 @@ void main() {
       pcmController.add(Uint8List.fromList(List.filled(64, 0)));
       await Future<void>.delayed(Duration.zero);
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'test',
@@ -827,7 +833,8 @@ void main() {
       pcmController.add(Uint8List.fromList(List.filled(64, 0)));
       await Future<void>.delayed(Duration.zero);
 
-      unawaited(Future<void>.delayed(Duration.zero).then((_) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
         fakeChannel.simulateServerMessage({
           'type': 'transcription.done',
           'text': 'test',
