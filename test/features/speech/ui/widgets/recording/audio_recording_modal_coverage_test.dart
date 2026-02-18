@@ -259,8 +259,8 @@ Future<void> _pumpModalContent(
   );
 }
 
-/// Pumps a widget that shows the modal via [AudioRecordingModal.show()].
-/// Returns after [pumpWidget] — caller should tap "Show Modal" and settle.
+/// Pumps a widget that shows the modal via `AudioRecordingModal.show()`.
+/// Returns after `pumpWidget` — caller should tap "Show Modal" and settle.
 Future<void> _pumpShowModalTrigger(
   WidgetTester tester, {
   required MockAudioRecorderRepository audioRecorderRepo,
@@ -298,7 +298,7 @@ Future<void> _pumpShowModalTrigger(
   );
 }
 
-/// Stubs [mockCategoryRepo.watchCategory] for [categoryId].
+/// Stubs `mockCategoryRepo.watchCategory` for the given [categoryId].
 void _stubCategory(
   MockCategoryRepository mockCategoryRepo, {
   String categoryId = 'test-category',
@@ -351,8 +351,7 @@ void main() {
 
     // Setup mock player
     when(() => mockPlayer.state).thenReturn(mockPlayerState);
-    when(() => mockPlayerState.duration)
-        .thenReturn(const Duration(minutes: 5));
+    when(() => mockPlayerState.duration).thenReturn(const Duration(minutes: 5));
     when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
     when(() => mockPlayerStream.position)
         .thenAnswer((_) => positionController.stream);

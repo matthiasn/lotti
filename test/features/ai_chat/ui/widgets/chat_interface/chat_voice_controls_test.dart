@@ -15,31 +15,42 @@ class _FakeRecorderController extends ChatRecorderController {
   List<double> getNormalizedAmplitudeHistory() => const [0.2, 0.6, 0.9];
 }
 
-void main() {
-  testWidgets('renders waveform with controller amplitudes', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(_FakeRecorderController.new),
+/// Pumps a [ChatVoiceControls] widget with providers and localization.
+Future<void> _pumpControls(
+  WidgetTester tester, {
+  required VoidCallback onCancel,
+  required VoidCallback onStop,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        chatRecorderControllerProvider
+            .overrideWith(_FakeRecorderController.new),
+      ],
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
         ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ChatVoiceControls(
-              onCancel: _noop,
-              onStop: _noop,
-            ),
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ChatVoiceControls(
+            onCancel: onCancel,
+            onStop: onStop,
           ),
         ),
       ),
-    );
+    ),
+  );
+}
+
+void _noop() {}
+
+void main() {
+  testWidgets('renders waveform with controller amplitudes', (tester) async {
+    await _pumpControls(tester, onCancel: _noop, onStop: _noop);
     await tester.pump();
 
     expect(find.byKey(const ValueKey('waveform_bars')), findsOneWidget);
@@ -52,28 +63,10 @@ void main() {
     var cancelCalled = false;
     var stopCalled = false;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(_FakeRecorderController.new),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ChatVoiceControls(
-              onCancel: () => cancelCalled = true,
-              onStop: () => stopCalled = true,
-            ),
-          ),
-        ),
-      ),
+    await _pumpControls(
+      tester,
+      onCancel: () => cancelCalled = true,
+      onStop: () => stopCalled = true,
     );
 
     await tester.tap(find.byIcon(Icons.close));
@@ -88,36 +81,15 @@ void main() {
   testWidgets('ESC key triggers onCancel shortcut', (tester) async {
     var cancelCalled = false;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(_FakeRecorderController.new),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ChatVoiceControls(
-              onCancel: () => cancelCalled = true,
-              onStop: _noop,
-            ),
-          ),
-        ),
-      ),
+    await _pumpControls(
+      tester,
+      onCancel: () => cancelCalled = true,
+      onStop: _noop,
     );
 
-    // Widget requests autofocus. Send ESC.
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
 
     expect(cancelCalled, isTrue);
   });
 }
-
-void _noop() {}

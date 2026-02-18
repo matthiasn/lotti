@@ -251,8 +251,8 @@ class _TestBench {
     );
   }
 
-  /// Calls [service.stop] with a temp output directory.
-  /// Returns the [RealtimeStopResult] and cleans up the temp dir.
+  /// Calls `service.stop` with a temp output directory.
+  /// Returns the stop result and cleans up the temp dir.
   Future<RealtimeStopResult> stop({
     Future<void> Function()? stopRecorder,
     String? outputPath,

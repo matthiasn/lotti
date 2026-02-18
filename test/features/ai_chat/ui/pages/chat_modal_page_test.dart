@@ -89,7 +89,8 @@ Future<void> _pumpChatModalPage(
   );
 }
 
-/// Stubs [repo.createSession] for [categoryId] to return a dummy session.
+/// Stubs `repo.createSession` for the given [categoryId] to return a dummy
+/// session.
 void _stubCreateSession(
   MockChatRepository repo, {
   required String categoryId,
