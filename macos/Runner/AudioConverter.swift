@@ -49,18 +49,22 @@ class AudioConverter {
                 // Read source WAV
                 let inputFile = try AVAudioFile(forReading: inputUrl)
                 let inputFormat = inputFile.processingFormat
-                let frameCount = AVAudioFrameCount(inputFile.length)
+                let rawLength = inputFile.length
 
-                guard frameCount > 0 else {
+                guard rawLength > 0, rawLength <= Int64(UInt32.max) else {
                     DispatchQueue.main.async {
                         result(FlutterError(
                             code: "EMPTY_FILE",
-                            message: "Input WAV file is empty",
+                            message: rawLength <= 0
+                                ? "Input WAV file is empty"
+                                : "Input WAV file too large (\(rawLength) frames)",
                             details: nil
                         ))
                     }
                     return
                 }
+
+                let frameCount = AVAudioFrameCount(rawLength)
 
                 let outputSettings: [String: Any] = [
                     AVFormatIDKey: kAudioFormatMPEG4AAC,
