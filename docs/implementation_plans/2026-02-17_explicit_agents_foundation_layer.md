@@ -84,14 +84,15 @@ Subscription examples:
 Runtime behavior:
 
 1. Listen to `UpdateNotifications` once in an `AgentWakeOrchestrator`.
-2. Classify incoming tokens into three classes:
+2. Consume `NotificationBatch` envelopes (`localBatchId`, `logicalChangeKey`, `affectedTokens`, optional cursor snapshot) instead of raw token sets.
+3. Classify incoming tokens into three classes:
    - semantic notification keys
    - subtype tokens
    - concrete entity IDs
-3. Match subscriptions using all matchable token classes (keys + subtype tokens + explicit ID subscriptions).
-4. Evaluate predicates against changed entities (bulk fetch only for real IDs).
-5. Queue wake jobs with per-agent coalescing, deterministic `runKey`, and deterministic `threadId`.
-6. Run agent workflow through single-flight lock per `agentId` and `runKey` dedupe.
+4. Match subscriptions using all matchable token classes (keys + subtype tokens + explicit ID subscriptions).
+5. Evaluate predicates against changed entities (bulk fetch only for real IDs).
+6. Queue wake jobs with per-agent coalescing, deterministic `runKey`, and deterministic `threadId`.
+7. Run agent workflow through single-flight lock per `agentId` and `runKey` dedupe.
 
 Why this works:
 
@@ -115,6 +116,7 @@ Token classes used by subscription matching:
 Subscription indexing contract:
 
 - index supports all three classes explicitly (`semanticKey`, `subtypeToken`, `entityId`)
+- implementation materializes tokens into `agent_subscription_tokens` with `token_class` + `token_value`
 - `index.match(...)` receives combined matchable tokens, not only known notification keys
 - non-ID tokens are never sent to entity lookup, avoiding wasted DB fetches
 
@@ -122,6 +124,28 @@ Examples:
 
 - Gym Coach: key `TASK` + predicate `task.categoryId == gymCategoryId`
 - Gym Coach: key `WORKOUT` (+ optional subtype token predicate for workout type)
+
+### Notification batch identity contract (explicit decision)
+
+`UpdateNotifications` currently emits token sets only; foundation requires explicit batch identity.
+
+Decision:
+
+- extend notification stream contract to emit `NotificationBatch`:
+  - `localBatchId` (stable unique ID for the emitted batch on a device/process)
+  - `logicalChangeKey` (cross-device-stable key derived from source cursor/mutation identity)
+  - `affectedTokens`
+  - optional `sourceCursor` snapshot for diagnostics/replay
+- this explicitly closes the current gap where `UpdateNotifications` emits raw token sets without batch identity.
+- `localBatchId` is assigned by notifier infrastructure before fan-out and is preserved for local diagnostics/migration only.
+- subscription run keys must use `logicalChangeKey`; cross-device dedupe must not depend on device-local batch IDs.
+- wake rehydration/replay must persist and reuse the original `logicalChangeKey`.
+
+Migration safety:
+
+- keep legacy token stream available during migration window to avoid breaking existing consumers.
+- introduce parallel batch stream API and migrate consumers incrementally.
+- once all consumers are migrated, deprecate and remove legacy raw-token stream.
 
 ### Agent-emitted notification tokens (explicit decision)
 
@@ -147,6 +171,7 @@ Use granular persisted records:
 - `AgentState` (synced durable state snapshot)
 - `AgentRuntimeState` (local-only runtime snapshot)
 - `AgentMessage` (immutable log entry, one record per message)
+- `AgentMessagePayload` (normalized large content object referenced by `AgentMessage.contentEntryId`)
 - `AgentReport` (immutable user-facing snapshot)
 - `AgentReportHead` (latest pointer per report scope, for example `current` / `daily` / `weekly` / `monthly`)
 
@@ -207,7 +232,9 @@ Ordering and durability:
 
 - compaction candidates are persisted as jobs (`agentId`, `threadId`, `startMessageId`, `endMessageId`, `status`, `attemptCount`, `nextAttemptAt`).
 - worker is single-flight per `(agentId, threadId)` to keep span ordering deterministic.
-- summary message ID is deterministic from compaction span identity to avoid duplicate summaries on replay/concurrent devices.
+- summary message ID is deterministic from compaction span identity + summarizer contract version
+  (prompt/fallback extractor version) to avoid duplicate summaries within a contract and avoid version-drift collisions.
+- summary content carries `summaryContentHash`; if same deterministic summary ID arrives with divergent content, first committed summary is kept and conflicting variants are recorded as diagnostics (no pointer rollback).
 - `AgentState` memory pointers are advanced only after summary message + links commit transactionally.
 
 Failure behavior:
@@ -235,7 +262,7 @@ Add a dedicated execution layer:
 - `AgentToolResult`: normalized success/error payload for memory and retry logic
 - `AgentToolContractSpec` (companion artifact): source-of-truth tool I/O, permissions, and side effects
 
-### 4.1.2 AgentToolContractSpec artifact definition
+### 4.1.1 AgentToolContractSpec artifact definition
 
 Canonical artifact and format:
 
@@ -347,7 +374,7 @@ final class AgentToolResult {
 }
 ```
 
-### 4.1.1 Category boundary enforcement hook
+### 4.1.2 Category boundary enforcement hook
 
 Core rule: every read/write tool execution is scoped by `Agent.allowedCategoryIds`.
 
@@ -505,6 +532,7 @@ This directly covers:
 - `changedEntityIds`
 - `changedTokens`
 - `errorCode/errorMessage` when failed
+- fields above are persisted in typed message metadata (not only ephemeral tool executor result objects)
 
 Foundation implication:
 
@@ -513,12 +541,15 @@ Foundation implication:
 ### 4.4 Safety and determinism policy
 
 - Every mutating tool requires `operationId` for idempotent retries/replays.
-- `operationId` generation is deterministic from wake/run identity:
-  `operationId = hash(runKey, actionOrdinal, toolName)`.
+- `operationId` generation is deterministic from wake/run identity + stable action identity:
+  `operationId = hash(runKey, actionStableId)`.
+- `actionStableId` is derived from canonical tool intent
+  (`toolName`, canonical args hash, scope snapshot, resolved target refs) and is persisted before execution.
+- retries/replays must reuse persisted planned actions for a `runKey` instead of regenerating execution order.
 - High-risk tools (`conclude_task_with_rollover`, bulk moves, destructive updates) support `previewOnly` and explicit apply.
 - Ambiguous target resolution never auto-writes:
   `resolve_task_reference` returns ranked candidates; caller must pass explicit `taskId` for writes.
-- Mutations execute transactionally via repositories/persistence logic, then emit notification tokens (`ids + semantic keys`).
+- Mutations execute transactionally within a domain via repositories/persistence logic; cross-domain workflows use the `operationId` saga contract, then emit notification tokens (`ids + semantic keys`).
 - Tool execution is logged as agent messages (`action` and `toolResult`) to keep memory/audit local-first and sync-safe.
 
 ### 4.5 Tool bed and sync/memory integration
@@ -528,6 +559,22 @@ Foundation implication:
 - Sync remains incremental:
   one message append + changed domain entities/links; no parent blob rewrite.
 - Alertness can subscribe to domain notifications generated by tool side effects, enabling chained workflows.
+
+### 4.6 Cross-domain write consistency contract (`db.sqlite` + `agent.sqlite`)
+
+Because journal and agent domains are in separate SQLite files, cross-domain writes are not atomic by default.
+
+Decision:
+
+- execute mutating tool side effects under a cross-domain saga keyed by `operationId`.
+- source-of-truth mutation (journal domain) commits first with idempotent `operationId`.
+- agent-domain action/toolResult/state writes commit second and include the same `operationId`.
+- if second phase fails, recovery worker reconciles using operation log + idempotent handlers until both domains converge.
+- replay and dedupe are defined by `operationId`; recovery must be safe to run repeatedly.
+- keep implementation minimal: single recovery table/state machine
+  (`operationId`, `phase`, `status`, `lastError`, `updatedAt`) plus linear startup scan/retry.
+
+This avoids false assumptions of two-database atomic commits while preserving deterministic outcomes.
 
 ## Data Models (Dart draft)
 
@@ -575,6 +622,11 @@ final class AgentMessageMetadata {
   const AgentMessageMetadata({
     this.actionRefId,
     this.operationId,
+    this.promptId,
+    this.promptVersion,
+    this.modelId,
+    this.changedEntityIds = const [],
+    this.changedTokens = const [],
     this.status,
     this.errorCode,
     this.errorMessage,
@@ -583,6 +635,11 @@ final class AgentMessageMetadata {
 
   final String? actionRefId;
   final String? operationId;
+  final String? promptId;
+  final String? promptVersion;
+  final String? modelId;
+  final List<String> changedEntityIds;
+  final List<String> changedTokens;
   final String? status;
   final String? errorCode;
   final String? errorMessage;
@@ -628,6 +685,7 @@ final class AgentState {
     this.sleepUntil,
     this.recentHeadMessageId,
     this.latestSummaryMessageId,
+    this.consecutiveFailureCount = 0,
     this.processedCounterByHost = const {},
     required this.slots,
   });
@@ -641,6 +699,7 @@ final class AgentState {
   final DateTime? sleepUntil;
   final String? recentHeadMessageId;
   final String? latestSummaryMessageId;
+  final int consecutiveFailureCount;
   final Map<String, int> processedCounterByHost;
   final AgentSlots slots;
 }
@@ -698,6 +757,58 @@ final class AgentMessage {
   final int tokensApprox;
   final AgentMessageMetadata metadata;
 }
+
+final class AgentMessagePayload {
+  const AgentMessagePayload({
+    required this.id,
+    required this.agentId,
+    required this.createdAt,
+    required this.content,
+    this.contentType = 'application/json',
+  });
+
+  final String id;
+  final String agentId;
+  final DateTime createdAt;
+  final JsonMap content;
+  final String contentType;
+}
+
+final class AgentReport {
+  const AgentReport({
+    required this.id,
+    required this.agentId,
+    required this.scope, // current|daily|weekly|monthly
+    required this.createdAt,
+    required this.content,
+    this.confidence,
+    this.provenance = const {},
+  });
+
+  final String id;
+  final String agentId;
+  final String scope;
+  final DateTime createdAt;
+  final JsonMap content;
+  final double? confidence;
+  final JsonMap provenance;
+}
+
+final class AgentReportHead {
+  const AgentReportHead({
+    required this.id,
+    required this.agentId,
+    required this.scope, // current|daily|weekly|monthly
+    required this.reportId,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String agentId;
+  final String scope;
+  final String reportId;
+  final DateTime updatedAt;
+}
 ```
 
 ### Data model clarifications
@@ -709,6 +820,12 @@ final class AgentMessage {
 - `revision` is a local optimistic-write guard and debugging aid. Cross-device ordering/conflict handling is vector-clock based.
 - `Agent`, `AgentState`, and `AgentMessage` use typed wrappers (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) in Phase 0A.
 - raw `JsonMap` is restricted to tool-call I/O and explicitly namespaced `extension` maps to prevent schema drift.
+- `JsonMap` is declared in this draft for readability; implementation must define/import the alias from a shared model utility location.
+- extension maps are reserved for forward-compatibility but remain empty in Phase 0A unless a namespaced key is explicitly registered in schema validation rules.
+- extension fields must never participate in merge-critical semantics or policy decisions until promoted to typed fields.
+- `AgentState.consecutiveFailureCount` is synced and used for cross-device retry/backoff safety; local `AgentRuntimeState.failureStreak` remains device-local operational telemetry.
+- `AgentMessage.contentEntryId` references `AgentMessagePayload.id` in `agent_message_payloads`; large payloads are normalized, linkable, and independently synced/pruned.
+- prompt/model provenance is captured per message via `AgentMessageMetadata.promptId/promptVersion/modelId` for replay/eval attribution.
 
 Thread policy implications:
 
@@ -725,6 +842,7 @@ Recommended persistence approach:
 4. Keep `db.sqlite` journal persistence unchanged as the canonical human-authored/observed domain.
 5. Model cross-domain relationships via ID references (`taskId`, `journalEntryId`, etc.), not journal-owned agent records.
 6. Sync each new/updated shared agent-domain record independently.
+7. Use `operationId`-keyed cross-domain saga/recovery for workflows touching both domains (no assumption of atomic commits across both SQLite files).
 
 ### Sync payload strategy (explicit decision)
 
@@ -732,7 +850,7 @@ To limit sequence-log/backfill complexity, do not add one payload type per agent
 
 Decision:
 
-- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`).
+- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentMessagePayload`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`).
 - `agentRuntimeState` is explicitly local-only and excluded from sync payloads.
 - Agent payload bodies originate from `agent.sqlite`, not journal JSON paths.
 
@@ -764,10 +882,11 @@ Foundation support required now:
 - `userInitiated` wake reason in wake queue/jobs
 - per-session thread IDs for interactive runs
 - explicit action/toolResult message pairs in both autonomous and interactive modes
+- interactive session inactivity TTL and deterministic session-close behavior (including automatic transition back to autonomous/hybrid baseline).
 
 ```mermaid
 flowchart TD
-  A["UpdateNotifications Set<String>"] --> B["Subscription Match"]
+  A["UpdateNotifications NotificationBatch"] --> B["Subscription Match"]
   B --> C["Predicate Evaluation (changed entities)"]
   C --> D["Wake Queue (coalesce per agent)"]
   D --> E["Agent Worker (single-flight lock)"]
@@ -788,8 +907,8 @@ Temporal wake flow:
 Pseudo-code:
 
 ```text
-onNotifications(affectedTokens, notificationBatchId):
-  classified = tokenClassifier.classify(affectedTokens)
+onNotifications(batch):
+  classified = tokenClassifier.classify(batch.affectedTokens)
   changed = db.getJournalEntitiesForIds(classified.entityIds)
   for sub in index.match(classified.matchTokens):
     if sub.matchesTokens(classified) and
@@ -798,7 +917,7 @@ onNotifications(affectedTokens, notificationBatchId):
       runKey = runKeyFactory.subscription(
         agentId=sub.agentId,
         subscriptionId=sub.id,
-        batchId=notificationBatchId,
+        logicalChangeKey=batch.logicalChangeKey,
       )
       threadId = threadPolicy.autonomous(agentId=sub.agentId, wakeId=runKey)
       wakeQueue.enqueueOrCoalesce(
@@ -843,26 +962,35 @@ onUserInitiated(agentId, sessionId, userInput):
 
 worker(job):
   agentId = job.agentId
-  if wakeRunLog.existsCompleted(job.runKey):
+  if wakeRunLog.existsTerminal(job.runKey):
     return
   lock(agentId):
     wakeRunLog.markStarted(job.runKey)
-    load agent/state
-    if destroyed or sleeping: return
-    mark running
-    context = memoryAssembler.build(agentId, threadId=job.threadId)
-    if job.reason == userInitiated:
-      result = interactiveWorkflow.runSession(context, seedInput=job.seedInput)
-    else:
-      result = workflow.run(context)
-    append action/toolResult messages + links // tool operationIds derive from job.runKey
-    memoryCompactor.maybeCompact(agentId, threadId=job.threadId)
-    state = reducer.apply(state, result) // shared synced state only
-    runtimeState = runtimeReducer.apply(runtimeState, result) // local-only
-    save state
-    save runtimeState
-    wakeRunLog.markCompleted(job.runKey)
-    notify({agentStateChangedNotification, agentId, state.id})
+    try:
+      load agent/state
+      if destroyed:
+        wakeRunLog.markSkipped(job.runKey, reason="agent_destroyed")
+        return
+      if sleeping:
+        wakeRunLog.markSkipped(job.runKey, reason="sleeping")
+        return
+      mark running
+      context = memoryAssembler.build(agentId, threadId=job.threadId)
+      if job.reason == userInitiated:
+        result = interactiveWorkflow.runSession(context, seedInput=job.seedInput)
+      else:
+        result = workflow.run(context)
+      append action/toolResult messages + links // tool operationIds derive from job.runKey + persisted actionStableId
+      memoryCompactor.maybeCompact(agentId, threadId=job.threadId)
+      state = reducer.apply(state, result) // shared synced state only
+      runtimeState = runtimeReducer.apply(runtimeState, result) // local-only
+      save state
+      save runtimeState
+      wakeRunLog.markCompleted(job.runKey)
+      notify({agentStateChangedNotification, agentId, state.id})
+    catch (error):
+      wakeRunLog.markFailed(job.runKey, errorCode=error.code)
+      rethrow
 ```
 
 ## Timer recovery semantics (explicit policy)
@@ -871,7 +999,7 @@ Missed timers and wall-clock changes must be deterministic.
 
 1. App offline for long periods with missed firings:
    - coalesce to one catch-up wake on recovery (not one wake per missed interval)
-   - wake reason carries `timer_catchup` metadata
+   - wake reason is `recoveryCatchup` with metadata `cause: timer`
 2. Clock jumps (NTP/manual correction):
    - recompute `nextRunAt` from persisted schedule intent
    - if overdue after recompute, enqueue one catch-up wake and advance
@@ -882,6 +1010,17 @@ Missed timers and wall-clock changes must be deterministic.
    - allow duplicate attempts
    - dedupe side effects via idempotent run key: `agentId + timerId + scheduledAt`
 
+## Agent destruction semantics
+
+When lifecycle transitions to `destroyed`, destruction is deterministic and sync-safe:
+
+1. immediately block new wake enqueue for the agent (`subscription`, `timer`, `userInitiated`, `recoveryCatchup`).
+2. cancel/disable active subscriptions and timers (soft-delete/tombstone records for sync convergence).
+3. terminate active local runtime sessions and clear local-only runtime state.
+4. preserve historical messages/reports by default as soft-deleted/tombstoned records for sync safety and auditability.
+5. apply retention policy to eventually prune tombstoned artifacts where allowed.
+6. writes from stale in-flight runs after destruction must fail closed (`agent_destroyed`) with no side effects.
+
 ## Wake-run idempotency and event cursor strategy
 
 There is no global event ID yet, but vector clocks already provide a robust cursor.
@@ -890,17 +1029,19 @@ Wake-run idempotency contract:
 
 - every wake job must carry a persisted `runKey` (not only timer wakes)
 - `runKey` is deterministic by reason:
-  - subscription: `hash(agentId, subscriptionId, notificationBatchId)`
+  - subscription: `hash(agentId, subscriptionId, notificationBatch.logicalChangeKey)`
   - timer: `hash(agentId, timerId, scheduledAt)`
   - user initiated: `hash(agentId, sessionId, turnId)`
-- worker records `wakeRunLog(runKey, status)` and short-circuits already completed runs
-- tool `operationId`s are derived from `runKey` + action ordinal, so crash/retry replays do not create new side effects
+- worker records `wakeRunLog(runKey, status)` with terminal states
+  (`completed`, `skipped_sleeping`, `skipped_destroyed`, `failed_terminal`) and short-circuits terminal runs
+- tool `operationId`s are derived from `runKey` + `actionStableId`, so crash/retry replays do not create new side effects
 
 Use `AgentState.processedCounterByHost`:
 
 - merged on every successful run (`max` per host)
 - used to skip stale/replayed triggers
 - persisted and synced with state
+- stale host counters are pruned deterministically (for example hosts inactive for >180 days) under retention policy to prevent unbounded map growth.
 
 This directly fits existing host-keyed monotonic counter semantics.
 
@@ -911,6 +1052,7 @@ Shared/synced fields:
 - lifecycle
 - sleep/timer policy fields
 - memory pointers (`recentHeadMessageId`, `latestSummaryMessageId`)
+- `consecutiveFailureCount` (cross-device safety/backoff counter)
 - `slots`
 - `processedCounterByHost`
 
@@ -926,8 +1068,9 @@ Deterministic merge rules for shared `AgentState`:
 4. pointers (`recentHeadMessageId`, `latestSummaryMessageId`):
    prefer descendant pointer when ancestry is known; otherwise use vector-clock-derived tie-break
    from referenced message/state metadata; if still concurrent/equal, tie-break by (`hostId`, `messageOrStateId`).
-5. `slots`: per-slot merge using embedded slot timestamp metadata (`slotUpdatedAt`), then deterministic tie-break by hostId and slot key.
-6. scheduling (`sleepUntil`, `nextWakeAt`):
+5. `consecutiveFailureCount`: merge by `max` and decay/reset only on explicit successful-run transition recorded in synced state reducer.
+6. `slots`: per-slot merge using embedded logical slot version metadata (`slotVersion`, not wall clock), then deterministic tie-break by hostId and slot key.
+7. scheduling (`sleepUntil`, `nextWakeAt`):
    keep the earliest future wake and the latest sleep barrier; this prevents “sleep lost” races while still waking promptly.
 
 No wall-clock (`updatedAt`) tie-break is used for merge-critical conflict resolution.
@@ -950,8 +1093,10 @@ New persisted entities/tables (or equivalent serialized records):
 - `agent_states`
 - `agent_runtime_states` (local-only)
 - `agent_subscriptions`
+- `agent_subscription_tokens` (materialized tokens: `subscription_id`, `token_class`, `token_value`, `active`)
 - `agent_timers`
 - `agent_messages`
+- `agent_message_payloads`
 - `agent_reports`
 - `agent_report_heads`
 - `agent_source_refs`
@@ -966,8 +1111,11 @@ Index additions:
 
 - `idx_agent_subscriptions_agent_active (agent_id, active)`
 - `idx_agent_subscriptions_key_active (notification_key, active)`
+- `idx_agent_subscription_tokens_class_value_active (token_class, token_value, active)`
+- `idx_agent_subscription_tokens_subscription_active (subscription_id, active)`
 - `idx_agent_timers_due (active, next_run_at)`
 - `idx_agent_messages_agent_created (agent_id, created_at DESC)`
+- `idx_agent_message_payloads_agent_created (agent_id, created_at DESC)`
 - `idx_agent_reports_agent_scope_created (agent_id, scope, created_at DESC)`
 - `idx_agent_report_heads_agent_scope (agent_id, scope)`
 - `idx_agent_runtime_states_agent (agent_id)`
@@ -981,19 +1129,69 @@ Index additions:
 
 ## Execution Order (locked)
 
-1. `Phase -1` operating excellence and trust layer
+1. `Phase -1A` core safety/policy/eval contracts and gates
 2. `Phase 0A` schema and persistence primitives
 3. `Phase 0B` contracts and enforcement
-4. Continue remaining phases in order (`1 -> 5`)
+4. Continue remaining baseline phases in order (`1 -> 5`)
+5. `Phase -1B` advanced multi-agent/operations contracts (contract-first; required before spawn/handoff production enablement)
 
 Immediate next step:
 
-- start with `Phase -1`.
+- start with `Phase -1A`.
+
+## Delivery Milestone M0 (vertical slice before full foundation completion)
+
+Goal: ship one meaningful single-agent flow early, while keeping spawn/handoff disabled.
+
+- one agent kind only (for example planner).
+- one trigger path (`subscription` only) with deterministic runKey.
+- one mutating tool path (for example `create_follow_up_task`) with idempotent `operationId`.
+- one user-facing `current` report with freshness marker.
+- basic user controls: pause/resume, global kill switch, approval prompt for high-risk action.
+- no spawn/handoff runtime enablement (`Phase -1B` remains deferred/feature-flagged).
+- compaction can run in MVP-safe deterministic mode (count/token bounded truncation) before full LLM summarization rollout.
+
+M0 exit criteria:
+
+- end-to-end flow works on-device and survives restart/replay.
+- safety gates are active for scope/egress/privacy confirmation.
+- targeted tests for the single tool path and wake/replay pass.
+
+## Phase Dependency Graph
+
+```mermaid
+flowchart TD
+  A["Phase -1A (contracts + core gates)"] --> B["Phase 0A (schema/persistence)"]
+  B --> C["Phase 0B (enforcement contracts)"]
+  C --> D["M0 Vertical Slice"]
+  D --> E["Phase 1 (subscriptions)"]
+  D --> F["Phase 2 (timers)"]
+  D --> G["Phase 3 (memory/compaction)"]
+  D --> H["Phase 4A/4B (sync/backfill)"]
+  D --> I["Phase 5 (tool bed rollout)"]
+  I --> J["Phase -1B (spawn/handoff/advanced ops enablement)"]
+```
 
 ## Phase -1 - Operating excellence and trust layer
 
+Delivery split (to avoid Phase -1 bottleneck while preserving safety posture):
+
+- `Phase -1A` (must complete before Phase 0A runtime rollout):
+  - evaluation harness + benchmark datasets + CI regression gates
+  - core policy/safety contracts, category/egress/provider controls, secret-management contracts
+  - kill switch + human approval controls + user-local observability/replay contracts
+  - provider privacy confirmation and `NEED_TO_KNOW` boundary contracts
+- `Phase -1B` (contract-first definitions in this foundation; runtime enablement remains feature-flagged):
+  - multi-agent handoff + spawn contracts and arbitration semantics
+  - retention governance refinements, incident runbooks, advanced ops/reliability playbooks
+  - advanced long-horizon report freshness calibration and operational SLO hardening
+  - can progress in parallel with baseline Phases `0A -> 5`, but must be complete before spawn/handoff production enablement.
+  - may be deferred entirely until after M0/M1 single-agent releases if spawn/handoff remain disabled.
+
 - Define an evaluation scorecard per agent kind (`gym_coach`, `planner`, `strategy`, task-lifetime agent).
 - Establish benchmark datasets:
+  - seed dataset for M0 (single-agent, single-tool, single-report path) is required first.
+  - richer suites are expanded incrementally as each phase adds new runtime capabilities.
   - golden-path scenarios with expected tool call sequences and report outputs.
   - adversarial scenarios (prompt injection, ambiguous references, out-of-scope requests, replay duplicates).
   - long-horizon drift scenarios (weekly/monthly trend interpretation and memory decay correctness).
@@ -1002,6 +1200,7 @@ Immediate next step:
   - mock/fake tool adapters for deterministic assertions.
   - regression comparison on action/toolResult/report outputs.
 - Add CI quality gates:
+  - phase-scoped progressive gating: smoke gates first, then expanded thresholds as capability surface grows.
   - block merge on scorecard regressions beyond agreed thresholds.
   - require pass on high-risk policy tests before enabling new tool handlers.
 - Define runtime observability contract:
@@ -1011,6 +1210,9 @@ Immediate next step:
 - Define policy/safety enforcement layer:
   - risk-tiered tool execution policy (`low`, `medium`, `high`) with confirmation requirements.
   - per-agent/day budget limits (token/cost/runtime/tool-call caps).
+  - budget accounting is windowed by local user day (`agentId`, `windowStartLocalDate`) and persisted for restart safety.
+  - cross-device budget usage merges via host-scoped additive counters; enforcement uses aggregated total for the active window.
+  - hard-limit behavior is fail-closed (`budget_exceeded`); optional soft-limit warning path is user-visible.
   - standardized denial/error codes (`out_of_scope`, `confirmation_required`, `budget_exceeded`, `unsafe_target`).
   - input hardening pipeline for prompt-injection and untrusted content boundaries.
   - provider/model access policy by (`agent`, `category`) with explicit allowlists.
@@ -1036,12 +1238,16 @@ Immediate next step:
 - Define report contract and freshness policy:
   - typed report schema (`current`, `daily`, `weekly`, `monthly`) with confidence/provenance fields.
   - freshness SLA and stale-report markers.
+  - freshness is dual-trigger: time-based max age per scope plus event-based invalidation when newer relevant source events exist.
+  - stale detection compares report source cursor vs latest relevant processed cursor and report age.
 - Define memory governance and retention classes:
   - explicit artifact classes (`trace`, `action/toolResult`, `summary`, `report`, `runtime_state`) with per-class TTL and pruning policy.
   - legal/privacy deletion behavior for user-requested erasure and retention overrides.
   - storage-budget enforcement and deterministic pruning order when limits are exceeded.
+  - bounded retention policy for host-index maps (for example `processedCounterByHost`) to prevent unbounded per-host growth.
 - Define versioning/rollout rules:
   - versioned prompts/tool contracts and compatibility guarantees.
+  - prompt/model provenance must be attached to run traces and action/toolResult messages (`promptId`, `promptVersion`, `modelId`).
   - canary rollout + rollback criteria for policy/tool/prompt changes.
 - Define multi-agent handoff protocol:
   - typed handoff artifact (for example attention request / planning request), not free-form negotiation by default.
@@ -1080,12 +1286,15 @@ Exit criteria:
 - emergency-stop controls (`global`, `per-agent`, `tool-class`) are tested, prominently accessible, and operationally documented.
 - spawn protocol contract and admission-policy tests are in place; recursive/unbounded spawning is blocked.
 - spawn lineage is queryable in observability traces and deterministic replay.
+- destruction semantics are codified and validated (`destroyed` blocks wakes/writes, schedules are tombstoned).
 - provider/model access policy and egress guard are enforced and covered by policy tests.
 - platform-security assumptions and deferred at-rest encryption gap are documented and visible in implementation notes.
 - secret-management contract is defined and validated (no raw secrets persisted/synced/logged; secure-store access required for provider calls).
 - provider privacy implications are shown in UI and explicit confirmation gates are enforced for provider/model usage.
 - observability storage/diagnostics remain user-local with no remote telemetry upload path by default.
 - `NEED_TO_KNOW` boundary projection rules are enforced for handoff/spawn/provider payloads and validated in tests.
+- interactive session inactivity TTL/cleanup semantics are codified and validated.
+- prompt/model provenance is present in run traces and message metadata for replay attribution.
 - rollout/rollback runbooks exist and are validated in dry runs.
 
 ## Phase 0A - Schema and persistence primitives
@@ -1100,7 +1309,9 @@ Exit criteria:
 - Define and codify `threadId` and `revision` semantics.
 - Land persistence for `Agent.allowedCategoryIds` and interaction mode fields.
 - Add persistence for `AgentReport` and `AgentReportHead`.
+- Add persistence for `AgentMessagePayload` (`agent_message_payloads`) and enforce `AgentMessage.contentEntryId` referential integrity.
 - Add cross-domain source-reference model (`agent_source_refs`) for journal/task IDs.
+- Add persistence for materialized subscription tokens (`agent_subscription_tokens`) to support semantic/subtype/entity token indexes.
 - Add schema-versioned wrapper serialization and extension-field validation rules.
 - Add guardrails so new agent internals/reports are not persisted through `JournalEntity` paths.
 - Add persistence for provider/model access policy mappings
@@ -1110,6 +1321,11 @@ Exit criteria:
   (`provider`, `model`, `policyVersion`, `confirmedAt`).
 - Add persistence/config for boundary projection policies
   (`boundaryType`, `operationKey`, `allowedFields`, `redactionRules`, `policyVersion`).
+- Add persistence for cross-domain operation/saga log keyed by `operationId` for recovery across `db.sqlite` and `agent.sqlite`.
+- Add persistence for notification batch provenance
+  (`localBatchId` for diagnostics, `logicalChangeKey` for dedupe provenance on subscription-triggered wakes).
+- Add wake-run log schema/status enum with explicit terminal states (`completed`, `skipped_sleeping`, `skipped_destroyed`, `failed_terminal`).
+- Add persistence for budget windows/counters (`agent_budget_windows`, host-scoped usage counters) used by policy enforcement.
 
 Exit criteria:
 
@@ -1120,22 +1336,39 @@ Exit criteria:
 - agent-domain persistence runs through `agent.sqlite` and does not depend on journal-table storage for agent internals/reports.
 - new agent internal/report artifacts are not created as `JournalEntity` records.
 - provider credential persistence stores only `secretRefId` metadata; raw secrets are absent from DB rows and sync payload serializers.
+- large message payload storage is normalized and referentially consistent (`AgentMessage.contentEntryId` -> `agent_message_payloads`).
+- subscription token materialization (`agent_subscription_tokens`) exists and supports semantic/subtype/entity token storage.
+- cross-domain operation/saga log exists with stable `operationId` indexing.
+- extension maps are empty by default and only allow explicitly registered namespaced keys.
 
 ## Phase 0B - Contracts and enforcement
 
 - Finalize `AgentState` concurrent merge semantics.
 - Define token classification contract (`semanticKey`, `subtypeToken`, `entityId`) and subscription index behavior.
-- Define and test per-slot timestamp metadata for `slots` merge.
+- Define `NotificationBatch` contract for `UpdateNotifications`
+  (`localBatchId`, `logicalChangeKey`, `affectedTokens`, optional cursor snapshot).
+- Define and test per-slot logical version metadata (`slotVersion`) for `slots` merge.
+- Define and test stale-host pruning contract for `processedCounterByHost` retention.
 - Add `Agent.allowedCategoryIds` enforcement in tool/query execution paths.
 - Define and test provider/model access contract and network-egress guard behavior.
 - Define and test secret-management contract (`SecretProvider` integration, `secretRefId` handling, fail-closed behavior when secrets unavailable).
 - Define and test provider privacy-confirmation contract (`privacy_confirmation_required`, policy-version re-confirmation).
 - Define and test `NEED_TO_KNOW` projection contract for handoff/spawn/provider boundaries.
 - Define interaction mode contracts (`autonomous`, `interactive`, `hybrid`) and `userInitiated` wake job schema.
+- Define interactive-session lifecycle contract (inactivity TTL, explicit close markers, and post-timeout mode transition).
+- Define destruction contract (`destroyed` lifecycle, wake blocking, timer/subscription tombstones, stale-run fail-closed behavior).
+- Define wake-run log status contract (terminal states for completed/skipped/failed and dedupe semantics).
 - Define deterministic enqueue-time `runKey`/`threadId` generation for all wake reasons.
 - Add persisted wake-run log contract and replay behavior.
+- Define deterministic action planning contract (`actionStableId` generation and persisted action plan reuse on retries).
+- Define budget-window contract (daily reset boundary, host-counter merge semantics, hard/soft limit behavior).
 - Define action/toolResult envelope schema used by `AgentMessage.kind`.
+- Align typed message metadata schema with toolResult envelope (`changedEntityIds`, `changedTokens`) for persisted queryability.
+- Define prompt/model provenance contract on message and trace artifacts (`promptId`, `promptVersion`, `modelId`).
+- Define report freshness contract with explicit time-based + event-based staleness rules.
 - Define and codify explicit agent notification token emission contract.
+- Define cross-domain saga/recovery contract for journal+agent writes (operation log, replay/idempotent recovery).
+- Define deterministic summary ID derivation to include summarizer contract version.
 - Publish companion `AgentToolContractSpec` at `docs/agent_tools/agent_tool_contract_spec.yaml`
   with schema `docs/agent_tools/agent_tool_contract_spec.schema.json`.
 
@@ -1145,23 +1378,38 @@ Exit criteria:
 - category-scope enforcement is wired and deny-by-default tests pass.
 - action/toolResult envelope contract is validated in unit/integration tests.
 - wake-run replay idempotency is validated for subscription/timer/user-initiated paths.
+- notification batch contract validates both local diagnostic identity and cross-device dedupe identity (`logicalChangeKey`).
+- wake-run terminal status semantics are validated for completed/skipped/failed paths.
 - `AgentToolContractSpec` exists, validates against schema, and covers initial tool set with I/O and permission scopes.
 - parity test enforces one-to-one alignment between registry tools and spec entries.
 - wrapper schema invariants (`AgentConfig`/`AgentSlots`/`AgentMessageMetadata`) are validated with migration and round-trip tests.
 - secret-management invariants are validated (`secretRefId` only in persistence, no raw secrets in payloads/logs, fail-closed on secure-store lookup failures).
 - provider privacy-confirmation invariants are validated (inference blocked until confirmation receipt exists for active `policyVersion`).
+- logical slot-merge invariants (`slotVersion`) are validated under concurrent-device tests.
+- destruction lifecycle invariants are validated (`destroyed` blocks wakes/writes and tombstones schedules/subscriptions).
+- report freshness invariants are validated with both age-based and event-cursor staleness tests.
+- `processedCounterByHost` retention/pruning invariants are validated without replay regressions.
+- toolResult persisted metadata invariants are validated (`changedEntityIds` + `changedTokens` present and queryable).
+- cross-domain saga/recovery invariants are validated under crash-between-db-commit scenarios.
+- deterministic action planning invariants are validated (`actionStableId` and persisted action-plan reuse on retry).
 
 ## Phase 1 - Alertness foundation
 
 - Implement `AgentSubscriptionRepository`.
+- Implement `NotificationBatch` emission in notifier integration and propagate
+  (`localBatchId`, `logicalChangeKey`) to wake enqueue.
+- Run compatibility mode with both legacy token stream and `NotificationBatch` stream during consumer migration.
 - Implement `AgentWakeOrchestrator` subscribed to `UpdateNotifications`.
 - Implement token classifier and subscription matching over all token classes.
+- Implement materialized token index/read path using `agent_subscription_tokens` across `semanticKey`/`subtypeToken`/`entityId`.
 - Implement `AgentWakeQueue` with coalescing, enqueue-time `threadId` assignment, per-agent lock, and `runKey` dedupe hooks.
 
 Exit criteria:
 
 - subscription-triggered wakes occur exactly once per coalesced batch.
 - subtype-token subscriptions trigger correctly without non-ID fetch overhead.
+- subscription run keys are deterministic from persisted `logicalChangeKey` and survive replay/recovery.
+- no legacy `UpdateNotifications` consumer regressions during dual-stream migration window.
 
 ## Phase 2 - Timer persistence
 
@@ -1183,7 +1431,8 @@ Exit criteria:
 - Implement LLM summarizer contract with deterministic fallback summarizer.
 - Implement ordered per-thread compaction and transactional pointer advance.
 - Implement retry/backoff and terminal-failure states for compaction jobs.
-- Implement deterministic summary message IDs by compaction span identity.
+- Implement deterministic summary message IDs by compaction span identity + summarizer contract version.
+- Implement deterministic handling for divergent summary content under same summary ID (first-commit keep + conflict diagnostics).
 
 Exit criteria:
 
@@ -1238,13 +1487,40 @@ Exit criteria:
 - Pomodoro agent can run user-initiated interactive sessions using the same action/toolResult model.
 - replaying the same `operationId` is side-effect free.
 
+## UI/UX Integration Plan (required for usable MVP)
+
+- Agent management surfaces:
+  - create/configure agent (`kind`, categories, schedule, provider/model choice)
+  - pause/resume/destroy controls and global kill switch entry point
+- Provider privacy + consent UX:
+  - provider/model picker with privacy implications disclosure
+  - explicit confirmation flow and re-confirmation prompts on `policyVersion` changes
+- Report UX:
+  - agent report view (`current` first) with freshness/stale marker and last-updated metadata
+- Approval UX:
+  - high-risk action approval sheet with preview/apply, operation context, and deny path
+- Observability UX (user-local):
+  - per-run trace viewer for local debug/replay context
+  - no remote telemetry/export by default
+- Budget + health UX:
+  - current window budget usage indicator (tokens/cost/runtime/tool calls)
+  - status/health badges (running, paused, sleeping, failure/backoff)
+
+UI readiness criteria:
+
+- every blocking policy (`privacy_confirmation_required`, `budget_exceeded`, `out_of_scope`, `agent_destroyed`) has a clear user-facing explanation path.
+- every user-facing state in this plan is backed by at least one explicit UI surface.
+
 ## Testing Strategy
 
 Unit:
 
 - subscription predicate matching and coalescing
 - token classification and matching across semantic key, subtype token, and entity ID classes
+- notification batch identity tests (`localBatchId` local stability + `logicalChangeKey` cross-device stability semantics)
+- subscription token index coverage tests (`semanticKey`/`subtypeToken`/`entityId`) against materialized index.
 - cursor/watermark merge rules
+- slot merge correctness using logical `slotVersion` under concurrent updates/skewed clocks
 - compaction span correctness
 - compaction job state machine (`pending -> running -> done/failed_terminal`) and retry backoff
 - tool schema validation, capability gating, and idempotency (`operationId`) behavior
@@ -1256,8 +1532,14 @@ Unit:
 - provider privacy-confirmation tests: inference is blocked until user confirmation exists for active provider/model policy version.
 - `NEED_TO_KNOW` projection tests: boundary payloads include only allowlisted fields and block overshared fields.
 - action/toolResult envelope validation for every tool invocation
-- deterministic `operationId` derivation from `runKey` + action ordinal
+- toolResult persisted metadata tests verify `changedEntityIds` and `changedTokens` are stored/queryable.
+- prompt/model provenance tests: `promptId`/`promptVersion`/`modelId` are present and stable for replay attribution.
+- deterministic `operationId` derivation from `runKey` + `actionStableId`
+- retry tests verify persisted action-plan reuse prevents ordinal drift on re-execution.
 - observability-path tests verify run traces are not uploaded to remote telemetry by default.
+- stale-host counter pruning tests ensure `processedCounterByHost` stays bounded without replay regressions.
+- report freshness tests cover both time-based and event-based staleness triggers.
+- budget-window tests verify daily reset boundaries and host-counter aggregation behavior.
 
 Integration:
 
@@ -1268,12 +1550,19 @@ Integration:
 - retrospective time entry creation links to task and optional source audio entry
 - interactive `userInitiated` run path produces conversational action/toolResult sequence
 - crash/retry replay of the same subscription wake preserves `runKey` and does not duplicate side effects
+- cross-device subscription replay tests verify shared `logicalChangeKey` convergence for dedupe/runKey derivation.
+- wake-run terminal-state tests verify `skipped_sleeping`/`skipped_destroyed`/`failed_terminal` prevent ambiguous re-execution.
 - LLM summarizer failure path preserves raw history and retries/falls back without pointer corruption
 - inference call with disallowed (`provider`, `model`) for category fails with policy error and no outbound request
 - inference call with missing/locked secure-store secret fails closed (`secret_unavailable`) with no outbound request
 - inference call with missing privacy confirmation fails closed (`privacy_confirmation_required`) with no outbound request
 - policy-version change invalidates prior confirmation and requires re-confirmation before next inference
 - cross-provider image-generation call emits minimal payload only (prompt + explicit attachments/params), with no unrelated task/journal/memory fields.
+- interactive session inactivity TTL closes session deterministically and returns agent to baseline autonomous/hybrid behavior.
+- destroying an agent disables new wakes immediately and stale in-flight writes fail closed (`agent_destroyed`).
+- message payload normalization works end-to-end (`AgentMessage.contentEntryId` resolves to synced `AgentMessagePayload`).
+- cross-domain saga recovery converges after simulated crash between `db.sqlite` and `agent.sqlite` commits.
+- budget enforcement blocks writes deterministically at hard limit across restart and multi-device merge scenarios.
 
 Multi-device sync:
 
@@ -1283,6 +1572,7 @@ Multi-device sync:
 - concurrent state updates with conflicting slots/schedule fields converge deterministically
 - pointer conflicts converge using vector-clock-derived tie-break under skewed wall clocks
 - concurrent compaction on two devices converges via deterministic summary ID and idempotent summary span links
+- divergent summary text for same deterministic compaction span follows first-commit keep policy with conflict diagnostics preserved.
 
 Performance:
 
@@ -1308,11 +1598,41 @@ Mitigation:
 
 - fetch changed entities in bulk by ID for predicate evaluation.
 
+Risk: subscription idempotency drifts if dedupe key is tied to device-local batch identity instead of cross-device change identity.
+
+Mitigation:
+
+- require `NotificationBatch.logicalChangeKey` for subscription dedupe, keep `localBatchId` diagnostic-only, and derive subscription `runKey` from `logicalChangeKey`.
+
 Risk: duplicate wake executions during bursts.
 
 Mitigation:
 
 - per-agent lock and coalesced queue keys.
+
+Risk: migrating `UpdateNotifications` to batch envelopes breaks existing token-stream consumers.
+
+Mitigation:
+
+- run dual-stream migration (legacy token stream + new `NotificationBatch` stream), migrate consumers incrementally, then deprecate legacy path.
+
+Risk: action/toolResult contract diverges from persisted schema (missing `changedEntityIds`/`changedTokens`).
+
+Mitigation:
+
+- align `AgentMessageMetadata` with toolResult envelope and enforce schema-parity tests.
+
+Risk: non-deterministic workflow planning changes action ordering on retry and breaks idempotent operation ID mapping.
+
+Mitigation:
+
+- persist deterministic action plans (`actionStableId` per action) before execution and derive `operationId` from (`runKey`, `actionStableId`) rather than ordinal position.
+
+Risk: wake-run log entries remain non-terminal on early return, causing ambiguous retry/dedupe behavior.
+
+Mitigation:
+
+- enforce terminal wake statuses (`completed`, `skipped_sleeping`, `skipped_destroyed`, `failed_terminal`) for every started run.
 
 Risk: timer drift/timezone issues.
 
@@ -1326,17 +1646,35 @@ Mitigation:
 
 - use one agent-domain sync payload category with subtype discriminator.
 
+Risk: cross-database crash window leaves journal and agent domains inconsistent.
+
+Mitigation:
+
+- use `operationId`-keyed cross-domain saga/recovery log; reconcile idempotently until both `db.sqlite` and `agent.sqlite` converge.
+
 Risk: ambiguous concurrent state merges.
 
 Mitigation:
 
 - Phase 0B field-level merge contract + dedicated tests before runtime wiring.
 
+Risk: `processedCounterByHost` grows unbounded as historical devices accumulate.
+
+Mitigation:
+
+- enforce deterministic stale-host pruning policy and validate replay safety in retention tests.
+
 Risk: link traversal query cost at scale.
 
 Mitigation:
 
 - add type-aware indexes and dedicated typed link queries.
+
+Risk: subscription token index contract and index implementation drift.
+
+Mitigation:
+
+- materialize subscription tokens by class (`semanticKey`/`subtypeToken`/`entityId`) and enforce index-coverage tests.
 
 Risk: wrong task selected for retrospective time logging.
 
@@ -1362,6 +1700,12 @@ Mitigation:
 
 - share one action/toolResult execution contract and one memory model across `autonomous` and `userInitiated` runs.
 
+Risk: slot merge ordering bugs from mixing logical/vector ordering with wall-clock-like metadata.
+
+Mitigation:
+
+- use explicit logical `slotVersion` (not wall clock), codify tie-break rules, and test under concurrent/skewed scenarios.
+
 Risk: subscription token semantics drift from runtime matcher implementation.
 
 Mitigation:
@@ -1372,7 +1716,13 @@ Risk: wake retries after crash re-run with new ids and duplicate side effects.
 
 Mitigation:
 
-- persisted wake-run log keyed by deterministic `runKey` for every wake reason; derive tool operation IDs from `runKey`.
+- persisted wake-run log keyed by deterministic `runKey` for every wake reason; derive tool operation IDs from (`runKey`, `actionStableId`).
+
+Risk: device-local failure streak resets allow repeated failing runs across devices without shared backoff pressure.
+
+Mitigation:
+
+- maintain synced `consecutiveFailureCount` in `AgentState` for cross-device safety/backoff decisions while keeping local runtime streak as telemetry.
 
 Risk: compaction depends on LLM availability/cost and can stall under rate limits.
 
@@ -1386,11 +1736,35 @@ Mitigation:
 
 - single-flight per thread and transactional pointer advance only after summary + links commit succeeds.
 
+Risk: concurrent devices generate different summary text for the same deterministic compaction span ID.
+
+Mitigation:
+
+- keep first committed summary content for that ID, record conflict diagnostics, and never roll back pointers on conflicting duplicate attempts.
+
+Risk: deterministic summary IDs collide across summarizer/prompt version changes for the same span.
+
+Mitigation:
+
+- include summarizer contract version in summary ID derivation and test replay behavior across version upgrades.
+
 Risk: evaluation blind spots allow quality regressions to ship.
 
 Mitigation:
 
 - maintain benchmark datasets per agent kind and enforce CI regression gates tied to scorecards.
+
+Risk: report freshness semantics are ambiguous and produce stale or noisy status signals.
+
+Mitigation:
+
+- define dual-trigger freshness contract (time + event cursor), plus explicit stale markers and tests.
+
+Risk: backend policy states are not intelligible to users due to missing UX surfaces.
+
+Mitigation:
+
+- require UI readiness criteria for agent config/report/approval/status views and explicit denial explanations before feature enablement.
 
 Risk: insufficient run observability makes failures hard to diagnose.
 
@@ -1464,6 +1838,12 @@ Mitigation:
 
 - explicitly accept host-security baseline for now (user-enabled full-disk encryption, OS protections, iOS/macOS sandboxing) and track app-managed encryption/key lifecycle as a follow-up hardening backlog item.
 
+Risk: incomplete destruction flow leaves active timers/subscriptions or allows stale in-flight writes after agent is destroyed.
+
+Mitigation:
+
+- codify destruction state machine with immediate wake blocking, timer/subscription tombstones, runtime teardown, and `agent_destroyed` fail-closed write behavior.
+
 ## Finalized Decisions (2026-02-17)
 
 1. Agent records will be persisted as dedicated entities/tables immediately (not as temporary `JournalEntity` subtypes).
@@ -1494,30 +1874,49 @@ Mitigation:
 26. Observability traces/diagnostics are user-realm artifacts; by default there is no remote operator/developer access path or automatic telemetry export of trace content.
 27. Provider/model choice is user-controlled, but privacy implications must be shown in UI and explicitly confirmed by user before first use and after policy-version changes.
 28. `NEED_TO_KNOW` is a hard boundary principle: handoff, spawn, and provider payloads must use minimal allowlisted projections; oversharing is blocked by policy.
+29. Phase -1 is delivered as `-1A` (core safety/eval gates) and `-1B` (advanced multi-agent/ops contracts), with `-1B` runtime enablement feature-flagged where needed.
+30. Cross-device retry safety uses synced `AgentState.consecutiveFailureCount`; local `AgentRuntimeState.failureStreak` remains device-local telemetry.
+31. Slot conflict merge uses logical `slotVersion` metadata, not wall-clock timestamps.
+32. Large message bodies are normalized in `agent_message_payloads` and referenced by `AgentMessage.contentEntryId`.
+33. Agent destruction is deterministic: destroyed agents block new wakes immediately, tombstone timers/subscriptions, and stale in-flight writes fail with `agent_destroyed`.
+34. Subscription wake idempotency is anchored on `NotificationBatch.logicalChangeKey` (cross-device stable); `localBatchId` is diagnostic-only.
+35. Wake-run logs must always transition to a terminal state after `markStarted`, including skip paths.
+36. ToolResult envelope fields `changedEntityIds` and `changedTokens` are persisted in typed message metadata.
+37. Cross-domain journal/agent mutations follow an `operationId`-keyed saga/recovery contract (no implicit two-DB atomicity assumption).
+38. Deterministic summary IDs include summarizer contract version in addition to span identity.
+39. Subscription token indexing is materialized and indexed for all token classes (`semanticKey`, `subtypeToken`, `entityId`).
+40. Delivery includes an explicit M0 single-agent vertical slice before full multi-agent capability enablement.
+41. `UpdateNotifications` migration to `NotificationBatch` uses dual-stream compatibility during transition.
+42. Mutating action idempotency uses persisted `actionStableId` planning; `operationId` must not depend on non-deterministic action ordinals.
 
 ### Consequences for implementation
 
-- Phase -1 must land evaluation scorecards, benchmark datasets, and CI regression gates before agent feature expansion.
-- Phase -1 must land policy/safety contracts and human approval control paths for high-risk actions.
-- Phase -1 must land run-trace observability sufficient for replay/debug of mutation-producing runs.
-- Phase -1 must land retention-class governance (TTL/pruning/legal overrides) and emergency-stop controls.
-- Phase -1 must define `SpawnRequest` schema, spawn admission policy gates, and parent/child lineage trace semantics before enabling spawn in production.
-- Phase -1 must define and validate provider/model access policy plus deny-by-default network egress controls before enabling agent inference in production.
-- Phase -1 must document platform-security assumptions and deferred app-managed at-rest encryption backlog with explicit threat-model boundaries.
-- Phase -1 must define and validate secret-management contracts (secure-store integration, rotation/revoke behavior, fail-closed handling).
-- Phase -1 must enforce user-local observability boundaries (no default remote telemetry export of trace content).
-- Phase -1 must define provider privacy implication metadata and explicit confirmation UX contract for model/provider usage.
-- Phase -1 must define and enforce `NEED_TO_KNOW` projection policy contracts for handoff, spawn, and provider boundaries.
+- Phase -1A must land evaluation scorecards, benchmark datasets, and CI regression gates before agent feature expansion.
+- Phase -1A must land policy/safety contracts and human approval control paths for high-risk actions.
+- Phase -1A must land run-trace observability sufficient for replay/debug of mutation-producing runs.
+- Phase -1A must land provider/model policy, deny-by-default egress, secret-management, and privacy-confirmation contracts before agent inference enablement.
+- Phase -1A must enforce user-local observability boundaries (no default remote telemetry export of trace content).
+- Phase -1A must define and enforce `NEED_TO_KNOW` projection policy contracts for handoff, spawn, and provider boundaries.
+- Phase -1A must define `NotificationBatch` identity contract and wake terminal-status semantics before subscription wake rollout.
+- Phase -1A evaluation assets are incremental: seed M0 datasets/gates first, expand suites as new runtime capabilities ship.
+- M0 single-agent vertical slice should ship before enabling spawn/handoff and before full `Phase -1B` runtime work.
+- Phase -1B must land retention-class governance (TTL/pruning/legal overrides), advanced incident runbooks, and reliability hardening contracts.
+- Phase -1B must define `SpawnRequest` schema, spawn admission policy gates, and parent/child lineage trace semantics before enabling spawn in production.
+- Phase -1B must document platform-security assumptions and deferred app-managed at-rest encryption backlog with explicit threat-model boundaries.
 - Phase 0A must include new persistence schema/migrations for dedicated agent entities.
 - Phase 0A must introduce `AgentDb` (`agent.sqlite`) and repository boundaries that prevent new agent internals/reports from leaking into journal persistence paths.
 - Phase 0A must enforce typed wrapper models (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) for persistent agent fields.
+- Phase 0A must persist toolResult metadata fields (`changedEntityIds`, `changedTokens`) and cross-domain saga operation logs.
 - Sync payload contracts must treat these entities as first-class and preserve tombstone semantics.
 - Sync/outbox/backfill implementations must load/store agent payload bodies from agent-domain storage.
 - Phase 0B must include category-scope enforcement in tool/query execution paths.
 - Phase 0B must include interactive wake-job schema and thread/session conventions.
+- Phase 0B must codify materialized subscription token indexing for all token classes.
+- Phase 0B must codify summary-ID derivation including summarizer contract version.
 - Phase 0B must publish `AgentToolContractSpec` as
   `docs/agent_tools/agent_tool_contract_spec.yaml` plus schema
   `docs/agent_tools/agent_tool_contract_spec.schema.json`.
+- Phase 5 (or equivalent UI track) must implement user-facing surfaces for agent configuration, reports, approvals, status/health, budget visibility, and policy-denial explanations.
 - `EntryLink` extension should add one new agent-specific variant, with metadata fields sufficient for:
   - relation kind (`agent_state`, `agent_head`, `message_prev`, `summary_start`, `summary_end`, `message_payload`, etc.)
   - optional thread/message context
@@ -1533,16 +1932,31 @@ Mitigation:
 - Spawn behavior is orchestrator-only via typed `SpawnRequest`, with tested depth/concurrency/budget/cooldown enforcement and deny-by-default admission.
 - Parent/child spawn lineage and decisions are queryable in run traces and replay tooling.
 - Provider/model policy enforcement and deny-by-default network egress controls are active and validated in tests.
+- Subscription wakes use stable `NotificationBatch.logicalChangeKey` and deterministic `runKey` derivation.
+- Wake-run logs always reach terminal statuses (including skip/error paths) with deterministic dedupe behavior.
 - Deferred at-rest encryption gap and host-security assumptions are explicitly documented for foundation scope.
 - Secret-management controls are active: secrets resolve via host secure store, only `secretRefId` persists, and secure-store failures block provider calls.
 - Observability traces remain in the user realm by default (no automatic remote telemetry export path).
 - Provider/model usage is user-confirmed with visible privacy implications; missing/outdated confirmations block inference.
 - `NEED_TO_KNOW` boundary policy is active: cross-boundary payloads are minimal/allowlisted and overshared payloads are blocked.
+- Budget controls are persisted and enforced with deterministic window semantics across restart and multi-device merge.
+- Core UX surfaces exist for agent config, reports, approvals, status/health, and policy-denial explanations.
 - Agent lifecycle persisted and synced.
 - Subscription-driven and timer-driven wakes both functional.
 - User-initiated interactive wakes functional.
+- Interactive session inactivity TTL/cleanup is enforced with deterministic mode transition.
+- Destroyed-agent semantics are enforced: wake blocking, timer/subscription tombstones, and `agent_destroyed` fail-closed writes.
 - Message history stored as linked immutable entries, not growing arrays.
+- Message payload normalization is active (`agent_message_payloads` + `contentEntryId` references).
 - Memory compaction active with summary spans.
+- Compaction conflict policy for divergent same-span summaries is implemented with diagnostics.
+- Summary ID derivation includes summarizer contract version for replay/version safety.
+- Report freshness contract is active with time-based and event-cursor staleness detection.
+- ToolResult metadata (`changedEntityIds`, `changedTokens`) is persisted and queryable from typed message metadata.
+- Cross-domain saga/recovery for journal+agent writes is active and crash-tested.
+- Subscription token indexing is materialized across `semanticKey`, `subtypeToken`, and `entityId`.
+- Prompt/model provenance (`promptId`, `promptVersion`, `modelId`) is captured in message/trace artifacts.
+- `processedCounterByHost` pruning policy is active and bounded under retention controls.
 - Sync cost per new message remains incremental.
 - MVP tool bed covers follow-up rollover, retrospective time logging, and day-plan block updates.
 - Tool reads/writes obey `allowedCategoryIds` boundaries with deny-by-default behavior.
