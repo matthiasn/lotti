@@ -88,8 +88,8 @@ Subscription examples:
 Runtime behavior:
 
 1. Listen to `UpdateNotifications` once in an `AgentWakeOrchestrator`.
-2. Consume `NotificationBatch` envelopes (`localBatchId`, `logicalChangeKey`, `affectedTokens`, optional cursor snapshot) instead of raw token sets.
-3. Classify incoming tokens into three classes:
+2. Consume `NotificationBatch` envelopes (`localBatchId`, `logicalChangeKey`, `changeUnitKeys`, `typedTokens`, optional legacy `affectedTokens`, optional cursor snapshot) instead of raw token sets.
+3. Classify incoming tokens into three classes using structured token fields (no heuristics on free-form strings):
    - semantic notification keys
    - subtype tokens
    - concrete entity IDs
@@ -120,7 +120,7 @@ Token classes used by subscription matching:
 Subscription indexing contract:
 
 - index supports all three classes explicitly (`semanticKey`, `subtypeToken`, `entityId`)
-- implementation materializes tokens into `agent_subscription_tokens` with `token_class` + `token_value`
+- implementation materializes tokens into `agent_subscription_tokens` with `token_class` + optional `token_namespace` + `token_value`
 - `index.match(...)` receives combined matchable tokens, not only known notification keys
 - non-ID tokens are never sent to entity lookup, avoiding wasted DB fetches
 
@@ -128,6 +128,26 @@ Examples:
 
 - Gym Coach: key `TASK` + predicate `task.categoryId == gymCategoryId`
 - Gym Coach: key `WORKOUT` (+ optional subtype token predicate for workout type)
+
+### Notification token representation contract (explicit decision)
+
+Decision:
+
+- `NotificationBatch` carries canonical structured tokens in `typedTokens`:
+  - `tokenClass`: `semanticKey | subtypeToken | entityId`
+  - `tokenValue`: string
+  - `tokenNamespace`: optional string, required when `tokenClass == subtypeToken`
+- Classification and matching use `typedTokens` as the canonical source; no heuristic classification from arbitrary raw strings.
+- Canonical token identity for dedupe/index/debug is:
+  - `tokenKey = "{tokenClass}|{tokenNamespace ?? '-'}|{tokenValue}"`
+- Legacy compatibility during migration:
+  - `affectedTokens` remains optional legacy mirror only.
+  - if fallback parsing is needed, only v1-prefixed encodings are valid:
+    - `k:{semanticKey}`
+    - `id:{entityId}`
+    - `sub:{namespace}:{value}`
+  - malformed legacy tokens are rejected with diagnostics (never silently reclassified).
+- Foundation steady state is typed-token-first; remove legacy-string dependence after migration window.
 
 ### Notification batch identity contract (explicit decision)
 
@@ -138,12 +158,48 @@ Decision:
 - extend notification stream contract to emit `NotificationBatch`:
   - `localBatchId` (stable unique ID for the emitted batch on a device/process)
   - `logicalChangeKey` (cross-device-stable key derived from source cursor/mutation identity)
-  - `affectedTokens`
+  - `changeUnitKeys` (sorted canonical provenance unit keys used to derive `logicalChangeKey`)
+  - `typedTokens` (canonical structured token list with `tokenClass`/`tokenNamespace`/`tokenValue`)
+  - optional legacy `affectedTokens` mirror during migration
   - optional `sourceCursor` snapshot for diagnostics/replay
 - this explicitly closes the current gap where `UpdateNotifications` emits raw token sets without batch identity.
 - `localBatchId` is assigned by notifier infrastructure before fan-out and is preserved for local diagnostics/migration only.
 - subscription run keys must use `logicalChangeKey`; cross-device dedupe must not depend on device-local batch IDs.
 - wake rehydration/replay must persist and reuse the original `logicalChangeKey`.
+
+Deterministic derivation contract (`logicalChangeKey`):
+
+- Define canonical change units (`ChangeUnit`) as the source of truth for notification identity.
+- Each `ChangeUnit` must include:
+  - `origin`: `sync` | `local`
+  - `hostId`
+  - `counter` (monotonic per host)
+  - `payloadType` (`journalEntity` | `entryLink` | agent payload type)
+  - `payloadId`
+- Source of truth by origin:
+  - `sync`: derive from applied sync payload provenance (`originatingHostId` + vector-clock counter for origin host) and persisted sequence-log tuple `(hostId, counter, payloadType, entryId/payloadId)`.
+  - `local`: derive from committed local write provenance (entity/link vector clock written in the same commit) and payload identity.
+- Canonical `ChangeUnit` string format (v1):
+  - `v1|{origin}|{hostId}|{counter}|{payloadType}|{payloadId}`
+- Canonical `changeUnitKey`:
+  - `changeUnitKey = hex(sha256(canonicalChangeUnitString))`
+- Canonical `logicalChangeKey`:
+  - collect all `changeUnitKey`s for the batch, remove duplicates, sort lexicographically.
+  - `logicalChangeKey = hex(sha256("v1|" + join(sortedChangeUnitKeys, ",")))`
+- Collision resistance:
+  - use SHA-256 digest space; treat collisions as practically impossible.
+  - persist sorted `changeUnitKey` list in batch provenance for replay/debug assertions.
+
+Coalescing contract:
+
+- Notification coalescing must be key-preserving: only merge token sets for records with the same `logicalChangeKey`.
+- Different `logicalChangeKey` values must emit separate `NotificationBatch` envelopes (even if emitted in the same debounce tick).
+- This prevents time-window-dependent key drift and keeps cross-device dedupe stable.
+- Agent wake queue may still coalesce downstream per agent, but wake `runKey` derivation remains anchored to each `logicalChangeKey`.
+
+Failure policy:
+
+- If notifier cannot derive `ChangeUnit` provenance for a would-be subscription wake, fail closed for agent wake enqueue (`missing_change_provenance`) and emit diagnostics; do not substitute `localBatchId` as dedupe identity.
 
 Migration safety:
 
@@ -609,17 +665,27 @@ final class AgentConfig {
 final class AgentSlots {
   const AgentSlots({
     this.primaryGoal,
+    this.primaryGoalVersion = 0,
     this.activeTaskId,
+    this.activeTaskIdVersion = 0,
     this.openLoopIds = const [],
+    this.openLoopIdsVersion = 0,
     this.preferenceByKey = const {},
+    this.preferenceByKeyVersion = 0,
     this.extension = const {},
+    this.extensionVersion = 0,
   });
 
   final String? primaryGoal;
+  final int primaryGoalVersion; // Merge rule #6 slotVersion metadata
   final String? activeTaskId;
+  final int activeTaskIdVersion; // Merge rule #6 slotVersion metadata
   final List<String> openLoopIds;
+  final int openLoopIdsVersion; // Merge rule #6 slotVersion metadata
   final Map<String, String> preferenceByKey;
+  final int preferenceByKeyVersion; // Merge rule #6 slotVersion metadata
   final JsonMap extension; // namespaced extension fields only
+  final int extensionVersion; // Merge rule #6 slotVersion metadata
 }
 
 final class AgentMessageMetadata {
@@ -912,7 +978,10 @@ Pseudo-code:
 
 ```text
 onNotifications(batch):
-  classified = tokenClassifier.classify(batch.affectedTokens)
+  classified = tokenClassifier.classify(
+    batch.typedTokens,
+    legacyFallback=batch.affectedTokens,
+  )
   changed = db.getJournalEntitiesForIds(classified.entityIds)
   for sub in index.match(classified.matchTokens):
     if sub.matchesTokens(classified) and
@@ -1098,7 +1167,7 @@ New persisted entities/tables (or equivalent serialized records):
 - `agent_states`
 - `agent_runtime_states` (local-only)
 - `agent_subscriptions`
-- `agent_subscription_tokens` (materialized tokens: `subscription_id`, `token_class`, `token_value`, `active`)
+- `agent_subscription_tokens` (materialized tokens: `subscription_id`, `token_class`, optional `token_namespace`, `token_value`, `active`)
 - `agent_timers`
 - `agent_messages`
 - `agent_message_payloads`
@@ -1118,7 +1187,7 @@ Index additions:
 
 - `idx_agent_subscriptions_agent_active (agent_id, active)`
 - `idx_agent_subscriptions_key_active (notification_key, active)`
-- `idx_agent_subscription_tokens_class_value_active (token_class, token_value, active)`
+- `idx_agent_subscription_tokens_class_namespace_value_active (token_class, token_namespace, token_value, active)`
 - `idx_agent_subscription_tokens_subscription_active (subscription_id, active)`
 - `idx_agent_timers_due (active, next_run_at)`
 - `idx_agent_messages_agent_created (agent_id, created_at DESC)`
@@ -1332,7 +1401,7 @@ Exit criteria:
   (`boundaryType`, `operationKey`, `allowedFields`, `redactionRules`, `policyVersion`).
 - Add persistence for cross-domain operation/saga log keyed by `operationId` for recovery across `db.sqlite` and `agent.sqlite`.
 - Add persistence for notification batch provenance
-  (`localBatchId` for diagnostics, `logicalChangeKey` for dedupe provenance on subscription-triggered wakes).
+  (`localBatchId` for diagnostics, `logicalChangeKey` for dedupe provenance, sorted `changeUnitKeys` as derivation evidence on subscription-triggered wakes).
 - Add wake-run log schema/status enum with explicit terminal states (`completed`, `skipped_sleeping`, `skipped_destroyed`, `failed_terminal`).
 - Add persistence for budget windows/counters (`agent_budget_windows`, host-scoped usage counters) used by policy enforcement.
 
@@ -1355,7 +1424,9 @@ Exit criteria:
 - Finalize `AgentState` concurrent merge semantics.
 - Define token classification contract (`semanticKey`, `subtypeToken`, `entityId`) and subscription index behavior.
 - Define `NotificationBatch` contract for `UpdateNotifications`
-  (`localBatchId`, `logicalChangeKey`, `affectedTokens`, optional cursor snapshot).
+  (`localBatchId`, `logicalChangeKey`, `changeUnitKeys`, `typedTokens`, optional legacy `affectedTokens`, optional cursor snapshot).
+- Define deterministic `logicalChangeKey` derivation algorithm from canonical `ChangeUnit` provenance
+  (sync sequence tuple or local committed vector-clock tuple) and key-preserving notifier coalescing behavior.
 - Define and test per-slot logical version metadata (`slotVersion`) for `slots` merge.
 - Define and test stale-host pruning contract for `processedCounterByHost` retention.
 - Add `Agent.allowedCategoryIds` enforcement in tool/query execution paths.
@@ -1388,6 +1459,7 @@ Exit criteria:
 - action/toolResult envelope contract is validated in unit/integration tests.
 - wake-run replay idempotency is validated for subscription/timer/user-initiated paths.
 - notification batch contract validates both local diagnostic identity and cross-device dedupe identity (`logicalChangeKey`).
+- notification derivation invariants are validated (`changeUnitKeys` sorted/unique, deterministic `logicalChangeKey` hash, and no cross-key batch merge).
 - wake-run terminal status semantics are validated for completed/skipped/failed paths.
 - `AgentToolContractSpec` exists, validates against schema, and covers initial tool set with I/O and permission scopes.
 - parity test enforces one-to-one alignment between registry tools and spec entries.
@@ -1406,7 +1478,8 @@ Exit criteria:
 
 - Implement `AgentSubscriptionRepository`.
 - Implement `NotificationBatch` emission in notifier integration and propagate
-  (`localBatchId`, `logicalChangeKey`) to wake enqueue.
+  (`localBatchId`, `logicalChangeKey`, `changeUnitKeys`, `typedTokens`, optional legacy `affectedTokens`) to wake enqueue.
+- Implement key-preserving notifier coalescing (merge only within identical `logicalChangeKey` groups).
 - Run compatibility mode with both legacy token stream and `NotificationBatch` stream during consumer migration.
 - Implement `AgentWakeOrchestrator` subscribed to `UpdateNotifications`.
 - Implement token classifier and subscription matching over all token classes.
@@ -1418,6 +1491,7 @@ Exit criteria:
 - subscription-triggered wakes occur exactly once per coalesced batch.
 - subtype-token subscriptions trigger correctly without non-ID fetch overhead.
 - subscription run keys are deterministic from persisted `logicalChangeKey` and survive replay/recovery.
+- typed-token classification is canonical (`tokenClass`/`tokenNamespace`/`tokenValue`); legacy-string parsing is migration-only.
 - no legacy `UpdateNotifications` consumer regressions during dual-stream migration window.
 
 ## Phase 2 - Timer persistence
@@ -1525,8 +1599,19 @@ UI readiness criteria:
 Unit:
 
 - subscription predicate matching and coalescing
-- token classification and matching across semantic key, subtype token, and entity ID classes
+- token classification and matching across semantic key, subtype token (with namespace), and entity ID classes
 - notification batch identity tests (`localBatchId` local stability + `logicalChangeKey` cross-device stability semantics)
+- typed-token contract tests verify canonical token structure and namespace requirements:
+  - `semanticKey` tokens must omit `tokenNamespace`
+  - `subtypeToken` tokens must include `tokenNamespace`
+  - `entityId` tokens must omit `tokenNamespace`
+- `logicalChangeKey` derivation tests cover:
+  - sync-origin provenance (`originatingHostId`, origin counter, payload type/id) -> stable key across devices
+  - local-origin provenance (committed vector clock + payload type/id) -> deterministic key
+  - order-independence of sorted `changeUnitKey` aggregation
+- coalescing tests verify notifier never merges batches with different `logicalChangeKey` values.
+- missing-provenance tests verify fail-closed behavior (`missing_change_provenance`) for subscription-triggered wakes.
+- legacy-token fallback tests verify only prefixed v1 forms are accepted and malformed tokens are rejected with diagnostics.
 - subscription token index coverage tests (`semanticKey`/`subtypeToken`/`entityId`) against materialized index.
 - cursor/watermark merge rules
 - slot merge correctness using logical `slotVersion` under concurrent updates/skewed clocks
@@ -1611,7 +1696,8 @@ Risk: subscription idempotency drifts if dedupe key is tied to device-local batc
 
 Mitigation:
 
-- require `NotificationBatch.logicalChangeKey` for subscription dedupe, keep `localBatchId` diagnostic-only, and derive subscription `runKey` from `logicalChangeKey`.
+- require `NotificationBatch.logicalChangeKey` for subscription dedupe, keep `localBatchId` diagnostic-only, persist sorted `changeUnitKeys`, and derive subscription `runKey` from `logicalChangeKey`.
+- enforce key-preserving coalescing in notifier (never merge different `logicalChangeKey` values into one batch).
 
 Risk: duplicate wake executions during bursts.
 
@@ -1868,7 +1954,7 @@ Mitigation:
 11. Agent interaction modes (`autonomous`, `interactive`, `hybrid`) are first-class; `userInitiated` wake reason is part of the foundation.
 12. Runtime execution fields are split into local-only `AgentRuntimeState`, excluded from sync payloads.
 13. `AgentMessage.kind` values `action` and `toolResult` follow a typed envelope contract (`actionRefId`, `operationId`, status/error fields).
-14. Subscription matching is defined over three token classes (`semanticKey`, `subtypeToken`, `entityId`) with explicit classifier/index support.
+14. Subscription matching is defined over three token classes (`semanticKey`, `subtypeToken`, `entityId`) with explicit classifier/index support, using structured notification tokens (`tokenClass`, optional `tokenNamespace`, `tokenValue`) as the canonical representation.
 15. Wake jobs for all reasons carry deterministic enqueue-time `runKey` and `threadId`; replay idempotency uses persisted wake-run log.
 16. Pointer conflict resolution uses vector-clock-derived tie-breaks (no wall-clock tie-break).
 17. Persistent agent domain fields must use typed wrappers (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`); raw maps are extension-only.
@@ -1888,7 +1974,7 @@ Mitigation:
 31. Slot conflict merge uses logical `slotVersion` metadata, not wall-clock timestamps.
 32. Large message bodies are normalized in `agent_message_payloads` and referenced by `AgentMessage.contentEntryId`.
 33. Agent destruction is deterministic: destroyed agents block new wakes immediately, tombstone timers/subscriptions, and stale in-flight writes fail with `agent_destroyed`.
-34. Subscription wake idempotency is anchored on `NotificationBatch.logicalChangeKey` (cross-device stable); `localBatchId` is diagnostic-only.
+34. Subscription wake idempotency is anchored on `NotificationBatch.logicalChangeKey` (cross-device stable, derived from sorted canonical `changeUnitKeys`); `localBatchId` is diagnostic-only, and notifier coalescing is key-preserving.
 35. Wake-run logs must always transition to a terminal state after `markStarted`, including skip paths.
 36. ToolResult envelope fields `changedEntityIds` and `changedTokens` are persisted in typed message metadata.
 37. Cross-domain journal/agent mutations follow an `operationId`-keyed saga/recovery contract (no implicit two-DB atomicity assumption).
@@ -1897,6 +1983,7 @@ Mitigation:
 40. Delivery includes an explicit M0 single-agent vertical slice before full multi-agent capability enablement.
 41. `UpdateNotifications` migration to `NotificationBatch` uses dual-stream compatibility during transition.
 42. Mutating action idempotency uses persisted `actionStableId` planning; `operationId` must not depend on non-deterministic action ordinals.
+43. Notification token semantics are explicit and unambiguous: `typedTokens` are canonical, subtype tokens are namespaced, and legacy raw-string token parsing is migration-only.
 
 ### Consequences for implementation
 
@@ -1922,6 +2009,7 @@ Mitigation:
 - Phase 0B must include category-scope enforcement in tool/query execution paths.
 - Phase 0B must include interactive wake-job schema and thread/session conventions.
 - Phase 0B must codify materialized subscription token indexing for all token classes.
+- Phase 0B must codify typed notification-token contract (`typedTokens`, subtype namespace rules, legacy fallback parsing constraints) and forbid heuristic classification.
 - Phase 0B must codify summary-ID derivation including summarizer contract version.
 - Phase 0B must publish `AgentToolContractSpec` as
   `docs/agent_tools/agent_tool_contract_spec.yaml` plus schema
@@ -1944,7 +2032,8 @@ Mitigation:
 - Spawn behavior is orchestrator-only via typed `SpawnRequest`, with tested depth/concurrency/budget/cooldown enforcement and deny-by-default admission.
 - Parent/child spawn lineage and decisions are queryable in run traces and replay tooling.
 - Provider/model policy enforcement and deny-by-default network egress controls are active and validated in tests.
-- Subscription wakes use stable `NotificationBatch.logicalChangeKey` and deterministic `runKey` derivation.
+- Subscription wakes use stable `NotificationBatch.logicalChangeKey` (derived from canonical provenance `changeUnitKeys`) and deterministic `runKey` derivation.
+- Notifier batch coalescing is key-preserving (no merge across distinct `logicalChangeKey` values).
 - Wake-run logs always reach terminal statuses (including skip/error paths) with deterministic dedupe behavior.
 - Deferred at-rest encryption gap and host-security assumptions are explicitly documented for foundation scope.
 - Secret-management controls are active: secrets resolve via host secure store, only `secretRefId` persists, and secure-store failures block provider calls.
@@ -1967,6 +2056,7 @@ Mitigation:
 - ToolResult metadata (`changedEntityIds`, `changedTokens`) is persisted and queryable from typed message metadata.
 - Cross-domain saga/recovery for journal+agent writes is active and crash-tested.
 - Subscription token indexing is materialized across `semanticKey`, `subtypeToken`, and `entityId`.
+- Notification token representation is typed and unambiguous (`typedTokens` canonical, namespaced subtype tokens, no heuristic parsing in steady state).
 - Prompt/model provenance (`promptId`, `promptVersion`, `modelId`) is captured in message/trace artifacts.
 - `processedCounterByHost` pruning policy is active and bounded under retention controls.
 - Sync cost per new message remains incremental.
