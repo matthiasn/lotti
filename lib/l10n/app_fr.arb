@@ -351,6 +351,8 @@
   "aiInferenceErrorUnknownTitle": "Erreur",
   "aiInferenceErrorViewLogButton": "Voir le journal",
   "aiModelSettings": "Paramètres du modèle AI",
+  "aiProviderAlibabaDescription": "La famille de modèles Qwen d'Alibaba Cloud via l'API DashScope",
+  "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La famille d'assistants AI Claude d'Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderGeminiDescription": "Modèles AI Gemini de Google",

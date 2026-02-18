@@ -414,6 +414,7 @@ void main() {
       testWidgets('displays correct icon for each provider type',
           (WidgetTester tester) async {
         final providerTypes = {
+          InferenceProviderType.alibaba: Icons.cloud,
           InferenceProviderType.anthropic: Icons.auto_awesome,
           InferenceProviderType.openAi: Icons.psychology,
           InferenceProviderType.gemini: Icons.diamond,

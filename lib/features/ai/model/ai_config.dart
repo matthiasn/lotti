@@ -5,6 +5,7 @@ part 'ai_config.freezed.dart';
 part 'ai_config.g.dart';
 
 enum InferenceProviderType {
+  alibaba,
   anthropic,
   gemini,
   genericOpenAi,

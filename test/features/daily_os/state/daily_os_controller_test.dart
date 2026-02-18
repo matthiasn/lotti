@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -1137,6 +1139,66 @@ void main() {
       expect(result, isNull);
 
       testContainer.dispose();
+    });
+
+    test('does not throw when disposed during polling delay', () {
+      fakeAsync((async) {
+        withClock(async.getClock(DateTime.now()), () {
+          final today = clock.now().dayAtMidnight;
+
+          final timelineData = DailyTimelineData(
+            date: today,
+            plannedSlots: [],
+            actualSlots: [],
+            dayStartHour: 8,
+            dayEndHour: 18,
+          );
+
+          final testData = DailyOsData(
+            date: today,
+            dayPlan: createTestPlan(),
+            timelineData: timelineData,
+            budgetProgress: [],
+          );
+
+          final testContainer = ProviderContainer(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(today),
+              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+                () => _TestUnifiedController(testData),
+              ),
+            ],
+          );
+
+          final emissions = <String?>[];
+          testContainer.listen<AsyncValue<String?>>(
+            activeFocusCategoryIdProvider,
+            (previous, next) {
+              if (next.hasValue) {
+                emissions.add(next.value);
+              }
+            },
+            fireImmediately: true,
+          );
+
+          // Let the stream emit its first value
+          async.flushMicrotasks();
+          expect(emissions, isNotEmpty);
+
+          // Advance partially into the 15-second polling delay
+          async.elapse(const Duration(seconds: 5));
+
+          // Dispose while the provider is awaiting the delay.
+          // Before the fix, this would cause a
+          // "Cannot use the Ref after it has been disposed" error.
+          testContainer.dispose();
+
+          // Advance past the remaining delay so the Future.any resolves
+          // and the disposal guard (`if (disposed.isCompleted) return`)
+          // is exercised.
+          async.elapse(const Duration(seconds: 15));
+        });
+      });
     });
   });
 }
