@@ -373,9 +373,14 @@ class AudioRecorderController extends _$AudioRecorderController {
 
       final recorderFactory = ref.read(realtimeRecorderFactoryProvider);
       final recorder = recorderFactory();
+      // Assign immediately so _cleanupRealtime() can dispose it if
+      // any subsequent await (hasPermission, startStream) throws.
+      _realtimeRecorder = recorder;
+
       final hasPerm = await recorder.hasPermission();
       if (!hasPerm) {
         await recorder.dispose();
+        _realtimeRecorder = null;
         _loggingService.captureEvent(
           'No audio recording permission for realtime',
           domain: 'recorder_controller',
@@ -392,8 +397,6 @@ class AudioRecorderController extends _$AudioRecorderController {
           numChannels: 1,
         ),
       );
-
-      _realtimeRecorder = recorder;
       _realtimeStartTime = DateTime.now();
 
       final service = ref.read(realtimeTranscriptionServiceProvider);
