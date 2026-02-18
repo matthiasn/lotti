@@ -21,7 +21,9 @@ void main() {
     late StreamController<Set<String>> notificationsController;
     late TagsService tagsService;
 
-    setUp(() {
+    setUp(() async {
+      await getIt.reset();
+
       mockJournalDb = MockJournalDb();
       mockUpdateNotifications = MockUpdateNotifications();
       notificationsController = StreamController<Set<String>>.broadcast();

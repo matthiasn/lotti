@@ -359,59 +359,70 @@ void main() {
   });
 
   group('UpdateNotifications stream handling', () {
-    test('refetches completions when habitCompletionNotification received',
-        () async {
-      container.read(habitsControllerProvider);
-      await pumpEventQueue();
+    test('refetches completions when habitCompletionNotification received', () {
+      fakeAsync((async) {
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
 
-      // Initial emit
-      definitionsController.add([testHabit1]);
-      await pumpEventQueue();
+        // Initial emit
+        definitionsController.add([testHabit1]);
+        async.flushMicrotasks();
 
-      // Reset mock to track new calls
-      clearInteractions(mockRepository);
-      when(
-        () => mockRepository.getHabitCompletionsInRange(
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) async => []);
+        // Reset mock to track new calls
+        clearInteractions(mockRepository);
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => []);
 
-      // Emit update notification
-      updateController.add({habitCompletionNotification});
-      await pumpEventQueue();
+        // Emit update notification
+        updateController.add({habitCompletionNotification});
+        // Flush to deliver stream event + process async handler,
+        // then elapse the 200ms production debounce inside the handler
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
 
-      // Verify getHabitCompletionsInRange was called again
-      verify(
-        () => mockRepository.getHabitCompletionsInRange(
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).called(greaterThanOrEqualTo(1));
+        // Verify getHabitCompletionsInRange was called again
+        verify(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      });
     });
 
-    test('ignores unrelated notifications', () async {
-      container.read(habitsControllerProvider);
-      await pumpEventQueue();
+    test('ignores unrelated notifications', () {
+      fakeAsync((async) {
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
 
-      definitionsController.add([testHabit1]);
-      await pumpEventQueue();
+        definitionsController.add([testHabit1]);
+        async.flushMicrotasks();
 
-      clearInteractions(mockRepository);
-      when(
-        () => mockRepository.getHabitCompletionsInRange(
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) async => []);
+        clearInteractions(mockRepository);
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => []);
 
-      // Emit unrelated notification
-      updateController.add({'some-other-notification'});
-      await pumpEventQueue();
+        // Emit unrelated notification
+        updateController.add({'some-other-notification'});
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
 
-      // Should not trigger refetch
-      verifyNever(
-        () => mockRepository.getHabitCompletionsInRange(
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      );
+        // Should not trigger refetch
+        verifyNever(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        );
+      });
     });
   });
 

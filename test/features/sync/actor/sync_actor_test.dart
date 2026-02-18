@@ -669,13 +669,13 @@ void main() {
             content: const <String, dynamic>{},
           ),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
         onSyncController
           ..add(MockSyncUpdate())
           ..add(MockSyncUpdate())
           ..add(MockSyncUpdate());
         timelineController.add(mockTimelineEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
         final health = await handler.handleCommand(_cmd('getHealth'));
         final syncCount = health['syncCount'];
