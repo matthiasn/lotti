@@ -1,7 +1,6 @@
-import 'package:lotti/database/sync_db.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
+import 'mocks.dart';
 
 MockSyncDatabase mockSyncDatabaseWithCount(int count) {
   final mock = MockSyncDatabase();

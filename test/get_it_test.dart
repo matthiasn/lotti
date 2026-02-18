@@ -10,16 +10,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockLoggingService extends Mock implements LoggingService {}
-
-class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockSyncDatabase extends Mock implements SyncDatabase {}
-
-class _MockJournalDb extends Mock implements JournalDb {}
-
-class _MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
+import 'mocks/mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -40,7 +31,7 @@ void main() {
 
   group('safeLog', () {
     test('delegates to logging service on success messages', () {
-      final loggingService = _MockLoggingService();
+      final loggingService = MockLoggingService();
       when(
         () => loggingService.captureEvent(
           any<String>(),
@@ -77,7 +68,7 @@ void main() {
     });
 
     test('uses DevLogger when logging service throws', () {
-      final loggingService = _MockLoggingService();
+      final loggingService = MockLoggingService();
       when(
         () => loggingService.captureEvent(
           any<String>(),
@@ -107,7 +98,7 @@ void main() {
 
   group('registerLazyServiceForTesting', () {
     test('registers lazy singleton and logs lifecycle events', () {
-      final loggingService = _MockLoggingService();
+      final loggingService = MockLoggingService();
       when(
         () => loggingService.captureEvent(
           any<String>(),
@@ -139,7 +130,7 @@ void main() {
     });
 
     test('logs and rethrows when factory fails', () {
-      final loggingService = _MockLoggingService();
+      final loggingService = MockLoggingService();
       when(
         () => loggingService.captureEvent(
           any<String>(),
@@ -175,7 +166,7 @@ void main() {
     });
 
     test('logs registration failure when duplicate service detected', () {
-      final loggingService = _MockLoggingService();
+      final loggingService = MockLoggingService();
       when(
         () => loggingService.captureEvent(
           any<String>(),
@@ -209,18 +200,18 @@ void main() {
   });
 
   group('checkAndPopulateSequenceLogForTesting', () {
-    late _MockLoggingService loggingService;
-    late _MockSettingsDb settingsDb;
-    late _MockSyncDatabase syncDatabase;
-    late _MockJournalDb journalDb;
-    late _MockSyncSequenceLogService sequenceLogService;
+    late MockLoggingService loggingService;
+    late MockSettingsDb settingsDb;
+    late MockSyncDatabase syncDatabase;
+    late MockJournalDb journalDb;
+    late MockSyncSequenceLogService sequenceLogService;
 
     setUp(() {
-      loggingService = _MockLoggingService();
-      settingsDb = _MockSettingsDb();
-      syncDatabase = _MockSyncDatabase();
-      journalDb = _MockJournalDb();
-      sequenceLogService = _MockSyncSequenceLogService();
+      loggingService = MockLoggingService();
+      settingsDb = MockSettingsDb();
+      syncDatabase = MockSyncDatabase();
+      journalDb = MockJournalDb();
+      sequenceLogService = MockSyncSequenceLogService();
 
       when(
         () => loggingService.captureEvent(

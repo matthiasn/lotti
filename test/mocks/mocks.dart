@@ -13,6 +13,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -274,6 +276,11 @@ class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 class MockRatingRepository extends Mock implements RatingRepository {}
+
+class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
 
 // --- Additional Fake classes ---
 

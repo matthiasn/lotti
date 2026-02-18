@@ -1515,7 +1515,8 @@ void main() {
               any(),
               isLinkedToTask: any(named: 'isLinkedToTask'),
               linkedTaskId: any(named: 'linkedTaskId'),
-              realtimeTranscriptProvided: any(named: 'realtimeTranscriptProvided'),
+              realtimeTranscriptProvided:
+                  any(named: 'realtimeTranscriptProvided'),
             )).thenAnswer((_) async {});
 
         // Configure the stop result

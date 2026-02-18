@@ -194,7 +194,8 @@ void main() {
         _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
-            () => _RealtimeRecordingController(partialTranscript: 'Hello world'),
+            () =>
+                _RealtimeRecordingController(partialTranscript: 'Hello world'),
           ),
         ],
       ),

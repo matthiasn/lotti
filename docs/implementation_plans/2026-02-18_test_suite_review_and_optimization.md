@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 2 Complete — Ready for Phase 3
+**Status:** Phase 3 In Progress
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -97,6 +97,35 @@
 - All 8,861+ tests pass across all migrated directories
 - 284 tests pass for files using `setUpTestGetIt` (backward compatibility confirmed)
 - No regressions detected
+
+### Phase 3a: Consolidate Split Test Files (Step 10) — DONE
+
+**Files consolidated:**
+
+| Consolidation | Action | Tests |
+|---------------|--------|------:|
+| `ai_config_delete_service_simple_test.dart` | Deleted — all 6 tests were redundant smoke tests (type checks, `isNotNull`, `isNotEmpty`) already covered by comprehensive 19-test main file | 19 |
+| `test/blocs/habits/autocomplete_update_test.dart` | Merged 4 unique tests (realistic nested structure) into `test/logic/habits/autocomplete_update_test.dart`; deleted `test/blocs/` directory entirely | 26 |
+| `test/services/get_it_test.dart` | Deleted — all 4 tests fully covered by 11-test root file; migrated root file from inline `_MockX` to central mocks; added `MockSyncDatabase` + `MockSyncSequenceLogService` to central mocks | 11 |
+| `test/features/settings/ui/advanced/maintenance_page_test.dart` + `test/features/settings/ui/pages/maintenance_page_test.dart` | Merged into `test/features/settings/ui/pages/advanced/maintenance_page_test.dart` (correct mirror path); two groups: hint reset (3 tests, real DB) + database operations (7 tests, mocked DB) | 10 |
+| `MockSyncDatabase` in `sync_config_test_mocks.dart` | Removed duplicate — now imports from central `mocks.dart` | — |
+
+**Directories deleted:** `test/blocs/`, `test/features/settings/ui/advanced/`
+
+### Phase 3b: Improve Garbage Tests (Step 9) — DONE
+
+| Test File | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| `measurable_type_card_test.dart` | 9 copy-paste tests, identical assertions per flag combo | 7 parameterized tests: displayName rendering, icon visibility via loop | Eliminated redundant aggregation tests (widget doesn't use it), added parameterized Visibility checks |
+| `survey_summary_test.dart` | 1 test checking `CFQ11:` text only | 3 tests: score key+value, chart visible by default, chart hidden with `showChart: false` | Tests actual calculated score values and chart toggle behavior |
+| `measurement_summary_test.dart` | 1 test checking `Coverage: 55 %` | 4 tests: value+unit display, TextViewerWidget presence, null dataType → SizedBox.shrink, null entryText → no TextViewerWidget | Tests all code paths in widget |
+| `metrics_grid_test.dart` | 1 test checking text labels | 6 tests: labels+values, Key per tile, empty entries, label transformation, 2-column layout at narrow width, 3-column at medium width | Tests responsive layout, keys, and label function |
+
+### Phase 3 Verification (Steps 9-10)
+- Analyzer: zero issues
+- Formatter: zero changes needed
+- All consolidated tests pass (26 autocomplete, 19 AI config delete, 11 GetIt, 10 maintenance page)
+- All improved garbage tests pass (7 + 3 + 4 + 6 = 20 tests, up from 12 low-value originals)
 
 ---
 
