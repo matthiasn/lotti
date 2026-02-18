@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.865" date="2026-02-18">
       <description>
-          <p>Realtime Transcription in Journal: Live transcription now works in the journal audio recorder too, not just AI chat. See your words appear in real time as you record journal entries.</p>
+          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS.</p>
       </description>
     </release>
     <release version="0.9.864" date="2026-02-18">
@@ -58,7 +58,7 @@
     </release>
     <release version="0.9.859" date="2026-02-13">
       <description>
-          <p>Real-Time Transcription: Added live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles during recording. A mode toggle lets users switch between standard recording and live transcription. Native WAV-to-M4A conversion via platform channels on iOS and macOS. Also improved sync outbox throughput by removing artificial 200ms per-message delay and reducing the idle threshold from 3s to 1.2s.</p>
+          <p>Sync Throughput: Removed artificial 200ms per-message delay from outbox enqueueing and reduced idle threshold from 3s to 1.2s, so sync resumes sooner after user interaction.</p>
       </description>
     </release>
     <release version="0.9.858" date="2026-02-13">
