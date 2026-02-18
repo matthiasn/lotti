@@ -81,6 +81,7 @@ class AudioConverter {
                     pcmFormat: inputFormat,
                     frameCapacity: frameCount
                 ) else {
+                    try? FileManager.default.removeItem(at: outputUrl)
                     DispatchQueue.main.async {
                         result(FlutterError(
                             code: "BUFFER_ERROR",
@@ -100,6 +101,8 @@ class AudioConverter {
                     result(true)
                 }
             } catch {
+                let outputUrl = URL(fileURLWithPath: outputPath)
+                try? FileManager.default.removeItem(at: outputUrl)
                 DispatchQueue.main.async {
                     result(FlutterError(
                         code: "CONVERSION_ERROR",
