@@ -38,6 +38,26 @@
 - **Parameterise varying inputs**: Helpers should accept the parts that differ between tests as named parameters (e.g. `selectedCategoryIds`, `extraOverrides`, `onDelta`) and keep the boilerplate fixed internally.
 - **Avoid copy-pasting test bodies**: If two tests differ only in a parameter value, consider whether they can share the same helper with different arguments instead of duplicating the entire setup.
 
+### Test Infrastructure Rules
+- **Use centralized mocks.** Import from `test/mocks/mocks.dart`. Never define a mock class inline in a test file if it already exists in the central file. If a new mock is needed, add it to `test/mocks/mocks.dart` first, then import it.
+- **Use centralized fallback values.** Import from `test/helpers/fallbacks.dart` and call `registerFallbackValue(...)` with values defined there. If a new fallback is needed, add it to the central file.
+- **Use `setUpTestGetIt()` / `tearDownTestGetIt()`.** Import from `test/widget_test_utils.dart`. Never write inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate. If additional services are needed beyond what the helper registers, extend the helper or register them after calling it.
+- **Use `makeTestableWidget()` for widget tests.** Import from `test/widget_test_utils.dart`. Do not create ad-hoc `MaterialApp` / `ProviderScope` / `MediaQuery` wrappers. Use the `overrides` parameter for Riverpod overrides.
+- **Use test data factories** where they exist (e.g., `test/features/categories/test_utils.dart`, `test/features/ai/test_utils.dart`). When creating test entities for a feature that already has a factory, use it. When touching a new feature, consider creating one.
+- **One test file per source file.** Test file paths must mirror source file paths (`lib/features/foo/bar.dart` → `test/features/foo/bar_test.dart`). Never split tests for one source file across multiple test files.
+
+### Test Quality Rules
+- **Every test must assert something meaningful.** `findsOneWidget` alone is not a valid test — it only proves the widget tree built without crashing. Always verify at least one of: displayed content/values, state changes after interaction, callback invocations, or error handling.
+- **No copy-paste test permutations.** If you need to test the same widget with different flag combinations (e.g., `private: true/false`, `favorite: true/false`), use a loop or parameterized helper, not N nearly-identical test bodies.
+- **No constructor smoke tests.** Tests that only instantiate an object and check `isNotNull` have zero value. Test behavior, not existence.
+- **Mock setup must not dwarf test logic.** If a test has 100 lines of mock setup and 5 lines of assertions, the test is either testing the wrong thing or needs a shared helper. Prefer extracting setup into `setUp()` or a helper function.
+
+### Async & Performance Rules
+- **Never use `Future.delayed()`, `sleep()`, or real `Timer` in tests.** See `test/README.md` for the fake time policy.
+- **Prefer `tester.pump(duration)` over `tester.pumpAndSettle()`.** `pumpAndSettle` has a default 10-second timeout and will hang if animations never settle. Use it only when you genuinely need all animations to complete, and never pass a duration > 1 second.
+- **Use `fakeAsync` for unit/service tests** that involve timers, delays, retries, or debounce. See `test/test_utils/retry_fake_time.dart` and `test/test_utils/pump_retry_time.dart` for helpers.
+- **Use deterministic dates.** Never use `DateTime.now()` in tests. Use specific dates like `DateTime(2024, 3, 15)`.
+
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
 - PRs must pass `make analyze` and `make test`; include a clear description, linked issues, and screenshots/GIFs for UI changes.
@@ -103,7 +123,9 @@
 - Prefer running commands via the dart-mcp server.
 - Only move on to adding new files when already created tests are all green.
 - Write meaningful tests that actually assert on valuable information. Refrain from adding BS
-  assertions such as finding a row or whatnot. Focus on useful information.
+  assertions such as finding a row or whatnot. Focus on useful information. See the
+  "Test Infrastructure Rules", "Test Quality Rules", and "Async & Performance Rules"
+  subsections under Testing Guidelines for specifics.
 - Aim for full coverage of every code path.
 - Every widget we touch should get as close to full test coverage as is reasonable, with meaningful
   tests.
