@@ -18,6 +18,7 @@ Constraints:
 - Reuse existing update notification stream and entry-link infrastructure.
 - Do not model history as a single growing list/blob.
 - Keep sync payload incremental and bandwidth efficient.
+- Keep human-authored journal content and AI-derived agent state in separate persistence domains.
 
 ## Current System Findings (from code exploration)
 
@@ -47,6 +48,22 @@ Constraints:
    - `lib/features/ai/state/direct_task_summary_refresh_controller.dart`
 
 ## Architectural Decisions
+
+## 0) Domain split: journal vs agent persistence
+
+Decision:
+
+- Introduce a dedicated `agent.sqlite` database for all agent-domain records.
+- Keep `db.sqlite` (journal domain) as canonical human-authored/observed content.
+- Do not write new agent internal state, memory traces, or agent reports as `JournalEntity` records.
+- Use ID-based cross-domain references (`taskId`, `journalEntryId`, etc.) from agent records to journal records.
+- Agent-domain data may be pruned/reset independently without affecting journal-domain data integrity.
+
+Why this works:
+
+- protects the "sacred log" role of the journal domain.
+- enables aggressive retention/compaction policies for verbose AI-generated state.
+- reduces churn and index pressure in journal persistence paths.
 
 ## 1) Alertness via workflow subscriptions
 
@@ -129,6 +146,8 @@ Use granular persisted records:
 - `AgentState` (synced durable state snapshot)
 - `AgentRuntimeState` (local-only runtime snapshot)
 - `AgentMessage` (immutable log entry, one record per message)
+- `AgentReport` (immutable user-facing snapshot)
+- `AgentReportHead` (latest pointer per report scope, for example `current` / `daily` / `weekly` / `monthly`)
 
 Link records chain them:
 
@@ -138,6 +157,8 @@ Link records chain them:
 - `message -> payloadEntry` (optional large content object)
 - `summaryMessage -> startMessage`
 - `summaryMessage -> endMessage`
+- `agent -> currentReportHead`
+- `report -> sourceSpan` (optional range metadata via links/refs)
 
 This guarantees append-only growth and sync incrementality.
 
@@ -658,10 +679,12 @@ Thread policy implications:
 
 Recommended persistence approach:
 
-1. Persist `Agent`, `AgentState`, `AgentMessage` as individual records.
-2. Persist `AgentRuntimeState` locally (not part of synced agent-domain payloads).
-3. Persist relationships as typed `EntryLink` records.
-4. Sync each new/updated shared record independently.
+1. Persist all agent-domain entities in dedicated `agent.sqlite` storage.
+2. Persist `AgentRuntimeState` and compaction-job execution state locally in `agent.sqlite` (not part of synced payloads).
+3. Persist agent-domain relationships as typed agent links/references in `agent.sqlite`.
+4. Keep `db.sqlite` journal persistence unchanged as the canonical human-authored/observed domain.
+5. Model cross-domain relationships via ID references (`taskId`, `journalEntryId`, etc.), not journal-owned agent records.
+6. Sync each new/updated shared agent-domain record independently.
 
 ### Sync payload strategy (explicit decision)
 
@@ -669,8 +692,9 @@ To limit sequence-log/backfill complexity, do not add one payload type per agent
 
 Decision:
 
-- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentSubscription`, `agentTimer`).
+- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`).
 - `agentRuntimeState` is explicitly local-only and excluded from sync payloads.
+- Agent payload bodies originate from `agent.sqlite`, not journal JSON paths.
 
 Rationale:
 
@@ -875,6 +899,11 @@ Consequence:
 
 ## Database and Index Plan
 
+Dedicated persistence boundary:
+
+- new `AgentDb` (`agent.sqlite`) for agent-domain records
+- existing `JournalDb` (`db.sqlite`) remains journal/domain data only
+
 New persisted entities/tables (or equivalent serialized records):
 
 - `agents`
@@ -883,6 +912,10 @@ New persisted entities/tables (or equivalent serialized records):
 - `agent_subscriptions`
 - `agent_timers`
 - `agent_messages`
+- `agent_reports`
+- `agent_report_heads`
+- `agent_source_refs`
+- `agent_links`
 - `agent_compaction_jobs` (local-only)
 
 Entry link additions:
@@ -895,35 +928,110 @@ Index additions:
 - `idx_agent_subscriptions_key_active (notification_key, active)`
 - `idx_agent_timers_due (active, next_run_at)`
 - `idx_agent_messages_agent_created (agent_id, created_at DESC)`
+- `idx_agent_reports_agent_scope_created (agent_id, scope, created_at DESC)`
+- `idx_agent_report_heads_agent_scope (agent_id, scope)`
 - `idx_agent_runtime_states_agent (agent_id)`
 - `idx_agent_compaction_jobs_ready (status, next_attempt_at)`
 - `idx_agent_compaction_jobs_thread_status (agent_id, thread_id, status)`
-- `idx_linked_entries_type_from_hidden_created (type, from_id, hidden, created_at DESC)`
-- `idx_linked_entries_type_to_hidden_created (type, to_id, hidden, created_at DESC)`
+- `idx_agent_source_refs_agent_source (agent_id, source_type, source_id)`
+- `idx_agent_links_type_from_hidden_created (type, from_id, hidden, created_at DESC)`
+- `idx_agent_links_type_to_hidden_created (type, to_id, hidden, created_at DESC)`
 
 ## Phased Implementation
 
 ## Execution Order (locked)
 
-1. `Phase 0A` schema and persistence primitives
-2. `Phase 0B` contracts and enforcement
-3. Continue remaining phases in order (`1 -> 5`)
+1. `Phase -1` operating excellence and trust layer
+2. `Phase 0A` schema and persistence primitives
+3. `Phase 0B` contracts and enforcement
+4. Continue remaining phases in order (`1 -> 5`)
 
 Immediate next step:
 
-- start with `Phase 0A`.
+- start with `Phase -1`.
+
+## Phase -1 - Operating excellence and trust layer
+
+- Define an evaluation scorecard per agent kind (`gym_coach`, `planner`, `strategy`, task-lifetime agent).
+- Establish benchmark datasets:
+  - golden-path scenarios with expected tool call sequences and report outputs.
+  - adversarial scenarios (prompt injection, ambiguous references, out-of-scope requests, replay duplicates).
+  - long-horizon drift scenarios (weekly/monthly trend interpretation and memory decay correctness).
+- Build an offline replay/eval harness:
+  - deterministic run replay from persisted wake/run inputs.
+  - mock/fake tool adapters for deterministic assertions.
+  - regression comparison on action/toolResult/report outputs.
+- Add CI quality gates:
+  - block merge on scorecard regressions beyond agreed thresholds.
+  - require pass on high-risk policy tests before enabling new tool handlers.
+- Define runtime observability contract:
+  - per-run trace model (`runKey`, wake reason, tool calls, policy decisions, retries, costs, latency).
+  - operator-facing diagnostics for failed/partial runs and replay attempts.
+- Define policy/safety enforcement layer:
+  - risk-tiered tool execution policy (`low`, `medium`, `high`) with confirmation requirements.
+  - per-agent/day budget limits (token/cost/runtime/tool-call caps).
+  - standardized denial/error codes (`out_of_scope`, `confirmation_required`, `budget_exceeded`, `unsafe_target`).
+  - input hardening pipeline for prompt-injection and untrusted content boundaries.
+- Define human control primitives:
+  - pause/resume agent, cancel run, replay run, re-run with explicit user override.
+  - explicit approval workflow for high-risk writes.
+- Define report contract and freshness policy:
+  - typed report schema (`current`, `daily`, `weekly`, `monthly`) with confidence/provenance fields.
+  - freshness SLA and stale-report markers.
+- Define memory governance and retention classes:
+  - explicit artifact classes (`trace`, `action/toolResult`, `summary`, `report`, `runtime_state`) with per-class TTL and pruning policy.
+  - legal/privacy deletion behavior for user-requested erasure and retention overrides.
+  - storage-budget enforcement and deterministic pruning order when limits are exceeded.
+- Define versioning/rollout rules:
+  - versioned prompts/tool contracts and compatibility guarantees.
+  - canary rollout + rollback criteria for policy/tool/prompt changes.
+- Define multi-agent handoff protocol:
+  - typed handoff artifact (for example attention request / planning request), not free-form negotiation by default.
+  - deterministic arbitration policy when agents disagree.
+- Define agent spawn protocol (orchestrator-mediated, not free-form):
+  - agents can only emit typed `SpawnRequest`; only the orchestrator can admit/reject and instantiate child runs.
+  - `SpawnRequest` contract includes at least: `spawnRequestId`, `parentAgentId`, `parentRunKey`, `requestedAgentKind`, `goal`, `inputRefs`, `allowedCategoryIds`, `allowedTools`, `riskTier`, `priority`, `ttl`, `maxRuntime`, `maxSteps`, `costBudget`, `tokenBudget`, `requiredApprovals`, `successCriteria`, and `onComplete` strategy.
+  - admission policy is deny-by-default and enforces depth limits, per-parent and global concurrency limits, per-day budget limits, cooldown windows, and kill-switch state.
+  - child runs always execute under their own policy envelope; parent agents cannot bypass child tool/risk constraints.
+  - parent/child lineage and spawn decisions (`approved`/`denied` + reason) are persisted and visible in run traces/replay.
+  - rollout remains staged: handoff-only first; spawn enabled later per agent kind behind explicit feature flags.
+- Define reliability SLOs and operations:
+  - SLOs for success rate, side-effect correctness, latency, and cost.
+  - dead-letter queue semantics and recovery playbooks.
+- Define incident control and emergency stop:
+  - global agent kill switch (all agents), prominently surfaced in-app (top-level quick action + settings), plus per-agent and high-risk-tool-class kill switches.
+  - kill-switch semantics are explicit: immediate stop for new wake/job enqueue, immediate block on mutating tool execution, and deterministic handling of in-flight runs.
+  - operator incident-severity playbook with containment, rollback, replay, and postmortem requirements.
+
+Exit criteria:
+
+- agent scorecards and benchmark datasets exist and are executable in CI.
+- regression gates are active for tool correctness, safety policy, and report quality.
+- run-trace observability is sufficient to explain any mutation-producing run end-to-end.
+- policy layer blocks unsafe/out-of-scope/high-risk writes without explicit approval.
+- human control primitives are implemented for pause/cancel/replay/approve.
+- report schema + freshness contract is finalized and validated in tests.
+- retention classes and TTL/pruning policies are codified and validated in policy/integration tests.
+- emergency-stop controls (`global`, `per-agent`, `tool-class`) are tested, prominently accessible, and operationally documented.
+- spawn protocol contract and admission-policy tests are in place; recursive/unbounded spawning is blocked.
+- spawn lineage is queryable in observability traces and deterministic replay.
+- rollout/rollback runbooks exist and are validated in dry runs.
 
 ## Phase 0A - Schema and persistence primitives
 
 - Finalize model classes and repository interfaces.
+- Create `AgentDb` (`agent.sqlite`) drift schema/module and repository wiring.
 - Replace raw persistent `JsonMap` fields in agent entities with typed wrappers:
   `AgentConfig`, `AgentSlots`, `AgentMessageMetadata`.
-- Add migration(s) for new tables/indexes and link variants.
+- Add migration(s) / schema bootstrap for new agent-domain tables/indexes and link variants in `AgentDb`.
 - Add serializers and conversion helpers.
 - Split synced `AgentState` from local-only `AgentRuntimeState`.
 - Define and codify `threadId` and `revision` semantics.
 - Land persistence for `Agent.allowedCategoryIds` and interaction mode fields.
+- Add persistence for `AgentReport` and `AgentReportHead`.
+- Add cross-domain source-reference model (`agent_source_refs`) for journal/task IDs.
 - Add schema-versioned wrapper serialization and extension-field validation rules.
+- Add guardrails so new agent internals/reports are not persisted through `JournalEntity` paths.
 
 Exit criteria:
 
@@ -931,6 +1039,8 @@ Exit criteria:
 - migrations are stable across upgrade paths and preserve existing data.
 - synced vs local-only state split is implemented in persistence layer.
 - no untyped persistent `JsonMap` fields remain in `Agent`, `AgentState`, or `AgentMessage` (except wrapper `extension` maps).
+- agent-domain persistence runs through `agent.sqlite` and does not depend on journal-table storage for agent internals/reports.
+- new agent internal/report artifacts are not created as `JournalEntity` records.
 
 ## Phase 0B - Contracts and enforcement
 
@@ -998,7 +1108,7 @@ Exit criteria:
 
 ## Phase 4A - Agent payload sync plumbing
 
-- Ensure all new entities/links flow through outbox/sync.
+- Ensure all new agent-domain entities/links from `agent.sqlite` flow through outbox/sync.
 - Introduce one agent-domain sync payload type with subtype discriminator.
 - Add sequence-log capture and population support for agent-domain records.
 
@@ -1077,6 +1187,14 @@ Performance:
 
 - append 10k+ message entries and verify read path bounded by context window
 - verify sync payload size remains proportional to new messages only
+
+Evaluation and trust gates:
+
+- golden benchmark suite validates tool action sequences and report outputs for each agent kind
+- adversarial benchmark suite validates prompt-injection resistance and scope-policy enforcement
+- deterministic replay tests verify run trace reproducibility from persisted wake inputs
+- budget/rate-limit policy tests verify deterministic `budget_exceeded` / retry behavior
+- human approval-flow tests verify high-risk actions are blocked until approved
 
 ## Risks and Mitigations
 
@@ -1164,31 +1282,84 @@ Mitigation:
 
 - single-flight per thread and transactional pointer advance only after summary + links commit succeeds.
 
+Risk: evaluation blind spots allow quality regressions to ship.
+
+Mitigation:
+
+- maintain benchmark datasets per agent kind and enforce CI regression gates tied to scorecards.
+
+Risk: insufficient run observability makes failures hard to diagnose.
+
+Mitigation:
+
+- require end-to-end run traces (wake -> action -> toolResult -> state/report write) and replay tooling.
+
+Risk: prompt-injection or untrusted content leads to unsafe tool calls.
+
+Mitigation:
+
+- enforce input-hardening and policy checks before tool execution; default deny on uncertain targets.
+
+Risk: high-risk actions execute without user intent.
+
+Mitigation:
+
+- risk-tiered confirmation policy with explicit approve/apply path for high-risk tools.
+
+Risk: retention policy mistakes either keep sensitive traces too long or prune critical artifacts too early.
+
+Mitigation:
+
+- codify retention classes with explicit TTLs, legal overrides, and deterministic pruning order; validate with policy and migration tests.
+
+Risk: no fast containment path during incidents causes cascading bad writes/cost blowups.
+
+Mitigation:
+
+- implement tested global/per-agent/tool-class kill switches plus incident runbooks with rollback and controlled replay.
+
+Risk: runaway spawn cascades create unbounded cost/latency and uncontrolled side effects.
+
+Mitigation:
+
+- enforce orchestrator-only spawn admission with strict depth/concurrency/budget/cooldown limits, deny-by-default policy gates, and kill-switch integration.
+
 ## Finalized Decisions (2026-02-17)
 
 1. Agent records will be persisted as dedicated entities/tables immediately (not as temporary `JournalEntity` subtypes).
-2. Tombstone strategy will use soft-delete semantics retained for sync safety; hard-delete may happen later via retention policy/backlog work.
-3. EntryLink modeling for agent graph edges will use a new explicit union variant with relation metadata (single variant that carries relation intent and typed metadata).
-4. Agent repositories/services will emit explicit `UpdateNotifications` tokens for agent mutations.
-5. Sync sequence/backfill will use a single agent-domain payload category with subtype discriminator.
-6. Concurrent `AgentState` reconciliation will follow field-level deterministic merge semantics defined in Phase 0B.
-7. Alertness subscriptions will match on full notification token sets (IDs + semantic keys + domain subtype tokens) and then apply entity predicates.
-8. Agent tooling will use a capability-gated, idempotent function-call registry with explicit high-risk preview/apply support.
-9. Strict category boundaries are first-class: `Agent.allowedCategoryIds` is mandatory and enforced on every tool read/write.
-10. Agent interaction modes (`autonomous`, `interactive`, `hybrid`) are first-class; `userInitiated` wake reason is part of the foundation.
-11. Runtime execution fields are split into local-only `AgentRuntimeState`, excluded from sync payloads.
-12. `AgentMessage.kind` values `action` and `toolResult` follow a typed envelope contract (`actionRefId`, `operationId`, status/error fields).
-13. Subscription matching is defined over three token classes (`semanticKey`, `subtypeToken`, `entityId`) with explicit classifier/index support.
-14. Wake jobs for all reasons carry deterministic enqueue-time `runKey` and `threadId`; replay idempotency uses persisted wake-run log.
-15. Pointer conflict resolution uses vector-clock-derived tie-breaks (no wall-clock tie-break).
-16. Persistent agent domain fields must use typed wrappers (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`); raw maps are extension-only.
-17. Memory compaction is asynchronous with LLM-first summarization plus deterministic fallback; failures are non-destructive and retryable.
+2. Agent-domain persistence is split into dedicated `agent.sqlite`; journal `db.sqlite` remains canonical human-authored/observed content.
+3. Tombstone strategy will use soft-delete semantics retained for sync safety; hard-delete may happen later via retention policy/backlog work.
+4. EntryLink modeling for agent graph edges will use a new explicit union variant with relation metadata (single variant that carries relation intent and typed metadata).
+5. Agent repositories/services will emit explicit `UpdateNotifications` tokens for agent mutations.
+6. Sync sequence/backfill will use a single agent-domain payload category with subtype discriminator.
+7. Concurrent `AgentState` reconciliation will follow field-level deterministic merge semantics defined in Phase 0B.
+8. Alertness subscriptions will match on full notification token sets (IDs + semantic keys + domain subtype tokens) and then apply entity predicates.
+9. Agent tooling will use a capability-gated, idempotent function-call registry with explicit high-risk preview/apply support.
+10. Strict category boundaries are first-class: `Agent.allowedCategoryIds` is mandatory and enforced on every tool read/write.
+11. Agent interaction modes (`autonomous`, `interactive`, `hybrid`) are first-class; `userInitiated` wake reason is part of the foundation.
+12. Runtime execution fields are split into local-only `AgentRuntimeState`, excluded from sync payloads.
+13. `AgentMessage.kind` values `action` and `toolResult` follow a typed envelope contract (`actionRefId`, `operationId`, status/error fields).
+14. Subscription matching is defined over three token classes (`semanticKey`, `subtypeToken`, `entityId`) with explicit classifier/index support.
+15. Wake jobs for all reasons carry deterministic enqueue-time `runKey` and `threadId`; replay idempotency uses persisted wake-run log.
+16. Pointer conflict resolution uses vector-clock-derived tie-breaks (no wall-clock tie-break).
+17. Persistent agent domain fields must use typed wrappers (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`); raw maps are extension-only.
+18. Memory compaction is asynchronous with LLM-first summarization plus deterministic fallback; failures are non-destructive and retryable.
+19. Agent spawning is orchestrator-mediated via typed `SpawnRequest`; direct agent-to-agent process creation is disallowed.
+20. Spawn admission is deny-by-default and must enforce hard caps (depth, concurrency, budgets, cooldowns) plus approval/kill-switch checks.
+21. Parent/child lineage and spawn admission decisions are first-class persisted and observable artifacts.
 
 ### Consequences for implementation
 
+- Phase -1 must land evaluation scorecards, benchmark datasets, and CI regression gates before agent feature expansion.
+- Phase -1 must land policy/safety contracts and human approval control paths for high-risk actions.
+- Phase -1 must land run-trace observability sufficient for replay/debug of mutation-producing runs.
+- Phase -1 must land retention-class governance (TTL/pruning/legal overrides) and emergency-stop controls.
+- Phase -1 must define `SpawnRequest` schema, spawn admission policy gates, and parent/child lineage trace semantics before enabling spawn in production.
 - Phase 0A must include new persistence schema/migrations for dedicated agent entities.
+- Phase 0A must introduce `AgentDb` (`agent.sqlite`) and repository boundaries that prevent new agent internals/reports from leaking into journal persistence paths.
 - Phase 0A must enforce typed wrapper models (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) for persistent agent fields.
 - Sync payload contracts must treat these entities as first-class and preserve tombstone semantics.
+- Sync/outbox/backfill implementations must load/store agent payload bodies from agent-domain storage.
 - Phase 0B must include category-scope enforcement in tool/query execution paths.
 - Phase 0B must include interactive wake-job schema and thread/session conventions.
 - Phase 0B must publish `AgentToolContractSpec` as
@@ -1201,6 +1372,13 @@ Mitigation:
 
 ## Definition of Done for Foundation Layer
 
+- Evaluation scorecards and adversarial benchmark suites are active in CI with enforced regression thresholds.
+- Policy/safety and approval controls are active for high-risk mutations.
+- Operator-facing run traces support deterministic replay/debug of mutation-producing runs.
+- Retention classes (TTL/pruning/legal overrides) are active and verified for all agent artifact classes.
+- Emergency-stop controls (`global`, `per-agent`, `tool-class`) are implemented, tested, documented, and globally prominent in the local app UI.
+- Spawn behavior is orchestrator-only via typed `SpawnRequest`, with tested depth/concurrency/budget/cooldown enforcement and deny-by-default admission.
+- Parent/child spawn lineage and decisions are queryable in run traces and replay tooling.
 - Agent lifecycle persisted and synced.
 - Subscription-driven and timer-driven wakes both functional.
 - User-initiated interactive wakes functional.
@@ -1209,4 +1387,5 @@ Mitigation:
 - Sync cost per new message remains incremental.
 - MVP tool bed covers follow-up rollover, retrospective time logging, and day-plan block updates.
 - Tool reads/writes obey `allowedCategoryIds` boundaries with deny-by-default behavior.
+- Human-authored journal persistence remains unpolluted by agent-generated internal state/report churn.
 - Analyzer and targeted tests pass for touched modules.
