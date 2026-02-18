@@ -592,6 +592,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'stopRealtime',
       );
     } catch (e) {
+      // Tear down the WebSocket and service subscriptions that
+      // service.stop() would have cleaned up on success.
+      try {
+        await _realtimeService.dispose();
+      } catch (_) {}
       if (currentOpId == _operationId && ref.mounted) {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
