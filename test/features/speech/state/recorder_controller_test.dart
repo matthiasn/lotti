@@ -1348,7 +1348,7 @@ void main() {
     });
 
     group('cancelRealtime', () {
-      test('resets state and disposes service', () async {
+      test('resets state and invalidates service provider', () async {
         final controller =
             container.read(audioRecorderControllerProvider.notifier);
 
@@ -1366,7 +1366,9 @@ void main() {
         expect(state.isRealtimeMode, isFalse);
         expect(state.partialTranscript, isNull);
 
-        verify(() => mockRealtimeService.dispose()).called(1);
+        // dispose() should NOT be called — the provider is invalidated instead
+        // so the singleton remains usable for future sessions
+        verifyNever(() => mockRealtimeService.dispose());
       });
 
       test('resets state even with no active session', () async {
@@ -1399,21 +1401,28 @@ void main() {
       });
 
       test('catches and logs errors during cancellation', () async {
-        when(() => mockRealtimeService.dispose())
-            .thenThrow(Exception('dispose failed'));
-
         final controller =
             container.read(audioRecorderControllerProvider.notifier);
 
         await controller.recordRealtime();
+
+        // Now make captureEvent throw so the cancel path hits the catch
+        when(
+          () => mockLoggingService.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenThrow(Exception('logging failed'));
+
         // Should not throw
         await controller.cancelRealtime();
 
         verify(
           () => mockLoggingService.captureException(
             any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
+            domain: 'recorder_controller',
+            subDomain: 'cancelRealtime',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);

@@ -606,9 +606,11 @@ class AudioRecorderController extends _$AudioRecorderController {
     try {
       await _cleanupRealtime();
 
-      // Dispose the service's active session
-      final service = ref.read(realtimeTranscriptionServiceProvider);
-      await service.dispose();
+      // Invalidate the provider so the next recordRealtime() gets a fresh
+      // instance. Using dispose() on the singleton would leave it in a
+      // broken state (nulled subscriptions) while the provider still
+      // holds the same reference.
+      ref.invalidate(realtimeTranscriptionServiceProvider);
 
       _dbfsBuffer.clear();
       state = state.copyWith(
