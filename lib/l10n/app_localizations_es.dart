@@ -695,13 +695,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingRealtime => 'Transcripción en vivo';
 
   @override
-  String get audioRecordingStop => 'PARAR';
-
-  @override
   String get audioRecordings => 'Grabaciones de audio';
 
   @override
   String get audioRecordingStandard => 'Estándar';
+
+  @override
+  String get audioRecordingStop => 'PARAR';
 
   @override
   String get automaticPrompts => 'Prompts automáticos';

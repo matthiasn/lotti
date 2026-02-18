@@ -674,13 +674,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingRealtime => 'Živý přepis';
 
   @override
-  String get audioRecordingStop => 'STOP';
-
-  @override
   String get audioRecordings => 'Audiozáznamy';
 
   @override
   String get audioRecordingStandard => 'Standardní';
+
+  @override
+  String get audioRecordingStop => 'STOP';
 
   @override
   String get automaticPrompts => 'Automatické výzvy';

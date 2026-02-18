@@ -664,13 +664,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get audioRecordingRealtime => 'Live Transcription';
 
   @override
-  String get audioRecordingStop => 'STOP';
-
-  @override
   String get audioRecordings => 'Audio Recordings';
 
   @override
   String get audioRecordingStandard => 'Standard';
+
+  @override
+  String get audioRecordingStop => 'STOP';
 
   @override
   String get automaticPrompts => 'Automatic Prompts';

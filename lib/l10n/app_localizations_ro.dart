@@ -673,13 +673,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingRealtime => 'Transcriere în direct';
 
   @override
-  String get audioRecordingStop => 'STOP';
-
-  @override
   String get audioRecordings => 'Înregistrări audio';
 
   @override
   String get audioRecordingStandard => 'Standard';
+
+  @override
+  String get audioRecordingStop => 'STOP';
 
   @override
   String get automaticPrompts => 'Prompturi automate';

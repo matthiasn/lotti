@@ -1283,12 +1283,6 @@ abstract class AppLocalizations {
   /// **'Live Transcription'**
   String get audioRecordingRealtime;
 
-  /// No description provided for @audioRecordingStop.
-  ///
-  /// In en, this message translates to:
-  /// **'STOP'**
-  String get audioRecordingStop;
-
   /// No description provided for @audioRecordings.
   ///
   /// In en, this message translates to:
@@ -1300,6 +1294,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Standard'**
   String get audioRecordingStandard;
+
+  /// No description provided for @audioRecordingStop.
+  ///
+  /// In en, this message translates to:
+  /// **'STOP'**
+  String get audioRecordingStop;
 
   /// No description provided for @automaticPrompts.
   ///

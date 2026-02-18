@@ -696,13 +696,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get audioRecordingRealtime => 'Transcription en direct';
 
   @override
-  String get audioRecordingStop => 'ARRÊTER';
-
-  @override
   String get audioRecordings => 'Enregistrements audio';
 
   @override
   String get audioRecordingStandard => 'Standard';
+
+  @override
+  String get audioRecordingStop => 'ARRÊTER';
 
   @override
   String get automaticPrompts => 'Prompts automatiques';
