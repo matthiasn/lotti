@@ -131,6 +131,7 @@ const _providerModelId = 'voxtral-mini-transcribe-realtime-2602';
 
 Future<(ProviderContainer, _FakeWebSocketChannel)> _createServiceWithConfig({
   bool addConfig = true,
+  Duration doneTimeout = const Duration(seconds: 10),
 }) async {
   final db = AiConfigDb(inMemoryDatabase: true);
   final aiRepo = AiConfigRepository(db);
@@ -181,7 +182,11 @@ Future<(ProviderContainer, _FakeWebSocketChannel)> _createServiceWithConfig({
     overrides: [
       aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
       realtimeTranscriptionServiceProvider.overrideWith(
-        (ref) => RealtimeTranscriptionService(ref, repository: repo),
+        (ref) => RealtimeTranscriptionService(
+          ref,
+          repository: repo,
+          doneTimeout: doneTimeout,
+        ),
       ),
     ],
   );
@@ -476,7 +481,9 @@ void main() {
     });
 
     test('falls back to accumulated deltas on timeout', () async {
-      final (container, fakeChannel) = await _createServiceWithConfig();
+      final (container, fakeChannel) = await _createServiceWithConfig(
+        doneTimeout: const Duration(milliseconds: 50),
+      );
       addTearDown(container.dispose);
 
       final svc = container.read(realtimeTranscriptionServiceProvider);
@@ -499,8 +506,7 @@ void main() {
         });
       await Future<void>.delayed(Duration.zero);
 
-      // Don't send transcription.done — let it time out
-      // Use a short timeout by not sending the done event
+      // Don't send transcription.done — let the short timeout trigger fallback
 
       final outputDir = await Directory.systemTemp.createTemp('rt_svc_test_');
       addTearDown(() => outputDir.delete(recursive: true));
@@ -510,11 +516,8 @@ void main() {
         outputPath: '${outputDir.path}/output',
       );
 
-      // Since transcription.done won't arrive before the real 10s timeout,
-      // and we can't control the timeout duration, we test the delta
-      // accumulation directly. The fallback mechanism is exercised when
-      // transcription.done times out.
-      expect(result.transcript, isNotEmpty);
+      expect(result.transcript, 'Hello world');
+      expect(result.usedTranscriptFallback, isTrue);
     });
 
     test('sends endAudio to server on stop', () async {

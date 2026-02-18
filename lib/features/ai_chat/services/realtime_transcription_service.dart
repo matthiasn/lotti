@@ -21,10 +21,13 @@ class RealtimeTranscriptionService {
   RealtimeTranscriptionService(
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
-  }) : _repository = repository ?? MistralRealtimeTranscriptionRepository();
+    Duration doneTimeout = const Duration(seconds: 10),
+  })  : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
+        _doneTimeout = doneTimeout;
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;
+  final Duration _doneTimeout;
   final _pcmBuffer = BytesBuilder(copy: false);
   final _amplitudeController = StreamController<double>.broadcast();
   final _deltaBuffer = StringBuffer();
@@ -197,7 +200,7 @@ class RealtimeTranscriptionService {
 
     try {
       final done = await _repository.transcriptionDone.first.timeout(
-        const Duration(seconds: 10),
+        _doneTimeout,
       );
       transcript = done.text;
     } on TimeoutException {
