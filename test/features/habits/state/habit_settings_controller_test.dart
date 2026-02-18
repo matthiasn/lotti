@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -333,89 +334,86 @@ void main() {
       subscription.close();
     });
 
-    test('does not update from DB when form is dirty', () async {
-      // Initially return null, then return habit on refetch
-      when(() => mockJournalDb.getHabitById(habitFlossing.id))
-          .thenAnswer((_) async => null);
+    test('does not update from DB when form is dirty', () {
+      fakeAsync((async) {
+        // Initially return null, then return habit on refetch
+        when(() => mockJournalDb.getHabitById(habitFlossing.id))
+            .thenAnswer((_) async => null);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final subscription = container.listen(
-        habitSettingsControllerProvider(habitFlossing.id),
-        (_, __) {},
-      );
+        final subscription = container.listen(
+          habitSettingsControllerProvider(habitFlossing.id),
+          (_, __) {},
+        );
 
-      final controller = container.read(
-        habitSettingsControllerProvider(habitFlossing.id).notifier,
-      );
+        final controller = container.read(
+          habitSettingsControllerProvider(habitFlossing.id).notifier,
+        );
 
-      await Future<void>.delayed(Duration.zero);
+        async.flushMicrotasks();
 
-      // Mark form as dirty
-      controller.setDirty();
+        // Mark form as dirty
+        controller.setDirty();
 
-      // Update stub and trigger notification to simulate DB change
-      when(() => mockJournalDb.getHabitById(habitFlossing.id))
-          .thenAnswer((_) async => habitFlossing);
-      updateStreamController.add({habitsNotification});
+        // Update stub and trigger notification to simulate DB change
+        when(() => mockJournalDb.getHabitById(habitFlossing.id))
+            .thenAnswer((_) async => habitFlossing);
+        updateStreamController.add({habitsNotification});
 
-      // Give time for stream to process
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Give time for stream to process
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
 
-      final state = container.read(
-        habitSettingsControllerProvider(habitFlossing.id),
-      );
+        final state = container.read(
+          habitSettingsControllerProvider(habitFlossing.id),
+        );
 
-      // Should still have empty name (initial state) because form is dirty
-      expect(state.habitDefinition.name, isEmpty);
-      expect(state.dirty, isTrue);
+        // Should still have empty name (initial state) because form is dirty
+        expect(state.habitDefinition.name, isEmpty);
+        expect(state.dirty, isTrue);
 
-      subscription.close();
+        subscription.close();
+      });
     });
 
-    test('updates default story when matching tag exists', () async {
-      final habitWithDefaultStory = habitFlossing.copyWith(
-        defaultStoryId: testStoryTag1.id,
-      );
+    test('updates default story when matching tag exists', () {
+      fakeAsync((async) {
+        final habitWithDefaultStory = habitFlossing.copyWith(
+          defaultStoryId: testStoryTag1.id,
+        );
 
-      when(() => mockJournalDb.getHabitById(habitWithDefaultStory.id))
-          .thenAnswer((_) async => habitWithDefaultStory);
+        when(() => mockJournalDb.getHabitById(habitWithDefaultStory.id))
+            .thenAnswer((_) async => habitWithDefaultStory);
 
-      final completer = Completer<void>();
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        container.listen(
+          habitSettingsControllerProvider(habitWithDefaultStory.id),
+          (_, __) {},
+        );
 
-      final subscription = container.listen(
-        habitSettingsControllerProvider(habitWithDefaultStory.id),
-        (_, next) {
-          if (next.defaultStory != null && !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
+        container.read(
+          habitSettingsControllerProvider(habitWithDefaultStory.id).notifier,
+        );
 
-      container.read(
-        habitSettingsControllerProvider(habitWithDefaultStory.id).notifier,
-      );
+        // Let habit load from initial fetch
+        async.elapse(const Duration(milliseconds: 20));
+        async.flushMicrotasks();
 
-      // Small delay to let habit load from initial fetch
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        // Then emit tags
+        tagsStreamController.add([testStoryTag1]);
+        async.flushMicrotasks();
 
-      // Then emit tags
-      tagsStreamController.add([testStoryTag1]);
+        final state = container.read(
+          habitSettingsControllerProvider(habitWithDefaultStory.id),
+        );
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
-
-      final state = container.read(
-        habitSettingsControllerProvider(habitWithDefaultStory.id),
-      );
-
-      expect(state.defaultStory, isNotNull);
-      expect(state.defaultStory?.id, equals(testStoryTag1.id));
-
-      subscription.close();
+        expect(state.defaultStory, isNotNull);
+        expect(state.defaultStory?.id, equals(testStoryTag1.id));
+      });
     });
 
     test('preserves showFrom when setting alertAtTime', () {
@@ -472,79 +470,77 @@ void main() {
       expect(schedule.alertAtTime, equals(alertAtTime));
     });
 
-    test('disposes stream subscriptions on dispose', () async {
-      const testHabitId = 'test-habit-id';
+    test('disposes stream subscriptions on dispose', () {
+      fakeAsync((async) {
+        const testHabitId = 'test-habit-id';
 
-      final container = ProviderContainer();
+        final container = ProviderContainer();
 
-      container.read(habitSettingsControllerProvider(testHabitId).notifier);
+        container.read(habitSettingsControllerProvider(testHabitId).notifier);
 
-      // Emit values to ensure subscriptions are active
-      tagsStreamController.add([]);
-      await Future<void>.delayed(Duration.zero);
+        // Emit values to ensure subscriptions are active
+        tagsStreamController.add([]);
+        async.flushMicrotasks();
 
-      // Dispose the container
-      container.dispose();
+        // Dispose the container
+        container.dispose();
 
-      // Should not throw - streams should be properly cleaned up
-      tagsStreamController.add([]);
+        // Should not throw - streams should be properly cleaned up
+        tagsStreamController.add([]);
+      });
     });
 
-    test('clears defaultStory when defaultStoryId is removed', () async {
-      // Start with a habit that has a defaultStoryId
-      final habitWithStory = habitFlossing.copyWith(
-        defaultStoryId: testStoryTag1.id,
-      );
-      final completer = Completer<void>();
+    test('clears defaultStory when defaultStoryId is removed', () {
+      fakeAsync((async) {
+        // Start with a habit that has a defaultStoryId
+        final habitWithStory = habitFlossing.copyWith(
+          defaultStoryId: testStoryTag1.id,
+        );
 
-      when(() => mockJournalDb.getHabitById(habitWithStory.id))
-          .thenAnswer((_) async => habitWithStory);
+        when(() => mockJournalDb.getHabitById(habitWithStory.id))
+            .thenAnswer((_) async => habitWithStory);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final subscription = container.listen(
-        habitSettingsControllerProvider(habitWithStory.id),
-        (_, next) {
-          if (next.defaultStory != null && !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
+        container.listen(
+          habitSettingsControllerProvider(habitWithStory.id),
+          (_, __) {},
+        );
 
-      container.read(
-        habitSettingsControllerProvider(habitWithStory.id).notifier,
-      );
+        container.read(
+          habitSettingsControllerProvider(habitWithStory.id).notifier,
+        );
 
-      // Small delay to let habit load from initial fetch
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        // Let habit load from initial fetch
+        async.elapse(const Duration(milliseconds: 20));
+        async.flushMicrotasks();
 
-      // Emit tags so defaultStory can resolve
-      tagsStreamController.add([testStoryTag1]);
+        // Emit tags so defaultStory can resolve
+        tagsStreamController.add([testStoryTag1]);
+        async.flushMicrotasks();
 
-      await completer.future.timeout(const Duration(milliseconds: 100));
+        // Verify defaultStory is set
+        var state = container.read(
+          habitSettingsControllerProvider(habitWithStory.id),
+        );
+        expect(state.defaultStory, isNotNull);
 
-      // Verify defaultStory is set
-      var state = container.read(
-        habitSettingsControllerProvider(habitWithStory.id),
-      );
-      expect(state.defaultStory, isNotNull);
+        // Now change stub to return habit without defaultStoryId and fire notification
+        final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
+        when(() => mockJournalDb.getHabitById(habitWithStory.id))
+            .thenAnswer((_) async => habitWithoutStory);
+        updateStreamController.add({habitsNotification});
 
-      // Now change stub to return habit without defaultStoryId and fire notification
-      final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
-      when(() => mockJournalDb.getHabitById(habitWithStory.id))
-          .thenAnswer((_) async => habitWithoutStory);
-      updateStreamController.add({habitsNotification});
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Verify defaultStory is cleared
-      state = container.read(
-        habitSettingsControllerProvider(habitWithStory.id),
-      );
-      expect(state.defaultStory, isNull);
-
-      subscription.close();
+        // Verify defaultStory is cleared
+        state = container.read(
+          habitSettingsControllerProvider(habitWithStory.id),
+        );
+        expect(state.defaultStory, isNull);
+      });
     });
 
     test('removeAutoCompleteRuleAt handles null rule gracefully', () {

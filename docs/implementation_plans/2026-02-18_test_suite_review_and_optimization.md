@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 3 Complete — Ready for Phase 4
+**Status:** Phase 4 Complete (Steps 12 done; Step 13 CI guardrails remaining)
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -160,6 +160,60 @@
 - All consolidated tests pass (26 autocomplete, 19 AI config delete, 11 GetIt, 10 maintenance, 23 logging page)
 - All improved garbage tests pass (7 + 3 + 4 + 6 = 20 tests, up from 12 low-value originals)
 - All pumpAndSettle-reduced tests pass (366 tests across 10 files)
+
+### Phase 4a: fakeAsync Migration — Service Tests (Step 12) — DONE
+
+| File | Approach | Future.delayed Removed | Tests |
+|------|----------|----------------------:|------:|
+| `notification_stream_test.dart` | Full fakeAsync migration; all 14 tests wrapped in `fakeAsync` + `flushMicrotasks` | 45 | 14 pass |
+| `entities_cache_service_test.dart` | Full fakeAsync migration; 12 tests wrapped, added `createCacheSync()` helper | 17 | 30 pass |
+| `vector_clock_service_test.dart` | Replaced 50ms `Future.delayed` with `await service.initialized` (real DB I/O, fakeAsync not suitable) | 4 | 15 pass |
+| **Total** | | **66** | **59 pass** |
+
+### Phase 4b: fakeAsync Migration — Controller Tests (Step 12) — DONE
+
+| File | Approach | Future.delayed Removed | Tests |
+|------|----------|----------------------:|------:|
+| `audio_player_controller_test.dart` | Full fakeAsync migration; 22 tests wrapped | 54 | 54 pass |
+| `unified_daily_os_data_controller_test.dart` | 9 tests migrated; fixed DateTime.now() | 9 | 77 pass |
+| `dashboards_page_controller_test.dart` | 14 tests migrated | 14 | 21 pass |
+| `backfill_stats_controller_test.dart` | 12 tests migrated; added `MockBackfillRequestService` to central mocks | 12 | 20 pass |
+| `sync_actor_test.dart` | **Skipped** — real SQLite FFI I/O incompatible with fakeAsync | — | 79 pass |
+| **Total** | | **89** | **251 pass** |
+
+### Phase 4c: fakeAsync Migration — More Controllers & Repositories (Step 12) — DONE
+
+| File | Approach | Future.delayed Removed | Tests |
+|------|----------|----------------------:|------:|
+| `unified_ai_controller_test.dart` | 4 tests migrated; fixed 4× DateTime.now() | 8 | 12 pass |
+| `habit_settings_controller_test.dart` | 4 tests migrated; removed Completer workarounds | 6 | 18 pass |
+| `entry_controller_test.dart` | 4 tests migrated | 4 | 63 pass |
+| `labels_repository_test.dart` | 1 test migrated | 4 | 31 pass |
+| `realtime_transcription_service_test.dart` | Fixed broken fakeAsync test (WebSocket channel close incompatible with fakeAsync); converted to real async | — | 24 pass |
+| **Total** | | **22** | **148 pass** |
+
+### Phase 4d: fakeAsync Migration — Final Batch (Step 12) — DONE
+
+| File | Approach | Future.delayed Removed | Tests |
+|------|----------|----------------------:|------:|
+| `habits_repository_test.dart` | 2 tests migrated | 4 | 13 pass |
+| `categories_repository_test.dart` | 2 tests migrated | 4 | 18 pass |
+| `automatic_prompt_trigger_test.dart` | 6 tests migrated; fixed 7× DateTime.now() | ~10 | 20 pass |
+| `conversation_manager_test.dart` | 3 tests migrated; cleaned up unnecessary async keywords | 3 | 33 pass |
+| `task_progress_controller_test.dart` | 3 tests migrated; fixed DateTime.now() | 3 | 5 pass |
+| `recorder_controller_test.dart` | 2 tests migrated | 3 | 60 pass |
+| `persistence_logic_test.dart` | **Skipped** — real SQLite FFI I/O; delays restored to original | — | 32 pass |
+| **Total** | | **~27** | **181 pass** |
+
+**Incompatible with fakeAsync (real I/O):**
+- `sync_actor_test.dart` — SQLite FFI
+- `persistence_logic_test.dart` — SQLite FFI
+- `realtime_transcription_service_test.dart` — WebSocket channel close chain
+
+### Phase 4 Verification
+- Analyzer: zero issues
+- All migrated tests pass across 4 batches (59 + 251 + 148 + 181 = 639 tests verified)
+- ~204 `Future.delayed` calls eliminated from ~18 test files
 
 ---
 

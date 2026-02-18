@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -770,36 +771,37 @@ void main() {
       expect(result, [label]);
     });
 
-    test('re-emits on labelsNotification', () async {
-      var fetchCount = 0;
-      when(() => journalDb.getAllLabelDefinitions()).thenAnswer((_) async {
-        fetchCount++;
-        return [
-          LabelDefinition(
-            id: 'l-$fetchCount',
-            name: 'Label $fetchCount',
-            color: '#FF0000',
-            createdAt: baseTime,
-            updatedAt: baseTime,
-            vectorClock: const VectorClock(<String, int>{}),
-          ),
-        ];
+    test('re-emits on labelsNotification', () {
+      fakeAsync((async) {
+        var fetchCount = 0;
+        when(() => journalDb.getAllLabelDefinitions()).thenAnswer((_) async {
+          fetchCount++;
+          return [
+            LabelDefinition(
+              id: 'l-$fetchCount',
+              name: 'Label $fetchCount',
+              color: '#FF0000',
+              createdAt: baseTime,
+              updatedAt: baseTime,
+              vectorClock: const VectorClock(<String, int>{}),
+            ),
+          ];
+        });
+
+        final emissions = <List<LabelDefinition>>[];
+        final sub =
+            repoWithRealNotifications.watchLabels().listen(emissions.add);
+
+        async.flushMicrotasks();
+        expect(emissions, hasLength(1));
+
+        notificationsController.add({labelsNotification});
+        async.flushMicrotasks();
+        expect(emissions, hasLength(2));
+        expect(emissions[1].first.id, 'l-2');
+
+        sub.cancel();
       });
-
-      final emissions = <List<LabelDefinition>>[];
-      final sub = repoWithRealNotifications.watchLabels().listen(emissions.add);
-
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-      expect(emissions, hasLength(1));
-
-      notificationsController.add({labelsNotification});
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-      expect(emissions, hasLength(2));
-      expect(emissions[1].first.id, 'l-2');
-
-      await sub.cancel();
     });
   });
 

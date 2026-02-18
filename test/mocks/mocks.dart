@@ -26,6 +26,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -278,6 +279,9 @@ class MockHabitsRepository extends Mock implements HabitsRepository {}
 class MockRatingRepository extends Mock implements RatingRepository {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockBackfillRequestService extends Mock
+    implements BackfillRequestService {}
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}

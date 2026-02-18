@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -144,121 +145,128 @@ void main() {
   });
 
   group('UnifiedAiController', () {
-    test('successfully runs inference and updates state', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      );
+    test('successfully runs inference and updates state', () {
+      fakeAsync((async) {
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
 
-      final progressUpdates = <String>[];
-      var statusChangeCount = 0;
-      final stateUpdates = <String>[];
+        final progressUpdates = <String>[];
+        var statusChangeCount = 0;
+        final stateUpdates = <String>[];
 
-      // Override the aiConfigByIdProvider to return our test prompt
-      final testContainer = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
-          aiConfigByIdProvider('prompt-1').overrideWith(
-            (ref) => Future.value(promptConfig),
+        // Override the aiConfigByIdProvider to return our test prompt
+        final testContainer = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider('prompt-1').overrideWith(
+              (ref) => Future.value(promptConfig),
+            ),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
           ),
-        ],
-      );
-      containersToDispose.add(testContainer);
+        ).thenAnswer((invocation) async {
+          final onProgress =
+              invocation.namedArguments[#onProgress] as void Function(String);
+          final onStatusChange = invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
 
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-          linkedEntityId: any(named: 'linkedEntityId'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onProgress =
-            invocation.namedArguments[#onProgress] as void Function(String);
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
+          // Simulate progress updates
+          onStatusChange(InferenceStatus.running);
+          statusChangeCount++;
+          onProgress('Starting inference...');
+          progressUpdates.add('Starting inference...');
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          onProgress('Processing...');
+          progressUpdates.add('Processing...');
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          onProgress('Complete!');
+          progressUpdates.add('Complete!');
+          onStatusChange(InferenceStatus.idle);
+          statusChangeCount++;
+        });
 
-        // Simulate progress updates
-        onStatusChange(InferenceStatus.running);
-        statusChangeCount++;
-        onProgress('Starting inference...');
-        progressUpdates.add('Starting inference...');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        onProgress('Processing...');
-        progressUpdates.add('Processing...');
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        onProgress('Complete!');
-        progressUpdates.add('Complete!');
-        onStatusChange(InferenceStatus.idle);
-        statusChangeCount++;
+        // Listen to the provider to capture state updates
+        final subscription = testContainer.listen(
+          unifiedAiControllerProvider((
+            entityId: 'test-entity',
+            promptId: 'prompt-1',
+          )),
+          (previous, next) {
+            stateUpdates.add(next.message);
+          },
+          fireImmediately: true,
+        );
+
+        // Trigger inference explicitly since it no longer runs automatically
+        testContainer.read(
+          triggerNewInferenceProvider((
+            entityId: 'test-entity',
+            promptId: 'prompt-1',
+            linkedEntityId: null,
+          )).future,
+        );
+
+        // Drive async execution through all delays
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 10))
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 10))
+          ..flushMicrotasks();
+
+        // Verify inference was called
+        verify(
+          () => mockRepository.runInference(
+            entityId: 'test-entity',
+            promptConfig: promptConfig,
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
+          ),
+        ).called(1);
+
+        // Verify progress updates
+        expect(progressUpdates.length, 3);
+        expect(progressUpdates, [
+          'Starting inference...',
+          'Processing...',
+          'Complete!',
+        ]);
+
+        // Verify status changes
+        expect(statusChangeCount, 2);
+
+        // Verify state updates
+        expect(stateUpdates.contains(''), true); // Initial state
+        expect(stateUpdates.contains('Starting inference...'), true);
+        expect(stateUpdates.contains('Processing...'), true);
+        expect(stateUpdates.contains('Complete!'), true);
+
+        // Clean up
+        subscription.close();
       });
-
-      // Listen to the provider to capture state updates
-      final subscription = testContainer.listen(
-        unifiedAiControllerProvider((
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-        )),
-        (previous, next) {
-          stateUpdates.add(next.message);
-        },
-        fireImmediately: true,
-      );
-
-      // Trigger inference explicitly since it no longer runs automatically
-      await testContainer.read(
-        triggerNewInferenceProvider((
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-          linkedEntityId: null,
-        )).future,
-      );
-
-      // Wait for async operations
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Verify inference was called
-      verify(
-        () => mockRepository.runInference(
-          entityId: 'test-entity',
-          promptConfig: promptConfig,
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-          linkedEntityId: any(named: 'linkedEntityId'),
-        ),
-      ).called(1);
-
-      // Verify progress updates
-      expect(progressUpdates.length, 3);
-      expect(progressUpdates, [
-        'Starting inference...',
-        'Processing...',
-        'Complete!',
-      ]);
-
-      // Verify status changes
-      expect(statusChangeCount, 2);
-
-      // Verify state updates
-      expect(stateUpdates.contains(''), true); // Initial state
-      expect(stateUpdates.contains('Starting inference...'), true);
-      expect(stateUpdates.contains('Processing...'), true);
-      expect(stateUpdates.contains('Complete!'), true);
-
-      // Clean up
-      subscription.close();
     });
 
     test('deduplicates concurrent inference requests', () async {
@@ -342,90 +350,94 @@ void main() {
       expect(runCount, 1);
     });
 
-    test('handles errors during inference', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      );
+    test('handles errors during inference', () {
+      fakeAsync((async) {
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+        );
 
-      final stateUpdates = <String>[];
+        final stateUpdates = <String>[];
 
-      // Override the aiConfigByIdProvider to return our test prompt
-      container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
-          aiConfigByIdProvider('prompt-1').overrideWith(
-            (ref) => Future.value(promptConfig),
+        // Override the aiConfigByIdProvider to return our test prompt
+        container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider('prompt-1').overrideWith(
+              (ref) => Future.value(promptConfig),
+            ),
+          ],
+        );
+
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
           ),
-        ],
-      );
+        ).thenAnswer((invocation) async {
+          final onStatusChange = invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
+          onStatusChange(InferenceStatus.running);
+          throw Exception('Test error');
+        });
 
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-          linkedEntityId: any(named: 'linkedEntityId'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
-        onStatusChange(InferenceStatus.running);
-        throw Exception('Test error');
+        // Listen to the provider to capture state updates
+        final subscription = container.listen(
+          unifiedAiControllerProvider((
+            entityId: 'test-entity',
+            promptId: 'prompt-1',
+          )),
+          (previous, next) {
+            stateUpdates.add(next.message);
+          },
+          fireImmediately: true,
+        );
+
+        // Trigger inference explicitly since it no longer runs automatically
+        container.read(
+          triggerNewInferenceProvider((
+            entityId: 'test-entity',
+            promptId: 'prompt-1',
+            linkedEntityId: null,
+          )).future,
+        );
+
+        // Drive async execution
+        async.flushMicrotasks();
+
+        // Verify error handling
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'UnifiedAiController',
+            subDomain: 'runInference',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        // Verify state updates - should contain error message
+        expect(
+          stateUpdates
+              .any((s) => s.contains('error') || s.contains('Error')),
+          true,
+        );
+
+        // Clean up
+        subscription.close();
       });
-
-      // Listen to the provider to capture state updates
-      final subscription = container.listen(
-        unifiedAiControllerProvider((
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-        )),
-        (previous, next) {
-          stateUpdates.add(next.message);
-        },
-        fireImmediately: true,
-      );
-
-      // Trigger inference explicitly since it no longer runs automatically
-      await container.read(
-        triggerNewInferenceProvider((
-          entityId: 'test-entity',
-          promptId: 'prompt-1',
-          linkedEntityId: null,
-        )).future,
-      );
-
-      // Wait for async operations
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // Verify error handling
-      verify(
-        () => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: 'UnifiedAiController',
-          subDomain: 'runInference',
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        ),
-      ).called(1);
-
-      // Verify state updates - should contain error message
-      expect(
-          stateUpdates.any((s) => s.contains('error') || s.contains('Error')),
-          true);
-
-      // Clean up
-      subscription.close();
     });
   });
 
@@ -726,190 +738,200 @@ void main() {
       ).called(1);
     });
 
-    test('updates inference status for linked entity when provided', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.audioTranscription,
-      );
-
-      // Override the aiConfigByIdProvider to return our test prompt
-      container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
-          aiConfigByIdProvider('prompt-1').overrideWith(
-            (ref) => Future.value(promptConfig),
-          ),
-        ],
-      );
-
-      // Track status updates for both entities
-      final mainEntityStatuses = <InferenceStatus>[];
-      final linkedEntityStatuses = <InferenceStatus>[];
-
-      // Listen to inference status for main entity
-      container
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'audio-entry-id',
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            mainEntityStatuses.add(next);
-          },
-          fireImmediately: true,
-        )
-
-        // Listen to inference status for linked entity
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'linked-task-id',
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            linkedEntityStatuses.add(next);
-          },
-          fireImmediately: true,
+    test('updates inference status for linked entity when provided', () {
+      fakeAsync((async) {
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.audioTranscription,
         );
 
-      // Set up mock for runInference
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-          linkedEntityId: any(named: 'linkedEntityId'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
+        // Override the aiConfigByIdProvider to return our test prompt
+        container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider('prompt-1').overrideWith(
+              (ref) => Future.value(promptConfig),
+            ),
+          ],
+        );
 
-        // Simulate status changes
-        onStatusChange(InferenceStatus.running);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        onStatusChange(InferenceStatus.idle);
+        // Track status updates for both entities
+        final mainEntityStatuses = <InferenceStatus>[];
+        final linkedEntityStatuses = <InferenceStatus>[];
+
+        // Listen to inference status for main entity
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'audio-entry-id',
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              mainEntityStatuses.add(next);
+            },
+            fireImmediately: true,
+          )
+
+          // Listen to inference status for linked entity
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'linked-task-id',
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              linkedEntityStatuses.add(next);
+            },
+            fireImmediately: true,
+          );
+
+        // Set up mock for runInference
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onStatusChange = invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
+
+          // Simulate status changes
+          onStatusChange(InferenceStatus.running);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          onStatusChange(InferenceStatus.idle);
+        });
+
+        // Trigger inference with linkedEntityId
+        container.read(
+          triggerNewInferenceProvider((
+            entityId: 'audio-entry-id',
+            promptId: 'prompt-1',
+            linkedEntityId: 'linked-task-id',
+          )).future,
+        );
+
+        // Drive async execution through the delay
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 10))
+          ..flushMicrotasks();
+
+        // Both entities should have received the same status updates
+        expect(mainEntityStatuses, contains(InferenceStatus.idle));
+        expect(mainEntityStatuses, contains(InferenceStatus.running));
+        expect(linkedEntityStatuses, contains(InferenceStatus.idle));
+        expect(linkedEntityStatuses, contains(InferenceStatus.running));
       });
-
-      // Trigger inference with linkedEntityId
-      await container.read(
-        triggerNewInferenceProvider((
-          entityId: 'audio-entry-id',
-          promptId: 'prompt-1',
-          linkedEntityId: 'linked-task-id',
-        )).future,
-      );
-
-      // Wait for async operations
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Both entities should have received the same status updates
-      expect(mainEntityStatuses, contains(InferenceStatus.idle));
-      expect(mainEntityStatuses, contains(InferenceStatus.running));
-      expect(linkedEntityStatuses, contains(InferenceStatus.idle));
-      expect(linkedEntityStatuses, contains(InferenceStatus.running));
     });
 
-    test('updates error status for linked entity on failure', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.audioTranscription,
-      );
-
-      // Override the aiConfigByIdProvider to return our test prompt
-      container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider
-              .overrideWithValue(mockRepository),
-          aiConfigByIdProvider('prompt-1').overrideWith(
-            (ref) => Future.value(promptConfig),
-          ),
-        ],
-      );
-
-      // Track status updates for both entities
-      final mainEntityStatuses = <InferenceStatus>[];
-      final linkedEntityStatuses = <InferenceStatus>[];
-
-      // Listen to inference status for main entity
-      container
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'audio-entry-id',
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            mainEntityStatuses.add(next);
-          },
-          fireImmediately: true,
-        )
-
-        // Listen to inference status for linked entity
-        ..listen(
-          inferenceStatusControllerProvider(
-            id: 'linked-task-id',
-            aiResponseType: AiResponseType.audioTranscription,
-          ),
-          (previous, next) {
-            linkedEntityStatuses.add(next);
-          },
-          fireImmediately: true,
+    test('updates error status for linked entity on failure', () {
+      fakeAsync((async) {
+        final promptConfig = AiConfigPrompt(
+          id: 'prompt-1',
+          name: 'Test Prompt',
+          systemMessage: 'System',
+          userMessage: 'User',
+          defaultModelId: 'model-1',
+          modelIds: ['model-1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.audioTranscription,
         );
 
-      // Set up mock for runInference to fail
-      when(
-        () => mockRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
-          linkedEntityId: any(named: 'linkedEntityId'),
-        ),
-      ).thenAnswer((invocation) async {
-        final onStatusChange = invocation.namedArguments[#onStatusChange]
-            as void Function(InferenceStatus);
+        // Override the aiConfigByIdProvider to return our test prompt
+        container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider
+                .overrideWithValue(mockRepository),
+            aiConfigByIdProvider('prompt-1').overrideWith(
+              (ref) => Future.value(promptConfig),
+            ),
+          ],
+        );
 
-        // Simulate running status then error
-        onStatusChange(InferenceStatus.running);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        throw Exception('Test error');
+        // Track status updates for both entities
+        final mainEntityStatuses = <InferenceStatus>[];
+        final linkedEntityStatuses = <InferenceStatus>[];
+
+        // Listen to inference status for main entity
+        container
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'audio-entry-id',
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              mainEntityStatuses.add(next);
+            },
+            fireImmediately: true,
+          )
+
+          // Listen to inference status for linked entity
+          ..listen(
+            inferenceStatusControllerProvider(
+              id: 'linked-task-id',
+              aiResponseType: AiResponseType.audioTranscription,
+            ),
+            (previous, next) {
+              linkedEntityStatuses.add(next);
+            },
+            fireImmediately: true,
+          );
+
+        // Set up mock for runInference to fail
+        when(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            useConversationApproach: any(named: 'useConversationApproach'),
+            linkedEntityId: any(named: 'linkedEntityId'),
+          ),
+        ).thenAnswer((invocation) async {
+          final onStatusChange = invocation.namedArguments[#onStatusChange]
+              as void Function(InferenceStatus);
+
+          // Simulate running status then error
+          onStatusChange(InferenceStatus.running);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          throw Exception('Test error');
+        });
+
+        // Trigger inference with linkedEntityId
+        container.read(
+          triggerNewInferenceProvider((
+            entityId: 'audio-entry-id',
+            promptId: 'prompt-1',
+            linkedEntityId: 'linked-task-id',
+          )).future,
+        );
+
+        // Drive async execution through the delay
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 10))
+          ..flushMicrotasks();
+
+        // Both entities should have error status
+        expect(mainEntityStatuses, contains(InferenceStatus.running));
+        expect(mainEntityStatuses, contains(InferenceStatus.error));
+        expect(linkedEntityStatuses, contains(InferenceStatus.running));
+        expect(linkedEntityStatuses, contains(InferenceStatus.error));
       });
-
-      // Trigger inference with linkedEntityId
-      await container.read(
-        triggerNewInferenceProvider((
-          entityId: 'audio-entry-id',
-          promptId: 'prompt-1',
-          linkedEntityId: 'linked-task-id',
-        )).future,
-      );
-
-      // Wait for async operations
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Both entities should have error status
-      expect(mainEntityStatuses, contains(InferenceStatus.running));
-      expect(mainEntityStatuses, contains(InferenceStatus.error));
-      expect(linkedEntityStatuses, contains(InferenceStatus.running));
-      expect(linkedEntityStatuses, contains(InferenceStatus.error));
     });
   });
 

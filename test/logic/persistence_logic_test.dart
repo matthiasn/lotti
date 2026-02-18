@@ -213,7 +213,7 @@ void main() {
           DateTime.now(),
         );
 
-        // Wait a moment to ensure the update is processed
+        // Yield to allow real SQLite I/O to complete
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // expect to find updated entry
@@ -474,8 +474,8 @@ void main() {
       final updatedTask = task.copyWith(meta: updatedMeta);
       await getIt<PersistenceLogic>().updateDbEntity(updatedTask);
 
-      // Add small delay to ensure database update completes
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // Yield to microtask queue to ensure database update completes
+      await Future<void>.value();
 
       // After deleting task, we'll have one less entry
       final countAfterDelete = await getIt<JournalDb>().getJournalCount();

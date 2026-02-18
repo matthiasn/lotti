@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -224,102 +225,108 @@ void main() {
   });
 
   group('AudioPlayerController - Stream Updates', () {
-    test('position stream updates progress', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('position stream updates progress', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // Emit position update
-      positionController.add(const Duration(seconds: 30));
-      await Future<void>.delayed(Duration.zero);
+        // Emit position update
+        positionController.add(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(const Duration(seconds: 30)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(const Duration(seconds: 30)));
+      });
     });
 
-    test('position stream clamps progress to totalDuration', () async {
-      // Initialize controller and set total duration
-      final controller = container.read(audioPlayerControllerProvider.notifier);
-      controller.updateProgress(Duration.zero); // Trigger initial state
+    test('position stream clamps progress to totalDuration', () {
+      fakeAsync((async) {
+        // Initialize controller and set total duration
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
+        controller.updateProgress(Duration.zero); // Trigger initial state
 
-      // Manually set state with totalDuration for this test
-      // Since we can't easily set totalDuration via streams, we test the clamping logic
-      // by verifying updateProgress behavior
+        // Emit very large position (should not clamp when totalDuration is zero)
+        positionController.add(const Duration(hours: 10));
+        async.flushMicrotasks();
 
-      // First set a total duration by reading position after setting audioNote
-      // For this test, we emit a position that would exceed a typical duration
-
-      // Emit very large position (should not clamp when totalDuration is zero)
-      positionController.add(const Duration(hours: 10));
-      await Future<void>.delayed(Duration.zero);
-
-      final state = container.read(audioPlayerControllerProvider);
-      // When totalDuration is zero, clamping doesn't occur
-      expect(state.progress, equals(const Duration(hours: 10)));
+        final state = container.read(audioPlayerControllerProvider);
+        // When totalDuration is zero, clamping doesn't occur
+        expect(state.progress, equals(const Duration(hours: 10)));
+      });
     });
 
-    test('buffer stream updates buffered amount', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('buffer stream updates buffered amount', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // Emit buffer update
-      bufferController.add(const Duration(seconds: 60));
-      await Future<void>.delayed(Duration.zero);
+        // Emit buffer update
+        bufferController.add(const Duration(seconds: 60));
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(seconds: 60)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(seconds: 60)));
+      });
     });
 
-    test('buffer stream clamps to totalDuration when exceeding', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('buffer stream clamps to totalDuration when exceeding', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // When totalDuration is zero, no clamping occurs
-      bufferController.add(const Duration(hours: 5));
-      await Future<void>.delayed(Duration.zero);
+        // When totalDuration is zero, no clamping occurs
+        bufferController.add(const Duration(hours: 5));
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(hours: 5)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(hours: 5)));
+      });
     });
 
-    test('does not emit when progress is unchanged', () async {
-      final states = <AudioPlayerState>[];
+    test('does not emit when progress is unchanged', () {
+      fakeAsync((async) {
+        final states = <AudioPlayerState>[];
 
-      container.listen(
-        audioPlayerControllerProvider,
-        (previous, next) => states.add(next),
-        fireImmediately: true,
-      );
+        container.listen(
+          audioPlayerControllerProvider,
+          (previous, next) => states.add(next),
+          fireImmediately: true,
+        );
 
-      // Emit same progress twice
-      positionController.add(const Duration(seconds: 30));
-      await Future<void>.delayed(Duration.zero);
+        // Emit same progress twice
+        positionController.add(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      positionController.add(const Duration(seconds: 30));
-      await Future<void>.delayed(Duration.zero);
+        positionController.add(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      // Should only have 2 states: initial + first update
-      // Second emission with same value should not trigger update
-      expect(states.length, equals(2));
+        // Should only have 2 states: initial + first update
+        // Second emission with same value should not trigger update
+        expect(states.length, equals(2));
+      });
     });
 
-    test('does not emit when buffered is unchanged', () async {
-      final states = <AudioPlayerState>[];
+    test('does not emit when buffered is unchanged', () {
+      fakeAsync((async) {
+        final states = <AudioPlayerState>[];
 
-      container.listen(
-        audioPlayerControllerProvider,
-        (previous, next) => states.add(next),
-        fireImmediately: true,
-      );
+        container.listen(
+          audioPlayerControllerProvider,
+          (previous, next) => states.add(next),
+          fireImmediately: true,
+        );
 
-      // Emit same buffer twice
-      bufferController.add(const Duration(seconds: 60));
-      await Future<void>.delayed(Duration.zero);
+        // Emit same buffer twice
+        bufferController.add(const Duration(seconds: 60));
+        async.flushMicrotasks();
 
-      bufferController.add(const Duration(seconds: 60));
-      await Future<void>.delayed(Duration.zero);
+        bufferController.add(const Duration(seconds: 60));
+        async.flushMicrotasks();
 
-      // Should only have 2 states: initial + first update
-      expect(states.length, equals(2));
+        // Should only have 2 states: initial + first update
+        expect(states.length, equals(2));
+      });
     });
   });
 
@@ -360,17 +367,21 @@ void main() {
       expect(state.status, equals(AudioPlayerStatus.paused));
     });
 
-    test('sets pausedAt to current progress', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('sets pausedAt to current progress', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set progress first
-      positionController.add(const Duration(seconds: 45));
-      await Future<void>.delayed(Duration.zero);
+        // Set progress first
+        positionController.add(const Duration(seconds: 45));
+        async.flushMicrotasks();
 
-      await controller.pause();
+        controller.pause();
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.pausedAt, equals(const Duration(seconds: 45)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.pausedAt, equals(const Duration(seconds: 45)));
+      });
     });
 
     test('calls player.pause()', () async {
@@ -411,19 +422,23 @@ void main() {
       expect(state.buffered, equals(const Duration(seconds: 90)));
     });
 
-    test('preserves buffered when seeking backward', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('preserves buffered when seeking backward', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set buffer ahead
-      bufferController.add(const Duration(seconds: 120));
-      await Future<void>.delayed(Duration.zero);
+        // Set buffer ahead
+        bufferController.add(const Duration(seconds: 120));
+        async.flushMicrotasks();
 
-      // Seek backward
-      await controller.seek(const Duration(seconds: 30));
+        // Seek backward
+        controller.seek(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(seconds: 120)));
-      expect(state.progress, equals(const Duration(seconds: 30)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(seconds: 120)));
+        expect(state.progress, equals(const Duration(seconds: 30)));
+      });
     });
 
     test('calls player.seek()', () async {
@@ -547,308 +562,357 @@ void main() {
       );
     });
 
-    test('paused -> playing -> paused maintains progress tracking', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('paused -> playing -> paused maintains progress tracking', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Simulate playing and receiving position updates
-      await controller.play();
-      positionController.add(const Duration(seconds: 30));
-      await Future<void>.delayed(Duration.zero);
+        // Simulate playing and receiving position updates
+        controller.play();
+        async.flushMicrotasks();
+        positionController.add(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      await controller.pause();
-      expect(
-        container.read(audioPlayerControllerProvider).pausedAt,
-        equals(const Duration(seconds: 30)),
-      );
+        controller.pause();
+        async.flushMicrotasks();
+        expect(
+          container.read(audioPlayerControllerProvider).pausedAt,
+          equals(const Duration(seconds: 30)),
+        );
 
-      await controller.play();
-      positionController.add(const Duration(seconds: 60));
-      await Future<void>.delayed(Duration.zero);
+        controller.play();
+        async.flushMicrotasks();
+        positionController.add(const Duration(seconds: 60));
+        async.flushMicrotasks();
 
-      await controller.pause();
-      expect(
-        container.read(audioPlayerControllerProvider).pausedAt,
-        equals(const Duration(seconds: 60)),
-      );
+        controller.pause();
+        async.flushMicrotasks();
+        expect(
+          container.read(audioPlayerControllerProvider).pausedAt,
+          equals(const Duration(seconds: 60)),
+        );
+      });
     });
   });
 
   group('AudioPlayerController - Edge cases', () {
-    test('handles zero durations', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('handles zero durations', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      positionController.add(Duration.zero);
-      bufferController.add(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-      await controller.seek(Duration.zero);
+        positionController.add(Duration.zero);
+        bufferController.add(Duration.zero);
+        async.flushMicrotasks();
+        controller.seek(Duration.zero);
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(Duration.zero));
-      expect(state.buffered, equals(Duration.zero));
-      expect(state.pausedAt, equals(Duration.zero));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(Duration.zero));
+        expect(state.buffered, equals(Duration.zero));
+        expect(state.pausedAt, equals(Duration.zero));
+      });
     });
 
-    test('handles very large durations', () async {
-      // Initialize controller first
-      container.read(audioPlayerControllerProvider);
+    test('handles very large durations', () {
+      fakeAsync((async) {
+        // Initialize controller first
+        container.read(audioPlayerControllerProvider);
 
-      positionController.add(const Duration(hours: 999));
-      await Future<void>.delayed(Duration.zero);
+        positionController.add(const Duration(hours: 999));
+        async.flushMicrotasks();
 
-      expect(
-        container.read(audioPlayerControllerProvider).progress,
-        equals(const Duration(hours: 999)),
-      );
+        expect(
+          container.read(audioPlayerControllerProvider).progress,
+          equals(const Duration(hours: 999)),
+        );
+      });
     });
 
-    test('clamps progress to totalDuration when exceeding', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('clamps progress to totalDuration when exceeding', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // The test verifies the clamping logic in updateProgress
-      // When position exceeds totalDuration and totalDuration > 0, it clamps
-      positionController.add(const Duration(seconds: 30));
-      await Future<void>.delayed(Duration.zero);
+        // The test verifies the clamping logic in updateProgress
+        // When position exceeds totalDuration and totalDuration > 0, it clamps
+        positionController.add(const Duration(seconds: 30));
+        async.flushMicrotasks();
 
-      // Progress should be updated normally when not exceeding
-      expect(
-        container.read(audioPlayerControllerProvider).progress,
-        equals(const Duration(seconds: 30)),
-      );
+        // Progress should be updated normally when not exceeding
+        expect(
+          container.read(audioPlayerControllerProvider).progress,
+          equals(const Duration(seconds: 30)),
+        );
+      });
     });
 
-    test('clamps buffer to totalDuration when exceeding', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('clamps buffer to totalDuration when exceeding', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // Emit buffer updates
-      bufferController.add(const Duration(seconds: 60));
-      await Future<void>.delayed(Duration.zero);
+        // Emit buffer updates
+        bufferController.add(const Duration(seconds: 60));
+        async.flushMicrotasks();
 
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(seconds: 60)));
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(seconds: 60)));
+      });
     });
   });
 
   group('AudioPlayerController - Completion Timer', () {
-    test('handleCompleted ignores when isCompleted is false', () async {
-      // Initialize controller
-      container.read(audioPlayerControllerProvider);
+    test('handleCompleted ignores when isCompleted is false', () {
+      fakeAsync((async) {
+        // Initialize controller
+        container.read(audioPlayerControllerProvider);
 
-      // Emit completed = false
-      completedController.add(false);
-      await Future<void>.delayed(Duration.zero);
+        // Emit completed = false
+        completedController.add(false);
+        async.flushMicrotasks();
 
-      // Nothing should happen - no timer created
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.status, equals(AudioPlayerStatus.initializing));
+        // Nothing should happen - no timer created
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.status, equals(AudioPlayerStatus.initializing));
+      });
     });
 
-    test('handleCompleted ignores when timer is already active', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('handleCompleted ignores when timer is already active', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set a longer delay so timer stays active
-      controller.completionDelayForTest = const Duration(seconds: 10);
+        // Set a longer delay so timer stays active
+        controller.completionDelayForTest = const Duration(seconds: 10);
 
-      // First completion starts timer
-      controller.handleCompletedForTest(isCompleted: true);
-      await Future<void>.delayed(Duration.zero);
+        // First completion starts timer
+        controller.handleCompletedForTest(isCompleted: true);
+        async.flushMicrotasks();
 
-      // Second completion should be ignored (timer active)
-      controller.handleCompletedForTest(isCompleted: true);
-      await Future<void>.delayed(Duration.zero);
+        // Second completion should be ignored (timer active)
+        controller.handleCompletedForTest(isCompleted: true);
+        async.flushMicrotasks();
 
-      // Timer is still pending
-      expect(controller.completionDelayForTest,
-          equals(const Duration(seconds: 10)));
+        // Timer is still pending
+        expect(
+          controller.completionDelayForTest,
+          equals(const Duration(seconds: 10)),
+        );
+
+        // Elapse to let the timer complete so fakeAsync doesn't complain
+        async.elapse(const Duration(seconds: 10));
+      });
     });
 
-    test('handleCompleted ignores when audioNote duration is null', () async {
-      // Initialize controller - no audioNote set, so duration is null
-      container.read(audioPlayerControllerProvider);
+    test('handleCompleted ignores when audioNote duration is null', () {
+      fakeAsync((async) {
+        // Initialize controller - no audioNote set, so duration is null
+        container.read(audioPlayerControllerProvider);
 
-      // Emit completion
-      completedController.add(true);
-      await Future<void>.delayed(Duration.zero);
+        // Emit completion
+        completedController.add(true);
+        async.flushMicrotasks();
 
-      // Nothing should happen since audioNote is null
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(Duration.zero));
+        // Nothing should happen since audioNote is null
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(Duration.zero));
+      });
     });
 
-    test('completion timer fires and updates progress to duration', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('completion timer fires and updates progress to duration', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set a very short delay for testing
-      controller.completionDelayForTest = const Duration(milliseconds: 10);
+        // Set a very short delay for testing
+        controller.completionDelayForTest = const Duration(milliseconds: 10);
 
-      // Set state with an audioNote that has duration using test helper
-      controller.stateForTest = AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: const Duration(minutes: 5),
-        audioNote: JournalAudio(
-          meta: Metadata(
-            id: 'test-audio-id',
-            createdAt: DateTime(2024, 1, 15),
-            updatedAt: DateTime(2024, 1, 15),
-            dateFrom: DateTime(2024, 1, 15),
-            dateTo: DateTime(2024, 1, 15),
+        // Set state with an audioNote that has duration using test helper
+        controller.stateForTest = AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: const Duration(minutes: 5),
+          audioNote: JournalAudio(
+            meta: Metadata(
+              id: 'test-audio-id',
+              createdAt: DateTime(2024, 1, 15),
+              updatedAt: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+              dateTo: DateTime(2024, 1, 15),
+            ),
+            data: AudioData(
+              audioFile: 'test.m4a',
+              audioDirectory: '/test/path',
+              duration: const Duration(minutes: 3),
+              dateTo: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+            ),
           ),
-          data: AudioData(
-            audioFile: 'test.m4a',
-            audioDirectory: '/test/path',
-            duration: const Duration(minutes: 3),
-            dateTo: DateTime(2024, 1, 15),
-            dateFrom: DateTime(2024, 1, 15),
-          ),
-        ),
-      );
+        );
 
-      // Trigger completion
-      controller.handleCompletedForTest(isCompleted: true);
+        // Trigger completion
+        controller.handleCompletedForTest(isCompleted: true);
+        async.flushMicrotasks();
 
-      // Wait for timer to fire
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Advance time past the completion delay
+        async.elapse(const Duration(milliseconds: 10));
 
-      // Progress should be updated to the audio duration
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(const Duration(minutes: 3)));
+        // Progress should be updated to the audio duration
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(const Duration(minutes: 3)));
+      });
     });
 
-    test('completion timer skips update when audio note has changed', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('completion timer skips update when audio note has changed', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set a longer delay so we can change the audio note before timer fires
-      controller.completionDelayForTest = const Duration(milliseconds: 50);
+        // Set a longer delay so we can change the audio note before timer fires
+        controller.completionDelayForTest = const Duration(milliseconds: 50);
 
-      // Set initial audio note
-      controller.stateForTest = AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: const Duration(minutes: 5),
-        audioNote: JournalAudio(
-          meta: Metadata(
-            id: 'first-audio-id',
-            createdAt: DateTime(2024, 1, 15),
-            updatedAt: DateTime(2024, 1, 15),
-            dateFrom: DateTime(2024, 1, 15),
-            dateTo: DateTime(2024, 1, 15),
+        // Set initial audio note
+        controller.stateForTest = AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: const Duration(minutes: 5),
+          audioNote: JournalAudio(
+            meta: Metadata(
+              id: 'first-audio-id',
+              createdAt: DateTime(2024, 1, 15),
+              updatedAt: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+              dateTo: DateTime(2024, 1, 15),
+            ),
+            data: AudioData(
+              audioFile: 'first.m4a',
+              audioDirectory: '/test/path',
+              duration: const Duration(minutes: 3),
+              dateTo: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+            ),
           ),
-          data: AudioData(
-            audioFile: 'first.m4a',
-            audioDirectory: '/test/path',
-            duration: const Duration(minutes: 3),
-            dateTo: DateTime(2024, 1, 15),
-            dateFrom: DateTime(2024, 1, 15),
+        );
+
+        // Trigger completion - timer starts with captured id 'first-audio-id'
+        controller.handleCompletedForTest(isCompleted: true);
+        async.flushMicrotasks();
+
+        // Change to a different audio note before timer fires
+        controller.stateForTest = AudioPlayerState(
+          status: AudioPlayerStatus.stopped,
+          totalDuration: const Duration(minutes: 10),
+          audioNote: JournalAudio(
+            meta: Metadata(
+              id: 'second-audio-id',
+              createdAt: DateTime(2024, 1, 16),
+              updatedAt: DateTime(2024, 1, 16),
+              dateFrom: DateTime(2024, 1, 16),
+              dateTo: DateTime(2024, 1, 16),
+            ),
+            data: AudioData(
+              audioFile: 'second.m4a',
+              audioDirectory: '/test/path',
+              duration: const Duration(minutes: 7),
+              dateTo: DateTime(2024, 1, 16),
+              dateFrom: DateTime(2024, 1, 16),
+            ),
           ),
-        ),
-      );
+        );
 
-      // Trigger completion - timer starts with captured id 'first-audio-id'
-      controller.handleCompletedForTest(isCompleted: true);
+        // Advance time past the completion delay to fire the timer
+        async.elapse(const Duration(milliseconds: 50));
 
-      // Change to a different audio note before timer fires
-      controller.stateForTest = AudioPlayerState(
-        status: AudioPlayerStatus.stopped,
-        totalDuration: const Duration(minutes: 10),
-        audioNote: JournalAudio(
-          meta: Metadata(
-            id: 'second-audio-id',
-            createdAt: DateTime(2024, 1, 16),
-            updatedAt: DateTime(2024, 1, 16),
-            dateFrom: DateTime(2024, 1, 16),
-            dateTo: DateTime(2024, 1, 16),
-          ),
-          data: AudioData(
-            audioFile: 'second.m4a',
-            audioDirectory: '/test/path',
-            duration: const Duration(minutes: 7),
-            dateTo: DateTime(2024, 1, 16),
-            dateFrom: DateTime(2024, 1, 16),
-          ),
-        ),
-      );
-
-      // Wait for timer to fire
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Progress should NOT be updated because audio note changed
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(Duration.zero));
-      expect(state.audioNote?.meta.id, equals('second-audio-id'));
+        // Progress should NOT be updated because audio note changed
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(Duration.zero));
+        expect(state.audioNote?.meta.id, equals('second-audio-id'));
+      });
     });
   });
 
   group('AudioPlayerController - Clamping with totalDuration', () {
-    test('clamps progress when exceeding totalDuration', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('clamps progress when exceeding totalDuration', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set state with totalDuration using test helper
-      controller.stateForTest = const AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: Duration(minutes: 5),
-      );
+        // Set state with totalDuration using test helper
+        controller.stateForTest = const AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: Duration(minutes: 5),
+        );
 
-      // Emit a position that exceeds totalDuration
-      positionController.add(const Duration(minutes: 10));
-      await Future<void>.delayed(Duration.zero);
+        // Emit a position that exceeds totalDuration
+        positionController.add(const Duration(minutes: 10));
+        async.flushMicrotasks();
 
-      // Progress should be clamped to totalDuration
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(const Duration(minutes: 5)));
+        // Progress should be clamped to totalDuration
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(const Duration(minutes: 5)));
+      });
     });
 
-    test('clamps buffer when exceeding totalDuration', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('clamps buffer when exceeding totalDuration', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set state with totalDuration using test helper
-      controller.stateForTest = const AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: Duration(minutes: 5),
-      );
+        // Set state with totalDuration using test helper
+        controller.stateForTest = const AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: Duration(minutes: 5),
+        );
 
-      // Emit a buffer that exceeds totalDuration
-      bufferController.add(const Duration(minutes: 10));
-      await Future<void>.delayed(Duration.zero);
+        // Emit a buffer that exceeds totalDuration
+        bufferController.add(const Duration(minutes: 10));
+        async.flushMicrotasks();
 
-      // Buffer should be clamped to totalDuration
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(minutes: 5)));
+        // Buffer should be clamped to totalDuration
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(minutes: 5)));
+      });
     });
 
-    test('does not clamp progress when within totalDuration', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('does not clamp progress when within totalDuration', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set state with totalDuration using test helper
-      controller.stateForTest = const AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: Duration(minutes: 5),
-      );
+        // Set state with totalDuration using test helper
+        controller.stateForTest = const AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: Duration(minutes: 5),
+        );
 
-      // Emit a position within totalDuration
-      positionController.add(const Duration(minutes: 3));
-      await Future<void>.delayed(Duration.zero);
+        // Emit a position within totalDuration
+        positionController.add(const Duration(minutes: 3));
+        async.flushMicrotasks();
 
-      // Progress should not be clamped
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.progress, equals(const Duration(minutes: 3)));
+        // Progress should not be clamped
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.progress, equals(const Duration(minutes: 3)));
+      });
     });
 
-    test('does not clamp buffer when within totalDuration', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+    test('does not clamp buffer when within totalDuration', () {
+      fakeAsync((async) {
+        final controller =
+            container.read(audioPlayerControllerProvider.notifier);
 
-      // Set state with totalDuration using test helper
-      controller.stateForTest = const AudioPlayerState(
-        status: AudioPlayerStatus.playing,
-        totalDuration: Duration(minutes: 5),
-      );
+        // Set state with totalDuration using test helper
+        controller.stateForTest = const AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: Duration(minutes: 5),
+        );
 
-      // Emit a buffer within totalDuration
-      bufferController.add(const Duration(minutes: 3));
-      await Future<void>.delayed(Duration.zero);
+        // Emit a buffer within totalDuration
+        bufferController.add(const Duration(minutes: 3));
+        async.flushMicrotasks();
 
-      // Buffer should not be clamped
-      final state = container.read(audioPlayerControllerProvider);
-      expect(state.buffered, equals(const Duration(minutes: 3)));
+        // Buffer should not be clamped
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.buffered, equals(const Duration(minutes: 3)));
+      });
     });
   });
 

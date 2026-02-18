@@ -250,89 +250,92 @@ void main() {
         });
       });
 
-      test('addAssistantMessage with only tool calls', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('addAssistantMessage with only tool calls', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        final toolCalls = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{"arg": "value"}',
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: '{"arg": "value"}',
+              ),
             ),
-          ),
-        ];
+          ];
 
-        manager.addAssistantMessage(
-          toolCalls: toolCalls,
-        );
+          manager.addAssistantMessage(
+            toolCalls: toolCalls,
+          );
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(manager.messages.length, 1);
-        expect(
-            manager.messages.first.role, ChatCompletionMessageRole.assistant);
-        expect(manager.messages.first.content, isNull);
-        // Tool calls were provided in the addAssistantMessage call
+          expect(manager.messages.length, 1);
+          expect(
+              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+          expect(manager.messages.first.content, isNull);
+          // Tool calls were provided in the addAssistantMessage call
 
-        expect(events.length, 1);
-        expect(events.first, isA<ToolCallsEvent>());
-        final toolCallsEvent = events.first as ToolCallsEvent;
-        expect(toolCallsEvent.calls, toolCalls);
+          expect(events.length, 1);
+          expect(events.first, isA<ToolCallsEvent>());
+          final toolCallsEvent = events.first as ToolCallsEvent;
+          expect(toolCallsEvent.calls, toolCalls);
+        });
       });
 
-      test('addAssistantMessage with both content and tool calls', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('addAssistantMessage with both content and tool calls', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        final toolCalls = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{"arg": "value"}',
+          final toolCalls = [
+            const ChatCompletionMessageToolCall(
+              id: 'tool-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'test_function',
+                arguments: '{"arg": "value"}',
+              ),
             ),
-          ),
-        ];
+          ];
 
-        manager.addAssistantMessage(
-          content: 'Executing function',
-          toolCalls: toolCalls,
-        );
+          manager.addAssistantMessage(
+            content: 'Executing function',
+            toolCalls: toolCalls,
+          );
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(manager.messages.length, 1);
-        expect(manager.messages.first.content, 'Executing function');
-        // Both content and tool calls were provided
+          expect(manager.messages.length, 1);
+          expect(manager.messages.first.content, 'Executing function');
+          // Both content and tool calls were provided
 
-        // Should emit tool calls event (takes priority over content)
-        expect(events.length, 1);
-        expect(events.first, isA<ToolCallsEvent>());
+          // Should emit tool calls event (takes priority over content)
+          expect(events.length, 1);
+          expect(events.first, isA<ToolCallsEvent>());
+        });
       });
 
-      test('addAssistantMessage with neither content nor tool calls', () async {
-        final events = <ConversationEvent>[];
-        manager.events.listen(events.add);
+      test('addAssistantMessage with neither content nor tool calls', () {
+        fakeAsync((async) {
+          final events = <ConversationEvent>[];
+          manager.events.listen(events.add);
 
-        manager.addAssistantMessage();
+          manager.addAssistantMessage();
 
-        // Allow event processing
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(manager.messages.length, 1);
-        expect(
-            manager.messages.first.role, ChatCompletionMessageRole.assistant);
-        expect(manager.messages.first.content, isNull);
-        // Neither content nor tool calls were provided
+          expect(manager.messages.length, 1);
+          expect(
+              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+          expect(manager.messages.first.content, isNull);
+          // Neither content nor tool calls were provided
 
-        // No event should be emitted for empty assistant message
-        expect(events, isEmpty);
+          // No event should be emitted for empty assistant message
+          expect(events, isEmpty);
+        });
       });
     });
 
@@ -490,7 +493,7 @@ void main() {
     });
 
     group('Thought Signatures', () {
-      test('stores thought signatures when adding assistant message', () async {
+      test('stores thought signatures when adding assistant message', () {
         final toolCalls = [
           const ChatCompletionMessageToolCall(
             id: 'tool-1',
@@ -515,7 +518,7 @@ void main() {
         expect(manager.getSignatureForToolCall('unknown-tool'), isNull);
       });
 
-      test('accumulates signatures across multiple messages', () async {
+      test('accumulates signatures across multiple messages', () {
         final toolCalls1 = [
           const ChatCompletionMessageToolCall(
             id: 'tool-1',
@@ -567,7 +570,7 @@ void main() {
         );
       });
 
-      test('does not store signatures when null', () async {
+      test('does not store signatures when null', () {
         final toolCalls = [
           const ChatCompletionMessageToolCall(
             id: 'tool-1',

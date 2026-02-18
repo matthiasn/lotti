@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -78,30 +79,34 @@ void main() {
         verify(mockJournalDb.getAllHabitDefinitions).called(1);
       });
 
-      test('emits updated habits on notification', () async {
-        var callCount = 0;
-        final updatedHabit = testHabit.copyWith(name: 'Updated Habit');
-        when(mockJournalDb.getAllHabitDefinitions).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 1) return [testHabit];
-          return [testHabit, updatedHabit];
+      test('emits updated habits on notification', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          final updatedHabit = testHabit.copyWith(name: 'Updated Habit');
+          when(mockJournalDb.getAllHabitDefinitions).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return [testHabit];
+            return [testHabit, updatedHabit];
+          });
+
+          final results = <List<HabitDefinition>>[];
+          final subscription =
+              repository.watchHabitDefinitions().listen(results.add);
+
+          async.flushMicrotasks();
+          expect(results, hasLength(1));
+          expect(results[0], hasLength(1));
+
+          updateStreamController.add({habitsNotification});
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
+
+          expect(results, hasLength(2));
+          expect(results[1], hasLength(2));
+
+          subscription.cancel();
         });
-
-        final results = <List<HabitDefinition>>[];
-        final subscription =
-            repository.watchHabitDefinitions().listen(results.add);
-
-        await Future<void>.delayed(Duration.zero);
-        expect(results, hasLength(1));
-        expect(results[0], hasLength(1));
-
-        updateStreamController.add({habitsNotification});
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(results, hasLength(2));
-        expect(results[1], hasLength(2));
-
-        await subscription.cancel();
       });
     });
 
@@ -255,21 +260,24 @@ void main() {
     });
 
     group('updateStream', () {
-      test('returns stream from UpdateNotifications', () async {
-        final notifications = <Set<String>>[];
-        final subscription = repository.updateStream.listen(notifications.add);
+      test('returns stream from UpdateNotifications', () {
+        fakeAsync((async) {
+          final notifications = <Set<String>>[];
+          final subscription =
+              repository.updateStream.listen(notifications.add);
 
-        updateStreamController.add({'habit-1'});
-        await Future<void>.delayed(Duration.zero);
+          updateStreamController.add({'habit-1'});
+          async.flushMicrotasks();
 
-        updateStreamController.add({habitCompletionNotification});
-        await Future<void>.delayed(Duration.zero);
+          updateStreamController.add({habitCompletionNotification});
+          async.flushMicrotasks();
 
-        expect(notifications, hasLength(2));
-        expect(notifications[0], contains('habit-1'));
-        expect(notifications[1], contains(habitCompletionNotification));
+          expect(notifications, hasLength(2));
+          expect(notifications[0], contains('habit-1'));
+          expect(notifications[1], contains(habitCompletionNotification));
 
-        await subscription.cancel();
+          subscription.cancel();
+        });
       });
     });
   });
