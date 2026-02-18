@@ -40,19 +40,10 @@ class ChecklistCardBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Items list (no horizontal padding so swipe backgrounds go edge-to-edge;
-        // individual items handle their own content padding).
-        if (itemIds.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
-            child: ChecklistEmptyState(),
-          )
-        else if (allDone)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
-            child: ChecklistAllDoneState(),
-          )
-        else
+        // Items list: no horizontal padding on the list so swipe backgrounds
+        // go edge-to-edge; individual items handle their own content padding.
+        // Empty/all-done placeholders get horizontal padding instead.
+        if (itemIds.isNotEmpty && !allDone)
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -77,6 +68,14 @@ class ChecklistCardBody extends StatelessWidget {
                 );
               },
             ),
+          )
+        else
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            child: itemIds.isEmpty
+                ? const ChecklistEmptyState()
+                : const ChecklistAllDoneState(),
           ),
 
         // Divider 3: Between items and add input (no horizontal padding)
