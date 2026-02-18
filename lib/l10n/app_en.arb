@@ -289,9 +289,9 @@
   "audioRecordingCancel": "CANCEL",
   "audioRecordingListening": "Listening...",
   "audioRecordingRealtime": "Live Transcription",
-  "audioRecordingStop": "STOP",
   "audioRecordings": "Audio Recordings",
   "audioRecordingStandard": "Standard",
+  "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatic Prompts",
   "backfillManualDescription": "Request all missing entries regardless of age. Use this to recover older sync gaps.",
   "backfillManualProcessing": "Processing...",
@@ -682,13 +682,17 @@
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {"type": "String"}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Failed to delete device: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Done",

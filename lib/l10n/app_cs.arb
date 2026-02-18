@@ -290,9 +290,9 @@
   "audioRecordingCancel": "ZRUŠIT",
   "audioRecordingListening": "Naslouchám...",
   "audioRecordingRealtime": "Živý přepis",
-  "audioRecordingStop": "STOP",
   "audioRecordings": "Audiozáznamy",
   "audioRecordingStandard": "Standardní",
+  "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatické výzvy",
   "backfillManualDescription": "Požádejte o všechny chybějící záznamy bez ohledu na jejich stáří. Použijte toto pro obnovení starších mezer ve synchronizaci.",
   "backfillManualProcessing": "Probíhá zpracování...",
@@ -400,13 +400,13 @@
       }
     }
   },
-  "checklistItemArchiveUndo": "Zpět",
   "checklistItemArchived": "Položka archivována",
+  "checklistItemArchiveUndo": "Zpět",
   "checklistItemDelete": "Smazat položku kontrolního seznamu?",
   "checklistItemDeleteCancel": "Zrušit",
   "checklistItemDeleteConfirm": "Potvrdit",
-  "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
   "checklistItemDeleted": "Položka smazána",
+  "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
   "checklistItemDrag": "Přetáhněte návrhy do kontrolního seznamu",
   "checklistItemUnarchived": "Položka obnovena z archivu",
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
@@ -683,13 +683,17 @@
   "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {"type": "String"}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Hotovo",

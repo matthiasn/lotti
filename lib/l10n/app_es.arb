@@ -290,9 +290,9 @@
   "audioRecordingCancel": "CANCELAR",
   "audioRecordingListening": "Escuchando...",
   "audioRecordingRealtime": "Transcripción en vivo",
-  "audioRecordingStop": "PARAR",
   "audioRecordings": "Grabaciones de audio",
   "audioRecordingStandard": "Estándar",
+  "audioRecordingStop": "PARAR",
   "automaticPrompts": "Prompts automáticos",
   "backfillManualDescription": "Solicitar todas las entradas faltantes sin importar su antigüedad. Úsalo para recuperar brechas de sincronización antiguas.",
   "backfillManualProcessing": "Procesando...",
@@ -683,13 +683,17 @@
   "deviceDeletedSuccess": "Dispositivo {deviceName} eliminado correctamente",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {"type": "String"}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Error al eliminar el dispositivo: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Hecho",
