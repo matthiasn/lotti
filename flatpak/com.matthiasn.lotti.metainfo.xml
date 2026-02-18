@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.865" date="2026-02-18">
+      <description>
+          <p>Realtime Transcription in Journal: Live transcription now works in the journal audio recorder too, not just AI chat. See your words appear in real time as you record journal entries.</p>
+      </description>
+    </release>
     <release version="0.9.864" date="2026-02-18">
       <description>
           <p>Checklist Layout &amp; AI Context: Swipe backgrounds now extend edge-to-edge for a polished look. Archived checklist items are now properly marked in AI prompts, so the AI understands they are not active work.</p>

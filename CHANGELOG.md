@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.865] - 2026-02-18
+### Added
+- Realtime transcription support for journal audio recording, extending live
+  subtitles beyond AI chat to the main journal entry recorder.
+
 ## [0.9.864] - 2026-02-18
 ### Improved
 - Checklist swipe backgrounds now extend edge-to-edge, filling the full card
