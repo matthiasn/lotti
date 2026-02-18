@@ -103,6 +103,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistantTranscribeAudio => 'Transcribe audio';
 
   @override
+  String get aiBatchToggleTooltip => 'Switch to standard recording';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API key cannot be empty';
 
   @override
@@ -445,6 +448,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderWhisperName => 'Whisper (local)';
 
   @override
+  String get aiRealtimeToggleTooltip => 'Switch to live transcription';
+
+  @override
+  String get aiRealtimeTranscribing => 'Live transcription...';
+
+  @override
+  String get aiRealtimeTranscriptionError =>
+      'Live transcription disconnected. Audio saved for batch processing.';
+
+  @override
   String get aiResponseDeleteCancel => 'Cancel';
 
   @override
@@ -642,7 +655,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiKeysSettingsPageTitle => 'AI Inference Providers';
 
   @override
+  String get audioRecordingCancel => 'CANCEL';
+
+  @override
+  String get audioRecordingListening => 'Listening...';
+
+  @override
+  String get audioRecordingRealtime => 'Live Transcription';
+
+  @override
   String get audioRecordings => 'Audio Recordings';
+
+  @override
+  String get audioRecordingStandard => 'Standard';
+
+  @override
+  String get audioRecordingStop => 'STOP';
 
   @override
   String get automaticPrompts => 'Automatic Prompts';
@@ -802,6 +830,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get celebrationTapToContinue => 'Tap to continue';
+
+  @override
+  String get chatInputCancelRealtime => 'Cancel (Esc)';
+
+  @override
+  String get chatInputCancelRecording => 'Cancel recording (Esc)';
+
+  @override
+  String get chatInputConfigureModel => 'Configure model';
+
+  @override
+  String get chatInputHintDefault => 'Ask about your tasks and productivity...';
+
+  @override
+  String get chatInputHintSelectModel => 'Select a model to start chatting';
+
+  @override
+  String get chatInputListening => 'Listening...';
+
+  @override
+  String get chatInputPleaseWait => 'Please wait...';
+
+  @override
+  String get chatInputProcessing => 'Processing...';
+
+  @override
+  String get chatInputRecordVoice => 'Record voice message';
+
+  @override
+  String get chatInputSendTooltip => 'Send message';
+
+  @override
+  String get chatInputStartRealtime => 'Start live transcription';
+
+  @override
+  String get chatInputStopRealtime => 'Stop live transcription';
+
+  @override
+  String get chatInputStopTranscribe => 'Stop and transcribe';
 
   @override
   String get checklistAddItem => 'Add a new item';
@@ -1491,12 +1558,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Delete device';
 
   @override
-  String deviceDeletedSuccess(Object deviceName) {
+  String deviceDeletedSuccess(String deviceName) {
     return 'Device $deviceName deleted successfully';
   }
 
   @override
-  String deviceDeleteFailed(Object error) {
+  String deviceDeleteFailed(String error) {
     return 'Failed to delete device: $error';
   }
 

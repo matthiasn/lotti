@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Přemýšlím...",
   "aiAssistantTitle": "AI asistent",
   "aiAssistantTranscribeAudio": "Přepsat zvuk",
+  "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
   "aiConfigApiKeyEmptyError": "API klíč nemůže být prázdný",
   "aiConfigApiKeyFieldLabel": "API klíč",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 přiřazený model odebrán} other{{count} přiřazených modelů odebráno}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (lokální)",
   "aiProviderWhisperDescription": "Lokální přepisování s Whisper a kompatibilní API OpenAI",
   "aiProviderWhisperName": "Whisper (lokální)",
+  "aiRealtimeToggleTooltip": "Přepnout na živý přepis",
+  "aiRealtimeTranscribing": "Živý přepis...",
+  "aiRealtimeTranscriptionError": "Živý přepis odpojen. Zvuk uložen pro dávkové zpracování.",
   "aiResponseDeleteCancel": "Zrušit",
   "aiResponseDeleteConfirm": "Smazat",
   "aiResponseDeleteError": "Nepodařilo se smazat odpověď AI. Prosím, zkuste to znovu.",
@@ -283,7 +287,12 @@
   "apiKeyFormCreateButton": "Vytvořit",
   "apiKeyFormUpdateButton": "Aktualizovat",
   "apiKeysSettingsPageTitle": "Poskytovatelé AI inferencí",
+  "audioRecordingCancel": "ZRUŠIT",
+  "audioRecordingListening": "Naslouchám...",
+  "audioRecordingRealtime": "Živý přepis",
   "audioRecordings": "Audiozáznamy",
+  "audioRecordingStandard": "Standardní",
+  "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatické výzvy",
   "backfillManualDescription": "Požádejte o všechny chybějící záznamy bez ohledu na jejich stáří. Použijte toto pro obnovení starších mezer ve synchronizaci.",
   "backfillManualProcessing": "Probíhá zpracování...",
@@ -350,6 +359,19 @@
   "categoryPrivateDescription": "Skrýt tuto kategorii, když je zapnutý soukromý režim",
   "categorySearchPlaceholder": "Vyhledávat kategorie...",
   "celebrationTapToContinue": "Klepněte pro pokračování",
+  "chatInputCancelRealtime": "Zrušit (Esc)",
+  "chatInputCancelRecording": "Zrušit nahrávání (Esc)",
+  "chatInputConfigureModel": "Konfigurovat model",
+  "chatInputHintDefault": "Ptejte se na své úkoly a produktivitu...",
+  "chatInputHintSelectModel": "Vyberte model pro zahájení chatu",
+  "chatInputListening": "Naslouchám...",
+  "chatInputPleaseWait": "Čekejte prosím...",
+  "chatInputProcessing": "Zpracování...",
+  "chatInputRecordVoice": "Nahrát hlasovou zprávu",
+  "chatInputSendTooltip": "Odeslat zprávu",
+  "chatInputStartRealtime": "Spustit živý přepis",
+  "chatInputStopRealtime": "Zastavit živý přepis",
+  "chatInputStopTranscribe": "Zastavit a přepsat",
   "checklistAddItem": "Přidat novou položku",
   "checklistAllDone": "Všechny položky splněny!",
   "checklistCompletedShort": "{completed}/{total} hotovo",
@@ -386,7 +408,7 @@
   "checklistItemDeleted": "Položka smazána",
   "checklistItemDeleteWarning": "Tuto akci nelze vrátit zpět.",
   "checklistItemDrag": "Přetáhněte návrhy do kontrolního seznamu",
-  "checklistItemUnarchived": "Položka obnovena",
+  "checklistItemUnarchived": "Položka obnovena z archivu",
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
   "checklistNoSuggestionsTitle": "Žádné navrhované akční položky",
   "checklistNothingToExport": "Žádné položky k exportu",
@@ -661,13 +683,17 @@
   "deviceDeletedSuccess": "Zařízení {deviceName} bylo úspěšně odstraněno",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Zařízení se nepodařilo odstranit: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Hotovo",
@@ -985,7 +1011,7 @@
   "promptUsePreconfiguredButton": "Použít přednastavený prompt",
   "promptUserPromptHint": "Zadejte uživatelský prompt...",
   "promptUserPromptLabel": "Uživatelský prompt",
-  "provisionedSyncBundleImported": "Synchronizační balíček importován",
+  "provisionedSyncBundleImported": "Provizní kód importován",
   "provisionedSyncConfigureButton": "Konfigurovat",
   "provisionedSyncCopiedToClipboard": "Zkopírováno do schránky",
   "provisionedSyncDisconnect": "Odpojit",

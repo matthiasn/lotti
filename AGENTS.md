@@ -31,6 +31,13 @@
 - Do not run all tests unless specifically asked to do so. Takes too long, uses too much context.
 - In CI, tests are run with `very_good test` in the same thread. This runs faster on low-end machines such as the CI runner, but requires extra careful cleanup of resources to avoid causes issues in other tests.
 
+### Keeping tests DRY
+- **Extract pump/setup helpers**: When multiple tests in a file share `ProviderScope` + `MaterialApp` + localization + `Scaffold` wrapping, extract a file-level helper (e.g. `_pumpWidget(tester, {...})`) that takes only the varying parts as parameters.
+- **Extract mock stub helpers**: When the same `when(...)` stub appears in 3+ tests, extract a helper like `_stubCreateSession(repo, categoryId: ...)`.
+- **Use test bench classes for complex state**: When tests share a lot of setup (containers, fake channels, services, stream controllers), group them into a `_TestBench` class with a `create()` factory and convenience methods (e.g. `startTranscription()`, `sendPcm()`, `stop()`).
+- **Parameterise varying inputs**: Helpers should accept the parts that differ between tests as named parameters (e.g. `selectedCategoryIds`, `extraOverrides`, `onDelta`) and keep the boilerplate fixed internally.
+- **Avoid copy-pasting test bodies**: If two tests differ only in a parameter value, consider whether they can share the same helper with different arguments instead of duplicating the entire setup.
+
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits (e.g., `feat:`, `fix:`, `chore:`, `ci:`). Keep subjects concise and imperative.
 - PRs must pass `make analyze` and `make test`; include a clear description, linked issues, and screenshots/GIFs for UI changes.
@@ -102,6 +109,9 @@
   tests.
 - Add CHANGELOG entry under the current version from `pubspec.yaml` (not under [Unreleased]).
 - Update `flatpak/com.matthiasn.lotti.metainfo.xml` alongside CHANGELOG — these two files go hand in hand.
+- Do not mention bugfixes in CHANGELOG for bugs that were never released. E.g. when working on a 
+  feature that comprises many commits, and the bug was fixed before being merged, then there is 
+  no reason to mention that bug in the CHANGELOG.
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
 - In most cases we prefer one test file for one implementation file.

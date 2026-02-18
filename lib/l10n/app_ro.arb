@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Se gândește...",
   "aiAssistantTitle": "Asistent AI",
   "aiAssistantTranscribeAudio": "Transcrie audio",
+  "aiBatchToggleTooltip": "Comutare la înregistrare standard",
   "aiConfigApiKeyEmptyError": "Cheia API nu poate fi goală",
   "aiConfigApiKeyFieldLabel": "Cheie API",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 model asociat eliminat} other{{count} modele asociate eliminate}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcriere Whisper locală cu API compatibil OpenAI",
   "aiProviderWhisperName": "Whisper (local)",
+  "aiRealtimeToggleTooltip": "Comutare la transcriere în direct",
+  "aiRealtimeTranscribing": "Transcriere în direct...",
+  "aiRealtimeTranscriptionError": "Transcriere în direct deconectată. Audio salvat pentru procesare în lot.",
   "aiResponseDeleteCancel": "Anulează",
   "aiResponseDeleteConfirm": "Șterge",
   "aiResponseDeleteError": "Eșec la ștergerea răspunsului AI. Vă rugăm să încercați din nou.",
@@ -283,7 +287,12 @@
   "apiKeyFormCreateButton": "Creează",
   "apiKeyFormUpdateButton": "Actualizează",
   "apiKeysSettingsPageTitle": "Furnizori de inferență AI",
+  "audioRecordingCancel": "ANULARE",
+  "audioRecordingListening": "Se ascultă...",
+  "audioRecordingRealtime": "Transcriere în direct",
   "audioRecordings": "Înregistrări audio",
+  "audioRecordingStandard": "Standard",
+  "audioRecordingStop": "STOP",
   "automaticPrompts": "Prompturi automate",
   "backfillManualDescription": "Solicită toate intrările lipsă indiferent de vechime. Folosiți pentru a recupera lacune de sincronizare mai vechi.",
   "backfillManualProcessing": "Se procesează...",
@@ -350,6 +359,19 @@
   "categoryPrivateDescription": "Ascundeți această categorie când modul privat este activat",
   "categorySearchPlaceholder": "Caută categorii...",
   "celebrationTapToContinue": "Atingeți pentru a continua",
+  "chatInputCancelRealtime": "Anulează (Esc)",
+  "chatInputCancelRecording": "Anulează înregistrarea (Esc)",
+  "chatInputConfigureModel": "Configurează modelul",
+  "chatInputHintDefault": "Întreabă despre sarcinile și productivitatea ta...",
+  "chatInputHintSelectModel": "Selectează un model pentru a începe conversația",
+  "chatInputListening": "Ascultă...",
+  "chatInputPleaseWait": "Așteaptă...",
+  "chatInputProcessing": "Se procesează...",
+  "chatInputRecordVoice": "Înregistrează mesaj vocal",
+  "chatInputSendTooltip": "Trimite mesajul",
+  "chatInputStartRealtime": "Pornește transcrierea în timp real",
+  "chatInputStopRealtime": "Oprește transcrierea în timp real",
+  "chatInputStopTranscribe": "Oprește și transcrie",
   "checklistAddItem": "Adaugă un element nou",
   "checklistAllDone": "Toate elementele sunt finalizate!",
   "checklistCompletedShort": "{completed}/{total} finalizate",
@@ -661,13 +683,17 @@
   "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Gata",

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.865" date="2026-02-18">
+      <description>
+          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS.</p>
+      </description>
+    </release>
     <release version="0.9.864" date="2026-02-18">
       <description>
           <p>Checklist Layout &amp; AI Context: Swipe backgrounds now extend edge-to-edge for a polished look. Archived checklist items are now properly marked in AI prompts, so the AI understands they are not active work.</p>
@@ -53,7 +58,7 @@
     </release>
     <release version="0.9.859" date="2026-02-13">
       <description>
-          <p>Sync Outbox Tuning: Removed artificial 200ms per-message delay from outbox enqueueing and reduced the user-activity idle threshold from 3s to 1.2s, improving sync throughput and responsiveness.</p>
+          <p>Sync Throughput: Removed artificial 200ms per-message delay from outbox enqueueing and reduced idle threshold from 3s to 1.2s, so sync resumes sooner after user interaction.</p>
       </description>
     </release>
     <release version="0.9.858" date="2026-02-13">

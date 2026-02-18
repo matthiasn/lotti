@@ -30,6 +30,7 @@
   "aiAssistantThinking": "Thinking...",
   "aiAssistantTitle": "AI Assistant",
   "aiAssistantTranscribeAudio": "Transcribe audio",
+  "aiBatchToggleTooltip": "Switch to standard recording",
   "aiConfigApiKeyEmptyError": "API key cannot be empty",
   "aiConfigApiKeyFieldLabel": "API Key",
   "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
@@ -174,6 +175,9 @@
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Local Whisper transcription with OpenAI-compatible API",
   "aiProviderWhisperName": "Whisper (local)",
+  "aiRealtimeToggleTooltip": "Switch to live transcription",
+  "aiRealtimeTranscribing": "Live transcription...",
+  "aiRealtimeTranscriptionError": "Live transcription disconnected. Audio saved for batch processing.",
   "aiResponseDeleteCancel": "Cancel",
   "aiResponseDeleteConfirm": "Delete",
   "aiResponseDeleteError": "Failed to delete AI response. Please try again.",
@@ -282,7 +286,12 @@
   "apiKeyFormCreateButton": "Create",
   "apiKeyFormUpdateButton": "Update",
   "apiKeysSettingsPageTitle": "AI Inference Providers",
+  "audioRecordingCancel": "CANCEL",
+  "audioRecordingListening": "Listening...",
+  "audioRecordingRealtime": "Live Transcription",
   "audioRecordings": "Audio Recordings",
+  "audioRecordingStandard": "Standard",
+  "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatic Prompts",
   "backfillManualDescription": "Request all missing entries regardless of age. Use this to recover older sync gaps.",
   "backfillManualProcessing": "Processing...",
@@ -349,6 +358,19 @@
   "categoryPrivateDescription": "Hide this category when private mode is enabled",
   "categorySearchPlaceholder": "Search categories...",
   "celebrationTapToContinue": "Tap to continue",
+  "chatInputCancelRealtime": "Cancel (Esc)",
+  "chatInputCancelRecording": "Cancel recording (Esc)",
+  "chatInputConfigureModel": "Configure model",
+  "chatInputHintDefault": "Ask about your tasks and productivity...",
+  "chatInputHintSelectModel": "Select a model to start chatting",
+  "chatInputListening": "Listening...",
+  "chatInputPleaseWait": "Please wait...",
+  "chatInputProcessing": "Processing...",
+  "chatInputRecordVoice": "Record voice message",
+  "chatInputSendTooltip": "Send message",
+  "chatInputStartRealtime": "Start live transcription",
+  "chatInputStopRealtime": "Stop live transcription",
+  "chatInputStopTranscribe": "Stop and transcribe",
   "checklistAddItem": "Add a new item",
   "checklistAllDone": "All items completed!",
   "checklistCompletedShort": "{completed}/{total} done",
@@ -660,13 +682,17 @@
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Failed to delete device: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Done",

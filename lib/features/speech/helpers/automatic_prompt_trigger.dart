@@ -43,6 +43,7 @@ class AutomaticPromptTrigger {
     AudioRecorderState state, {
     required bool isLinkedToTask,
     String? linkedTaskId,
+    bool realtimeTranscriptProvided = false,
   }) async {
     try {
       final category = await categoryRepository.getCategoryById(categoryId);
@@ -71,9 +72,12 @@ class AutomaticPromptTrigger {
         final shouldTriggerTaskSummary = isLinkedToTask &&
             (state.enableTaskSummary ?? hasAutomaticTaskSummary);
 
-        // Trigger audio transcription if enabled
+        // Trigger audio transcription if enabled (skip if realtime already
+        // produced a transcript, e.g. from live transcription mode)
         Future<void>? transcriptionFuture;
-        if (shouldTriggerTranscription && hasAutomaticTranscription) {
+        if (shouldTriggerTranscription &&
+            hasAutomaticTranscription &&
+            !realtimeTranscriptProvided) {
           final transcriptionPromptIds =
               category.automaticPrompts![AiResponseType.audioTranscription]!;
 

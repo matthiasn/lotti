@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.865] - 2026-02-18
+### Added
+- Real-time transcription via Mistral Voxtral WebSocket API with live subtitles
+  during recording (~2s latency). Available in both AI chat and the journal
+  audio recording modal via a mode toggle.
+- Native WAV-to-M4A audio conversion via platform channels on iOS and macOS.
+
 ## [0.9.864] - 2026-02-18
 ### Improved
 - Checklist swipe backgrounds now extend edge-to-edge, filling the full card

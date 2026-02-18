@@ -31,6 +31,7 @@
   "aiAssistantThinking": "Réflexion...",
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
+  "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
   "aiConfigApiKeyEmptyError": "La clé API ne peut pas être vide",
   "aiConfigApiKeyFieldLabel": "Clé API",
   "aiConfigAssociatedModelsRemoved": "{count} modèle{count, plural, =1{} other{s}} associé{count, plural, =1{} other{s}} supprimé{count, plural, =1{} other{s}}",
@@ -175,6 +176,9 @@
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcription Whisper locale avec API compatible OpenAI",
   "aiProviderWhisperName": "Whisper (local)",
+  "aiRealtimeToggleTooltip": "Passer à la transcription en direct",
+  "aiRealtimeTranscribing": "Transcription en direct...",
+  "aiRealtimeTranscriptionError": "Transcription en direct déconnectée. Audio sauvegardé pour traitement par lots.",
   "aiResponseDeleteCancel": "Annuler",
   "aiResponseDeleteConfirm": "Supprimer",
   "aiResponseDeleteError": "Échec de la suppression de la réponse AI. Réessaie s'il te plaît.",
@@ -283,7 +287,12 @@
   "apiKeyFormCreateButton": "Créer",
   "apiKeyFormUpdateButton": "Mettre à jour",
   "apiKeysSettingsPageTitle": "Fournisseurs d'inférence AI",
+  "audioRecordingCancel": "ANNULER",
+  "audioRecordingListening": "Écoute en cours...",
+  "audioRecordingRealtime": "Transcription en direct",
   "audioRecordings": "Enregistrements audio",
+  "audioRecordingStandard": "Standard",
+  "audioRecordingStop": "ARRÊTER",
   "automaticPrompts": "Prompts automatiques",
   "backfillManualDescription": "Demander toutes les entrées manquantes quel que soit leur âge. Utilisez cette option pour récupérer les écarts de synchronisation anciens.",
   "backfillManualProcessing": "Traitement...",
@@ -350,6 +359,19 @@
   "categoryPrivateDescription": "Masquer cette catégorie lorsque le mode privé est activé",
   "categorySearchPlaceholder": "Rechercher des catégories...",
   "celebrationTapToContinue": "Appuyez pour continuer",
+  "chatInputCancelRealtime": "Annuler (Échap)",
+  "chatInputCancelRecording": "Annuler l'enregistrement (Échap)",
+  "chatInputConfigureModel": "Configurer le modèle",
+  "chatInputHintDefault": "Posez des questions sur vos tâches et votre productivité...",
+  "chatInputHintSelectModel": "Sélectionnez un modèle pour commencer à discuter",
+  "chatInputListening": "Écoute en cours...",
+  "chatInputPleaseWait": "Veuillez patienter...",
+  "chatInputProcessing": "Traitement...",
+  "chatInputRecordVoice": "Enregistrer un message vocal",
+  "chatInputSendTooltip": "Envoyer le message",
+  "chatInputStartRealtime": "Démarrer la transcription en direct",
+  "chatInputStopRealtime": "Arrêter la transcription en direct",
+  "chatInputStopTranscribe": "Arrêter et transcrire",
   "checklistAddItem": "Ajouter un nouvel élément",
   "checklistAllDone": "Tous les éléments sont terminés !",
   "checklistCompletedShort": "{completed}/{total} terminés",
@@ -661,13 +683,17 @@
   "deviceDeletedSuccess": "Appareil {deviceName} supprimé avec succès",
   "@deviceDeletedSuccess": {
     "placeholders": {
-      "deviceName": {}
+      "deviceName": {
+        "type": "String"
+      }
     }
   },
   "deviceDeleteFailed": "Échec de suppression de l'appareil : {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
-      "error": {}
+      "error": {
+        "type": "String"
+      }
     }
   },
   "done": "Terminé",

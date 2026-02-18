@@ -10,12 +10,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -58,9 +61,6 @@ class MockPlayerStream extends Mock implements PlayerStream {}
 
 class FakePlayable extends Fake implements Playable {}
 
-// Note: _TestNavigatorObserver removed - navigation testing is handled
-// through integration tests in the main test suite
-
 // Fake implementations for testing
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   FakeCategoryDefinition({
@@ -80,10 +80,10 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   String get name => 'Test Category';
 
   @override
-  DateTime get createdAt => DateTime.now();
+  DateTime get createdAt => DateTime(2024);
 
   @override
-  DateTime get updatedAt => DateTime.now();
+  DateTime get updatedAt => DateTime(2024);
 
   @override
   bool get private => false;
@@ -170,7 +170,7 @@ class FakeEntryController extends EntryController {
 }
 
 Task createMockTask(String id) {
-  final now = DateTime.now();
+  final now = DateTime(2024);
   const uuid = Uuid();
   final openStatus = TaskStatus.open(
     id: uuid.v1(),
@@ -207,10 +207,109 @@ class TestAudioRecorderController extends AudioRecorderController {
   AudioRecorderState build() => fixedState;
 }
 
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+/// Returns the three provider overrides common to nearly every test.
+List<Override> _baseOverrides({
+  required MockAudioRecorderRepository audioRecorderRepo,
+  required MockCategoryRepository categoryRepo,
+  required MockPlayer player,
+}) =>
+    [
+      audioRecorderRepositoryProvider.overrideWithValue(audioRecorderRepo),
+      categoryRepositoryProvider.overrideWithValue(categoryRepo),
+      playerFactoryProvider.overrideWithValue(() => player),
+    ];
+
+/// Pumps an [AudioRecordingModalContent] widget with localization and the
+/// standard provider overrides.  Pass [extraOverrides] for per-test extras
+/// (e.g. [audioRecorderControllerProvider], [realtimeAvailableProvider]).
+Future<void> _pumpModalContent(
+  WidgetTester tester, {
+  required MockAudioRecorderRepository audioRecorderRepo,
+  required MockCategoryRepository categoryRepo,
+  required MockPlayer player,
+  String categoryId = 'test-category',
+  String? linkedId,
+  List<Override> extraOverrides = const [],
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        ..._baseOverrides(
+          audioRecorderRepo: audioRecorderRepo,
+          categoryRepo: categoryRepo,
+          player: player,
+        ),
+        ...extraOverrides,
+      ],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AudioRecordingModalContent(
+            categoryId: categoryId,
+            linkedId: linkedId,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Pumps a widget that shows the modal via `AudioRecordingModal.show()`.
+/// Returns after `pumpWidget` — caller should tap "Show Modal" and settle.
+Future<void> _pumpShowModalTrigger(
+  WidgetTester tester, {
+  required MockAudioRecorderRepository audioRecorderRepo,
+  required MockCategoryRepository categoryRepo,
+  required MockPlayer player,
+  String? categoryId,
+  String? linkedId,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: _baseOverrides(
+        audioRecorderRepo: audioRecorderRepo,
+        categoryRepo: categoryRepo,
+        player: player,
+      ),
+      child: MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: ElevatedButton(
+                onPressed: () {
+                  AudioRecordingModal.show(
+                    context,
+                    categoryId: categoryId,
+                    linkedId: linkedId,
+                  );
+                },
+                child: const Text('Show Modal'),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+/// Stubs `mockCategoryRepo.watchCategory` for the given [categoryId].
+void _stubCategory(
+  MockCategoryRepository mockCategoryRepo, {
+  String categoryId = 'test-category',
+  FakeCategoryDefinition? category,
+}) {
+  when(() => mockCategoryRepo.watchCategory(categoryId))
+      .thenAnswer((_) => Stream.value(category ?? FakeCategoryDefinition()));
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // Font downloads are centrally configured in test/flutter_test_config.dart
 
   late MockLoggingService mockLoggingService;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
@@ -308,40 +407,15 @@ void main() {
   group('AudioRecordingModal.show() - Static Method Coverage', () {
     testWidgets('should set modal visible and category when show() is called',
         (tester) async {
-      final category = FakeCategoryDefinition();
+      _stubCategory(mockCategoryRepository);
 
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      AudioRecordingModal.show(
-                        context,
-                        categoryId: 'test-category',
-                        linkedId: 'test-linked-id',
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpShowModalTrigger(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        categoryId: 'test-category',
+        linkedId: 'test-linked-id',
       );
 
       // Initial state - modal not visible
@@ -365,39 +439,14 @@ void main() {
 
     testWidgets('should set modal invisible when modal is dismissed',
         (tester) async {
-      final category = FakeCategoryDefinition();
+      _stubCategory(mockCategoryRepository);
 
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      AudioRecordingModal.show(
-                        context,
-                        categoryId: 'test-category',
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpShowModalTrigger(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        categoryId: 'test-category',
       );
 
       // Show modal
@@ -412,7 +461,7 @@ void main() {
       var state = container.read(audioRecorderControllerProvider);
       expect(state.modalVisible, isTrue);
 
-      // Dismiss modal by tapping outside (simulate back button)
+      // Dismiss modal by tapping outside
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
@@ -422,31 +471,11 @@ void main() {
     });
 
     testWidgets('should handle show() without categoryId', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      AudioRecordingModal.show(context);
-                    },
-                    child: const Text('Show Modal'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpShowModalTrigger(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
       );
 
       await tester.tap(find.text('Show Modal'));
@@ -464,13 +493,10 @@ void main() {
 
   group('Stop Button Rendering and _isRecording Coverage', () {
     testWidgets(
-        'should render stop button UI when _isRecording returns true (recording state)',
-        (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+        'should render stop button UI when _isRecording returns true '
+        '(recording state)', (tester) async {
+      _stubCategory(mockCategoryRepository);
 
-      // Create a custom state with recording status
       final recordingState = AudioRecorderState(
         status: AudioRecorderStatus.recording,
         progress: const Duration(seconds: 5),
@@ -480,70 +506,38 @@ void main() {
         modalVisible: true,
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            // Override the provider to return recording state directly
-            audioRecorderControllerProvider.overrideWith(
-                () => TestAudioRecorderController(recordingState)),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: 'test-category',
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => false),
+          audioRecorderControllerProvider
+              .overrideWith(() => TestAudioRecorderController(recordingState)),
+        ],
       );
 
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 250));
 
-      // Verify stop button is rendered (_buildStopButton called)
-      final stopButtonFinder = find.byKey(const ValueKey('stop'));
-      expect(stopButtonFinder, findsOneWidget);
-
-      // Verify STOP text (line 192-198)
+      final stopControlsFinder = find.byKey(const ValueKey('stop_controls'));
+      expect(stopControlsFinder, findsOneWidget);
       expect(find.text('STOP'), findsOneWidget);
-
-      // Verify the GestureDetector with onTap (line 158-160)
-      final gestureDetector = tester.widget<GestureDetector>(stopButtonFinder);
-      expect(gestureDetector.onTap, isNotNull);
-
-      // Verify visual elements are rendered (lines 161-189)
       expect(
         find.descendant(
-          of: stopButtonFinder,
+          of: stopControlsFinder,
           matching: find.byType(Container),
         ),
         findsWidgets,
       );
-
-      // Verify Row with red indicator dot
-      expect(
-        find.descendant(
-          of: stopButtonFinder,
-          matching: find.byType(Row),
-        ),
-        findsOneWidget,
-      );
     });
 
     testWidgets(
-        'should render stop button when _isRecording returns true (paused state)',
-        (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+        'should render stop button when _isRecording returns true '
+        '(paused state)', (tester) async {
+      _stubCategory(mockCategoryRepository);
 
-      // Create state with paused status - should still show stop button
       final pausedState = AudioRecorderState(
         status: AudioRecorderStatus.paused,
         progress: const Duration(seconds: 10),
@@ -553,83 +547,49 @@ void main() {
         modalVisible: true,
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            audioRecorderControllerProvider
-                .overrideWith(() => TestAudioRecorderController(pausedState)),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: 'test-category',
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => false),
+          audioRecorderControllerProvider
+              .overrideWith(() => TestAudioRecorderController(pausedState)),
+        ],
       );
 
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 250));
 
-      // Verify _isRecording(paused) returns true and shows stop button
-      final stopButtonFinder = find.byKey(const ValueKey('stop'));
-      expect(stopButtonFinder, findsOneWidget);
+      final stopControlsFinder = find.byKey(const ValueKey('stop_controls'));
+      expect(stopControlsFinder, findsOneWidget);
       expect(find.text('STOP'), findsOneWidget);
     });
-
-    // Note: Testing _stop() method invocation is complex due to async state management
-    // The method itself (lines 144-154) is covered by the fact that:
-    // 1. Stop button renders with onTap callback (verified above)
-    // 2. The callback is wired to _stop method (visible in widget code)
-    // 3. Integration tests in the main test file verify the full stop flow
   });
 
   group('Record Button Coverage', () {
     testWidgets('should call record when record button is tapped',
         (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+      _stubCategory(mockCategoryRepository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: 'test-category',
-                linkedId: 'test-linked-id',
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        linkedId: 'test-linked-id',
       );
 
       await tester.pumpAndSettle();
 
-      // Find record button
       final recordButton = find.byKey(const ValueKey('record'));
       expect(recordButton, findsOneWidget);
       expect(find.text('RECORD'), findsOneWidget);
 
-      // Tap record button
       await tester.tap(recordButton);
       await tester.pumpAndSettle();
 
-      // Verify recording started
       verify(() => mockAudioRecorderRepository.startRecording()).called(1);
     });
   });
@@ -638,27 +598,13 @@ void main() {
     testWidgets(
         'should call setEnableSpeechRecognition when speech checkbox toggled',
         (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+      _stubCategory(mockCategoryRepository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: AudioRecordingModalContent(
-                categoryId: 'test-category',
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
       );
 
       await tester.pumpAndSettle();
@@ -668,20 +614,16 @@ void main() {
         tester.element(find.byType(Scaffold)),
       );
 
-      // Find speech recognition checkbox
       final speechCheckbox =
           find.byKey(const Key('speech_recognition_checkbox'));
       expect(speechCheckbox, findsOneWidget);
 
-      // Initial state
       var state = container.read(audioRecorderControllerProvider);
       final initialValue = state.enableSpeechRecognition ?? true;
 
-      // Toggle checkbox
       await tester.tap(speechCheckbox);
       await tester.pumpAndSettle();
 
-      // Verify state changed
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableSpeechRecognition, !initialValue);
     });
@@ -689,49 +631,21 @@ void main() {
     testWidgets(
         'should call setEnableChecklistUpdates when checklist checkbox toggled',
         (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+      _stubCategory(mockCategoryRepository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        linkedId: 'task-123',
+        extraOverrides: [
+          entryControllerProvider(id: 'task-123').overrideWith(
+            () => FakeEntryController(
+              mockEntry: createMockTask('task-123'),
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            entryControllerProvider(id: 'task-123').overrideWith(
-              () => FakeEntryController(
-                mockEntry: createMockTask('task-123'),
-              ),
-            ),
-          ],
-          child: Builder(
-            builder: (context) {
-              return MaterialApp(
-                home: Scaffold(
-                  body: Builder(
-                    builder: (innerContext) {
-                      // Enable speech recognition first
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ProviderScope.containerOf(innerContext)
-                            .read(audioRecorderControllerProvider.notifier)
-                            .setEnableSpeechRecognition(enable: true);
-                      });
-
-                      return const AudioRecordingModalContent(
-                        categoryId: 'test-category',
-                        linkedId: 'task-123',
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
           ),
-        ),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -741,20 +655,22 @@ void main() {
         tester.element(find.byType(Scaffold)),
       );
 
-      // Find checklist checkbox
+      // Enable speech recognition to reveal checklist checkbox
+      container
+          .read(audioRecorderControllerProvider.notifier)
+          .setEnableSpeechRecognition(enable: true);
+      await tester.pumpAndSettle();
+
       final checklistCheckbox =
           find.byKey(const Key('checklist_updates_checkbox'));
       expect(checklistCheckbox, findsOneWidget);
 
-      // Initial state
       var state = container.read(audioRecorderControllerProvider);
       final initialValue = state.enableChecklistUpdates ?? true;
 
-      // Toggle checkbox
       await tester.tap(checklistCheckbox);
       await tester.pumpAndSettle();
 
-      // Verify state changed
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableChecklistUpdates, !initialValue);
     });
@@ -762,49 +678,21 @@ void main() {
     testWidgets(
         'should call setEnableTaskSummary when task summary checkbox toggled',
         (tester) async {
-      final category = FakeCategoryDefinition();
-      when(() => mockCategoryRepository.watchCategory('test-category'))
-          .thenAnswer((_) => Stream.value(category));
+      _stubCategory(mockCategoryRepository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        linkedId: 'task-456',
+        extraOverrides: [
+          entryControllerProvider(id: 'task-456').overrideWith(
+            () => FakeEntryController(
+              mockEntry: createMockTask('task-456'),
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            playerFactoryProvider.overrideWithValue(() => mockPlayer),
-            entryControllerProvider(id: 'task-456').overrideWith(
-              () => FakeEntryController(
-                mockEntry: createMockTask('task-456'),
-              ),
-            ),
-          ],
-          child: Builder(
-            builder: (context) {
-              return MaterialApp(
-                home: Scaffold(
-                  body: Builder(
-                    builder: (innerContext) {
-                      // Enable speech recognition first
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ProviderScope.containerOf(innerContext)
-                            .read(audioRecorderControllerProvider.notifier)
-                            .setEnableSpeechRecognition(enable: true);
-                      });
-
-                      return const AudioRecordingModalContent(
-                        categoryId: 'test-category',
-                        linkedId: 'task-456',
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
           ),
-        ),
+        ],
       );
 
       await tester.pumpAndSettle();
@@ -814,21 +702,379 @@ void main() {
         tester.element(find.byType(Scaffold)),
       );
 
-      // Find task summary checkbox
+      // Enable speech recognition to reveal task summary checkbox
+      container
+          .read(audioRecorderControllerProvider.notifier)
+          .setEnableSpeechRecognition(enable: true);
+      await tester.pumpAndSettle();
+
       final summaryCheckbox = find.byKey(const Key('task_summary_checkbox'));
       expect(summaryCheckbox, findsOneWidget);
 
-      // Initial state
       var state = container.read(audioRecorderControllerProvider);
       final initialValue = state.enableTaskSummary ?? true;
 
-      // Toggle checkbox
       await tester.tap(summaryCheckbox);
       await tester.pumpAndSettle();
 
-      // Verify state changed
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableTaskSummary, !initialValue);
     });
   });
+
+  group('Realtime Mode UI Coverage', () {
+    testWidgets('should render mode toggle when realtime is available',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Switch), findsOneWidget);
+    });
+
+    testWidgets('should toggle between standard and realtime mode',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      final switchWidget = find.byType(Switch);
+      expect(switchWidget, findsOneWidget);
+
+      await tester.tap(switchWidget);
+      await tester.pumpAndSettle();
+
+      final switchState = tester.widget<Switch>(switchWidget);
+      expect(switchState.value, isTrue);
+    });
+
+    testWidgets('should render cancel button in realtime recording mode',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      final realtimeRecordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 5),
+        vu: 80,
+        dBFS: -20,
+        showIndicator: false,
+        modalVisible: true,
+        isRealtimeMode: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => TestAudioRecorderController(realtimeRecordingState),
+          ),
+        ],
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text('CANCEL'), findsOneWidget);
+      expect(find.text('STOP'), findsOneWidget);
+    });
+
+    testWidgets('should render live transcript area with listening spinner',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      final realtimeRecordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 3),
+        vu: 60,
+        dBFS: -30,
+        showIndicator: false,
+        modalVisible: true,
+        isRealtimeMode: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => TestAudioRecorderController(realtimeRecordingState),
+          ),
+        ],
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('should render live transcript text when available',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      final realtimeRecordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 5),
+        vu: 60,
+        dBFS: -30,
+        showIndicator: false,
+        modalVisible: true,
+        isRealtimeMode: true,
+        partialTranscript: 'Hello this is a test transcription',
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => TestAudioRecorderController(realtimeRecordingState),
+          ),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Hello this is a test transcription'),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('tapping STOP in realtime mode calls stopRealtime',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      var stopRealtimeCalled = false;
+      final realtimeRecordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 5),
+        vu: 80,
+        dBFS: -20,
+        showIndicator: false,
+        modalVisible: true,
+        isRealtimeMode: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => _CallbackTrackingController(
+              fixedState: realtimeRecordingState,
+              onStopRealtimeCalled: () => stopRealtimeCalled = true,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text('STOP'), findsOneWidget);
+      await tester.tap(find.text('STOP'));
+      await tester.pumpAndSettle();
+
+      expect(stopRealtimeCalled, isTrue);
+    });
+
+    testWidgets('tapping CANCEL in realtime mode calls cancelRealtime',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      var cancelRealtimeCalled = false;
+      final realtimeRecordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 5),
+        vu: 80,
+        dBFS: -20,
+        showIndicator: false,
+        modalVisible: true,
+        isRealtimeMode: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => _CallbackTrackingController(
+              fixedState: realtimeRecordingState,
+              onCancelRealtimeCalled: () => cancelRealtimeCalled = true,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text('CANCEL'), findsOneWidget);
+      await tester.tap(find.text('CANCEL'));
+      await tester.pumpAndSettle();
+
+      expect(cancelRealtimeCalled, isTrue);
+    });
+
+    testWidgets('tapping RECORD in realtime mode calls recordRealtime',
+        (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      var recordRealtimeCalled = false;
+      final idleState = AudioRecorderState(
+        status: AudioRecorderStatus.stopped,
+        progress: Duration.zero,
+        vu: 0,
+        dBFS: -160,
+        showIndicator: false,
+        modalVisible: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider.overrideWith(
+            () => _CallbackTrackingController(
+              fixedState: idleState,
+              onRecordRealtimeCalled: () => recordRealtimeCalled = true,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      // Toggle to realtime mode first
+      final switchWidget = find.byType(Switch);
+      expect(switchWidget, findsOneWidget);
+      await tester.tap(switchWidget);
+      await tester.pumpAndSettle();
+
+      // Tap the RECORD button (now in realtime mode)
+      expect(find.text('RECORD'), findsOneWidget);
+      await tester.tap(find.text('RECORD'));
+      await tester.pumpAndSettle();
+
+      expect(recordRealtimeCalled, isTrue);
+    });
+
+    testWidgets('should not show mode toggle when recording', (tester) async {
+      _stubCategory(mockCategoryRepository);
+
+      final recordingState = AudioRecorderState(
+        status: AudioRecorderStatus.recording,
+        progress: const Duration(seconds: 5),
+        vu: 80,
+        dBFS: -20,
+        showIndicator: false,
+        modalVisible: true,
+      );
+
+      await _pumpModalContent(
+        tester,
+        audioRecorderRepo: mockAudioRecorderRepository,
+        categoryRepo: mockCategoryRepository,
+        player: mockPlayer,
+        extraOverrides: [
+          realtimeAvailableProvider.overrideWith((_) async => true),
+          audioRecorderControllerProvider
+              .overrideWith(() => TestAudioRecorderController(recordingState)),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Switch), findsNothing);
+    });
+  });
+}
+
+/// Controller that tracks method calls for interaction tests
+class _CallbackTrackingController extends AudioRecorderController {
+  _CallbackTrackingController({
+    required this.fixedState,
+    this.onStopRealtimeCalled,
+    this.onCancelRealtimeCalled,
+    this.onRecordRealtimeCalled,
+  });
+
+  final AudioRecorderState fixedState;
+  final VoidCallback? onStopRealtimeCalled;
+  final VoidCallback? onCancelRealtimeCalled;
+  final VoidCallback? onRecordRealtimeCalled;
+
+  @override
+  AudioRecorderState build() => fixedState;
+
+  @override
+  Future<String?> stopRealtime() async {
+    onStopRealtimeCalled?.call();
+    state = fixedState.copyWith(
+      status: AudioRecorderStatus.stopped,
+      modalVisible: false,
+    );
+    return null;
+  }
+
+  @override
+  Future<void> cancelRealtime() async {
+    onCancelRealtimeCalled?.call();
+    state = fixedState.copyWith(
+      status: AudioRecorderStatus.stopped,
+      modalVisible: false,
+    );
+  }
+
+  @override
+  Future<void> recordRealtime({String? linkedId}) async {
+    onRecordRealtimeCalled?.call();
+  }
+
+  @override
+  Future<void> record({String? linkedId}) async {}
+
+  @override
+  Future<String?> stop() async => null;
 }

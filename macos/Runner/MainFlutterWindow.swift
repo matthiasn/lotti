@@ -9,8 +9,11 @@ class MainFlutterWindow: NSWindow {
         self.contentViewController = flutterViewController
         self.setFrame(windowFrame, display: true)
         
+        if let registrar = flutterViewController.registrar(forPlugin: "AudioConverter") {
+            AudioConverter.register(with: registrar)
+        }
         RegisterGeneratedPlugins(registry: flutterViewController)
-        
+
         super.awakeFromNib()
     }
 }
