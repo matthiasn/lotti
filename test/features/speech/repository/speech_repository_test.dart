@@ -9,17 +9,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mocks
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-// Fakes
-class FakeJournalAudio extends Fake implements JournalAudio {}
-
-class FakeMetadata extends Fake implements Metadata {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

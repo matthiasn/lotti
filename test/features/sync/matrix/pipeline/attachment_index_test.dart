@@ -1,12 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockEvent extends Mock implements Event {}
+import '../../../../mocks/mocks.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockEvent extends Mock implements Event {}
 
 void main() {
   setUpAll(() {

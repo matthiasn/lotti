@@ -5,27 +5,19 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
-import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-// Mock implementations
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   setUpAll(() {

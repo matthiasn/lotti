@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -44,71 +45,69 @@ void main() {
     });
 
     group('dashboardsProvider', () {
-      test('emits only active dashboards from initial fetch', () async {
-        final activeDashboard = testDashboardConfig;
-        final inactiveDashboard = testDashboardConfig.copyWith(
-          id: 'inactive-dashboard',
-          active: false,
-        );
+      test('emits only active dashboards from initial fetch', () {
+        fakeAsync((async) {
+          final activeDashboard = testDashboardConfig;
+          final inactiveDashboard = testDashboardConfig.copyWith(
+            id: 'inactive-dashboard',
+            active: false,
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [activeDashboard, inactiveDashboard]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [activeDashboard, inactiveDashboard]);
 
-        final states = <AsyncValue<List<DashboardDefinition>>>[];
-        container.listen(
-          dashboardsProvider,
-          (_, next) => states.add(next),
-          fireImmediately: true,
-        );
+          final states = <AsyncValue<List<DashboardDefinition>>>[];
+          container.listen(
+            dashboardsProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
 
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(states.last.hasValue, isTrue);
-        expect(states.last.value, [activeDashboard]);
-        expect(
-          states.last.value!.any((d) => d.id == 'inactive-dashboard'),
-          isFalse,
-        );
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, [activeDashboard]);
+          expect(
+            states.last.value!.any((d) => d.id == 'inactive-dashboard'),
+            isFalse,
+          );
+        });
       });
 
-      test('emits empty list when all dashboards are inactive', () async {
-        final inactiveDashboard = testDashboardConfig.copyWith(active: false);
+      test('emits empty list when all dashboards are inactive', () {
+        fakeAsync((async) {
+          final inactiveDashboard = testDashboardConfig.copyWith(active: false);
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [inactiveDashboard]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [inactiveDashboard]);
 
-        final states = <AsyncValue<List<DashboardDefinition>>>[];
-        container.listen(
-          dashboardsProvider,
-          (_, next) => states.add(next),
-          fireImmediately: true,
-        );
+          final states = <AsyncValue<List<DashboardDefinition>>>[];
+          container.listen(
+            dashboardsProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
 
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(states.last.hasValue, isTrue);
-        expect(states.last.value, isEmpty);
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, isEmpty);
+        });
       });
 
-      test('handles fetcher errors', () async {
-        final error = Exception('Database error');
+      test('handles fetcher errors', () {
+        fakeAsync((async) {
+          final error = Exception('Database error');
 
-        when(() => mockDb.getAllDashboards()).thenThrow(error);
+          when(() => mockDb.getAllDashboards()).thenThrow(error);
 
-        final completer = Completer<void>();
-        container.listen(
-          dashboardsProvider,
-          (_, next) {
-            if (next.hasError && !completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
+          container.listen(dashboardsProvider, (_, __) {});
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
 
-        final state = container.read(dashboardsProvider);
-        expect(state.hasError, isTrue);
+          final state = container.read(dashboardsProvider);
+          expect(state.hasError, isTrue);
+        });
       });
     });
 
@@ -172,230 +171,241 @@ void main() {
         expect(state, isEmpty);
       });
 
-      test('returns all dashboards when no category filter selected', () async {
-        final dashboard1 = testDashboardConfig.copyWith(
-          id: 'dashboard-b',
-          name: 'B Dashboard',
-        );
-        final dashboard2 = testDashboardConfig.copyWith(
-          id: 'dashboard-a',
-          name: 'A Dashboard',
-        );
+      test('returns all dashboards when no category filter selected', () {
+        fakeAsync((async) {
+          final dashboard1 = testDashboardConfig.copyWith(
+            id: 'dashboard-b',
+            name: 'B Dashboard',
+          );
+          final dashboard2 = testDashboardConfig.copyWith(
+            id: 'dashboard-a',
+            name: 'A Dashboard',
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard1, dashboard2]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard1, dashboard2]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 2);
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 2);
+        });
       });
 
-      test('sorts dashboards by name alphabetically', () async {
-        final dashboardB = testDashboardConfig.copyWith(
-          id: 'dashboard-b',
-          name: 'Zulu Dashboard',
-        );
-        final dashboardA = testDashboardConfig.copyWith(
-          id: 'dashboard-a',
-          name: 'Alpha Dashboard',
-        );
+      test('sorts dashboards by name alphabetically', () {
+        fakeAsync((async) {
+          final dashboardB = testDashboardConfig.copyWith(
+            id: 'dashboard-b',
+            name: 'Zulu Dashboard',
+          );
+          final dashboardA = testDashboardConfig.copyWith(
+            id: 'dashboard-a',
+            name: 'Alpha Dashboard',
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboardB, dashboardA]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboardB, dashboardA]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 2);
-        expect(state[0].name, 'Alpha Dashboard');
-        expect(state[1].name, 'Zulu Dashboard');
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 2);
+          expect(state[0].name, 'Alpha Dashboard');
+          expect(state[1].name, 'Zulu Dashboard');
+        });
       });
 
-      test('sorts case-insensitively', () async {
-        final dashboardLower = testDashboardConfig.copyWith(
-          id: 'dashboard-1',
-          name: 'alpha Dashboard',
-        );
-        final dashboardUpper = testDashboardConfig.copyWith(
-          id: 'dashboard-2',
-          name: 'Beta Dashboard',
-        );
+      test('sorts case-insensitively', () {
+        fakeAsync((async) {
+          final dashboardLower = testDashboardConfig.copyWith(
+            id: 'dashboard-1',
+            name: 'alpha Dashboard',
+          );
+          final dashboardUpper = testDashboardConfig.copyWith(
+            id: 'dashboard-2',
+            name: 'Beta Dashboard',
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboardUpper, dashboardLower]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboardUpper, dashboardLower]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state[0].name, 'alpha Dashboard');
-        expect(state[1].name, 'Beta Dashboard');
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state[0].name, 'alpha Dashboard');
+          expect(state[1].name, 'Beta Dashboard');
+        });
       });
 
-      test('filters dashboards by selected category', () async {
-        final dashboard1 = testDashboardConfig.copyWith(
-          id: 'dashboard-1',
-          name: 'Dashboard 1',
-          categoryId: 'category-1',
-        );
-        final dashboard2 = testDashboardConfig.copyWith(
-          id: 'dashboard-2',
-          name: 'Dashboard 2',
-          categoryId: 'category-2',
-        );
-        final dashboard3 = testDashboardConfig.copyWith(
-          id: 'dashboard-3',
-          name: 'Dashboard 3',
-          categoryId: 'category-1',
-        );
+      test('filters dashboards by selected category', () {
+        fakeAsync((async) {
+          final dashboard1 = testDashboardConfig.copyWith(
+            id: 'dashboard-1',
+            name: 'Dashboard 1',
+            categoryId: 'category-1',
+          );
+          final dashboard2 = testDashboardConfig.copyWith(
+            id: 'dashboard-2',
+            name: 'Dashboard 2',
+            categoryId: 'category-2',
+          );
+          final dashboard3 = testDashboardConfig.copyWith(
+            id: 'dashboard-3',
+            name: 'Dashboard 3',
+            categoryId: 'category-1',
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        // Select category-1 filter
-        container
-            .read(selectedCategoryIdsProvider.notifier)
-            .toggle('category-1');
+          // Select category-1 filter
+          container
+              .read(selectedCategoryIdsProvider.notifier)
+              .toggle('category-1');
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 2);
-        expect(state.every((d) => d.categoryId == 'category-1'), isTrue);
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 2);
+          expect(state.every((d) => d.categoryId == 'category-1'), isTrue);
+        });
       });
 
-      test('filters by multiple selected categories', () async {
-        final dashboard1 = testDashboardConfig.copyWith(
-          id: 'dashboard-1',
-          name: 'Dashboard 1',
-          categoryId: 'category-1',
-        );
-        final dashboard2 = testDashboardConfig.copyWith(
-          id: 'dashboard-2',
-          name: 'Dashboard 2',
-          categoryId: 'category-2',
-        );
-        final dashboard3 = testDashboardConfig.copyWith(
-          id: 'dashboard-3',
-          name: 'Dashboard 3',
-          categoryId: 'category-3',
-        );
+      test('filters by multiple selected categories', () {
+        fakeAsync((async) {
+          final dashboard1 = testDashboardConfig.copyWith(
+            id: 'dashboard-1',
+            name: 'Dashboard 1',
+            categoryId: 'category-1',
+          );
+          final dashboard2 = testDashboardConfig.copyWith(
+            id: 'dashboard-2',
+            name: 'Dashboard 2',
+            categoryId: 'category-2',
+          );
+          final dashboard3 = testDashboardConfig.copyWith(
+            id: 'dashboard-3',
+            name: 'Dashboard 3',
+            categoryId: 'category-3',
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        // Select multiple categories
-        container.read(selectedCategoryIdsProvider.notifier)
-          ..toggle('category-1')
-          ..toggle('category-2');
+          // Select multiple categories
+          container.read(selectedCategoryIdsProvider.notifier)
+            ..toggle('category-1')
+            ..toggle('category-2');
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 2);
-        expect(
-          state.every(
-            (d) => d.categoryId == 'category-1' || d.categoryId == 'category-2',
-          ),
-          isTrue,
-        );
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 2);
+          expect(
+            state.every(
+              (d) =>
+                  d.categoryId == 'category-1' || d.categoryId == 'category-2',
+            ),
+            isTrue,
+          );
+        });
       });
 
       test('excludes dashboards with null categoryId when filter is active',
-          () async {
-        final dashboard1 = testDashboardConfig.copyWith(
-          id: 'dashboard-1',
-          name: 'Dashboard 1',
-          categoryId: 'category-1',
-        );
-        final dashboardNoCategory = testDashboardConfig.copyWith(
-          id: 'dashboard-2',
-          name: 'Dashboard 2',
-          categoryId: null,
-        );
+          () {
+        fakeAsync((async) {
+          final dashboard1 = testDashboardConfig.copyWith(
+            id: 'dashboard-1',
+            name: 'Dashboard 1',
+            categoryId: 'category-1',
+          );
+          final dashboardNoCategory = testDashboardConfig.copyWith(
+            id: 'dashboard-2',
+            name: 'Dashboard 2',
+            categoryId: null,
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        // Select category-1 filter
-        container
-            .read(selectedCategoryIdsProvider.notifier)
-            .toggle('category-1');
+          // Select category-1 filter
+          container
+              .read(selectedCategoryIdsProvider.notifier)
+              .toggle('category-1');
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 1);
-        expect(state[0].id, 'dashboard-1');
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 1);
+          expect(state[0].id, 'dashboard-1');
+        });
       });
 
       test('includes dashboards with null categoryId when no filter is active',
-          () async {
-        final dashboard1 = testDashboardConfig.copyWith(
-          id: 'dashboard-1',
-          name: 'Dashboard 1',
-          categoryId: 'category-1',
-        );
-        final dashboardNoCategory = testDashboardConfig.copyWith(
-          id: 'dashboard-2',
-          name: 'Dashboard 2',
-          categoryId: null,
-        );
+          () {
+        fakeAsync((async) {
+          final dashboard1 = testDashboardConfig.copyWith(
+            id: 'dashboard-1',
+            name: 'Dashboard 1',
+            categoryId: 'category-1',
+          );
+          final dashboardNoCategory = testDashboardConfig.copyWith(
+            id: 'dashboard-2',
+            name: 'Dashboard 2',
+            categoryId: null,
+          );
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final state = container.read(filteredSortedDashboardsProvider);
-        expect(state.length, 2);
+          final state = container.read(filteredSortedDashboardsProvider);
+          expect(state.length, 2);
+        });
       });
     });
 
     group('dashboardCategoriesProvider', () {
-      test('emits categories from initial fetch', () async {
-        when(() => mockDb.getAllCategories())
-            .thenAnswer((_) async => [categoryMindfulness]);
+      test('emits categories from initial fetch', () {
+        fakeAsync((async) {
+          when(() => mockDb.getAllCategories())
+              .thenAnswer((_) async => [categoryMindfulness]);
 
-        final states = <AsyncValue<List<CategoryDefinition>>>[];
-        container.listen(
-          dashboardCategoriesProvider,
-          (_, next) => states.add(next),
-          fireImmediately: true,
-        );
+          final states = <AsyncValue<List<CategoryDefinition>>>[];
+          container.listen(
+            dashboardCategoriesProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
 
-        await Future<void>.delayed(Duration.zero);
+          async.flushMicrotasks();
 
-        expect(states.last.hasValue, isTrue);
-        expect(states.last.value, [categoryMindfulness]);
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, [categoryMindfulness]);
+        });
       });
 
-      test('handles fetcher errors', () async {
-        final error = Exception('Categories error');
+      test('handles fetcher errors', () {
+        fakeAsync((async) {
+          final error = Exception('Categories error');
 
-        when(() => mockDb.getAllCategories()).thenThrow(error);
+          when(() => mockDb.getAllCategories()).thenThrow(error);
 
-        final completer = Completer<void>();
-        container.listen(
-          dashboardCategoriesProvider,
-          (_, next) {
-            if (next.hasError && !completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
+          container.listen(dashboardCategoriesProvider, (_, __) {});
 
-        await completer.future.timeout(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
 
-        final state = container.read(dashboardCategoriesProvider);
-        expect(state.hasError, isTrue);
+          final state = container.read(dashboardCategoriesProvider);
+          expect(state.hasError, isTrue);
+        });
       });
     });
 
@@ -407,62 +417,69 @@ void main() {
         getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
       });
 
-      test('returns dashboard from cache when found', () async {
-        final dashboard = testDashboardConfig;
+      test('returns dashboard from cache when found', () {
+        fakeAsync((async) {
+          final dashboard = testDashboardConfig;
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard]);
-        when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-            .thenReturn(dashboard);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard]);
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(dashboard);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final result = container.read(dashboardByIdProvider(dashboard.id));
-        expect(result, dashboard);
+          final result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result, dashboard);
+        });
       });
 
-      test('returns null when dashboard not found in cache', () async {
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [testDashboardConfig]);
-        when(() => mockEntitiesCacheService.getDashboardById('unknown-id'))
-            .thenReturn(null);
+      test('returns null when dashboard not found in cache', () {
+        fakeAsync((async) {
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [testDashboardConfig]);
+          when(() => mockEntitiesCacheService.getDashboardById('unknown-id'))
+              .thenReturn(null);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        final result = container.read(dashboardByIdProvider('unknown-id'));
-        expect(result, isNull);
+          final result = container.read(dashboardByIdProvider('unknown-id'));
+          expect(result, isNull);
+        });
       });
 
-      test('rebuilds when dashboards stream updates via notification',
-          () async {
-        final dashboard = testDashboardConfig;
-        final updatedDashboard = dashboard.copyWith(name: 'Updated Name');
+      test('rebuilds when dashboards stream updates via notification', () {
+        fakeAsync((async) {
+          final dashboard = testDashboardConfig;
+          final updatedDashboard = dashboard.copyWith(name: 'Updated Name');
 
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [dashboard]);
-        when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-            .thenReturn(dashboard);
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [dashboard]);
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(dashboard);
 
-        container.listen(dashboardsProvider, (_, __) {});
-        await Future<void>.delayed(Duration.zero);
+          container.listen(dashboardsProvider, (_, __) {});
+          async.flushMicrotasks();
 
-        var result = container.read(dashboardByIdProvider(dashboard.id));
-        expect(result?.name, dashboard.name);
+          var result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result?.name, dashboard.name);
 
-        // Update stubs for the next fetch
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) async => [updatedDashboard]);
-        when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-            .thenReturn(updatedDashboard);
+          // Update stubs for the next fetch
+          when(() => mockDb.getAllDashboards())
+              .thenAnswer((_) async => [updatedDashboard]);
+          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
+              .thenReturn(updatedDashboard);
 
-        // Fire notification to trigger refetch
-        notificationController.add({dashboardsNotification});
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Fire notification to trigger refetch
+          notificationController.add({dashboardsNotification});
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
 
-        result = container.read(dashboardByIdProvider(dashboard.id));
-        expect(result?.name, 'Updated Name');
+          result = container.read(dashboardByIdProvider(dashboard.id));
+          expect(result?.name, 'Updated Name');
+        });
       });
     });
   });

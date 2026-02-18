@@ -3,10 +3,9 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiInputRepository extends Mock implements AiInputRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockAiInputRepository mockAiInputRepo;

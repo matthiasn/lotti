@@ -8,7 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   late ProviderContainer container;

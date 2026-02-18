@@ -13,8 +13,6 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -9,6 +9,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../widget_test_utils.dart';
 

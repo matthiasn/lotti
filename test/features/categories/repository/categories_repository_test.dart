@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -102,35 +103,39 @@ void main() {
         verify(() => mockJournalDb.getAllCategories()).called(1);
       });
 
-      test('emits updated categories on notification', () async {
-        final category1 =
-            CategoryTestUtils.createTestCategory(name: 'Category 1');
-        final category2 =
-            CategoryTestUtils.createTestCategory(name: 'Category 2');
-        final category3 =
-            CategoryTestUtils.createTestCategory(name: 'Category 3');
+      test('emits updated categories on notification', () {
+        fakeAsync((async) {
+          final category1 =
+              CategoryTestUtils.createTestCategory(name: 'Category 1');
+          final category2 =
+              CategoryTestUtils.createTestCategory(name: 'Category 2');
+          final category3 =
+              CategoryTestUtils.createTestCategory(name: 'Category 3');
 
-        var callCount = 0;
-        when(() => mockJournalDb.getAllCategories()).thenAnswer((_) async {
-          callCount++;
-          if (callCount == 1) return [category1, category2];
-          return [category1, category2, category3];
+          var callCount = 0;
+          when(() => mockJournalDb.getAllCategories()).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return [category1, category2];
+            return [category1, category2, category3];
+          });
+
+          final results = <List<CategoryDefinition>>[];
+          final subscription = repository.watchCategories().listen(results.add);
+
+          async.flushMicrotasks();
+          expect(results, hasLength(1));
+          expect(results[0], hasLength(2));
+
+          updateStreamController.add({categoriesNotification});
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
+
+          expect(results, hasLength(2));
+          expect(results[1], hasLength(3));
+
+          subscription.cancel();
         });
-
-        final results = <List<CategoryDefinition>>[];
-        final subscription = repository.watchCategories().listen(results.add);
-
-        await Future<void>.delayed(Duration.zero);
-        expect(results, hasLength(1));
-        expect(results[0], hasLength(2));
-
-        updateStreamController.add({categoriesNotification});
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(results, hasLength(2));
-        expect(results[1], hasLength(3));
-
-        await subscription.cancel();
       });
     });
 
@@ -157,36 +162,40 @@ void main() {
         expect(result, isNull);
       });
 
-      test('emits updated category on notification', () async {
-        final categoryId = const Uuid().v4();
-        final category1 = CategoryTestUtils.createTestCategory(
-            id: categoryId, name: 'Original');
-        final category2 = CategoryTestUtils.createTestCategory(
-            id: categoryId, name: 'Updated');
+      test('emits updated category on notification', () {
+        fakeAsync((async) {
+          final categoryId = const Uuid().v4();
+          final category1 = CategoryTestUtils.createTestCategory(
+              id: categoryId, name: 'Original');
+          final category2 = CategoryTestUtils.createTestCategory(
+              id: categoryId, name: 'Updated');
 
-        var callCount = 0;
-        when(() => mockJournalDb.getCategoryById(categoryId))
-            .thenAnswer((_) async {
-          callCount++;
-          if (callCount == 1) return category1;
-          return category2;
+          var callCount = 0;
+          when(() => mockJournalDb.getCategoryById(categoryId))
+              .thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) return category1;
+            return category2;
+          });
+
+          final results = <CategoryDefinition?>[];
+          final subscription =
+              repository.watchCategory(categoryId).listen(results.add);
+
+          async.flushMicrotasks();
+          expect(results, hasLength(1));
+          expect(results[0]?.name, equals('Original'));
+
+          updateStreamController.add({categoriesNotification});
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
+
+          expect(results, hasLength(2));
+          expect(results[1]?.name, equals('Updated'));
+
+          subscription.cancel();
         });
-
-        final results = <CategoryDefinition?>[];
-        final subscription =
-            repository.watchCategory(categoryId).listen(results.add);
-
-        await Future<void>.delayed(Duration.zero);
-        expect(results, hasLength(1));
-        expect(results[0]?.name, equals('Original'));
-
-        updateStreamController.add({categoriesNotification});
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(results, hasLength(2));
-        expect(results[1]?.name, equals('Updated'));
-
-        await subscription.cancel();
       });
     });
 

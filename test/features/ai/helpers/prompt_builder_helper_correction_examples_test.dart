@@ -4,32 +4,20 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../labels/label_assignment_processor_test.dart' as label_test
-    show MockLabelsRepository;
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
   late MockJournalRepository mockJournalRepository;
   late MockChecklistRepository mockChecklistRepository;
-  late label_test.MockLabelsRepository mockLabelsRepository;
+  late MockLabelsRepository mockLabelsRepository;
   late MockEntitiesCacheService mockEntitiesCacheService;
 
   final testCategoryWithExamples = CategoryDefinition(
@@ -119,7 +107,7 @@ void main() {
     mockAiInputRepository = MockAiInputRepository();
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
-    mockLabelsRepository = label_test.MockLabelsRepository();
+    mockLabelsRepository = MockLabelsRepository();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
     // Register mock EntitiesCacheService

@@ -8,10 +8,10 @@ import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart'
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 // Fake types for mocktail fallback
 class FakeEntryStream extends Fake

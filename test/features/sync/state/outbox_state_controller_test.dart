@@ -9,7 +9,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import '../../../mocks/sync_config_test_mocks.dart';
 
 void main() {
   group('OutboxStateController', () {

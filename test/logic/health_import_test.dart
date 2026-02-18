@@ -4,16 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/health_import.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/health_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
+import '../mocks/mocks.dart';
 
 class MockHealthService extends Mock implements HealthService {}
 

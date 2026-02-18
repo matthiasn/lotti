@@ -14,13 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb mockDb;
@@ -147,7 +141,7 @@ void main() {
         notifier.updateTitle('Updated Title');
 
         // Wait for the async correction capture to complete
-        await Future<void>.delayed(const Duration(milliseconds: 150));
+        await pumpEventQueue();
 
         // Verify the checklist item was updated
         verify(
@@ -203,7 +197,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle('  Original Title  ');
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Notification should NOT be fired (noChange result)
         final event = container.read(correctionCaptureProvider);
@@ -255,7 +249,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle('New Title');
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Update should still happen
         verify(
@@ -295,7 +289,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle(null);
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Nothing should happen
         verifyNever(

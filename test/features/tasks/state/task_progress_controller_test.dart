@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,12 +14,10 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {}
-
-class MockTimeService extends Mock implements TimeService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 // This matches the signature of the getter linkedFrom in TimeService
 class MockTask extends Mock implements Task {
@@ -27,13 +26,15 @@ class MockTask extends Mock implements Task {
 
   final String taskId;
 
+  static final _fixedDate = DateTime(2022, 7, 7);
+
   @override
   Metadata get meta => Metadata(
         id: taskId,
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        dateFrom: _fixedDate,
+        dateTo: _fixedDate,
+        createdAt: _fixedDate,
+        updatedAt: _fixedDate,
       );
 }
 
@@ -258,14 +259,16 @@ void main() {
       ),
     ).thenReturn(updatedProgress);
 
-    // Emit a journal entity from the time service
-    timeServiceStreamController.add(testJournalEntity);
-    await Future<void>.delayed(Duration.zero);
+    fakeAsync((async) {
+      // Emit a journal entity from the time service
+      timeServiceStreamController.add(testJournalEntity);
+      async.flushMicrotasks();
 
-    // Ensure the state was updated
-    final state =
-        container.read(taskProgressControllerProvider(id: testTaskId));
-    expect(state.value?.estimate, equals(testEstimate));
+      // Ensure the state was updated
+      final state =
+          container.read(taskProgressControllerProvider(id: testTaskId));
+      expect(state.value?.estimate, equals(testEstimate));
+    });
   });
 
   test('ignores time service events for unrelated tasks', () async {
@@ -291,17 +294,19 @@ void main() {
     // Clear previous invocations
     clearInteractions(mockRepository);
 
-    // Emit a journal entity from the time service
-    timeServiceStreamController.add(testJournalEntity);
-    await Future<void>.delayed(Duration.zero);
+    fakeAsync((async) {
+      // Emit a journal entity from the time service
+      timeServiceStreamController.add(testJournalEntity);
+      async.flushMicrotasks();
 
-    // Verify getTaskProgress is never called when task ID doesn't match
-    verifyNever(
-      () => mockRepository.getTaskProgress(
-        timeRanges: any(named: 'timeRanges'),
-        estimate: any(named: 'estimate'),
-      ),
-    );
+      // Verify getTaskProgress is never called when task ID doesn't match
+      verifyNever(
+        () => mockRepository.getTaskProgress(
+          timeRanges: any(named: 'timeRanges'),
+          estimate: any(named: 'estimate'),
+        ),
+      );
+    });
   });
 
   test('disposes subscriptions when disposed', () async {
@@ -335,13 +340,17 @@ void main() {
     // Dispose the container which should trigger controller disposal
     localContainer.dispose();
 
-    // Emit events that would normally trigger updates
-    updateStreamController.add({testTaskId});
+    fakeAsync((async) {
+      // Emit events that would normally trigger updates
+      updateStreamController.add({testTaskId});
 
-    // Allow the async operations to complete deterministically
-    await Future<void>.delayed(Duration.zero);
+      // Allow the async operations to complete deterministically
+      async.flushMicrotasks();
 
-    // Verify no further repository calls were made after disposal
-    verifyNever(() => testRepository.getTaskProgressData(id: any(named: 'id')));
+      // Verify no further repository calls were made after disposal
+      verifyNever(
+        () => testRepository.getTaskProgressData(id: any(named: 'id')),
+      );
+    });
   });
 }

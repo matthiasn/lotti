@@ -370,7 +370,7 @@ void main() {
 
       // Select a label
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Apply changes
       await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
@@ -441,7 +441,7 @@ void main() {
         matching: find.byType(EditableText),
       );
       await tester.enterText(searchField, 'Urgent');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Only one CheckboxListTile should be visible
       expect(find.byType(CheckboxListTile), findsOneWidget);
@@ -465,10 +465,10 @@ void main() {
         matching: find.byType(EditableText),
       );
       await tester.enterText(searchField, 'test');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.enterText(searchField, '');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both labels should be visible
       expect(find.text('Urgent'), findsOneWidget);
@@ -522,7 +522,7 @@ void main() {
 
       // Tap to select
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Now checked
       checkbox = tester.widget<CheckboxListTile>(

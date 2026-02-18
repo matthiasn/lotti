@@ -7,17 +7,13 @@ import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSecureStorage extends Mock implements SecureStorage {}
+import '../../../mocks/mocks.dart';
 
 class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   late MockSecureStorage mockSecureStorage;

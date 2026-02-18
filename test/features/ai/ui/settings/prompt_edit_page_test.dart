@@ -4,7 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_text_field.dart';
@@ -13,8 +14,7 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mock classes
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   late MockAiConfigRepository mockRepository;
@@ -203,11 +203,11 @@ void main() {
       if (reasoningSwitch.evaluate().isNotEmpty) {
         // Ensure the switch is visible by scrolling
         await tester.ensureVisible(reasoningSwitch.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap to toggle
         await tester.tap(reasoningSwitch.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Switch should have toggled
         final switchWidget = tester.widget<Switch>(reasoningSwitch.first);
@@ -224,7 +224,7 @@ void main() {
 
       // Scroll to bottom to see buttons
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify both buttons exist
       expect(find.text('Cancel'), findsOneWidget);
@@ -260,7 +260,7 @@ void main() {
       // Test name validation - too short
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'), 'AB');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The form validates on change - validation errors may appear
       // Enter valid data to verify form works
@@ -273,7 +273,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter the user prompt...'),
           'Please help with: {{input}}');
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('saves modified prompt data', (WidgetTester tester) async {
@@ -286,16 +286,16 @@ void main() {
       // Modify a field
       final nameField = find.widgetWithText(TextFormField, 'Test Prompt');
       await tester.enterText(nameField, 'Updated Prompt Name');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save was called with updated data
       verify(() => mockRepository.saveConfig(any())).called(1);
@@ -318,7 +318,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter the user prompt...'),
           'User message');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify CallbackShortcuts widget exists
       expect(find.byType(CallbackShortcuts), findsWidgets);
@@ -338,7 +338,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Describe this prompt'),
           'This prompt helps with various tasks');
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('displays Configuration Options section with required fields',
@@ -419,7 +419,7 @@ void main() {
 
       // Scroll to make the card visible (form may have validation errors taking space)
       await tester.ensureVisible(responseTypeCard);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(responseTypeCard);
       await tester.pumpAndSettle();
@@ -446,11 +446,11 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter the user prompt...'),
           'User message');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find save button - scroll to bottom first
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final saveButton = find.text('Save');
       expect(saveButton, findsOneWidget);
@@ -575,7 +575,7 @@ void main() {
 
         // Try to enter text
         await tester.enterText(systemPromptField, 'New system message');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The text should remain unchanged because readOnly is true
         expect(textField.controller?.text,
@@ -627,7 +627,7 @@ void main() {
 
         // Toggle off
         await tester.tap(trackingSwitch);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // After toggling, text fields should become editable
         final systemPromptFields = find.byWidgetPredicate((widget) {
@@ -645,17 +645,17 @@ void main() {
 
         // Clear the field first
         await tester.tap(systemPromptField);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Select all text
         await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
         await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Type new text
         await tester.enterText(systemPromptField, 'New system message');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The text should have changed
         final textField = tester.widget<TextFormField>(systemPromptField);
@@ -693,14 +693,14 @@ void main() {
         // Modify the name field (which is still editable even with tracking)
         final nameField = find.widgetWithText(TextFormField, 'Tracked Prompt');
         await tester.enterText(nameField, 'Updated Tracked Prompt');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Save
         final saveButton = find.text('Save');
         await tester.ensureVisible(saveButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
         await tester.tap(saveButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify save was called and check the saved config
         final captured = verify(() => mockRepository.saveConfig(captureAny()))

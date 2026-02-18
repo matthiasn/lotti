@@ -6,7 +6,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockRatingRepository extends Mock implements RatingRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockRatingRepository mockRepository;

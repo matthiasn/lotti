@@ -5,19 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mock classes
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../../mocks/mocks.dart';
 
 /// Mock What's New controller that returns no unseen releases
 class _MockWhatsNewController extends WhatsNewController {
@@ -240,11 +239,11 @@ void main() {
 
       // Scroll to make save button visible
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Try to tap save button
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save was called (may be called multiple times for provider + models)
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
@@ -287,7 +286,7 @@ void main() {
 
       // Tap to show API key
       await tester.tap(visibilityToggle);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should now show hide icon
       expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
@@ -375,7 +374,7 @@ void main() {
       final openAiOption = find.text('OpenAI').first;
       // Ensure OpenAI option is visible before tapping
       await tester.ensureVisible(openAiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: openAiOption,
@@ -398,16 +397,16 @@ void main() {
       // Modify a field
       final nameField = find.widgetWithText(TextFormField, 'Test Provider');
       await tester.enterText(nameField, 'Updated Provider Name');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to make save button visible
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save was called with updated data
       verify(() => mockRepository.saveConfig(any())).called(1);
@@ -485,7 +484,7 @@ void main() {
       final openAiOption = find.text('OpenAI').first;
       // Ensure OpenAI option is visible before tapping
       await tester.ensureVisible(openAiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: openAiOption,
@@ -552,7 +551,7 @@ void main() {
       // Ensure Ollama option is visible before tapping
       final ollamaOption = find.text('Ollama');
       await tester.ensureVisible(ollamaOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: ollamaOption,
@@ -583,7 +582,7 @@ void main() {
       // Ensure OpenAI option is visible before tapping
       final openAiOption = find.text('OpenAI').first;
       await tester.ensureVisible(openAiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: openAiOption,
@@ -626,11 +625,11 @@ void main() {
       // Scroll to save button
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should be able to save without API key
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save was called (may be called multiple times due to model pre-population)
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
@@ -657,7 +656,7 @@ void main() {
       // Try to save - should fail because API key is required
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Now switch to Ollama
       await tester.tap(find.ancestor(
@@ -674,7 +673,7 @@ void main() {
 
       // Should now be able to save without API key
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save was called for Ollama without API key (may be called multiple times due to model pre-population)
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
@@ -710,7 +709,7 @@ void main() {
       // Find and tap Gemini option
       final geminiOption = find.text('Google Gemini');
       await tester.ensureVisible(geminiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: geminiOption,
@@ -730,10 +729,10 @@ void main() {
       // Scroll to save button and tap
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Prompt setup dialog should appear
       expect(find.text('Set Up AI Features?'), findsOneWidget);
@@ -757,7 +756,7 @@ void main() {
 
       final anthropicOption = find.text('Anthropic Claude');
       await tester.ensureVisible(anthropicOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: anthropicOption,
@@ -777,10 +776,10 @@ void main() {
       // Scroll to save button and tap
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Prompt setup dialog should NOT appear for non-Gemini/non-OpenAI providers
       expect(find.text('Set Up AI Features?'), findsNothing);
@@ -811,15 +810,15 @@ void main() {
       // Modify a field
       final nameField = find.widgetWithText(TextFormField, 'Existing Gemini');
       await tester.enterText(nameField, 'Updated Gemini');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button and tap
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Prompt setup dialog should NOT appear for edits
       expect(find.text('Set Up AI Features?'), findsNothing);
@@ -852,7 +851,7 @@ void main() {
 
       final geminiOption = find.text('Google Gemini');
       await tester.ensureVisible(geminiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: geminiOption,
@@ -871,15 +870,15 @@ void main() {
       // Save
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Confirm prompt setup
       expect(find.text('Set Up AI Features?'), findsOneWidget);
       await tester.tap(find.text('Set Up'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify prompts were created
       // FTUE creates: 3 models + 9 prompts (optimized assignment)
@@ -914,7 +913,7 @@ void main() {
 
       final geminiOption = find.text('Google Gemini');
       await tester.ensureVisible(geminiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: geminiOption,
@@ -933,15 +932,15 @@ void main() {
       // Save
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Decline prompt setup
       expect(find.text('Set Up AI Features?'), findsOneWidget);
       await tester.tap(find.text('No Thanks'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Dialog should close, no prompts created
       expect(find.text('Set Up AI Features?'), findsNothing);
@@ -978,7 +977,7 @@ void main() {
       final availableModelsSection = find.text('Available Models');
       if (availableModelsSection.evaluate().isNotEmpty) {
         await tester.ensureVisible(availableModelsSection);
-        await tester.pumpAndSettle();
+        await tester.pump();
       }
 
       // Should show Available Models section
@@ -1024,7 +1023,7 @@ void main() {
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
       await tester.ensureVisible(availableModelsSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show Gemini known models (from known_models.dart)
       // Nano Banana Pro is the first model for Gemini
@@ -1069,7 +1068,7 @@ void main() {
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
       await tester.ensureVisible(availableModelsSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show "Added" badge for the already configured model
       expect(find.text('Added'), findsAtLeastNWidgets(1));
@@ -1100,15 +1099,15 @@ void main() {
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
       await tester.ensureVisible(availableModelsSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find and tap an add button (the circular button with add icon)
       final addButton = find.byIcon(Icons.add_rounded).first;
       await tester.ensureVisible(addButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(addButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify saveConfig was called with a new model
       verify(() => mockRepository.saveConfig(any(
@@ -1145,7 +1144,7 @@ void main() {
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
       await tester.ensureVisible(availableModelsSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show modality chips (In: and Out: prefixes)
       expect(find.textContaining('In:'), findsAtLeastNWidgets(1));
@@ -1216,7 +1215,7 @@ void main() {
       // Scroll to find AI Setup Wizard section
       final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show AI Setup Wizard section
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
@@ -1265,7 +1264,7 @@ void main() {
       // Scroll to find AI Setup Wizard section
       final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show AI Setup Wizard section for OpenAI
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
@@ -1308,7 +1307,7 @@ void main() {
       // Scroll to find AI Setup Wizard section
       final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show AI Setup Wizard section for Mistral
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
@@ -1399,7 +1398,7 @@ void main() {
       // Scroll to find Run Setup button
       final runSetupButton = find.text(strings.aiSetupWizardRunButton);
       await tester.ensureVisible(runSetupButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the Run Setup button
       await tester.tap(runSetupButton);
@@ -1445,7 +1444,7 @@ void main() {
       // Scroll to find AI Setup Wizard section
       final aiSetupSection = find.text(strings.aiSetupWizardTitle);
       await tester.ensureVisible(aiSetupSection);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify all localized strings are displayed
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
@@ -1494,7 +1493,7 @@ void main() {
       // Scroll to find Run Setup button and verify initial state
       final runSetupButton = find.text(strings.aiSetupWizardRunButton);
       await tester.ensureVisible(runSetupButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Button should show "Run Setup" initially
       expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
@@ -1531,7 +1530,7 @@ void main() {
       // Find and tap OpenAI option
       final openAiOption = find.text('OpenAI').first;
       await tester.ensureVisible(openAiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: openAiOption,
@@ -1551,10 +1550,10 @@ void main() {
       // Scroll to save button and tap
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Prompt setup dialog should appear for OpenAI
       expect(find.text('Set Up AI Features?'), findsOneWidget);
@@ -1588,7 +1587,7 @@ void main() {
       // Find and tap Mistral option (displayed as 'Mistral' not 'Mistral AI')
       final mistralOption = find.text('Mistral');
       await tester.ensureVisible(mistralOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: mistralOption,
@@ -1608,10 +1607,10 @@ void main() {
       // Scroll to save button and tap
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Prompt setup dialog should appear for Mistral
       expect(find.text('Set Up AI Features?'), findsOneWidget);
@@ -1644,7 +1643,7 @@ void main() {
 
       final openAiOption = find.text('OpenAI').first;
       await tester.ensureVisible(openAiOption);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.ancestor(
         of: openAiOption,
@@ -1663,15 +1662,15 @@ void main() {
       // Save
       final saveButton = find.text('Save');
       await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Confirm prompt setup
       expect(find.text('Set Up AI Features?'), findsOneWidget);
       await tester.tap(find.text('Set Up'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify prompts were created for OpenAI
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;

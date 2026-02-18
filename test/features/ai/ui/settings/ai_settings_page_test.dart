@@ -3,13 +3,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   group('AiSettingsPage', () {
@@ -155,7 +156,7 @@ void main() {
 
       // Enter search text that doesn't match
       await tester.enterText(find.byType(TextField), 'nonexistent');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Wait for debounce timer (300ms + buffer)
       await tester.pump(const Duration(milliseconds: 350));
@@ -165,7 +166,7 @@ void main() {
 
       // Clear search
       await tester.enterText(find.byType(TextField), '');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Wait for debounce timer (300ms + buffer)
       await tester.pump(const Duration(milliseconds: 350));
@@ -269,14 +270,14 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test search');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear button should appear
       expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
 
       // Tap clear button
       await tester.tap(find.byIcon(Icons.clear_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Search field should be empty
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -436,7 +437,7 @@ void main() {
 
       // Tap Vision filter
       await tester.tap(find.text('Vision'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should only see model with vision capability
       expect(find.text('Claude Sonnet 3.5'), findsOneWidget);
@@ -475,7 +476,7 @@ void main() {
 
       // Search for "Task"
       await tester.enterText(find.byType(TextField), 'Task');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Wait for debounce timer
       await tester.pump(const Duration(milliseconds: 350));
@@ -513,7 +514,7 @@ void main() {
 
       // Search for "Anthropic"
       await tester.enterText(find.byType(TextField), 'Anthropic');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Wait for debounce timer
       await tester.pump(const Duration(milliseconds: 350));
@@ -598,7 +599,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Select chip should now show selected state (checkbox icon)
         expect(find.byIcon(Icons.check_box), findsOneWidget);
@@ -620,7 +621,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The sliver uses AnimatedContainer as custom checkbox (not standard icon)
         // When selection mode is on, the Select chip shows checked icon
@@ -645,7 +646,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // FAB should still show "Add Prompt" when selection mode is on but nothing selected
         expect(find.text('Add Prompt'), findsOneWidget);
@@ -666,7 +667,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // In selection mode, tap on the prompt card text to select it
         // (the sliver wraps cards and handles tap for selection)
@@ -680,7 +681,7 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // FAB should now show delete icon
         expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
@@ -704,7 +705,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Select a prompt by tapping on the card text
         final promptCardFinders = find.text('Task Summary');
@@ -715,12 +716,12 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap delete FAB
         final deleteFab = find.byType(FloatingActionButton);
         await tester.tap(deleteFab);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should show confirmation dialog with correct title
         expect(find.byType(AlertDialog), findsOneWidget);
@@ -742,7 +743,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final promptCardFinders = find.text('Task Summary');
         // Assert the card exists before attempting to tap
@@ -752,15 +753,15 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap delete FAB
         await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap Cancel button
         await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Dialog should be dismissed
         expect(find.byType(AlertDialog), findsNothing);
@@ -788,7 +789,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final promptCardFinders = find.text('Task Summary');
         // Assert the card exists before attempting to tap
@@ -798,15 +799,15 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap delete FAB
         await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap Delete button to confirm
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Dialog should be dismissed
         expect(find.byType(AlertDialog), findsNothing);
@@ -830,7 +831,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Select a prompt
         final promptCardFinders = find.text('Task Summary');
@@ -841,14 +842,14 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should be in selection mode with items selected
         expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
 
         // Toggle off selection mode
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should exit selection mode and show Add Prompt FAB
         expect(find.text('Add Prompt'), findsOneWidget);
@@ -868,7 +869,7 @@ void main() {
           matching: find.byType(FilterChip),
         );
         await tester.tap(selectChip);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Select a prompt
         final promptCardFinders = find.text('Task Summary');
@@ -879,7 +880,7 @@ void main() {
           reason: 'Task Summary prompt card should be present',
         );
         await tester.tap(promptCardFinders.last);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should have delete FAB with selected item
         expect(find.byIcon(Icons.delete_rounded), findsOneWidget);

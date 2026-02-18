@@ -106,7 +106,7 @@ void main() {
   group('Label rendering and selection', () {
     testWidgets('renders all available labels', (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Urgent'), findsOneWidget);
       expect(find.text('Backend'), findsOneWidget);
@@ -116,7 +116,7 @@ void main() {
 
     testWidgets('shows labels sorted alphabetically', (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final checkboxes =
           tester.widgetList<CheckboxListTile>(find.byType(CheckboxListTile));
@@ -133,7 +133,7 @@ void main() {
       await tester.pumpWidget(
         buildWidget(initialLabelIds: const ['label-1', 'label-2']),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final urgentCheckbox = tester.widget<CheckboxListTile>(
         find.ancestor(
@@ -161,7 +161,7 @@ void main() {
 
     testWidgets('toggles selection when checkbox is tapped', (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially unchecked
       var urgentCheckbox = tester.widget<CheckboxListTile>(
@@ -174,7 +174,7 @@ void main() {
 
       // Tap to check
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       urgentCheckbox = tester.widget<CheckboxListTile>(
         find.ancestor(
@@ -186,7 +186,7 @@ void main() {
 
       // Tap to uncheck
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       urgentCheckbox = tester.widget<CheckboxListTile>(
         find.ancestor(
@@ -200,7 +200,7 @@ void main() {
     testWidgets('shows label description as subtitle when present',
         (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Requires immediate attention'), findsOneWidget);
       expect(find.text('Backend development task'), findsOneWidget);
@@ -209,7 +209,7 @@ void main() {
     testWidgets('does not show subtitle for labels without description',
         (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final frontendCheckbox = tester.widget<CheckboxListTile>(
         find.ancestor(
@@ -230,7 +230,7 @@ void main() {
 
     testWidgets('shows colored circle avatar for each label', (tester) async {
       await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byWidgetPredicate(
@@ -266,11 +266,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Update search query
       searchQuery.value = 'urg';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Urgent'), findsOneWidget);
       expect(find.text('Backend'), findsNothing);
@@ -302,11 +302,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Search by description
       searchQuery.value = 'development';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Backend'), findsOneWidget);
       expect(find.text('Urgent'), findsNothing);
@@ -338,10 +338,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'URGENT';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Urgent'), findsOneWidget);
     });
@@ -370,10 +370,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = '  backend  ';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Backend'), findsOneWidget);
       expect(find.text('Urgent'), findsNothing);
@@ -403,10 +403,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = '';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Urgent'), findsOneWidget);
       expect(find.text('Backend'), findsOneWidget);
@@ -423,7 +423,7 @@ void main() {
           availableLabels: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No labels available yet.'), findsOneWidget);
       expect(find.text('Create label'), findsOneWidget);
@@ -454,10 +454,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'nonexistent';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No labels match "nonexistent".'), findsOneWidget);
       expect(find.text('Create "nonexistent" label'), findsOneWidget);
@@ -488,7 +488,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No labels available yet.'), findsOneWidget);
       expect(find.text('Create label'), findsOneWidget);
@@ -519,11 +519,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Set search to whitespace only
       searchQuery.value = '   ';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All labels should still be visible since trimmed query is empty
       expect(find.text('Urgent'), findsOneWidget);
@@ -557,10 +557,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Create label'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(LabelEditorSheet), findsOneWidget);
     });
@@ -590,13 +590,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'New Label Name';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Create "New Label Name" label'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final editorSheet =
           tester.widget<LabelEditorSheet>(find.byType(LabelEditorSheet));
@@ -628,10 +628,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Create label'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final editorSheet =
           tester.widget<LabelEditorSheet>(find.byType(LabelEditorSheet));
@@ -664,7 +664,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(applyController.value, isNotNull);
     });
@@ -699,11 +699,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Select a label
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Call apply
       final result = await applyController.value!();
@@ -745,7 +745,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Call apply
       final result = await applyController.value!();
@@ -783,13 +783,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Select additional labels
       await tester.tap(find.text('Backend'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(find.text('Frontend'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Call apply
       await applyController.value!();
@@ -834,11 +834,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Deselect one label
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Call apply
       await applyController.value!();
@@ -880,11 +880,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Deselect the label
       await tester.tap(find.text('Urgent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Call apply
       await applyController.value!();
@@ -905,7 +905,7 @@ void main() {
           availableLabels: testLabels,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All labels should be available
       expect(find.text('Urgent'), findsOneWidget);
@@ -926,7 +926,7 @@ void main() {
           availableLabels: categoryLabels,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Only category-specific labels should be available
       expect(find.text('Urgent'), findsOneWidget);
@@ -972,11 +972,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Search for "CI" which is a substring of "dependencies"
       searchQuery.value = 'CI';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // "dependencies" should be shown (substring match)
       expect(find.text('dependencies'), findsOneWidget);
@@ -1021,10 +1021,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'CI';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // "CI" label should be shown
       expect(find.text('CI'), findsOneWidget);
@@ -1069,11 +1069,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Search for "ci" (lowercase) when "CI" (uppercase) exists
       searchQuery.value = 'ci';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // "CI" label should be shown
       expect(find.text('CI'), findsOneWidget);
@@ -1122,10 +1122,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'CI';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both substring matches should be shown
       expect(find.text('dependencies'), findsOneWidget);
@@ -1158,10 +1158,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = '';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All labels should be shown
       expect(find.text('Urgent'), findsOneWidget);
@@ -1195,10 +1195,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = '   ';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All labels should be shown (trimmed query is empty)
       expect(find.text('Urgent'), findsOneWidget);
@@ -1242,14 +1242,14 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'CI';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the create button
       await tester.tap(find.text('Create "CI" label'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Label editor should open with "CI" as initial name
       expect(find.byType(LabelEditorSheet), findsOneWidget);
@@ -1292,10 +1292,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       searchQuery.value = 'CI';
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Category-scoped label shown
       expect(find.text('dependencies'), findsOneWidget);

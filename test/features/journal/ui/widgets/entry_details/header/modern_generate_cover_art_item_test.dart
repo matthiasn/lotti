@@ -14,15 +14,8 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_helper.dart';
-
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);

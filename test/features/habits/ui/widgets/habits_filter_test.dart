@@ -17,8 +17,6 @@ import 'package:pie_chart/pie_chart.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

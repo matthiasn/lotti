@@ -80,8 +80,7 @@ void main() {
           ),
           findsOneWidget);
 
-      // Allow all animations and timers to complete
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('shows clip indicator for high decibels', (tester) async {
@@ -103,8 +102,7 @@ void main() {
           ),
           findsOneWidget);
 
-      // Allow all animations and timers to complete
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('maintains aspect ratio at different sizes', (tester) async {

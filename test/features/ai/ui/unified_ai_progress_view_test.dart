@@ -8,29 +8,26 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
+    show aiConfigByIdProvider, aiConfigByTypeControllerProvider;
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
-
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 /// Helper to create override for UnifiedAiController with a specific state.
 Override unifiedAiControllerOverride(UnifiedAiState initialState) {

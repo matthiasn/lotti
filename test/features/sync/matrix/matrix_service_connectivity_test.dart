@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -16,27 +14,19 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockGateway extends Mock implements MatrixSyncGateway {}
 
 class MockMessageSender extends Mock implements MatrixMessageSender {}
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
-
 class MockReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class MockEventProcessor extends Mock implements SyncEventProcessor {}
-
-class MockSecureStorage extends Mock implements SecureStorage {}
 
 class MockRoomManager extends Mock implements SyncRoomManager {}
 

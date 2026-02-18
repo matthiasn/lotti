@@ -7,7 +7,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../mocks/mocks.dart';
 
 class MockDBusClient extends Mock implements DBusClient {}
 

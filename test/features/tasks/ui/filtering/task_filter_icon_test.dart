@@ -22,6 +22,7 @@ import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
 class FakeJournalPageController extends JournalPageController {
@@ -74,8 +75,6 @@ class FakeJournalPageController extends JournalPageController {
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late FakeJournalPageController fakeController;

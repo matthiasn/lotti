@@ -12,15 +12,9 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSettingsDb extends Mock implements SettingsDb {}
-
-class MockJournalDb extends Mock implements JournalDb {}
+import '../../../../../mocks/mocks.dart';
 
 class MockUserActivityService extends Mock implements UserActivityService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockSettingsDb mockSettingsDb;

@@ -17,6 +17,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import 'matrix_stream_consumer_test_support.dart';
 
 void main() {

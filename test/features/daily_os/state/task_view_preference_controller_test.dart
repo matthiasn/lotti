@@ -5,7 +5,7 @@ import 'package:lotti/features/daily_os/state/task_view_preference_controller.da
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSettingsDb extends Mock implements SettingsDb {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -17,10 +17,9 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late FakeJournalPageController fakeController;

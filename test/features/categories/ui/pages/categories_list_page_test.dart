@@ -12,11 +12,10 @@ import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
   group('CategoriesListPage Widget Tests', () {

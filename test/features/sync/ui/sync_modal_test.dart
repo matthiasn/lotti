@@ -7,16 +7,13 @@ import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mock for SyncMaintenanceRepository
+import '../../../mocks/mocks.dart';
+
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
-
-// Mock for LoggingService
-class MockLoggingService extends Mock implements LoggingService {}
 
 class SpySyncController extends SyncMaintenanceController {
   SpySyncController();

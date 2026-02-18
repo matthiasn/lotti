@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
@@ -237,6 +238,12 @@ class _TestBench {
     await Future<void>.delayed(Duration.zero);
   }
 
+  /// Sends PCM data synchronously — use inside `fakeAsync` blocks.
+  /// Call `async.flushMicrotasks()` after to process.
+  void sendPcmSync(Uint8List data) {
+    _pcmController!.add(data);
+  }
+
   /// Schedules a `transcription.done` event with enough delay for `stop()`
   /// to be listening on the broadcast stream.
   void scheduleDone(String text, {Map<String, dynamic>? extra}) {
@@ -249,6 +256,16 @@ class _TestBench {
         });
       }),
     );
+  }
+
+  /// Sends a `transcription.done` event immediately — use inside `fakeAsync`
+  /// blocks after elapsing time past the scheduled delay.
+  void simulateDone(String text, {Map<String, dynamic>? extra}) {
+    channel.simulateServerMessage({
+      'type': 'transcription.done',
+      'text': text,
+      if (extra != null) ...extra,
+    });
   }
 
   /// Calls `service.stop` with a temp output directory.
@@ -458,26 +475,36 @@ void main() {
       expect(amplitudes, isNotEmpty);
     });
 
-    test('calls onDelta callback for each transcription delta', () async {
-      final bench = await _TestBench.create();
-      addTearDown(bench.dispose);
+    test('calls onDelta callback for each transcription delta', () {
+      fakeAsync((async) {
+        late _TestBench bench;
+        _TestBench.create().then((b) => bench = b);
+        async.flushMicrotasks();
+        addTearDown(bench.dispose);
 
-      final deltas = <String>[];
-      await bench.startTranscription(onDelta: deltas.add);
+        final deltas = <String>[];
+        bench.startTranscription(onDelta: deltas.add);
+        // Flush microtasks for DB/setup, then elapse to fire the
+        // zero-duration timer that delivers session.created.
+        async
+          ..flushMicrotasks()
+          ..elapse(Duration.zero)
+          ..flushMicrotasks();
 
-      bench.channel.simulateServerMessage({
-        'type': 'transcription.text.delta',
-        'text': 'Hello ',
+        bench.channel.simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'Hello ',
+        });
+        async.flushMicrotasks();
+
+        bench.channel.simulateServerMessage({
+          'type': 'transcription.text.delta',
+          'text': 'world',
+        });
+        async.flushMicrotasks();
+
+        expect(deltas, ['Hello ', 'world']);
       });
-      await Future<void>.delayed(Duration.zero);
-
-      bench.channel.simulateServerMessage({
-        'type': 'transcription.text.delta',
-        'text': 'world',
-      });
-      await Future<void>.delayed(Duration.zero);
-
-      expect(deltas, ['Hello ', 'world']);
     });
   });
 
@@ -521,8 +548,15 @@ void main() {
         });
       await Future<void>.delayed(Duration.zero);
 
-      // Don't send transcription.done — let the short timeout trigger fallback
-      final result = await bench.stop();
+      // Don't send transcription.done — let the short 50ms timeout trigger
+      // the fallback. Call service.stop directly to avoid file I/O in the
+      // test bench helper (Directory.createTemp). No PCM was sent so
+      // _saveAudio returns null (no file I/O).
+      final result = await bench.service.stop(
+        stopRecorder: () async {},
+        outputPath: '/tmp/rt_test_fallback/output',
+      );
+
       expect(result.transcript, 'Hello world');
       expect(result.usedTranscriptFallback, isTrue);
     });
@@ -612,22 +646,32 @@ void main() {
   });
 
   group('PCM stream error handling', () {
-    test('logs exception when PCM stream emits error', () async {
-      final bench = await _TestBench.create();
-      addTearDown(bench.dispose);
+    test('logs exception when PCM stream emits error', () {
+      fakeAsync((async) {
+        late _TestBench bench;
+        _TestBench.create().then((b) => bench = b);
+        async.flushMicrotasks();
+        addTearDown(bench.dispose);
 
-      final pcm = await bench.startTranscription();
+        late StreamController<Uint8List> pcm;
+        bench.startTranscription().then((c) => pcm = c);
+        async
+          ..flushMicrotasks()
+          ..elapse(Duration.zero)
+          ..flushMicrotasks();
 
-      pcm.addError(Exception('microphone disconnected'));
-      await Future<void>.delayed(Duration.zero);
+        pcm.addError(Exception('microphone disconnected'));
+        async.flushMicrotasks();
 
-      expect(fakeLogging.exceptions, hasLength(1));
-      expect(
-        fakeLogging.exceptions.first.toString(),
-        contains('microphone disconnected'),
-      );
+        expect(fakeLogging.exceptions, hasLength(1));
+        expect(
+          fakeLogging.exceptions.first.toString(),
+          contains('microphone disconnected'),
+        );
 
-      await bench.service.dispose();
+        bench.service.dispose();
+        async.flushMicrotasks();
+      });
     });
   });
 

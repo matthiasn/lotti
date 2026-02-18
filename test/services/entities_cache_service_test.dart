@@ -1,16 +1,15 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 /// A simple wrapper that exposes the same [updateStream] getter as
 /// [UpdateNotifications], but without debouncing — so tests can verify
@@ -79,6 +78,40 @@ void main() {
       updateNotifications: notifications,
     );
     await cache.init();
+    return cache;
+  }
+
+  /// Synchronous version of [createCache] for use inside [fakeAsync].
+  /// Call this, then [FakeAsync.flushMicrotasks] to resolve the init future.
+  EntitiesCacheService createCacheSync(
+    FakeAsync async, {
+    List<MeasurableDataType> measurables = const [],
+    List<CategoryDefinition> categories = const [],
+    List<HabitDefinition> habits = const [],
+    List<DashboardDefinition> dashboards = const [],
+    List<LabelDefinition> labels = const [],
+    List<TagEntity> tags = const [],
+    bool privateFlag = false,
+  }) {
+    when(() => journalDb.getAllMeasurableDataTypes())
+        .thenAnswer((_) async => measurables);
+    when(() => journalDb.getAllCategories())
+        .thenAnswer((_) async => categories);
+    when(() => journalDb.getAllHabitDefinitions())
+        .thenAnswer((_) async => habits);
+    when(() => journalDb.getAllDashboards())
+        .thenAnswer((_) async => dashboards);
+    when(() => journalDb.getAllLabelDefinitions())
+        .thenAnswer((_) async => labels);
+    when(() => journalDb.getAllTags()).thenAnswer((_) async => tags);
+    when(() => journalDb.getConfigFlag('private'))
+        .thenAnswer((_) async => privateFlag);
+
+    final cache = EntitiesCacheService(
+      journalDb: journalDb,
+      updateNotifications: notifications,
+    )..init();
+    async.flushMicrotasks();
     return cache;
   }
 
@@ -156,102 +189,108 @@ void main() {
     expect(result.map((e) => e.id).toSet(), {'g', 'w', 'p'});
   });
 
-  test('prunes orphan category keys on categories update', () async {
-    final work = CategoryDefinition(
-      id: 'work',
-      name: 'Work',
-      color: '#0000FF',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
+  test('prunes orphan category keys on categories update', () {
+    fakeAsync((async) {
+      final work = CategoryDefinition(
+        id: 'work',
+        name: 'Work',
+        color: '#0000FF',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        active: true,
+        private: false,
+      );
 
-    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-    final ghost = testLabelDefinition1.copyWith(
-      id: 'x',
-      name: 'Ghosted',
-      applicableCategoryIds: const ['ghost'],
-    );
+      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+      final ghost = testLabelDefinition1.copyWith(
+        id: 'x',
+        name: 'Ghosted',
+        applicableCategoryIds: const ['ghost'],
+      );
 
-    final cache = await createCache(
-      categories: [work],
-      labels: [global, ghost],
-      privateFlag: true,
-    );
+      final cache = createCacheSync(
+        async,
+        categories: [work],
+        labels: [global, ghost],
+        privateFlag: true,
+      );
 
-    // Before prune, ghost bucket exists
-    expect(
-      cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
-      {'g', 'x'},
-    );
+      // Before prune, ghost bucket exists
+      expect(
+        cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
+        {'g', 'x'},
+      );
 
-    // Trigger categories update (still only 'work') → prune removes 'ghost' key
-    when(() => journalDb.getAllCategories()).thenAnswer((_) async => [work]);
-    notifications.emit({categoriesNotification});
-    await Future<void>.delayed(Duration.zero);
+      // Trigger categories update (still only 'work') → prune removes 'ghost' key
+      when(() => journalDb.getAllCategories()).thenAnswer((_) async => [work]);
+      notifications.emit({categoriesNotification});
+      async.flushMicrotasks();
 
-    expect(
-      cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
-      {'g'},
-    );
+      expect(
+        cache.availableLabelsForCategory('ghost').map((e) => e.id).toSet(),
+        {'g'},
+      );
+    });
   });
 
-  test('availableLabelsForCategory respects private config flag', () async {
-    final cat = CategoryDefinition(
-      id: 'work',
-      name: 'Work',
-      color: '#0000FF',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
-    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-    final privGlobal = testLabelDefinition1.copyWith(
-      id: 'p',
-      name: 'Priv',
-      private: true,
-    );
-    final workPub = testLabelDefinition1.copyWith(
-      id: 'w',
-      name: 'WorkPub',
-      applicableCategoryIds: const ['work'],
-    );
-    final workPriv = testLabelDefinition1.copyWith(
-      id: 'wp',
-      name: 'WorkPriv',
-      private: true,
-      applicableCategoryIds: const ['work'],
-    );
+  test('availableLabelsForCategory respects private config flag', () {
+    fakeAsync((async) {
+      final cat = CategoryDefinition(
+        id: 'work',
+        name: 'Work',
+        color: '#0000FF',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        active: true,
+        private: false,
+      );
+      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+      final privGlobal = testLabelDefinition1.copyWith(
+        id: 'p',
+        name: 'Priv',
+        private: true,
+      );
+      final workPub = testLabelDefinition1.copyWith(
+        id: 'w',
+        name: 'WorkPub',
+        applicableCategoryIds: const ['work'],
+      );
+      final workPriv = testLabelDefinition1.copyWith(
+        id: 'wp',
+        name: 'WorkPriv',
+        private: true,
+        applicableCategoryIds: const ['work'],
+      );
 
-    // Start with private=false
-    final cache = await createCache(
-      categories: [cat],
-      labels: [global, privGlobal, workPub, workPriv],
-    );
+      // Start with private=false
+      final cache = createCacheSync(
+        async,
+        categories: [cat],
+        labels: [global, privGlobal, workPub, workPriv],
+      );
 
-    expect(
-      cache.availableLabelsForCategory('work').map((e) => e.id).toList(),
-      containsAllInOrder(['g', 'w']),
-    );
-    expect(
-      cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-      isNot(containsAll(['p', 'wp'])),
-    );
+      expect(
+        cache.availableLabelsForCategory('work').map((e) => e.id).toList(),
+        containsAllInOrder(['g', 'w']),
+      );
+      expect(
+        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        isNot(containsAll(['p', 'wp'])),
+      );
 
-    // Flip to private=true via notification
-    when(() => journalDb.getConfigFlag('private'))
-        .thenAnswer((_) async => true);
-    notifications.emit({privateToggleNotification});
-    await Future<void>.delayed(Duration.zero);
+      // Flip to private=true via notification
+      when(() => journalDb.getConfigFlag('private'))
+          .thenAnswer((_) async => true);
+      notifications.emit({privateToggleNotification});
+      async.flushMicrotasks();
 
-    expect(
-      cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-      containsAll(['g', 'p', 'w', 'wp']),
-    );
+      expect(
+        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        containsAll(['g', 'p', 'w', 'wp']),
+      );
+    });
   });
 
   test('availableLabelsForCategory returns labels sorted case-insensitively',
@@ -284,56 +323,58 @@ void main() {
     expect(res.map((l) => l.name).toList(), ['apple', 'Banana', 'cherry']);
   });
 
-  test('availableLabelsForCategory handles deleted categories gracefully',
-      () async {
-    final work = CategoryDefinition(
-      id: 'work',
-      name: 'Work',
-      color: '#0000FF',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
-    final personal = CategoryDefinition(
-      id: 'personal',
-      name: 'Personal',
-      color: '#00FF00',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      active: true,
-      private: false,
-    );
-    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-    final scopedWork = testLabelDefinition1.copyWith(
-      id: 'w',
-      name: 'WorkOnly',
-      applicableCategoryIds: const ['work'],
-    );
+  test('availableLabelsForCategory handles deleted categories gracefully', () {
+    fakeAsync((async) {
+      final work = CategoryDefinition(
+        id: 'work',
+        name: 'Work',
+        color: '#0000FF',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        active: true,
+        private: false,
+      );
+      final personal = CategoryDefinition(
+        id: 'personal',
+        name: 'Personal',
+        color: '#00FF00',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        active: true,
+        private: false,
+      );
+      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+      final scopedWork = testLabelDefinition1.copyWith(
+        id: 'w',
+        name: 'WorkOnly',
+        applicableCategoryIds: const ['work'],
+      );
 
-    final cache = await createCache(
-      categories: [work, personal],
-      labels: [global, scopedWork],
-      privateFlag: true,
-    );
+      final cache = createCacheSync(
+        async,
+        categories: [work, personal],
+        labels: [global, scopedWork],
+        privateFlag: true,
+      );
 
-    expect(
-      cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-      {'g', 'w'},
-    );
+      expect(
+        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        {'g', 'w'},
+      );
 
-    // Simulate deleting the 'work' category
-    when(() => journalDb.getAllCategories())
-        .thenAnswer((_) async => [personal]);
-    notifications.emit({categoriesNotification});
-    await Future<void>.delayed(Duration.zero);
+      // Simulate deleting the 'work' category
+      when(() => journalDb.getAllCategories())
+          .thenAnswer((_) async => [personal]);
+      notifications.emit({categoriesNotification});
+      async.flushMicrotasks();
 
-    expect(
-      cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
-      {'g'},
-    );
+      expect(
+        cache.availableLabelsForCategory('work').map((e) => e.id).toSet(),
+        {'g'},
+      );
+    });
   });
 
   test('filterLabelsForCategory handles empty input list', () async {
@@ -342,61 +383,64 @@ void main() {
     expect(res, isEmpty);
   });
 
-  test('pruning cleans up multiple orphaned categories at once', () async {
-    CategoryDefinition makeCat(String id) => CategoryDefinition(
-          id: id,
-          name: id.toUpperCase(),
-          color: '#000000',
-          createdAt: testEpochDateTime,
-          updatedAt: testEpochDateTime,
-          vectorClock: null,
-          active: true,
-          private: false,
-        );
+  test('pruning cleans up multiple orphaned categories at once', () {
+    fakeAsync((async) {
+      CategoryDefinition makeCat(String id) => CategoryDefinition(
+            id: id,
+            name: id.toUpperCase(),
+            color: '#000000',
+            createdAt: testEpochDateTime,
+            updatedAt: testEpochDateTime,
+            vectorClock: null,
+            active: true,
+            private: false,
+          );
 
-    final a = makeCat('a');
-    final b = makeCat('b');
-    final c = makeCat('c');
-    final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
-    final la = testLabelDefinition1.copyWith(
-      id: 'la',
-      name: 'A',
-      applicableCategoryIds: const ['a'],
-    );
-    final lb = testLabelDefinition1.copyWith(
-      id: 'lb',
-      name: 'B',
-      applicableCategoryIds: const ['b'],
-    );
+      final a = makeCat('a');
+      final b = makeCat('b');
+      final c = makeCat('c');
+      final global = testLabelDefinition1.copyWith(id: 'g', name: 'Global');
+      final la = testLabelDefinition1.copyWith(
+        id: 'la',
+        name: 'A',
+        applicableCategoryIds: const ['a'],
+      );
+      final lb = testLabelDefinition1.copyWith(
+        id: 'lb',
+        name: 'B',
+        applicableCategoryIds: const ['b'],
+      );
 
-    final cache = await createCache(
-      categories: [a, b, c],
-      labels: [global, la, lb],
-      privateFlag: true,
-    );
+      final cache = createCacheSync(
+        async,
+        categories: [a, b, c],
+        labels: [global, la, lb],
+        privateFlag: true,
+      );
 
-    expect(
-      cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
-      {'g', 'la'},
-    );
-    expect(
-      cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
-      {'g', 'lb'},
-    );
+      expect(
+        cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
+        {'g', 'la'},
+      );
+      expect(
+        cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
+        {'g', 'lb'},
+      );
 
-    // Drop both a and b at once
-    when(() => journalDb.getAllCategories()).thenAnswer((_) async => [c]);
-    notifications.emit({categoriesNotification});
-    await Future<void>.delayed(Duration.zero);
+      // Drop both a and b at once
+      when(() => journalDb.getAllCategories()).thenAnswer((_) async => [c]);
+      notifications.emit({categoriesNotification});
+      async.flushMicrotasks();
 
-    expect(
-      cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
-      {'g'},
-    );
-    expect(
-      cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
-      {'g'},
-    );
+      expect(
+        cache.availableLabelsForCategory('a').map((e) => e.id).toSet(),
+        {'g'},
+      );
+      expect(
+        cache.availableLabelsForCategory('b').map((e) => e.id).toSet(),
+        {'g'},
+      );
+    });
   });
 
   test(
@@ -597,23 +641,25 @@ void main() {
     expect(globals.map((l) => l.name).toList(), ['Apple', 'Zebra']);
   });
 
-  test('showPrivateEntries reflects config flag', () async {
-    final cache = await createCache();
-    expect(cache.showPrivateEntries, false);
+  test('showPrivateEntries reflects config flag', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async);
+      expect(cache.showPrivateEntries, false);
 
-    // Toggle to true
-    when(() => journalDb.getConfigFlag('private'))
-        .thenAnswer((_) async => true);
-    notifications.emit({privateToggleNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.showPrivateEntries, true);
+      // Toggle to true
+      when(() => journalDb.getConfigFlag('private'))
+          .thenAnswer((_) async => true);
+      notifications.emit({privateToggleNotification});
+      async.flushMicrotasks();
+      expect(cache.showPrivateEntries, true);
 
-    // Toggle back to false
-    when(() => journalDb.getConfigFlag('private'))
-        .thenAnswer((_) async => false);
-    notifications.emit({privateToggleNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.showPrivateEntries, false);
+      // Toggle back to false
+      when(() => journalDb.getConfigFlag('private'))
+          .thenAnswer((_) async => false);
+      notifications.emit({privateToggleNotification});
+      async.flushMicrotasks();
+      expect(cache.showPrivateEntries, false);
+    });
   });
 
   test(
@@ -683,164 +729,175 @@ void main() {
     expect(result.map((l) => l.id).toSet(), {'g'});
   });
 
-  test('data types cache updates on notification', () async {
-    final cache = await createCache();
-    expect(cache.getDataTypeById(measurableWater.id), isNull);
+  test('data types cache updates on notification', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async);
+      expect(cache.getDataTypeById(measurableWater.id), isNull);
 
-    // First update
-    when(() => journalDb.getAllMeasurableDataTypes())
-        .thenAnswer((_) async => [measurableWater]);
-    notifications.emit({measurablesNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+      // First update
+      when(() => journalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [measurableWater]);
+      notifications.emit({measurablesNotification});
+      async.flushMicrotasks();
+      expect(cache.getDataTypeById(measurableWater.id), measurableWater);
 
-    // Second update with different set — old ones should be cleared
-    when(() => journalDb.getAllMeasurableDataTypes())
-        .thenAnswer((_) async => [measurablePullUps]);
-    notifications.emit({measurablesNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.getDataTypeById(measurableWater.id), isNull);
-    expect(cache.getDataTypeById(measurablePullUps.id), measurablePullUps);
-  });
-
-  test('habits cache updates on notification', () async {
-    final cache = await createCache();
-    expect(cache.getHabitById(habitFlossing.id), isNull);
-
-    when(() => journalDb.getAllHabitDefinitions())
-        .thenAnswer((_) async => [habitFlossing]);
-    notifications.emit({habitsNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.getHabitById(habitFlossing.id), habitFlossing);
-  });
-
-  test('dashboards cache updates on notification', () async {
-    final cache = await createCache();
-    expect(cache.getDashboardById(testDashboardConfig.id), isNull);
-
-    when(() => journalDb.getAllDashboards())
-        .thenAnswer((_) async => [testDashboardConfig]);
-    notifications.emit({dashboardsNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(
-      cache.getDashboardById(testDashboardConfig.id),
-      testDashboardConfig,
-    );
-  });
-
-  test('privateToggleNotification triggers all cache reloads', () async {
-    final cache = await createCache();
-
-    // Set up return values for all entity types
-    when(() => journalDb.getAllMeasurableDataTypes())
-        .thenAnswer((_) async => [measurableWater]);
-    when(() => journalDb.getAllCategories())
-        .thenAnswer((_) async => [categoryMindfulness]);
-    when(() => journalDb.getAllHabitDefinitions())
-        .thenAnswer((_) async => [habitFlossing]);
-    when(() => journalDb.getAllDashboards())
-        .thenAnswer((_) async => [testDashboardConfig]);
-    when(() => journalDb.getAllLabelDefinitions())
-        .thenAnswer((_) async => [testLabelDefinition1]);
-    when(() => journalDb.getConfigFlag('private'))
-        .thenAnswer((_) async => true);
-
-    notifications.emit({privateToggleNotification});
-    await Future<void>.delayed(Duration.zero);
-
-    expect(cache.getDataTypeById(measurableWater.id), measurableWater);
-    expect(
-      cache.getCategoryById(categoryMindfulness.id),
-      categoryMindfulness,
-    );
-    expect(cache.getHabitById(habitFlossing.id), habitFlossing);
-    expect(
-      cache.getDashboardById(testDashboardConfig.id),
-      testDashboardConfig,
-    );
-    expect(
-      cache.getLabelById(testLabelDefinition1.id),
-      testLabelDefinition1,
-    );
-    expect(cache.showPrivateEntries, true);
-  });
-
-  test('tags cache updates on notification', () async {
-    final tag = TagEntity.genericTag(
-      id: 'tag-1',
-      tag: 'Test',
-      private: false,
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      inactive: false,
-    );
-
-    final cache = await createCache();
-    expect(cache.tagsById, isEmpty);
-
-    when(() => journalDb.getAllTags()).thenAnswer((_) async => [tag]);
-    notifications.emit({tagsNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.tagsById[tag.id], tag);
-  });
-
-  test('serialized fetch coalesces rapid notifications', () async {
-    var measurableFetchCount = 0;
-    final completer = Completer<List<MeasurableDataType>>();
-
-    when(() => journalDb.getAllMeasurableDataTypes()).thenAnswer((_) async {
-      measurableFetchCount++;
-      if (measurableFetchCount == 1) {
-        // Initial fetch: return immediately
-        return [];
-      }
-      if (measurableFetchCount == 2) {
-        // Second fetch: block on completer
-        return completer.future;
-      }
-      // Third fetch (coalesced retry): return data
-      return [measurableWater];
+      // Second update with different set — old ones should be cleared
+      when(() => journalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [measurablePullUps]);
+      notifications.emit({measurablesNotification});
+      async.flushMicrotasks();
+      expect(cache.getDataTypeById(measurableWater.id), isNull);
+      expect(cache.getDataTypeById(measurablePullUps.id), measurablePullUps);
     });
-    when(() => journalDb.getAllCategories())
-        .thenAnswer((_) async => <CategoryDefinition>[]);
-    when(() => journalDb.getAllHabitDefinitions())
-        .thenAnswer((_) async => <HabitDefinition>[]);
-    when(() => journalDb.getAllDashboards())
-        .thenAnswer((_) async => <DashboardDefinition>[]);
-    when(() => journalDb.getAllLabelDefinitions())
-        .thenAnswer((_) async => <LabelDefinition>[]);
-    when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
-    when(() => journalDb.getConfigFlag('private'))
-        .thenAnswer((_) async => false);
+  });
 
-    final cache = EntitiesCacheService(
-      journalDb: journalDb,
-      updateNotifications: notifications,
-    );
-    await cache.init();
-    expect(measurableFetchCount, 1);
+  test('habits cache updates on notification', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async);
+      expect(cache.getHabitById(habitFlossing.id), isNull);
 
-    // First notification triggers a fetch that blocks
-    notifications.emit({measurablesNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(measurableFetchCount, 2);
+      when(() => journalDb.getAllHabitDefinitions())
+          .thenAnswer((_) async => [habitFlossing]);
+      notifications.emit({habitsNotification});
+      async.flushMicrotasks();
+      expect(cache.getHabitById(habitFlossing.id), habitFlossing);
+    });
+  });
 
-    // Rapid notifications while fetch is in progress — should coalesce
-    notifications
-      ..emit({measurablesNotification})
-      ..emit({measurablesNotification})
-      ..emit({measurablesNotification});
-    await Future<void>.delayed(Duration.zero);
+  test('dashboards cache updates on notification', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async);
+      expect(cache.getDashboardById(testDashboardConfig.id), isNull);
 
-    // Complete the blocking fetch
-    completer.complete([measurablePullUps]);
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+      when(() => journalDb.getAllDashboards())
+          .thenAnswer((_) async => [testDashboardConfig]);
+      notifications.emit({dashboardsNotification});
+      async.flushMicrotasks();
+      expect(
+        cache.getDashboardById(testDashboardConfig.id),
+        testDashboardConfig,
+      );
+    });
+  });
 
-    // Should have done exactly 3 fetches: init + blocked + one coalesced retry
-    expect(measurableFetchCount, 3);
-    expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+  test('privateToggleNotification triggers all cache reloads', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async);
+
+      // Set up return values for all entity types
+      when(() => journalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [measurableWater]);
+      when(() => journalDb.getAllCategories())
+          .thenAnswer((_) async => [categoryMindfulness]);
+      when(() => journalDb.getAllHabitDefinitions())
+          .thenAnswer((_) async => [habitFlossing]);
+      when(() => journalDb.getAllDashboards())
+          .thenAnswer((_) async => [testDashboardConfig]);
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => [testLabelDefinition1]);
+      when(() => journalDb.getConfigFlag('private'))
+          .thenAnswer((_) async => true);
+
+      notifications.emit({privateToggleNotification});
+      async.flushMicrotasks();
+
+      expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+      expect(
+        cache.getCategoryById(categoryMindfulness.id),
+        categoryMindfulness,
+      );
+      expect(cache.getHabitById(habitFlossing.id), habitFlossing);
+      expect(
+        cache.getDashboardById(testDashboardConfig.id),
+        testDashboardConfig,
+      );
+      expect(
+        cache.getLabelById(testLabelDefinition1.id),
+        testLabelDefinition1,
+      );
+      expect(cache.showPrivateEntries, true);
+    });
+  });
+
+  test('tags cache updates on notification', () {
+    fakeAsync((async) {
+      final tag = TagEntity.genericTag(
+        id: 'tag-1',
+        tag: 'Test',
+        private: false,
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        inactive: false,
+      );
+
+      final cache = createCacheSync(async);
+      expect(cache.tagsById, isEmpty);
+
+      when(() => journalDb.getAllTags()).thenAnswer((_) async => [tag]);
+      notifications.emit({tagsNotification});
+      async.flushMicrotasks();
+      expect(cache.tagsById[tag.id], tag);
+    });
+  });
+
+  test('serialized fetch coalesces rapid notifications', () {
+    fakeAsync((async) {
+      var measurableFetchCount = 0;
+      final completer = Completer<List<MeasurableDataType>>();
+
+      when(() => journalDb.getAllMeasurableDataTypes()).thenAnswer((_) async {
+        measurableFetchCount++;
+        if (measurableFetchCount == 1) {
+          // Initial fetch: return immediately
+          return [];
+        }
+        if (measurableFetchCount == 2) {
+          // Second fetch: block on completer
+          return completer.future;
+        }
+        // Third fetch (coalesced retry): return data
+        return [measurableWater];
+      });
+      when(() => journalDb.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => journalDb.getAllHabitDefinitions())
+          .thenAnswer((_) async => <HabitDefinition>[]);
+      when(() => journalDb.getAllDashboards())
+          .thenAnswer((_) async => <DashboardDefinition>[]);
+      when(() => journalDb.getAllLabelDefinitions())
+          .thenAnswer((_) async => <LabelDefinition>[]);
+      when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
+      when(() => journalDb.getConfigFlag('private'))
+          .thenAnswer((_) async => false);
+
+      final cache = EntitiesCacheService(
+        journalDb: journalDb,
+        updateNotifications: notifications,
+      )..init();
+      async.flushMicrotasks();
+      expect(measurableFetchCount, 1);
+
+      // First notification triggers a fetch that blocks
+      notifications.emit({measurablesNotification});
+      async.flushMicrotasks();
+      expect(measurableFetchCount, 2);
+
+      // Rapid notifications while fetch is in progress — should coalesce
+      notifications
+        ..emit({measurablesNotification})
+        ..emit({measurablesNotification})
+        ..emit({measurablesNotification});
+      async.flushMicrotasks();
+
+      // Complete the blocking fetch
+      completer.complete([measurablePullUps]);
+      async.flushMicrotasks();
+
+      // Should have done exactly 3 fetches: init + blocked + one coalesced retry
+      expect(measurableFetchCount, 3);
+      expect(cache.getDataTypeById(measurableWater.id), measurableWater);
+    });
   });
 
   test('init loads all entity types in parallel', () async {
@@ -882,15 +939,16 @@ void main() {
     expect(cache.showPrivateEntries, true);
   });
 
-  test('dispose cancels notification subscription', () async {
-    final cache = await createCache();
-    cache.dispose();
+  test('dispose cancels notification subscription', () {
+    fakeAsync((async) {
+      final cache = createCacheSync(async)..dispose();
 
-    // After dispose, notifications should not trigger reloads
-    when(() => journalDb.getAllMeasurableDataTypes())
-        .thenAnswer((_) async => [measurableWater]);
-    notifications.emit({measurablesNotification});
-    await Future<void>.delayed(Duration.zero);
-    expect(cache.getDataTypeById(measurableWater.id), isNull);
+      // After dispose, notifications should not trigger reloads
+      when(() => journalDb.getAllMeasurableDataTypes())
+          .thenAnswer((_) async => [measurableWater]);
+      notifications.emit({measurablesNotification});
+      async.flushMicrotasks();
+      expect(cache.getDataTypeById(measurableWater.id), isNull);
+    });
   });
 }

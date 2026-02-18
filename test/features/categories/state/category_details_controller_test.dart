@@ -9,11 +9,8 @@ import 'package:lotti/features/categories/state/category_details_controller.dart
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 void main() {
   setUpAll(() {

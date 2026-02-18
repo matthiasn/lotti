@@ -16,7 +16,8 @@ void main() {
     late SettingsDb settingsDb;
     late JournalDb mockJournalDb;
 
-    setUpAll(() {
+    setUpAll(() async {
+      await getIt.reset();
       final secureStorageMock = MockSecureStorage();
       settingsDb = SettingsDb(inMemoryDatabase: true);
       mockJournalDb = mockJournalDbWithMeasurableTypes([]);
@@ -43,6 +44,10 @@ void main() {
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(
             NavService(journalDb: mockJournalDb, settingsDb: settingsDb));
+    });
+
+    tearDownAll(() async {
+      await getIt.reset();
     });
 
     test('tap all tabs', () async {

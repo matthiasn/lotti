@@ -8,17 +8,14 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
+
 // Mocks
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockSelectable<T> extends Mock implements Selectable<T> {}
 
 const _uuid = Uuid();

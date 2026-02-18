@@ -365,4 +365,224 @@ void main() {
       expect(result, healthRule);
     });
   });
+
+  group('Edit Autocomplete Rule Tests - realistic nested structure', () {
+    // A realistic deeply nested AutoCompleteRule structure used for
+    // testing removal and replacement at various depths.
+    const testAutoComplete = AutoCompleteRule.and(
+      title: 'Physical Exercises and Hydration',
+      rules: [
+        AutoCompleteRule.or(
+          title: 'Body weight exercises or Gym',
+          rules: [
+            AutoCompleteRule.multiple(
+              successes: 5,
+              title: 'Daily body weight exercises',
+              rules: [
+                AutoCompleteRule.measurable(
+                    dataTypeId: 'push-ups', minimum: 25),
+                AutoCompleteRule.measurable(
+                    dataTypeId: 'pull-ups', minimum: 10),
+                AutoCompleteRule.measurable(dataTypeId: 'sit-ups', minimum: 70),
+                AutoCompleteRule.measurable(dataTypeId: 'lunges', minimum: 30),
+                AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
+                AutoCompleteRule.measurable(dataTypeId: 'squats', minimum: 10),
+              ],
+            ),
+            AutoCompleteRule.workout(
+              dataType: 'functionalStrengthTraining.duration',
+              title: 'Gym workout without tracking exercises',
+              minimum: 30,
+            ),
+          ],
+        ),
+        AutoCompleteRule.or(
+          title: 'Daily Cardio',
+          rules: [
+            AutoCompleteRule.health(
+                dataType: 'cumulative_step_count', minimum: 10000),
+            AutoCompleteRule.workout(dataType: 'walking.duration', minimum: 60),
+            AutoCompleteRule.workout(
+                dataType: 'swimming.duration', minimum: 20),
+            AutoCompleteRule.workout(
+                dataType: 'cycling.duration', minimum: 120),
+          ],
+        ),
+        AutoCompleteRule.measurable(
+          dataTypeId: 'water',
+          minimum: 2000,
+          title: 'Stay hydrated.',
+        ),
+      ],
+    );
+
+    test('Remove top level rule returns null', () {
+      expect(removeAt(testAutoComplete, path: [0]), null);
+    });
+
+    test('Remove last rule in top level AND: hydration', () {
+      const expected = AutoCompleteRule.and(
+        title: 'Physical Exercises and Hydration',
+        rules: [
+          AutoCompleteRule.or(
+            title: 'Body weight exercises or Gym',
+            rules: [
+              AutoCompleteRule.multiple(
+                successes: 5,
+                title: 'Daily body weight exercises',
+                rules: [
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'push-ups', minimum: 25),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'pull-ups', minimum: 10),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'sit-ups', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'lunges', minimum: 30),
+                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'squats', minimum: 10),
+                ],
+              ),
+              AutoCompleteRule.workout(
+                dataType: 'functionalStrengthTraining.duration',
+                title: 'Gym workout without tracking exercises',
+                minimum: 30,
+              ),
+            ],
+          ),
+          AutoCompleteRule.or(
+            title: 'Daily Cardio',
+            rules: [
+              AutoCompleteRule.health(
+                  dataType: 'cumulative_step_count', minimum: 10000),
+              AutoCompleteRule.workout(
+                  dataType: 'walking.duration', minimum: 60),
+              AutoCompleteRule.workout(
+                  dataType: 'swimming.duration', minimum: 20),
+              AutoCompleteRule.workout(
+                  dataType: 'cycling.duration', minimum: 120),
+            ],
+          ),
+        ],
+      );
+      expect(removeAt(testAutoComplete, path: [0, 2]), expected);
+    });
+
+    test('Remove deeply nested pull-ups rule', () {
+      const expected = AutoCompleteRule.and(
+        title: 'Physical Exercises and Hydration',
+        rules: [
+          AutoCompleteRule.or(
+            title: 'Body weight exercises or Gym',
+            rules: [
+              AutoCompleteRule.multiple(
+                successes: 5,
+                title: 'Daily body weight exercises',
+                rules: [
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'push-ups', minimum: 25),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'sit-ups', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'lunges', minimum: 30),
+                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'squats', minimum: 10),
+                ],
+              ),
+              AutoCompleteRule.workout(
+                dataType: 'functionalStrengthTraining.duration',
+                title: 'Gym workout without tracking exercises',
+                minimum: 30,
+              ),
+            ],
+          ),
+          AutoCompleteRule.or(
+            title: 'Daily Cardio',
+            rules: [
+              AutoCompleteRule.health(
+                  dataType: 'cumulative_step_count', minimum: 10000),
+              AutoCompleteRule.workout(
+                  dataType: 'walking.duration', minimum: 60),
+              AutoCompleteRule.workout(
+                  dataType: 'swimming.duration', minimum: 20),
+              AutoCompleteRule.workout(
+                  dataType: 'cycling.duration', minimum: 120),
+            ],
+          ),
+          AutoCompleteRule.measurable(
+            dataTypeId: 'water',
+            minimum: 2000,
+            title: 'Stay hydrated.',
+          ),
+        ],
+      );
+      expect(removeAt(testAutoComplete, path: [0, 0, 0, 1]), expected);
+    });
+
+    test('Replace deeply nested pull-ups rule with harder minimum', () {
+      const expected = AutoCompleteRule.and(
+        title: 'Physical Exercises and Hydration',
+        rules: [
+          AutoCompleteRule.or(
+            title: 'Body weight exercises or Gym',
+            rules: [
+              AutoCompleteRule.multiple(
+                successes: 5,
+                title: 'Daily body weight exercises',
+                rules: [
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'push-ups', minimum: 25),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'pull-ups', minimum: 18),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'sit-ups', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'lunges', minimum: 30),
+                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
+                  AutoCompleteRule.measurable(
+                      dataTypeId: 'squats', minimum: 10),
+                ],
+              ),
+              AutoCompleteRule.workout(
+                dataType: 'functionalStrengthTraining.duration',
+                title: 'Gym workout without tracking exercises',
+                minimum: 30,
+              ),
+            ],
+          ),
+          AutoCompleteRule.or(
+            title: 'Daily Cardio',
+            rules: [
+              AutoCompleteRule.health(
+                  dataType: 'cumulative_step_count', minimum: 10000),
+              AutoCompleteRule.workout(
+                  dataType: 'walking.duration', minimum: 60),
+              AutoCompleteRule.workout(
+                  dataType: 'swimming.duration', minimum: 20),
+              AutoCompleteRule.workout(
+                  dataType: 'cycling.duration', minimum: 120),
+            ],
+          ),
+          AutoCompleteRule.measurable(
+            dataTypeId: 'water',
+            minimum: 2000,
+            title: 'Stay hydrated.',
+          ),
+        ],
+      );
+      expect(
+        replaceAt(
+          testAutoComplete,
+          replaceAtPath: [0, 0, 0, 1],
+          replaceWith: const AutoCompleteRule.measurable(
+            dataTypeId: 'pull-ups',
+            minimum: 18,
+          ),
+        ),
+        expected,
+      );
+    });
+  });
 }

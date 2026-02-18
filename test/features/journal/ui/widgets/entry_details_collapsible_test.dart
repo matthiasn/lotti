@@ -35,8 +35,6 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
 void main() {
   group('EntryDetailsWidget Collapsible Tests', () {
     TestWidgetsFlutterBinding.ensureInitialized();

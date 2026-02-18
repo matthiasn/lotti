@@ -12,11 +12,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 class MockLinkedEntriesController extends LinkedEntriesController {
   @override

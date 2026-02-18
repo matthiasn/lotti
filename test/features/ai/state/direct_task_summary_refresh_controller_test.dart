@@ -17,11 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockInferenceStatusController extends InferenceStatusController {
   MockInferenceStatusController(this._status);

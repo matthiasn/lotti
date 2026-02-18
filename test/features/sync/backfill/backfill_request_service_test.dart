@@ -5,23 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
-import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
-
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

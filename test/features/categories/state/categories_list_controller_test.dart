@@ -8,9 +8,8 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
   group('CategoriesListController', () {

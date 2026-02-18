@@ -161,7 +161,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // No toast should be shown since taskId doesn't match
     expect(find.text('Assigned:'), findsNothing);
@@ -233,7 +233,7 @@ void main() {
     expect(find.text('Undo'), findsOneWidget);
 
     await tester.tap(find.text('Undo'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     verify(() => repository.removeLabel(
           journalEntityId: 'task-123',
@@ -320,7 +320,7 @@ void main() {
     // Clear the first SnackBar to ensure clean state for second
     ScaffoldMessenger.of(tester.element(find.byType(Scaffold)))
         .clearSnackBars();
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Second event supersedes toast
     eventService.publish(const LabelAssignmentEvent(
@@ -450,7 +450,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.longPress(find.text(noDesc.name));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Close'), findsNothing);
   });
@@ -465,7 +465,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.longPress(find.text(emptyDesc.name));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Close'), findsNothing);
   });
@@ -562,7 +562,7 @@ void main() {
       matching: find.byType(EditableText),
     );
     await tester.enterText(searchField, 'Urgent');
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Label should be visible (text appears in both search field and label)
     expect(find.text('Urgent'), findsWidgets);
@@ -585,11 +585,11 @@ void main() {
       matching: find.byType(EditableText),
     );
     await tester.enterText(searchField, 'test');
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Clear the search by entering empty string
     await tester.enterText(searchField, '');
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // All labels should be visible again
     expect(find.text('Urgent'), findsOneWidget);
@@ -613,7 +613,7 @@ void main() {
 
     // Select a label
     await tester.tap(find.text('Urgent'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Apply changes
     await tester.tap(find.widgetWithText(FilledButton, 'Apply'));

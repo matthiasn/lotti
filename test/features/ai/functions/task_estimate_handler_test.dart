@@ -5,11 +5,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockConversationManager extends Mock implements ConversationManager {}
 

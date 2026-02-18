@@ -13,12 +13,9 @@ import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../test_utils.dart';
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 // Helper method to find an enabled LottiPrimaryButton
 LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {

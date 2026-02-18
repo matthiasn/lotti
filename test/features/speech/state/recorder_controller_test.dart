@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -23,10 +24,10 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:record/record.dart';
 import 'package:record/record.dart' as rec;
+import 'package:record/record.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -761,58 +762,64 @@ void main() {
     });
 
     group('build() method amplitude subscription', () {
-      test('should subscribe to amplitude stream and update state', () async {
-        // Arrange
-        final amplitudeController = StreamController<Amplitude>.broadcast();
-        final mockAmplitude = MockAmplitude();
-        when(() => mockAmplitude.current).thenReturn(-50);
+      test('should subscribe to amplitude stream and update state', () {
+        fakeAsync((async) {
+          // Arrange
+          final amplitudeController = StreamController<Amplitude>.broadcast();
+          final mockAmplitude = MockAmplitude();
+          when(() => mockAmplitude.current).thenReturn(-50);
 
-        when(() => mockAudioRecorderRepository.amplitudeStream)
-            .thenAnswer((_) => amplitudeController.stream);
+          when(() => mockAudioRecorderRepository.amplitudeStream)
+              .thenAnswer((_) => amplitudeController.stream);
 
-        // Act - Create a new container to trigger build()
-        final testContainer = ProviderContainer(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-          ],
-        )
+          // Act - Create a new container to trigger build()
+          final testContainer = ProviderContainer(
+            overrides: [
+              audioRecorderRepositoryProvider.overrideWithValue(
+                mockAudioRecorderRepository,
+              ),
+            ],
+          )
 
-          // Read the provider to ensure it's initialized
-          ..read(audioRecorderControllerProvider.notifier);
+            // Read the provider to ensure it's initialized
+            ..read(audioRecorderControllerProvider.notifier);
 
-        // Give some time for the stream subscription to be established
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Give some time for the stream subscription to be established
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
 
-        // Emit multiple amplitude updates to fill the RMS buffer
-        // The VU meter uses a 300ms window with 20ms intervals = 15 samples
-        // We need to send at least 15 samples to fill the buffer
-        for (var i = 0; i < 20; i++) {
-          amplitudeController.add(mockAmplitude);
-          // Allow microtask queue to process
-          await Future.microtask(() {});
-        }
+          // Emit multiple amplitude updates to fill the RMS buffer
+          // The VU meter uses a 300ms window with 20ms intervals = 15 samples
+          // We need to send at least 15 samples to fill the buffer
+          for (var i = 0; i < 20; i++) {
+            amplitudeController.add(mockAmplitude);
+            // Allow microtask queue to process
+            async.flushMicrotasks();
+          }
 
-        // Wait for all stream events to be processed
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for all stream events to be processed
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
 
-        // Assert
-        final state = testContainer.read(audioRecorderControllerProvider);
+          // Assert
+          final state = testContainer.read(audioRecorderControllerProvider);
 
-        expect(state.dBFS, equals(-50.0)); // Direct dBFS value
+          expect(state.dBFS, equals(-50.0)); // Direct dBFS value
 
-        // VU calculation with constant -50 dBFS input:
-        // - RMS of constant -50 dBFS values = -50 dBFS
-        // - VU = RMS_dB - vuReferenceLevelDbfs = -50 - (-18) = -32
-        // - However, VU is clamped to range [-20, +3] in the implementation
-        // - Therefore, -32 gets clamped to -20 (the minimum VU value)
-        expect(state.vu, equals(-20.0));
-        expect(state.progress.inMilliseconds, greaterThan(0));
+          // VU calculation with constant -50 dBFS input:
+          // - RMS of constant -50 dBFS values = -50 dBFS
+          // - VU = RMS_dB - vuReferenceLevelDbfs = -50 - (-18) = -32
+          // - However, VU is clamped to range [-20, +3] in the implementation
+          // - Therefore, -32 gets clamped to -20 (the minimum VU value)
+          expect(state.vu, equals(-20.0));
+          expect(state.progress.inMilliseconds, greaterThan(0));
 
-        // Clean up
-        await amplitudeController.close();
-        testContainer.dispose();
+          // Clean up
+          amplitudeController.close();
+          testContainer.dispose();
+        });
       });
 
       test('should cancel amplitude subscription on dispose', () async {
@@ -1270,20 +1277,23 @@ void main() {
         );
       });
 
-      test('subscribes to amplitude stream for VU meter', () async {
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier);
-        await controller.recordRealtime();
+      test('subscribes to amplitude stream for VU meter', () {
+        fakeAsync((async) {
+          container
+              .read(audioRecorderControllerProvider.notifier)
+              .recordRealtime();
+          async.flushMicrotasks();
 
-        // Emit an amplitude value
-        realtimeAmplitudeController.add(-30);
+          // Emit an amplitude value
+          realtimeAmplitudeController.add(-30);
 
-        // Allow the stream event to propagate
-        await Future<void>.delayed(Duration.zero);
+          // Allow the stream event to propagate
+          async.flushMicrotasks();
 
-        final state = container.read(audioRecorderControllerProvider);
-        // dBFS should have been updated from the amplitude stream
-        expect(state.dBFS, -30);
+          final state = container.read(audioRecorderControllerProvider);
+          // dBFS should have been updated from the amplitude stream
+          expect(state.dBFS, -30);
+        });
       });
     });
 
@@ -1515,7 +1525,8 @@ void main() {
               any(),
               isLinkedToTask: any(named: 'isLinkedToTask'),
               linkedTaskId: any(named: 'linkedTaskId'),
-              realtimeTranscriptProvided: any(named: 'realtimeTranscriptProvided'),
+              realtimeTranscriptProvided:
+                  any(named: 'realtimeTranscriptProvided'),
             )).thenAnswer((_) async {});
 
         // Configure the stop result

@@ -1,5 +1,7 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -7,21 +9,88 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../mocks/mocks.dart';
-import '../../../../widget_test_utils.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../test_helper.dart';
+import '../../../../../widget_test_utils.dart';
 
-class MockNotificationService extends Mock implements NotificationService {}
+Widget _constrainedMaintenancePage() {
+  return ConstrainedBox(
+    constraints: const BoxConstraints(maxHeight: 1000, maxWidth: 1000),
+    child: const MaintenancePage(),
+  );
+}
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  final mockJournalDb = MockJournalDb();
-  final mockNotificationService = MockNotificationService();
+  group('MaintenancePage - hint reset', () {
+    final getItInstance = GetIt.instance;
 
-  group('MaintenancePage Widget Tests - ', () {
+    setUpAll(() {
+      drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    });
+
+    setUp(() async {
+      await getItInstance.reset();
+      getItInstance
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+        ..registerSingleton<Maintenance>(Maintenance());
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(() async {
+      if (getItInstance.isRegistered<JournalDb>()) {
+        await getItInstance<JournalDb>().close();
+      }
+      await getItInstance.reset();
+    });
+
+    Future<void> openResetHints(WidgetTester tester) async {
+      await tester.pumpWidget(const WidgetTestBench(child: MaintenancePage()));
+      await tester.pumpAndSettle();
+
+      final resetTitle = find.text('Reset In\u2011App Hints');
+      expect(resetTitle, findsOneWidget);
+      await tester.tap(resetTitle);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('CONFIRM'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows SnackBar with count: 0', (tester) async {
+      SharedPreferences.setMockInitialValues({'other_key': true});
+      await openResetHints(tester);
+      expect(find.text('Reset zero hints'), findsOneWidget);
+    });
+
+    testWidgets('shows SnackBar with count: 1', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'seen_tooltip_x': true,
+        'random': false,
+      });
+      await openResetHints(tester);
+      expect(find.text('Reset one hint'), findsOneWidget);
+    });
+
+    testWidgets('shows SnackBar with count: many', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'seen_a': true,
+        'seen_b': true,
+        'foo': true,
+      });
+      await openResetHints(tester);
+      expect(find.text('Reset 2 hints'), findsOneWidget);
+    });
+  });
+
+  group('MaintenancePage - database operations', () {
+    final mockJournalDb = MockJournalDb();
+    final mockNotificationService = MockNotificationService();
+
     setUp(() {
       when(mockJournalDb.getTaggedCount).thenAnswer((_) async => 1);
-
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
       );
@@ -36,25 +105,15 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<Maintenance>(mockMaintenance)
         ..registerSingleton<NotificationService>(mockNotificationService);
-
-      // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
     });
+
     tearDown(getIt.reset);
 
-    testWidgets('page is displayed', (tester) async {
+    testWidgets('page displays expected maintenance options', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const MaintenancePage(),
-          ),
-        ),
+        makeTestableWidget(_constrainedMaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
       expect(find.text('Delete Logging Database'), findsOneWidget);
@@ -74,26 +133,13 @@ void main() {
     testWidgets('delete logging database button shows confirmation dialog',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const MaintenancePage(),
-          ),
-        ),
+        makeTestableWidget(_constrainedMaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
-      // Find and tap the delete logging database button
-      final deleteButton = find.text('Delete Logging Database');
-      expect(deleteButton, findsOneWidget);
-      await tester.tap(deleteButton);
+      await tester.tap(find.text('Delete Logging Database'));
       await tester.pumpAndSettle();
 
-      // Verify that the confirmation dialog is shown
       expect(
         find.text('Are you sure you want to delete Logging Database?'),
         findsOneWidget,
@@ -106,52 +152,27 @@ void main() {
         'delete logging database button deletes database when confirmed',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const MaintenancePage(),
-          ),
-        ),
+        makeTestableWidget(_constrainedMaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
-      // Find and tap the delete logging database button
-      final deleteButton = find.text('Delete Logging Database');
-      expect(deleteButton, findsOneWidget);
-      await tester.tap(deleteButton);
+      await tester.tap(find.text('Delete Logging Database'));
       await tester.pumpAndSettle();
 
-      // Tap the 'YES, DELETE DATABASE' button in the confirmation dialog
       await tester.tap(find.text('YES, DELETE DATABASE'));
       await tester.pumpAndSettle();
 
-      // Verify that the database was deleted
       verify(() => getIt<Maintenance>().deleteLoggingDb()).called(1);
     });
 
     testWidgets('delete editor database button shows confirmation dialog',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const MaintenancePage(),
-          ),
-        ),
+        makeTestableWidget(_constrainedMaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
-      final deleteButton = find.text('Delete Editor Database');
-      expect(deleteButton, findsOneWidget);
-      await tester.tap(deleteButton);
+      await tester.tap(find.text('Delete Editor Database'));
       await tester.pumpAndSettle();
 
       expect(
@@ -165,22 +186,11 @@ void main() {
     testWidgets('delete editor database button deletes database when confirmed',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const MaintenancePage(),
-          ),
-        ),
+        makeTestableWidget(_constrainedMaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
-      final deleteButton = find.text('Delete Editor Database');
-      expect(deleteButton, findsOneWidget);
-      await tester.tap(deleteButton);
+      await tester.tap(find.text('Delete Editor Database'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('YES, DELETE DATABASE'));
@@ -192,11 +202,8 @@ void main() {
     testWidgets('purge deleted entries button opens purge modal',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const MaintenancePage(),
-        ),
+        makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
       final purgeButton = find.text('Purge deleted items').first;
@@ -211,11 +218,8 @@ void main() {
     testWidgets('recreate fts5 button opens fts5 recreate modal',
         (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const MaintenancePage(),
-        ),
+        makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
-
       await tester.pumpAndSettle();
 
       final recreateButton = find.text('Recreate full-text index').first;

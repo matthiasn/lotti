@@ -14,10 +14,9 @@ import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../test_utils/fake_journal_page_controller.dart';
 import '../../widget_test_utils.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 /// Simple mock controller for config flag tests (no tracking needed)
 class MockJournalPageController extends JournalPageController {

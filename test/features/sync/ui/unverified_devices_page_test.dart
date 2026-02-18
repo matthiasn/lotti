@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
@@ -10,6 +9,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
@@ -22,8 +22,6 @@ class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
 }
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
-
-class MockMatrixService extends Mock implements MatrixService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

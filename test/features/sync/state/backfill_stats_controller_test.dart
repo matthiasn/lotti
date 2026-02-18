@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -10,11 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
-
-class MockBackfillRequestService extends Mock
-    implements BackfillRequestService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -52,321 +47,294 @@ void main() {
       await getIt.reset();
     });
 
-    Future<void> waitForStats(ProviderContainer c) async {
-      for (var i = 0; i < 20; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        final state = c.read(backfillStatsControllerProvider);
-        if (state.stats != null) return;
-      }
+    /// Creates the container, triggers the provider build, and flushes
+    /// microtasks so that [_loadStats] completes synchronously under
+    /// [fakeAsync].
+    void createAndLoad(FakeAsync async) {
+      container = ProviderContainer()..read(backfillStatsControllerProvider);
+      async.flushMicrotasks();
     }
 
-    test('loads stats on build', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
+    /// Reads the controller notifier and invokes [action] on it, then
+    /// flushes microtasks so the async operation progresses.
+    void act(
+      FakeAsync async,
+      void Function(BackfillStatsController) action,
+    ) {
+      action(container.read(backfillStatsControllerProvider.notifier));
+      async.flushMicrotasks();
+    }
 
-      container = ProviderContainer();
+    test('loads stats on build', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
 
-      // Listen to state changes
-      final completer = Completer<BackfillStatsState>();
-      container.listen(
-        backfillStatsControllerProvider,
-        (previous, next) {
-          if (next.stats != null && !completer.isCompleted) {
-            completer.complete(next);
-          }
-        },
-        fireImmediately: true,
-      );
+        createAndLoad(async);
 
-      // Wait for stats to load with timeout
-      final state = await completer.future.timeout(
-        const Duration(seconds: 2),
-        onTimeout: () => container.read(backfillStatsControllerProvider),
-      );
-
-      expect(state.stats, testStats);
-      expect(state.error, isNull);
-    });
-
-    test('refresh reloads stats', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-
-      container = ProviderContainer();
-      await waitForStats(container);
-
-      // Reset verify counts after initial load
-      clearInteractions(mockSequenceService);
-
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.refresh();
-
-      // Should only count the refresh call, not the initial build call
-      verify(() => mockSequenceService.getBackfillStats()).called(1);
-    });
-
-    test('handles error during refresh', () async {
-      var callCount = 0;
-      when(() => mockSequenceService.getBackfillStats()).thenAnswer((_) async {
-        callCount++;
-        if (callCount == 1) {
-          return testStats;
-        }
-        throw Exception('Test error');
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.stats, testStats);
+        expect(state.error, isNull);
       });
-
-      container = ProviderContainer();
-      await waitForStats(container);
-
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.refresh();
-
-      final state = container.read(backfillStatsControllerProvider);
-      expect(state.error, contains('Test error'));
     });
 
-    test('triggerFullBackfill calls service and refreshes stats', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processFullBackfill())
-          .thenAnswer((_) async => 10);
+    test('refresh reloads stats', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
+        clearInteractions(mockSequenceService);
 
-      // Reset verify counts after initial load
-      clearInteractions(mockSequenceService);
+        container.read(backfillStatsControllerProvider.notifier).refresh();
+        async.flushMicrotasks();
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.triggerFullBackfill();
-
-      verify(() => mockBackfillService.processFullBackfill()).called(1);
-      // Should call getBackfillStats once on refresh after backfill
-      verify(() => mockSequenceService.getBackfillStats()).called(1);
-
-      final state = container.read(backfillStatsControllerProvider);
-      expect(state.isProcessing, isFalse);
-      expect(state.lastProcessedCount, 10);
+        verify(() => mockSequenceService.getBackfillStats()).called(1);
+      });
     });
 
-    test('triggerFullBackfill sets isProcessing during operation', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
+    test('handles error during refresh', () {
+      fakeAsync((async) {
+        var callCount = 0;
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return testStats;
+          throw Exception('Test error');
+        });
 
-      var backfillStarted = false;
-      when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-        (_) async {
-          backfillStarted = true;
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          return 5;
-        },
-      );
+        createAndLoad(async);
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        container.read(backfillStatsControllerProvider.notifier).refresh();
+        async.flushMicrotasks();
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      final future = controller.triggerFullBackfill();
-
-      // Wait for backfill to start
-      while (!backfillStarted) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-
-      var state = container.read(backfillStatsControllerProvider);
-      expect(state.isProcessing, isTrue);
-
-      await future;
-
-      state = container.read(backfillStatsControllerProvider);
-      expect(state.isProcessing, isFalse);
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.error, contains('Test error'));
+      });
     });
 
-    test('triggerFullBackfill handles errors', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processFullBackfill())
-          .thenAnswer((_) async => throw Exception('Backfill failed'));
+    test('triggerFullBackfill calls service and refreshes stats', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill())
+            .thenAnswer((_) async => 10);
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
+        clearInteractions(mockSequenceService);
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.triggerFullBackfill();
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerFullBackfill();
+        async.flushMicrotasks();
 
-      final state = container.read(backfillStatsControllerProvider);
-      expect(state.isProcessing, isFalse);
-      expect(state.error, contains('Backfill failed'));
+        verify(() => mockBackfillService.processFullBackfill()).called(1);
+        verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isProcessing, isFalse);
+        expect(state.lastProcessedCount, 10);
+      });
     });
 
-    test('triggerFullBackfill does nothing if already processing', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-        (_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-          return 5;
-        },
-      );
+    test('triggerFullBackfill sets isProcessing during operation', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+            return 5;
+          },
+        );
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerFullBackfill();
+        async.flushMicrotasks();
 
-      // Start first trigger
-      final future1 = controller.triggerFullBackfill();
+        var state = container.read(backfillStatsControllerProvider);
+        expect(state.isProcessing, isTrue);
 
-      // Wait a bit then try to trigger again
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      await controller.triggerFullBackfill();
+        async
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
 
-      await future1;
-
-      // Should only have been called once
-      verify(() => mockBackfillService.processFullBackfill()).called(1);
+        state = container.read(backfillStatsControllerProvider);
+        expect(state.isProcessing, isFalse);
+      });
     });
 
-    test('triggerReRequest calls service and refreshes stats', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processReRequest())
-          .thenAnswer((_) async => 15);
+    test('triggerFullBackfill handles errors', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill())
+            .thenAnswer((_) async => throw Exception('Backfill failed'));
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
 
-      // Reset verify counts after initial load
-      clearInteractions(mockSequenceService);
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerFullBackfill();
+        async.flushMicrotasks();
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.triggerReRequest();
-
-      verify(() => mockBackfillService.processReRequest()).called(1);
-      // Should call getBackfillStats once on refresh after re-request
-      verify(() => mockSequenceService.getBackfillStats()).called(1);
-
-      final state = container.read(backfillStatsControllerProvider);
-      expect(state.isReRequesting, isFalse);
-      expect(state.lastReRequestedCount, 15);
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isProcessing, isFalse);
+        expect(state.error, contains('Backfill failed'));
+      });
     });
 
-    test('triggerReRequest sets isReRequesting during operation', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
+    test('triggerFullBackfill does nothing if already processing', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 5;
+          },
+        );
 
-      var reRequestStarted = false;
-      when(() => mockBackfillService.processReRequest()).thenAnswer(
-        (_) async {
-          reRequestStarted = true;
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          return 8;
-        },
-      );
+        createAndLoad(async);
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        // Start first trigger, then try a second while first is processing
+        act(async, (c) => c.triggerFullBackfill());
+        act(async, (c) => c.triggerFullBackfill());
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      final future = controller.triggerReRequest();
+        // Complete the first one
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
 
-      // Wait for re-request to start
-      while (!reRequestStarted) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-
-      var state = container.read(backfillStatsControllerProvider);
-      expect(state.isReRequesting, isTrue);
-
-      await future;
-
-      state = container.read(backfillStatsControllerProvider);
-      expect(state.isReRequesting, isFalse);
+        verify(() => mockBackfillService.processFullBackfill()).called(1);
+      });
     });
 
-    test('triggerReRequest handles errors', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processReRequest())
-          .thenAnswer((_) async => throw Exception('Re-request failed'));
+    test('triggerReRequest calls service and refreshes stats', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processReRequest())
+            .thenAnswer((_) async => 15);
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
+        clearInteractions(mockSequenceService);
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
-      await controller.triggerReRequest();
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerReRequest();
+        async.flushMicrotasks();
 
-      final state = container.read(backfillStatsControllerProvider);
-      expect(state.isReRequesting, isFalse);
-      expect(state.error, contains('Re-request failed'));
+        verify(() => mockBackfillService.processReRequest()).called(1);
+        verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isReRequesting, isFalse);
+        expect(state.lastReRequestedCount, 15);
+      });
     });
 
-    test('triggerReRequest does nothing if already re-requesting', () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processReRequest()).thenAnswer(
-        (_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-          return 5;
-        },
-      );
+    test('triggerReRequest sets isReRequesting during operation', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processReRequest()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+            return 8;
+          },
+        );
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerReRequest();
+        async.flushMicrotasks();
 
-      // Start first trigger
-      final future1 = controller.triggerReRequest();
+        var state = container.read(backfillStatsControllerProvider);
+        expect(state.isReRequesting, isTrue);
 
-      // Wait a bit then try to trigger again
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      await controller.triggerReRequest();
+        async
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
 
-      await future1;
-
-      // Should only have been called once
-      verify(() => mockBackfillService.processReRequest()).called(1);
+        state = container.read(backfillStatsControllerProvider);
+        expect(state.isReRequesting, isFalse);
+      });
     });
 
-    test('triggerReRequest does nothing if already processing backfill',
-        () async {
-      when(() => mockSequenceService.getBackfillStats())
-          .thenAnswer((_) async => testStats);
-      when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-        (_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-          return 5;
-        },
-      );
+    test('triggerReRequest handles errors', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processReRequest())
+            .thenAnswer((_) async => throw Exception('Re-request failed'));
 
-      container = ProviderContainer();
-      await waitForStats(container);
+        createAndLoad(async);
 
-      final controller =
-          container.read(backfillStatsControllerProvider.notifier);
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .triggerReRequest();
+        async.flushMicrotasks();
 
-      // Start full backfill first
-      final future1 = controller.triggerFullBackfill();
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isReRequesting, isFalse);
+        expect(state.error, contains('Re-request failed'));
+      });
+    });
 
-      // Wait a bit then try to trigger re-request
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      await controller.triggerReRequest();
+    test('triggerReRequest does nothing if already re-requesting', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processReRequest()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 5;
+          },
+        );
 
-      await future1;
+        createAndLoad(async);
 
-      // processReRequest should not have been called
-      verifyNever(() => mockBackfillService.processReRequest());
+        act(async, (c) => c.triggerReRequest());
+        act(async, (c) => c.triggerReRequest());
+
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        verify(() => mockBackfillService.processReRequest()).called(1);
+      });
+    });
+
+    test('triggerReRequest does nothing if already processing backfill', () {
+      fakeAsync((async) {
+        when(() => mockSequenceService.getBackfillStats())
+            .thenAnswer((_) async => testStats);
+        when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return 5;
+          },
+        );
+
+        createAndLoad(async);
+
+        // Start full backfill, then try re-request while it's processing
+        act(async, (c) => c.triggerFullBackfill());
+        act(async, (c) => c.triggerReRequest());
+
+        // Complete the backfill
+        async
+          ..elapse(const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+
+        verifyNever(() => mockBackfillService.processReRequest());
+      });
     });
   });
 

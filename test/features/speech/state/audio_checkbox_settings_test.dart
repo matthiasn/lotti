@@ -11,10 +11,10 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 class MockPlayer extends Mock implements Player {}
 

@@ -4,19 +4,17 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}

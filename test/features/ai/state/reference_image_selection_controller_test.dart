@@ -10,7 +10,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   group('ReferenceImageSelectionState', () {

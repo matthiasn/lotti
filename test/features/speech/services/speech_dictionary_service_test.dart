@@ -2,15 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late SpeechDictionaryService service;

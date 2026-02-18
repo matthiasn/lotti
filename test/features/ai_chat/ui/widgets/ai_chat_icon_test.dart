@@ -16,11 +16,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
-
-class MockChatRepository extends Mock implements ChatRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 /// Pumps an `AiChatIcon` inside a localised `MaterialApp` with an AppBar,
 /// using the given [controller] and optional extra provider overrides.

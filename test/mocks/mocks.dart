@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,10 +13,25 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai_chat/models/chat_session.dart';
+import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
+import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -239,3 +255,46 @@ class MockMaintenance extends Mock implements Maintenance {}
 class MockMatrixService extends Mock implements MatrixService {}
 
 class MockGeolocationService extends Mock implements GeolocationService {}
+
+// --- Repository mocks (frequently duplicated inline) ---
+
+class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+
+class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockCategoryRepository extends Mock implements CategoryRepository {}
+
+class MockLabelsRepository extends Mock implements LabelsRepository {}
+
+class MockAiInputRepository extends Mock implements AiInputRepository {}
+
+class MockChatRepository extends Mock implements ChatRepository {}
+
+class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
+
+class MockHabitsRepository extends Mock implements HabitsRepository {}
+
+class MockRatingRepository extends Mock implements RatingRepository {}
+
+class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class MockBackfillRequestService extends Mock
+    implements BackfillRequestService {}
+
+class MockSyncSequenceLogService extends Mock
+    implements SyncSequenceLogService {}
+
+// --- Additional Fake classes ---
+
+class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
+
+class FakeAiConfigModel extends Fake implements AiConfigModel {}
+
+class FakeAiConfigInferenceProvider extends Fake
+    implements AiConfigInferenceProvider {}
+
+class FakeChatSession extends Fake implements ChatSession {}
+
+class FakeChecklistItemData extends Fake implements ChecklistItemData {}

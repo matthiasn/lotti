@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -1089,118 +1090,40 @@ void main() {
   });
 
   group('Rate limit backoff', () {
-    test('retries on 429 and succeeds on subsequent attempt', () async {
-      var attemptCount = 0;
-      final client = _RetryTestClient(
-        statusCodes: [429, 200],
-        responses: [
-          '{"error": "rate limited"}',
-          jsonEncode({
-            'candidates': [
-              {
-                'content': {
-                  'role': 'model',
-                  'parts': [
-                    {'text': 'Success after retry'},
-                  ],
+    test('retries on 429 and succeeds on subsequent attempt', () {
+      fakeAsync((async) {
+        var attemptCount = 0;
+        final client = _RetryTestClient(
+          statusCodes: [429, 200],
+          responses: [
+            '{"error": "rate limited"}',
+            jsonEncode({
+              'candidates': [
+                {
+                  'content': {
+                    'role': 'model',
+                    'parts': [
+                      {'text': 'Success after retry'},
+                    ],
+                  }
                 }
-              }
-            ]
-          }),
-        ],
-        onRequest: () => attemptCount++,
-      );
+              ]
+            }),
+          ],
+          onRequest: () => attemptCount++,
+        );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'test',
-            model: 'gemini-2.5-pro',
-            temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
-            provider: provider,
-          )
-          .toList();
-
-      expect(attemptCount, 2);
-      expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'Success after retry');
-    });
-
-    test('retries on 503 service unavailable', () async {
-      var attemptCount = 0;
-      final client = _RetryTestClient(
-        statusCodes: [503, 200],
-        responses: [
-          '{"error": "service unavailable"}',
-          jsonEncode({
-            'candidates': [
-              {
-                'content': {
-                  'role': 'model',
-                  'parts': [
-                    {'text': 'Back online'},
-                  ],
-                }
-              }
-            ]
-          }),
-        ],
-        onRequest: () => attemptCount++,
-      );
-
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
-
-      final events = await repo
-          .generateText(
-            prompt: 'test',
-            model: 'gemini-2.5-pro',
-            temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
-            provider: provider,
-          )
-          .toList();
-
-      expect(attemptCount, 2);
-      expect(events.first.choices!.first.delta!.content, 'Back online');
-    });
-
-    test('gives up after max retries and throws', () async {
-      var attemptCount = 0;
-      final client = _RetryTestClient(
-        statusCodes: [429, 429, 429, 429], // Always 429
-        responses: List.filled(4, '{"error": "still rate limited"}'),
-        onRequest: () => attemptCount++,
-      );
-
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
-
-      await expectLater(
+        List<CreateChatCompletionStreamResponse>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -1209,16 +1132,135 @@ void main() {
               thinkingConfig: GeminiThinkingConfig.disabled,
               provider: provider,
             )
-            .toList(),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('429'),
-        )),
-      );
+            .toList()
+            .then((e) => events = e);
 
-      // Default max retries is 3, so 4 attempts total (1 initial + 3 retries)
-      expect(attemptCount, 4);
+        // First request: gets 429, schedules 500ms backoff
+        async.flushMicrotasks();
+        // Elapse past backoff
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        expect(attemptCount, 2);
+        expect(events, isNotNull);
+        expect(events!.length, 1);
+        expect(
+          events!.first.choices!.first.delta!.content,
+          'Success after retry',
+        );
+      });
+    });
+
+    test('retries on 503 service unavailable', () {
+      fakeAsync((async) {
+        var attemptCount = 0;
+        final client = _RetryTestClient(
+          statusCodes: [503, 200],
+          responses: [
+            '{"error": "service unavailable"}',
+            jsonEncode({
+              'candidates': [
+                {
+                  'content': {
+                    'role': 'model',
+                    'parts': [
+                      {'text': 'Back online'},
+                    ],
+                  }
+                }
+              ]
+            }),
+          ],
+          onRequest: () => attemptCount++,
+        );
+
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        List<CreateChatCompletionStreamResponse>? events;
+        repo
+            .generateText(
+              prompt: 'test',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList()
+            .then((e) => events = e);
+
+        // First request: gets 503, schedules 500ms backoff
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        expect(attemptCount, 2);
+        expect(events, isNotNull);
+        expect(events!.first.choices!.first.delta!.content, 'Back online');
+      });
+    });
+
+    test('gives up after max retries and throws', () {
+      fakeAsync((async) {
+        var attemptCount = 0;
+        final client = _RetryTestClient(
+          statusCodes: [429, 429, 429, 429], // Always 429
+          responses: List.filled(4, '{"error": "still rate limited"}'),
+          onRequest: () => attemptCount++,
+        );
+
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        Object? caughtError;
+        repo
+            .generateText(
+              prompt: 'test',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList()
+            .catchError((Object e) {
+          caughtError = e;
+          return <CreateChatCompletionStreamResponse>[];
+        });
+
+        // Attempt 1: gets 429, schedules 500ms backoff
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+        // Attempt 2: gets 429, schedules 1s backoff
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+        // Attempt 3: gets 429, schedules 2s backoff
+        async.elapse(const Duration(seconds: 2));
+        async.flushMicrotasks();
+        // Attempt 4: gets 429, exceeds maxRetries, throws
+
+        expect(caughtError, isNotNull);
+        expect(
+          caughtError.toString(),
+          contains('429'),
+        );
+        // Default max retries is 3, so 4 attempts total (1 initial + 3 retries)
+        expect(attemptCount, 4);
+      });
     });
   });
 
@@ -2287,51 +2329,61 @@ void main() {
   });
 
   group('Rate limit with Retry-After header', () {
-    test('respects Retry-After header when present', () async {
-      var attemptCount = 0;
-      final client = _RetryWithHeaderClient(
-        statusCodes: [429, 200],
-        responses: [
-          '{"error": "rate limited"}',
-          jsonEncode({
-            'candidates': [
-              {
-                'content': {
-                  'role': 'model',
-                  'parts': [
-                    {'text': 'Success'},
-                  ],
+    test('respects Retry-After header when present', () {
+      fakeAsync((async) {
+        var attemptCount = 0;
+        final client = _RetryWithHeaderClient(
+          statusCodes: [429, 200],
+          responses: [
+            '{"error": "rate limited"}',
+            jsonEncode({
+              'candidates': [
+                {
+                  'content': {
+                    'role': 'model',
+                    'parts': [
+                      {'text': 'Success'},
+                    ],
+                  }
                 }
-              }
-            ]
-          }),
-        ],
-        retryAfterSeconds: 1,
-        onRequest: () => attemptCount++,
-      );
+              ]
+            }),
+          ],
+          retryAfterSeconds: 1,
+          onRequest: () => attemptCount++,
+        );
 
-      final repo = GeminiInferenceRepository(httpClient: client);
-      final provider = AiConfigInferenceProvider(
-        id: 'prov',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
+        final repo = GeminiInferenceRepository(httpClient: client);
+        final provider = AiConfigInferenceProvider(
+          id: 'prov',
+          baseUrl: 'https://generativelanguage.googleapis.com',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
 
-      final events = await repo
-          .generateText(
-            prompt: 'test',
-            model: 'gemini-2.5-pro',
-            temperature: 0.5,
-            thinkingConfig: GeminiThinkingConfig.disabled,
-            provider: provider,
-          )
-          .toList();
+        List<CreateChatCompletionStreamResponse>? events;
+        repo
+            .generateText(
+              prompt: 'test',
+              model: 'gemini-2.5-pro',
+              temperature: 0.5,
+              thinkingConfig: GeminiThinkingConfig.disabled,
+              provider: provider,
+            )
+            .toList()
+            .then((e) => events = e);
 
-      expect(attemptCount, 2);
-      expect(events.first.choices!.first.delta!.content, 'Success');
+        // First request: gets 429 with Retry-After: 1, schedules 1s delay
+        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
+
+        expect(attemptCount, 2);
+        expect(events, isNotNull);
+        expect(events!.first.choices!.first.delta!.content, 'Success');
+      });
     });
   });
 

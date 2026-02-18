@@ -6,9 +6,7 @@ import 'dart:typed_data';
 import 'package:fake_async/fake_async.dart';
 // ignore_for_file: unnecessary_lambdas, cascade_invocations, unawaited_futures, avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -20,15 +18,11 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
+
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 

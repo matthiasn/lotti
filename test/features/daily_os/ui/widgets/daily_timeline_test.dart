@@ -20,9 +20,8 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {
@@ -134,7 +133,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show empty timeline message
       expect(find.text('No timeline entries'), findsOneWidget);
@@ -167,7 +166,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show timeline header with icon
       expect(find.byIcon(MdiIcons.timelineClockOutline), findsOneWidget);
@@ -201,7 +200,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show legend labels
       expect(find.text('Plan'), findsOneWidget);
@@ -235,7 +234,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should render the category name in the planned block
       expect(find.text('Work'), findsOneWidget);
@@ -285,7 +284,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Actual blocks render as colored blocks without text labels.
       // The category name is preserved via Semantics for accessibility.
@@ -319,7 +318,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show hour labels on the time axis for the visible cluster
       // Entry from 9-11 occupies hours 9 and 10 (no buffer padding)
@@ -354,7 +353,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(DailyTimeline), findsOneWidget);
     });
@@ -385,7 +384,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show "Planned" as fallback when no category
       expect(find.text('Planned'), findsOneWidget);
@@ -442,7 +441,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show both category names
       expect(find.text('Work'), findsOneWidget);
@@ -481,7 +480,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Actual blocks show category name via Semantics (no visible text)
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -516,7 +515,7 @@ void main() {
           highlightedCategoryId: 'cat-1',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Widget should render (test passes if no exception)
       expect(find.byType(DailyTimeline), findsOneWidget);
@@ -578,7 +577,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Planned block shows visible text label
       expect(find.text('Work'), findsOneWidget);
@@ -614,7 +613,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the planned block text and its GestureDetector ancestor
       final blockFinder = find.text('Work');
@@ -670,7 +669,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the actual block by its semantics label and check for GestureDetector
       final blockFinder = find.bySemanticsLabel('Work');
@@ -734,10 +733,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.bySemanticsLabel('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(navigatedPath, equals('/journal/time-entry-1'));
     });
@@ -789,10 +788,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.bySemanticsLabel('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(navigatedPath, equals('/journal/time-entry-1'));
     });
@@ -857,10 +856,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.bySemanticsLabel('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(navigatedPath, equals('/tasks/task-1'));
 
@@ -898,7 +897,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // With no buffer, entry 6-7 creates a visible cluster just for that hour
       // The hour label for the entry's hour is visible
@@ -938,7 +937,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should render without throwing RangeError
       expect(find.byType(DailyTimeline), findsOneWidget);
@@ -995,7 +994,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Single entry should render successfully
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1041,7 +1040,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries should render (using semantics since text is hidden)
       expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
@@ -1102,7 +1101,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both overlapping entries should be visible
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1188,7 +1187,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All three overlapping entries should be visible
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1274,7 +1273,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All three entries should be visible (lane reuse is handled internally)
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1336,7 +1335,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries with identical times should be visible in separate lanes
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1397,7 +1396,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Back-to-back entries should both render (in same lane, no overlap)
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1470,7 +1469,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries should render - the nested one should be inside the parent
       // Since they have the same category, we expect 2 semantics labels for 'Work'
@@ -1534,7 +1533,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both should be visible - different categories don't nest
       expect(find.bySemanticsLabel('Work'), findsOneWidget);
@@ -1597,7 +1596,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All three entries should render (parent + 2 nested children)
       expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
@@ -1648,7 +1647,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries should render (partial overlap = separate lanes, not nesting)
       expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
@@ -1712,7 +1711,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All three entries should render (parent + 2 overlapping nested children)
       // The nested children should be in separate lanes within the parent
@@ -1747,7 +1746,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Entry without category should still render
       // The DailyTimeline should be visible and contain the entry
@@ -1797,7 +1796,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries should render (timeline visible)
       expect(find.byType(DailyTimeline), findsOneWidget);
@@ -1849,7 +1848,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Both entries should render (parent + single nested child)
       expect(find.bySemanticsLabel('Work'), findsNWidgets(2));
@@ -1918,7 +1917,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should have CompressedTimelineRegion for the large gap in the middle
       expect(find.byType(CompressedTimelineRegion), findsWidgets);
@@ -1952,7 +1951,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Compressed regions show time range labels like "04:00 - 20:00"
       // We should find at least one text with time range format
@@ -1991,7 +1990,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // CompressedTimelineRegion contains unfold_more icon
       final compressedRegions = find.byType(CompressedTimelineRegion);
@@ -2032,7 +2031,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // With entries every 3 hours and 1-hour buffer, no gap exceeds threshold
       // Should have no compressed regions
@@ -2054,7 +2053,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Empty timeline shows empty state, not compressed regions
       expect(find.text('No timeline entries'), findsOneWidget);
@@ -2089,7 +2088,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Planned slot should create visible cluster with compressed regions around it
       expect(find.byType(DailyTimeline), findsOneWidget);
@@ -2126,7 +2125,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show hour label for the visible cluster (10-11, no buffer)
       expect(find.text('10:00'), findsOneWidget);
@@ -2160,7 +2159,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should have compressed regions
       final compressedRegions = find.byType(CompressedTimelineRegion);
@@ -2168,7 +2167,7 @@ void main() {
 
       // Tap the first compressed region to expand it
       await tester.tap(compressedRegions.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // After expansion, the tapped region should show hour labels instead
       // The region 0-11 (before noon entry) should now be expanded
@@ -2205,7 +2204,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Count initial compressed regions
       final initialCompressedCount =
@@ -2214,7 +2213,7 @@ void main() {
 
       // Tap a compressed region to expand it
       await tester.tap(find.byType(CompressedTimelineRegion).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should now have one fewer compressed region
       expect(
@@ -2227,7 +2226,7 @@ void main() {
 
       // Tap the fold button to collapse
       await tester.tap(find.text('Fold'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should be back to original state with compressed regions
       expect(
@@ -2265,7 +2264,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The visible cluster (where the entry is) should NOT have a fold button
       // Only expanded compressed regions have fold buttons

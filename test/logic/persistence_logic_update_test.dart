@@ -18,22 +18,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockFts5Db extends Mock implements Fts5Db {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockTagsService extends Mock implements TagsService {}
+import '../mocks/mocks.dart';
 
 class TestPersistenceLogic extends PersistenceLogic {
   TestPersistenceLogic({this.updateDbEntityHandler});

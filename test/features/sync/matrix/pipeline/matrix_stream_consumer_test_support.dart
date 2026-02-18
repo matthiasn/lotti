@@ -1,5 +1,3 @@
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -7,19 +5,14 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../../mocks/mocks.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 

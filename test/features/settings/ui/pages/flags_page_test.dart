@@ -14,8 +14,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockUserActivityService extends Mock implements UserActivityService {}
 
 class FakeConfigFlag extends Fake implements ConfigFlag {}

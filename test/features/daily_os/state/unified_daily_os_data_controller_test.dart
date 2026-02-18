@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -19,19 +20,9 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockDayPlanRepository extends Mock implements DayPlanRepository {}
-
-class MockTimeService extends Mock implements TimeService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -2205,8 +2196,8 @@ void main() {
 
     test('future dates use getTasksDueOn instead of getTasksDueOnOrBefore',
         () async {
-      // Use a date that is definitely in the future (1000 days from now)
-      final futureDate = DateTime.now().add(const Duration(days: 1000));
+      // Use a date that is definitely in the future
+      final futureDate = DateTime(2030, 6, 15);
       final futureDateStart =
           DateTime(futureDate.year, futureDate.month, futureDate.day);
 
@@ -2444,449 +2435,484 @@ void main() {
   });
 
   group('UnifiedDailyOsDataController - Timer Subscription Logic', () {
-    test('updates state when timer starts', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('updates state when timer starts', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // Create a timer entry for the current day
-      final timerEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
-      );
+        // Create a timer entry for the current day
+        final timerEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
+        );
 
-      // Simulate timer starting by emitting on stream
-      timerStreamController.add(timerEntry);
+        // Simulate timer starting by emitting on stream
+        timerStreamController.add(timerEntry);
 
-      // Allow stream listener to process
-      await Future<void>.delayed(Duration.zero);
+        // Allow stream listener to process
+        async.flushMicrotasks();
 
-      // Verify the state was updated (the subscription listener was called)
-      // The controller should have processed the timer event
-      verify(() => mockTimeService.getStream()).called(greaterThan(0));
+        // Verify the state was updated (the subscription listener was called)
+        // The controller should have processed the timer event
+        verify(() => mockTimeService.getStream()).called(greaterThan(0));
+      });
     });
 
-    test('updates state when timer stops', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('updates state when timer stops', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // Start timer first
-      final timerEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
-      );
-      timerStreamController.add(timerEntry);
-      await Future<void>.delayed(Duration.zero);
+        // Start timer first
+        final timerEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
+        );
+        timerStreamController.add(timerEntry);
+        async.flushMicrotasks();
 
-      // Stop timer by emitting null
-      timerStreamController.add(null);
-      await Future<void>.delayed(Duration.zero);
+        // Stop timer by emitting null
+        timerStreamController.add(null);
+        async.flushMicrotasks();
 
-      // Verify the stream listener processed both events
-      verify(() => mockTimeService.getStream()).called(greaterThan(0));
+        // Verify the stream listener processed both events
+        verify(() => mockTimeService.getStream()).called(greaterThan(0));
+      });
     });
 
-    test('throttles updates when minute does not change', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('throttles updates when minute does not change', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // First timer event (start)
-      final timerEntry1 = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
-      );
-      timerStreamController.add(timerEntry1);
-      await Future<void>.delayed(Duration.zero);
+        // First timer event (start)
+        final timerEntry1 = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
+        );
+        timerStreamController.add(timerEntry1);
+        async.flushMicrotasks();
 
-      // Second timer event - same minute (should be throttled)
-      final timerEntry2 = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo:
-            testDate.add(const Duration(hours: 10, minutes: 5, seconds: 30)),
-      );
-      timerStreamController.add(timerEntry2);
-      await Future<void>.delayed(Duration.zero);
+        // Second timer event - same minute (should be throttled)
+        final timerEntry2 = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo:
+              testDate.add(const Duration(hours: 10, minutes: 5, seconds: 30)),
+        );
+        timerStreamController.add(timerEntry2);
+        async.flushMicrotasks();
 
-      // Verify stream was accessed (listener is active)
-      verify(() => mockTimeService.getStream()).called(greaterThan(0));
+        // Verify stream was accessed (listener is active)
+        verify(() => mockTimeService.getStream()).called(greaterThan(0));
+      });
     });
 
-    test('updates when minute changes', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('updates when minute changes', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // First timer event
-      final timerEntry1 = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
-      );
-      timerStreamController.add(timerEntry1);
-      await Future<void>.delayed(Duration.zero);
+        // First timer event
+        final timerEntry1 = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
+        );
+        timerStreamController.add(timerEntry1);
+        async.flushMicrotasks();
 
-      // Second timer event - different minute (should update)
-      final timerEntry2 = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 6)),
-      );
-      timerStreamController.add(timerEntry2);
-      await Future<void>.delayed(Duration.zero);
+        // Second timer event - different minute (should update)
+        final timerEntry2 = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 6)),
+        );
+        timerStreamController.add(timerEntry2);
+        async.flushMicrotasks();
 
-      // Verify stream was accessed
-      verify(() => mockTimeService.getStream()).called(greaterThan(0));
+        // Verify stream was accessed
+        verify(() => mockTimeService.getStream()).called(greaterThan(0));
+      });
     });
 
-    test('ignores timer for different day', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('ignores timer for different day', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      final initialResult = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
-      final initialRecorded =
-          initialResult.budgetProgress.firstOrNull?.recordedDuration;
+        // Initial fetch
+        late DailyOsData initialResult;
+        container
+            .read(
+              unifiedDailyOsDataControllerProvider(date: testDate).future,
+            )
+            .then((value) => initialResult = value);
+        async.flushMicrotasks();
 
-      // Timer entry for a DIFFERENT day
-      final differentDayEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(days: 1, hours: 10)),
-        dateTo: testDate.add(const Duration(days: 1, hours: 10, minutes: 30)),
-      );
-      timerStreamController.add(differentDayEntry);
-      await Future<void>.delayed(Duration.zero);
+        final initialRecorded =
+            initialResult.budgetProgress.firstOrNull?.recordedDuration;
 
-      // The budget should not have changed
-      final result = container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate),
-      );
-      expect(
-        result.value?.budgetProgress.firstOrNull?.recordedDuration,
-        equals(initialRecorded),
-      );
+        // Timer entry for a DIFFERENT day
+        final differentDayEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(days: 1, hours: 10)),
+          dateTo: testDate.add(const Duration(days: 1, hours: 10, minutes: 30)),
+        );
+        timerStreamController.add(differentDayEntry);
+        async.flushMicrotasks();
+
+        // The budget should not have changed
+        final result = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(
+          result.value?.budgetProgress.firstOrNull?.recordedDuration,
+          equals(initialRecorded),
+        );
+      });
     });
 
-    test('ignores timer when entry has no category', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('ignores timer when entry has no category', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // Timer entry with no category
-      final noCategoryEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: null, // No category
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
-      );
-      timerStreamController.add(noCategoryEntry);
-      await Future<void>.delayed(Duration.zero);
+        // Timer entry with no category
+        final noCategoryEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: null, // No category
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
+        );
+        timerStreamController.add(noCategoryEntry);
+        async.flushMicrotasks();
 
-      // The budget should not have changed for any category
-      final result = container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate),
-      );
-      expect(
-          result.value?.budgetProgress.first.recordedDuration, Duration.zero);
+        // The budget should not have changed for any category
+        final result = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(
+            result.value?.budgetProgress.first.recordedDuration, Duration.zero);
+      });
     });
 
-    test('uses linkedFrom category when available', () async {
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+    test('uses linkedFrom category when available', () {
+      fakeAsync((async) {
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => []);
 
-      // linkedFrom task has the category
-      final linkedTask = createTestTask(
-        id: 'linked-task',
-        categoryId: 'cat-work',
-        dateFrom: testDate,
-        dateTo: testDate,
-      );
-      when(() => mockTimeService.linkedFrom).thenReturn(linkedTask);
+        // linkedFrom task has the category
+        final linkedTask = createTestTask(
+          id: 'linked-task',
+          categoryId: 'cat-work',
+          dateFrom: testDate,
+          dateTo: testDate,
+        );
+        when(() => mockTimeService.linkedFrom).thenReturn(linkedTask);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // Timer entry with no category, but linkedFrom has category
-      final timerEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: null, // No category on entry
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
-      );
-      timerStreamController.add(timerEntry);
-      await Future<void>.delayed(Duration.zero);
+        // Timer entry with no category, but linkedFrom has category
+        final timerEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: null, // No category on entry
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
+        );
+        timerStreamController.add(timerEntry);
+        async.flushMicrotasks();
 
-      // The linkedFrom category should be used
-      verify(() => mockTimeService.linkedFrom).called(greaterThan(0));
+        // The linkedFrom category should be used
+        verify(() => mockTimeService.linkedFrom).called(greaterThan(0));
+      });
     });
 
-    test('adds new running entry to contributing entries', () async {
-      final existingEntry = createTestEntry(
-        id: 'existing-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 9)),
-        dateTo: testDate.add(const Duration(hours: 10)),
-      );
+    test('adds new running entry to contributing entries', () {
+      fakeAsync((async) {
+        final existingEntry = createTestEntry(
+          id: 'existing-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 9)),
+          dateTo: testDate.add(const Duration(hours: 10)),
+        );
 
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => [existingEntry]);
+        ).thenAnswer((_) async => [existingEntry]);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch - should have 1 hour recorded
-      final initialResult = await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
-      expect(
-        initialResult.budgetProgress.first.recordedDuration,
-        equals(const Duration(hours: 1)),
-      );
+        // Initial fetch - should have 1 hour recorded
+        late DailyOsData initialResult;
+        container
+            .read(
+              unifiedDailyOsDataControllerProvider(date: testDate).future,
+            )
+            .then((value) => initialResult = value);
+        async.flushMicrotasks();
 
-      // New timer entry (not in existing entries)
-      final newTimerEntry = createTestEntry(
-        id: 'new-timer-entry',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 11)),
-        dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
-      );
-      timerStreamController.add(newTimerEntry);
-      await Future<void>.delayed(Duration.zero);
+        expect(
+          initialResult.budgetProgress.first.recordedDuration,
+          equals(const Duration(hours: 1)),
+        );
 
-      // The new entry should be added to contributing entries
-      // Total should now be 1.5 hours
-      final result = container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate),
-      );
+        // New timer entry (not in existing entries)
+        final newTimerEntry = createTestEntry(
+          id: 'new-timer-entry',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 11)),
+          dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+        );
+        timerStreamController.add(newTimerEntry);
+        async.flushMicrotasks();
 
-      // Verify the state was updated
-      expect(result.hasValue, isTrue);
+        // The new entry should be added to contributing entries
+        // Total should now be 1.5 hours
+        final result = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+
+        // Verify the state was updated
+        expect(result.hasValue, isTrue);
+      });
     });
 
-    test('updates existing entry in contributing entries', () async {
-      final existingEntry = createTestEntry(
-        id: 'timer-entry-1',
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
-      );
+    test('updates existing entry in contributing entries', () {
+      fakeAsync((async) {
+        final existingEntry = createTestEntry(
+          id: 'timer-entry-1',
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
+        );
 
-      final plan = createTestPlan(
-        plannedBlocks: [
-          PlannedBlock(
-            id: 'block-1',
-            categoryId: 'cat-work',
-            startTime: testDate.add(const Duration(hours: 9)),
-            endTime: testDate.add(const Duration(hours: 12)),
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)),
+            ),
+          ],
+        );
+        when(() => mockDayPlanRepository.getDayPlan(testDate))
+            .thenAnswer((_) async => plan);
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
           ),
-        ],
-      );
-      when(() => mockDayPlanRepository.getDayPlan(testDate))
-          .thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => [existingEntry]);
+        ).thenAnswer((_) async => [existingEntry]);
 
-      when(() => mockTimeService.linkedFrom).thenReturn(null);
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
 
-      // Initial fetch
-      await container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate).future,
-      );
+        // Initial fetch
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
 
-      // Same entry ID but updated duration
-      final updatedTimerEntry = createTestEntry(
-        id: 'timer-entry-1', // Same ID as existing
-        categoryId: 'cat-work',
-        dateFrom: testDate.add(const Duration(hours: 10)),
-        dateTo: testDate.add(const Duration(hours: 11)), // Now 1 hour
-      );
-      timerStreamController.add(updatedTimerEntry);
-      await Future<void>.delayed(Duration.zero);
+        // Same entry ID but updated duration
+        final updatedTimerEntry = createTestEntry(
+          id: 'timer-entry-1', // Same ID as existing
+          categoryId: 'cat-work',
+          dateFrom: testDate.add(const Duration(hours: 10)),
+          dateTo: testDate.add(const Duration(hours: 11)), // Now 1 hour
+        );
+        timerStreamController.add(updatedTimerEntry);
+        async.flushMicrotasks();
 
-      // The entry should be updated (replaced) in contributing entries
-      final result = container.read(
-        unifiedDailyOsDataControllerProvider(date: testDate),
-      );
-      expect(result.hasValue, isTrue);
+        // The entry should be updated (replaced) in contributing entries
+        final result = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(result.hasValue, isTrue);
+      });
     });
   });
 

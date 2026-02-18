@@ -7,201 +7,77 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  group('MeasurableTypeCard Widget Tests - ', () {
-    setUp(() {});
+  group('MeasurableTypeCard', () {
     tearDown(getIt.reset);
 
-    const testDescription = 'test description';
-    const testUnit = 'ml';
-    const testDisplayName = 'Water';
-    final testItem = MeasurableDataType(
-      description: testDescription,
-      unitName: testUnit,
-      displayName: testDisplayName,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    final baseItem = MeasurableDataType(
+      description: 'test description',
+      unitName: 'ml',
+      displayName: 'Water',
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
       version: 1,
-      id: 'some-id',
+      id: 'measurable-123',
     );
 
-    testWidgets('displays measurable data type with unit', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(MeasurableTypeCard(item: testItem)),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsNothing);
-      expect(find.byIcon(MdiIcons.security), findsNothing);
-    });
-
-    testWidgets('displays measurable data type without unit', (tester) async {
+    Future<void> pumpCard(
+      WidgetTester tester, {
+      bool? private,
+      bool? favorite,
+      String? displayName,
+    }) async {
       await tester.pumpWidget(
         makeTestableWidget(
           MeasurableTypeCard(
-            item: testItem.copyWith(unitName: ''),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsNothing);
-      expect(find.byIcon(MdiIcons.security), findsNothing);
-    });
-
-    testWidgets('displays private measurable data type with unit',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(private: true),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsNothing);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-    });
-
-    testWidgets('displays starred measurable data type with unit',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(favorite: true),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsNothing);
-    });
-
-    testWidgets('displays private starred measurable data type with unit',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(
-              favorite: true,
-              private: true,
+            item: baseItem.copyWith(
+              private: private,
+              favorite: favorite,
+              displayName: displayName ?? baseItem.displayName,
             ),
           ),
         ),
       );
-
       await tester.pumpAndSettle();
+    }
 
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    testWidgets('displays the item displayName', (tester) async {
+      await pumpCard(tester);
+      expect(find.text('Water'), findsOneWidget);
     });
 
-    testWidgets(
-        'displays private starred measurable data type with unit and '
-        'aggregation type daily sum', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(
-              favorite: true,
-              private: true,
-              aggregationType: AggregationType.dailySum,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
+    testWidgets('displays a different displayName', (tester) async {
+      await pumpCard(tester, displayName: 'Steps');
+      expect(find.text('Steps'), findsOneWidget);
+      expect(find.text('Water'), findsNothing);
     });
 
-    testWidgets(
-        'displays private starred measurable data type with unit and '
-        'aggregation type daily max', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(
-              favorite: true,
-              private: true,
-              aggregationType: AggregationType.dailyMax,
-            ),
-          ),
-        ),
-      );
+    // Parameterized icon visibility tests covering all flag combinations.
+    // Visibility widget with visible=false replaces child with SizedBox.shrink,
+    // so the icon is removed from the tree entirely.
+    final iconCases = <({bool? private, bool? favorite, String label})>[
+      (private: null, favorite: null, label: 'neither private nor favorite'),
+      (private: false, favorite: false, label: 'explicitly not private/fav'),
+      (private: true, favorite: null, label: 'private only'),
+      (private: null, favorite: true, label: 'favorite only'),
+      (private: true, favorite: true, label: 'both private and favorite'),
+    ];
 
-      await tester.pumpAndSettle();
+    for (final c in iconCases) {
+      testWidgets('icon visibility: ${c.label}', (tester) async {
+        await pumpCard(tester, private: c.private, favorite: c.favorite);
 
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-    });
-
-    testWidgets(
-        'displays private starred measurable data type with unit and '
-        'aggregation type daily avg', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(
-              favorite: true,
-              private: true,
-              aggregationType: AggregationType.dailyAvg,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-    });
-
-    testWidgets(
-        'displays private starred measurable data type with unit and '
-        'aggregation type none', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          MeasurableTypeCard(
-            item: testItem.copyWith(
-              favorite: true,
-              private: true,
-              aggregationType: AggregationType.none,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text(testDisplayName), findsOneWidget);
-
-      expect(find.byIcon(MdiIcons.star), findsOneWidget);
-      expect(find.byIcon(MdiIcons.security), findsOneWidget);
-    });
+        expect(
+          find.byIcon(MdiIcons.security),
+          c.private == true ? findsOneWidget : findsNothing,
+          reason: 'security icon for ${c.label}',
+        );
+        expect(
+          find.byIcon(MdiIcons.star),
+          c.favorite == true ? findsOneWidget : findsNothing,
+          reason: 'star icon for ${c.label}',
+        );
+      });
+    }
   });
 }

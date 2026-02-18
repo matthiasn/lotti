@@ -15,8 +15,7 @@ void main() {
     settingsDb = SettingsDb(inMemoryDatabase: true);
     getIt.registerSingleton<SettingsDb>(settingsDb);
     service = VectorClockService();
-    // Allow init() to complete
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await service.initialized;
   });
 
   tearDown(() async {
@@ -76,11 +75,9 @@ void main() {
       final emptySettingsDb = SettingsDb(inMemoryDatabase: true);
       getIt.registerSingleton<SettingsDb>(emptySettingsDb);
 
-      // Create service but don't wait for init
+      // Create service and wait for init
       final uninitializedService = VectorClockService();
-      // The service will have set a host during init, so this test
-      // verifies that getHostHash works after initialization
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await uninitializedService.initialized;
 
       final hash = await uninitializedService.getHostHash();
       expect(hash, isNotNull);
@@ -141,7 +138,7 @@ void main() {
 
       // Create new service instance
       final newService = VectorClockService();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await newService.initialized;
 
       final counter = await newService.getNextAvailableCounter();
       expect(counter, 50);
@@ -152,7 +149,7 @@ void main() {
 
       // Create new service instance
       final newService = VectorClockService();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await newService.initialized;
 
       final loadedHost = await newService.getHost();
       expect(loadedHost, originalHost);

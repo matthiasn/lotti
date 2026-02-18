@@ -59,14 +59,6 @@ class MockEntryController extends EntryController {
   }
 }
 
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockSecureStorage extends Mock implements SecureStorage {}
-
-class MockOutboxService extends Mock implements OutboxService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

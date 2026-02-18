@@ -5,11 +5,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mocks
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   late ProviderContainer container;

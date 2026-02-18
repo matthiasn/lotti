@@ -6,9 +6,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late MockEntitiesCacheService mockCacheService;

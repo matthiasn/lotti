@@ -10,7 +10,7 @@ import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../mocks/mocks.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;

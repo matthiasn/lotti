@@ -4,13 +4,12 @@ import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   late MockSyncMaintenanceRepository mockRepository;

@@ -1,6 +1,8 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:async';
 
-import 'package:flutter_quill/flutter_quill.dart'; // Import for QuillController
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,26 +49,12 @@ class Listener<T> extends Mock {
   void call(T? previous, T next);
 }
 
-// Create a Fake class for EntryText to use with registerFallbackValue
-class FakeEntryText extends Fake implements EntryText {}
-
-// Mock for EditorStateService
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-// Fake for QuillController
-class FakeQuillController extends Fake implements QuillController {}
-
-// Added FakeTaskData
-class FakeTaskData extends Fake implements TaskData {}
-
 // Added FakeEventData
 class FakeEventData extends Fake implements EventData {}
 
 // Mock for DirectTaskSummaryRefreshController
 class MockDirectTaskSummaryRefreshController extends Mock
     implements DirectTaskSummaryRefreshController {}
-
-class MockOutboxService extends Mock implements OutboxService {}
 
 class MockSmartTaskSummaryTrigger extends Mock
     implements SmartTaskSummaryTrigger {}
@@ -2659,93 +2647,100 @@ void main() {
 
     test(
         'triggers smart task summary using task category (not entry category) when saving linked text entry',
-        () async {
-      final localMockJournalRepository = MockJournalRepository();
+        () {
+      fakeAsync((async) {
+        final localMockJournalRepository = MockJournalRepository();
 
-      // Task with its own category
-      const taskCategoryId = 'task-category';
-      final taskWithCategory = testTaskEntry.copyWith(
-        meta: testTaskEntry.meta.copyWith(categoryId: taskCategoryId),
-      );
+        // Task with its own category
+        const taskCategoryId = 'task-category';
+        final taskWithCategory = testTaskEntry.copyWith(
+          meta: testTaskEntry.meta.copyWith(categoryId: taskCategoryId),
+        );
 
-      // Text entry linked to a task - with DIFFERENT category
-      const entryCategoryId = 'entry-category';
-      final textEntryLinkedToTask = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          id: 'text-linked-to-task',
-          categoryId: entryCategoryId,
-        ),
-        entryText: const EntryText(plainText: 'Some meaningful content'),
-      );
+        // Text entry linked to a task - with DIFFERENT category
+        const entryCategoryId = 'entry-category';
+        final textEntryLinkedToTask = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            id: 'text-linked-to-task',
+            categoryId: entryCategoryId,
+          ),
+          entryText: const EntryText(plainText: 'Some meaningful content'),
+        );
 
-      // The link from this entry to a task
-      final linkToTask = EntryLink.basic(
-        id: 'link-1',
-        fromId: textEntryLinkedToTask.id,
-        toId: taskWithCategory.id,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-      );
+        // The link from this entry to a task
+        final linkToTask = EntryLink.basic(
+          id: 'link-1',
+          fromId: textEntryLinkedToTask.id,
+          toId: taskWithCategory.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
 
-      when(() => mockJournalDb.journalEntityById(textEntryLinkedToTask.id))
-          .thenAnswer((_) async => textEntryLinkedToTask);
+        when(() => mockJournalDb.journalEntityById(textEntryLinkedToTask.id))
+            .thenAnswer((_) async => textEntryLinkedToTask);
 
-      when(
-        () =>
-            localMockJournalRepository.getLinksFromId(textEntryLinkedToTask.id),
-      ).thenAnswer((_) async => [linkToTask]);
+        when(
+          () => localMockJournalRepository
+              .getLinksFromId(textEntryLinkedToTask.id),
+        ).thenAnswer((_) async => [linkToTask]);
 
-      when(
-        () => localMockJournalRepository
-            .getJournalEntityById(taskWithCategory.id),
-      ).thenAnswer((_) async => taskWithCategory);
+        when(
+          () => localMockJournalRepository
+              .getJournalEntityById(taskWithCategory.id),
+        ).thenAnswer((_) async => taskWithCategory);
 
-      final container = makeProviderContainer(
-        overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
-          smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
-        ],
-      );
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+            smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
+          ],
+        );
 
-      final notifier = container.read(
-        entryControllerProvider(id: textEntryLinkedToTask.id).notifier,
-      );
-      await container
-          .read(entryControllerProvider(id: textEntryLinkedToTask.id).future);
+        container
+          ..read(
+            entryControllerProvider(id: textEntryLinkedToTask.id).notifier,
+          )
+          ..read(entryControllerProvider(id: textEntryLinkedToTask.id).future);
+        async.flushMicrotasks();
 
-      // Insert text to make the controller have non-empty content
-      notifier.controller.document.insert(0, 'Some meaningful content');
+        final notifier = container.read(
+          entryControllerProvider(id: textEntryLinkedToTask.id).notifier,
+        );
 
-      when(
-        () => mockEditorStateService.entryWasSaved(
-          id: textEntryLinkedToTask.id,
-          lastSaved: any(named: 'lastSaved'),
-          controller: notifier.controller,
-        ),
-      ).thenAnswer((_) async {});
+        // Insert text to make the controller have non-empty content
+        notifier.controller.document.insert(0, 'Some meaningful content');
 
-      await notifier.save();
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: textEntryLinkedToTask.id,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
 
-      // Allow async fire-and-forget to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        notifier.save();
+        async
+          ..elapse(const Duration(milliseconds: 50))
+          ..flushMicrotasks();
 
-      // Verify we use the TASK's category, not the entry's
-      verify(
-        () => mockSmartTrigger.triggerTaskSummary(
-          taskId: taskWithCategory.id,
-          categoryId: taskCategoryId, // Task's category, not entry's
-        ),
-      ).called(1);
+        // Verify we use the TASK's category, not the entry's
+        verify(
+          () => mockSmartTrigger.triggerTaskSummary(
+            taskId: taskWithCategory.id,
+            categoryId: taskCategoryId, // Task's category, not entry's
+          ),
+        ).called(1);
 
-      // Ensure we did NOT use the entry's category
-      verifyNever(
-        () => mockSmartTrigger.triggerTaskSummary(
-          taskId: any(named: 'taskId'),
-          categoryId: entryCategoryId,
-        ),
-      );
+        // Ensure we did NOT use the entry's category
+        verifyNever(
+          () => mockSmartTrigger.triggerTaskSummary(
+            taskId: any(named: 'taskId'),
+            categoryId: entryCategoryId,
+          ),
+        );
+      });
     });
 
     test('does not trigger when saving text entry with empty content',
@@ -2797,188 +2792,209 @@ void main() {
       );
     });
 
-    test('does not trigger when entry is not linked to any task', () async {
-      final localMockJournalRepository = MockJournalRepository();
+    test('does not trigger when entry is not linked to any task', () {
+      fakeAsync((async) {
+        final localMockJournalRepository = MockJournalRepository();
 
-      final unlinkedTextEntry = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          id: 'unlinked-text-entry',
-          categoryId: 'test-category',
-        ),
-        entryText: const EntryText(plainText: 'Some content'),
-      );
+        final unlinkedTextEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            id: 'unlinked-text-entry',
+            categoryId: 'test-category',
+          ),
+          entryText: const EntryText(plainText: 'Some content'),
+        );
 
-      when(() => mockJournalDb.journalEntityById(unlinkedTextEntry.id))
-          .thenAnswer((_) async => unlinkedTextEntry);
+        when(() => mockJournalDb.journalEntityById(unlinkedTextEntry.id))
+            .thenAnswer((_) async => unlinkedTextEntry);
 
-      // No links from this entry
-      when(
-        () => localMockJournalRepository.getLinksFromId(unlinkedTextEntry.id),
-      ).thenAnswer((_) async => []);
+        // No links from this entry
+        when(
+          () => localMockJournalRepository.getLinksFromId(unlinkedTextEntry.id),
+        ).thenAnswer((_) async => []);
 
-      final container = makeProviderContainer(
-        overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
-          smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
-        ],
-      );
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+            smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
+          ],
+        );
 
-      final notifier = container.read(
-        entryControllerProvider(id: unlinkedTextEntry.id).notifier,
-      );
-      await container
-          .read(entryControllerProvider(id: unlinkedTextEntry.id).future);
+        container
+          ..read(
+            entryControllerProvider(id: unlinkedTextEntry.id).notifier,
+          )
+          ..read(entryControllerProvider(id: unlinkedTextEntry.id).future);
+        async.flushMicrotasks();
 
-      notifier.controller.document.insert(0, 'Some content');
+        final notifier = container.read(
+          entryControllerProvider(id: unlinkedTextEntry.id).notifier,
+        );
 
-      when(
-        () => mockEditorStateService.entryWasSaved(
-          id: unlinkedTextEntry.id,
-          lastSaved: any(named: 'lastSaved'),
-          controller: notifier.controller,
-        ),
-      ).thenAnswer((_) async {});
+        notifier.controller.document.insert(0, 'Some content');
 
-      await notifier.save();
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: unlinkedTextEntry.id,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
 
-      // Allow async to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        notifier.save();
+        async
+          ..elapse(const Duration(milliseconds: 50))
+          ..flushMicrotasks();
 
-      // Should not trigger because not linked to a task
-      verifyNever(
-        () => mockSmartTrigger.triggerTaskSummary(
-          taskId: any(named: 'taskId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      );
+        // Should not trigger because not linked to a task
+        verifyNever(
+          () => mockSmartTrigger.triggerTaskSummary(
+            taskId: any(named: 'taskId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
     });
 
-    test('does not trigger when linked entry is not a task', () async {
-      final localMockJournalRepository = MockJournalRepository();
+    test('does not trigger when linked entry is not a task', () {
+      fakeAsync((async) {
+        final localMockJournalRepository = MockJournalRepository();
 
-      final textEntry = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          id: 'text-linked-to-non-task',
-          categoryId: 'test-category',
-        ),
-        entryText: const EntryText(plainText: 'Content here'),
-      );
+        final textEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            id: 'text-linked-to-non-task',
+            categoryId: 'test-category',
+          ),
+          entryText: const EntryText(plainText: 'Content here'),
+        );
 
-      // Link to another text entry (not a task)
-      final linkToNonTask = EntryLink.basic(
-        id: 'link-2',
-        fromId: textEntry.id,
-        toId: testTextEntryNoGeo.id,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-      );
+        // Link to another text entry (not a task)
+        final linkToNonTask = EntryLink.basic(
+          id: 'link-2',
+          fromId: textEntry.id,
+          toId: testTextEntryNoGeo.id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
 
-      when(() => mockJournalDb.journalEntityById(textEntry.id))
-          .thenAnswer((_) async => textEntry);
+        when(() => mockJournalDb.journalEntityById(textEntry.id))
+            .thenAnswer((_) async => textEntry);
 
-      when(
-        () => localMockJournalRepository.getLinksFromId(textEntry.id),
-      ).thenAnswer((_) async => [linkToNonTask]);
+        when(
+          () => localMockJournalRepository.getLinksFromId(textEntry.id),
+        ).thenAnswer((_) async => [linkToNonTask]);
 
-      when(
-        () => localMockJournalRepository
-            .getJournalEntityById(testTextEntryNoGeo.id),
-      ).thenAnswer((_) async => testTextEntryNoGeo);
+        when(
+          () => localMockJournalRepository
+              .getJournalEntityById(testTextEntryNoGeo.id),
+        ).thenAnswer((_) async => testTextEntryNoGeo);
 
-      final container = makeProviderContainer(
-        overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
-          smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
-        ],
-      );
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+            smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
+          ],
+        );
 
-      final notifier = container.read(
-        entryControllerProvider(id: textEntry.id).notifier,
-      );
-      await container.read(entryControllerProvider(id: textEntry.id).future);
+        container.read(
+          entryControllerProvider(id: textEntry.id).notifier,
+        );
+        container.read(entryControllerProvider(id: textEntry.id).future);
+        async.flushMicrotasks();
 
-      notifier.controller.document.insert(0, 'Content here');
+        final notifier = container.read(
+          entryControllerProvider(id: textEntry.id).notifier,
+        );
 
-      when(
-        () => mockEditorStateService.entryWasSaved(
-          id: textEntry.id,
-          lastSaved: any(named: 'lastSaved'),
-          controller: notifier.controller,
-        ),
-      ).thenAnswer((_) async {});
+        notifier.controller.document.insert(0, 'Content here');
 
-      await notifier.save();
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: textEntry.id,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
 
-      // Allow async to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        notifier.save();
+        async.elapse(const Duration(milliseconds: 50));
+        async.flushMicrotasks();
 
-      // Should not trigger because linked entry is not a task
-      verifyNever(
-        () => mockSmartTrigger.triggerTaskSummary(
-          taskId: any(named: 'taskId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      );
+        // Should not trigger because linked entry is not a task
+        verifyNever(
+          () => mockSmartTrigger.triggerTaskSummary(
+            taskId: any(named: 'taskId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
     });
 
-    test('handles exception during link lookup gracefully', () async {
-      final localMockJournalRepository = MockJournalRepository();
+    test('handles exception during link lookup gracefully', () {
+      fakeAsync((async) {
+        final localMockJournalRepository = MockJournalRepository();
 
-      final textEntry = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          id: 'text-with-error',
-          categoryId: 'test-category',
-        ),
-        entryText: const EntryText(plainText: 'Some content'),
-      );
+        final textEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            id: 'text-with-error',
+            categoryId: 'test-category',
+          ),
+          entryText: const EntryText(plainText: 'Some content'),
+        );
 
-      when(() => mockJournalDb.journalEntityById(textEntry.id))
-          .thenAnswer((_) async => textEntry);
+        when(() => mockJournalDb.journalEntityById(textEntry.id))
+            .thenAnswer((_) async => textEntry);
 
-      // Link lookup throws
-      when(
-        () => localMockJournalRepository.getLinksFromId(textEntry.id),
-      ).thenThrow(Exception('Database error'));
+        // Link lookup throws
+        when(
+          () => localMockJournalRepository.getLinksFromId(textEntry.id),
+        ).thenThrow(Exception('Database error'));
 
-      final container = makeProviderContainer(
-        overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
-          smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
-        ],
-      );
+        final container = makeProviderContainer(
+          overrides: [
+            journalRepositoryProvider
+                .overrideWithValue(localMockJournalRepository),
+            smartTaskSummaryTriggerProvider.overrideWithValue(mockSmartTrigger),
+          ],
+        );
 
-      final notifier = container.read(
-        entryControllerProvider(id: textEntry.id).notifier,
-      );
-      await container.read(entryControllerProvider(id: textEntry.id).future);
+        container
+          ..read(
+            entryControllerProvider(id: textEntry.id).notifier,
+          )
+          ..read(entryControllerProvider(id: textEntry.id).future);
+        async.flushMicrotasks();
 
-      notifier.controller.document.insert(0, 'Some content');
+        final notifier = container.read(
+          entryControllerProvider(id: textEntry.id).notifier,
+        );
 
-      when(
-        () => mockEditorStateService.entryWasSaved(
-          id: textEntry.id,
-          lastSaved: any(named: 'lastSaved'),
-          controller: notifier.controller,
-        ),
-      ).thenAnswer((_) async {});
+        notifier.controller.document.insert(0, 'Some content');
 
-      // Should not throw - silently fails
-      await notifier.save();
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: textEntry.id,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
 
-      // Allow async to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Should not throw - silently fails
+        notifier.save();
+        async
+          ..elapse(const Duration(milliseconds: 50))
+          ..flushMicrotasks();
 
-      // Should not trigger because of exception
-      verifyNever(
-        () => mockSmartTrigger.triggerTaskSummary(
-          taskId: any(named: 'taskId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      );
+        // Should not trigger because of exception
+        verifyNever(
+          () => mockSmartTrigger.triggerTaskSummary(
+            taskId: any(named: 'taskId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
     });
   });
 
@@ -3099,5 +3115,3 @@ void main() {
     });
   });
 }
-
-class MockJournalRepository extends Mock implements JournalRepository {}

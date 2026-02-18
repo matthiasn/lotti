@@ -19,17 +19,21 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart'
+    show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
+import 'package:lotti/features/journal/repository/journal_repository.dart'
+    show journalRepositoryProvider;
+import 'package:lotti/features/labels/repository/labels_repository.dart'
+    show labelsRepositoryProvider;
+import 'package:lotti/features/tasks/repository/checklist_repository.dart'
+    show checklistRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/dev_logger.dart';
@@ -39,33 +43,18 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}
 
 class MockDirectory extends Mock implements Directory {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 class TestChecklistCompletionService extends ChecklistCompletionService {
   List<ChecklistCompletionSuggestion> capturedSuggestions = [];
@@ -79,15 +68,6 @@ class TestChecklistCompletionService extends ChecklistCompletionService {
   }
 }
 
-class FakeAiConfigModel extends Fake implements AiConfigModel {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
-
-class FakeMetadata extends Fake implements Metadata {}
-
-class FakeTaskData extends Fake implements TaskData {}
-
 class FakeTask extends Fake implements Task {}
 
 class FakeImageData extends Fake implements ImageData {}
@@ -96,15 +76,9 @@ class FakeAudioData extends Fake implements AudioData {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
 
-class FakeJournalAudio extends Fake implements JournalAudio {}
-
 class FakeChecklistData extends Fake implements ChecklistData {}
 
-class FakeChecklistItemData extends Fake implements ChecklistItemData {}
-
-class MockLabelsRepository extends Mock implements LabelsRepository {}
-
-class MockSelectable<T> extends Mock implements Selectable<T> {}
+class MockSelectableSimple<T> extends Mock implements Selectable<T> {}
 
 void main() {
   UnifiedAiInferenceRepository? repository;
@@ -367,7 +341,7 @@ void main() {
 
       // Mock the database query for items - return empty so items are skipped
       // (detailed update behavior is tested in LottiChecklistUpdateHandler tests)
-      final mockSelectable = MockSelectable<JournalDbEntity>();
+      final mockSelectable = MockSelectableSimple<JournalDbEntity>();
       when(mockSelectable.get).thenAnswer((_) async => []);
       when(() => mockJournalDb.entriesForIds(any())).thenReturn(mockSelectable);
 

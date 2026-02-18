@@ -1,14 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingDb extends Mock implements LoggingDb {}
+import '../../../mocks/mocks.dart';
 
 class FakeLogEntry extends Fake implements LogEntry {}
 

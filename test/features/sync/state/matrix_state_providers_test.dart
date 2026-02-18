@@ -9,7 +9,7 @@ import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockMatrixService extends Mock implements MatrixService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockMatrixService mockMatrixService;

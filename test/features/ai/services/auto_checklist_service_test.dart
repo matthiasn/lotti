@@ -12,12 +12,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class FakeChecklistItemData extends Fake implements ChecklistItemData {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -17,13 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

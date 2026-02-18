@@ -7,9 +7,8 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class MockRatingRepository extends Mock implements RatingRepository {}
 
 void main() {
   late MockRatingRepository mockRepository;

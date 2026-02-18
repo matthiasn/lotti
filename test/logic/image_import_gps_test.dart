@@ -14,28 +14,10 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../helpers/path_provider.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockFts5Db extends Mock implements Fts5Db {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockTagsService extends Mock implements TagsService {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockTimeService extends Mock implements TimeService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../mocks/mocks.dart';
 
 /// Creates a JPEG with valid GPS EXIF data
 /// GPS coordinates: 37.7749° N, 122.4194° W (San Francisco)

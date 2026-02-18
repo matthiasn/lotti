@@ -14,11 +14,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
+import '../mocks/mocks.dart';
 
 class MockAutomaticImageAnalysisTrigger extends Mock
     implements AutomaticImageAnalysisTrigger {}

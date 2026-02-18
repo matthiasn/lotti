@@ -1,16 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 // ignore_for_file: avoid_redundant_argument_values
-
-class MockMaintenance extends Mock implements Maintenance {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

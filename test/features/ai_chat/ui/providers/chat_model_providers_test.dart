@@ -5,7 +5,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   group('eligibleChatModelsForCategoryProvider', () {

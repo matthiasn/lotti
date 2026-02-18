@@ -15,17 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
+import '../../../mocks/mocks.dart';
 
 // Helper to register a mock instance in getIt
 void registerMock<T extends Object>(T instance) {

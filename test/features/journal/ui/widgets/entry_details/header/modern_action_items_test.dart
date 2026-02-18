@@ -20,15 +20,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_helper.dart';
-
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockLinkService extends Mock implements LinkService {}
 
 /// Builds a widget wrapped in a pushed Navigator route so that
 /// Navigator.of(context).pop() can be exercised during tests.
@@ -214,7 +207,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleStarredCalls, contains('entry-1'));
     });
@@ -266,7 +259,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.togglePrivateCalls, contains('entry-1'));
     });
@@ -319,7 +312,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleFlaggedCalls, contains('entry-1'));
     });
@@ -398,7 +391,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(pageIndexNotifier.value, equals(2));
     });
@@ -477,7 +470,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(pageIndexNotifier.value, equals(1));
     });
@@ -648,7 +641,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(controller.updateLinkCalls, hasLength(1));
       expect(controller.updateLinkCalls.first.hidden, isTrue);
@@ -858,7 +851,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleMapVisibleCalls, contains('geo-entry-1'));
     });

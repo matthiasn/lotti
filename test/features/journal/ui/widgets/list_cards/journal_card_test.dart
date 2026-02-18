@@ -40,6 +40,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
 
+import '../../../../../mocks/mocks.dart'
+    show MockJournalDb, MockUpdateNotifications;
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
@@ -99,10 +101,6 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
         : null;
   }
 }
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   late MockNavService mockNavService;

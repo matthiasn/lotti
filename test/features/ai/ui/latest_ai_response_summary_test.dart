@@ -7,27 +7,22 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/database/database.dart' show JournalDb;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart'
+    show journalRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/db_notification.dart' show UpdateNotifications;
+import 'package:lotti/services/logging_service.dart' show LoggingService;
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;

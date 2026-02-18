@@ -10,9 +10,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockNavService extends Mock implements NavService {}
+import '../../../../../mocks/mocks.dart';
 
 /// Test constants to avoid magic numbers and improve maintainability
 class TestConstants {

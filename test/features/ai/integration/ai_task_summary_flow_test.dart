@@ -15,20 +15,15 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart'
+    show journalRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockAiConfigDb extends Mock implements AiConfigDb {}
 

@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -5,7 +6,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late CorrectionCaptureService service;
@@ -482,32 +483,34 @@ void main() {
       );
     });
 
-    test('disposal before timer fires does not throw', () async {
-      final container = ProviderContainer();
+    test('disposal before timer fires does not throw', () {
+      fakeAsync((async) {
+        final container = ProviderContainer();
 
-      final pending = PendingCorrection(
-        before: 'before',
-        after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
-        createdAt: DateTime.now(),
-      );
+        final pending = PendingCorrection(
+          before: 'before',
+          after: 'after',
+          categoryId: 'cat-1',
+          categoryName: 'Test',
+          createdAt: DateTime(2024, 3, 15),
+        );
 
-      // Set pending (starts the save timer)
-      container.read(correctionCaptureProvider.notifier).setPending(
-            pending: pending,
-            onSave: () async {},
-          );
+        // Set pending (starts the save timer)
+        container.read(correctionCaptureProvider.notifier).setPending(
+              pending: pending,
+              onSave: () async {},
+            );
 
-      // Immediately dispose before the timer fires
-      container.dispose();
+        // Immediately dispose before the timer fires
+        container.dispose();
 
-      // Wait past the save delay
-      await Future<void>.delayed(
-          kCorrectionSaveDelay + const Duration(milliseconds: 100));
+        // Elapse past the save delay — if the timer wasn't cancelled,
+        // the callback would fire on a disposed container and throw.
+        async.elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100));
 
-      // If we get here without throwing, the test passes
-      // The timer was properly cancelled on disposal
+        // If we get here without throwing, the test passes
+        // The timer was properly cancelled on disposal
+      });
     });
 
     test('clear clears state immediately', () {
