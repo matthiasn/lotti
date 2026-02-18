@@ -147,7 +147,7 @@ void main() {
       updateStreamController.add({'linked-from-id-1'});
 
       // Wait for the async update to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // Get the updated state
       final updatedState =

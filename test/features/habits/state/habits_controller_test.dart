@@ -227,7 +227,7 @@ void main() {
 
     test('setTimeSpan updates timeSpanDays', () async {
       // Wait for initialization to complete
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       final controller = container.read(habitsControllerProvider.notifier);
 
@@ -268,11 +268,11 @@ void main() {
 
       // Trigger initialization
       container.read(habitsControllerProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // Emit habit definitions
       definitionsController.add([testHabit1, testHabit2]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final state = container.read(habitsControllerProvider);
 
@@ -311,10 +311,10 @@ void main() {
       ).thenAnswer((_) async => completions);
 
       container.read(habitsControllerProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final state = container.read(habitsControllerProvider);
 
@@ -346,10 +346,10 @@ void main() {
       ).thenAnswer((_) async => completions);
 
       container.read(habitsControllerProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       final state = container.read(habitsControllerProvider);
 
@@ -362,11 +362,11 @@ void main() {
     test('refetches completions when habitCompletionNotification received',
         () async {
       container.read(habitsControllerProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // Initial emit
       definitionsController.add([testHabit1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Reset mock to track new calls
       clearInteractions(mockRepository);
@@ -378,7 +378,7 @@ void main() {
 
       // Emit update notification
       updateController.add({habitCompletionNotification});
-      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await pumpEventQueue();
 
       // Verify getHabitCompletionsInRange was called again
       verify(
@@ -390,10 +390,10 @@ void main() {
 
     test('ignores unrelated notifications', () async {
       container.read(habitsControllerProvider);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       clearInteractions(mockRepository);
       when(
@@ -404,7 +404,7 @@ void main() {
 
       // Emit unrelated notification
       updateController.add({'some-other-notification'});
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Should not trigger refetch
       verifyNever(
@@ -443,10 +443,10 @@ void main() {
       ).thenAnswer((_) async => completions);
 
       final controller = container.read(habitsControllerProvider.notifier);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1, testHabit2]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       controller.setInfoYmd(todayYmd);
 
@@ -478,10 +478,10 @@ void main() {
       ).thenAnswer((_) async => completions);
 
       final controller = container.read(habitsControllerProvider.notifier);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       controller.setInfoYmd(todayYmd);
 
@@ -523,11 +523,11 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final controller = container.read(habitsControllerProvider.notifier);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // testHabit1 has cat-1, testHabit2 has cat-2
       definitionsController.add([testHabit1, testHabit2]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Before filtering - both habits should be in openNow
       var state = container.read(habitsControllerProvider);
@@ -535,7 +535,7 @@ void main() {
 
       // Filter by cat-1
       controller.toggleSelectedCategoryIds('cat-1');
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       state = container.read(habitsControllerProvider);
       expect(state.openNow.length, 1);
@@ -568,10 +568,10 @@ void main() {
       ).thenAnswer((_) async => completions);
 
       final controller = container.read(habitsControllerProvider.notifier);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       definitionsController.add([testHabit1, testHabit2]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Both should be completed
       var state = container.read(habitsControllerProvider);
@@ -579,7 +579,7 @@ void main() {
 
       // Filter by cat-2
       controller.toggleSelectedCategoryIds('cat-2');
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       state = container.read(habitsControllerProvider);
       expect(state.completed.length, 1);
@@ -594,15 +594,15 @@ void main() {
       ).thenAnswer((_) async => []);
 
       final controller = container.read(habitsControllerProvider.notifier);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       // testHabit3 has showFrom: 18 (pending later) and cat-1
       definitionsController.add([testHabit1, testHabit3]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       // Filter by cat-1 - both habits have cat-1
       controller.toggleSelectedCategoryIds('cat-1');
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await pumpEventQueue();
 
       final state = container.read(habitsControllerProvider);
       // testHabit3 should be in pendingLater (if current time < 18:00)

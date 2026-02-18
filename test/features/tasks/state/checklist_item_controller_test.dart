@@ -141,7 +141,7 @@ void main() {
         notifier.updateTitle('Updated Title');
 
         // Wait for the async correction capture to complete
-        await Future<void>.delayed(const Duration(milliseconds: 150));
+        await pumpEventQueue();
 
         // Verify the checklist item was updated
         verify(
@@ -197,7 +197,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle('  Original Title  ');
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Notification should NOT be fired (noChange result)
         final event = container.read(correctionCaptureProvider);
@@ -249,7 +249,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle('New Title');
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Update should still happen
         verify(
@@ -289,7 +289,7 @@ void main() {
         // ignore: cascade_invocations
         notifier.updateTitle(null);
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Nothing should happen
         verifyNever(
