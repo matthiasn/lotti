@@ -94,7 +94,10 @@ class _ChecklistItemWidgetState extends State<ChecklistItemWidget> {
         : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: 1,
+      ),
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),

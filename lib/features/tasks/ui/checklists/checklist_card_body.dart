@@ -40,40 +40,44 @@ class ChecklistCardBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Items list (with horizontal padding)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
-          child: itemIds.isEmpty
-              ? const ChecklistEmptyState()
-              : allDone
-                  ? const ChecklistAllDoneState()
-                  : ReorderableListView(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      // Disable Flutter's default handles - we use custom left-side
-                      // handles. Cross-checklist drag uses super_drag_and_drop
-                      // (long-press anywhere on item).
-                      buildDefaultDragHandles: false,
-                      proxyDecorator: (child, index, animation) =>
-                          buildDragDecorator(context, child),
-                      onReorder: onReorder,
-                      children: List.generate(
-                        itemIds.length,
-                        (int index) {
-                          final itemId = itemIds.elementAt(index);
-                          return ChecklistItemWrapper(
-                            itemId,
-                            taskId: taskId,
-                            checklistId: checklistId,
-                            hideIfChecked: hideChecked,
-                            index: index,
-                            key:
-                                ValueKey('checklist-item-$checklistId-$itemId'),
-                          );
-                        },
-                      ),
-                    ),
-        ),
+        // Items list (no horizontal padding so swipe backgrounds go edge-to-edge;
+        // individual items handle their own content padding).
+        if (itemIds.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            child: ChecklistEmptyState(),
+          )
+        else if (allDone)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            child: ChecklistAllDoneState(),
+          )
+        else
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            // Disable Flutter's default handles - we use custom left-side
+            // handles. Cross-checklist drag uses super_drag_and_drop
+            // (long-press anywhere on item).
+            buildDefaultDragHandles: false,
+            proxyDecorator: (child, index, animation) =>
+                buildDragDecorator(context, child),
+            onReorder: onReorder,
+            children: List.generate(
+              itemIds.length,
+              (int index) {
+                final itemId = itemIds.elementAt(index);
+                return ChecklistItemWrapper(
+                  itemId,
+                  taskId: taskId,
+                  checklistId: checklistId,
+                  hideIfChecked: hideChecked,
+                  index: index,
+                  key: ValueKey('checklist-item-$checklistId-$itemId'),
+                );
+              },
+            ),
+          ),
 
         // Divider 3: Between items and add input (no horizontal padding)
         Divider(
