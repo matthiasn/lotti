@@ -116,44 +116,31 @@ class ChecklistItemWrapper extends ConsumerWidget {
                     },
                   );
                 },
-                // Archive background (swipe right)
-                background: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ColoredBox(
-                      color: Colors.amber.shade700,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Icon(
-                            item.data.isArchived
-                                ? Icons.unarchive
-                                : Icons.archive,
-                            color: Colors.white,
-                          ),
-                        ),
+                // Archive background (swipe right) — edge-to-edge color
+                background: ColoredBox(
+                  color: Colors.amber.shade700,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(left: AppTheme.cardPadding),
+                      child: Icon(
+                        item.data.isArchived ? Icons.unarchive : Icons.archive,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
-                // Delete background (swipe left)
-                secondaryBackground: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ColoredBox(
-                      color: context.colorScheme.error,
-                      child: const Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Icon(
-                            Icons.delete,
-                            color: Colors.white,
-                          ),
-                        ),
+                // Delete background (swipe left) — edge-to-edge color
+                secondaryBackground: ColoredBox(
+                  color: context.colorScheme.error,
+                  child: const Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: AppTheme.cardPadding),
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.white,
                       ),
                     ),
                   ),

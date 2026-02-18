@@ -140,6 +140,7 @@ class AiInputRepository {
           (item) => AiActionItem(
             title: item.title,
             completed: item.isChecked,
+            isArchived: item.isArchived,
             id: item.id,
           ),
         )

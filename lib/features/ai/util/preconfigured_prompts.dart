@@ -67,6 +67,14 @@ Focus on providing a comprehensive overview of the task that refreshes the user'
 and clearly outlines progress and next steps. Generate the summary in the language
 specified by the task's languageCode field, or default to English if not set.
 
+ARCHIVED ACTION ITEMS:
+Action items in the task JSON may have "isArchived": true. Archived items are NOT active
+work for this task — they were set aside because they are handled elsewhere, are no longer
+relevant, or are kept only for reference. They will not need to be created again.
+- Do NOT list archived items under "Remaining steps"
+- You may briefly mention them under "Achieved results" or in context if useful
+- Treat them as informational background, not actionable work
+
 RELATED TASKS CONTEXT:
 You may receive a `linked_tasks` object containing:
 - `linked_from`: Child tasks that reference this task (typically subtasks)
@@ -234,6 +242,16 @@ IMPORTANT RULES:
 - Deleted items avoidance: Use the Deleted Checklist Items list (if present). Do NOT re-create items with titles from that list or obvious near-duplicates unless the user explicitly requests to re-add.
 - Make all necessary function calls in a single response (checklist + estimate + due date + language)
 - If you receive an unknown function name error, use only the functions listed above
+
+ARCHIVED ITEMS:
+Action items in the task JSON may have "isArchived": true. Archived items are NOT active
+work for this task — they were set aside because they are handled elsewhere (e.g., covered
+by a different task or team), are no longer relevant to the current scope, or are kept only
+for reference and won't need to be created again.
+- Do NOT create new items that duplicate archived items
+- Do NOT mark archived items as completed — they are intentionally set aside, not done
+- Do NOT attempt to update archived items unless the user explicitly asks to unarchive them
+- Treat archived items as informational context only
 
 UPDATE RULES (for update_checklist_items):
 - ONLY use for items that already exist in the task's checklists - never for creating new items

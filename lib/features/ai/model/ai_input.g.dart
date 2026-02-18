@@ -38,6 +38,7 @@ _AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) =>
     _AiActionItem(
       title: json['title'] as String,
       completed: json['completed'] as bool,
+      isArchived: json['isArchived'] as bool? ?? false,
       id: json['id'] as String?,
       deadline: json['deadline'] == null
           ? null
@@ -51,6 +52,7 @@ Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
     <String, dynamic>{
       'title': instance.title,
       'completed': instance.completed,
+      'isArchived': instance.isArchived,
       'id': instance.id,
       'deadline': instance.deadline?.toIso8601String(),
       'completionDate': instance.completionDate?.toIso8601String(),

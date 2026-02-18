@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.864] - 2026-02-18
+### Improved
+- Checklist swipe backgrounds now extend edge-to-edge, filling the full card
+  width when swiping to archive or delete.
+
+### Added
+- Archived checklist items are now marked as such in AI prompt context,
+  with clear instructions that they are not active work — handled elsewhere,
+  no longer relevant, or kept for reference only.
+
 ## [0.9.863] - 2026-02-17
 ### Added
 - Archive swipe gesture for checklist items: swipe right to archive, preserving

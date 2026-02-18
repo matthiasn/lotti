@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/themes/theme.dart';
 
 import '../../../../test_helper.dart';
 
@@ -10,7 +11,9 @@ import '../../../../test_helper.dart';
 /// Coverage: Ensures the compact spacing is maintained after UI refactoring
 void main() {
   group('ChecklistItemWidget Spacing Tests', () {
-    testWidgets('outer padding is exactly 2 pixels vertically', (tester) async {
+    testWidgets(
+        'outer padding includes card padding horizontally and 1px vertically',
+        (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -29,18 +32,24 @@ void main() {
 
       expect(paddingFinder, findsWidgets);
 
-      // Find the specific Padding with vertical: 2
+      // Find the specific outer Padding with card padding horizontal + 1 vertical
       final paddings = tester.widgetList<Padding>(paddingFinder);
       final outerPadding = paddings.firstWhere(
         (padding) =>
             padding.padding is EdgeInsets &&
             (padding.padding as EdgeInsets).top == 1 &&
             (padding.padding as EdgeInsets).bottom == 1 &&
-            (padding.padding as EdgeInsets).left == 0 &&
-            (padding.padding as EdgeInsets).right == 0,
+            (padding.padding as EdgeInsets).left == AppTheme.cardPadding &&
+            (padding.padding as EdgeInsets).right == AppTheme.cardPadding,
       );
 
-      expect(outerPadding.padding, const EdgeInsets.symmetric(vertical: 1));
+      expect(
+        outerPadding.padding,
+        const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: 1,
+        ),
+      );
     });
 
     testWidgets('inner row has correct spacing', (tester) async {
@@ -90,8 +99,8 @@ void main() {
             padding.padding is EdgeInsets &&
             (padding.padding as EdgeInsets).top == 1 &&
             (padding.padding as EdgeInsets).bottom == 1 &&
-            (padding.padding as EdgeInsets).left == 0 &&
-            (padding.padding as EdgeInsets).right == 0,
+            (padding.padding as EdgeInsets).left == AppTheme.cardPadding &&
+            (padding.padding as EdgeInsets).right == AppTheme.cardPadding,
       );
 
       expect(hasCorrectOuterPadding, isTrue);
@@ -233,7 +242,8 @@ void main() {
             padding.padding is EdgeInsets &&
             (padding.padding as EdgeInsets).top == 1 &&
             (padding.padding as EdgeInsets).bottom == 1 &&
-            (padding.padding as EdgeInsets).horizontal == 0,
+            (padding.padding as EdgeInsets).horizontal ==
+                AppTheme.cardPadding * 2,
       );
 
       // Should have 3 items with correct outer padding
