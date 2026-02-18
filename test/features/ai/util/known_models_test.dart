@@ -94,6 +94,15 @@ void main() {
                 'Voxtral model ${model.name} should not have maxCompletionTokens defined',
           );
         }
+
+        for (final model in alibabaModels) {
+          expect(
+            model.maxCompletionTokens,
+            isNull,
+            reason:
+                'Alibaba model ${model.name} should not have maxCompletionTokens defined',
+          );
+        }
       });
 
       test(
@@ -259,6 +268,7 @@ void main() {
         expect(
           knownModelsByProvider.keys.toSet(),
           containsAll([
+            InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
@@ -414,6 +424,76 @@ void main() {
 
       test('all Mistral models should have valid configurations', () {
         for (final model in mistralModels) {
+          expect(model.providerModelId, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have non-empty providerModelId');
+          expect(model.name, isNotEmpty,
+              reason: 'Model should have non-empty name');
+          expect(model.description, isNotEmpty,
+              reason: 'Model ${model.name} should have non-empty description');
+          expect(model.inputModalities, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one input modality');
+          expect(model.outputModalities, isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one output modality');
+        }
+      });
+    });
+
+    group('Alibaba Models', () {
+      test('should have text, vision, and reasoning models', () {
+        expect(alibabaModels.length, equals(8));
+
+        final textModels = alibabaModels.where(
+          (m) =>
+              m.inputModalities.contains(Modality.text) &&
+              !m.inputModalities.contains(Modality.image),
+        );
+        final visionModels = alibabaModels.where(
+          (m) => m.inputModalities.contains(Modality.image),
+        );
+        final reasoningModels = alibabaModels.where(
+          (m) => m.isReasoningModel,
+        );
+
+        expect(textModels, isNotEmpty, reason: 'Should have text-only models');
+        expect(visionModels, isNotEmpty, reason: 'Should have vision models');
+        expect(reasoningModels, isNotEmpty,
+            reason: 'Should have reasoning models');
+      });
+
+      test('Qwen3 Max should be a reasoning model', () {
+        final maxModel = alibabaModels.firstWhere(
+          (m) => m.providerModelId == 'qwen3-max',
+        );
+        expect(maxModel.isReasoningModel, isTrue);
+        expect(maxModel.supportsFunctionCalling, isTrue);
+      });
+
+      test('QwQ Plus should be a reasoning model', () {
+        final qwqModel = alibabaModels.firstWhere(
+          (m) => m.providerModelId == 'qwq-plus',
+        );
+        expect(qwqModel.isReasoningModel, isTrue);
+      });
+
+      test('vision models should accept image input', () {
+        final vlModels = alibabaModels.where(
+          (m) => m.providerModelId.contains('vl'),
+        );
+        expect(vlModels.length, equals(2));
+
+        for (final model in vlModels) {
+          expect(model.inputModalities, contains(Modality.image),
+              reason: '${model.name} should accept image input');
+          expect(model.outputModalities, contains(Modality.text),
+              reason: '${model.name} should output text');
+        }
+      });
+
+      test('all Alibaba models should have valid configurations', () {
+        for (final model in alibabaModels) {
           expect(model.providerModelId, isNotEmpty,
               reason:
                   'Model ${model.name} should have non-empty providerModelId');

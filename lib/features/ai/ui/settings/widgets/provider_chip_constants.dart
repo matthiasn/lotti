@@ -47,6 +47,10 @@ class ProviderChipConstants {
   /// Provider-specific colors that work in both light and dark themes
   static const Map<InferenceProviderType, ({Color dark, Color light})>
       providerColors = {
+    InferenceProviderType.alibaba: (
+      dark: Color(0xFFFFAB40),
+      light: Color(0xFFFF6D00), // Alibaba Orange
+    ),
     InferenceProviderType.anthropic: (
       dark: Color(0xFFD4A574),
       light: Color(0xFFB8864E), // Warm bronze

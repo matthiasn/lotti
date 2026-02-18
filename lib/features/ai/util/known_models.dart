@@ -62,6 +62,7 @@ class KnownModel {
 
 /// Known models for each inference provider type
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
+  InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
@@ -73,6 +74,97 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
+
+/// Alibaba Cloud models - Qwen family via DashScope (OpenAI-compatible)
+///
+/// These models run on Alibaba Cloud's DashScope API, which is fully
+/// OpenAI-compatible. They include text, vision, and reasoning models.
+/// API keys are obtained from the Alibaba Cloud Model Studio console.
+const List<KnownModel> alibabaModels = [
+  KnownModel(
+    providerModelId: 'qwen3-max',
+    name: 'Qwen3 Max',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Top-tier Qwen3 MoE model with 1T parameters. Best for complex '
+        'reasoning, analysis, and generation tasks.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-plus',
+    name: 'Qwen Plus',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Balanced mid-tier model. Good performance-to-cost ratio for '
+        'summaries, classification, and general tasks.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-flash',
+    name: 'Qwen Flash',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Fast and affordable model optimized for speed. Great for quick '
+        'tasks, summaries, and high-throughput workloads.',
+  ),
+  KnownModel(
+    providerModelId: 'qwq-plus',
+    name: 'QwQ Plus',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Chain-of-thought reasoning model for complex problem-solving '
+        'and analytical tasks.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-plus',
+    name: 'Qwen3 VL Plus',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Top vision-language model with image understanding. Supports '
+        'multiple images per request via standard OpenAI vision format.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-flash',
+    name: 'Qwen3 VL Flash',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Fast vision-language model for efficient image analysis and '
+        'visual question answering.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-coder-plus',
+    name: 'Qwen Coder Plus',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Code-specialized model for programming tasks, code review, '
+        'and software engineering assistance.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-long',
+    name: 'Qwen Long',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Long-context specialist supporting up to 10M tokens. Ideal for '
+        'processing lengthy documents and transcripts.',
+  ),
+];
 
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [

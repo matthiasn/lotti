@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -277,28 +278,7 @@ class AiConfigCard extends ConsumerWidget {
   IconData _getConfigIcon() {
     if (config is AiConfigInferenceProvider) {
       final provider = config as AiConfigInferenceProvider;
-      switch (provider.inferenceProviderType) {
-        case InferenceProviderType.anthropic:
-          return Icons.auto_awesome;
-        case InferenceProviderType.openAi:
-          return Icons.psychology;
-        case InferenceProviderType.gemini:
-          return Icons.diamond;
-        case InferenceProviderType.mistral:
-          return Icons.record_voice_over;
-        case InferenceProviderType.openRouter:
-          return Icons.hub;
-        case InferenceProviderType.ollama:
-          return Icons.computer;
-        case InferenceProviderType.genericOpenAi:
-          return Icons.cloud;
-        case InferenceProviderType.nebiusAiStudio:
-          return Icons.rocket_launch;
-        case InferenceProviderType.whisper:
-          return Icons.mic;
-        case InferenceProviderType.voxtral:
-          return Icons.record_voice_over;
-      }
+      return provider.inferenceProviderType.icon;
     } else if (config is AiConfigModel) {
       final model = config as AiConfigModel;
       final family = _getModelFamily(model);

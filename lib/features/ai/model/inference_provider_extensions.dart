@@ -5,6 +5,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 extension InferenceProviderTypeExtension on InferenceProviderType {
   String displayName(BuildContext context) {
     switch (this) {
+      case InferenceProviderType.alibaba:
+        return context.messages.aiProviderAlibabaName;
       case InferenceProviderType.anthropic:
         return context.messages.aiProviderAnthropicName;
       case InferenceProviderType.gemini:
@@ -30,6 +32,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
 
   String description(BuildContext context) {
     switch (this) {
+      case InferenceProviderType.alibaba:
+        return context.messages.aiProviderAlibabaDescription;
       case InferenceProviderType.anthropic:
         return context.messages.aiProviderAnthropicDescription;
       case InferenceProviderType.gemini:
@@ -55,22 +59,24 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
 
   IconData get icon {
     switch (this) {
+      case InferenceProviderType.alibaba:
+        return Icons.cloud;
       case InferenceProviderType.anthropic:
+        return Icons.auto_awesome;
+      case InferenceProviderType.openAi:
         return Icons.psychology;
       case InferenceProviderType.gemini:
         return Icons.diamond;
-      case InferenceProviderType.genericOpenAi:
-        return Icons.public;
       case InferenceProviderType.mistral:
         return Icons.record_voice_over;
-      case InferenceProviderType.openAi:
-        return Icons.smart_toy;
-      case InferenceProviderType.nebiusAiStudio:
-        return Icons.assistant;
       case InferenceProviderType.openRouter:
-        return Icons.assistant;
+        return Icons.hub;
       case InferenceProviderType.ollama:
-        return Icons.assistant;
+        return Icons.computer;
+      case InferenceProviderType.genericOpenAi:
+        return Icons.cloud;
+      case InferenceProviderType.nebiusAiStudio:
+        return Icons.rocket_launch;
       case InferenceProviderType.whisper:
         return Icons.mic;
       case InferenceProviderType.voxtral:
