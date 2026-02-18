@@ -14,17 +14,49 @@ import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
 
+/// Holds the mocks registered during [setUpTestGetIt] so tests can access
+/// them for stubbing without re-creating or looking them up.
+class TestGetItMocks {
+  TestGetItMocks({
+    required this.journalDb,
+    required this.updateNotifications,
+    required this.settingsDb,
+    required this.loggingDb,
+    required this.loggingService,
+  });
+
+  final MockJournalDb journalDb;
+  final MockUpdateNotifications updateNotifications;
+  final MockSettingsDb settingsDb;
+  final MockLoggingDb loggingDb;
+  final LoggingService loggingService;
+}
+
 /// Sets up GetIt with common mocks for widget tests.
+///
 /// Call this in setUp() before creating widgets that use controllers
 /// which access GetIt (e.g., ChecklistController, ChecklistItemController,
 /// ThemingController).
-Future<void> setUpTestGetIt() async {
+///
+/// Pass additional services via [additionalSetup] to register extra mocks
+/// after the core ones:
+/// ```dart
+/// final mocks = await setUpTestGetIt(
+///   additionalSetup: () {
+///     getIt.registerSingleton<EntitiesCacheService>(mockCache);
+///   },
+/// );
+/// ```
+Future<TestGetItMocks> setUpTestGetIt({
+  void Function()? additionalSetup,
+}) async {
   await getIt.reset();
 
   final mockUpdateNotifications = MockUpdateNotifications();
   final mockJournalDb = MockJournalDb();
   final mockSettingsDb = MockSettingsDb();
   final mockLoggingDb = MockLoggingDb();
+  final loggingService = LoggingService();
 
   when(() => mockUpdateNotifications.updateStream)
       .thenAnswer((_) => const Stream.empty());
@@ -39,7 +71,17 @@ Future<void> setUpTestGetIt() async {
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingDb>(mockLoggingDb)
-    ..registerSingleton<LoggingService>(LoggingService());
+    ..registerSingleton<LoggingService>(loggingService);
+
+  additionalSetup?.call();
+
+  return TestGetItMocks(
+    journalDb: mockJournalDb,
+    updateNotifications: mockUpdateNotifications,
+    settingsDb: mockSettingsDb,
+    loggingDb: mockLoggingDb,
+    loggingService: loggingService,
+  );
 }
 
 /// Tears down GetIt after tests.

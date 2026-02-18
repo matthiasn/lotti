@@ -9,11 +9,15 @@ import 'widget_test_utils.dart';
 class WidgetTestBench extends StatelessWidget {
   const WidgetTestBench({
     required this.child,
+    this.overrides = const [],
+    this.theme,
     this.mediaQueryData,
     super.key,
   });
 
   final Widget child;
+  final List<Override> overrides;
+  final ThemeData? theme;
   final MediaQueryData? mediaQueryData;
 
   @override
@@ -21,9 +25,11 @@ class WidgetTestBench extends StatelessWidget {
     final mediaQuery = mediaQueryData ?? phoneMediaQueryData;
 
     return ProviderScope(
+      overrides: overrides,
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
+          theme: theme,
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

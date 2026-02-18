@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 2 In Progress — Steps 4-5 Done, Steps 6-8 Remaining
+**Status:** Phase 2 Complete — Ready for Phase 3
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -68,14 +68,34 @@
 - The mock is not in the central file (feature-specific mocks like `MockPromptCapabilityFilter`)
 - Private mock classes (`_MockX`) used for encapsulation
 
-**Steps 6-8 not yet started:**
-- Step 6: GetIt test helper centralization
-- Step 7: Test data factory expansion
-- Step 8: Widget helper consolidation
+### Phase 2b: Infrastructure Improvements (Steps 6-8) — DONE
 
-### Phase 2a Verification
+**Step 6: GetIt test helper expansion** (`test/widget_test_utils.dart`)
+- `setUpTestGetIt()` now returns `TestGetItMocks` — tests can access registered mocks for stubbing
+- Added `additionalSetup` callback parameter for registering extra services
+- Backward-compatible: existing callers that ignore the return value continue to work
+- Usage: only 8 files use the helper vs 145+ doing manual setup; improved helper makes adoption easier
+
+**Step 7: Entity factories** (`test/helpers/entity_factories.dart` — NEW)
+- `TestMetadataFactory.create()` — sensible defaults, override only what matters
+- `TestTaskDataFactory.create()` — matches actual `TaskData` constructor signature
+- `TestTaskFactory.create()` — combines Metadata + TaskData + EntryText in one call
+- `TestChecklistItemFactory.create()` — includes required `linkedChecklists` field
+- All use `testFixedDate = DateTime(2024, 3, 15, 10)` — no `DateTime.now()` per policy
+
+**Step 8: Widget test bench consolidation** (`test/test_helper.dart`)
+- `WidgetTestBench` now accepts optional `overrides` and `theme` parameters
+- This makes it a superset of all 4 existing bench classes:
+  - `WidgetTestBench()` — base (907 calls)
+  - `WidgetTestBench(overrides: [...])` — replaces `RiverpodWidgetTestBench` (292 calls)
+  - `WidgetTestBench(theme: ThemeData.dark())` — replaces `DarkWidgetTestBench` (7 calls)
+  - `WidgetTestBench(overrides: [...], theme: ThemeData.dark())` — replaces `DarkRiverpodWidgetTestBench` (2 calls)
+- Old classes kept for backward compatibility; new tests should use unified `WidgetTestBench`
+
+### Phase 2 Verification
 - Analyzer: zero issues across entire `test/` and `lib/`
-- All 8,861 tests pass across all migrated directories
+- All 8,861+ tests pass across all migrated directories
+- 284 tests pass for files using `setUpTestGetIt` (backward compatibility confirmed)
 - No regressions detected
 
 ---
