@@ -15,57 +15,72 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 
+const _categoryId = 'cat-1';
+
+/// Pumps a [ChatInterface] wrapped in the required providers and localization.
+///
+/// [recorderOverride] controls the chat recorder controller (defaults to
+/// [_FakeChatRecorderController]).
+/// [sessionOverride] controls the chat session controller.
+Future<void> _pumpChatInterface(
+  WidgetTester tester, {
+  required Override sessionOverride,
+  Override? recorderOverride,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        recorderOverride ??
+            chatRecorderControllerProvider.overrideWith(
+              _FakeChatRecorderController.new,
+            ),
+        sessionOverride,
+        eligibleChatModelsForCategoryProvider(_categoryId)
+            .overrideWith((_) async => []),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ChatInterface(categoryId: _categoryId)),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+/// Creates a sendable session override that records sent messages in [sink].
+Override _sendableSession({ValueNotifier<String?>? sink}) {
+  return chatSessionControllerProvider(_categoryId).overrideWith(
+    () => _FakeChatSessionController(sink: sink ?? ValueNotifier(null)),
+  );
+}
+
+/// Creates a non-sendable session override (no selected model).
+Override _nonSendableSession() {
+  return chatSessionControllerProvider(_categoryId)
+      .overrideWith(_NonSendableChatSessionController.new);
+}
+
 void main() {
+  setUp(() async {
+    await getIt.reset();
+    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
+  });
+
   testWidgets(
       'Chat input shows mic by default, waveform + Cancel/Stop while recording',
       (tester) async {
-    const categoryId = 'cat-1';
-
-    // Ensure a clean DI slate for this test
-    await getIt.reset();
-
-    // Capture sent messages without static state
     final lastSent = ValueNotifier<String?>(null);
 
-    final overrides = <Override>[
-      // Recorder provider overridden with a fake controller we can observe
-      chatRecorderControllerProvider.overrideWith(
-        _FakeChatRecorderController.new,
-      ),
-
-      // Provide a simple chat session state where sending is allowed
-      chatSessionControllerProvider(categoryId).overrideWith(
-        () => _FakeChatSessionController(sink: lastSent),
-      ),
-
-      // No eligible models needed in header for this test
-      eligibleChatModelsForCategoryProvider(categoryId)
-          .overrideWith((_) async => []),
-    ];
-
-    // Minimal DI to satisfy ChatSessionController base class
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: overrides,
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ChatInterface(categoryId: categoryId),
-          ),
-        ),
-      ),
+    await _pumpChatInterface(
+      tester,
+      sessionOverride: _sendableSession(sink: lastSent),
     );
-
-    // Let post-frame init settle
-    await tester.pump();
 
     // Default: mic icon visible
     expect(find.byIcon(Icons.mic), findsOneWidget);
@@ -82,7 +97,6 @@ void main() {
     await tester.tap(find.byIcon(Icons.stop));
     await tester.pump();
     // Allow auto-scroll timer to complete and any queued frames to settle
-    // Drive the 100ms delayed scroll + 300ms animateTo without overpumping
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
@@ -91,37 +105,12 @@ void main() {
   });
 
   testWidgets('Cancel discards recording and returns to mic', (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
     final lastSent = ValueNotifier<String?>(null);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _FakeChatRecorderController.new,
-          ),
-          chatSessionControllerProvider(categoryId).overrideWith(
-            () => _FakeChatSessionController(sink: lastSent),
-          ),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
-      ),
+    await _pumpChatInterface(
+      tester,
+      sessionOverride: _sendableSession(sink: lastSent),
     );
-    await tester.pump();
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
     await tester.tap(find.byIcon(Icons.mic));
@@ -137,36 +126,10 @@ void main() {
   });
 
   testWidgets('Esc cancels recording', (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _FakeChatRecorderController.new,
-          ),
-          chatSessionControllerProvider(categoryId).overrideWith(
-            () =>
-                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
-          ),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
-      ),
+    await _pumpChatInterface(
+      tester,
+      sessionOverride: _sendableSession(),
     );
-    await tester.pump();
 
     await tester.tap(find.byIcon(Icons.mic));
     await tester.pump();
@@ -180,35 +143,10 @@ void main() {
 
   testWidgets('When cannot send, mic is hidden and settings opens sheet',
       (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _FakeChatRecorderController.new,
-          ),
-          chatSessionControllerProvider(categoryId).overrideWith(
-            _NonSendableChatSessionController.new,
-          ),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
-      ),
+    await _pumpChatInterface(
+      tester,
+      sessionOverride: _nonSendableSession(),
     );
-    await tester.pump();
 
     // Mic hidden; header settings present
     expect(find.byIcon(Icons.mic), findsNothing);
@@ -222,34 +160,12 @@ void main() {
 
   testWidgets('Processing state shows spinner and disables input',
       (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _ProcessingChatRecorderController.new,
-          ),
-          chatSessionControllerProvider(categoryId).overrideWith(
-            () =>
-                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
-          ),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
+    await _pumpChatInterface(
+      tester,
+      recorderOverride: chatRecorderControllerProvider.overrideWith(
+        _ProcessingChatRecorderController.new,
       ),
+      sessionOverride: _sendableSession(),
     );
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -265,41 +181,13 @@ void main() {
       find.byKey(const ValueKey('chat_text_field')),
     );
     expect(textField.enabled, isFalse);
-
-    // No cancel available in processing; finish without teardown actions
   });
 
   testWidgets('Tooltips reflect state transitions (sendable session)',
       (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _FakeChatRecorderController.new,
-          ),
-          // Make session sendable so mic is available
-          chatSessionControllerProvider(categoryId).overrideWith(
-            () =>
-                _FakeChatSessionController(sink: ValueNotifier<String?>(null)),
-          ),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
-      ),
+    await _pumpChatInterface(
+      tester,
+      sessionOverride: _sendableSession(),
     );
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -310,49 +198,11 @@ void main() {
     expect(find.byTooltip('Cancel recording (Esc)'), findsOneWidget);
     expect(find.byTooltip('Stop and transcribe'), findsOneWidget);
   });
-
-  testWidgets('When cannot send, mic is hidden and settings opens sheet',
-      (tester) async {
-    const categoryId = 'cat-1';
-    await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_FakeLoggingService());
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          chatRecorderControllerProvider.overrideWith(
-            _FakeChatRecorderController.new,
-          ),
-          // Non-sendable session (no selected model)
-          chatSessionControllerProvider(categoryId)
-              .overrideWith(_NonSendableChatSessionController.new),
-          eligibleChatModelsForCategoryProvider(categoryId)
-              .overrideWith((_) async => []),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChatInterface(categoryId: categoryId)),
-        ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 50));
-
-    // Mic hidden; header settings available
-    expect(find.byIcon(Icons.mic), findsNothing);
-    expect(find.byTooltip('Assistant settings'), findsOneWidget);
-
-    // Tapping header settings opens the Assistant Settings sheet
-    await tester.tap(find.byTooltip('Assistant settings'));
-    await tester.pumpAndSettle();
-    expect(find.text('Assistant Settings'), findsOneWidget);
-  });
 }
+
+// ---------------------------------------------------------------------------
+// Fakes
+// ---------------------------------------------------------------------------
 
 class _FakeChatRecorderController extends ChatRecorderController {
   _FakeChatRecorderController();

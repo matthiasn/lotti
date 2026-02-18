@@ -14,45 +14,71 @@ import 'package:mocktail/mocktail.dart';
 class _MockRealtimeService extends Mock
     implements RealtimeTranscriptionService {}
 
-void main() {
-  Widget wrap(Widget child, {List<Override> overrides = const []}) =>
-      ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: child),
-        ),
-      );
+/// Wraps [child] in [ProviderScope] + [MaterialApp] with localization.
+Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: child),
+      ),
+    );
 
+/// Creates an [InputArea] with sensible defaults.  Only the varying parts
+/// need to be passed.
+Widget _inputArea({
+  TextEditingController? controller,
+  bool isLoading = false,
+  bool canSend = true,
+  bool requiresModelSelection = false,
+  void Function(String)? onSendMessage,
+}) =>
+    InputArea(
+      controller: controller ?? TextEditingController(),
+      scrollController: ScrollController(),
+      isLoading: isLoading,
+      canSend: canSend,
+      requiresModelSelection: requiresModelSelection,
+      categoryId: 'cat',
+      onSendMessage: onSendMessage ?? (_) {},
+    );
+
+/// Override that uses the real [ChatRecorderController].
+Override _defaultRecorderOverride() =>
+    chatRecorderControllerProvider.overrideWith(ChatRecorderController.new);
+
+/// Creates a [_MockRealtimeService] that reports realtime config available.
+_MockRealtimeService _realtimeServiceWithConfig() {
+  final mock = _MockRealtimeService();
+  when(mock.resolveRealtimeConfig).thenAnswer(
+    (_) async => (
+      provider: const _FakeProvider(),
+      model: const _FakeModel(),
+    ),
+  );
+  return mock;
+}
+
+void main() {
   testWidgets('InputArea sends message when send tapped', (tester) async {
     String? sent;
-    final controller = TextEditingController(text: 'hello');
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: controller,
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
+      _wrap(
+        _inputArea(
+          controller: TextEditingController(text: 'hello'),
           onSendMessage: (msg) => sent = msg,
         ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
-    // Tap the send button (IconButton.filled with send icon since there is text)
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
@@ -62,20 +88,9 @@ void main() {
   testWidgets('InputArea shows mic when empty and not requiresModelSelection',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
@@ -86,16 +101,8 @@ void main() {
       'TranscriptionProgress shows partial transcript during processing',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _ProcessingRecorderController(
@@ -106,17 +113,11 @@ void main() {
       ),
     );
 
-    // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
-    // animates continuously and would cause pumpAndSettle to timeout
     await tester.pump();
 
-    // Should show the partial transcript text
     expect(find.text('Transcribing audio...'), findsOneWidget);
-    // Should show the transcribe icon
     expect(find.byIcon(Icons.transcribe), findsOneWidget);
-    // Should show a progress indicator
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    // Should not show the text field
     expect(find.byType(TextField), findsNothing);
   });
 
@@ -127,27 +128,17 @@ void main() {
     );
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(() => controller),
         ],
       ),
     );
 
-    // Use pump() due to CircularProgressIndicator animation
     await tester.pump();
     expect(find.text('First chunk'), findsOneWidget);
 
-    // Update the partial transcript
     controller.updatePartialTranscript('First chunk Second chunk');
     await tester.pump();
 
@@ -158,47 +149,27 @@ void main() {
       'InputArea shows TextField when processing without partialTranscript',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
-            () => _ProcessingRecorderController(
-              partialTranscript: null,
-            ),
+            () => _ProcessingRecorderController(partialTranscript: null),
           ),
         ],
       ),
     );
 
-    // Use pump() due to CircularProgressIndicator animation
     await tester.pump();
 
-    // Should show the text field (disabled) since no partialTranscript
     expect(find.byType(TextField), findsOneWidget);
-    // Should show progress indicator in the button
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
+
   testWidgets('shows Listening indicator during realtimeRecording',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             _RealtimeRecordingController.new,
@@ -207,69 +178,42 @@ void main() {
       ),
     );
 
-    // Use pump() due to CircularProgressIndicator animation
     await tester.pump();
 
     expect(find.text('Listening...'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    // No text field during realtime recording
     expect(find.byType(TextField), findsNothing);
-    // Stop and cancel buttons visible
     expect(find.byIcon(Icons.stop), findsOneWidget);
     expect(find.byIcon(Icons.close), findsOneWidget);
   });
 
   testWidgets('shows live transcript text during realtimeRecording',
       (tester) async {
-    final controller = _RealtimeRecordingController(
-      partialTranscript: 'Hello world',
-    );
-
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
-          chatRecorderControllerProvider.overrideWith(() => controller),
+          chatRecorderControllerProvider.overrideWith(
+            () => _RealtimeRecordingController(partialTranscript: 'Hello world'),
+          ),
         ],
       ),
     );
 
     await tester.pump();
 
-    // Shows the live transcript text
     expect(find.text('Hello world'), findsOneWidget);
-    // Does NOT show "Listening..." when there's text
     expect(find.textContaining('Listening'), findsNothing);
   });
 
   testWidgets('shows spinner when isLoading is true', (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: true,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(isLoading: true),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
-    // Use pump() because CircularProgressIndicator animates
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -278,20 +222,9 @@ void main() {
 
   testWidgets('disables text field when canSend is false', (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: false,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(canSend: false),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
@@ -304,29 +237,19 @@ void main() {
   testWidgets('shows disabled send button when canSend is false and has text',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
+      _wrap(
+        _inputArea(
           controller: TextEditingController(text: 'hello'),
-          scrollController: ScrollController(),
-          isLoading: false,
           canSend: false,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
         ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
 
-    // Send icon should be visible
     expect(find.byIcon(Icons.send), findsOneWidget);
 
-    // The IconButton should be disabled (onPressed null)
     final iconButton = tester.widget<IconButton>(
       find.ancestor(
         of: find.byIcon(Icons.send),
@@ -339,81 +262,43 @@ void main() {
   testWidgets('shows tune icon when requiresModelSelection is true',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: true,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(requiresModelSelection: true),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.tune), findsOneWidget);
-    // No mic button when model selection required
     expect(find.byIcon(Icons.mic), findsNothing);
   });
 
   testWidgets('shows correct hint text for requiresModelSelection',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: true,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(requiresModelSelection: true),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Select a model to start chatting'),
-      findsOneWidget,
-    );
+    expect(find.text('Select a model to start chatting'), findsOneWidget);
   });
 
   testWidgets('does not send when message is empty', (tester) async {
     String? sent;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (msg) => sent = msg,
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(onSendMessage: (msg) => sent = msg),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
 
-    // No send button visible (mic is shown instead when empty)
     expect(find.byIcon(Icons.send), findsNothing);
     expect(sent, isNull);
   });
@@ -421,16 +306,8 @@ void main() {
   testWidgets('cancel button during recording calls cancel', (tester) async {
     var cancelCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RecordingControllerWithCallbacks(
@@ -443,7 +320,6 @@ void main() {
 
     await tester.pump();
 
-    // Find and tap the close (cancel) button
     expect(find.byIcon(Icons.close), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close));
     await tester.pump();
@@ -454,16 +330,8 @@ void main() {
   testWidgets('stop button during recording calls stop', (tester) async {
     var stopCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RecordingControllerWithCallbacks(
@@ -487,16 +355,8 @@ void main() {
       (tester) async {
     var cancelCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RealtimeControllerWithCallbacks(
@@ -520,16 +380,8 @@ void main() {
       (tester) async {
     var stopCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RealtimeControllerWithCallbacks(
@@ -552,16 +404,8 @@ void main() {
   testWidgets('escape key during recording calls cancel', (tester) async {
     var cancelCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RecordingControllerWithCallbacks(
@@ -574,7 +418,6 @@ void main() {
 
     await tester.pump();
 
-    // Simulate pressing Escape
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
 
@@ -583,28 +426,13 @@ void main() {
 
   testWidgets('mode toggle switches between realtime and batch',
       (tester) async {
-    final mockRealtime = _MockRealtimeService();
-    when(mockRealtime.resolveRealtimeConfig).thenAnswer(
-      (_) async => (
-        provider: const _FakeProvider(),
-        model: const _FakeModel(),
-      ),
-    );
+    final mockRealtime = _realtimeServiceWithConfig();
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
+          _defaultRecorderOverride(),
           realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
         ],
       ),
@@ -612,64 +440,37 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Initially in batch mode: graphic_eq toggle + mic button
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     expect(find.byIcon(Icons.mic), findsOneWidget);
 
-    // Tap toggle to switch to realtime mode
     await tester.tap(find.byIcon(Icons.graphic_eq));
     await tester.pumpAndSettle();
 
-    // Now in realtime mode: mic toggle + graphic_eq button
     expect(find.byIcon(Icons.mic), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
   });
 
   testWidgets('text field has send action configured', (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
     await tester.pumpAndSettle();
 
-    // Verify the text field has correct textInputAction
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.textInputAction, TextInputAction.send);
-    // Verify onSubmitted is wired when canSend is true
     expect(textField.onSubmitted, isNotNull);
   });
 
   testWidgets('text field onSubmitted is null when canSend is false',
       (tester) async {
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: false,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
-        overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
-        ],
+      _wrap(
+        _inputArea(canSend: false),
+        overrides: [_defaultRecorderOverride()],
       ),
     );
 
@@ -680,28 +481,13 @@ void main() {
   });
 
   testWidgets('shows realtime mode toggle when available', (tester) async {
-    final mockRealtime = _MockRealtimeService();
-    when(mockRealtime.resolveRealtimeConfig).thenAnswer(
-      (_) async => (
-        provider: const _FakeProvider(),
-        model: const _FakeModel(),
-      ),
-    );
+    final mockRealtime = _realtimeServiceWithConfig();
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
-          chatRecorderControllerProvider
-              .overrideWith(ChatRecorderController.new),
+          _defaultRecorderOverride(),
           realtimeTranscriptionServiceProvider.overrideWithValue(mockRealtime),
         ],
       ),
@@ -709,32 +495,17 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Should show both mic and waveform toggle
     expect(find.byIcon(Icons.mic), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
   });
 
   testWidgets('mic tap in realtime mode calls startRealtime', (tester) async {
     var startRealtimeCalled = false;
-    final mockRealtime = _MockRealtimeService();
-    when(mockRealtime.resolveRealtimeConfig).thenAnswer(
-      (_) async => (
-        provider: const _FakeProvider(),
-        model: const _FakeModel(),
-      ),
-    );
+    final mockRealtime = _realtimeServiceWithConfig();
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _IdleControllerWithCallbacks(
@@ -752,10 +523,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.graphic_eq));
     await tester.pumpAndSettle();
 
-    // Tap the mic/graphic_eq button (now in realtime mode)
     // In realtime mode the filled button shows graphic_eq icon
-    find.byType(IconButton);
-    // Find the filled IconButton.filled — it has the graphic_eq icon
     await tester.tap(find.byIcon(Icons.graphic_eq).last);
     await tester.pumpAndSettle();
 
@@ -766,16 +534,8 @@ void main() {
       (tester) async {
     var cancelCalled = false;
     await tester.pumpWidget(
-      wrap(
-        InputArea(
-          controller: TextEditingController(),
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
-          onSendMessage: (_) {},
-        ),
+      _wrap(
+        _inputArea(),
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _RealtimeControllerWithCallbacks(
@@ -788,7 +548,6 @@ void main() {
 
     await tester.pump();
 
-    // Simulate pressing Escape during realtime recording
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
 
@@ -801,14 +560,9 @@ void main() {
     final controller = _TranscriptEmittingController();
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
+      _wrap(
+        _inputArea(
           controller: textController,
-          scrollController: ScrollController(),
-          isLoading: false,
-          canSend: true,
-          requiresModelSelection: false,
-          categoryId: 'cat',
           onSendMessage: (msg) => sentMessage = msg,
         ),
         overrides: [
@@ -819,12 +573,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Simulate a transcript being produced (e.g., after stopRealtime)
     controller.emitTranscript('Hello from realtime');
     await tester.pumpAndSettle();
 
     expect(sentMessage, 'Hello from realtime');
-    // Text field should be cleared after send
     expect(textController.text, isEmpty);
   });
 
@@ -835,14 +587,10 @@ void main() {
     final controller = _TranscriptEmittingController();
 
     await tester.pumpWidget(
-      wrap(
-        InputArea(
+      _wrap(
+        _inputArea(
           controller: textController,
-          scrollController: ScrollController(),
-          isLoading: false,
           canSend: false,
-          requiresModelSelection: false,
-          categoryId: 'cat',
           onSendMessage: (msg) => sentMessage = msg,
         ),
         overrides: [
@@ -853,16 +601,17 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Simulate a transcript being produced
     controller.emitTranscript('Transcript text');
     await tester.pumpAndSettle();
 
-    // Should NOT have sent a message
     expect(sentMessage, isNull);
-    // Should have filled the text controller instead
     expect(textController.text, 'Transcript text');
   });
 }
+
+// ---------------------------------------------------------------------------
+// Fake controllers
+// ---------------------------------------------------------------------------
 
 /// Test controller in recording state that tracks cancel/stop callbacks
 class _RecordingControllerWithCallbacks extends ChatRecorderController {
@@ -959,7 +708,8 @@ class _FakeModel implements AiConfigModel {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-/// Test controller that returns a processing state with optional partialTranscript
+/// Test controller that returns a processing state with optional
+/// partialTranscript
 class _ProcessingRecorderController extends ChatRecorderController {
   _ProcessingRecorderController({
     required String? partialTranscript,

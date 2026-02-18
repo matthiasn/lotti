@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
@@ -47,15 +48,63 @@ class _MockJournalPageController extends JournalPageController {
   }
 }
 
-void main() {
-  // Helper to set up test environment with adequate size
-  Future<void> setupTestWidget(WidgetTester tester, Widget child) async {
-    tester.view.physicalSize = const Size(800, 1200);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.view.reset());
-    await tester.pumpWidget(child);
-  }
+/// Pumps a [ChatModalPage] wrapped in the required providers and localization.
+///
+/// [selectedCategoryIds] controls which categories the mock journal page
+/// controller reports. [chatRepository] is included as an override when
+/// provided. [extraOverrides] allows injecting additional provider overrides
+/// (e.g. for chatSessionControllerProvider).
+Future<void> _pumpChatModalPage(
+  WidgetTester tester, {
+  required Set<String> selectedCategoryIds,
+  MockChatRepository? chatRepository,
+  List<Override> extraOverrides = const [],
+}) async {
+  tester.view.physicalSize = const Size(800, 1200);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() => tester.view.reset());
 
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        if (chatRepository != null)
+          chatRepositoryProvider.overrideWithValue(chatRepository),
+        journalPageScopeProvider.overrideWithValue(true),
+        journalPageControllerProvider(true).overrideWith(
+          () => _MockJournalPageController(selectedCategoryIds),
+        ),
+        ...extraOverrides,
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: ChatModalPage()),
+      ),
+    ),
+  );
+}
+
+/// Stubs [repo.createSession] for [categoryId] to return a dummy session.
+void _stubCreateSession(
+  MockChatRepository repo, {
+  required String categoryId,
+}) {
+  when(() => repo.createSession(categoryId: categoryId))
+      .thenAnswer((_) async => ChatSession(
+            id: 'test-session',
+            title: 'New Chat',
+            createdAt: DateTime(2024),
+            lastMessageAt: DateTime(2024),
+            messages: [],
+          ));
+}
+
+void main() {
   group('ChatModalPage', () {
     late MockChatRepository mockChatRepository;
     late MockLoggingService mockLoggingService;
@@ -64,7 +113,6 @@ void main() {
       mockChatRepository = MockChatRepository();
       mockLoggingService = MockLoggingService();
 
-      // Register mock services with GetIt
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
       }
@@ -76,73 +124,34 @@ void main() {
 
     testWidgets('displays category selection prompt when no category selected',
         (tester) async {
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pump();
 
-      // Check category selection prompt elements
       expect(find.byIcon(Icons.category_outlined), findsOneWidget);
       expect(find.text('Please select a single category'), findsOneWidget);
       expect(
-          find.text(
-              'The AI assistant needs a specific category context to help you with tasks'),
-          findsOneWidget);
+        find.text(
+          'The AI assistant needs a specific category context '
+          'to help you with tasks',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
         'displays category selection prompt when multiple categories selected',
         (tester) async {
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'cat1', 'cat2'}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {'cat1', 'cat2'},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pump();
 
-      // Check category selection prompt is shown
       expect(find.byIcon(Icons.category_outlined), findsOneWidget);
       expect(find.text('Please select a single category'), findsOneWidget);
     });
@@ -150,47 +159,16 @@ void main() {
     testWidgets(
         'displays RefactoredChatInterface when single category selected',
         (tester) async {
-      when(() => mockChatRepository.createSession(
-              categoryId: 'single-category-id'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+      _stubCreateSession(mockChatRepository, categoryId: 'single-category-id');
 
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'single-category-id'}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {'single-category-id'},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pump();
 
-      // Check RefactoredChatInterface is displayed
       expect(find.byType(ChatInterface), findsOneWidget);
-
-      // Verify no category selection prompt
       expect(find.byIcon(Icons.category_outlined), findsNothing);
       expect(find.text('Please select a single category'), findsNothing);
     });
@@ -198,212 +176,86 @@ void main() {
     testWidgets('passes correct categoryId to RefactoredChatInterface',
         (tester) async {
       const categoryId = 'test-category-123';
+      _stubCreateSession(mockChatRepository, categoryId: categoryId);
 
-      when(() => mockChatRepository.createSession(categoryId: categoryId))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
-
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{categoryId}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {categoryId},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pump();
 
-      // Find the RefactoredChatInterface widget
       final chatInterfaceWidget = tester.widget<ChatInterface>(
         find.byType(ChatInterface),
       );
-
-      // Verify categoryId is passed correctly
       expect(chatInterfaceWidget.categoryId, equals(categoryId));
     });
 
     testWidgets('uses SizedBox with 85% screen height constraint',
         (tester) async {
-      when(() => mockChatRepository.createSession(
-              categoryId: 'single-category-id'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
-
-      await setupTestWidget(
-        tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'single-category-id'}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+      _stubCreateSession(
+        mockChatRepository,
+        categoryId: 'single-category-id',
       );
 
+      await _pumpChatModalPage(
+        tester,
+        selectedCategoryIds: {'single-category-id'},
+        chatRepository: mockChatRepository,
+      );
       await tester.pumpAndSettle();
 
-      // Find the SizedBox constraint
       final sizedBox = tester.widget<SizedBox>(
         find.byType(SizedBox).first,
       );
 
-      // Get screen height
-      final screenHeight =
-          MediaQuery.of(tester.element(find.byType(ChatModalPage))).size.height;
-      final expectedHeight = screenHeight * 0.85;
-
-      expect(sizedBox.height, equals(expectedHeight));
+      final screenHeight = MediaQuery.of(
+        tester.element(find.byType(ChatModalPage)),
+      ).size.height;
+      expect(sizedBox.height, equals(screenHeight * 0.85));
     });
 
     testWidgets('responds to category selection changes', (tester) async {
-      // Test initial state with no categories
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pumpAndSettle();
 
-      // Should show category selection prompt
       expect(find.text('Please select a single category'), findsOneWidget);
       expect(find.byType(ChatInterface), findsNothing);
     });
 
     testWidgets('shows chat interface with single category selected',
         (tester) async {
-      // Test state with single category selected
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+      _stubCreateSession(mockChatRepository, categoryId: 'test-category');
 
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            chatRepositoryProvider.overrideWithValue(mockChatRepository),
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'test-category'}),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ChatModalPage(),
-            ),
-          ),
-        ),
+        selectedCategoryIds: {'test-category'},
+        chatRepository: mockChatRepository,
       );
-
       await tester.pumpAndSettle();
 
-      // Should show chat interface
       expect(find.text('Please select a single category'), findsNothing);
       expect(find.byType(ChatInterface), findsOneWidget);
     });
 
     testWidgets('ambient pulse overlay toggles with streaming state',
         (tester) async {
-      // Ensure LoggingService is available
       if (!GetIt.instance.isRegistered<LoggingService>()) {
         GetIt.instance.registerSingleton<LoggingService>(LoggingService());
       }
 
       // First with streaming=true
-      await setupTestWidget(
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'cat'}),
-            ),
-            chatSessionControllerProvider('cat')
-                .overrideWith(_StreamingChatController.new),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ChatModalPage()),
-          ),
-        ),
+        selectedCategoryIds: {'cat'},
+        extraOverrides: [
+          chatSessionControllerProvider('cat')
+              .overrideWith(_StreamingChatController.new),
+        ],
       );
       await tester.pump();
 
@@ -419,37 +271,24 @@ void main() {
         findsWidgets,
       );
 
-      // Rebuild with idle controller -> ensure app still builds (glow assertions
-      // skipped due to perpetual animation intricacies in tests)
-      await setupTestWidget(
+      // Rebuild with idle controller -> ensure app still builds
+      await _pumpChatModalPage(
         tester,
-        ProviderScope(
-          overrides: [
-            journalPageScopeProvider.overrideWithValue(true),
-            journalPageControllerProvider(true).overrideWith(
-              () => _MockJournalPageController(<String>{'cat'}),
-            ),
-            chatSessionControllerProvider('cat')
-                .overrideWith(_IdleChatController.new),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ChatModalPage()),
-          ),
-        ),
+        selectedCategoryIds: {'cat'},
+        extraOverrides: [
+          chatSessionControllerProvider('cat')
+              .overrideWith(_IdleChatController.new),
+        ],
       );
       await tester.pump();
     });
   });
 }
 
-// File-scope helper controllers for the ambient pulse test
+// ---------------------------------------------------------------------------
+// Fake controllers for the ambient pulse test
+// ---------------------------------------------------------------------------
+
 class _StreamingChatController extends ChatSessionController {
   @override
   ChatSessionUiModel build(String categoryId) {
