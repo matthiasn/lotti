@@ -6,9 +6,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   group('PromptFormController Model Validation', () {

@@ -5,7 +5,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late CorrectionCaptureService service;

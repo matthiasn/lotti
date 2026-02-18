@@ -1292,8 +1292,5 @@ void main() {
   });
 }
 
-// Mock DeviceLocation
+// Mock DeviceLocation — not available in central mocks
 class MockDeviceLocation extends Mock implements DeviceLocation {}
-
-// Mock OutboxService
-class MockOutboxService extends Mock implements OutboxService {}

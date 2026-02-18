@@ -15,9 +15,7 @@ import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
-class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockJournalDb extends Mock implements JournalDb {}
+import '../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -7,10 +7,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart'
+    show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart'
+    show labelsRepositoryProvider;
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -18,17 +20,11 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLabelsRepository extends Mock implements LabelsRepository {}
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockJournalRepository2 extends Mock implements JournalRepository {}
 
 class MockChecklistRepository2 extends Mock implements ChecklistRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   late ProviderContainer container;

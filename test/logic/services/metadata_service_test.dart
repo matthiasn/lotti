@@ -7,7 +7,7 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockVectorClockService extends Mock implements VectorClockService {}
+import '../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -20,9 +20,8 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {

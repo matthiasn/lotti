@@ -7,14 +7,17 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart'
+    show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart'
+    show journalRepositoryProvider;
+import 'package:lotti/features/labels/repository/labels_repository.dart'
+    show labelsRepositoryProvider;
+import 'package:lotti/features/tasks/repository/checklist_repository.dart'
+    show checklistRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
@@ -23,35 +26,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLabelsRepository extends Mock implements LabelsRepository {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
-
-class FakeAiConfigModel extends Fake implements AiConfigModel {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
-
-class FakeMetadata extends Fake implements Metadata {}
-
-class FakeTaskData extends Fake implements TaskData {}
 
 void main() {
   late UnifiedAiInferenceRepository repository;

@@ -15,7 +15,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../tasks/ui/checklists/checklists_widget_test.dart';
+import '../../../mocks/mocks.dart';
 
 class _MockJournalDb extends Mock implements JournalDb {}
 

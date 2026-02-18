@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockMaintenance extends Mock implements Maintenance {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockMaintenance mockMaintenance;

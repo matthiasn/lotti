@@ -42,16 +42,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../../mocks/mocks.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-class MockNavService extends Mock implements NavService {}
 
 class MockPlayer extends Mock implements Player {}
 

@@ -4,18 +4,15 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 const _uuid = Uuid();
 

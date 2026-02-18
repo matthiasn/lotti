@@ -15,11 +15,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
 import '../../../../../widget_test_utils.dart';
-
-/// Mock for EntitiesCacheService to provide category colors in tests.
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 /// Test category definitions with colors for chart rendering tests.
 final testCategories = {

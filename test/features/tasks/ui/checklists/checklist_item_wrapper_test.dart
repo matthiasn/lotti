@@ -15,13 +15,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 class MockChecklistItemController extends ChecklistItemController {
   MockChecklistItemController(

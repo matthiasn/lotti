@@ -24,10 +24,6 @@ import '../../../../../widget_test_utils.dart';
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
 // Test controller that provides a fixed state
 class TestAudioRecorderController extends AudioRecorderController {
   TestAudioRecorderController(this._testState);

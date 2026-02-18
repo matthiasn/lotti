@@ -9,20 +9,13 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
+import '../../../mocks/mocks.dart';
 
 /// Integration test for the full backfill flow.
 ///

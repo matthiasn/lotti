@@ -5,12 +5,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../test_utils.dart';
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
 
 void main() {
   group('ProviderPromptSetupService', () {

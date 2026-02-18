@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 // Generic listener class to track when providers notify their listeners
 class Listener<T> extends Mock {

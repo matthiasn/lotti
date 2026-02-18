@@ -19,6 +19,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart' hide MockNavService;
 import '../../../../test_helper.dart';
 
 class MockNavService extends Mock implements NavService {
@@ -29,8 +30,6 @@ class MockNavService extends Mock implements NavService {
     navigationHistory.add(path);
   }
 }
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

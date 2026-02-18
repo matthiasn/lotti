@@ -14,13 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb mockDb;

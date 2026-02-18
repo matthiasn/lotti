@@ -12,11 +12,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../mocks/mocks.dart';
 
 class Listener<T> extends Mock {
   void call(T? previous, T next);

@@ -11,8 +11,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockNotificationService extends Mock implements NotificationService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final mockJournalDb = MockJournalDb();

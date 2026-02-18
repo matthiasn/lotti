@@ -18,14 +18,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockTagsService extends Mock implements TagsService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
 class FakeHabitDefinitionLocal extends Fake implements HabitDefinition {}
 
 void main() {

@@ -9,8 +9,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
 void main() {
   late MockCategoryRepository mockRepository;
 

@@ -20,9 +20,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockChatRepository extends Mock implements ChatRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../../mocks/mocks.dart';
 
 /// Mock controller that returns a specific state based on selectedCategoryIds
 class _MockJournalPageController extends JournalPageController {

@@ -13,12 +13,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late MockUnifiedAiInferenceRepository mockRepository;

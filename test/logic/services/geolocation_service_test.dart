@@ -4,17 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../mocks/mocks.dart';
 
 class MockMetadataService extends Mock implements MetadataService {}
 

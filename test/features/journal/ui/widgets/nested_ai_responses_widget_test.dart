@@ -16,13 +16,8 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 // Test data
 final testAudioEntry = JournalAudio(

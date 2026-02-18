@@ -21,8 +21,6 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
 class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
 

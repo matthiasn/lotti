@@ -3,10 +3,11 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
@@ -14,8 +15,6 @@ class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 class MockClient extends Mock implements Client {}
 

@@ -12,7 +12,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockPlayer extends Mock implements Player {}
 

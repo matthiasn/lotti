@@ -24,13 +24,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 class MockInferenceRepo extends Mock implements InferenceRepositoryInterface {}
 

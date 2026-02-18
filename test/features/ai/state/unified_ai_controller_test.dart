@@ -27,12 +27,6 @@ import '../../../mocks/mocks.dart';
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
-
 void main() {
   late ProviderContainer container;
   final containersToDispose = <ProviderContainer>[];

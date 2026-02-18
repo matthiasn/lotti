@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter_quill/flutter_quill.dart'; // Import for QuillController
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,26 +46,12 @@ class Listener<T> extends Mock {
   void call(T? previous, T next);
 }
 
-// Create a Fake class for EntryText to use with registerFallbackValue
-class FakeEntryText extends Fake implements EntryText {}
-
-// Mock for EditorStateService
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-// Fake for QuillController
-class FakeQuillController extends Fake implements QuillController {}
-
-// Added FakeTaskData
-class FakeTaskData extends Fake implements TaskData {}
-
 // Added FakeEventData
 class FakeEventData extends Fake implements EventData {}
 
 // Mock for DirectTaskSummaryRefreshController
 class MockDirectTaskSummaryRefreshController extends Mock
     implements DirectTaskSummaryRefreshController {}
-
-class MockOutboxService extends Mock implements OutboxService {}
 
 class MockSmartTaskSummaryTrigger extends Mock
     implements SmartTaskSummaryTrigger {}
@@ -3099,5 +3084,3 @@ void main() {
     });
   });
 }
-
-class MockJournalRepository extends Mock implements JournalRepository {}

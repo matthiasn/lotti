@@ -3,9 +3,8 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../mocks/mocks.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;

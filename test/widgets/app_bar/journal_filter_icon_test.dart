@@ -13,10 +13,9 @@ import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../test_helper.dart';
 import '../../test_utils/fake_journal_page_controller.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late FakeJournalPageController fakeController;

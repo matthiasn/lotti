@@ -20,15 +20,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_helper.dart';
-
-class MockEditorStateService extends Mock implements EditorStateService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockLinkService extends Mock implements LinkService {}
 
 /// Builds a widget wrapped in a pushed Navigator route so that
 /// Navigator.of(context).pop() can be exercised during tests.

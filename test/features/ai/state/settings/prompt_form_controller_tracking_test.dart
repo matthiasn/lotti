@@ -8,9 +8,7 @@ import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
-
-// Mocks
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   late ProviderContainer container;

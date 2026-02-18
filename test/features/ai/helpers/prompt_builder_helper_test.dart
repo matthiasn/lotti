@@ -14,10 +14,8 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/services/task_summary_refresh_service.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -26,29 +24,21 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../labels/label_assignment_processor_test.dart' as label_test
-    show MockLabelsRepository;
 import '../test_utils.dart';
 
 // Mocks
-class MockAiInputRepository extends Mock implements AiInputRepository {}
-
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
 class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
 
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
-  late label_test.MockLabelsRepository mockLabelsRepository;
+  late MockLabelsRepository mockLabelsRepository;
 
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
     mockAiInputRepository = MockAiInputRepository();
-    mockLabelsRepository = label_test.MockLabelsRepository();
+    mockLabelsRepository = MockLabelsRepository();
 
     // Stub labels repository to return empty lists by default
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
@@ -278,7 +268,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-1'))
@@ -378,7 +368,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getJournalEntityById('audio-2'))
@@ -506,7 +496,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           checklistRepository: checklistRepository,
           journalRepository: MockJournalRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         task = Task(
@@ -1160,7 +1150,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() =>
@@ -1250,7 +1240,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getLinkedEntities(
@@ -1340,7 +1330,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() => mockJournalRepository.getLinkedEntities(
@@ -1405,7 +1395,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         // No linked task found
@@ -1520,7 +1510,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         when(() =>
@@ -1617,7 +1607,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         // No linked task
@@ -1670,7 +1660,7 @@ void main() {
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: MockChecklistRepository(),
-          labelsRepository: label_test.MockLabelsRepository(),
+          labelsRepository: MockLabelsRepository(),
         );
 
         // Simulate an error when finding linked task

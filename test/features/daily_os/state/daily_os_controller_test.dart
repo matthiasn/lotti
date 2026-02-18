@@ -14,7 +14,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockTimeService extends Mock implements TimeService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

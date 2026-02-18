@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 /// A simple wrapper that exposes the same [updateStream] getter as
 /// [UpdateNotifications], but without debouncing — so tests can verify

@@ -17,13 +17,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockChatRepository extends Mock implements ChatRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class FakeChatSession extends Fake implements ChatSession {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 /// Creates a test [ChatSession] with sensible defaults.
 ///

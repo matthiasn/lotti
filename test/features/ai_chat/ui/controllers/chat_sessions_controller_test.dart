@@ -9,11 +9,7 @@ import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockChatRepository extends Mock implements ChatRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class FakeChatSession extends Fake implements ChatSession {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   setUpAll(() {

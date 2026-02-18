@@ -26,6 +26,7 @@ import 'package:riverpod/riverpod.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 import '../../../helpers/path_provider.dart';
+import '../../../mocks/mocks.dart';
 
 class MockSystemClipboard extends Mock implements SystemClipboard {}
 
@@ -34,26 +35,6 @@ class MockClipboardReader extends Mock implements ClipboardReader {}
 class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
 
 class MockDataReaderFile extends Mock implements DataReaderFile {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockFts5Db extends Mock implements Fts5Db {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockTagsService extends Mock implements TagsService {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockTimeService extends Mock implements TimeService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 class MockAutomaticImageAnalysisTrigger extends Mock
     implements AutomaticImageAnalysisTrigger {}

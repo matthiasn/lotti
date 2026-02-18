@@ -16,10 +16,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
 void main() {
   group('CreateEntryModal', () {
     late MockNavService mockNavService;

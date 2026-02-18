@@ -19,24 +19,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
-class MockLabelsRepository extends Mock implements LabelsRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-// Fallback value for AiConfigInferenceProvider
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
 
 void main() {
   setUpAll(() {

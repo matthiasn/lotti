@@ -8,8 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../logic/health_import_test.dart';
-import '../../../../mocks/mocks.dart' hide MockJournalDb;
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {

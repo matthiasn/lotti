@@ -5,7 +5,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockAudioRecorder extends Mock implements AudioRecorder {}
 

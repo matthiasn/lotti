@@ -10,17 +10,14 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart'
+    show categoryRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}

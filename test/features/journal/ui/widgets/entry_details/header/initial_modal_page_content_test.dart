@@ -44,8 +44,6 @@ class _TestEntryController extends EntryController {
   }
 }
 
-class MockTagsService extends Mock implements TagsService {}
-
 JournalEntity textEntry({List<String>? labelIds}) {
   final now = DateTime(2023);
   return JournalEntity.journalEntry(

@@ -27,24 +27,10 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
+import '../../../mocks/mocks.dart';
 
 class MockTaskSummaryRefreshService extends Mock
     implements TaskSummaryRefreshService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockNotificationService extends Mock implements NotificationService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockOutboxService extends Mock implements OutboxService {}
-
-class MockTimeService extends Mock implements TimeService {}
 
 /// Provider to capture a real Ref for testing.
 /// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.

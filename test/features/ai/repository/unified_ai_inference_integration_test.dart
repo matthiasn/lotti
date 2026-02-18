@@ -11,15 +11,18 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart'
+    show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart'
+    show journalRepositoryProvider;
+import 'package:lotti/features/labels/repository/labels_repository.dart'
+    show labelsRepositoryProvider;
+import 'package:lotti/features/tasks/repository/checklist_repository.dart'
+    show checklistRepositoryProvider;
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
@@ -28,6 +31,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 /// Integration test to verify that concurrent AI processing and user modifications
@@ -38,40 +42,12 @@ import '../test_utils.dart';
 /// 2. User modifies the task during AI processing
 /// 3. AI completes and uses current task state (not stale captured state)
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
-class MockAiInputRepository extends Mock implements AiInputRepository {}
-
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
-
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-// TODO: Add integration tests that exercise label repository methods
-// (getAllLabels, getLabelUsageCounts, buildLabelTuples) and remove this
-// unused mock once those tests are implemented.
-class MockLabelsRepository extends Mock implements LabelsRepository {}
-
 class MockDirectory extends Mock implements Directory {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
-
-class FakeAiConfigModel extends Fake implements AiConfigModel {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
-
-class FakeMetadata extends Fake implements Metadata {}
-
-class FakeTaskData extends Fake implements TaskData {}
 
 class FakeAiResponseData extends Fake implements AiResponseData {}
 

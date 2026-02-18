@@ -7,15 +7,11 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockSyncDatabase extends Mock implements SyncDatabase {}
-
-class MockVectorClockService extends Mock implements VectorClockService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

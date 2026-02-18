@@ -11,13 +11,8 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
-
-class MockTagsService extends Mock implements TagsService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   group('DashboardItemCard', () {

@@ -21,6 +21,8 @@ export 'package:lotti/features/ai/state/consts.dart';
 export 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
     show aiConfigByTypeControllerProvider;
 export 'package:lotti/l10n/app_localizations.dart';
+// Re-export MockAiConfigRepository from central mocks for existing consumers
+export '../../mocks/mocks.dart' show MockAiConfigRepository;
 
 /// Provider to capture a real Ref for testing.
 /// In Riverpod 3.x, Ref is sealed and cannot be mocked directly.
@@ -35,8 +37,6 @@ export 'package:lotti/l10n/app_localizations.dart';
 final testRefProvider = Provider<Ref>((ref) => ref);
 
 /// Shared mock classes for AI feature tests
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
 class MockAiConfigByTypeController extends AiConfigByTypeController {
   MockAiConfigByTypeController(this._configs);
 

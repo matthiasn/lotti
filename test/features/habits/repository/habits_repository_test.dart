@@ -10,9 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -333,5 +331,3 @@ void main() {
     });
   });
 }
-
-class MockHabitsRepository extends Mock implements HabitsRepository {}

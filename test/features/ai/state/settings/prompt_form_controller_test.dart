@@ -6,14 +6,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/prompt_form_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mocks
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../../mocks/mocks.dart';
 
 class MockAiConfigPrompt extends Mock implements AiConfigPrompt {}
-
-// Fallback class for AiConfigPrompt if needed for deeper interactions,
-// but for `any()` a simple instance from the mock is usually enough.
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late ProviderContainer container;

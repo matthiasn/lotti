@@ -26,12 +26,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-// Mocks
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
@@ -110,12 +106,6 @@ class MockConversationRepository extends ConversationRepository {
 }
 
 class MockConversationManager extends Mock implements ConversationManager {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 // ignore: prefer_const_constructors
 final _uuid = Uuid();

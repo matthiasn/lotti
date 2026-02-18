@@ -39,13 +39,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
+
 class MockBuildContext extends Mock implements BuildContext {}
-
-class MockTagsService extends Mock implements TagsService {}
-
-class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
   group('SettingsLocation', () {

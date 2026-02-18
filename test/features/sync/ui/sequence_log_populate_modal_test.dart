@@ -11,14 +11,10 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockLoggingDb extends Mock implements LoggingDb {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -26,7 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 import 'package:record/record.dart' as rec;
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}

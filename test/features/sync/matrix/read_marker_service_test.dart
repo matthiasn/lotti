@@ -1,11 +1,12 @@
 // ignore_for_file: unnecessary_lambdas, avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart' as pf;
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockClient extends Mock implements Client {}
 
@@ -14,8 +15,6 @@ class MockRoom extends Mock implements Room {}
 class MockTimeline extends Mock implements Timeline {}
 
 class MockLogging extends Mock implements LoggingService {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockEvent extends Mock implements Event {}
 

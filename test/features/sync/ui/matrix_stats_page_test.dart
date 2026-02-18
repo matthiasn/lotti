@@ -10,9 +10,8 @@ import 'package:lotti/features/sync/ui/matrix_stats_page.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class MockMatrixService extends Mock implements MatrixService {}
 
 class _FakeMatrixStatsController extends MatrixStatsController {
   _FakeMatrixStatsController(this.stats);

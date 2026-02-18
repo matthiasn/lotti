@@ -2,11 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../../mocks/mocks.dart';
 
 void main() {
   late Directory tempDir;

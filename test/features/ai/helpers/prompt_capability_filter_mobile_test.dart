@@ -4,12 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 void main() {
   late MockAiConfigRepository mockRepo;

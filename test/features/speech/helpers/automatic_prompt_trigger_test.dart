@@ -15,11 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockCategoryRepository extends Mock implements CategoryRepository {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}

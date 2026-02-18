@@ -23,9 +23,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockJournalRepository extends Mock implements JournalRepository {}
 
 /// Mock ConversationRepository that extends the real class.
 /// In Riverpod 3, Notifier classes can't be mocked with `Mock implements`
@@ -99,14 +98,6 @@ class MockConversationRepository extends ConversationRepository {
 }
 
 class MockConversationManager extends Mock implements ConversationManager {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockLabelsRepository extends Mock implements LabelsRepository {}
 
 class FakeInferenceRepo extends Fake implements InferenceRepositoryInterface {}
 

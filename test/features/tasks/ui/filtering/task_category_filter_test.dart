@@ -16,6 +16,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
 class FakeJournalPageController extends JournalPageController {
@@ -45,8 +46,6 @@ class FakeJournalPageController extends JournalPageController {
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late FakeJournalPageController fakeController;

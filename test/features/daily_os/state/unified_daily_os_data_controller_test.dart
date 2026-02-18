@@ -19,19 +19,9 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class MockDayPlanRepository extends Mock implements DayPlanRepository {}
-
-class MockTimeService extends Mock implements TimeService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

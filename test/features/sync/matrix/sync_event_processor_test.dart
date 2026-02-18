@@ -10,12 +10,9 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -25,7 +22,6 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -33,21 +29,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
 class MockEvent extends Mock implements Event {}
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class MockLoggingService extends Mock implements LoggingService {}
-
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
-
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
-
-class MockSettingsDb extends Mock implements SettingsDb {}
 
 class MockMatrixRoom extends Mock implements Room {}
 

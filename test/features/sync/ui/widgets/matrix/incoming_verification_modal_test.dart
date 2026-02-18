@@ -12,9 +12,8 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockMatrixService extends Mock implements MatrixService {}
 
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 

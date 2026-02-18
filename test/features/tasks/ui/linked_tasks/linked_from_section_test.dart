@@ -8,10 +8,9 @@ import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_card.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockJournalRepository extends Mock implements JournalRepository {}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);

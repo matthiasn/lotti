@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 1 Complete — Ready for Phase 2
+**Status:** Phase 2 In Progress — Steps 4-5 Done, Steps 6-8 Remaining
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -41,6 +41,42 @@
 - Analyzer: zero issues
 - Formatter: zero changes needed in lib/ and test/
 - All affected tests pass (22 timeout tests + 3 merged client_runner tests)
+
+### Phase 2a: Expand Central Mocks & Fallbacks (Steps 4-5) — DONE
+
+**Infrastructure files updated:**
+- `test/mocks/mocks.dart` — Added 10 new repository mock classes + 5 new Fake classes:
+  - Mocks: `MockAiConfigRepository`, `MockJournalRepository`, `MockChecklistRepository`, `MockCategoryRepository`, `MockLabelsRepository`, `MockAiInputRepository`, `MockChatRepository`, `MockTaskSummaryRepository`, `MockHabitsRepository`, `MockRatingRepository`
+  - Fakes: `FakeAiConfigPrompt`, `FakeAiConfigModel`, `FakeAiConfigInferenceProvider`, `FakeChatSession`, `FakeChecklistItemData`
+- `test/helpers/fallbacks.dart` — Expanded `registerAllFallbackValues()` with 21 fallback values (was 4)
+- `test/features/ai/test_utils.dart` — Removed duplicate `MockAiConfigRepository`, added re-export from central mocks
+
+**Test files migrated (inline mocks → central imports) — ~160 files across all feature directories:**
+
+| Round | Directories | Files | Tests Verified |
+|-------|-------------|------:|---------------:|
+| 1 (batches 1-9) | `ai/helpers`, `ai/repository`, `ai/functions`, `ai/state`, `ai_chat`, `categories`, `labels` | ~65 | 1,282 |
+| 2 (batches 10-11) | `ai/helpers` (remaining), `ai/services`, `ai/integration`, `ai/util`, `ai/ui` (remaining) | ~21 | 2,714 (full ai/) |
+| 3 | `journal/` (state, ui, repository) | ~14 | 799 |
+| 4 | `tasks/`, `speech/`, `habits/`, `ratings/`, `checklist/` | ~29 | 1,311 |
+| 5 | `daily_os/`, `sync/`, `settings/`, `theming/` | ~30+ | 2,055 |
+| 6 | `logic/`, `services/`, `widgets/`, `database/`, `beamer/` | ~28 | 1,982 |
+| **Total** | **All feature directories** | **~160** | **8,861** |
+
+**Remaining inline mocks:** Some files intentionally keep inline mocks where:
+- The mock has custom method overrides (e.g., gamey card tests)
+- The mock is not in the central file (feature-specific mocks like `MockPromptCapabilityFilter`)
+- Private mock classes (`_MockX`) used for encapsulation
+
+**Steps 6-8 not yet started:**
+- Step 6: GetIt test helper centralization
+- Step 7: Test data factory expansion
+- Step 8: Widget helper consolidation
+
+### Phase 2a Verification
+- Analyzer: zero issues across entire `test/` and `lib/`
+- All 8,861 tests pass across all migrated directories
+- No regressions detected
 
 ---
 

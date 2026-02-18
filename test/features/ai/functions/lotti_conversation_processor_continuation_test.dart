@@ -9,17 +9,13 @@ import 'package:lotti/features/ai/functions/lotti_checklist_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockAutoChecklistService extends Mock implements AutoChecklistService {}
-
-class MockChecklistRepository extends Mock implements ChecklistRepository {}
 
 class MockConversationManager extends Mock implements ConversationManager {}
 

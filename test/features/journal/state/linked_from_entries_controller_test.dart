@@ -9,9 +9,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalRepository extends Mock implements JournalRepository {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../mocks/mocks.dart';
 
 class MockLinkedFromEntriesController extends LinkedFromEntriesController {
   MockLinkedFromEntriesController(this._entities);

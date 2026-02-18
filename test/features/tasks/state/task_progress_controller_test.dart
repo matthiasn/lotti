@@ -13,12 +13,10 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {}
-
-class MockTimeService extends Mock implements TimeService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 // This matches the signature of the getter linkedFrom in TimeService
 class MockTask extends Mock implements Task {

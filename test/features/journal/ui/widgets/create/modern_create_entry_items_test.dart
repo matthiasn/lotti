@@ -29,10 +29,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockEntryCreationService extends Mock implements EntryCreationService {}
 
 class FakeBuildContext extends Fake implements BuildContext {}
