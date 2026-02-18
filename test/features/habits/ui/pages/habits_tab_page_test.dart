@@ -130,7 +130,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
 
       expect(
         find.text(habitFlossing.name),
@@ -141,20 +141,20 @@ void main() {
       expect(searchButtonFinder, findsOneWidget);
 
       await tester.tap(searchButtonFinder);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
 
       final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
       expect(timeSpanButtonFinder, findsOneWidget);
 
       await tester.tap(timeSpanButtonFinder);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
 
       final habitCategoryFilterFinder =
           find.byKey(const Key('habit_category_filter'));
       expect(habitCategoryFilterFinder, findsOneWidget);
 
       await tester.tap(habitCategoryFilterFinder);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
     });
 
     testWidgets(

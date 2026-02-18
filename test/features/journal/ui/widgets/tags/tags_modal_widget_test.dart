@@ -233,7 +233,7 @@ void main() {
       final searchFieldFinder = find.byType(CupertinoTextField);
       await tester.enterText(searchFieldFinder, newTag.tag);
       await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
 
       verify(() => mockJournalDb.upsertTagEntity(any())).called(1);
       verify(() => mockPersistenceLogic.updateMetadata(any())).called(1);

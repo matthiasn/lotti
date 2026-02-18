@@ -1,8 +1,46 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Analysis Complete / Awaiting Approval
+**Status:** Phase 1 Complete — Ready for Phase 2
 **Scope:** 774 test files, 332K lines of test code
+
+---
+
+## Progress Log
+
+### Phase 0: Update AGENTS.md — DONE
+- Added three subsections to `AGENTS.md` under Testing Guidelines:
+  - **Test Infrastructure Rules** — centralized mocks, fallbacks, GetIt helpers, widget helpers, test data factories, 1:1 file mapping
+  - **Test Quality Rules** — meaningful assertions, no copy-paste permutations, no constructor smoke tests, balanced mock-to-test ratio
+  - **Async & Performance Rules** — no real waits, prefer `pump` over `pumpAndSettle`, use `fakeAsync`, deterministic dates
+- Strengthened Implementation Discipline cross-reference
+
+### Phase 1a: Delete empty/orphaned files — DONE
+- Deleted `test/themes/themes_service_test.dart` (empty — group with setup but zero test cases)
+- Deleted `test/utils/wait.dart` (unused `Future.delayed` utility, confirmed no callers)
+- **Not deleted** (reclassified as consolidation candidates for Phase 3):
+  - `test/features/ai/model/prompt_tracking_test.dart` — has real tests, but `prompt_form_state_test.dart` already exists
+  - `test/features/ai/state/settings/prompt_tracking_test.dart` — has real tests, but `prompt_form_controller_tracking_test.dart` already exists
+
+### Phase 1b: Fix explicit long timeouts — DONE
+- `test/.../tags_modal_widget_test.dart:236` — removed 5s explicit timeout → default `pumpAndSettle()`
+- `test/.../habits_tab_page_test.dart` — removed 4x 2s explicit timeouts → default `pumpAndSettle()`
+- `test/.../analog_vu_meter_test.dart` — removed 2x 2s explicit timeouts → default `pumpAndSettle()`
+- `test/.../unified_ai_popup_menu_test.dart:679` — kept 5ms `Future.delayed` (intentional async race-condition test, negligible perf impact)
+- All 22 affected tests pass
+
+### Phase 1c: Delete duplicate test files — DONE
+- **Merged then deleted:** `test/sync/client_runner_test.dart` (1 unique test merged into `test/features/sync/client_runner_test.dart`, which now has all 3 tests passing)
+- **Deleted:** `test/features/sync/matrix/ui/metrics_section_test.dart` (subset of comprehensive test at correct location; only unique test was a low-value `findsOneWidget` check for `dbEntryLinkNoop`)
+- Removed empty directories: `test/sync/`, `test/features/sync/matrix/ui/`
+- **Deferred to Phase 3** (non-overlapping tests, need proper merge):
+  - `test/features/settings/ui/advanced/maintenance_page_test.dart` (87 lines, tests hint reset)
+  - `test/features/settings/ui/pages/maintenance_page_test.dart` (230 lines, tests DB deletion)
+
+### Verification
+- Analyzer: zero issues
+- Formatter: zero changes needed in lib/ and test/
+- All affected tests pass (22 timeout tests + 3 merged client_runner tests)
 
 ---
 
@@ -211,7 +249,7 @@ mandates fake time but compliance is low for service/controller tests.
 
 ## Implementation Plan
 
-### Phase 0: Update AGENTS.md Testing Guidance (First)
+### Phase 0: Update AGENTS.md Testing Guidance — DONE
 
 **Goal:** Prevent regressions by codifying the lessons from this analysis into AI agent
 instructions. Every future test written by an AI agent should follow these rules from the
@@ -292,7 +330,7 @@ a cross-reference:
 all future AI-generated tests follow the new rules. It is zero-risk — it only changes
 documentation, not code.
 
-### Phase 1: Quick Wins (Immediate, Low Risk)
+### Phase 1: Quick Wins — DONE
 
 **Goal:** Remove dead weight and fix the most obvious violations.
 
