@@ -19,6 +19,7 @@ Constraints:
 - Do not model history as a single growing list/blob.
 - Keep sync payload incremental and bandwidth efficient.
 - Keep human-authored journal content and AI-derived agent state in separate persistence domains.
+- Enforce `NEED_TO_KNOW` data minimization across all cross-boundary transfers (handoff, spawn, provider calls): share only the minimum required fields.
 
 ## Current System Findings (from code exploration)
 
@@ -229,6 +230,8 @@ Add a dedicated execution layer:
 - `AgentToolRegistry`: declarative catalog (`name`, schema, capability, risk level, handler)
 - `AgentCapabilityProfile`: per-agent-kind allowlist (`gym_coach`, `planner`, `strategy`, ...)
 - `AgentToolExecutor`: validates schema, enforces capabilities, executes handlers, emits notifications, records results
+- `AgentModelAccessResolver`: resolves allowed provider/model tuples by (`agentKind`/`agentId`, `categoryId`)
+- `AgentEgressPolicyGuard`: deny-by-default network gate; only provider-gateway egress is permitted
 - `AgentToolResult`: normalized success/error payload for memory and retry logic
 - `AgentToolContractSpec` (companion artifact): source-of-truth tool I/O, permissions, and side effects
 
@@ -258,6 +261,7 @@ Required fields per tool entry (minimum):
 - `scopeRules` (category enforcement)
 - `sideEffects` (entity types + notification tokens)
 - `riskLevel`
+- `dataMinimizationPolicyRef` (outbound field allowlist/redaction policy)
 
 Validation requirements:
 
@@ -353,6 +357,42 @@ Core rule: every read/write tool execution is scoped by `Agent.allowedCategoryId
 - scope violations return structured tool errors (`errorCode: "out_of_scope"`) and append a `toolResult` message
 
 This avoids retrofitting every query path later and makes category safety a foundation concern.
+
+### 4.1.3 Provider/model access and network egress policy
+
+Core rule: agents have no arbitrary network capability.
+
+- all outbound network calls from agent runs must go through a single provider gateway path.
+- gateway enforces deny-by-default egress: if destination is not a configured model-provider endpoint, request is blocked.
+- each model-inference request must carry `agentId`, `agentKind`, and effective `categoryId`.
+- policy resolver must allow the tuple (`agent`, `category`, `provider`, `model`) before execution.
+- missing/denied policy returns structured errors (`model_not_allowed`, `provider_not_allowed`, `network_denied`) and appends `toolResult`.
+- provider/model selection is user-controlled; system must not auto-switch providers/models without user action.
+- UI must present provider privacy implications before activation (for example training/retention/jurisdiction metadata, as available from configured provider policy data).
+- explicit user confirmation is required per (`provider`, `model`, `policyVersion`) before first inference and again when policy metadata/version changes.
+- missing confirmation fails closed with structured error (`privacy_confirmation_required`) and no outbound request.
+- outbound provider payload must be produced by a tool-specific `NEED_TO_KNOW` projection; full thread/journal/memory dumps are forbidden by default.
+- foundation scope explicitly excludes arbitrary HTTP/fetch tools and arbitrary host access.
+- provider credentials/secrets are never stored in `agent.sqlite`, `db.sqlite`, sync payloads, or agent message content.
+- provider credentials are resolved via OS secure credential storage (host keychain/secure store) through a dedicated `SecretProvider`.
+- runtime only stores stable secret references (for example `secretRefId`), not raw secret material.
+- if secure store is unavailable or locked, provider calls fail closed with structured error (`secret_unavailable`).
+
+Why this matters:
+
+- enforces least-privilege model usage by domain/category.
+- prevents accidental or prompt-induced network exfiltration through ungoverned endpoints.
+- prevents credential leakage through persistence, sync, and trace surfaces.
+
+### 4.1.4 NEED_TO_KNOW boundary policy (handoff/spawn/provider)
+
+Guiding principle: every boundary crossing uses explicit minimal payload projection.
+
+- boundary types covered: `agent_to_agent_handoff`, `agent_spawn_input`, `provider_inference_request`.
+- each boundary type must define an allowlist schema of permitted fields; non-allowlisted fields are dropped.
+- projections are built from references (`inputRefs`) and explicit user-selected attachments, not implicit full-context expansion.
+- for cross-provider tools (for example image generation), request payload includes only required generation arguments and explicitly attached assets; unrelated task history, journals, open loops, and reports are excluded.
+- policy violations fail closed (`overshared_payload_blocked`) and are recorded in local run traces.
 
 ### 4.2 Tool catalog (current vs planned)
 
@@ -966,12 +1006,30 @@ Immediate next step:
   - require pass on high-risk policy tests before enabling new tool handlers.
 - Define runtime observability contract:
   - per-run trace model (`runKey`, wake reason, tool calls, policy decisions, retries, costs, latency).
-  - operator-facing diagnostics for failed/partial runs and replay attempts.
+  - user-local diagnostics for failed/partial runs and replay attempts (no operator/developer access path).
+  - observability artifacts remain in the user data realm and are never streamed to remote telemetry endpoints by default.
 - Define policy/safety enforcement layer:
   - risk-tiered tool execution policy (`low`, `medium`, `high`) with confirmation requirements.
   - per-agent/day budget limits (token/cost/runtime/tool-call caps).
   - standardized denial/error codes (`out_of_scope`, `confirmation_required`, `budget_exceeded`, `unsafe_target`).
   - input hardening pipeline for prompt-injection and untrusted content boundaries.
+  - provider/model access policy by (`agent`, `category`) with explicit allowlists.
+  - deny-by-default network egress policy: only configured model-provider gateway endpoints allowed.
+- Define secret-management contract:
+  - secrets for model providers are stored in host secure credential storage (for example iOS/macOS Keychain) via `SecretProvider`.
+  - agent-domain persistence/sync/logging must store only secret references, never raw secret values.
+  - secret lifecycle supports create/update/revoke, and provider execution fails closed when secret access is unavailable.
+  - platform capability matrix must be explicit (iOS/macOS sandbox+keychain baseline; fallback behavior on other platforms is deny-by-default).
+- Define provider privacy disclosure + consent contract:
+  - provider/model choice remains user-controlled; no automatic provider/model switching.
+  - UI must disclose provider privacy implications before enablement and capture explicit user confirmation.
+  - consent receipts are local records keyed by (`provider`, `model`, `policyVersion`, `confirmedAt`).
+  - inference is blocked until confirmation exists for the active provider/model policy version.
+- Define `NEED_TO_KNOW` outbound data-minimization contract:
+  - handoff/spawn/provider boundary payloads must use typed projection allowlists.
+  - boundary projections are capability- and category-aware, and may include only fields required for the requested operation.
+  - high-risk/cross-provider calls (for example image generation on a different provider) require strict minimal payload projection and explicit attachment-based expansion only.
+  - oversharing attempts are blocked with structured error (`overshared_payload_blocked`).
 - Define human control primitives:
   - pause/resume agent, cancel run, replay run, re-run with explicit user override.
   - explicit approval workflow for high-risk writes.
@@ -988,11 +1046,13 @@ Immediate next step:
 - Define multi-agent handoff protocol:
   - typed handoff artifact (for example attention request / planning request), not free-form negotiation by default.
   - deterministic arbitration policy when agents disagree.
+  - handoff payload follows `NEED_TO_KNOW` projection rules; no full-thread/memory transfer by default.
 - Define agent spawn protocol (orchestrator-mediated, not free-form):
   - agents can only emit typed `SpawnRequest`; only the orchestrator can admit/reject and instantiate child runs.
   - `SpawnRequest` contract includes at least: `spawnRequestId`, `parentAgentId`, `parentRunKey`, `requestedAgentKind`, `goal`, `inputRefs`, `allowedCategoryIds`, `allowedTools`, `riskTier`, `priority`, `ttl`, `maxRuntime`, `maxSteps`, `costBudget`, `tokenBudget`, `requiredApprovals`, `successCriteria`, and `onComplete` strategy.
   - admission policy is deny-by-default and enforces depth limits, per-parent and global concurrency limits, per-day budget limits, cooldown windows, and kill-switch state.
   - child runs always execute under their own policy envelope; parent agents cannot bypass child tool/risk constraints.
+  - child input context is projected under `NEED_TO_KNOW`; spawn does not inherit parent full memory/transcript implicitly.
   - parent/child lineage and spawn decisions (`approved`/`denied` + reason) are persisted and visible in run traces/replay.
   - rollout remains staged: handoff-only first; spawn enabled later per agent kind behind explicit feature flags.
 - Define reliability SLOs and operations:
@@ -1001,7 +1061,12 @@ Immediate next step:
 - Define incident control and emergency stop:
   - global agent kill switch (all agents), prominently surfaced in-app (top-level quick action + settings), plus per-agent and high-risk-tool-class kill switches.
   - kill-switch semantics are explicit: immediate stop for new wake/job enqueue, immediate block on mutating tool execution, and deterministic handling of in-flight runs.
-  - operator incident-severity playbook with containment, rollback, replay, and postmortem requirements.
+  - local incident-severity playbook with containment, rollback, replay, and postmortem requirements.
+- Document explicit platform-security baseline and deferred encryption gap:
+  - current foundation does not introduce app-managed at-rest encryption for `agent.sqlite`.
+  - temporary trust assumption: host/device security baseline is required (for example full-disk encryption enabled by user).
+  - platform note: iOS/macOS app sandbox boundaries are part of current containment assumptions.
+  - follow-up backlog must define app-managed encryption/key lifecycle if threat model requires protection against local disk extraction beyond host guarantees.
 
 Exit criteria:
 
@@ -1015,6 +1080,12 @@ Exit criteria:
 - emergency-stop controls (`global`, `per-agent`, `tool-class`) are tested, prominently accessible, and operationally documented.
 - spawn protocol contract and admission-policy tests are in place; recursive/unbounded spawning is blocked.
 - spawn lineage is queryable in observability traces and deterministic replay.
+- provider/model access policy and egress guard are enforced and covered by policy tests.
+- platform-security assumptions and deferred at-rest encryption gap are documented and visible in implementation notes.
+- secret-management contract is defined and validated (no raw secrets persisted/synced/logged; secure-store access required for provider calls).
+- provider privacy implications are shown in UI and explicit confirmation gates are enforced for provider/model usage.
+- observability storage/diagnostics remain user-local with no remote telemetry upload path by default.
+- `NEED_TO_KNOW` boundary projection rules are enforced for handoff/spawn/provider payloads and validated in tests.
 - rollout/rollback runbooks exist and are validated in dry runs.
 
 ## Phase 0A - Schema and persistence primitives
@@ -1032,6 +1103,13 @@ Exit criteria:
 - Add cross-domain source-reference model (`agent_source_refs`) for journal/task IDs.
 - Add schema-versioned wrapper serialization and extension-field validation rules.
 - Add guardrails so new agent internals/reports are not persisted through `JournalEntity` paths.
+- Add persistence for provider/model access policy mappings
+  (agent-kind/agent-id + category -> allowed provider/model tuples).
+- Add persistence for provider credential references (for example `secretRefId` per provider/account context), with explicit prohibition on storing raw secret material.
+- Add persistence for provider privacy policy metadata and local user confirmation receipts
+  (`provider`, `model`, `policyVersion`, `confirmedAt`).
+- Add persistence/config for boundary projection policies
+  (`boundaryType`, `operationKey`, `allowedFields`, `redactionRules`, `policyVersion`).
 
 Exit criteria:
 
@@ -1041,6 +1119,7 @@ Exit criteria:
 - no untyped persistent `JsonMap` fields remain in `Agent`, `AgentState`, or `AgentMessage` (except wrapper `extension` maps).
 - agent-domain persistence runs through `agent.sqlite` and does not depend on journal-table storage for agent internals/reports.
 - new agent internal/report artifacts are not created as `JournalEntity` records.
+- provider credential persistence stores only `secretRefId` metadata; raw secrets are absent from DB rows and sync payload serializers.
 
 ## Phase 0B - Contracts and enforcement
 
@@ -1048,6 +1127,10 @@ Exit criteria:
 - Define token classification contract (`semanticKey`, `subtypeToken`, `entityId`) and subscription index behavior.
 - Define and test per-slot timestamp metadata for `slots` merge.
 - Add `Agent.allowedCategoryIds` enforcement in tool/query execution paths.
+- Define and test provider/model access contract and network-egress guard behavior.
+- Define and test secret-management contract (`SecretProvider` integration, `secretRefId` handling, fail-closed behavior when secrets unavailable).
+- Define and test provider privacy-confirmation contract (`privacy_confirmation_required`, policy-version re-confirmation).
+- Define and test `NEED_TO_KNOW` projection contract for handoff/spawn/provider boundaries.
 - Define interaction mode contracts (`autonomous`, `interactive`, `hybrid`) and `userInitiated` wake job schema.
 - Define deterministic enqueue-time `runKey`/`threadId` generation for all wake reasons.
 - Add persisted wake-run log contract and replay behavior.
@@ -1065,6 +1148,8 @@ Exit criteria:
 - `AgentToolContractSpec` exists, validates against schema, and covers initial tool set with I/O and permission scopes.
 - parity test enforces one-to-one alignment between registry tools and spec entries.
 - wrapper schema invariants (`AgentConfig`/`AgentSlots`/`AgentMessageMetadata`) are validated with migration and round-trip tests.
+- secret-management invariants are validated (`secretRefId` only in persistence, no raw secrets in payloads/logs, fail-closed on secure-store lookup failures).
+- provider privacy-confirmation invariants are validated (inference blocked until confirmation receipt exists for active `policyVersion`).
 
 ## Phase 1 - Alertness foundation
 
@@ -1137,6 +1222,11 @@ Exit criteria:
   `upsert_day_plan_blocks`, `get_ratings_summary`.
 - Enforce `operationId` idempotency and `previewOnly` on high-risk handlers.
 - Enforce `allowedCategoryIds` scope on every tool read/write path.
+- Enforce provider/model access policy in inference path for every run context (`agent`, `category`).
+- Resolve provider credentials through `SecretProvider` (host secure store) at call time; never read secrets from persisted agent/journal records.
+- Enforce provider privacy-confirmation gate (`provider`, `model`, `policyVersion`) before any inference call.
+- Enforce boundary projection policy (`NEED_TO_KNOW`) for handoff/spawn/provider payload assembly.
+- Enforce deny-by-default network egress guard so no arbitrary host access is possible.
 - Support interactive `userInitiated` runs in tool execution path (Pomodoro-style conversational sessions).
 - Emit explicit `UpdateNotifications` tokens from all new agent-invoked mutations.
 
@@ -1160,8 +1250,14 @@ Unit:
 - tool schema validation, capability gating, and idempotency (`operationId`) behavior
 - task-resolution confidence thresholds and disambiguation responses
 - category-scope enforcement tests (`allowedCategoryIds`) for reads and writes
+- provider/model policy enforcement tests by (`agent`, `category`) tuple
+- network-egress deny-by-default tests (non-provider hosts blocked deterministically)
+- secret-management tests: raw provider secrets are never persisted in DB/sync payloads/run traces; only `secretRefId` appears.
+- provider privacy-confirmation tests: inference is blocked until user confirmation exists for active provider/model policy version.
+- `NEED_TO_KNOW` projection tests: boundary payloads include only allowlisted fields and block overshared fields.
 - action/toolResult envelope validation for every tool invocation
 - deterministic `operationId` derivation from `runKey` + action ordinal
+- observability-path tests verify run traces are not uploaded to remote telemetry by default.
 
 Integration:
 
@@ -1173,6 +1269,11 @@ Integration:
 - interactive `userInitiated` run path produces conversational action/toolResult sequence
 - crash/retry replay of the same subscription wake preserves `runKey` and does not duplicate side effects
 - LLM summarizer failure path preserves raw history and retries/falls back without pointer corruption
+- inference call with disallowed (`provider`, `model`) for category fails with policy error and no outbound request
+- inference call with missing/locked secure-store secret fails closed (`secret_unavailable`) with no outbound request
+- inference call with missing privacy confirmation fails closed (`privacy_confirmation_required`) with no outbound request
+- policy-version change invalidates prior confirmation and requires re-confirmation before next inference
+- cross-provider image-generation call emits minimal payload only (prompt + explicit attachments/params), with no unrelated task/journal/memory fields.
 
 Multi-device sync:
 
@@ -1192,6 +1293,9 @@ Evaluation and trust gates:
 
 - golden benchmark suite validates tool action sequences and report outputs for each agent kind
 - adversarial benchmark suite validates prompt-injection resistance and scope-policy enforcement
+- adversarial suite validates attempts to induce arbitrary network egress are denied
+- adversarial suite validates model-call attempts bypassing privacy-confirmation UX are denied
+- adversarial suite validates prompt-induced oversharing attempts across handoff/spawn/provider boundaries are blocked.
 - deterministic replay tests verify run trace reproducibility from persisted wake inputs
 - budget/rate-limit policy tests verify deterministic `budget_exceeded` / retry behavior
 - human approval-flow tests verify high-risk actions are blocked until approved
@@ -1294,6 +1398,12 @@ Mitigation:
 
 - require end-to-end run traces (wake -> action -> toolResult -> state/report write) and replay tooling.
 
+Risk: observability plumbing accidentally introduces remote trace exposure outside user control.
+
+Mitigation:
+
+- keep observability artifacts user-local by default, prohibit automatic remote telemetry export, and require explicit user action for any export/share flow.
+
 Risk: prompt-injection or untrusted content leads to unsafe tool calls.
 
 Mitigation:
@@ -1324,6 +1434,36 @@ Mitigation:
 
 - enforce orchestrator-only spawn admission with strict depth/concurrency/budget/cooldown limits, deny-by-default policy gates, and kill-switch integration.
 
+Risk: ungoverned provider/model selection or arbitrary network egress leaks sensitive data.
+
+Mitigation:
+
+- enforce (`agent`, `category`, `provider`, `model`) allowlist checks on every inference request and deny-by-default network egress through a single provider gateway.
+
+Risk: provider credentials leak via local persistence, sync payloads, or diagnostic traces.
+
+Mitigation:
+
+- keep provider secrets exclusively in host secure credential storage (keychain/secure store), persist only `secretRefId`, redact traces, and fail closed when secure-store lookup fails.
+
+Risk: user selects a provider/model without understanding privacy implications.
+
+Mitigation:
+
+- require explicit in-app disclosure of provider implications and explicit user confirmation per (`provider`, `model`, `policyVersion`) before inference; require re-confirmation on policy-version change.
+
+Risk: handoff/spawn/cross-provider calls leak unnecessary context.
+
+Mitigation:
+
+- enforce `NEED_TO_KNOW` projection allowlists for every boundary payload and block non-required fields with `overshared_payload_blocked`.
+
+Risk: local disk extraction/host compromise can expose agent-domain data because app-managed at-rest encryption is deferred in foundation phase.
+
+Mitigation:
+
+- explicitly accept host-security baseline for now (user-enabled full-disk encryption, OS protections, iOS/macOS sandboxing) and track app-managed encryption/key lifecycle as a follow-up hardening backlog item.
+
 ## Finalized Decisions (2026-02-17)
 
 1. Agent records will be persisted as dedicated entities/tables immediately (not as temporary `JournalEntity` subtypes).
@@ -1347,6 +1487,13 @@ Mitigation:
 19. Agent spawning is orchestrator-mediated via typed `SpawnRequest`; direct agent-to-agent process creation is disallowed.
 20. Spawn admission is deny-by-default and must enforce hard caps (depth, concurrency, budgets, cooldowns) plus approval/kill-switch checks.
 21. Parent/child lineage and spawn admission decisions are first-class persisted and observable artifacts.
+22. Provider/model access is policy-gated by (`agent`, `category`) allowlists; disallowed tuples must fail closed.
+23. Agent network egress is deny-by-default; only configured model-provider gateway endpoints are permitted in foundation scope.
+24. Application-managed at-rest encryption for `agent.sqlite` is an explicit deferred gap in foundation; current baseline relies on host/device protections (for example full-disk encryption and iOS/macOS sandboxing).
+25. Provider credentials are managed via host secure credential storage (for example iOS/macOS Keychain); foundation persistence/sync/logging may store only stable secret references, never raw secret values.
+26. Observability traces/diagnostics are user-realm artifacts; by default there is no remote operator/developer access path or automatic telemetry export of trace content.
+27. Provider/model choice is user-controlled, but privacy implications must be shown in UI and explicitly confirmed by user before first use and after policy-version changes.
+28. `NEED_TO_KNOW` is a hard boundary principle: handoff, spawn, and provider payloads must use minimal allowlisted projections; oversharing is blocked by policy.
 
 ### Consequences for implementation
 
@@ -1355,6 +1502,12 @@ Mitigation:
 - Phase -1 must land run-trace observability sufficient for replay/debug of mutation-producing runs.
 - Phase -1 must land retention-class governance (TTL/pruning/legal overrides) and emergency-stop controls.
 - Phase -1 must define `SpawnRequest` schema, spawn admission policy gates, and parent/child lineage trace semantics before enabling spawn in production.
+- Phase -1 must define and validate provider/model access policy plus deny-by-default network egress controls before enabling agent inference in production.
+- Phase -1 must document platform-security assumptions and deferred app-managed at-rest encryption backlog with explicit threat-model boundaries.
+- Phase -1 must define and validate secret-management contracts (secure-store integration, rotation/revoke behavior, fail-closed handling).
+- Phase -1 must enforce user-local observability boundaries (no default remote telemetry export of trace content).
+- Phase -1 must define provider privacy implication metadata and explicit confirmation UX contract for model/provider usage.
+- Phase -1 must define and enforce `NEED_TO_KNOW` projection policy contracts for handoff, spawn, and provider boundaries.
 - Phase 0A must include new persistence schema/migrations for dedicated agent entities.
 - Phase 0A must introduce `AgentDb` (`agent.sqlite`) and repository boundaries that prevent new agent internals/reports from leaking into journal persistence paths.
 - Phase 0A must enforce typed wrapper models (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) for persistent agent fields.
@@ -1374,11 +1527,17 @@ Mitigation:
 
 - Evaluation scorecards and adversarial benchmark suites are active in CI with enforced regression thresholds.
 - Policy/safety and approval controls are active for high-risk mutations.
-- Operator-facing run traces support deterministic replay/debug of mutation-producing runs.
+- User-local run traces support deterministic replay/debug of mutation-producing runs.
 - Retention classes (TTL/pruning/legal overrides) are active and verified for all agent artifact classes.
 - Emergency-stop controls (`global`, `per-agent`, `tool-class`) are implemented, tested, documented, and globally prominent in the local app UI.
 - Spawn behavior is orchestrator-only via typed `SpawnRequest`, with tested depth/concurrency/budget/cooldown enforcement and deny-by-default admission.
 - Parent/child spawn lineage and decisions are queryable in run traces and replay tooling.
+- Provider/model policy enforcement and deny-by-default network egress controls are active and validated in tests.
+- Deferred at-rest encryption gap and host-security assumptions are explicitly documented for foundation scope.
+- Secret-management controls are active: secrets resolve via host secure store, only `secretRefId` persists, and secure-store failures block provider calls.
+- Observability traces remain in the user realm by default (no automatic remote telemetry export path).
+- Provider/model usage is user-confirmed with visible privacy implications; missing/outdated confirmations block inference.
+- `NEED_TO_KNOW` boundary policy is active: cross-boundary payloads are minimal/allowlisted and overshared payloads are blocked.
 - Agent lifecycle persisted and synced.
 - Subscription-driven and timer-driven wakes both functional.
 - User-initiated interactive wakes functional.
