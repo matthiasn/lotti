@@ -102,6 +102,9 @@
   tests.
 - Add CHANGELOG entry under the current version from `pubspec.yaml` (not under [Unreleased]).
 - Update `flatpak/com.matthiasn.lotti.metainfo.xml` alongside CHANGELOG — these two files go hand in hand.
+- Do not mention bugfixes in CHANGELOG for bugs that were never released. E.g. when working on a 
+  feature that comprises many commits, and the bug was fixed before being merged, then there is 
+  no reason to mention that bug in the CHANGELOG.
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
 - In most cases we prefer one test file for one implementation file.
