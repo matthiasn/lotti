@@ -131,7 +131,7 @@ void main() {
         ));
 
         await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(result, isFalse);
         expect(find.text('Set Up Default Prompts?'), findsNothing);
@@ -384,7 +384,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(result, isTrue);
         verify(() => mockRepository.saveConfig(any())).called(4);
@@ -419,7 +419,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final promptNames = savedConfigs
             .whereType<AiConfigPrompt>()
@@ -461,7 +461,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(result, isTrue);
         verify(() => mockRepository.saveConfig(any())).called(3);
@@ -496,7 +496,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final promptNames = savedConfigs
             .whereType<AiConfigPrompt>()
@@ -540,7 +540,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final deepSeekModelId =
             ollamaModels.firstWhere((m) => m.name.contains('DeepSeek')).id;
@@ -585,7 +585,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final gemmaModelId =
             ollamaModels.firstWhere((m) => m.name.contains('Gemma')).id;
@@ -622,7 +622,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
         expect(find.text('4 prompts created successfully!'), findsOneWidget);
@@ -652,7 +652,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
         expect(find.text('3 prompts created successfully!'), findsOneWidget);
@@ -683,7 +683,7 @@ void main() {
         ));
 
         await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Set Up Default Prompts?'), findsNothing);
         expect(result, isFalse);
@@ -728,7 +728,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final ollamaModelIds = ollamaModels.map((m) => m.id).toSet();
         for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
@@ -778,7 +778,7 @@ void main() {
         expect(find.text('Uses Gemma 3 12B'), findsNWidgets(3));
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
           expect(config.defaultModelId, 'ollama-gemma-only');
@@ -842,7 +842,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
           expect(config.trackPreconfigured, isTrue);
@@ -878,7 +878,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Set Up Prompts'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final prompts = savedConfigs.whereType<AiConfigPrompt>().toList();
 
@@ -918,7 +918,7 @@ void main() {
         ));
 
         await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should return false because no models exist
         expect(result, isFalse);
@@ -956,7 +956,7 @@ void main() {
         ));
 
         await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should return false because no models for this provider
         expect(result, isFalse);
@@ -1234,7 +1234,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNull);
     });
@@ -1276,7 +1276,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(4));
@@ -1352,7 +1352,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(0));
@@ -1435,7 +1435,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
@@ -1477,7 +1477,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
@@ -1678,7 +1678,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNull);
     });
@@ -1720,7 +1720,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(3));
@@ -1791,7 +1791,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(0));
@@ -1869,7 +1869,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.promptsSkipped, equals(1));
@@ -1911,7 +1911,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
@@ -1961,7 +1961,7 @@ void main() {
       ));
 
       await tester.tap(find.text('Test'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockCategoryRepository.createCategory(
             name: 'Test Category Mistral Enabled',

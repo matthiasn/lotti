@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 3 In Progress
+**Status:** Phase 3 Complete — Ready for Phase 4
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -121,11 +121,45 @@
 | `measurement_summary_test.dart` | 1 test checking `Coverage: 55 %` | 4 tests: value+unit display, TextViewerWidget presence, null dataType → SizedBox.shrink, null entryText → no TextViewerWidget | Tests all code paths in widget |
 | `metrics_grid_test.dart` | 1 test checking text labels | 6 tests: labels+values, Key per tile, empty entries, label transformation, 2-column layout at narrow width, 3-column at medium width | Tests responsive layout, keys, and label function |
 
-### Phase 3 Verification (Steps 9-10)
+### Phase 3c: Remaining Consolidation (Step 10 continued) — DONE
+
+| Consolidation | Action | Tests |
+|---------------|--------|------:|
+| `test/widgets/logging_page_test.dart` | Moved to `test/features/settings/ui/pages/advanced/logging_page_test.dart` (mirrors source path); fixed imports | 23 |
+| `test/widgets/ui/form_bottom_bar_test.dart` vs `test/features/ai/ui/settings/form_bottom_bar_test.dart` | **No action** — confirmed these are different widgets (`lib/widgets/ui/` generic vs `lib/features/ai/ui/settings/` AI-specific); both at correct mirror paths | — |
+
+### Phase 3d: Reduce pumpAndSettle Usage (Step 11) — DONE
+
+**Batch 1 (top 5 files by pumpAndSettle count):**
+
+| File | Original | New | Removed | Tests |
+|------|----------|-----|---------|------:|
+| `inference_provider_edit_page_test.dart` | 141 | 87 | 54 | 42 pass |
+| `ai_settings_page_test.dart` | 83 | 56 | 27 | 33 pass |
+| `time_budget_card_test.dart` | 72 | 0 | 72 | 62 pass |
+| `label_selection_modal_content_test.dart` | 62 | 0 | 62 | 35 pass |
+| `daily_timeline_test.dart` | 50 | 0 | 50 | 44 pass |
+| **Subtotal** | **408** | **143** | **265 (65%)** | **216 pass** |
+
+**Batch 2 (next 5 files):**
+
+| File | Original | New | Removed | Tests |
+|------|----------|-----|---------|------:|
+| `task_labels_wrapper_test.dart` | 47 | 38 | 9 | 20 pass |
+| `modern_labels_item_test.dart` | 47 | 42 | 5 | 16 pass |
+| `provider_prompt_setup_service_test.dart` | 47 | 20 | 27 | 55 pass |
+| `prompt_edit_page_test.dart` | 47 | 26 | 21 | 24 pass |
+| `modern_action_items_test.dart` | 44 | 37 | 7 | 35 pass |
+| **Subtotal** | **232** | **163** | **69 (30%)** | **150 pass** |
+
+**Total pumpAndSettle reduction: 334 calls removed across 10 files (52% reduction)**
+
+### Phase 3 Verification (Steps 9-11)
 - Analyzer: zero issues
 - Formatter: zero changes needed
-- All consolidated tests pass (26 autocomplete, 19 AI config delete, 11 GetIt, 10 maintenance page)
+- All consolidated tests pass (26 autocomplete, 19 AI config delete, 11 GetIt, 10 maintenance, 23 logging page)
 - All improved garbage tests pass (7 + 3 + 4 + 6 = 20 tests, up from 12 low-value originals)
+- All pumpAndSettle-reduced tests pass (366 tests across 10 files)
 
 ---
 

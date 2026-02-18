@@ -161,7 +161,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Work'), findsOneWidget);
     });
@@ -174,7 +174,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // New format shows "recorded / planned" (default recorded is 1h)
       expect(find.text('1h / 3h'), findsOneWidget);
@@ -186,7 +186,7 @@ void main() {
           progress: createProgress(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('1h left'), findsOneWidget);
     });
@@ -201,7 +201,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('+1h over'), findsOneWidget);
     });
@@ -216,7 +216,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('10m left'), findsOneWidget);
     });
@@ -230,7 +230,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text("Time's up"), findsOneWidget);
     });
@@ -244,10 +244,10 @@ void main() {
           onTap: () => tapped = true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byType(TimeBudgetCard));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tapped, isTrue);
     });
@@ -256,7 +256,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The progress bar is a custom widget, verify it exists
       expect(find.byType(TimeBudgetCard), findsOneWidget);
@@ -284,7 +284,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Uncategorized'), findsOneWidget);
     });
@@ -299,7 +299,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // New format shows "recorded / planned"
       expect(find.text('1h 15m / 2h 30m'), findsOneWidget);
@@ -315,7 +315,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // New format shows "recorded / planned"
       expect(find.text('20m / 45m'), findsOneWidget);
@@ -335,7 +335,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Widget should have enhanced styling when highlighted
       expect(find.byType(AnimatedContainer), findsWidgets);
@@ -357,10 +357,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.longPress(find.byType(TimeBudgetCard));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(longPressed, isTrue);
     });
@@ -375,7 +375,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('1h 30m left'), findsOneWidget);
     });
@@ -390,7 +390,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('+1h 15m over'), findsOneWidget);
     });
@@ -405,7 +405,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The progress bar should show over-budget indicator
       expect(find.byType(TimeBudgetCard), findsOneWidget);
@@ -475,7 +475,7 @@ void main() {
           progress: createProgressWithTasks(tasks: []),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not show task title text when no tasks
       expect(find.text('Test Task'), findsNothing);
@@ -503,7 +503,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('My Pinned Task'), findsOneWidget);
       expect(find.byType(Divider), findsOneWidget);
@@ -526,7 +526,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Important Work Item'), findsOneWidget);
     });
@@ -548,7 +548,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Open tasks show a circle border indicator (no check icon)
       expect(find.byIcon(Icons.check_circle), findsNothing);
@@ -573,7 +573,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
@@ -596,7 +596,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
@@ -635,7 +635,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: progress, isFocusActive: true),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should still show check_circle icon (faded)
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
@@ -659,7 +659,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
@@ -681,7 +681,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
@@ -704,7 +704,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
@@ -727,7 +727,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
@@ -749,7 +749,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
@@ -791,7 +791,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('First Task'), findsOneWidget);
       expect(find.text('Second Task'), findsOneWidget);
@@ -817,7 +817,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the task text and verify it has a GestureDetector ancestor
       final taskTextFinder = find.text('Tappable Task');
@@ -901,7 +901,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // No tasks means no task section (only JournalEntries in contributingEntries)
       expect(find.byType(TimeBudgetCard), findsOneWidget);
@@ -931,7 +931,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Task title should NOT appear because it's only in contributingEntries
       expect(find.text('Contributing Task In Entries'), findsNothing);
@@ -1008,7 +1008,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show P0 badge text
       expect(find.text('P0'), findsOneWidget);
@@ -1021,7 +1021,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('P1'), findsOneWidget);
     });
@@ -1034,7 +1034,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('P2'), findsOneWidget);
     });
@@ -1046,7 +1046,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('P3'), findsOneWidget);
     });
@@ -1060,7 +1060,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final p0Text = tester.widget<Text>(find.text('P0'));
       final p0Color = p0Text.style?.color;
@@ -1082,7 +1082,7 @@ void main() {
             isFocusActive: true,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final text = tester.widget<Text>(find.text(priority.short));
         textColors.add(text.style!.color!);
@@ -1109,7 +1109,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show timer icon
       expect(find.byIcon(Icons.timer), findsOneWidget);
@@ -1120,7 +1120,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not show timer icon
       expect(find.byIcon(Icons.timer), findsNothing);
@@ -1141,7 +1141,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not show timer icon for this category
       expect(find.byIcon(Icons.timer), findsNothing);
@@ -1158,7 +1158,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tasks should be visible when expanded
       expect(find.text('Test Task 1'), findsWidgets);
@@ -1183,7 +1183,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially expanded
       expect(find.text('Test Task 1'), findsWidgets);
@@ -1205,7 +1205,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should be collapsed now - tasks hidden
       expect(find.text('Test Task 1'), findsNothing);
@@ -1227,7 +1227,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially expanded
       expect(find.text('Test Task 1'), findsWidgets);
@@ -1236,7 +1236,7 @@ void main() {
       final expandIcon = find.byIcon(Icons.keyboard_arrow_up);
       expect(expandIcon, findsOneWidget);
       await tester.tap(expandIcon);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should be collapsed after user toggle
       expect(find.text('Test Task 1'), findsNothing);
@@ -1255,7 +1255,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Bring focus back
       await tester.pumpWidget(
@@ -1271,7 +1271,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should still be collapsed because user manually toggled
       expect(find.text('Test Task 1'), findsNothing);
@@ -1366,7 +1366,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Grid view should show GridView widget
       expect(find.byType(GridView), findsOneWidget);
@@ -1391,7 +1391,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The completed task should show a check icon
       expect(find.byIcon(Icons.check), findsOneWidget);
@@ -1412,7 +1412,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Initially in list view - should show grid toggle icon
       expect(find.byType(GridView), findsNothing);
@@ -1495,7 +1495,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show the "Due today" badge text (list view)
       expect(find.text('Due today'), findsOneWidget);
@@ -1508,7 +1508,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show the "Overdue" badge text
       expect(find.text('Overdue'), findsOneWidget);
@@ -1521,7 +1521,7 @@ void main() {
           isFocusActive: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not show any due badge
       expect(find.text('Due today'), findsNothing);
@@ -1618,7 +1618,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgressNoBudgetNoTime()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show inline warning indicator
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -1639,7 +1639,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgressNoBudgetWithTime()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show time comparison (recorded / planned)
       expect(find.text('45m / 0m'), findsOneWidget);
@@ -1658,7 +1658,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should not show warning icon
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
@@ -1758,7 +1758,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show P0 badge in grid
       expect(find.text('P0'), findsOneWidget);
@@ -1786,7 +1786,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show "Due" badge in grid (short form)
       expect(find.text('Due'), findsOneWidget);
@@ -1814,7 +1814,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show "Late" badge in grid (short form)
       expect(find.text('Late'), findsOneWidget);
@@ -1845,7 +1845,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show all badges
       expect(find.byIcon(Icons.check), findsOneWidget); // Completed checkmark
@@ -1890,7 +1890,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get localized string from context
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -1939,7 +1939,7 @@ void main() {
           selectedDate: testDate,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get localized string from context
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -1947,7 +1947,7 @@ void main() {
 
       // Tap the quick create button
       await tester.tap(find.byTooltip(tooltipText));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify task creation was called with correct category
       verify(() => mockPersistenceLogic.createTaskEntry(
@@ -2004,7 +2004,7 @@ void main() {
           selectedDate: selectedDate,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get localized string from context
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -2012,7 +2012,7 @@ void main() {
 
       // Tap the quick create button
       await tester.tap(find.byTooltip(tooltipText));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the due date was passed correctly
       expect(capturedData, isNotNull);
@@ -2031,7 +2031,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get localized string from context
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -2039,7 +2039,7 @@ void main() {
 
       // Tap the quick create button
       await tester.tap(find.byTooltip(tooltipText));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify navigation was not called
       expect(mockNavService.navigationHistory, isEmpty);
@@ -2097,7 +2097,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(progress: progressWithoutCategory),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get localized string from context
       final context = tester.element(find.byType(TimeBudgetCard));
@@ -2105,7 +2105,7 @@ void main() {
 
       // Tap the quick create button
       await tester.tap(find.byTooltip(tooltipText));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify task creation was called with null category
       // Note: Using captureAny to verify categoryId was explicitly passed as null

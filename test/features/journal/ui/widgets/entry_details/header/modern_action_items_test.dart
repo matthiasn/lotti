@@ -207,7 +207,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleStarredCalls, contains('entry-1'));
     });
@@ -259,7 +259,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.togglePrivateCalls, contains('entry-1'));
     });
@@ -312,7 +312,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleFlaggedCalls, contains('entry-1'));
     });
@@ -391,7 +391,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(pageIndexNotifier.value, equals(2));
     });
@@ -470,7 +470,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(pageIndexNotifier.value, equals(1));
     });
@@ -641,7 +641,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(controller.updateLinkCalls, hasLength(1));
       expect(controller.updateLinkCalls.first.hidden, isTrue);
@@ -851,7 +851,7 @@ void main() {
 
       await tester.pumpAndSettle();
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tracker.toggleMapVisibleCalls, contains('geo-entry-1'));
     });
