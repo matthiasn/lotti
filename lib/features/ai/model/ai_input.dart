@@ -25,6 +25,7 @@ abstract class AiActionItem with _$AiActionItem {
   const factory AiActionItem({
     required String title,
     required bool completed,
+    @Default(false) bool isArchived,
     String? id,
     DateTime? deadline,
     DateTime? completionDate,

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.864" date="2026-02-18">
+      <description>
+          <p>Checklist Layout &amp; AI Context: Swipe backgrounds now extend edge-to-edge for a polished look. Archived checklist items are now properly marked in AI prompts, so the AI understands they are not active work.</p>
+      </description>
+    </release>
     <release version="0.9.863" date="2026-02-17">
       <description>
           <p>Archive Swipe Gesture: Swipe right on checklist items to archive them, preserving historical context without marking as completed. Archived items are excluded from completion metrics and hidden in Open filter mode. Swipe left to delete (unchanged).</p>

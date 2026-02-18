@@ -541,6 +541,7 @@ class __$AiInputTaskObjectCopyWithImpl<$Res>
 mixin _$AiActionItem {
   String get title;
   bool get completed;
+  bool get isArchived;
   String? get id;
   DateTime? get deadline;
   DateTime? get completionDate;
@@ -564,6 +565,8 @@ mixin _$AiActionItem {
             (identical(other.title, title) || other.title == title) &&
             (identical(other.completed, completed) ||
                 other.completed == completed) &&
+            (identical(other.isArchived, isArchived) ||
+                other.isArchived == isArchived) &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
@@ -573,12 +576,12 @@ mixin _$AiActionItem {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, title, completed, id, deadline, completionDate);
+  int get hashCode => Object.hash(
+      runtimeType, title, completed, isArchived, id, deadline, completionDate);
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate)';
   }
 }
 
@@ -591,6 +594,7 @@ abstract mixin class $AiActionItemCopyWith<$Res> {
   $Res call(
       {String title,
       bool completed,
+      bool isArchived,
       String? id,
       DateTime? deadline,
       DateTime? completionDate});
@@ -610,6 +614,7 @@ class _$AiActionItemCopyWithImpl<$Res> implements $AiActionItemCopyWith<$Res> {
   $Res call({
     Object? title = null,
     Object? completed = null,
+    Object? isArchived = null,
     Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
@@ -622,6 +627,10 @@ class _$AiActionItemCopyWithImpl<$Res> implements $AiActionItemCopyWith<$Res> {
       completed: null == completed
           ? _self.completed
           : completed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isArchived: null == isArchived
+          ? _self.isArchived
+          : isArchived // ignore: cast_nullable_to_non_nullable
               as bool,
       id: freezed == id
           ? _self.id
@@ -732,7 +741,7 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String title, bool completed, String? id,
+    TResult Function(String title, bool completed, bool isArchived, String? id,
             DateTime? deadline, DateTime? completionDate)?
         $default, {
     required TResult orElse(),
@@ -740,8 +749,8 @@ extension AiActionItemPatterns on AiActionItem {
     final _that = this;
     switch (_that) {
       case _AiActionItem() when $default != null:
-        return $default(_that.title, _that.completed, _that.id, _that.deadline,
-            _that.completionDate);
+        return $default(_that.title, _that.completed, _that.isArchived,
+            _that.id, _that.deadline, _that.completionDate);
       case _:
         return orElse();
     }
@@ -762,15 +771,15 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String title, bool completed, String? id,
+    TResult Function(String title, bool completed, bool isArchived, String? id,
             DateTime? deadline, DateTime? completionDate)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AiActionItem():
-        return $default(_that.title, _that.completed, _that.id, _that.deadline,
-            _that.completionDate);
+        return $default(_that.title, _that.completed, _that.isArchived,
+            _that.id, _that.deadline, _that.completionDate);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -790,15 +799,15 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String title, bool completed, String? id,
+    TResult? Function(String title, bool completed, bool isArchived, String? id,
             DateTime? deadline, DateTime? completionDate)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AiActionItem() when $default != null:
-        return $default(_that.title, _that.completed, _that.id, _that.deadline,
-            _that.completionDate);
+        return $default(_that.title, _that.completed, _that.isArchived,
+            _that.id, _that.deadline, _that.completionDate);
       case _:
         return null;
     }
@@ -811,6 +820,7 @@ class _AiActionItem implements AiActionItem {
   const _AiActionItem(
       {required this.title,
       required this.completed,
+      this.isArchived = false,
       this.id,
       this.deadline,
       this.completionDate});
@@ -821,6 +831,9 @@ class _AiActionItem implements AiActionItem {
   final String title;
   @override
   final bool completed;
+  @override
+  @JsonKey()
+  final bool isArchived;
   @override
   final String? id;
   @override
@@ -851,6 +864,8 @@ class _AiActionItem implements AiActionItem {
             (identical(other.title, title) || other.title == title) &&
             (identical(other.completed, completed) ||
                 other.completed == completed) &&
+            (identical(other.isArchived, isArchived) ||
+                other.isArchived == isArchived) &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
@@ -860,12 +875,12 @@ class _AiActionItem implements AiActionItem {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, title, completed, id, deadline, completionDate);
+  int get hashCode => Object.hash(
+      runtimeType, title, completed, isArchived, id, deadline, completionDate);
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, id: $id, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate)';
   }
 }
 
@@ -880,6 +895,7 @@ abstract mixin class _$AiActionItemCopyWith<$Res>
   $Res call(
       {String title,
       bool completed,
+      bool isArchived,
       String? id,
       DateTime? deadline,
       DateTime? completionDate});
@@ -900,6 +916,7 @@ class __$AiActionItemCopyWithImpl<$Res>
   $Res call({
     Object? title = null,
     Object? completed = null,
+    Object? isArchived = null,
     Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
@@ -912,6 +929,10 @@ class __$AiActionItemCopyWithImpl<$Res>
       completed: null == completed
           ? _self.completed
           : completed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isArchived: null == isArchived
+          ? _self.isArchived
+          : isArchived // ignore: cast_nullable_to_non_nullable
               as bool,
       id: freezed == id
           ? _self.id
