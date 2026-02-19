@@ -389,7 +389,7 @@ void main() {
 
   group('search at scale', () {
     test('finds nearest neighbors among 20k entries', () {
-      // Insert 10,000 vectors where each has a unique constant value
+      // Insert 20,000 vectors where each has a unique constant value
       // equal to its index. This creates a linear spread in vector space.
       const totalEntries = 20000;
       for (var i = 0; i < totalEntries; i++) {

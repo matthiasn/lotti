@@ -49,6 +49,10 @@ class EmbeddingsDb {
 
   /// Opens the database and creates the schema if needed.
   void open() {
+    if (!inMemory && path == null) {
+      throw ArgumentError(
+          "EmbeddingsDb.open(): 'path' must be set when not inMemory");
+    }
     _db = inMemory ? sqlite3.openInMemory() : sqlite3.open(path!);
 
     db
@@ -95,16 +99,15 @@ class EmbeddingsDb {
     required Float32List embedding,
     required String contentHash,
   }) {
-    final now = DateTime.now().toUtc().toIso8601String();
+    if (embedding.length != dimensions) {
+      throw ArgumentError(
+        'EmbeddingsDb.upsertEmbedding(): embedding.length '
+        '(${embedding.length}) does not match dimensions ($dimensions) '
+        'for entityId=$entityId, entityType=$entityType, modelId=$modelId',
+      );
+    }
 
-    db.execute(
-      '''
-      INSERT OR REPLACE INTO embedding_metadata
-        (entity_id, entity_type, model_id, dimensions, content_hash, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ''',
-      [entityId, entityType, modelId, dimensions, contentHash, now],
-    );
+    final now = DateTime.now().toUtc().toIso8601String();
 
     // sqlite-vec expects the vector as a raw blob of float32 bytes.
     final blob = embedding.buffer.asUint8List(
@@ -112,35 +115,64 @@ class EmbeddingsDb {
       embedding.lengthInBytes,
     );
 
-    // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
-    db
-      ..execute(
-        'DELETE FROM vec_embeddings WHERE entity_id = ?',
-        [entityId],
-      )
-      ..execute(
-        'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
-        [entityId, blob],
-      );
+    // All three mutations must be atomic — metadata and vector data must stay
+    // consistent even if one statement fails.
+    db.execute('BEGIN');
+    try {
+      db
+        ..execute(
+          '''
+          INSERT OR REPLACE INTO embedding_metadata
+            (entity_id, entity_type, model_id, dimensions, content_hash, created_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ''',
+          [entityId, entityType, modelId, dimensions, contentHash, now],
+        )
+        // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
+        ..execute(
+          'DELETE FROM vec_embeddings WHERE entity_id = ?',
+          [entityId],
+        )
+        ..execute(
+          'INSERT INTO vec_embeddings (entity_id, embedding) VALUES (?, ?)',
+          [entityId, blob],
+        )
+        ..execute('COMMIT');
+    } on Object {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
   }
 
   /// Deletes an embedding and its metadata by entity ID.
   void deleteEmbedding(String entityId) {
-    db
-      ..execute(
-        'DELETE FROM vec_embeddings WHERE entity_id = ?',
-        [entityId],
-      )
-      ..execute(
-        'DELETE FROM embedding_metadata WHERE entity_id = ?',
-        [entityId],
-      );
+    db.execute('BEGIN');
+    try {
+      db
+        ..execute(
+          'DELETE FROM vec_embeddings WHERE entity_id = ?',
+          [entityId],
+        )
+        ..execute(
+          'DELETE FROM embedding_metadata WHERE entity_id = ?',
+          [entityId],
+        )
+        ..execute('COMMIT');
+    } on Object {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
   }
 
   /// Performs k-nearest-neighbor search.
   ///
   /// Returns up to [k] results ordered by ascending distance (most similar
   /// first). Optionally filter by [entityTypeFilter].
+  ///
+  /// Note: [entityTypeFilter] is applied as a post-KNN filter via a JOIN on
+  /// embedding_metadata. This means the result may contain fewer than [k]
+  /// items when filtering is active, since vec0 selects the top-k candidates
+  /// before the entity_type predicate is evaluated.
   List<EmbeddingSearchResult> search({
     required Float32List queryVector,
     int k = 10,
@@ -215,8 +247,15 @@ class EmbeddingsDb {
 
   /// Deletes all embeddings and metadata.
   void deleteAll() {
-    db
-      ..execute('DELETE FROM vec_embeddings')
-      ..execute('DELETE FROM embedding_metadata');
+    db.execute('BEGIN');
+    try {
+      db
+        ..execute('DELETE FROM vec_embeddings')
+        ..execute('DELETE FROM embedding_metadata')
+        ..execute('COMMIT');
+    } on Object {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
   }
 }

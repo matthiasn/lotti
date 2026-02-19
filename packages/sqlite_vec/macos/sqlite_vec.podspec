@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'OTHER_CFLAGS' => '-O3 -DSQLITE_VEC_ENABLE_NEON',
+    'OTHER_CFLAGS' => '-O3',
+    'OTHER_CFLAGS[arch=arm64]' => '-O3 -DSQLITE_VEC_ENABLE_NEON',
   }
 end

@@ -246,7 +246,16 @@ icons:
 build_test_sqlite_vec:
 	@echo "Building test sqlite3+vec library..."
 	@SQLITE3_DIR=$$(mktemp -d) && \
+	EXPECTED_SHA256="77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784" && \
 	curl -sL "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip" -o "$$SQLITE3_DIR/sqlite3.zip" && \
+	ACTUAL_SHA256=$$(shasum -a 256 "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1) && \
+	if [ "$$ACTUAL_SHA256" != "$$EXPECTED_SHA256" ]; then \
+		echo "ERROR: SHA256 mismatch for sqlite-amalgamation-3460100.zip" >&2; \
+		echo "  Expected: $$EXPECTED_SHA256" >&2; \
+		echo "  Actual:   $$ACTUAL_SHA256" >&2; \
+		rm -rf "$$SQLITE3_DIR"; \
+		exit 1; \
+	fi && \
 	unzip -q -o "$$SQLITE3_DIR/sqlite3.zip" -d "$$SQLITE3_DIR" && \
 	EXT=$$(if [ "$$(uname -s)" = "Darwin" ]; then echo dylib; else echo so; fi) && \
 	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON -flax-vector-conversions"; fi) && \

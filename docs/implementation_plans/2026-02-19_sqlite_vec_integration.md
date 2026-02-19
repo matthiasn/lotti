@@ -243,8 +243,8 @@ and CPU architecture.
 
 - **Not Drift**: vec0 virtual tables and binary vector params aren't Drift-compatible.
   Raw sqlite3 is simpler and avoids schema version coupling.
-- **Separate file (`embeddings.sqlite`)**: Embeddings are derived data. Can be deleted
-  and rebuilt without data loss. No sync needed across devices.
+- **Separate file (`embeddings.sqlite`)**: Embeddings are derived data. They can be
+  deleted and rebuilt without data loss. No sync needed across devices.
 - **Statically linked into sqlite3**: Avoids the `SQLITE_OMIT_LOAD_EXTENSION` problem on
   macOS and works identically in tests and production. No Flutter plugin dependency needed.
 - **No pubspec.yaml dependency**: The vendored source is only consumed by the Makefile
