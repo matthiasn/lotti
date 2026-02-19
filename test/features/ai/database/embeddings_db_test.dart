@@ -13,7 +13,14 @@ import 'package:sqlite3/sqlite3.dart';
 /// Built via `make build_test_sqlite_vec` before running tests.
 String get _testLibPath {
   final root = Directory.current.path;
-  final ext = Platform.isMacOS ? 'dylib' : 'so';
+  final String ext;
+  if (Platform.isMacOS) {
+    ext = 'dylib';
+  } else if (Platform.isWindows) {
+    ext = 'dll';
+  } else {
+    ext = 'so';
+  }
   return '$root/packages/sqlite_vec/test_sqlite3_with_vec.$ext';
 }
 
@@ -28,7 +35,14 @@ void _loadSqliteVecForTests() {
     );
   }
 
-  final os = Platform.isMacOS ? OperatingSystem.macOS : OperatingSystem.linux;
+  final OperatingSystem os;
+  if (Platform.isMacOS) {
+    os = OperatingSystem.macOS;
+  } else if (Platform.isWindows) {
+    os = OperatingSystem.windows;
+  } else {
+    os = OperatingSystem.linux;
+  }
   open.overrideFor(os, () => DynamicLibrary.open(path));
 
   // Use inLibrary instead of staticallyLinked so the init symbol is looked up
@@ -84,6 +98,13 @@ void main() {
         () => db.count,
         throwsA(isA<StateError>()),
       );
+    });
+
+    test('close is idempotent', () {
+      db
+        ..close()
+        // Second close should not throw.
+        ..close();
     });
   });
 
@@ -346,6 +367,19 @@ void main() {
       expect(results, isEmpty);
     });
 
+    test('throws on query vector dimension mismatch', () {
+      expect(
+        () => db.search(queryVector: _makeVector(512)),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('does not match kEmbeddingDimensions'),
+          ),
+        ),
+      );
+    });
+
     test('returns zero distance for identical vectors', () {
       db.upsertEmbedding(
         entityId: 'entity-1',
@@ -412,10 +446,12 @@ void main() {
   });
 
   group('search at scale', () {
-    test('finds nearest neighbors among 20k entries', () {
-      // Insert 20,000 vectors where each has a unique constant value
-      // equal to its index. This creates a linear spread in vector space.
-      const totalEntries = 20000;
+    // Insert 20,000 vectors where each has a unique constant value
+    // equal to its index. This creates a linear spread in vector space.
+    // Even indices are 'journal_entry', odd indices are 'task'.
+    const totalEntries = 20000;
+
+    setUp(() {
       for (var i = 0; i < totalEntries; i++) {
         db.upsertEmbedding(
           entityId: 'entity-$i',
@@ -425,7 +461,9 @@ void main() {
           contentHash: 'hash-$i',
         );
       }
+    });
 
+    test('finds nearest neighbors among 20k entries', () {
       expect(db.count, totalEntries);
 
       // Query with a vector of all 50.0 — entity-50 should be the
@@ -458,17 +496,6 @@ void main() {
     });
 
     test('entity type filter works at scale', () {
-      const totalEntries = 20000;
-      for (var i = 0; i < totalEntries; i++) {
-        db.upsertEmbedding(
-          entityId: 'entity-$i',
-          entityType: i.isEven ? 'journal_entry' : 'task',
-          modelId: 'test-model',
-          embedding: _makeVector(2048, value: i.toDouble()),
-          contentHash: 'hash-$i',
-        );
-      }
-
       final query = _makeVector(2048, value: 50);
 
       // Note: sqlite-vec applies KNN first, then the JOIN filter.

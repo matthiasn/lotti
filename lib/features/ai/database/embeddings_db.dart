@@ -94,10 +94,12 @@ class EmbeddingsDb {
       ''');
   }
 
-  /// Closes the database.
+  /// Closes the database. Safe to call multiple times.
   void close() {
-    _db?.dispose();
+    final d = _db;
+    if (d == null) return;
     _db = null;
+    d.dispose();
   }
 
   /// Inserts or updates an embedding and its metadata.
@@ -191,6 +193,14 @@ class EmbeddingsDb {
     int k = 10,
     String? entityTypeFilter,
   }) {
+    if (queryVector.length != kEmbeddingDimensions) {
+      throw ArgumentError(
+        'EmbeddingsDb.search(): queryVector.length '
+        '(${queryVector.length}) does not match kEmbeddingDimensions '
+        '($kEmbeddingDimensions)',
+      );
+    }
+
     final blob = queryVector.buffer.asUint8List(
       queryVector.offsetInBytes,
       queryVector.lengthInBytes,

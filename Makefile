@@ -18,6 +18,8 @@ LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
 
 SQLITE_VERSION := 3460100
+# SQLITE_YEAR must match the year in which SQLITE_VERSION was released.
+# Find the correct year at https://www.sqlite.org/download.html
 SQLITE_YEAR := 2024
 SQLITE_AMALGAMATION := sqlite-amalgamation-$(SQLITE_VERSION)
 SQLITE_URL := https://www.sqlite.org/$(SQLITE_YEAR)/$(SQLITE_AMALGAMATION).zip
@@ -253,7 +255,11 @@ build_test_sqlite_vec:
 	@echo "Building test sqlite3+vec library..."
 	@SQLITE3_DIR=$$(mktemp -d) && \
 	curl -fsL "$(SQLITE_URL)" -o "$$SQLITE3_DIR/sqlite3.zip" && \
-	ACTUAL_SHA256=$$(shasum -a 256 "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1) && \
+	if command -v sha256sum >/dev/null 2>&1; then \
+		ACTUAL_SHA256=$$(sha256sum "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1); \
+	else \
+		ACTUAL_SHA256=$$(shasum -a 256 "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1); \
+	fi && \
 	if [ "$$ACTUAL_SHA256" != "$(SQLITE_SHA256)" ]; then \
 		echo "ERROR: SHA256 mismatch for $(SQLITE_AMALGAMATION).zip" >&2; \
 		echo "  Expected: $(SQLITE_SHA256)" >&2; \
@@ -262,10 +268,16 @@ build_test_sqlite_vec:
 		exit 1; \
 	fi && \
 	unzip -q -o "$$SQLITE3_DIR/sqlite3.zip" -d "$$SQLITE3_DIR" && \
-	EXT=$$(if [ "$$(uname -s)" = "Darwin" ]; then echo dylib; else echo so; fi) && \
 	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON -flax-vector-conversions"; fi) && \
 	AVX_FLAG=$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "-DSQLITE_VEC_ENABLE_AVX -mavx"; fi) && \
-	cc -shared -O3 -fPIC \
+	if [ "$$(uname -s)" = "Darwin" ]; then \
+		EXT=dylib; \
+		LINK_FLAG="-dynamiclib"; \
+	else \
+		EXT=so; \
+		LINK_FLAG="-shared"; \
+	fi && \
+	cc $$LINK_FLAG -O3 -fPIC \
 		$$NEON_FLAG $$AVX_FLAG \
 		-DSQLITE_ENABLE_FTS5 \
 		-I"$$SQLITE3_DIR/$(SQLITE_AMALGAMATION)/" \

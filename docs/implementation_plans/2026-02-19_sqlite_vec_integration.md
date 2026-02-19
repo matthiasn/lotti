@@ -9,9 +9,10 @@ and perform k-nearest-neighbor search.
 
 **Decision:** Integrate [sqlite-vec](https://github.com/asg017/sqlite-vec) (MIT/Apache-2.0,
 pure C, zero dependencies) by compiling the vendored `sqlite-vec.c` together with the
-sqlite3 amalgamation into a single shared library. This approach avoids any Flutter plugin
-dependency, keeps the existing SQLite/Drift setup unchanged, and works identically in
-production and tests.
+sqlite3 amalgamation into a single shared library. For tests, the combined library is built
+via `make build_test_sqlite_vec` and loaded at runtime. For production, the
+`packages/sqlite_vec/` Flutter FFI plugin scaffolding will deliver the library to each
+platform via its native build system (Podspec/CMake).
 
 **Why not Drift for the embeddings DB:** Drift doesn't natively support vec0 virtual tables
 or binary vector parameters. The embeddings DB will use raw `package:sqlite3` (v2.4.5,
