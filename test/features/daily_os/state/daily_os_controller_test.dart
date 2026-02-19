@@ -1188,6 +1188,8 @@ void main() {
           // Advance partially into the 15-second polling delay
           async.elapse(const Duration(seconds: 5));
 
+          final emissionCountBeforeDispose = emissions.length;
+
           // Dispose while the provider is awaiting the delay.
           // Before the fix, this would cause a
           // "Cannot use the Ref after it has been disposed" error.
@@ -1197,6 +1199,9 @@ void main() {
           // and the disposal guard (`if (disposed.isCompleted) return`)
           // is exercised.
           async.elapse(const Duration(seconds: 15));
+
+          // The stream should have stopped — no new emissions after dispose
+          expect(emissions.length, equals(emissionCountBeforeDispose));
         });
       });
     });
