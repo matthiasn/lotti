@@ -30,6 +30,8 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
+      - name: Build sqlite-vec test library
+        run: make build_test_sqlite_vec
       - name: Activate very_good_cli
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests

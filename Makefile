@@ -242,5 +242,25 @@ splash:
 icons:
 	dart run flutter_launcher_icons:main
 
+.PHONY: build_test_sqlite_vec
+build_test_sqlite_vec:
+	@echo "Building test sqlite3+vec library..."
+	@SQLITE3_DIR=$$(mktemp -d) && \
+	curl -sL "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip" -o "$$SQLITE3_DIR/sqlite3.zip" && \
+	unzip -q -o "$$SQLITE3_DIR/sqlite3.zip" -d "$$SQLITE3_DIR" && \
+	EXT=$$(if [ "$$(uname -s)" = "Darwin" ]; then echo dylib; else echo so; fi) && \
+	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON"; fi) && \
+	AVX_FLAG=$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "-DSQLITE_VEC_ENABLE_AVX -mavx"; fi) && \
+	cc -shared -O3 -fPIC \
+		$$NEON_FLAG $$AVX_FLAG \
+		-DSQLITE_ENABLE_FTS5 \
+		-I"$$SQLITE3_DIR/sqlite-amalgamation-3460100/" \
+		"$$SQLITE3_DIR/sqlite-amalgamation-3460100/sqlite3.c" \
+		packages/sqlite_vec/src/sqlite-vec.c \
+		-lm \
+		-o packages/sqlite_vec/test_sqlite3_with_vec.$$EXT && \
+	rm -rf "$$SQLITE3_DIR" && \
+	echo "Built packages/sqlite_vec/test_sqlite3_with_vec.$$EXT"
+
 .PHONY: clean_test
 clean_test: clean deps build_runner l10n test

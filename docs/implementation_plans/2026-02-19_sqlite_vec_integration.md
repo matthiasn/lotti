@@ -8,25 +8,33 @@ data stays on-device. We need a local vector database to store embeddings (e.g.,
 and perform k-nearest-neighbor search.
 
 **Decision:** Integrate [sqlite-vec](https://github.com/asg017/sqlite-vec) (MIT/Apache-2.0,
-pure C, zero dependencies) as a local Flutter FFI plugin (Path 2). This keeps the existing
-SQLite/Drift setup completely unchanged and only compiles the small sqlite-vec.c file as a
-separate shared library.
+pure C, zero dependencies) by compiling the vendored `sqlite-vec.c` together with the
+sqlite3 amalgamation into a single shared library. This approach avoids any Flutter plugin
+dependency, keeps the existing SQLite/Drift setup unchanged, and works identically in
+production and tests.
 
 **Why not Drift for the embeddings DB:** Drift doesn't natively support vec0 virtual tables
 or binary vector parameters. The embeddings DB will use raw `package:sqlite3` (v2.4.5,
 already a dependency). This follows the principle that the embeddings DB is derived,
 rebuildable infrastructure -- not part of the core data model.
 
+**Why not a Flutter FFI plugin:** macOS system SQLite is compiled with
+`SQLITE_OMIT_LOAD_EXTENSION`, which prevents `sqlite3_auto_extension` from working. A
+separate FFI plugin would still require the host SQLite to support extension loading.
+Compiling sqlite-vec statically into a custom sqlite3 build sidesteps this entirely and
+works uniformly across platforms and in tests.
+
 ### Alternatives Considered
 
 | Option | Verdict | Reason |
 |--------|---------|--------|
+| **Flutter FFI plugin (Path 2)** | Rejected | Requires host SQLite to support extension loading; macOS system SQLite blocks this |
 | **sqlite-vss** | Dead | Abandoned by author; FAISS dependency made cross-compilation painful |
 | **sqlite-vector (sqliteai)** | Rejected | Elastic License 2.0 -- requires commercial license for production |
 | **sqlite_vec pub.dev package** | Rejected | Weekend project (21 lines of Dart, template placeholders, 86 downloads, broken include paths) |
 | **ObjectBox** | Rejected | Replaces Drift entirely; massive migration for one feature |
 | **local_hnsw (pure Dart)** | Not needed | In-memory only, 27 downloads; brute-force via sqlite-vec is adequate at our scale |
-| **Custom amalgamation (Path 1)** | Rejected | Forces recompilation of sqlite3.c (~240K lines) on clean builds; Path 2 only compiles sqlite-vec.c |
+| **Custom amalgamation (Path 1 - full replacement)** | Rejected | Would replace *all* sqlite3 usage in the app; too invasive |
 
 ### Performance at Our Scale
 
@@ -43,67 +51,84 @@ Brute-force benchmarks for 2048-dim float32 vectors:
 ANN indexes (HNSW/IVF/DiskANN) are on the sqlite-vec roadmap but only matter at 100K+
 scale. We won't need them for the foreseeable future.
 
+## Architecture
+
+### How sqlite-vec is compiled
+
+The vendored `sqlite-vec.c` is compiled **statically into a custom sqlite3 build** by
+linking it together with the sqlite3 amalgamation into a single shared library. This
+library is then loaded via `package:sqlite3`'s `open.overrideFor()` API, replacing the
+system SQLite for the embeddings database.
+
+```
+sqlite3.c (amalgamation, downloaded at build time)
+  +
+sqlite-vec.c (vendored in packages/sqlite_vec/src/)
+  =
+test_sqlite3_with_vec.{dylib,so}  (platform-specific shared library)
+```
+
+The extension is then activated via:
+```dart
+sqlite3.ensureExtensionLoaded(
+  SqliteExtension.staticallyLinked('sqlite3_vec_init'),
+);
+```
+
+### Build target
+
+`make build_test_sqlite_vec` downloads the sqlite3 amalgamation and compiles the combined
+library for the current platform. This runs:
+- Locally before tests (developer responsibility)
+- In CI before the test step (automated in GitHub Actions workflow)
+
+Compilation flags auto-detect the platform:
+- `-O3` optimization
+- ARM64 (macOS Apple Silicon, Linux aarch64): `-DSQLITE_VEC_ENABLE_NEON`
+- x86_64 (Linux CI): `-DSQLITE_VEC_ENABLE_AVX`
+- `-DSQLITE_ENABLE_FTS5` (for future hybrid search)
+- `-lm` (math library)
+
+## Implementation Status
+
+### Done (PR 1)
+
+- [x] **Vendored sqlite-vec source** — `packages/sqlite_vec/src/sqlite-vec.{c,h}` from
+  upstream v0.1.6
+- [x] **EmbeddingsDb class** — `lib/features/ai/database/embeddings_db.dart` with full
+  CRUD + KNN search API
+- [x] **EmbeddingSearchResult data model** — returned by `search()`
+- [x] **18 tests** — `test/features/ai/database/embeddings_db_test.dart` covering all
+  operations (lifecycle, upsert, update, delete, search by distance, k-limit, entity type
+  filter, sequential vector ranking)
+- [x] **Makefile target** — `make build_test_sqlite_vec` builds the combined sqlite3+vec
+  library for the current platform
+- [x] **CI integration** — `flutter-test-linux-faster.yml` runs the build step before tests
+- [x] **Analyzer zero warnings, formatter clean**
+
+### TODO (future PRs)
+
+- [ ] **App startup wiring** — Load extension + register `EmbeddingsDb` as GetIt singleton
+  in `lib/get_it.dart`
+- [ ] **Production build** — Platform-specific compilation of the combined library for
+  release builds (Podspec/CMake integration or pre-built binaries)
+- [ ] Embedding generation pipeline (provider interface, background worker)
+- [ ] Integration with agent tools (`resolve_task_reference`, memory retrieval)
+- [ ] Hybrid search (FTS5 + embedding fusion)
+- [ ] Dimension optimization (int8 quantization, Matryoshka truncation)
+- [ ] Multiple embedding tables for different models/dimensions
+
 ## Deliverables
 
-### 1. Local Flutter FFI Plugin: `packages/sqlite_vec/`
-
-A minimal Flutter FFI plugin that compiles `sqlite-vec.c` per platform and exposes the
-dynamic library handle to Dart.
+### 1. Vendored Source: `packages/sqlite_vec/src/`
 
 ```
-packages/sqlite_vec/
-  pubspec.yaml              # Flutter plugin, ffiPlugin: true
-  lib/sqlite_vec.dart       # ~20 lines: DynamicLibrary loader
-  src/
-    sqlite-vec.c            # Vendored from upstream v0.1.6
-    sqlite-vec.h            # Vendored from upstream v0.1.6
-    CMakeLists.txt          # Shared CMake for Android/Linux/Windows
-  android/
-    CMakeLists.txt          # Android-specific CMake
-  ios/
-    sqlite_vec.podspec      # iOS podspec
-    Classes/
-      sqlite_vec.c          # Forwarder: #include "../../src/sqlite-vec.c"
-  macos/
-    sqlite_vec.podspec      # macOS podspec
-    Classes/
-      sqlite_vec.c          # Forwarder: #include "../../src/sqlite-vec.c"
-  linux/
-    CMakeLists.txt          # Linux CMake
-  windows/
-    CMakeLists.txt          # Windows CMake
+packages/sqlite_vec/src/
+  sqlite-vec.c    # Vendored from upstream v0.1.6 (305 KB)
+  sqlite-vec.h    # Vendored from upstream v0.1.6
 ```
 
-**Dart API** (the entire library):
-```dart
-import 'dart:ffi';
-import 'dart:io';
-
-const String _libName = 'sqlite_vec';
-
-/// Handle to the sqlite-vec shared library.
-/// Use with sqlite3.ensureExtensionLoaded(
-///   SqliteExtension.inLibrary(vec0, 'sqlite3_vec_init'),
-/// )
-final DynamicLibrary vec0 = () {
-  if (Platform.isMacOS || Platform.isIOS) {
-    return DynamicLibrary.open('$_libName.framework/$_libName');
-  }
-  if (Platform.isAndroid || Platform.isLinux) {
-    return DynamicLibrary.open('lib$_libName.so');
-  }
-  if (Platform.isWindows) {
-    return DynamicLibrary.open('$_libName.dll');
-  }
-  throw UnsupportedError('Unknown platform: ${Platform.operatingSystem}');
-}();
-```
-
-**Compilation flags** (from upstream Makefile):
-- `-O3` optimization
-- ARM64 (iOS/macOS Apple Silicon): `-DSQLITE_VEC_ENABLE_NEON`
-- x86_64: `-DSQLITE_VEC_ENABLE_AVX` (where supported)
-- Link `-lm` on Linux
+Upstream updates = copy two files from a new release's amalgamation archive.
 
 ### 2. Embeddings Database: `lib/features/ai/database/embeddings_db.dart`
 
@@ -134,7 +159,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
 ```dart
 class EmbeddingsDb {
   // Lifecycle
-  Future<void> open();
+  void open();
   void close();
 
   // Write
@@ -163,9 +188,12 @@ class EmbeddingsDb {
 }
 ```
 
+**Implementation note:** vec0 virtual tables don't support `INSERT OR REPLACE`. The
+`upsertEmbedding` method uses delete-then-insert for the vec0 table.
+
 **KNN query** (using sqlite-vec syntax):
 ```sql
-SELECT v.entity_id, v.distance, m.entity_type, m.model_id
+SELECT v.entity_id, v.distance, m.entity_type
 FROM vec_embeddings v
 JOIN embedding_metadata m ON v.entity_id = m.entity_id
 WHERE v.embedding MATCH ?       -- query vector as Float32List blob
@@ -173,32 +201,7 @@ WHERE v.embedding MATCH ?       -- query vector as Float32List blob
 ORDER BY v.distance
 ```
 
-### 3. Extension Loading at App Startup
-
-In `lib/get_it.dart` or app initialization, load the extension once:
-
-```dart
-import 'package:sqlite3/sqlite3.dart';
-import 'package:sqlite_vec/sqlite_vec.dart' as sqlite_vec;
-
-// Load sqlite-vec extension into the process-global SQLite engine
-sqlite3.ensureExtensionLoaded(
-  SqliteExtension.inLibrary(sqlite_vec.vec0, 'sqlite3_vec_init'),
-);
-```
-
-Then register `EmbeddingsDb` as a GetIt singleton.
-
-### 4. Root pubspec.yaml Changes
-
-Add the local package as a path dependency:
-```yaml
-dependencies:
-  sqlite_vec:
-    path: packages/sqlite_vec
-```
-
-### 5. Data Model
+### 3. Data Model
 
 ```dart
 class EmbeddingSearchResult {
@@ -208,42 +211,33 @@ class EmbeddingSearchResult {
 }
 ```
 
-## Implementation Steps
+### 4. Build & CI
 
-1. **Create `packages/sqlite_vec/` plugin structure** with pubspec, platform configs
-2. **Vendor `sqlite-vec.c` and `sqlite-vec.h`** from upstream v0.1.6 release
-3. **Write platform build configs** (CMake, Podspec) with correct compiler flags
-4. **Write the Dart loader** (~20 lines)
-5. **Add path dependency** in root pubspec.yaml
-6. **Create `EmbeddingsDb`** class with open/close/upsert/search/delete
-7. **Load extension** in app startup (get_it.dart)
-8. **Register `EmbeddingsDb`** as GetIt singleton
-9. **Write tests** for EmbeddingsDb (in-memory sqlite3 with extension loaded)
-10. **Run analyzer, formatter, tests** to verify everything compiles
+**Makefile target:**
+```makefile
+make build_test_sqlite_vec
+```
 
-## Key Files to Modify
+Downloads sqlite3 amalgamation, compiles `sqlite3.c + sqlite-vec.c` into a single shared
+library at `packages/sqlite_vec/test_sqlite3_with_vec.{dylib,so}`. Auto-detects platform
+and CPU architecture.
 
-| File | Change |
-|------|--------|
-| `pubspec.yaml` | Add `sqlite_vec` path dependency |
-| `lib/get_it.dart` | Load extension + register EmbeddingsDb |
-| `test/widget_test_utils.dart` | Add EmbeddingsDb to test setup/teardown if needed |
+**CI workflow** (`flutter-test-linux-faster.yml`):
+```yaml
+- name: Build sqlite-vec test library
+  run: make build_test_sqlite_vec
+```
 
-## Key Files to Create
+## Key Files
 
 | File | Purpose |
 |------|---------|
-| `packages/sqlite_vec/` | Entire local FFI plugin (new directory tree) |
+| `packages/sqlite_vec/src/sqlite-vec.c` | Vendored sqlite-vec source (v0.1.6) |
+| `packages/sqlite_vec/src/sqlite-vec.h` | Vendored sqlite-vec header |
 | `lib/features/ai/database/embeddings_db.dart` | Vector database class |
-| `test/features/ai/database/embeddings_db_test.dart` | Tests |
-
-## Verification
-
-1. `dart analyze` / MCP analyzer -- zero warnings
-2. `dart format` -- all formatted
-3. Run embeddings_db_test.dart -- passes
-4. Run full test suite -- no regressions (extension loading should be harmless)
-5. Manual smoke test: `fvm flutter run -d macos` -- app launches without crash
+| `test/features/ai/database/embeddings_db_test.dart` | 18 tests |
+| `Makefile` | `build_test_sqlite_vec` target |
+| `.github/workflows/flutter-test-linux-faster.yml` | CI build step |
 
 ## Design Decisions
 
@@ -251,18 +245,12 @@ class EmbeddingSearchResult {
   Raw sqlite3 is simpler and avoids schema version coupling.
 - **Separate file (`embeddings.sqlite`)**: Embeddings are derived data. Can be deleted
   and rebuilt without data loss. No sync needed across devices.
-- **Process-global extension**: `ensureExtensionLoaded` makes vec0 available on all
-  connections. This is harmless -- vec0 only activates when you create vec0 virtual tables.
+- **Statically linked into sqlite3**: Avoids the `SQLITE_OMIT_LOAD_EXTENSION` problem on
+  macOS and works identically in tests and production. No Flutter plugin dependency needed.
+- **No pubspec.yaml dependency**: The vendored source is only consumed by the Makefile
+  build step. The Dart code depends only on `package:sqlite3` which is already a dependency.
 - **Vendored C source**: We own the build. No dependency on a third-party pub.dev package.
-  Upstream updates = copy two files.
+  Upstream updates = copy two files from a new release's amalgamation archive.
 - **Dimension in schema**: Hardcoded to 2048 in the vec0 table. If different models use
   different dimensions, we'd create separate vec0 tables per dimension (sqlite-vec requires
   fixed dimensions per table).
-
-## Out of Scope (future work)
-
-- Embedding generation pipeline (provider interface, background worker)
-- Integration with agent tools (`resolve_task_reference`, memory retrieval)
-- Hybrid search (FTS5 + embedding fusion)
-- Dimension optimization (int8 quantization, Matryoshka truncation)
-- Multiple embedding tables for different models/dimensions
