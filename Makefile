@@ -17,6 +17,12 @@ MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
 
+SQLITE_VERSION := 3460100
+SQLITE_YEAR := 2024
+SQLITE_AMALGAMATION := sqlite-amalgamation-$(SQLITE_VERSION)
+SQLITE_URL := https://www.sqlite.org/$(SQLITE_YEAR)/$(SQLITE_AMALGAMATION).zip
+SQLITE_SHA256 := 77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784
+
 .PHONY: test
 test:
 	$(FLUTTER_CMD) test --coverage
@@ -246,12 +252,11 @@ icons:
 build_test_sqlite_vec:
 	@echo "Building test sqlite3+vec library..."
 	@SQLITE3_DIR=$$(mktemp -d) && \
-	EXPECTED_SHA256="77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784" && \
-	curl -sL "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip" -o "$$SQLITE3_DIR/sqlite3.zip" && \
+	curl -fsL "$(SQLITE_URL)" -o "$$SQLITE3_DIR/sqlite3.zip" && \
 	ACTUAL_SHA256=$$(shasum -a 256 "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1) && \
-	if [ "$$ACTUAL_SHA256" != "$$EXPECTED_SHA256" ]; then \
-		echo "ERROR: SHA256 mismatch for sqlite-amalgamation-3460100.zip" >&2; \
-		echo "  Expected: $$EXPECTED_SHA256" >&2; \
+	if [ "$$ACTUAL_SHA256" != "$(SQLITE_SHA256)" ]; then \
+		echo "ERROR: SHA256 mismatch for $(SQLITE_AMALGAMATION).zip" >&2; \
+		echo "  Expected: $(SQLITE_SHA256)" >&2; \
 		echo "  Actual:   $$ACTUAL_SHA256" >&2; \
 		rm -rf "$$SQLITE3_DIR"; \
 		exit 1; \
@@ -263,8 +268,8 @@ build_test_sqlite_vec:
 	cc -shared -O3 -fPIC \
 		$$NEON_FLAG $$AVX_FLAG \
 		-DSQLITE_ENABLE_FTS5 \
-		-I"$$SQLITE3_DIR/sqlite-amalgamation-3460100/" \
-		"$$SQLITE3_DIR/sqlite-amalgamation-3460100/sqlite3.c" \
+		-I"$$SQLITE3_DIR/$(SQLITE_AMALGAMATION)/" \
+		"$$SQLITE3_DIR/$(SQLITE_AMALGAMATION)/sqlite3.c" \
 		packages/sqlite_vec/src/sqlite-vec.c \
 		-lm \
 		-o packages/sqlite_vec/test_sqlite3_with_vec.$$EXT && \

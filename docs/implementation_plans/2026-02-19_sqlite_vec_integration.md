@@ -60,7 +60,7 @@ linking it together with the sqlite3 amalgamation into a single shared library. 
 library is then loaded via `package:sqlite3`'s `open.overrideFor()` API, replacing the
 system SQLite for the embeddings database.
 
-```
+```text
 sqlite3.c (amalgamation, downloaded at build time)
   +
 sqlite-vec.c (vendored in packages/sqlite_vec/src/)
@@ -122,7 +122,7 @@ Compilation flags auto-detect the platform:
 
 ### 1. Vendored Source: `packages/sqlite_vec/src/`
 
-```
+```text
 packages/sqlite_vec/src/
   sqlite-vec.c    # Vendored from upstream v0.1.6 (305 KB)
   sqlite-vec.h    # Vendored from upstream v0.1.6

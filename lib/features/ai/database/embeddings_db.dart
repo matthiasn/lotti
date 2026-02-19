@@ -28,7 +28,8 @@ class EmbeddingsDb {
   ///
   /// If [inMemory] is true an in-memory database is created (useful for
   /// tests). Otherwise the database is opened at [path].
-  EmbeddingsDb({this.path, this.inMemory = false});
+  EmbeddingsDb({this.path, this.inMemory = false})
+      : assert(inMemory || path != null, 'path must be set when not inMemory');
 
   /// File path for the database. Ignored when [inMemory] is true.
   final String? path;
@@ -183,33 +184,21 @@ class EmbeddingsDb {
       queryVector.lengthInBytes,
     );
 
-    final ResultSet rows;
-    if (entityTypeFilter != null) {
-      rows = db.select(
-        '''
-        SELECT v.entity_id, v.distance, m.entity_type
-        FROM vec_embeddings v
-        JOIN embedding_metadata m ON v.entity_id = m.entity_id
-        WHERE v.embedding MATCH ?
-          AND k = ?
-          AND m.entity_type = ?
-        ORDER BY v.distance
-        ''',
-        [blob, k, entityTypeFilter],
-      );
-    } else {
-      rows = db.select(
-        '''
-        SELECT v.entity_id, v.distance, m.entity_type
-        FROM vec_embeddings v
-        JOIN embedding_metadata m ON v.entity_id = m.entity_id
-        WHERE v.embedding MATCH ?
-          AND k = ?
-        ORDER BY v.distance
-        ''',
-        [blob, k],
-      );
-    }
+    final typeClause = entityTypeFilter != null ? 'AND m.entity_type = ?' : '';
+    final params = [blob, k, if (entityTypeFilter != null) entityTypeFilter];
+
+    final rows = db.select(
+      '''
+      SELECT v.entity_id, v.distance, m.entity_type
+      FROM vec_embeddings v
+      JOIN embedding_metadata m ON v.entity_id = m.entity_id
+      WHERE v.embedding MATCH ?
+        AND k = ?
+        $typeClause
+      ORDER BY v.distance
+      ''',
+      params,
+    );
 
     return rows.map((row) {
       return EmbeddingSearchResult(
