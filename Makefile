@@ -249,7 +249,7 @@ build_test_sqlite_vec:
 	curl -sL "https://www.sqlite.org/2024/sqlite-amalgamation-3460100.zip" -o "$$SQLITE3_DIR/sqlite3.zip" && \
 	unzip -q -o "$$SQLITE3_DIR/sqlite3.zip" -d "$$SQLITE3_DIR" && \
 	EXT=$$(if [ "$$(uname -s)" = "Darwin" ]; then echo dylib; else echo so; fi) && \
-	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON"; fi) && \
+	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON -flax-vector-conversions"; fi) && \
 	AVX_FLAG=$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "-DSQLITE_VEC_ENABLE_AVX -mavx"; fi) && \
 	cc -shared -O3 -fPIC \
 		$$NEON_FLAG $$AVX_FLAG \
