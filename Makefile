@@ -252,41 +252,7 @@ icons:
 
 .PHONY: build_test_sqlite_vec
 build_test_sqlite_vec:
-	@echo "Building test sqlite3+vec library..."
-	@SQLITE3_DIR=$$(mktemp -d) && \
-	curl -fsL "$(SQLITE_URL)" -o "$$SQLITE3_DIR/sqlite3.zip" && \
-	if command -v sha256sum >/dev/null 2>&1; then \
-		ACTUAL_SHA256=$$(sha256sum "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1); \
-	else \
-		ACTUAL_SHA256=$$(shasum -a 256 "$$SQLITE3_DIR/sqlite3.zip" | cut -d' ' -f1); \
-	fi && \
-	if [ "$$ACTUAL_SHA256" != "$(SQLITE_SHA256)" ]; then \
-		echo "ERROR: SHA256 mismatch for $(SQLITE_AMALGAMATION).zip" >&2; \
-		echo "  Expected: $(SQLITE_SHA256)" >&2; \
-		echo "  Actual:   $$ACTUAL_SHA256" >&2; \
-		rm -rf "$$SQLITE3_DIR"; \
-		exit 1; \
-	fi && \
-	unzip -q -o "$$SQLITE3_DIR/sqlite3.zip" -d "$$SQLITE3_DIR" && \
-	NEON_FLAG=$$(if [ "$$(uname -m)" = "arm64" ] || [ "$$(uname -m)" = "aarch64" ]; then echo "-DSQLITE_VEC_ENABLE_NEON -flax-vector-conversions"; fi) && \
-	AVX_FLAG=$$(if [ "$$(uname -m)" = "x86_64" ]; then echo "-DSQLITE_VEC_ENABLE_AVX -mavx"; fi) && \
-	if [ "$$(uname -s)" = "Darwin" ]; then \
-		EXT=dylib; \
-		LINK_FLAG="-dynamiclib"; \
-	else \
-		EXT=so; \
-		LINK_FLAG="-shared"; \
-	fi && \
-	cc $$LINK_FLAG -O3 -fPIC \
-		$$NEON_FLAG $$AVX_FLAG \
-		-DSQLITE_ENABLE_FTS5 \
-		-I"$$SQLITE3_DIR/$(SQLITE_AMALGAMATION)/" \
-		"$$SQLITE3_DIR/$(SQLITE_AMALGAMATION)/sqlite3.c" \
-		packages/sqlite_vec/src/sqlite-vec.c \
-		-lm \
-		-o packages/sqlite_vec/test_sqlite3_with_vec.$$EXT && \
-	rm -rf "$$SQLITE3_DIR" && \
-	echo "Built packages/sqlite_vec/test_sqlite3_with_vec.$$EXT"
+	@./scripts/build_test_sqlite_vec.sh "$(SQLITE_URL)" "$(SQLITE_SHA256)" "$(SQLITE_AMALGAMATION)"
 
 .PHONY: clean_test
 clean_test: clean deps build_runner l10n test
