@@ -93,16 +93,6 @@ const List<KnownModel> alibabaModels = [
         'reasoning, analysis, and generation tasks.',
   ),
   KnownModel(
-    providerModelId: 'qwen-plus',
-    name: 'Qwen Plus',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description: 'Balanced mid-tier model. Good performance-to-cost ratio for '
-        'summaries, classification, and general tasks.',
-  ),
-  KnownModel(
     providerModelId: 'qwen-flash',
     name: 'Qwen Flash',
     inputModalities: [Modality.text],
@@ -112,16 +102,6 @@ const List<KnownModel> alibabaModels = [
     description:
         'Fast and affordable model optimized for speed. Great for quick '
         'tasks, summaries, and high-throughput workloads.',
-  ),
-  KnownModel(
-    providerModelId: 'qwq-plus',
-    name: 'QwQ Plus',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Chain-of-thought reasoning model for complex problem-solving '
-        'and analytical tasks.',
   ),
   KnownModel(
     providerModelId: 'qwen3-vl-plus',
@@ -144,25 +124,15 @@ const List<KnownModel> alibabaModels = [
         'visual question answering.',
   ),
   KnownModel(
-    providerModelId: 'qwen-coder-plus',
-    name: 'Qwen Coder Plus',
-    inputModalities: [Modality.text],
+    providerModelId: 'qwen3-omni-flash',
+    name: 'Qwen3 Omni Flash',
+    inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Code-specialized model for programming tasks, code review, '
-        'and software engineering assistance.',
-  ),
-  KnownModel(
-    providerModelId: 'qwen-long',
-    name: 'Qwen Long',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description:
-        'Long-context specialist supporting up to 10M tokens. Ideal for '
-        'processing lengthy documents and transcripts.',
+    description: 'Multimodal model with audio understanding. Supports up to '
+        '20 minutes of audio for transcription and analysis. '
+        'Accepts AMR, WAV, AAC, and MP3 formats.',
   ),
 ];
 

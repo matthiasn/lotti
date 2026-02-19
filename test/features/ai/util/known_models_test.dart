@@ -442,16 +442,20 @@ void main() {
     });
 
     group('Alibaba Models', () {
-      test('should have text, vision, and reasoning models', () {
-        expect(alibabaModels.length, equals(8));
+      test('should have text, vision, audio, and reasoning models', () {
+        expect(alibabaModels.length, equals(5));
 
         final textModels = alibabaModels.where(
           (m) =>
               m.inputModalities.contains(Modality.text) &&
-              !m.inputModalities.contains(Modality.image),
+              !m.inputModalities.contains(Modality.image) &&
+              !m.inputModalities.contains(Modality.audio),
         );
         final visionModels = alibabaModels.where(
           (m) => m.inputModalities.contains(Modality.image),
+        );
+        final audioModels = alibabaModels.where(
+          (m) => m.inputModalities.contains(Modality.audio),
         );
         final reasoningModels = alibabaModels.where(
           (m) => m.isReasoningModel,
@@ -459,6 +463,7 @@ void main() {
 
         expect(textModels, isNotEmpty, reason: 'Should have text-only models');
         expect(visionModels, isNotEmpty, reason: 'Should have vision models');
+        expect(audioModels, isNotEmpty, reason: 'Should have audio models');
         expect(reasoningModels, isNotEmpty,
             reason: 'Should have reasoning models');
       });
@@ -469,13 +474,6 @@ void main() {
         );
         expect(maxModel.isReasoningModel, isTrue);
         expect(maxModel.supportsFunctionCalling, isTrue);
-      });
-
-      test('QwQ Plus should be a reasoning model', () {
-        final qwqModel = alibabaModels.firstWhere(
-          (m) => m.providerModelId == 'qwq-plus',
-        );
-        expect(qwqModel.isReasoningModel, isTrue);
       });
 
       test('vision models should accept image input', () {
@@ -490,6 +488,16 @@ void main() {
           expect(model.outputModalities, contains(Modality.text),
               reason: '${model.name} should output text');
         }
+      });
+
+      test('Qwen3 Omni Flash should accept audio input', () {
+        final omniModel = alibabaModels.firstWhere(
+          (m) => m.providerModelId == 'qwen3-omni-flash',
+        );
+        expect(omniModel.inputModalities, contains(Modality.audio));
+        expect(omniModel.inputModalities, contains(Modality.text));
+        expect(omniModel.outputModalities, contains(Modality.text));
+        expect(omniModel.supportsFunctionCalling, isTrue);
       });
 
       test('all Alibaba models should have valid configurations', () {

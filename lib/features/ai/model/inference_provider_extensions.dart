@@ -80,7 +80,14 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.whisper:
         return Icons.mic;
       case InferenceProviderType.voxtral:
-        return Icons.record_voice_over;
+        return Icons.graphic_eq;
     }
   }
+
+  /// Whether this provider requires audio data wrapped in a data URI
+  /// (`data:;base64,...`) instead of raw base64.
+  ///
+  /// DashScope (Alibaba) requires this format with an intentionally empty
+  /// MIME type. See: https://github.com/pydantic/pydantic-ai/issues/3530
+  bool get requiresDataUriForAudio => this == InferenceProviderType.alibaba;
 }
