@@ -82,8 +82,7 @@ void main() {
         const WidgetTestBench(child: ChecklistAllDoneState()),
       );
 
-      expect(find.byType(ChecklistAllDoneState), findsOneWidget);
-      expect(find.byType(Text), findsOneWidget);
+      expect(find.text('All items completed!'), findsOneWidget);
     });
   });
 }

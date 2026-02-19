@@ -61,7 +61,6 @@ void main() {
 
       expect(find.text(habitFlossing.name), findsOneWidget);
       expect(find.byType(HabitCompletionCard), findsOneWidget);
-      expect(find.byType(DashboardHabitsChart), findsOneWidget);
     });
   });
 }

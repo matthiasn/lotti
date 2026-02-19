@@ -74,9 +74,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      // Title present and page rendered with stats provider data
+      // Title and subtitle present, stats card rendered
       expect(find.text('Matrix Stats'), findsOneWidget);
-      expect(find.byType(SyncStatsPage), findsOneWidget);
+      expect(find.text('Inspect sync pipeline metrics'), findsOneWidget);
     });
   });
 }

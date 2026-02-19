@@ -63,8 +63,10 @@ void main() {
         '${measurablePullUps.displayName} [dailyMax]',
       ),
     ]) {
+      final expectedChartType =
+          testCase.$2 == AggregationType.none ? 'line' : 'bar';
       testWidgets(
-          'renders chart with ${testCase.$2.name} aggregation and bar chart',
+          'renders chart with ${testCase.$2.name} aggregation and $expectedChartType chart',
           (tester) async {
         final measurable = testCase.$2 == AggregationType.none
             ? testCase.$1

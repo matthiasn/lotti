@@ -484,7 +484,9 @@ void main() {
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
-      getIt<JournalDb>().purgeDeleted(backup: false, stepDelay: Duration.zero);
+      await getIt<JournalDb>()
+          .purgeDeleted(backup: false, stepDelay: Duration.zero)
+          .drain<void>();
     });
 
     test('create and retrieve workout entry', () async {
