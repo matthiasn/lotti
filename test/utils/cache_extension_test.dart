@@ -1,33 +1,40 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
-final Provider<DateTime> testProvider = Provider.autoDispose<DateTime>((ref) {
-  ref.cacheFor(const Duration(milliseconds: 100));
-  return DateTime.now();
-});
-
 void main() {
   group('cacheFor', () {
-    test('should keep the provider alive for the specified duration', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test('should keep the provider alive for the specified duration', () {
+      fakeAsync((async) {
+        var buildCount = 0;
+        final testProvider = Provider.autoDispose<int>((ref) {
+          ref.cacheFor(const Duration(milliseconds: 100));
+          return ++buildCount;
+        });
 
-      // Read the provider to activate it
-      final initialTime = container.read(testProvider);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      // Wait for a short time, less than the cache duration
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Read the provider to activate it
+        final initialValue = container.read(testProvider);
+        expect(initialValue, 1);
 
-      // The provider should still be active and return the same time
-      expect(container.read(testProvider), initialTime);
+        // Advance less than cache duration — provider should still be cached
+        async.elapse(const Duration(milliseconds: 50));
+        expect(container.read(testProvider), initialValue);
+        expect(buildCount, 1);
 
-      // Wait for the cache duration to expire
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Advance past cache duration — keepAlive link is closed,
+        // but provider stays alive as long as something reads it
+        async.elapse(const Duration(milliseconds: 60));
 
-      // The provider should now be re-initialized and return a new time
-      final newTime = container.read(testProvider);
-      expect(newTime, isNot(initialTime));
+        // Invalidate to force re-evaluation now that keepAlive expired
+        container.invalidate(testProvider);
+        final newValue = container.read(testProvider);
+        expect(newValue, 2);
+        expect(buildCount, 2);
+      });
     });
   });
 }

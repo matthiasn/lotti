@@ -108,7 +108,8 @@ void main() {
         }
 
         await tester.pumpWidget(makeTestableWidgetWithScaffold(chart));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
 
         expect(find.text(testCase.$3), findsOneWidget);
         // 'none' aggregation uses line chart, all others use bar chart
@@ -148,7 +149,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
 
       expect(
         find.text('${measurableWater.displayName} [dailySum]'),
