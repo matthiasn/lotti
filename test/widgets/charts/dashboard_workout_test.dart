@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,111 +27,45 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('workout chart for running distance is rendered',
-        (tester) async {
-      when(
-        () => mockJournalDb.getWorkouts(
-          rangeEnd: any(named: 'rangeEnd'),
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) async => [testWorkoutRunning]);
+    for (final testCase in [
+      (WorkoutValueType.distance, 'Running distance'),
+      (WorkoutValueType.energy, 'Running calories'),
+      (WorkoutValueType.duration, 'Running Duration'),
+    ]) {
+      testWidgets(
+          'renders chart with title and bar chart for ${testCase.$1.name}',
+          (tester) async {
+        when(
+          () => mockJournalDb.getWorkouts(
+            rangeEnd: any(named: 'rangeEnd'),
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => [testWorkoutRunning]);
 
-      when(mockHealthImport.getWorkoutsHealthDataDelta)
-          .thenAnswer((_) async {});
+        when(mockHealthImport.getWorkoutsHealthDataDelta)
+            .thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DashboardWorkoutChart(
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            chartConfig: DashboardWorkoutItem(
-              valueType: WorkoutValueType.distance,
-              color: '#00FF00',
-              displayName: 'Running distance',
-              workoutType: testWorkoutRunning.data.workoutType,
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardWorkoutChart(
+              rangeStart: DateTime(2022),
+              rangeEnd: DateTime(2023),
+              chartConfig: DashboardWorkoutItem(
+                valueType: testCase.$1,
+                color: '#00FF00',
+                displayName: testCase.$2,
+                workoutType: testWorkoutRunning.data.workoutType,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // chart displays expected title
-      expect(
-        find.text('Running distance'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('workout chart for running energy is rendered', (tester) async {
-      when(
-        () => mockJournalDb.getWorkouts(
-          rangeEnd: any(named: 'rangeEnd'),
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) async => [testWorkoutRunning]);
-
-      when(mockHealthImport.getWorkoutsHealthDataDelta)
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DashboardWorkoutChart(
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            chartConfig: DashboardWorkoutItem(
-              valueType: WorkoutValueType.energy,
-              color: '#00FF00',
-              displayName: 'Running calories',
-              workoutType: testWorkoutRunning.data.workoutType,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // chart displays expected title
-      expect(
-        find.text('Running calories'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('workout chart for running duration is rendered',
-        (tester) async {
-      when(
-        () => mockJournalDb.getWorkouts(
-          rangeEnd: any(named: 'rangeEnd'),
-          rangeStart: any(named: 'rangeStart'),
-        ),
-      ).thenAnswer((_) async => [testWorkoutRunning]);
-
-      when(mockHealthImport.getWorkoutsHealthDataDelta)
-          .thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DashboardWorkoutChart(
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            chartConfig: DashboardWorkoutItem(
-              valueType: WorkoutValueType.duration,
-              color: '#00FF00',
-              displayName: 'Running Duration',
-              workoutType: testWorkoutRunning.data.workoutType,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // chart displays expected title
-      expect(
-        find.text('Running Duration'),
-        findsOneWidget,
-      );
-    });
+        expect(find.text(testCase.$2), findsOneWidget);
+        expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+        expect(find.byType(WorkoutChartInfoWidget), findsOneWidget);
+      });
+    }
   });
 }

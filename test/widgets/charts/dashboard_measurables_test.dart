@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -39,168 +41,89 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets(
-        'chart is rendered with measurement entry, aggregation sum by day',
-        (tester) async {
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableChocolate.id,
-        ),
-      ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
+    for (final testCase in [
+      (
+        measurableChocolate,
+        AggregationType.dailySum,
+        '${measurableChocolate.displayName} [dailySum]',
+      ),
+      (
+        measurableChocolate,
+        AggregationType.hourlySum,
+        '${measurableChocolate.displayName} [hourlySum]',
+      ),
+      (
+        measurableCoverage,
+        AggregationType.none,
+        measurableCoverage.displayName,
+      ),
+      (
+        measurablePullUps,
+        AggregationType.dailyMax,
+        '${measurablePullUps.displayName} [dailyMax]',
+      ),
+    ]) {
+      testWidgets(
+          'renders chart with ${testCase.$2.name} aggregation and bar chart',
+          (tester) async {
+        final measurable = testCase.$2 == AggregationType.none
+            ? testCase.$1
+            : testCase.$1.copyWith(aggregationType: testCase.$2);
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(measurableChocolate.id),
-      ).thenAnswer((_) async => measurableChocolate);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          MeasurablesBarChart(
-            dashboardId: 'dashboardId',
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            measurableDataTypeId: measurableChocolate.id,
+        when(
+          () => mockJournalDb.getMeasurementsByType(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+            type: testCase.$1.id,
           ),
-        ),
-      );
+        ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
 
-      await tester.pumpAndSettle();
+        when(
+          () => mockJournalDb.getMeasurableDataTypeById(testCase.$1.id),
+        ).thenAnswer((_) async => measurable);
 
-      // measurement entry displays expected date
-      expect(
-        find.text('${measurableChocolate.displayName} [dailySum]'),
-        findsOneWidget,
-      );
-    });
+        final needsBeamer = testCase.$2 == AggregationType.dailyMax;
 
-    testWidgets(
-        'chart is rendered with measurement entry, aggregation sum by hour',
-        (tester) async {
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableChocolate.id,
-        ),
-      ).thenAnswer(
-        (_) async => [testMeasurementChocolateEntry],
-      );
+        Widget chart = MeasurablesBarChart(
+          dashboardId: 'dashboardId',
+          rangeStart: DateTime(2022),
+          rangeEnd: DateTime(2023),
+          measurableDataTypeId: testCase.$1.id,
+          enableCreate: needsBeamer,
+        );
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(measurableChocolate.id),
-      ).thenAnswer(
-        (_) async => measurableChocolate.copyWith(
-          aggregationType: AggregationType.hourlySum,
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          MeasurablesBarChart(
-            dashboardId: 'dashboardId',
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            measurableDataTypeId: measurableChocolate.id,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // measurement entry displays expected date
-      expect(
-        find.text('${measurableChocolate.displayName} [hourlySum]'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('chart is rendered with measurement entry, aggregation none',
-        (tester) async {
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableCoverage.id,
-        ),
-      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
-
-      when(() => mockJournalDb.getMeasurableDataTypeById(measurableCoverage.id))
-          .thenAnswer((_) async => measurableCoverage);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          MeasurablesBarChart(
-            dashboardId: 'dashboardId',
-            rangeStart: DateTime(2022),
-            rangeEnd: DateTime(2023),
-            measurableDataTypeId: measurableCoverage.id,
-            enableCreate: true,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // measurement entry displays expected date
-      expect(
-        find.text(measurableCoverage.displayName),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-        'chart is rendered with measurement entry, aggregation daily max',
-        (tester) async {
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurablePullUps.id,
-        ),
-      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
-
-      when(() => mockJournalDb.getMeasurableDataTypeById(measurablePullUps.id))
-          .thenAnswer((_) async => measurablePullUps);
-
-      final delegate = BeamerDelegate(
-        locationBuilder: RoutesLocationBuilder(
-          routes: {
-            '/': (context, state, data) => Container(),
-          },
-        ).call,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BeamerProvider(
-            routerDelegate: delegate,
-            child: MeasurablesBarChart(
-              dashboardId: 'dashboardId',
-              rangeStart: DateTime(2022),
-              rangeEnd: DateTime(2023),
-              measurableDataTypeId: measurablePullUps.id,
-              enableCreate: true,
+        if (needsBeamer) {
+          chart = BeamerProvider(
+            routerDelegate: BeamerDelegate(
+              locationBuilder: RoutesLocationBuilder(
+                routes: {
+                  '/': (context, state, data) => Container(),
+                },
+              ).call,
             ),
-          ),
-        ),
-      );
+            child: chart,
+          );
+        }
 
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(makeTestableWidgetWithScaffold(chart));
+        await tester.pumpAndSettle();
 
-      // measurement entry displays expected date
-      expect(
-        find.text('${measurablePullUps.displayName} [dailyMax]'),
-        findsOneWidget,
-      );
+        expect(find.text(testCase.$3), findsOneWidget);
+        // 'none' aggregation uses line chart, all others use bar chart
+        if (testCase.$2 == AggregationType.none) {
+          expect(find.byType(TimeSeriesLineChart), findsOneWidget);
+        } else {
+          expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+        }
 
-      final addIconFinder = find.byType(IconButton);
-      await tester.tap(addIconFinder);
-      await tester.pumpAndSettle();
-    });
+        expect(
+          find.byType(MeasurablesBarChart),
+          findsOneWidget,
+        );
+      });
+    }
 
-    testWidgets('chart displays description stacked under title',
-        (tester) async {
+    testWidgets('displays description stacked under title', (tester) async {
       when(
         () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
@@ -225,17 +148,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify title is displayed
       expect(
         find.text('${measurableWater.displayName} [dailySum]'),
         findsOneWidget,
       );
-
-      // Verify description is displayed stacked under title
-      expect(
-        find.text(measurableWater.description),
-        findsOneWidget,
-      );
+      expect(find.text(measurableWater.description), findsOneWidget);
     });
   });
 }

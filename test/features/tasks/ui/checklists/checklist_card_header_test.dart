@@ -51,61 +51,43 @@ void main() {
       );
     }
 
-    testWidgets('renders title', (tester) async {
+    testWidgets('normal expanded mode shows title, chevron, menu, filters',
+        (tester) async {
       await tester.pumpWidget(buildHeader(title: 'My Checklist'));
 
       expect(find.text('My Checklist'), findsOneWidget);
-    });
-
-    testWidgets('shows chevron in normal mode', (tester) async {
-      await tester.pumpWidget(buildHeader());
-
       expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.drag_indicator), findsNothing);
+      expect(find.byType(ChecklistFilterTabs), findsOneWidget);
+      expect(find.byType(ChecklistProgressIndicator), findsWidgets);
     });
 
-    testWidgets('hides chevron in sorting mode', (tester) async {
-      await tester.pumpWidget(buildHeader(isSortingMode: true));
-
-      expect(find.byIcon(Icons.expand_more), findsNothing);
-    });
-
-    testWidgets('shows drag handle in sorting mode', (tester) async {
+    testWidgets('sorting mode shows drag handle, hides chevron and menu',
+        (tester) async {
       await tester.pumpWidget(buildHeader(isSortingMode: true));
 
       expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
-    });
-
-    testWidgets('hides drag handle in normal mode', (tester) async {
-      await tester.pumpWidget(buildHeader());
-
-      expect(find.byIcon(Icons.drag_indicator), findsNothing);
-    });
-
-    testWidgets('shows menu button in normal mode', (tester) async {
-      await tester.pumpWidget(buildHeader());
-
-      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
-    });
-
-    testWidgets('hides menu button in sorting mode', (tester) async {
-      await tester.pumpWidget(buildHeader(isSortingMode: true));
-
+      expect(find.byIcon(Icons.expand_more), findsNothing);
       expect(find.byIcon(Icons.more_horiz_rounded), findsNothing);
     });
 
-    testWidgets('shows filter tabs when expanded and has items',
+    testWidgets(
+        'drag handle wrapped in ReorderableDragStartListener when reorderIndex provided',
         (tester) async {
-      await tester.pumpWidget(buildHeader());
+      await tester.pumpWidget(
+        buildHeader(isSortingMode: true, reorderIndex: 0),
+      );
+      expect(find.byType(ReorderableDragStartListener), findsOneWidget);
 
-      expect(find.byType(ChecklistFilterTabs), findsOneWidget);
+      // Without reorderIndex, no ReorderableDragStartListener
+      await tester.pumpWidget(buildHeader(isSortingMode: true));
+      expect(find.byType(ReorderableDragStartListener), findsNothing);
     });
 
     testWidgets('hides filter tabs when collapsed', (tester) async {
-      await tester.pumpWidget(buildHeader(
-        isExpanded: false,
-      ));
+      await tester.pumpWidget(buildHeader(isExpanded: false));
 
-      // Filter tabs are in AnimatedCrossFade showing secondChild
       final crossFades = tester.widgetList<AnimatedCrossFade>(
         find.byType(AnimatedCrossFade),
       );
@@ -117,25 +99,15 @@ void main() {
 
     testWidgets('hides filter tabs when empty (totalCount = 0)',
         (tester) async {
-      await tester.pumpWidget(buildHeader(
-        totalCount: 0,
-      ));
+      await tester.pumpWidget(buildHeader(totalCount: 0));
 
-      // All AnimatedCrossFades should show secondChild when empty
       final crossFades = tester.widgetList<AnimatedCrossFade>(
         find.byType(AnimatedCrossFade),
       );
       final hiddenCount = crossFades
           .where((cf) => cf.crossFadeState == CrossFadeState.showSecond)
           .length;
-      // At least dividers and progress row should be hidden
       expect(hiddenCount, greaterThanOrEqualTo(3));
-    });
-
-    testWidgets('shows progress indicator', (tester) async {
-      await tester.pumpWidget(buildHeader());
-
-      expect(find.byType(ChecklistProgressIndicator), findsWidgets);
     });
 
     testWidgets('calls onToggleExpand when chevron tapped', (tester) async {
@@ -157,7 +129,6 @@ void main() {
         onTitleTap: () => titleTapped = true,
       ));
 
-      // Find the title text and tap it
       await tester.tap(find.text('Test Checklist'));
       await tester.pump();
 
@@ -178,40 +149,15 @@ void main() {
 
     testWidgets('shows delete dialog when delete menu item selected',
         (tester) async {
-      await tester.pumpWidget(buildHeader(
-        onDelete: () {},
-      ));
+      await tester.pumpWidget(buildHeader(onDelete: () {}));
 
-      // Open menu
       await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pumpAndSettle();
 
-      // Tap delete
       await tester.tap(find.text('Delete checklist?'));
       await tester.pump();
 
-      // Dialog should appear
       expect(find.byType(AlertDialog), findsOneWidget);
-    });
-
-    testWidgets(
-        'wraps drag handle in ReorderableDragStartListener when reorderIndex provided',
-        (tester) async {
-      await tester.pumpWidget(buildHeader(
-        isSortingMode: true,
-        reorderIndex: 0,
-      ));
-
-      expect(find.byType(ReorderableDragStartListener), findsOneWidget);
-    });
-
-    testWidgets('does not wrap drag handle when reorderIndex is null',
-        (tester) async {
-      await tester.pumpWidget(buildHeader(
-        isSortingMode: true,
-      ));
-
-      expect(find.byType(ReorderableDragStartListener), findsNothing);
     });
   });
 }

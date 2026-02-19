@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -44,7 +45,7 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('workout chart for running distance is rendered',
+    testWidgets('renders habit chart with title and completion card',
         (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -58,11 +59,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // chart displays expected title
-      expect(
-        find.text(habitFlossing.name),
-        findsOneWidget,
-      );
+      expect(find.text(habitFlossing.name), findsOneWidget);
+      expect(find.byType(HabitCompletionCard), findsOneWidget);
+      expect(find.byType(DashboardHabitsChart), findsOneWidget);
     });
   });
 }

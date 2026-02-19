@@ -145,24 +145,15 @@ void main() {
   }
 
   group('InitialModalPageContent ModernLabelsItem integration', () {
-    testWidgets('shows Labels action item for non-task entries',
+    testWidgets('shows Labels icon, text, and subtitle for non-task entries',
         (tester) async {
       final entry = textEntry();
 
       await tester.pumpWidget(buildWrapper(entry));
       await tester.pumpAndSettle();
 
-      // Find the Labels action item by icon and text
       expect(find.byIcon(MdiIcons.labelOutline), findsOneWidget);
       expect(find.text('Labels'), findsOneWidget);
-    });
-
-    testWidgets('shows Labels action item subtitle', (tester) async {
-      final entry = textEntry();
-
-      await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
-
       expect(
         find.text('Assign labels to organize this entry'),
         findsOneWidget,
@@ -170,67 +161,27 @@ void main() {
     });
 
     testWidgets('hides Labels action item for Task entries', (tester) async {
-      final task = taskEntry();
-
-      await tester.pumpWidget(buildWrapper(task));
+      await tester.pumpWidget(buildWrapper(taskEntry()));
       await tester.pumpAndSettle();
-
-      // ModernLabelsItem should return SizedBox.shrink for tasks
-      // There should be no label icon in the modal for tasks
       expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
     });
 
     testWidgets('hides Labels action item when entry is null', (tester) async {
       await tester.pumpWidget(buildWrapper(null));
       await tester.pumpAndSettle();
-
-      // ModernLabelsItem should return SizedBox.shrink when entry is null
       expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
-    });
-
-    testWidgets('Labels item appears in menu with icon and text',
-        (tester) async {
-      final entry = textEntry();
-
-      await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
-
-      // Find the labels item icon
-      final labelIcon = find.byIcon(MdiIcons.labelOutline);
-      expect(labelIcon, findsOneWidget);
-
-      // Find labels text
-      expect(find.text('Labels'), findsOneWidget);
-
-      // Find labels subtitle
-      expect(
-        find.text('Assign labels to organize this entry'),
-        findsOneWidget,
-      );
     });
   });
 
   group('InitialModalPageContent link actions', () {
-    testWidgets('renders Link from item', (tester) async {
+    testWidgets('renders both Link from and Link to items', (tester) async {
       final entry = textEntry();
 
       await tester.pumpWidget(buildWrapper(entry));
       await tester.pumpAndSettle();
 
-      // Find the "Link from" item (localized string)
-      final linkFromFinder = find.text('Link from');
-      expect(linkFromFinder, findsOneWidget);
-    });
-
-    testWidgets('renders Link to item', (tester) async {
-      final entry = textEntry();
-
-      await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
-
-      // Find the "Link to" item (localized string)
-      final linkToFinder = find.text('Link to');
-      expect(linkToFinder, findsOneWidget);
+      expect(find.text('Link from'), findsOneWidget);
+      expect(find.text('Link to'), findsOneWidget);
     });
   });
 
@@ -277,21 +228,14 @@ void main() {
       );
     }
 
-    testWidgets('shows speech transcription item for audio', (tester) async {
+    testWidgets('shows transcription and share items for audio',
+        (tester) async {
       final entry = audioEntry();
 
       await tester.pumpWidget(buildAudioWrapper(entry));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
-    });
-
-    testWidgets('shows share item for audio', (tester) async {
-      final entry = audioEntry();
-
-      await tester.pumpWidget(buildAudioWrapper(entry));
-      await tester.pumpAndSettle();
-
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
     });
   });
@@ -338,21 +282,13 @@ void main() {
       );
     }
 
-    testWidgets('shows share item for image', (tester) async {
+    testWidgets('shows share and copy items for image', (tester) async {
       final entry = imageEntry();
 
       await tester.pumpWidget(buildImageWrapper(entry));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
-    });
-
-    testWidgets('shows copy image item for image', (tester) async {
-      final entry = imageEntry();
-
-      await tester.pumpWidget(buildImageWrapper(entry));
-      await tester.pumpAndSettle();
-
       expect(find.byIcon(MdiIcons.contentCopy), findsOneWidget);
     });
   });
