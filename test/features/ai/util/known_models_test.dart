@@ -442,16 +442,20 @@ void main() {
     });
 
     group('Alibaba Models', () {
-      test('should have text, vision, and reasoning models', () {
-        expect(alibabaModels.length, equals(8));
+      test('should have text, vision, audio, and reasoning models', () {
+        expect(alibabaModels.length, equals(6));
 
         final textModels = alibabaModels.where(
           (m) =>
               m.inputModalities.contains(Modality.text) &&
-              !m.inputModalities.contains(Modality.image),
+              !m.inputModalities.contains(Modality.image) &&
+              !m.inputModalities.contains(Modality.audio),
         );
         final visionModels = alibabaModels.where(
           (m) => m.inputModalities.contains(Modality.image),
+        );
+        final audioModels = alibabaModels.where(
+          (m) => m.inputModalities.contains(Modality.audio),
         );
         final reasoningModels = alibabaModels.where(
           (m) => m.isReasoningModel,
@@ -459,6 +463,7 @@ void main() {
 
         expect(textModels, isNotEmpty, reason: 'Should have text-only models');
         expect(visionModels, isNotEmpty, reason: 'Should have vision models');
+        expect(audioModels, isNotEmpty, reason: 'Should have audio models');
         expect(reasoningModels, isNotEmpty,
             reason: 'Should have reasoning models');
       });
@@ -469,13 +474,6 @@ void main() {
         );
         expect(maxModel.isReasoningModel, isTrue);
         expect(maxModel.supportsFunctionCalling, isTrue);
-      });
-
-      test('QwQ Plus should be a reasoning model', () {
-        final qwqModel = alibabaModels.firstWhere(
-          (m) => m.providerModelId == 'qwq-plus',
-        );
-        expect(qwqModel.isReasoningModel, isTrue);
       });
 
       test('vision models should accept image input', () {
@@ -490,6 +488,16 @@ void main() {
           expect(model.outputModalities, contains(Modality.text),
               reason: '${model.name} should output text');
         }
+      });
+
+      test('Qwen3 Omni Flash should accept audio input', () {
+        final omniModel = alibabaModels.firstWhere(
+          (m) => m.providerModelId == 'qwen3-omni-flash',
+        );
+        expect(omniModel.inputModalities, contains(Modality.audio));
+        expect(omniModel.inputModalities, contains(Modality.text));
+        expect(omniModel.outputModalities, contains(Modality.text));
+        expect(omniModel.supportsFunctionCalling, isTrue);
       });
 
       test('all Alibaba models should have valid configurations', () {
@@ -508,6 +516,104 @@ void main() {
               reason:
                   'Model ${model.name} should have at least one output modality');
         }
+      });
+    });
+
+    group('Alibaba FTUE functions', () {
+      test('findAlibabaKnownModel returns model for valid ID', () {
+        final model = findAlibabaKnownModel(ftueAlibabaReasoningModelId);
+        expect(model, isNotNull);
+        expect(model!.providerModelId, equals(ftueAlibabaReasoningModelId));
+        expect(model.isReasoningModel, isTrue);
+      });
+
+      test('findAlibabaKnownModel returns null for invalid ID', () {
+        final model = findAlibabaKnownModel('non-existent-model-id');
+        expect(model, isNull);
+      });
+
+      test('getAlibabaFtueKnownModels returns all required models', () {
+        final models = getAlibabaFtueKnownModels();
+        expect(models, isNotNull);
+
+        // Verify flash model (Qwen Flash)
+        expect(
+          models!.flash.providerModelId,
+          equals(ftueAlibabaFlashModelId),
+        );
+
+        // Verify reasoning model (Qwen3 Max)
+        expect(
+          models.reasoning.providerModelId,
+          equals(ftueAlibabaReasoningModelId),
+        );
+        expect(models.reasoning.isReasoningModel, isTrue);
+
+        // Verify audio model (Qwen3 Omni Flash)
+        expect(
+          models.audio.providerModelId,
+          equals(ftueAlibabaAudioModelId),
+        );
+        expect(models.audio.inputModalities, contains(Modality.audio));
+
+        // Verify vision model (Qwen3 VL Flash)
+        expect(
+          models.vision.providerModelId,
+          equals(ftueAlibabaVisionModelId),
+        );
+        expect(models.vision.inputModalities, contains(Modality.image));
+
+        // Verify image model (Wan 2.6 Image)
+        expect(
+          models.image.providerModelId,
+          equals(ftueAlibabaImageModelId),
+        );
+        expect(models.image.outputModalities, contains(Modality.image));
+      });
+
+      test('FTUE model constants are valid Alibaba model IDs', () {
+        expect(findAlibabaKnownModel(ftueAlibabaFlashModelId), isNotNull);
+        expect(findAlibabaKnownModel(ftueAlibabaReasoningModelId), isNotNull);
+        expect(findAlibabaKnownModel(ftueAlibabaAudioModelId), isNotNull);
+        expect(findAlibabaKnownModel(ftueAlibabaVisionModelId), isNotNull);
+        expect(findAlibabaKnownModel(ftueAlibabaImageModelId), isNotNull);
+      });
+
+      test('FTUE category constants have expected values', () {
+        expect(ftueAlibabaCategoryName, 'Test Category Alibaba Enabled');
+        expect(ftueAlibabaCategoryColor, '#FF6D00');
+        expect(ftueAlibabaColor, isNotNull);
+      });
+    });
+
+    group('Alibaba Image Generation Model (Wan 2.6)', () {
+      test('should have image generation model in alibabaModels', () {
+        final imageGenModels = alibabaModels.where(
+          (m) => m.outputModalities.contains(Modality.image),
+        );
+
+        expect(imageGenModels, isNotEmpty,
+            reason: 'Should have at least one image generation model');
+
+        final model = imageGenModels.first;
+        expect(model.providerModelId, 'wan2.6-image');
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.outputModalities, contains(Modality.image));
+        expect(model.isReasoningModel, isFalse);
+        expect(model.supportsFunctionCalling, isFalse);
+      });
+
+      test('Wan 2.6 Image model has valid configuration', () {
+        final model = alibabaModels.firstWhere(
+          (m) => m.providerModelId == 'wan2.6-image',
+        );
+
+        expect(model.name, isNotEmpty);
+        expect(model.description, isNotEmpty);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.outputModalities, contains(Modality.text));
+        expect(model.outputModalities, contains(Modality.image));
       });
     });
 

@@ -422,7 +422,7 @@ void main() {
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
-          InferenceProviderType.voxtral: Icons.record_voice_over,
+          InferenceProviderType.voxtral: Icons.graphic_eq,
         };
 
         for (final entry in providerTypes.entries) {

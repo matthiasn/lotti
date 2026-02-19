@@ -88,7 +88,7 @@
     </release>
     <release version="0.9.865" date="2026-02-18">
       <description>
-          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS. New AI Provider: Alibaba Cloud (Qwen) with text, vision, reasoning, and code models via DashScope API.</p>
+          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS. New AI Provider: Alibaba Cloud (Qwen) with text, vision, reasoning, and audio models via DashScope API.</p>
       </description>
     </release>
     <release version="0.9.864" date="2026-02-18">

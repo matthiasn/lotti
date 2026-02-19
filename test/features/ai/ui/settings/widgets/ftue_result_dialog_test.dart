@@ -206,6 +206,67 @@ void main() {
     });
   });
 
+  group('FtueResultData - Alibaba', () {
+    test('fromAlibaba creates correct data from AlibabaFtueResult', () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 5,
+        modelsVerified: 0,
+        promptsCreated: 9,
+        promptsSkipped: 0,
+        categoryCreated: true,
+        categoryName: 'Test Category Alibaba Enabled',
+        errors: ['Test error'],
+      );
+
+      final data = FtueResultData.fromAlibaba(result);
+
+      expect(data.modelsCreated, equals(5));
+      expect(data.modelsVerified, equals(0));
+      expect(data.promptsCreated, equals(9));
+      expect(data.promptsSkipped, equals(0));
+      expect(data.categoryCreated, isTrue);
+      expect(data.categoryUpdated, isFalse);
+      expect(data.categoryName, equals('Test Category Alibaba Enabled'));
+      expect(data.errors, contains('Test error'));
+    });
+
+    testWidgets('showAlibaba displays Alibaba results correctly',
+        (tester) async {
+      const result = AlibabaFtueResult(
+        modelsCreated: 5,
+        modelsVerified: 0,
+        promptsCreated: 9,
+        promptsSkipped: 0,
+        categoryCreated: true,
+        categoryName: 'Test Category Alibaba Enabled',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                await FtueResultDialog.showAlibaba(context, result: result);
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Setup Complete'), findsOneWidget);
+      expect(find.text('5 created'), findsOneWidget);
+      expect(find.text('9 created'), findsOneWidget);
+      expect(
+        find.text('Test Category Alibaba Enabled (created)'),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('FtueResultData - Mistral', () {
     test('fromMistral creates correct data from MistralFtueResult', () {
       const result = MistralFtueResult(

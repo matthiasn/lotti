@@ -149,8 +149,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during recording (~2s latency). Available in both AI chat and the journal
   audio recording modal via a mode toggle.
 - Native WAV-to-M4A audio conversion via platform channels on iOS and macOS.
-- Alibaba Cloud (Qwen) as AI inference provider with 8 models including text,
-  vision, reasoning, and code-specialized variants via DashScope API.
+- Alibaba Cloud (Qwen) as AI inference provider with 5 models including text,
+  vision, reasoning, and audio variants via DashScope API.
 
 ## [0.9.864] - 2026-02-18
 ### Improved

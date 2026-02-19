@@ -35,6 +35,11 @@ Future<Object?> runFtueSetupForType({
   required ProviderPromptSetupService setupService,
 }) async {
   return switch (providerType) {
+    InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
+        context: context,
+        ref: ref,
+        provider: config,
+      ),
     InferenceProviderType.gemini => setupService.performGeminiFtueSetup(
         context: context,
         ref: ref,
@@ -57,6 +62,8 @@ Future<Object?> runFtueSetupForType({
 /// Shows the appropriate FTUE result dialog based on result type.
 Future<void> showFtueResultDialog(BuildContext context, Object result) async {
   switch (result) {
+    case AlibabaFtueResult():
+      await FtueResultDialog.showAlibaba(context, result: result);
     case GeminiFtueResult():
       await FtueResultDialog.show(context, result: result);
     case OpenAiFtueResult():

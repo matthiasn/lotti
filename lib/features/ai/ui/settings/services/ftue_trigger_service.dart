@@ -1,3 +1,4 @@
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,6 +19,7 @@ enum FtueTriggerResult {
 
 /// Provider types that support FTUE (First Time User Experience) setup.
 const Set<InferenceProviderType> ftueSupportedProviderTypes = {
+  InferenceProviderType.alibaba,
   InferenceProviderType.gemini,
   InferenceProviderType.openAi,
   InferenceProviderType.mistral,
@@ -26,12 +28,9 @@ const Set<InferenceProviderType> ftueSupportedProviderTypes = {
 /// Extension providing FTUE-related properties for provider types.
 extension FtueProviderTypeExtension on InferenceProviderType {
   /// Returns the display name for FTUE dialogs, or null if not supported.
-  String? get ftueDisplayName => switch (this) {
-        InferenceProviderType.gemini => 'Gemini',
-        InferenceProviderType.openAi => 'OpenAI',
-        InferenceProviderType.mistral => 'Mistral',
-        _ => null,
-      };
+  String? get ftueDisplayName => ftueSupportedProviderTypes.contains(this)
+      ? ProviderConfig.defaultNames[this]
+      : null;
 }
 
 /// Service that determines whether FTUE setup should be triggered for a provider.

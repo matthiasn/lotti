@@ -63,6 +63,13 @@ void main() {
         expect(service.isFtueSupported(InferenceProviderType.mistral), isTrue);
       });
 
+      test('returns true for Alibaba provider type', () {
+        final container = createContainer();
+        final service = container.read(ftueTriggerServiceProvider.notifier);
+
+        expect(service.isFtueSupported(InferenceProviderType.alibaba), isTrue);
+      });
+
       test('returns false for Ollama provider type', () {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -177,6 +184,50 @@ void main() {
         final result = await service.shouldTriggerFtue(provider);
 
         expect(result, equals(FtueTriggerResult.shouldShowFtue));
+      });
+
+      test(
+          'returns shouldShowFtue when Alibaba provider is first of its type (count == 1)',
+          () async {
+        final provider = createProvider(
+          id: 'alibaba-1',
+          type: InferenceProviderType.alibaba,
+        );
+
+        when(() =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [provider]);
+
+        final container = createContainer();
+        final service = container.read(ftueTriggerServiceProvider.notifier);
+
+        final result = await service.shouldTriggerFtue(provider);
+
+        expect(result, equals(FtueTriggerResult.shouldShowFtue));
+      });
+
+      test(
+          'returns skipNotFirstProvider when Alibaba provider is second of its type',
+          () async {
+        final alibaba1 = createProvider(
+          id: 'alibaba-1',
+          type: InferenceProviderType.alibaba,
+        );
+        final alibaba2 = createProvider(
+          id: 'alibaba-2',
+          type: InferenceProviderType.alibaba,
+        );
+
+        when(() =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
+            .thenAnswer((_) async => [alibaba1, alibaba2]);
+
+        final container = createContainer();
+        final service = container.read(ftueTriggerServiceProvider.notifier);
+
+        final result = await service.shouldTriggerFtue(alibaba2);
+
+        expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
       });
 
       test(
@@ -563,11 +614,13 @@ void main() {
     });
 
     group('ftueSupportedProviderTypes constant', () {
-      test('contains exactly 3 supported provider types', () {
-        expect(ftueSupportedProviderTypes.length, equals(3));
+      test('contains exactly 4 supported provider types', () {
+        expect(ftueSupportedProviderTypes.length, equals(4));
       });
 
-      test('contains Gemini, OpenAI, and Mistral', () {
+      test('contains Alibaba, Gemini, OpenAI, and Mistral', () {
+        expect(ftueSupportedProviderTypes,
+            contains(InferenceProviderType.alibaba));
         expect(
             ftueSupportedProviderTypes, contains(InferenceProviderType.gemini));
         expect(
@@ -606,6 +659,11 @@ void main() {
       test('returns Mistral for mistral provider type', () {
         expect(
             InferenceProviderType.mistral.ftueDisplayName, equals('Mistral'));
+      });
+
+      test('returns Alibaba Cloud (Qwen) for alibaba provider type', () {
+        expect(InferenceProviderType.alibaba.ftueDisplayName,
+            equals('Alibaba Cloud (Qwen)'));
       });
 
       test('returns null for ollama provider type', () {

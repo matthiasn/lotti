@@ -5,8 +5,10 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
@@ -26,6 +28,7 @@ class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
       : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
         _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
+        _dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider),
         _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
         _mistralTranscriptionRepository =
             MistralTranscriptionRepository(httpClient: httpClient),
@@ -37,6 +40,7 @@ class CloudInferenceRepository {
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
+  final DashScopeInferenceRepository _dashScopeRepository;
   final MistralInferenceRepository _mistralRepository;
   final MistralTranscriptionRepository _mistralTranscriptionRepository;
   final WhisperInferenceRepository _whisperRepository;
@@ -389,6 +393,11 @@ class CloudInferenceRepository {
       );
     }
 
+    final effectiveAudioBase64 =
+        provider.inferenceProviderType.requiresDataUriForAudio
+            ? 'data:;base64,$audioBase64'
+            : audioBase64;
+
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(
@@ -399,7 +408,7 @@ class CloudInferenceRepository {
                     ChatCompletionMessageContentPart.text(text: prompt),
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
-                        data: audioBase64,
+                        data: effectiveAudioBase64,
                         format: audioFormat,
                       ),
                     ),
@@ -545,15 +554,16 @@ class CloudInferenceRepository {
   // Image generation
   // -------------------------------------------------------------------------
 
-  /// Generates an image using the Gemini image generation API.
+  /// Generates an image using a provider-specific image generation API.
   ///
-  /// This method currently only supports Gemini providers with image output
-  /// capability (models with Modality.image in outputModalities).
+  /// Supported providers:
+  /// - **Gemini**: Uses Gemini's native image generation API
+  /// - **Alibaba**: Uses DashScope's native SSE streaming API (Wan models)
   ///
   /// Parameters:
   /// - [prompt]: The text prompt describing the image to generate.
   /// - [model]: The model ID (e.g., 'models/gemini-3-pro-image-preview').
-  /// - [provider]: The inference provider configuration (must be Gemini).
+  /// - [provider]: The inference provider configuration.
   /// - [systemMessage]: Optional system instruction for guiding generation.
   /// - [referenceImages]: Optional list of reference images for visual context.
   ///
@@ -566,12 +576,6 @@ class CloudInferenceRepository {
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
   }) async {
-    if (provider.inferenceProviderType != InferenceProviderType.gemini) {
-      throw UnsupportedError(
-        'Image generation is only supported for Gemini providers',
-      );
-    }
-
     developer.log(
       'CloudInferenceRepository.generateImage called with:\n'
       '  model: $model\n'
@@ -581,13 +585,35 @@ class CloudInferenceRepository {
       name: 'CloudInferenceRepository',
     );
 
-    return _geminiRepository.generateImage(
-      prompt: prompt,
-      model: model,
-      provider: provider,
-      systemMessage: systemMessage,
-      referenceImages: referenceImages,
-    );
+    switch (provider.inferenceProviderType) {
+      case InferenceProviderType.gemini:
+        return _geminiRepository.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+          systemMessage: systemMessage,
+          referenceImages: referenceImages,
+        );
+      case InferenceProviderType.alibaba:
+        return _dashScopeRepository.generateImage(
+          prompt: prompt,
+          model: model,
+          provider: provider,
+        );
+      case InferenceProviderType.anthropic:
+      case InferenceProviderType.genericOpenAi:
+      case InferenceProviderType.mistral:
+      case InferenceProviderType.nebiusAiStudio:
+      case InferenceProviderType.openAi:
+      case InferenceProviderType.openRouter:
+      case InferenceProviderType.ollama:
+      case InferenceProviderType.voxtral:
+      case InferenceProviderType.whisper:
+        throw UnsupportedError(
+          'Image generation is not supported for '
+          '${provider.inferenceProviderType} providers',
+        );
+    }
   }
 }
 
