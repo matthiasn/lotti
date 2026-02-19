@@ -150,7 +150,7 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(textCard);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should now have only save button checkmark (text unselected)
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
@@ -173,7 +173,7 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(imageCard);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should now have three checkmarks (text, image selected + save button)
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(3));
@@ -191,7 +191,7 @@ void main() {
 
         // Tap save button by text
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify callback was called with initial selection
         expect(savedModalities, contains(Modality.text));
@@ -213,11 +213,11 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(imageCard);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap save button by text
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should have called onSave with updated selection
         expect(savedModalities.length, greaterThanOrEqualTo(1));
@@ -245,7 +245,7 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(textCard);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should now have one checkmark (image) plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
@@ -375,7 +375,7 @@ void main() {
           await tester.tap(textCard);
           await tester.pump();
         }
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should still be responsive and not crash
         expect(find.byType(ModalitySelectionModal), findsOneWidget);
@@ -409,7 +409,7 @@ void main() {
         await tester.pump();
         await tester.tap(audioCard);
         await tester.pump();
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should have 3 selected checkmarks plus save button
         expect(find.byIcon(Icons.check_rounded), findsNWidgets(4));
@@ -427,7 +427,7 @@ void main() {
 
         // Tap save button with no selection by text
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should save empty list
         expect(savedModalities, isEmpty);

@@ -131,7 +131,7 @@ void main() {
         descriptionFieldFinder,
         'Some test dashboard description',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final formData2 = formKey.currentState!.value;
       expect(formKey.currentState!.isValid, isTrue);
@@ -311,7 +311,7 @@ void main() {
         nameFieldFinder,
         '${testDashboardConfig.name} modified',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find and scroll to the copy button
       final copyButtonFinder = find.byIcon(Icons.copy);
@@ -368,7 +368,7 @@ void main() {
       expect(saveButtonFinder, findsNothing);
 
       await tester.enterText(nameFieldFinder, testDashboardConfig.name);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // save button is now visible after text enter
       expect(saveButtonFinder, findsOneWidget);

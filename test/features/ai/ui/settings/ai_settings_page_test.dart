@@ -239,10 +239,8 @@ void main() {
           .thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(createTestWidget());
-      // Pump a few frames to allow animations to complete
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Should show loading indicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);

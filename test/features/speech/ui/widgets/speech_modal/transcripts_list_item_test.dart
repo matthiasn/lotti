@@ -114,7 +114,7 @@ void main() {
 
       // Expand to see the transcript text
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check that the transcript text is present after expansion
       expect(
@@ -207,7 +207,7 @@ void main() {
 
       // Tap to expand
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should now show up arrow
       expect(
@@ -221,7 +221,7 @@ void main() {
 
       // Tap to collapse
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_up_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show down arrow again
       expect(
@@ -252,7 +252,7 @@ void main() {
 
       // Expand the tile
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Opacity widget containing the delete button
       final opacityFinder = find.ancestor(
@@ -315,7 +315,7 @@ void main() {
 
       // Expand to show content
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the direct Padding widget containing SelectableText
       final selectableText = find.byType(SelectableText);
@@ -352,7 +352,7 @@ void main() {
       expect(find.textContaining('Lang: DE'), findsOneWidget);
 
       await tester.pumpWidget(makeTestableWidget(testTranscriptLongModel));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check that French language is displayed in uppercase
       expect(find.textContaining('Lang: FR'), findsOneWidget);
@@ -396,7 +396,7 @@ void main() {
 
       // Expand to show content
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check that transcript uses SelectableText
       expect(find.byType(SelectableText), findsOneWidget);
@@ -503,11 +503,11 @@ void main() {
 
       // Expand to show delete button
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the delete button
       await tester.tap(find.byIcon(MdiIcons.trashCanOutline));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify that updateDbEntity was called
       final captured = verify(
@@ -577,7 +577,7 @@ void main() {
 
       // Try to tap the hidden button (warnIfMissed: false since we know it's hidden)
       await tester.tap(deleteButtonFinder, warnIfMissed: false);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify that updateDbEntity was NOT called
       verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));

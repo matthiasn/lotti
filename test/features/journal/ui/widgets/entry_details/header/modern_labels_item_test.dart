@@ -214,7 +214,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildSimpleWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Labels'), findsOneWidget);
     });
@@ -223,7 +223,7 @@ void main() {
       final task = taskWithLabels(const []);
 
       await tester.pumpWidget(buildSimpleWrapper(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Labels'), findsNothing);
     });
@@ -232,7 +232,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildSimpleWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.text('Assign labels to organize this entry'),
@@ -244,7 +244,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildSimpleWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // ModernModalActionItem uses the provided icon
       expect(find.byType(Icon), findsWidgets);
@@ -262,7 +262,7 @@ void main() {
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // First open the dialog containing ModernLabelsItem
       await tester.tap(find.text('Open Modal'));
@@ -280,7 +280,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -298,7 +298,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -318,7 +318,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -338,7 +338,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -360,7 +360,7 @@ void main() {
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -398,7 +398,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -427,7 +427,7 @@ void main() {
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -451,7 +451,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -481,7 +481,7 @@ void main() {
       final entry = textEntryWithLabels(['label-1']);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -503,7 +503,7 @@ void main() {
       final entry = textEntryWithLabels(const []);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
@@ -540,7 +540,7 @@ void main() {
       final entry = textEntryWithLabels(['label-1', 'label-2']);
 
       await tester.pumpWidget(buildWrapper(entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();

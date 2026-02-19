@@ -91,7 +91,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(BundleImportWidget));
       expect(find.byType(TextField), findsOneWidget);
@@ -108,7 +108,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter valid Base64
       await tester.enterText(find.byType(TextField), validBase64);
@@ -138,7 +138,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter invalid Base64
       await tester.enterText(
@@ -164,7 +164,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter valid Base64 and import
       await tester.enterText(find.byType(TextField), validBase64);
@@ -196,7 +196,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter invalid Base64 that decodes to non-JSON
       await tester.enterText(find.byType(TextField), invalidJsonBase64);
@@ -222,7 +222,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter invalid data and import to trigger error
       await tester.enterText(find.byType(TextField), invalidJsonBase64);
@@ -252,7 +252,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // With empty text field, the import button's onPressed should be null
       final context = tester.element(find.byType(BundleImportWidget));
@@ -273,7 +273,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter some text
       await tester.enterText(find.byType(TextField), 'some-text');
@@ -297,7 +297,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Enter valid Base64 and import
       await tester.enterText(find.byType(TextField), validBase64);
@@ -339,7 +339,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(BundleImportWidget));
       expect(
@@ -381,7 +381,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(
@@ -412,7 +412,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(BundleImportWidget));
       expect(
@@ -438,7 +438,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.qr_code_scanner), findsNothing);
     });
@@ -450,7 +450,7 @@ void main() {
           overrides: defaultOverrides(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Import first bundle
       await tester.enterText(find.byType(TextField), validBase64);

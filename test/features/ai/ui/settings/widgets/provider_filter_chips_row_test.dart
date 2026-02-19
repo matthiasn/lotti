@@ -217,7 +217,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap second provider
         await tester.tap(find.text('OpenAI'));
@@ -304,7 +304,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap provider2 - should replace selection
         await tester.tap(find.text('OpenAI'));
@@ -370,7 +370,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // All chip should show as selected when selection is empty
         final allChipFinder = find.ancestor(
@@ -550,7 +550,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify provider1 chip still shows as selected
         final provider1ChipAfterRebuild =
@@ -590,7 +590,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify provider2 chip is now selected
         final provider2Chips = find.ancestor(

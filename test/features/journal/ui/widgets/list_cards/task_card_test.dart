@@ -933,7 +933,7 @@ void main() {
 
       // Tap to toggle to relative display
       await tester.tap(find.byIcon(Icons.event_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Now shows relative date ("Due in 5 days")
       expect(find.text(absoluteText), findsNothing);
@@ -941,7 +941,7 @@ void main() {
 
       // Tap again to toggle back to absolute
       await tester.tap(find.byIcon(Icons.event_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Back to absolute
       expect(find.text(absoluteText), findsOneWidget);

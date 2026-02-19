@@ -264,6 +264,8 @@ void main() {
 
   // setUpAll at main scope
   setUpAll(() {
+    stopRecordingDelay = Duration.zero;
+
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeEntryText());

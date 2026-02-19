@@ -210,11 +210,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the task creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was called with the correct path
         expect(navCalled, true);
@@ -274,11 +274,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the task creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was called even with linked ID
         expect(navCalled, true);
@@ -312,11 +312,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the task creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was not called
         expect(navCalled, false);
@@ -370,11 +370,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the event creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was called with the correct path
         expect(navCalled, true);
@@ -428,11 +428,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the event creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was called even with linked ID
         expect(navCalled, true);
@@ -467,11 +467,11 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the event creation item
         await tester.tap(find.byType(CreateMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify navigation was not called
         expect(navCalled, false);
@@ -518,7 +518,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the event item is rendered (localized)
       final l10n = AppLocalizations.of(
@@ -560,7 +560,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find and tap the item
       final itemFinder = find.byType(CreateMenuListItem);
@@ -587,7 +587,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify widget is rendered with correct parameters
       final widget = tester.widget<CreateAudioItem>(
@@ -785,7 +785,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the item
       final itemFinder = find.byType(CreateMenuListItem);
@@ -812,7 +812,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify widget is rendered with correct parameters
       final widget = tester.widget<CreateTextItem>(
@@ -853,7 +853,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the item
       final itemFinder = find.byType(CreateMenuListItem);
@@ -880,7 +880,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify widget is rendered with correct parameters
       final widget = tester.widget<ImportImageItem>(
@@ -921,7 +921,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the item
       final itemFinder = find.byType(CreateMenuListItem);
@@ -948,7 +948,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify widget is rendered with correct parameters
       final widget = tester.widget<CreateScreenshotItem>(
@@ -999,7 +999,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: SizedBox.shrink() behavior (CreateMenuListItem not found)
       final l10n = AppLocalizations.of(
@@ -1061,7 +1061,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Defaults to hidden on error with no previous value
       expect(find.byType(CreateMenuListItem), findsNothing);
@@ -1195,7 +1195,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: CreateMenuListItem is found and localized text visible
       final l10n = AppLocalizations.of(
@@ -1228,7 +1228,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Widget is hidden (defaults to false)
       final l10n = AppLocalizations.of(
@@ -1296,11 +1296,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the item to trigger onTap
       await tester.tap(find.byType(CreateMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify task creation was called
       verify(() => mockPersistenceLogic.createTaskEntry(
@@ -1369,11 +1369,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the item to trigger onTap
       await tester.tap(find.byType(CreateMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify event creation was called
       verify(() => mockPersistenceLogic.createEventEntry(
@@ -1484,7 +1484,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify timer item is rendered
       expect(find.byType(CreateMenuListItem), findsOneWidget);
@@ -1550,7 +1550,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the timer item
       await tester.tap(find.byType(CreateMenuListItem));
@@ -1626,7 +1626,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(CreateMenuListItem), findsOneWidget);
 
@@ -1709,7 +1709,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(CreateMenuListItem), findsOneWidget);
 
@@ -1771,7 +1771,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the item is rendered
       expect(find.byType(CreateMenuListItem), findsOneWidget);
@@ -1825,7 +1825,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the item is rendered
       expect(find.byType(CreateMenuListItem), findsOneWidget);
@@ -1879,7 +1879,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show SizedBox.shrink (nothing visible) when clipboard is empty
       expect(find.byType(CreateMenuListItem), findsNothing);

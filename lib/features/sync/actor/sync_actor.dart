@@ -87,7 +87,9 @@ class SyncActorCommandHandler {
     bool enableLogging = true,
     SyncDatabaseFactory? syncDatabaseFactory,
     OutboundQueueFactory? outboundQueueFactory,
-  })  : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
+    Duration retryBaseDelay = const Duration(milliseconds: 250),
+  })  : _retryBaseDelay = retryBaseDelay,
+        _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
         _createMatrixClientFactory =
             createMatrixClientFactory ?? createMatrixClient,
         _vodInitializer = vodInitializer ?? vod.init,
@@ -120,6 +122,7 @@ class SyncActorCommandHandler {
   final int _verificationPeerDiscoveryAttempts;
   final Duration _verificationPeerDiscoveryInterval;
   final bool _enableLogging;
+  final Duration _retryBaseDelay;
 
   SyncActorState _state = SyncActorState.uninitialized;
   MatrixSdkGateway? _gateway;
@@ -509,9 +512,10 @@ class SyncActorCommandHandler {
   Future<T> _runWithRetries<T>(
     Future<T> Function() operation, {
     int maxRetries = 5,
-    Duration baseDelay = const Duration(milliseconds: 250),
+    Duration? baseDelay,
     bool Function(Object)? isRetryable,
   }) async {
+    final effectiveDelay = baseDelay ?? _retryBaseDelay;
     for (var attempt = 0;; attempt++) {
       try {
         return await operation();
@@ -525,7 +529,7 @@ class SyncActorCommandHandler {
 
         await Future<void>.delayed(
           Duration(
-            milliseconds: baseDelay.inMilliseconds * (1 << attempt),
+            milliseconds: effectiveDelay.inMilliseconds * (1 << attempt),
           ),
         );
       }

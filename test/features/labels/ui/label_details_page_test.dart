@@ -153,7 +153,7 @@ void main() {
           tester.widget<LottiPrimaryButton>(saveButton).onPressed, isNotNull);
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(saved, isTrue);
     });
@@ -178,7 +178,7 @@ void main() {
 
       // Tap the delete button in the bottom bar
       await tester.tap(find.byType(LottiTertiaryButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Confirm in the dialog (destructive tertiary button)
       final confirmButton = find
@@ -188,7 +188,7 @@ void main() {
           )
           .last;
       await tester.tap(confirmButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => repo.deleteLabel('label-1')).called(1);
     });
@@ -265,7 +265,7 @@ void main() {
       expect(addButton, findsOneWidget);
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('keyboard shortcut Cmd+S triggers save', (tester) async {
@@ -304,7 +304,7 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(saved, isTrue);
     });
@@ -345,7 +345,7 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(saved, isTrue);
     });
@@ -386,7 +386,7 @@ void main() {
       final cancel = find.byType(LottiSecondaryButton);
       expect(cancel, findsOneWidget);
       await tester.tap(cancel);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(saved, isFalse);
     });
@@ -453,7 +453,7 @@ void main() {
       expect(tester.widget<Switch>(switchFinder).value, isFalse);
 
       await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tester.widget<Switch>(switchFinder).value, isTrue);
     });
@@ -521,7 +521,7 @@ void main() {
       );
       expect(deleteIcon, findsOneWidget);
       await tester.tap(deleteIcon);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 'Work' chip should be gone; 'Life' remains
       expect(find.text('Work'), findsNothing);
@@ -566,12 +566,12 @@ void main() {
       // User edits
       await tester.enterText(nameField, 'AlphaX');
       await tester.enterText(descField, 'HelloX');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Trigger a rebuild via toggling private switch
       final switchFinder = find.byType(Switch);
       await tester.tap(switchFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Controllers keep user-edited text (no reseed)
       expect(

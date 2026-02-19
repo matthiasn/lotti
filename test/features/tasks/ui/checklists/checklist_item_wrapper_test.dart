@@ -219,7 +219,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the item is rendered
       expect(find.byType(ChecklistItemWithSuggestionWidget), findsOneWidget);
@@ -250,7 +250,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify nothing is rendered
       expect(find.byType(ChecklistItemWithSuggestionWidget), findsNothing);
@@ -298,7 +298,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify nothing is rendered for deleted item
       expect(find.byType(ChecklistItemWithSuggestionWidget), findsNothing);
@@ -323,7 +323,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Dismissible widget
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -379,7 +379,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
       expect(dismissible.onDismissed, isNotNull);
@@ -436,7 +436,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Trigger delete dismiss — use pump() to avoid advancing past Timer
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -489,7 +489,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The widget should be rendered without errors
       expect(find.byType(ChecklistItemWithSuggestionWidget), findsOneWidget);
@@ -516,7 +516,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the DragItemWidget and test its dragBuilder directly
       final dragItemWidget =
@@ -559,7 +559,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify widget renders correctly
       expect(find.byType(ChecklistItemWrapper), findsOneWidget);
@@ -594,7 +594,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify DragItemWidget is configured with dragItemProvider
       final dragItemWidget =
@@ -624,7 +624,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the DragItemWidget and check allowedOperations
       final dragItemWidget =
@@ -654,7 +654,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Dismissible widget
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -697,7 +697,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify DropRegion is present in widget tree
       expect(find.byType(DropRegion), findsOneWidget);
@@ -720,7 +720,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the DropRegion and verify its configuration
       final dropRegion = tester.widget<DropRegion>(find.byType(DropRegion));
@@ -752,7 +752,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the widget renders with the correct index
       final wrapper = tester.widget<ChecklistItemWrapper>(
@@ -782,7 +782,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final dropRegion = tester.widget<DropRegion>(find.byType(DropRegion));
       expect(dropRegion.formats, Formats.standardFormats);
@@ -818,7 +818,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the confirmDismiss callback
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -887,7 +887,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the confirmDismiss callback
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -935,7 +935,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the confirmDismiss callback for delete direction
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -970,7 +970,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify both backgrounds are set on the Dismissible widget
       final dismissible = tester.widget<Dismissible>(find.byType(Dismissible));
@@ -1012,7 +1012,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify isArchived is passed through
       final suggestionWidget = tester.widget<ChecklistItemWithSuggestionWidget>(

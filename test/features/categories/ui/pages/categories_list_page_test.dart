@@ -28,6 +28,24 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
+    Future<void> pumpCategoriesListPage(
+      WidgetTester tester, {
+      bool settle = true,
+    }) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: const CategoriesListPage(),
+        ),
+      );
+      await tester.pump();
+      if (settle) {
+        await tester.pumpAndSettle();
+      }
+    }
+
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -55,16 +73,7 @@ void main() {
           (_) => Stream.error(Exception('Test error')),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
         expect(find.textContaining('Test error'), findsOneWidget);
@@ -77,16 +86,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.category_outlined), findsOneWidget);
         // Empty state text would be localized
@@ -100,16 +100,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byType(LottiSearchBar), findsOneWidget);
         expect(find.text('Search categories...'), findsOneWidget);
@@ -126,16 +117,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // All categories should be visible initially
         expect(find.text('Work'), findsOneWidget);
@@ -163,20 +145,11 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Enter search query with no matches
         await tester.enterText(find.byType(TextField), 'xyz');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('No categories found'), findsOneWidget);
         expect(find.byIcon(Icons.search_off), findsOneWidget);
@@ -192,16 +165,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Enter search query
         await tester.enterText(find.byType(TextField), 'work');
@@ -231,16 +195,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Search for 'WORK' should find 'Work'
         await tester.enterText(find.byType(TextField), 'WORK');
@@ -264,16 +219,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byType(ModernBaseCard), findsOneWidget);
       });
@@ -287,16 +233,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         final card = tester.widget<ModernBaseCard>(find.byType(ModernBaseCard));
         expect(card.onTap, isNotNull);
@@ -315,16 +252,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Find all ModernBaseCards
         final cards = find.byType(ModernBaseCard);
@@ -356,16 +284,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Check for circular container with first letter
         expect(find.byType(ModernBaseCard), findsOneWidget);
@@ -382,16 +301,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
       });
@@ -406,16 +316,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
       });
@@ -434,16 +335,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should have subtitle with features
         final listTile = find.byType(ListTile);
@@ -465,16 +357,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Verify the ModernBaseCard exists and is tappable
         final card = find.byType(ModernBaseCard);
@@ -490,16 +373,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Verify FAB exists
         final fab = find.byType(FloatingActionButton);
@@ -524,16 +398,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should display all 3 categories with ModernBaseCard
         expect(find.byType(ModernBaseCard), findsNWidgets(3));
@@ -571,16 +436,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should display the category with subtitle showing it has automatic prompts
         final listTile = tester.widget<ListTile>(find.byType(ListTile));
@@ -598,16 +454,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should show '?' for empty name
         expect(find.text('?'), findsOneWidget);
@@ -624,16 +471,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should sort case-insensitively
         final tiles = find.byType(ListTile);
@@ -657,16 +495,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Search for 'dev' should find both Development and Developer Tools
         await tester.enterText(find.byType(TextField), 'dev');
@@ -714,7 +543,7 @@ void main() {
           CategoryTestUtils.createTestCategory(name: 'Personal'),
           CategoryTestUtils.createTestCategory(name: 'Workspace'),
         ]);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Search query should still be applied
         expect(find.byType(ModernBaseCard),
@@ -734,16 +563,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Search with leading/trailing spaces should be trimmed
         await tester.enterText(find.byType(TextField), '  work  ');
@@ -789,16 +609,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should show both private and inactive icons
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
@@ -819,16 +630,7 @@ void main() {
           (_) => Stream.value(manyCategories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should use CustomScrollView (with slivers)
         expect(find.byType(CustomScrollView), findsOneWidget);
@@ -839,7 +641,7 @@ void main() {
 
         // Scroll down
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Later items should now be visible
         expect(find.text('Category 0'), findsNothing); // Scrolled away
@@ -855,16 +657,7 @@ void main() {
           (_) => Stream.value(manyCategories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Search for specific number
         await tester.enterText(find.byType(TextField), '42');
@@ -886,16 +679,7 @@ void main() {
           (_) => Stream.value(categories),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Apply search filter
         await tester.enterText(find.byType(TextField), 'work');
@@ -917,16 +701,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should have SettingsPageHeader
         expect(find.byType(SettingsPageHeader), findsOneWidget);
@@ -940,16 +715,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should have back button (chevron_left icon)
         expect(find.byIcon(Icons.chevron_left), findsOneWidget);
@@ -960,16 +726,7 @@ void main() {
           (_) => Stream.value([]),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoriesListPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await pumpCategoriesListPage(tester);
 
         // Should use CustomScrollView for sliver structure
         expect(find.byType(CustomScrollView), findsOneWidget);

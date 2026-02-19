@@ -131,7 +131,7 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.psychology_outlined), findsWidgets);
       expect(find.text('Ask me about your tasks'), findsOneWidget);
@@ -163,7 +163,7 @@ void main() {
             aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
           ],
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(find.byTooltip('Assistant settings'));
         await tester.pump(const Duration(milliseconds: 50));
@@ -179,7 +179,7 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final tf = tester.widget<TextField>(
         find.byKey(const ValueKey('chat_text_field')),

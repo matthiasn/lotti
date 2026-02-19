@@ -142,7 +142,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // No collapse arrow should be shown for text entries
         expect(find.byIcon(Icons.expand_more), findsNothing);
@@ -164,7 +164,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.expand_more), findsNothing);
       });
@@ -197,7 +197,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
@@ -218,7 +218,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(SizeTransition), findsOneWidget);
       });
@@ -238,7 +238,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Non-collapsible entries don't use AnimatedSize for collapse
         expect(find.byIcon(Icons.expand_more), findsNothing);
@@ -261,7 +261,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
           find.byType(SizeTransition),
@@ -288,7 +288,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
           find.byType(SizeTransition),
@@ -387,7 +387,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Text entries should NOT be collapsible, even in linked context
         expect(find.byIcon(Icons.expand_more), findsNothing);
@@ -421,7 +421,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(EntryImageWidget), findsOneWidget);
       });
@@ -443,7 +443,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // EntryDatetimeWidget should appear in expanded content
         expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
@@ -467,7 +467,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
           find.byType(SizeTransition),
@@ -491,7 +491,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(TagsListWidget), findsOneWidget);
       });
@@ -612,7 +612,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
           find.byType(SizeTransition),
@@ -647,7 +647,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final sizeTransition = tester.widget<SizeTransition>(
           find.byType(SizeTransition),
@@ -695,7 +695,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The collapse arrow should be present (isCollapsible = true)
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
@@ -743,7 +743,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the collapse chevron
         await tester.tap(find.byIcon(Icons.expand_more));
@@ -798,7 +798,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the collapse chevron (which should expand)
         await tester.tap(find.byIcon(Icons.expand_more));
@@ -842,7 +842,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final header = tester.widget<EntryDetailHeader>(
           find.byType(EntryDetailHeader),
@@ -900,7 +900,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap the collapse chevron — updateLink will throw
         await tester.tap(find.byIcon(Icons.expand_more));

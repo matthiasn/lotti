@@ -153,7 +153,7 @@ void main() {
 
         // Tap to select
         await tester.tap(find.text('Urgent'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         checkbox = tester.widget<CheckboxListTile>(
           find.ancestor(
@@ -165,7 +165,7 @@ void main() {
 
         // Tap to deselect
         await tester.tap(find.text('Urgent'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         checkbox = tester.widget<CheckboxListTile>(
           find.ancestor(
@@ -209,7 +209,7 @@ void main() {
         expect(find.text('Backend'), findsOneWidget);
 
         searchQuery.value = 'Urg';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Urgent'), findsOneWidget);
         expect(find.text('Backend'), findsNothing);
@@ -224,7 +224,7 @@ void main() {
         await tester.pumpAndSettle();
 
         searchQuery.value = 'immediate';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Urgent'), findsOneWidget);
         expect(find.text('Backend'), findsNothing);
@@ -239,7 +239,7 @@ void main() {
         await tester.pumpAndSettle();
 
         searchQuery.value = 'URGENT';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Urgent'), findsOneWidget);
       });
@@ -267,7 +267,7 @@ void main() {
         await tester.pumpAndSettle();
 
         searchQuery.value = 'nonexistent';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.textContaining('No labels match'), findsOneWidget);
       });
@@ -287,7 +287,7 @@ void main() {
         expect(createButton, findsOneWidget);
 
         await tester.tap(createButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(LabelEditorSheet), findsOneWidget);
       });
@@ -302,7 +302,7 @@ void main() {
         await tester.pumpAndSettle();
 
         searchQuery.value = 'Urg';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should find create button since 'Urg' is not an exact match
         expect(find.textContaining('Create "Urg" label'), findsOneWidget);
@@ -318,7 +318,7 @@ void main() {
         await tester.pumpAndSettle();
 
         searchQuery.value = 'Urgent';
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should not find create button since 'Urgent' is an exact match
         expect(find.textContaining('Create "Urgent" label'), findsNothing);

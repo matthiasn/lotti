@@ -82,7 +82,7 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test query');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify state was updated
       final state = capturedRef.read(habitsControllerProvider);
@@ -102,7 +102,7 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear button should now be visible
       expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
@@ -125,7 +125,7 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test query');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify text was entered
       expect(capturedRef.read(habitsControllerProvider).searchString,
@@ -149,7 +149,7 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'persistent text');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Trigger a rebuild by pumping with a new frame
       await tester.pump(const Duration(milliseconds: 100));
@@ -177,7 +177,7 @@ void main() {
 
       // Enter some text
       await tester.enterText(find.byType(TextField), 'initial text');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Change state externally (e.g., via another widget)
       capturedRef.read(habitsControllerProvider.notifier).setSearchString('');
@@ -205,7 +205,7 @@ void main() {
 
       // Enter mixed case text
       await tester.enterText(find.byType(TextField), 'TEST Query');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The habits controller converts to lowercase for filtering
       expect(

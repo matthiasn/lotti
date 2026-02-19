@@ -484,7 +484,7 @@ void main() {
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 0);
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
-      getIt<JournalDb>().purgeDeleted(backup: false);
+      getIt<JournalDb>().purgeDeleted(backup: false, stepDelay: Duration.zero);
     });
 
     test('create and retrieve workout entry', () async {
@@ -844,7 +844,7 @@ void main() {
       // Call purgeDeleted and collect all progress values
       final progressValues = <double>[];
       await getIt<JournalDb>()
-          .purgeDeleted(backup: false)
+          .purgeDeleted(backup: false, stepDelay: Duration.zero)
           .forEach(progressValues.add);
 
       // Verify the final progress is 1.0

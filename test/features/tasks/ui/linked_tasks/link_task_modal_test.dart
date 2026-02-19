@@ -506,7 +506,7 @@ void main() {
 
       // Enter search query
       await tester.enterText(find.byType(TextField), 'banana');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Only matching task should be visible
       expect(find.text('Apple Task'), findsNothing);
@@ -553,7 +553,7 @@ void main() {
 
       // Enter search query with no matches
       await tester.enterText(find.byType(TextField), 'xyz123');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No tasks found'), findsOneWidget);
     });
@@ -596,7 +596,7 @@ void main() {
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'search text');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Clear button should appear
       expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
@@ -840,7 +840,7 @@ void main() {
 
       // Enter search that matches via FTS5
       await tester.enterText(find.byType(TextField), 'special');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Task-2 should be visible because FTS5 matched it
       expect(find.text('Banana Task'), findsOneWidget);
@@ -888,7 +888,7 @@ void main() {
 
       // Enter search
       await tester.enterText(find.byType(TextField), 'test');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);

@@ -157,14 +157,29 @@ void main() {
     );
   }
 
+  Future<void> pumpInferenceProviderPage(
+    WidgetTester tester,
+    Widget widget,
+  ) async {
+    await tester.pumpWidget(widget);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpInferenceProviderPageQuick(
+    WidgetTester tester,
+    Widget widget,
+  ) async {
+    await tester.pumpWidget(widget);
+    await tester.pump();
+  }
+
   group('InferenceProviderEditPage', () {
     testWidgets('displays correct title for new provider',
         (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await pumpInferenceProviderPageQuick(tester, buildTestWidget());
 
       expect(find.text('Add Provider'), findsOneWidget);
     });
@@ -174,8 +189,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await pumpInferenceProviderPageQuick(
+        tester,
+        buildTestWidget(configId: 'test-provider-id'),
+      );
 
       expect(find.text('Edit Provider'), findsOneWidget);
     });
@@ -185,8 +202,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await pumpInferenceProviderPageQuick(
+        tester,
+        buildTestWidget(configId: 'test-provider-id'),
+      );
 
       // Check that the form is populated with existing data
       expect(find.text('Test Provider'), findsOneWidget);
@@ -199,8 +218,10 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       // Use existing provider that requires API key to show Authentication section
-      await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await pumpInferenceProviderPageQuick(
+        tester,
+        buildTestWidget(configId: 'test-provider-id'),
+      );
 
       // Check section headers
       expect(find.text('Provider Configuration'), findsOneWidget);
@@ -218,8 +239,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await pumpInferenceProviderPage(tester, buildTestWidget());
 
       // Initially save button should be disabled
       final saveButton = find.text('Save');
@@ -235,7 +255,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
           'sk-test-api-key-12345');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to make save button visible
       await tester.ensureVisible(saveButton);
@@ -333,7 +353,7 @@ void main() {
       // Test name validation - too short
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'), 'AB');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The form validates on change - validation errors may appear
 
@@ -341,7 +361,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'not-a-url');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The form validates on change - validation errors may appear
 
@@ -352,7 +372,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://valid.url.com');
-      await tester.pumpAndSettle();
+      await tester.pump();
     });
 
     testWidgets('pre-fills form when changing provider type',
@@ -426,7 +446,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'https://api.example.com'),
           'https://test.com');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify CallbackShortcuts widget exists
       expect(find.byType(CallbackShortcuts), findsWidgets);
@@ -724,7 +744,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
           'test-gemini-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button and tap
       final saveButton = find.text('Save');
@@ -771,7 +791,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
           'test-anthropic-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button and tap
       final saveButton = find.text('Save');
@@ -865,7 +885,7 @@ void main() {
           'My Gemini');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save
       final saveButton = find.text('Save');
@@ -927,7 +947,7 @@ void main() {
           'My Gemini');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save
       final saveButton = find.text('Save');
@@ -1545,7 +1565,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
           'test-openai-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button and tap
       final saveButton = find.text('Save');
@@ -1602,7 +1622,7 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
           'test-mistral-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button and tap
       final saveButton = find.text('Save');
@@ -1657,7 +1677,7 @@ void main() {
           'My OpenAI');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'), 'test-key');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save
       final saveButton = find.text('Save');

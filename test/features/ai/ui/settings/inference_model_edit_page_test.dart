@@ -288,7 +288,7 @@ void main() {
       // Modify a field
       final nameField = find.widgetWithText(TextFormField, 'Test Model');
       await tester.enterText(nameField, 'Updated Model Name');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Scroll to save button
       final saveButton = find.text('Save');

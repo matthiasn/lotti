@@ -1705,7 +1705,8 @@ void main() {
         final docDir = getIt<Directory>();
         await createPlaceholderDbFile(docDir);
 
-        final progress = await db!.purgeDeleted().toList();
+        final progress =
+            await db!.purgeDeleted(stepDelay: Duration.zero).toList();
         expect(progress, equals([1.0]));
 
         final backupDir = Directory('${docDir.path}/backup');
@@ -1732,7 +1733,9 @@ void main() {
           backupDir.deleteSync(recursive: true);
         }
 
-        final progress = await db!.purgeDeleted(backup: false).toList();
+        final progress = await db!
+            .purgeDeleted(backup: false, stepDelay: Duration.zero)
+            .toList();
         expect(progress, equals([1.0]));
         expect(backupDir.existsSync(), isFalse);
       });
@@ -1743,7 +1746,9 @@ void main() {
         await createPlaceholderDbFile(docDir);
         await seedDeletedDatabaseContent(db!, deletionTime);
 
-        await db!.purgeDeleted(backup: false).toList();
+        await db!
+            .purgeDeleted(backup: false, stepDelay: Duration.zero)
+            .toList();
 
         expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
         expect(await db!.select(db!.measurableTypes).get(), isEmpty);
@@ -1755,12 +1760,16 @@ void main() {
         final deletionTime = DateTime(2024, 2, 2, 9);
         await seedDeletedDatabaseContent(db!, deletionTime);
 
-        final progress = await db!.purgeDeleted(backup: false).toList();
+        final progress = await db!
+            .purgeDeleted(backup: false, stepDelay: Duration.zero)
+            .toList();
         expect(progress, equals([0.25, 0.5, 0.75, 1.0]));
       });
 
       test('returns 1.0 immediately when nothing to purge', () async {
-        final progress = await db!.purgeDeleted(backup: false).toList();
+        final progress = await db!
+            .purgeDeleted(backup: false, stepDelay: Duration.zero)
+            .toList();
         expect(progress, equals([1.0]));
       });
     });

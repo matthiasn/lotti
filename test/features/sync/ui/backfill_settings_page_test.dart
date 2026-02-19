@@ -135,7 +135,7 @@ void main() {
 
       // Tap the switch
       await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Switch should now be off
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
@@ -162,11 +162,11 @@ void main() {
 
       // Scroll to make the button visible
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the button
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the service was called
       verify(() => mockBackfillService.processFullBackfill()).called(1);
@@ -252,7 +252,7 @@ void main() {
 
       // Find and tap refresh button
       await tester.tap(find.byIcon(Icons.refresh));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should have called getBackfillStats again
       verify(() => mockSequenceService.getBackfillStats()).called(1);
@@ -286,7 +286,7 @@ void main() {
 
       // Toggle the switch off
       await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should now show sync_disabled icon
       expect(find.byIcon(Icons.sync_disabled), findsOneWidget);
@@ -358,9 +358,9 @@ void main() {
         matching: find.bySubtype<ButtonStyleButton>(),
       );
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Error state should be visible (button should still be tappable)
       expect(find.bySubtype<ButtonStyleButton>(), findsWidgets);
@@ -457,7 +457,7 @@ void main() {
 
       // Scroll to make the button visible
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Button should be disabled (onPressed is null)
       final button = tester.widget<FilledButton>(buttonFinder);
@@ -488,11 +488,11 @@ void main() {
 
       // Scroll to make the button visible
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the button
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify the service was called
       verify(() => mockBackfillService.processReRequest()).called(1);
@@ -518,9 +518,9 @@ void main() {
         matching: find.bySubtype<ButtonStyleButton>(),
       );
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show check_circle icon for success
       expect(find.byIcon(Icons.check_circle), findsWidgets);
@@ -568,7 +568,7 @@ void main() {
 
       // Ensure the card is visible
       await tester.ensureVisible(statsCard);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should display the unresolvable count of 3
       expect(find.text('3'), findsWidgets);

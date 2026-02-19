@@ -360,7 +360,7 @@ void main() {
     testWidgets('shows checkbox when transcription prompts exist',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -376,7 +376,7 @@ void main() {
           FakeCategoryDefinition(includeTranscriptionPrompts: false);
 
       await tester.pumpWidget(createTestWidget(category: category));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -407,7 +407,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -424,7 +424,7 @@ void main() {
         'should NOT show checklist updates checkbox when not linked to task',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -455,7 +455,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -486,7 +486,7 @@ void main() {
         linkedTaskId: 'task-123',
         category: category,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -520,7 +520,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -554,7 +554,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -593,7 +593,7 @@ void main() {
         linkedTaskId: 'task-123',
         category: category,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -621,7 +621,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -631,7 +631,7 @@ void main() {
         'Checklist Updates',
       );
       await tester.tap(checkboxFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -662,7 +662,7 @@ void main() {
         linkedTaskId: 'task-123',
         category: category,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -690,7 +690,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -717,7 +717,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -735,7 +735,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -767,7 +767,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -799,7 +799,7 @@ void main() {
         linkedTaskId: 'task-123',
         category: category,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -826,7 +826,7 @@ void main() {
         state: state,
         linkedTaskId: 'task-123',
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -846,7 +846,7 @@ void main() {
         category: category,
         linkedTaskId: null,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -879,7 +879,7 @@ void main() {
         linkedTaskId: 'task-123',
         category: category,
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -894,7 +894,7 @@ void main() {
     testWidgets('hides entire section when no categoryId provided',
         (tester) async {
       await tester.pumpWidget(createTestWidget(provideCategory: false));
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -912,7 +912,7 @@ void main() {
           linkedTaskId: 'task-1',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -981,7 +981,7 @@ void main() {
           linkedTaskId: 'task-1',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1072,7 +1072,7 @@ void main() {
           linkedEntry: mockTask,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1156,7 +1156,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1234,7 +1234,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1308,7 +1308,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1383,7 +1383,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1458,7 +1458,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 
@@ -1542,7 +1542,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pumps for Riverpod async provider error state propagation
       await tester.pump();
       await tester.pump();
@@ -1642,7 +1642,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
 

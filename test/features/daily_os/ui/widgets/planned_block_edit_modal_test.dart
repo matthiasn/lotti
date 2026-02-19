@@ -144,7 +144,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Edit Planned Block'), findsOneWidget);
     });
@@ -154,7 +154,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Time Range'), findsOneWidget);
       expect(find.text('Start'), findsOneWidget);
@@ -170,7 +170,7 @@ void main() {
           block: createTestBlock(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('09:00'), findsOneWidget);
       expect(find.text('11:00'), findsOneWidget);
@@ -185,7 +185,7 @@ void main() {
           block: createTestBlock(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('2 hours'), findsOneWidget);
     });
@@ -195,7 +195,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Category'), findsOneWidget);
       expect(find.text('Work'), findsOneWidget);
@@ -207,7 +207,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(block: createTestBlock(categoryId: 'unknown')),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Uncategorized'), findsOneWidget);
     });
@@ -217,7 +217,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Note'), findsOneWidget);
       expect(find.text('Add a note...'), findsOneWidget);
@@ -230,7 +230,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(block: createTestBlock(note: 'Important meeting')),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Important meeting'), findsOneWidget);
     });
@@ -240,7 +240,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
@@ -251,7 +251,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(MdiIcons.delete), findsOneWidget);
     });
@@ -261,7 +261,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(PlannedBlockEditModal), findsOneWidget);
     });
@@ -275,7 +275,7 @@ void main() {
           block: createTestBlock(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 2 hours exactly
       expect(find.text('2 hours'), findsOneWidget);
@@ -313,7 +313,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 30 minutes
       expect(find.text('30 minutes'), findsOneWidget);
@@ -324,7 +324,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find InkWell widgets for time selectors
       expect(find.byType(InkWell), findsWidgets);
@@ -335,7 +335,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the delete button
       await tester.tap(find.byIcon(MdiIcons.delete));
@@ -354,7 +354,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap delete and then cancel
       await tester.tap(find.byIcon(MdiIcons.delete));
@@ -373,13 +373,13 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final textField = find.byType(TextField);
       expect(textField, findsOneWidget);
 
       await tester.enterText(textField, 'My test note');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('My test note'), findsOneWidget);
     });
@@ -389,7 +389,7 @@ void main() {
           .thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Save button
       final saveButton = find.text('Save');

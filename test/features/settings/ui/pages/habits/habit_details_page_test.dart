@@ -116,7 +116,7 @@ void main() {
         descriptionFieldFinder,
         'new description',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // save button is now visible
       expect(saveButtonFinder, findsOneWidget);
@@ -221,7 +221,7 @@ void main() {
         descriptionFieldFinder,
         'new description',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // save button is now visible
       expect(saveButtonFinder, findsOneWidget);
@@ -303,7 +303,7 @@ void main() {
         descriptionFieldFinder,
         'new description',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // save button is now visible
       expect(saveButtonFinder, findsOneWidget);

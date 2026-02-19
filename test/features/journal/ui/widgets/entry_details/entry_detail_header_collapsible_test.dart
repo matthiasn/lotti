@@ -320,7 +320,7 @@ void main() {
         expect(collapseArrow, findsOneWidget);
 
         await tester.tap(collapseArrow);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(toggled, isTrue);
       });
