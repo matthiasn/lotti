@@ -60,7 +60,7 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
   IconData get icon {
     switch (this) {
       case InferenceProviderType.alibaba:
-        return Icons.cloud;
+        return Icons.cloud_queue;
       case InferenceProviderType.anthropic:
         return Icons.auto_awesome;
       case InferenceProviderType.openAi:
