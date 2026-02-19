@@ -112,14 +112,25 @@ void main() {
     );
   }
 
+  Future<void> pumpPromptEditPage(
+    WidgetTester tester, {
+    String? configId,
+    bool settle = true,
+  }) async {
+    await tester.pumpWidget(buildTestWidget(configId: configId));
+    await tester.pump();
+    if (settle) {
+      await tester.pumpAndSettle();
+    }
+  }
+
   group('PromptEditPage', () {
     testWidgets('displays correct title for new prompt',
         (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await pumpPromptEditPage(tester, settle: false);
 
       expect(find.text('Add Prompt'), findsOneWidget);
     });
@@ -129,8 +140,11 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
-      await tester.pumpAndSettle();
+      await pumpPromptEditPage(
+        tester,
+        configId: 'test-prompt-id',
+        settle: false,
+      );
 
       expect(find.text('Edit Prompt'), findsOneWidget);
     });
@@ -140,8 +154,11 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
-      await tester.pumpAndSettle();
+      await pumpPromptEditPage(
+        tester,
+        configId: 'test-prompt-id',
+        settle: false,
+      );
 
       // Check that the form is populated with existing data
       expect(find.text('Test Prompt'), findsOneWidget);
@@ -154,8 +171,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await pumpPromptEditPage(tester, settle: false);
 
       // Check section headers - using hardcoded values for tests
       // since we can't access localized messages in tests without proper setup
@@ -175,8 +191,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await pumpPromptEditPage(tester, settle: false);
 
       // Find the save button
       final saveButton = find.text('Save');

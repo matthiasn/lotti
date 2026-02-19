@@ -208,7 +208,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Work'), findsOneWidget);
     });
@@ -229,7 +229,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show fallback "Planned" text
       expect(find.text('Planned'), findsOneWidget);
@@ -251,7 +251,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find resize handle containers (24x3 px decorations)
       final handleFinder = find.byWidgetPredicate(
@@ -282,7 +282,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find resize handle containers
       final handleFinder = find.byWidgetPredicate(
@@ -313,7 +313,7 @@ void main() {
           highlightedCategoryId: 'cat-1',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the AnimatedContainer with border
       final animatedContainer = tester.widget<AnimatedContainer>(
@@ -344,7 +344,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the block - should not crash
       await tester.tap(find.text('Work'));
@@ -369,7 +369,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Double tap - should not crash (would normally open edit modal)
       await tester.tap(find.text('Work'));
@@ -401,7 +401,7 @@ void main() {
               dragActive = isDragging,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Start long press
       final gesture = await tester.startGesture(
@@ -435,7 +435,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Start long press
       final gesture = await tester.startGesture(
@@ -468,7 +468,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final center = tester.getCenter(find.text('Work'));
 
@@ -503,7 +503,7 @@ void main() {
           sectionEndHour: 12,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final center = tester.getCenter(find.text('Work'));
 
@@ -539,7 +539,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final center = tester.getCenter(find.text('Work'));
 
@@ -577,7 +577,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the block bounds
       final blockFinder = find.byType(DraggablePlannedBlock);
@@ -616,7 +616,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the block bounds
       final blockFinder = find.byType(DraggablePlannedBlock);
@@ -655,7 +655,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get block center (not text center which is at top)
       final blockFinder = find.byType(DraggablePlannedBlock);
@@ -689,7 +689,7 @@ void main() {
           sectionEndHour: 18,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Get the block bounds
       final blockFinder = find.byType(DraggablePlannedBlock);
@@ -741,7 +741,7 @@ void main() {
             sectionEndHour: 18,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Long press
         final gesture = await tester.startGesture(

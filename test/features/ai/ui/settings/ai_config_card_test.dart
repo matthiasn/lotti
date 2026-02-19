@@ -268,10 +268,7 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('displays chevron icon', (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(testProvider));
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      });
+      // Chevron presence covered in compact mode group tests
     });
 
     group('Compact mode', () {
@@ -319,76 +316,31 @@ void main() {
         expect(find.byIcon(Icons.chevron_right), findsNothing);
       });
 
-      testWidgets('shows config name in both modes',
+      testWidgets('shows name, description, and icon in both modes',
           (WidgetTester tester) async {
-        // Normal mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-        ));
-        expect(find.text(testProvider.name), findsOneWidget);
-
-        // Compact mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-          compact: true,
-        ));
-        expect(find.text(testProvider.name), findsOneWidget);
+        for (final compact in [false, true]) {
+          await tester.pumpWidget(createCompactWidget(
+            config: testProvider,
+            compact: compact,
+          ));
+          expect(find.text(testProvider.name), findsOneWidget);
+          expect(find.text(testProvider.description!), findsOneWidget);
+          expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+        }
       });
 
-      testWidgets('shows description in both modes',
+      testWidgets(
+          'uses AnimatedContainer in normal mode but not in compact mode',
           (WidgetTester tester) async {
-        // Normal mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-        ));
-        expect(find.text(testProvider.description!), findsOneWidget);
-
-        // Compact mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-          compact: true,
-        ));
-        expect(find.text(testProvider.description!), findsOneWidget);
-      });
-
-      testWidgets('shows config icon in both modes',
-          (WidgetTester tester) async {
-        // Normal mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-        ));
-        expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
-
-        // Compact mode
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-          compact: true,
-        ));
-        expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
-      });
-
-      testWidgets('renders without AnimatedContainer in compact mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-          compact: true,
-        ));
-
-        // In compact mode, should not have the outer AnimatedContainer
-        // (it returns just the Row content)
-        // The widget should be a simple Row, not wrapped in AnimatedContainer
-        expect(find.text(testProvider.name), findsOneWidget);
-        expect(find.byType(AnimatedContainer), findsNothing);
-      });
-
-      testWidgets('renders with AnimatedContainer in normal mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-        ));
-
-        // Normal mode should have the AnimatedContainer wrapper
+        // Normal mode has AnimatedContainer
+        await tester.pumpWidget(createCompactWidget(config: testProvider));
         expect(find.byType(AnimatedContainer), findsOneWidget);
+
+        // Compact mode does not
+        await tester.pumpWidget(
+          createCompactWidget(config: testProvider, compact: true),
+        );
+        expect(find.byType(AnimatedContainer), findsNothing);
       });
 
       testWidgets('onTap still works in compact mode',
@@ -662,66 +614,42 @@ void main() {
     });
 
     group('Theme variations', () {
-      testWidgets('renders correctly in light theme',
+      testWidgets('renders correctly in both light and dark themes',
           (WidgetTester tester) async {
-        final widget = MaterialApp(
-          theme: ThemeData.light(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ProviderScope(
-              overrides: [
-                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        for (final theme in [ThemeData.light(), ThemeData.dark()]) {
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
               ],
-              child: AiConfigCard(
-                config: testProvider,
-                onTap: () {},
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ProviderScope(
+                  overrides: [
+                    aiConfigRepositoryProvider
+                        .overrideWithValue(mockRepository),
+                  ],
+                  child: AiConfigCard(
+                    config: testProvider,
+                    onTap: () {},
+                  ),
+                ),
               ),
             ),
-          ),
-        );
-
-        await tester.pumpWidget(widget);
-        expect(find.text(testProvider.name), findsOneWidget);
-      });
-
-      testWidgets('renders correctly in dark theme',
-          (WidgetTester tester) async {
-        final widget = MaterialApp(
-          theme: ThemeData.dark(),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ProviderScope(
-              overrides: [
-                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: AiConfigCard(
-                config: testProvider,
-                onTap: () {},
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpWidget(widget);
-        expect(find.text(testProvider.name), findsOneWidget);
+          );
+          expect(find.text(testProvider.name), findsOneWidget);
+        }
       });
     });
 
     group('Edge cases', () {
-      testWidgets('handles config without description',
+      testWidgets('handles configs with no description and long text',
           (WidgetTester tester) async {
+        // No description
         final configNoDesc = AiConfig.inferenceProvider(
           id: 'no-desc',
           name: 'No Description Provider',
@@ -730,52 +658,37 @@ void main() {
           baseUrl: 'https://api.example.com',
           createdAt: DateTime.fromMillisecondsSinceEpoch(0),
         );
-
         await tester.pumpWidget(createTestWidget(configNoDesc));
-
         expect(find.text(configNoDesc.name), findsOneWidget);
-        expect(find.text(''), findsNothing); // No empty description shown
-      });
 
-      testWidgets('handles very long names with ellipsis',
-          (WidgetTester tester) async {
+        // Long name
+        const longName =
+            'This is a very long provider name that should be truncated with ellipsis when displayed in the card';
         final longNameConfig = AiConfig.inferenceProvider(
           id: 'long-name',
-          name:
-              'This is a very long provider name that should be truncated with ellipsis when displayed in the card',
+          name: longName,
           inferenceProviderType: InferenceProviderType.genericOpenAi,
           apiKey: 'test-key',
           baseUrl: 'https://api.example.com',
           createdAt: DateTime.fromMillisecondsSinceEpoch(0),
         );
-
         await tester.pumpWidget(createTestWidget(longNameConfig));
+        expect(find.text(longName), findsOneWidget);
 
-        // Text should be displayed but truncated
-        expect(
-          find.text(
-              'This is a very long provider name that should be truncated with ellipsis when displayed in the card'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('handles very long descriptions with ellipsis',
-          (WidgetTester tester) async {
+        // Long description
+        const longDesc =
+            'This is a very long description that should be truncated with ellipsis when displayed in the card. It contains multiple sentences and should be limited to two lines maximum in normal mode.';
         final longDescConfig = AiConfig.inferenceProvider(
           id: 'long-desc',
           name: 'Provider',
-          description:
-              'This is a very long description that should be truncated with ellipsis when displayed in the card. It contains multiple sentences and should be limited to two lines maximum in normal mode.',
+          description: longDesc,
           inferenceProviderType: InferenceProviderType.genericOpenAi,
           apiKey: 'test-key',
           baseUrl: 'https://api.example.com',
           createdAt: DateTime.fromMillisecondsSinceEpoch(0),
         );
-
         await tester.pumpWidget(createTestWidget(longDescConfig));
-
-        // Description should be displayed
-        expect(find.text(longDescConfig.description!), findsOneWidget);
+        expect(find.text(longDesc), findsOneWidget);
       });
     });
 

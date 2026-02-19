@@ -138,7 +138,7 @@ void main() {
       // Enter a term that exceeds 50 characters
       final longTerm = 'a' * 60; // 60 characters
       await tester.enterText(find.byType(TextField), longTerm);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify term is truncated to 50 characters
       expect(changedTerms, hasLength(1));
@@ -162,7 +162,7 @@ void main() {
 
       // Clear the text field
       await tester.enterText(find.byType(TextField), '');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify empty list is returned
       expect(changedTerms, isEmpty);
@@ -407,7 +407,7 @@ void main() {
         find.byType(TextField),
         'Kirkjubæjarklaustur',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify Unicode characters are preserved
       expect(changedTerms, equals(['Kirkjubæjarklaustur']));

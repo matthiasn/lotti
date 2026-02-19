@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,7 +18,7 @@ void main() {
   var mockJournalDb = MockJournalDb();
   final mockHealthImport = MockHealthImport();
 
-  group('DashboardMeasurablesChart Widget Tests - ', () {
+  group('DashboardHealthChart Widget Tests - ', () {
     setUp(() {
       mockJournalDb = MockJournalDb();
 
@@ -26,7 +28,8 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('weight chart is rendered', (tester) async {
+    testWidgets('renders weight chart with title and line chart',
+        (tester) async {
       when(
         () => mockJournalDb.getQuantitativeByType(
           type: testWeightEntry.data.dataType,
@@ -55,23 +58,20 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // chart displays expected title
-      expect(
-        find.text('Weight'),
-        findsOneWidget,
-      );
+      expect(find.text('Weight'), findsOneWidget);
+      expect(find.byType(TimeSeriesLineChart), findsOneWidget);
+      expect(find.byType(HealthChartInfoWidget), findsOneWidget);
     });
 
-    testWidgets('BP chart is rendered', (tester) async {
+    testWidgets('renders blood pressure chart using BP-specific widget',
+        (tester) async {
       when(
         () => mockJournalDb.getQuantitativeByType(
           type: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async {
-        return [testBpSystolicEntry];
-      });
+      ).thenAnswer((_) async => [testBpSystolicEntry]);
 
       when(
         () => mockJournalDb.getQuantitativeByType(
@@ -79,11 +79,7 @@ void main() {
           rangeEnd: any(named: 'rangeEnd'),
           rangeStart: any(named: 'rangeStart'),
         ),
-      ).thenAnswer((_) async {
-        return [
-          testBpDiastolicEntry,
-        ];
-      });
+      ).thenAnswer((_) async => [testBpDiastolicEntry]);
 
       const bpType = 'BLOOD_PRESSURE';
 
@@ -106,11 +102,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // chart displays expected title
-      expect(
-        find.text('Blood Pressure'),
-        findsOneWidget,
-      );
+      expect(find.text('Blood Pressure'), findsOneWidget);
+      // BP type uses specialized widget instead of generic chart
+      expect(find.byType(DashboardHealthBpChart), findsOneWidget);
     });
   });
 }

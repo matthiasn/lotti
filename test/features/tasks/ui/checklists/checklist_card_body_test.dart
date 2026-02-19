@@ -22,114 +22,56 @@ void main() {
       await tearDownTestGetIt();
     });
 
-    testWidgets('shows empty state when itemIds is empty', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: ChecklistCardBody(
-              itemIds: const [],
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              filter: ChecklistFilter.openOnly,
-              completionRate: 0,
-              focusNode: focusNode,
-              isCreatingItem: false,
-              onCreateItem: (_) async {},
-              onReorder: (_, __) {},
-            ),
+    Widget buildBody({
+      List<String> itemIds = const [],
+      double completionRate = 0,
+    }) {
+      return ProviderScope(
+        child: WidgetTestBench(
+          child: ChecklistCardBody(
+            itemIds: itemIds,
+            checklistId: 'checklist-1',
+            taskId: 'task-1',
+            filter: ChecklistFilter.openOnly,
+            completionRate: completionRate,
+            focusNode: focusNode,
+            isCreatingItem: false,
+            onCreateItem: (_) async {},
+            onReorder: (_, __) {},
           ),
         ),
       );
+    }
+
+    testWidgets('empty list shows empty state, input field, and divider',
+        (tester) async {
+      await tester.pumpWidget(buildBody());
 
       expect(find.byType(ChecklistEmptyState), findsOneWidget);
       expect(find.text('No items yet'), findsOneWidget);
-    });
-
-    testWidgets('shows add input field', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: ChecklistCardBody(
-              itemIds: const [],
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              filter: ChecklistFilter.openOnly,
-              completionRate: 0,
-              focusNode: focusNode,
-              isCreatingItem: false,
-              onCreateItem: (_) async {},
-              onReorder: (_, __) {},
-            ),
-          ),
-        ),
-      );
-
       expect(find.byType(TitleTextField), findsOneWidget);
-    });
-
-    testWidgets('shows divider between content and add input', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: ChecklistCardBody(
-              itemIds: const [],
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              filter: ChecklistFilter.openOnly,
-              completionRate: 0,
-              focusNode: focusNode,
-              isCreatingItem: false,
-              onCreateItem: (_) async {},
-              onReorder: (_, __) {},
-            ),
-          ),
-        ),
-      );
-
       expect(find.byType(Divider), findsOneWidget);
     });
 
-    testWidgets('shows ReorderableListView when items exist', (tester) async {
+    testWidgets('non-empty list shows ReorderableListView and input field',
+        (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: ChecklistCardBody(
-              itemIds: const ['item-1', 'item-2'],
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              filter: ChecklistFilter.openOnly,
-              completionRate: 0.5,
-              focusNode: focusNode,
-              isCreatingItem: false,
-              onCreateItem: (_) async {},
-              onReorder: (_, __) {},
-            ),
-          ),
-        ),
+        buildBody(itemIds: ['item-1', 'item-2'], completionRate: 0.5),
       );
 
       expect(find.byType(ReorderableListView), findsOneWidget);
+      expect(find.byType(TitleTextField), findsOneWidget);
+      expect(find.byType(ChecklistEmptyState), findsNothing);
     });
   });
 
   group('ChecklistEmptyState', () {
-    testWidgets('renders empty state message', (tester) async {
+    testWidgets('renders centered empty message', (tester) async {
       await tester.pumpWidget(
-        const WidgetTestBench(
-          child: ChecklistEmptyState(),
-        ),
+        const WidgetTestBench(child: ChecklistEmptyState()),
       );
 
       expect(find.text('No items yet'), findsOneWidget);
-    });
-
-    testWidgets('centers the message', (tester) async {
-      await tester.pumpWidget(
-        const WidgetTestBench(
-          child: ChecklistEmptyState(),
-        ),
-      );
-
       expect(find.byType(Center), findsOneWidget);
     });
   });
@@ -137,14 +79,10 @@ void main() {
   group('ChecklistAllDoneState', () {
     testWidgets('renders all done message', (tester) async {
       await tester.pumpWidget(
-        const WidgetTestBench(
-          child: ChecklistAllDoneState(),
-        ),
+        const WidgetTestBench(child: ChecklistAllDoneState()),
       );
 
-      // The message comes from localization, so check for the widget
-      expect(find.byType(ChecklistAllDoneState), findsOneWidget);
-      expect(find.byType(Text), findsOneWidget);
+      expect(find.text('All items completed!'), findsOneWidget);
     });
   });
 }

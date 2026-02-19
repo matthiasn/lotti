@@ -50,7 +50,7 @@ void main() {
   group('RatingModal', () {
     testWidgets('renders title', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Rate this session'), findsOneWidget);
     });
@@ -58,7 +58,7 @@ void main() {
     testWidgets('renders all rating dimension labels from catalog',
         (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('How productive was this session?'), findsOneWidget);
       expect(find.text('How energized did you feel?'), findsOneWidget);
@@ -68,7 +68,7 @@ void main() {
 
     testWidgets('renders challenge-skill buttons from catalog', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Too easy'), findsOneWidget);
       expect(find.text('Just right'), findsOneWidget);
@@ -77,14 +77,14 @@ void main() {
 
     testWidgets('renders note text field', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Quick note (optional)'), findsOneWidget);
     });
 
     testWidgets('renders Skip and Save buttons', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Skip'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
@@ -93,7 +93,7 @@ void main() {
     testWidgets('Save button is disabled when not all dimensions are set',
         (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the FilledButton (Save button)
       final saveButton = tester.widget<FilledButton>(
@@ -106,7 +106,7 @@ void main() {
 
     testWidgets('can enter text in note field', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'My session note');
       await tester.pump();
@@ -140,7 +140,7 @@ void main() {
       ).thenAnswer((_) async => existingRating);
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Note should be pre-populated
       expect(find.text('Previous note'), findsOneWidget);
@@ -154,7 +154,7 @@ void main() {
 
     testWidgets('tapping challenge-skill button selects it', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Just right'));
       await tester.pumpAndSettle();
@@ -169,7 +169,7 @@ void main() {
 
     testWidgets('renders drag handle', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The drag handle is a Container with 40x4 dimensions
       // We verify the overall layout rendered properly
@@ -211,7 +211,7 @@ void main() {
       ).thenAnswer((_) async => existingRating);
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // All dimensions pre-populated, Save should be enabled
       final saveButton = tester.widget<FilledButton>(
@@ -268,7 +268,7 @@ void main() {
       ).thenAnswer((_) async => existingRating);
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap Save
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
@@ -322,7 +322,7 @@ void main() {
     testWidgets('tapping all tap bars and challenge button enables Save',
         (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Save should be disabled initially
       var saveButton = tester.widget<FilledButton>(
@@ -353,7 +353,7 @@ void main() {
 
     testWidgets('skip button is always enabled', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final skipButton = tester.widget<OutlinedButton>(
         find.widgetWithText(OutlinedButton, 'Skip'),
@@ -412,7 +412,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show the catalogId as title
       expect(find.text('day_morning'), findsOneWidget);
@@ -468,7 +468,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Falls back to dimension key as label
       expect(find.text('some_dimension'), findsOneWidget);

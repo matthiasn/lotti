@@ -79,12 +79,12 @@ void main() {
 
       // Emit initial category
       streamController.add(category);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the name field (first TextFormField in Basic Settings)
       final nameField = find.byType(TextFormField).first;
       await tester.tap(nameField);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // User types a suffix
       await tester.enterText(nameField, 'AlphaX');
@@ -333,7 +333,7 @@ void main() {
         // Change the name (use .first to target name field, not speech dictionary)
         final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'Updated Name');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Check save button is enabled - there might be multiple buttons
         final enabledButton = findEnabledPrimaryButton(tester);
@@ -694,7 +694,7 @@ void main() {
         // Enter name with whitespace (use .first to target name field, not speech dictionary)
         final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'New Name');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Save - find the enabled save button
         final saveButtons = find.byType(LottiPrimaryButton);
@@ -756,7 +756,7 @@ void main() {
 
         // Enter category name
         await tester.enterText(find.byType(TextField), 'New Category');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap create button
         final createButton = find.byType(LottiPrimaryButton);
@@ -811,7 +811,7 @@ void main() {
 
         // Change name to enable save (use .first to target name field, not speech dictionary)
         await tester.enterText(find.byType(TextFormField).first, 'Updated');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Tap save button
         final saveButton = findEnabledPrimaryButton(tester);
@@ -853,7 +853,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(TextField), 'New Category');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(find.byType(LottiPrimaryButton));
         await tester.pumpAndSettle();
@@ -899,7 +899,7 @@ void main() {
         // Make a change (use .first to target name field, not speech dictionary)
         await tester.enterText(
             find.byType(TextFormField).first, 'Changed Name');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Save button should remain absent in app bar; save is in bottom bar only
         expect(

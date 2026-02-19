@@ -245,7 +245,7 @@ void main() {
 
       // Search for "anthropic"
       await tester.enterText(find.byType(TextField), 'anthropic');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Simulate the filtering (in a real app this would be reactive)
       searchQuery = 'anthropic';

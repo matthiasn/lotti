@@ -123,7 +123,7 @@ void main() {
   group('AddBlockSheet', () {
     testWidgets('renders sheet with title', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Title and button both show 'Add Block'
       expect(find.text('Add Block'), findsNWidgets(2));
@@ -131,7 +131,7 @@ void main() {
 
     testWidgets('shows Select Category label', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Select Category'), findsOneWidget);
     });
@@ -139,28 +139,28 @@ void main() {
     testWidgets('shows category placeholder when none selected',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Choose a category...'), findsOneWidget);
     });
 
     testWidgets('shows folder icon when no category selected', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(MdiIcons.folderOutline), findsOneWidget);
     });
 
     testWidgets('shows Time Range label', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Time Range'), findsOneWidget);
     });
 
     testWidgets('shows Start and End labels', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Start'), findsOneWidget);
       expect(find.text('End'), findsOneWidget);
@@ -168,7 +168,7 @@ void main() {
 
     testWidgets('shows action buttons', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Cancel'), findsOneWidget);
       // Add Block button appears twice: title and button
@@ -178,7 +178,7 @@ void main() {
     testWidgets('Add Block button is disabled without category',
         (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the FilledButton with Add Block text
       final addButton = find.widgetWithText(FilledButton, 'Add Block');
@@ -191,14 +191,14 @@ void main() {
 
     testWidgets('renders AddBlockSheet widget', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(AddBlockSheet), findsOneWidget);
     });
 
     testWidgets('shows duration display', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Default is 9:00 AM to 10:00 AM = 1 hour
       expect(find.text('1h'), findsOneWidget);
@@ -206,7 +206,7 @@ void main() {
 
     testWidgets('category selector is tappable', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the category selector by its placeholder text
       final selectorFinder = find.text('Choose a category...');
@@ -222,7 +222,7 @@ void main() {
 
     testWidgets('time selectors are tappable', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find start time selector
       final startFinder = find.text('Start');
@@ -248,7 +248,7 @@ void main() {
 
     testWidgets('shows arrow between time selectors', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Arrow icon between start and end time
       expect(find.byIcon(MdiIcons.arrowRight), findsOneWidget);
@@ -256,7 +256,7 @@ void main() {
 
     testWidgets('shows chevron icons for selection', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Chevron for category selector
       expect(find.byIcon(MdiIcons.chevronRight), findsOneWidget);
@@ -264,7 +264,7 @@ void main() {
 
     testWidgets('displays default start time', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Default start time is 9:00 AM
       expect(find.text('9:00 AM'), findsOneWidget);
@@ -272,7 +272,7 @@ void main() {
 
     testWidgets('displays default end time', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Default end time is 10:00 AM
       expect(find.text('10:00 AM'), findsOneWidget);
@@ -280,7 +280,7 @@ void main() {
 
     testWidgets('Cancel button is enabled', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final cancelButton = find.widgetWithText(OutlinedButton, 'Cancel');
       expect(cancelButton, findsOneWidget);
@@ -291,7 +291,7 @@ void main() {
 
     testWidgets('shows drag handle at top', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The drag handle is a Container with specific decoration
       // Check that the widget structure exists (handle container is 40x4)
@@ -300,7 +300,7 @@ void main() {
 
     testWidgets('has correct layout structure', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should have main Column for layout
       expect(find.byType(Column), findsWidgets);

@@ -30,6 +30,7 @@ void main() {
 
       final handler = VerificationHandler(
         onStateChanged: events.add,
+        pollInterval: Duration.zero,
       );
       addTearDown(handler.dispose);
 
@@ -69,6 +70,7 @@ void main() {
 
       final handler = VerificationHandler(
         onStateChanged: events.add,
+        pollInterval: Duration.zero,
       );
       addTearDown(handler.dispose);
 
@@ -89,7 +91,10 @@ void main() {
 
     test('acceptVerification requires active incoming verification', () async {
       final verification = MockKeyVerification();
-      final handler = VerificationHandler(onStateChanged: (_) {});
+      final handler = VerificationHandler(
+        onStateChanged: (_) {},
+        pollInterval: Duration.zero,
+      );
       addTearDown(handler.dispose);
 
       when(verification.acceptVerification)
@@ -121,7 +126,10 @@ void main() {
     });
 
     test('acceptSas requires an active verification', () async {
-      final handler = VerificationHandler(onStateChanged: (_) {});
+      final handler = VerificationHandler(
+        onStateChanged: (_) {},
+        pollInterval: Duration.zero,
+      );
       addTearDown(handler.dispose);
 
       await expectLater(
@@ -190,6 +198,7 @@ void main() {
 
       final handler = VerificationHandler(
         onStateChanged: events.add,
+        pollInterval: Duration.zero,
       );
       addTearDown(handler.dispose);
 
@@ -222,8 +231,10 @@ void main() {
       when(() => outgoing.onUpdate = any()).thenReturn(null);
       when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
 
-      final handler = VerificationHandler(onStateChanged: (_) {})
-        ..trackOutgoing(outgoing);
+      final handler = VerificationHandler(
+        onStateChanged: (_) {},
+        pollInterval: Duration.zero,
+      )..trackOutgoing(outgoing);
       await handler.dispose();
 
       verify(outgoing.cancel).called(1);
@@ -256,7 +267,10 @@ void main() {
       });
       when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
 
-      final handler = VerificationHandler(onStateChanged: events.add);
+      final handler = VerificationHandler(
+        onStateChanged: events.add,
+        pollInterval: Duration.zero,
+      );
       addTearDown(handler.dispose);
 
       handler.trackOutgoing(outgoing);
@@ -281,7 +295,10 @@ void main() {
       when(() => outgoing.onUpdate = any()).thenReturn(null);
       when(outgoing.cancel).thenAnswer((_) async => Future<void>.value());
 
-      final handler = VerificationHandler(onStateChanged: events.add);
+      final handler = VerificationHandler(
+        onStateChanged: events.add,
+        pollInterval: Duration.zero,
+      );
       addTearDown(handler.dispose);
 
       handler.trackOutgoing(outgoing);

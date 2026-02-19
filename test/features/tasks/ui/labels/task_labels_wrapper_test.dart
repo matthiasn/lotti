@@ -151,7 +151,7 @@ void main() {
 
     final task = taskWithLabels(['existing']);
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Publish assignment event for a DIFFERENT task
     eventService.publish(
@@ -186,7 +186,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Should render SizedBox.shrink() for non-Task
     expect(find.text('Add Label'), findsNothing);
@@ -214,7 +214,7 @@ void main() {
 
     final task = taskWithLabels(['existing']);
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Publish assignment event
     eventService.publish(
@@ -258,7 +258,7 @@ void main() {
 
     final task = taskWithLabels([]);
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Publish assignment event to trigger SnackBar
     eventService.publish(
@@ -305,7 +305,7 @@ void main() {
 
     final task = taskWithLabels(const []);
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // First event
     eventService.publish(const LabelAssignmentEvent(
@@ -340,7 +340,7 @@ void main() {
     final task = taskWithLabels(['label-1']);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Add Label'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);
@@ -350,7 +350,7 @@ void main() {
     final task = taskWithLabels(['label-1']);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.longPress(find.text('Urgent'));
     await tester.pumpAndSettle();
@@ -368,7 +368,7 @@ void main() {
     ).thenAnswer((_) async => true);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -383,7 +383,7 @@ void main() {
     );
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -399,7 +399,7 @@ void main() {
     final task = base.copyWith(meta: base.meta.copyWith(categoryId: null));
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -415,7 +415,7 @@ void main() {
     final task = base.copyWith(meta: base.meta.copyWith(categoryId: 'work'));
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Tap add label button to open selector
     await tester.tap(find.text('Add Label'));
@@ -433,7 +433,7 @@ void main() {
     final task = taskWithLabels(const []);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Wrapper should always show to allow adding labels and setting estimates
     expect(find.text('Add Label'), findsOneWidget);
@@ -447,7 +447,7 @@ void main() {
     final task = taskWithLabels([noDesc.id]);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.longPress(find.text(noDesc.name));
     await tester.pump();
@@ -462,7 +462,7 @@ void main() {
     final task = taskWithLabels([emptyDesc.id]);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.longPress(find.text(emptyDesc.name));
     await tester.pump();
@@ -474,7 +474,7 @@ void main() {
     final task = taskWithLabels(['label-1']);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -498,7 +498,7 @@ void main() {
     ).thenAnswer((_) async => null);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -524,7 +524,7 @@ void main() {
 
     final task = taskWithLabels(['existing']);
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Publish assignment event with missing labels
     eventService.publish(
@@ -551,7 +551,7 @@ void main() {
     ).thenAnswer((_) async => true);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -574,7 +574,7 @@ void main() {
     final task = taskWithLabels(const []);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();
@@ -606,7 +606,7 @@ void main() {
     ).thenAnswer((_) async => true);
 
     await tester.pumpWidget(buildWrapper(task));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     await tester.tap(find.text('Add Label'));
     await tester.pumpAndSettle();

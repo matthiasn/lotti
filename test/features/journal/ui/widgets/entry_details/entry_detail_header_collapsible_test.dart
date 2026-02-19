@@ -92,8 +92,7 @@ void main() {
     });
 
     group('default header (non-collapsible)', () {
-      testWidgets('renders default layout when isCollapsible is false',
-          (tester) async {
+      testWidgets('shows menu but no collapse arrow', (tester) async {
         when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
             .thenAnswer((_) async => testImageEntry);
 
@@ -106,30 +105,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Should show 3-dots menu but NOT collapse arrow
         expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-        expect(find.byIcon(Icons.expand_more), findsNothing);
-      });
-
-      testWidgets('does not show collapse arrow by default', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testTextEntry.meta.id,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
         expect(find.byIcon(Icons.expand_more), findsNothing);
       });
     });
 
     group('collapsible header - expanded state', () {
-      testWidgets('shows collapse arrow when isCollapsible is true',
+      testWidgets('shows collapse arrow, menu, and no preview icons',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
             .thenAnswer((_) async => testImageEntry);
@@ -147,52 +129,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
-      });
-
-      testWidgets('shows 3-dots menu in collapsible mode', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testImageEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
         expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-      });
-
-      testWidgets(
-          'does NOT show image thumbnail when expanded (isCollapsed=false)',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testImageEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
         // When expanded, no thumbnail or mic icon in the header
         expect(find.byIcon(Icons.mic_rounded), findsNothing);
       });
     });
 
     group('collapsible header - collapsed state', () {
-      testWidgets('shows mic icon when audio entry is collapsed',
+      testWidgets(
+          'shows mic icon, duration, collapse arrow, but hides menu for audio',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
             .thenAnswer((_) async => testAudioEntry);
@@ -211,28 +156,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-      });
-
-      testWidgets('shows duration label when audio entry is collapsed',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
         // testAudioEntry has duration of 1 hour -> h:mm:ss format
         expect(find.text('1:00:00'), findsOneWidget);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsNothing);
       });
 
       testWidgets('does NOT show mic icon when audio entry is expanded',
@@ -253,46 +180,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.mic_rounded), findsNothing);
-      });
-
-      testWidgets('hides 3-dots menu when collapsed', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.more_horiz), findsNothing);
-      });
-
-      testWidgets('still shows collapse arrow when collapsed', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
     });
 
@@ -320,7 +207,7 @@ void main() {
         expect(collapseArrow, findsOneWidget);
 
         await tester.tap(collapseArrow);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(toggled, isTrue);
       });
@@ -549,46 +436,28 @@ void main() {
     });
 
     group('default header AI popup condition', () {
-      testWidgets(
-          'shows AI popup for audio entry in default (non-collapsible) header',
+      testWidgets('shows menu for audio and image entries in default header',
           (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        for (final entry in [testAudioEntry, testImageEntry]) {
+          when(() => mockJournalDb.journalEntityById(entry.meta.id))
+              .thenAnswer((_) async => entry);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              EntryDetailHeader(
+                entryId: entry.meta.id,
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // The 3-dots menu must be present (operator precedence fix)
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
-      });
-
-      testWidgets(
-          'shows AI popup for image entry in default (non-collapsible) header',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testImageEntry.meta.id,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+          expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+        }
       });
     });
 
     group('expanded state shows action buttons', () {
-      testWidgets('shows 3-dots and collapse arrow when expanded',
+      testWidgets('shows menu, arrow, date, but no preview icons',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
             .thenAnswer((_) async => testAudioEntry);
@@ -607,9 +476,13 @@ void main() {
 
         expect(find.byIcon(Icons.more_horiz), findsOneWidget);
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byType(EntryDatetimeWidget), findsOneWidget);
+        expect(find.byIcon(Icons.mic_rounded), findsNothing);
       });
+    });
 
-      testWidgets('shows date but NOT preview icons when expanded',
+    group('collapsed state shows only preview and arrow', () {
+      testWidgets('shows date but hides menu, flag, and AI actions',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
             .thenAnswer((_) async => testAudioEntry);
@@ -620,61 +493,14 @@ void main() {
               entryId: testAudioEntry.meta.id,
               inLinkedEntries: true,
               isCollapsible: true,
+              isCollapsed: true,
               onToggleCollapse: () {},
             ),
           ),
         );
         await tester.pumpAndSettle();
 
-        // Date widget is present in expanded header
         expect(find.byType(EntryDatetimeWidget), findsOneWidget);
-        // No mic icon or duration in expanded state
-        expect(find.byIcon(Icons.mic_rounded), findsNothing);
-      });
-    });
-
-    group('collapsed state shows only preview and arrow', () {
-      testWidgets('shows date widget when collapsed', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Date widget is present in collapsed header
-        expect(
-          find.byType(EntryDatetimeWidget),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('does NOT show AI popup when collapsed', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
         // AI, flag, 3-dots all hidden when collapsed
         expect(find.byIcon(Icons.more_horiz), findsNothing);
         expect(find.byIcon(Icons.flag_outlined), findsNothing);
@@ -780,7 +606,8 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('shows image thumbnail area when collapsed', (tester) async {
+    testWidgets('shows thumbnail, ClipRRect, and date for collapsed image',
+        (tester) async {
       when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
           .thenAnswer((_) async => testImageEntry);
 
@@ -803,46 +630,7 @@ void main() {
         (s) => s.width == 40 && s.height == 40,
       );
       expect(thumbnail, isNotEmpty);
-    });
-
-    testWidgets('shows ClipRRect for image thumbnail when collapsed',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-          .thenAnswer((_) async => testImageEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailHeader(
-            entryId: testImageEntry.meta.id,
-            inLinkedEntries: true,
-            isCollapsible: true,
-            isCollapsed: true,
-            onToggleCollapse: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
       expect(find.byType(ClipRRect), findsOneWidget);
-    });
-
-    testWidgets('shows date widget for collapsed image entry', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-          .thenAnswer((_) async => testImageEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailHeader(
-            entryId: testImageEntry.meta.id,
-            inLinkedEntries: true,
-            isCollapsible: true,
-            isCollapsed: true,
-            onToggleCollapse: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
       expect(find.byType(EntryDatetimeWidget), findsOneWidget);
     });
   });

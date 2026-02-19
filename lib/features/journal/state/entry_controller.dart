@@ -35,6 +35,11 @@ import 'package:super_clipboard/super_clipboard.dart';
 
 part 'entry_controller.g.dart';
 
+/// Delay before stopping the time service after save.
+/// Overridable in tests to avoid real delays.
+@visibleForTesting
+Duration stopRecordingDelay = const Duration(milliseconds: 100);
+
 @riverpod
 class EntryController extends _$EntryController {
   void focusNodeListener() {
@@ -252,7 +257,7 @@ class EntryController extends _$EntryController {
       }
 
       if (stopRecording) {
-        await Future<void>.delayed(const Duration(milliseconds: 100)).then((_) {
+        await Future<void>.delayed(stopRecordingDelay).then((_) {
           getIt<TimeService>().stop();
         });
 

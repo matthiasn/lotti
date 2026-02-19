@@ -430,8 +430,7 @@ void main() {
 
         // Verify state updates - should contain error message
         expect(
-          stateUpdates
-              .any((s) => s.contains('error') || s.contains('Error')),
+          stateUpdates.any((s) => s.contains('error') || s.contains('Error')),
           true,
         );
 

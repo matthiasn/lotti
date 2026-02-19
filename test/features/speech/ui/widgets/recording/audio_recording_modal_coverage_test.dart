@@ -455,7 +455,7 @@ void main() {
 
       // Dismiss modal by tapping outside
       await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Modal should be invisible after dismissal
       state = container.read(audioRecorderControllerProvider);
@@ -580,7 +580,7 @@ void main() {
       expect(find.text('RECORD'), findsOneWidget);
 
       await tester.tap(recordButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockAudioRecorderRepository.startRecording()).called(1);
     });
@@ -614,7 +614,7 @@ void main() {
       final initialValue = state.enableSpeechRecognition ?? true;
 
       await tester.tap(speechCheckbox);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableSpeechRecognition, !initialValue);
@@ -651,7 +651,7 @@ void main() {
       container
           .read(audioRecorderControllerProvider.notifier)
           .setEnableSpeechRecognition(enable: true);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final checklistCheckbox =
           find.byKey(const Key('checklist_updates_checkbox'));
@@ -661,7 +661,7 @@ void main() {
       final initialValue = state.enableChecklistUpdates ?? true;
 
       await tester.tap(checklistCheckbox);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableChecklistUpdates, !initialValue);
@@ -698,7 +698,7 @@ void main() {
       container
           .read(audioRecorderControllerProvider.notifier)
           .setEnableSpeechRecognition(enable: true);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final summaryCheckbox = find.byKey(const Key('task_summary_checkbox'));
       expect(summaryCheckbox, findsOneWidget);
@@ -707,7 +707,7 @@ void main() {
       final initialValue = state.enableTaskSummary ?? true;
 
       await tester.tap(summaryCheckbox);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       state = container.read(audioRecorderControllerProvider);
       expect(state.enableTaskSummary, !initialValue);
@@ -754,7 +754,7 @@ void main() {
       expect(switchWidget, findsOneWidget);
 
       await tester.tap(switchWidget);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final switchState = tester.widget<Switch>(switchWidget);
       expect(switchState.value, isTrue);
@@ -982,12 +982,12 @@ void main() {
       final switchWidget = find.byType(Switch);
       expect(switchWidget, findsOneWidget);
       await tester.tap(switchWidget);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the RECORD button (now in realtime mode)
       expect(find.text('RECORD'), findsOneWidget);
       await tester.tap(find.text('RECORD'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(recordRealtimeCalled, isTrue);
     });

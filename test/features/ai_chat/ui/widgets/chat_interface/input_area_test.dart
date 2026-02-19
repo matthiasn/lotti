@@ -78,7 +78,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 
@@ -229,7 +229,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isFalse);
@@ -247,7 +247,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byIcon(Icons.send), findsOneWidget);
 
@@ -269,7 +269,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byIcon(Icons.tune), findsOneWidget);
     expect(find.byIcon(Icons.mic), findsNothing);
@@ -284,7 +284,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Select a model to start chatting'), findsOneWidget);
   });
@@ -298,7 +298,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byIcon(Icons.send), findsNothing);
     expect(sent, isNull);
@@ -439,7 +439,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     expect(find.byIcon(Icons.mic), findsOneWidget);
@@ -459,7 +459,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.textInputAction, TextInputAction.send);
@@ -475,7 +475,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.onSubmitted, isNull);
@@ -494,7 +494,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
@@ -518,7 +518,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Toggle to realtime mode
     await tester.tap(find.byIcon(Icons.graphic_eq));
@@ -572,7 +572,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     controller.emitTranscript('Hello from realtime');
     await tester.pumpAndSettle();
@@ -600,7 +600,7 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     controller.emitTranscript('Transcript text');
     await tester.pumpAndSettle();

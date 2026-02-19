@@ -71,6 +71,7 @@ class TestableOutboxService extends OutboxService {
     super.ownsActivityGate,
     super.saveJsonHandler,
     super.sequenceLogService,
+    super.postDrainSettle = Duration.zero,
   });
 
   int enqueueCalls = 0;
@@ -1393,6 +1394,7 @@ void main() {
         messageSender: messageSender,
         processor: processor,
         matrixService: matrixService,
+        postDrainSettle: Duration.zero,
       );
 
       // Access the gate via reflection (private) by invoking sendNext; gate is
@@ -1674,6 +1676,7 @@ void main() {
         activityGate: gate,
         ownsActivityGate: false,
         matrixService: matrixService,
+        postDrainSettle: Duration.zero,
       );
 
       await gatedSvc.sendNext();
@@ -1714,6 +1717,7 @@ void main() {
         activityGate: gate,
         ownsActivityGate: false,
         matrixService: matrixService,
+        postDrainSettle: Duration.zero,
       );
 
       await svc.sendNext();

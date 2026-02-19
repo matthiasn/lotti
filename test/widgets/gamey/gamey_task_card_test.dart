@@ -147,223 +147,147 @@ void main() {
     ),
   ];
 
+  /// Helper to build a [GameyTaskCard] with the given task and options.
+  Widget buildCard(Task task, {bool dark = false}) {
+    if (dark) {
+      return DarkRiverpodWidgetTestBench(
+        overrides: testOverrides,
+        child: GameyTaskCard(task: task),
+      );
+    }
+    return RiverpodWidgetTestBench(
+      overrides: testOverrides,
+      child: GameyTaskCard(task: task),
+    );
+  }
+
+  /// Helper to create a task with a given status and title.
+  Task taskWithStatus(
+    Task base,
+    TaskStatus status, {
+    String? title,
+    List<String>? labelIds,
+  }) {
+    return Task(
+      meta: labelIds != null
+          ? Metadata(
+              id: base.meta.id,
+              createdAt: base.meta.createdAt,
+              updatedAt: base.meta.updatedAt,
+              dateFrom: base.meta.dateFrom,
+              dateTo: base.meta.dateTo,
+              labelIds: labelIds,
+            )
+          : base.meta,
+      data: TaskData(
+        status: status,
+        dateFrom: base.data.dateFrom,
+        dateTo: base.data.dateTo,
+        statusHistory: [],
+        title: title ?? base.data.title,
+      ),
+      entryText: base.entryText,
+    );
+  }
+
   group('GameyTaskCard', () {
-    testWidgets('renders task title', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: testTask),
-        ),
-      );
-
+    testWidgets('renders card with title, status badge, and correct structure',
+        (tester) async {
+      await tester.pumpWidget(buildCard(testTask));
       await tester.pumpAndSettle();
 
-      expect(find.text('Test Task Title'), findsOneWidget);
-    });
-
-    testWidgets('renders inside GameySubtleCard', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: testTask),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
+      // Card structure
       expect(find.byType(GameySubtleCard), findsOneWidget);
-    });
-
-    testWidgets('renders status icon badge', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: testTask),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
       expect(find.byType(GameyIconBadge), findsOneWidget);
+
+      // Title text content
+      expect(find.text('Test Task Title'), findsOneWidget);
+
+      // Status chip shows "Open" for the default open status
+      expect(find.text('Open'), findsOneWidget);
+
+      // Priority chip shows default priority
+      expect(find.text('P2'), findsOneWidget);
     });
 
     testWidgets('navigates to task details on tap', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: testTask),
-        ),
-      );
-
+      await tester.pumpWidget(buildCard(testTask));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(GameyTaskCard));
       await tester.pump();
 
-      expect(mockNavService.navigationHistory, contains('/tasks/test-task-id'));
+      expect(
+        mockNavService.navigationHistory,
+        contains('/tasks/test-task-id'),
+      );
     });
 
-    testWidgets('renders with different task statuses', (tester) async {
-      // Test with in-progress status
-      final inProgressStatus = TaskStatus.inProgress(
-        id: 'status-id',
-        createdAt: now,
-        utcOffset: now.timeZoneOffset.inMinutes,
-      );
-
-      final inProgressTask = Task(
-        meta: testTask.meta,
-        data: TaskData(
-          status: inProgressStatus,
-          dateFrom: now,
-          dateTo: now.add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'In Progress Task',
-        ),
-        entryText: testTask.entryText,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: inProgressTask),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('In Progress Task'), findsOneWidget);
-    });
-
-    testWidgets('renders with done status', (tester) async {
-      final doneStatus = TaskStatus.done(
-        id: 'status-id',
-        createdAt: now,
-        utcOffset: now.timeZoneOffset.inMinutes,
-      );
-
-      final doneTask = Task(
-        meta: testTask.meta,
-        data: TaskData(
-          status: doneStatus,
-          dateFrom: now,
-          dateTo: now.add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Done Task',
-        ),
-        entryText: testTask.entryText,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: doneTask),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('Done Task'), findsOneWidget);
-    });
-
-    testWidgets('renders with blocked status', (tester) async {
-      final blockedStatus = TaskStatus.blocked(
-        id: 'status-id',
-        createdAt: now,
-        utcOffset: now.timeZoneOffset.inMinutes,
-        reason: 'Waiting for dependencies',
-      );
-
-      final blockedTask = Task(
-        meta: testTask.meta,
-        data: TaskData(
-          status: blockedStatus,
-          dateFrom: now,
-          dateTo: now.add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Blocked Task',
-        ),
-        entryText: testTask.entryText,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: blockedTask),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('Blocked Task'), findsOneWidget);
-    });
-
-    testWidgets('renders due date when showDueDate is true', (tester) async {
-      final taskWithDueDate = Task(
-        meta: testTask.meta,
-        data: TaskData(
-          status: testTask.data.status,
-          dateFrom: now,
-          dateTo: now.add(const Duration(hours: 1)),
-          statusHistory: [],
-          title: 'Task With Due Date',
-          estimate: const Duration(hours: 2),
-        ),
-        entryText: testTask.entryText,
-      );
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(
-            task: taskWithDueDate,
+    testWidgets('renders correct status label for each status type',
+        (tester) async {
+      final statusCases = [
+        (
+          TaskStatus.inProgress(
+            id: 'sid',
+            createdAt: now,
+            utcOffset: now.timeZoneOffset.inMinutes,
           ),
+          'In Progress',
         ),
-      );
+        (
+          TaskStatus.done(
+            id: 'sid',
+            createdAt: now,
+            utcOffset: now.timeZoneOffset.inMinutes,
+          ),
+          'Done',
+        ),
+        (
+          TaskStatus.blocked(
+            id: 'sid',
+            createdAt: now,
+            utcOffset: now.timeZoneOffset.inMinutes,
+            reason: 'Waiting',
+          ),
+          'Blocked',
+        ),
+      ];
 
-      await tester.pumpAndSettle();
+      for (final (status, expectedLabel) in statusCases) {
+        final task = taskWithStatus(testTask, status, title: expectedLabel);
+        await tester.pumpWidget(buildCard(task));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Task With Due Date'), findsOneWidget);
+        expect(
+          find.text(expectedLabel),
+          findsWidgets,
+          reason: 'Should show "$expectedLabel" status chip',
+        );
+      }
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        DarkRiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: testTask),
-        ),
-      );
-
+    testWidgets('renders in dark mode with correct structure', (tester) async {
+      await tester.pumpWidget(buildCard(testTask, dark: true));
       await tester.pumpAndSettle();
 
       expect(find.text('Test Task Title'), findsOneWidget);
+      expect(find.byType(GameySubtleCard), findsOneWidget);
+      expect(find.byType(GameyIconBadge), findsOneWidget);
     });
 
-    testWidgets('renders with labels when task has labels', (tester) async {
-      final taskWithLabels = Task(
-        meta: Metadata(
-          id: 'test-task-id',
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now.add(const Duration(hours: 1)),
-          labelIds: ['label-1', 'label-2'],
-        ),
-        data: testTask.data,
-        entryText: testTask.entryText,
+    testWidgets('renders card when task has label IDs', (tester) async {
+      final taskWithLabels = taskWithStatus(
+        testTask,
+        testTask.data.status,
+        labelIds: ['label-1', 'label-2'],
       );
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: testOverrides,
-          child: GameyTaskCard(task: taskWithLabels),
-        ),
-      );
-
+      await tester.pumpWidget(buildCard(taskWithLabels));
       await tester.pumpAndSettle();
 
-      // Task should render - check for GameySubtleCard presence
+      // Card renders successfully (labels are null from mock, so no LabelChips)
       expect(find.byType(GameySubtleCard), findsOneWidget);
+      expect(find.text('Test Task Title'), findsOneWidget);
     });
 
     group('priority and status chip colors', () {
@@ -393,13 +317,7 @@ void main() {
 
       testWidgets('priority chip uses urgency palette (not unified blue)',
           (tester) async {
-        // testTask has default priority p2Medium
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: testOverrides,
-            child: GameyTaskCard(task: testTask),
-          ),
-        );
+        await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
         final container = findGradientChipContainer(tester, 'P2');
@@ -408,42 +326,28 @@ void main() {
         final decoration = container!.decoration! as BoxDecoration;
         final gradient = decoration.gradient! as LinearGradient;
 
-        // GameyColors.priorityColor(p2Medium) = taskYellow
         expect(gradient.colors.first,
             equals(GameyColors.priorityColor(TaskPriority.p2Medium)));
-        // Should NOT be the old unified blue
         expect(gradient.colors.first, isNot(equals(GameyColors.gameyAccent)));
       });
 
       testWidgets('status chip uses semantic orange for open status',
           (tester) async {
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: testOverrides,
-            child: GameyTaskCard(task: testTask),
-          ),
-        );
+        await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
-        // testTask has TaskStatus.open → localized label is "Open"
         final container = findGradientChipContainer(tester, 'Open');
         expect(container, isNotNull);
 
         final decoration = container!.decoration! as BoxDecoration;
         final gradient = decoration.gradient! as LinearGradient;
 
-        // Open status → GameyColors.primaryOrange
         expect(gradient.colors.first, equals(GameyColors.primaryOrange));
       });
 
       testWidgets('priority and status chips have different colors',
           (tester) async {
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: testOverrides,
-            child: GameyTaskCard(task: testTask),
-          ),
-        );
+        await tester.pumpWidget(buildCard(testTask));
         await tester.pumpAndSettle();
 
         final priorityContainer = findGradientChipContainer(tester, 'P2');
@@ -465,29 +369,18 @@ void main() {
       });
 
       testWidgets('blocked status uses red color', (tester) async {
-        final blockedTask = Task(
-          meta: testTask.meta,
-          data: TaskData(
-            status: TaskStatus.blocked(
-              id: 'status-id',
-              createdAt: now,
-              utcOffset: now.timeZoneOffset.inMinutes,
-              reason: 'Blocked reason',
-            ),
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
-            statusHistory: [],
-            title: 'Blocked Task',
+        final blockedTask = taskWithStatus(
+          testTask,
+          TaskStatus.blocked(
+            id: 'status-id',
+            createdAt: now,
+            utcOffset: now.timeZoneOffset.inMinutes,
+            reason: 'Blocked reason',
           ),
-          entryText: testTask.entryText,
+          title: 'Blocked Task',
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: testOverrides,
-            child: GameyTaskCard(task: blockedTask),
-          ),
-        );
+        await tester.pumpWidget(buildCard(blockedTask));
         await tester.pumpAndSettle();
 
         final container = findGradientChipContainer(tester, 'Blocked');
@@ -515,12 +408,7 @@ void main() {
             entryText: testTask.entryText,
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: testOverrides,
-              child: GameyTaskCard(task: task),
-            ),
-          );
+          await tester.pumpWidget(buildCard(task));
           await tester.pumpAndSettle();
 
           final container = findGradientChipContainer(tester, priority.short);

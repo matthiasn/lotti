@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -47,7 +45,6 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('gates page when feature disabled', (tester) async {
-      // Feature flag off
       when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
           .thenAnswer((_) => Stream<bool>.value(false));
       await tester.pumpWidget(
@@ -60,30 +57,11 @@ void main() {
       );
 
       await tester.pump();
-      // No Matrix Stats title rendered when gated.
       expect(find.text('Matrix Stats'), findsNothing);
     });
 
-    testWidgets('renders page without page-level loader', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SyncStatsPage(),
-          overrides: [
-            // Provide matrixService to avoid provider errors; page does not
-            // watch stats provider anymore.
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      await tester.pump();
-      expect(find.text('Matrix Stats'), findsOneWidget);
-      // Allow entrance animations to settle so no pending timers remain.
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('shows stats card when data available', (tester) async {
+    testWidgets('renders title and stats card when data available',
+        (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SyncStatsPage(),
@@ -96,8 +74,9 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      // Title and card content present (single title expected)
+      // Title and subtitle present, stats card rendered
       expect(find.text('Matrix Stats'), findsOneWidget);
+      expect(find.text('Inspect sync pipeline metrics'), findsOneWidget);
     });
   });
 }

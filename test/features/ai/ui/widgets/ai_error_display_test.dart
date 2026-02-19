@@ -508,7 +508,7 @@ void main() {
         final materialButton =
             find.ancestor(of: retryText, matching: find.byType(Material)).first;
         await tester.tap(materialButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
         expect(retried, isTrue);
       });
 
@@ -559,7 +559,7 @@ void main() {
             .ancestor(of: viewLogText, matching: find.byType(Material))
             .first;
         await tester.tap(materialButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
         // Verify that beamToNamed was called with the correct route
         verify(() => mockNavService.beamToNamed('/settings/advanced/logging'))
             .called(1);

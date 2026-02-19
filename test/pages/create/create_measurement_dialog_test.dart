@@ -118,7 +118,7 @@ void main() {
       expect(saveButtonFinder, findsNothing);
 
       await tester.enterText(valueFieldFinder, '1000');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // save button is now visible
       expect(saveButtonFinder, findsOneWidget);
@@ -187,7 +187,7 @@ void main() {
       // Enter a value to make the form dirty
       final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
       await tester.enterText(valueFieldFinder, '500');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify save button is rendered with the expected key
       final saveButtonFinder = find.byKey(const Key('measurement_save'));
@@ -331,7 +331,7 @@ void main() {
 
       // Enter a comment
       await tester.enterText(commentFieldFinder, 'Test comment');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Test comment'), findsOneWidget);
     });
@@ -527,7 +527,7 @@ void main() {
       // Enter an invalid number (passes character filter but fails num.tryParse)
       final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
       await tester.enterText(valueFieldFinder, '1..2');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Form should be invalid - save button should NOT appear
       expect(find.byKey(const Key('measurement_save')), findsNothing);

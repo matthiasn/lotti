@@ -161,6 +161,7 @@ SyncActorCommandHandler createTestHandler({
     verificationPeerDiscoveryInterval: verificationPeerDiscoveryInterval,
     vodInitializer: () async {},
     enableLogging: enableLogging,
+    retryBaseDelay: Duration.zero,
   );
 }
 

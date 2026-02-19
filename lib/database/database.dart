@@ -931,7 +931,10 @@ class JournalDb extends _$JournalDb {
     }
   }
 
-  Stream<double> purgeDeleted({bool backup = true}) async* {
+  Stream<double> purgeDeleted({
+    bool backup = true,
+    Duration stepDelay = const Duration(milliseconds: 50),
+  }) async* {
     if (backup) {
       await createDbBackup(journalDbFileName);
     }
@@ -975,7 +978,7 @@ class JournalDb extends _$JournalDb {
           .go();
     }
     yield 0.25; // 25% complete after dashboards
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await Future<void>.delayed(stepDelay);
 
     // Purge measurables
     if (measurableCount > 0) {
@@ -983,7 +986,7 @@ class JournalDb extends _$JournalDb {
           .go();
     }
     yield 0.5; // 50% complete after measurables
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await Future<void>.delayed(stepDelay);
 
     // Purge tags
     if (tagCount > 0) {
@@ -991,7 +994,7 @@ class JournalDb extends _$JournalDb {
           .go();
     }
     yield 0.75; // 75% complete after tags
-    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await Future<void>.delayed(stepDelay);
 
     // Purge journal entries
     if (journalCount > 0) {

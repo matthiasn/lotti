@@ -91,7 +91,7 @@ void main() {
       find.byType(TextField, skipOffstage: false).first,
       'backlog',
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Backlog'), findsWidgets);
     expect(find.text('Urgent'), findsNothing);
@@ -107,7 +107,7 @@ void main() {
       find.byType(TextField, skipOffstage: false).first,
       'BACK',
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Backlog'), findsWidgets);
     expect(find.text('Urgent'), findsNothing);
@@ -159,7 +159,7 @@ void main() {
     final fab = find.byType(FloatingActionButton);
     await tester.ensureVisible(fab);
     await tester.tap(fab, warnIfMissed: false);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     verify(() => mockNav.beamToNamed('/settings/labels/create')).called(1);
   });
@@ -175,13 +175,13 @@ void main() {
       find.byType(TextField, skipOffstage: false).first,
       query,
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final ctaText = find.text('Create "$query" label');
     expect(ctaText, findsOneWidget);
     await tester.ensureVisible(ctaText);
     await tester.tap(ctaText, warnIfMissed: false);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     verify(() => mockNav.beamToNamed('/settings/labels/create?name=My%20Label'))
         .called(1);
@@ -196,7 +196,7 @@ void main() {
     final tile = find.byType(ListTile).first;
     await tester.ensureVisible(tile);
     await tester.tap(tile, warnIfMissed: false);
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     verify(() =>
             mockNav.beamToNamed('/settings/labels/${testLabelDefinition1.id}'))
@@ -241,7 +241,7 @@ void main() {
       find.byType(TextField, skipOffstage: false).first,
       query,
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // CTA should reflect the exact typed casing
     expect(find.text('Create "$query" label'), findsOneWidget);

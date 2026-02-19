@@ -81,7 +81,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: 'Event' chip text is NOT found
       expect(find.text('Event'), findsNothing);
@@ -120,7 +120,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: 'Event' chip text IS found
       expect(find.text('Event'), findsOneWidget);
@@ -151,7 +151,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: JournalEvent is filtered out (default false behavior)
       expect(find.text('Event'), findsNothing);
@@ -236,7 +236,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Habit chip is hidden
       expect(find.text('Habit'), findsNothing);
@@ -271,7 +271,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Habit chip is visible
       expect(find.text('Habit'), findsOneWidget);
@@ -307,7 +307,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Measured and Health chips are hidden
       expect(find.text('Measured'), findsNothing);
@@ -343,7 +343,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Measured and Health chips are visible
       expect(find.text('Measured'), findsOneWidget);
@@ -504,7 +504,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Event chip visible (flag loaded and true)
       expect(find.text('Event'), findsOneWidget);
@@ -635,7 +635,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find and tap the Task chip
       await tester.tap(find.text('Task'));
@@ -666,7 +666,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Long press the Text chip
       await tester.longPress(find.text('Text'));
@@ -697,7 +697,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the FilterChoiceChip for Task - it should be selected
       final taskChipFinder = find.ancestor(
@@ -740,7 +740,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify all entry type labels are present
       // Labels come from app_en.arb localization
@@ -820,7 +820,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the "All" chip
       await tester.tap(find.text('All'));
@@ -869,7 +869,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the "All" chip
       await tester.tap(find.text('All'));
@@ -917,7 +917,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the "All" FilterChoiceChip
       final allChipFinder = find.ancestor(
@@ -952,7 +952,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the "All" FilterChoiceChip
       final allChipFinder = find.ancestor(

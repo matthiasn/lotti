@@ -389,7 +389,7 @@ void main() {
 
         // Toggle to disabled
         await tester.tap(find.text('Toggle'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         saveButton = tester
             .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
@@ -397,7 +397,7 @@ void main() {
 
         // Toggle back to enabled
         await tester.tap(find.text('Toggle'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         saveButton = tester
             .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));

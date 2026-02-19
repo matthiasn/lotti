@@ -46,7 +46,9 @@ class OutboxService {
     // Optional seams for testing/injection
     Stream<List<ConnectivityResult>>? connectivityStream,
     SyncSequenceLogService? sequenceLogService,
-  })  : _syncDatabase = syncDatabase,
+    Duration postDrainSettle = _defaultPostDrainSettle,
+  })  : _postDrainSettle = postDrainSettle,
+        _syncDatabase = syncDatabase,
         _loggingService = loggingService,
         _vectorClockService = vectorClockService,
         _journalDb = journalDb,
@@ -314,7 +316,8 @@ class OutboxService {
   }
 
   static const int _maxDrainPasses = 20;
-  static const Duration _postDrainSettle = Duration(milliseconds: 250);
+  static const Duration _defaultPostDrainSettle = Duration(milliseconds: 250);
+  final Duration _postDrainSettle;
 
   void _recordBackoff(Duration delay) {
     if (delay <= Duration.zero) return;

@@ -168,7 +168,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Open Sync Status'));
       await tester.pumpAndSettle();
@@ -237,7 +237,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
@@ -259,7 +259,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(UnverifiedDevices), findsOneWidget);
     });
@@ -288,7 +288,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(DeviceCard), findsOneWidget);
       expect(find.text('Pixel 7'), findsWidgets);
@@ -312,7 +312,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
@@ -338,7 +338,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final context = tester.element(find.byType(ProvisionedStatusWidget));
       expect(
@@ -364,7 +364,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('\u2022' * 24), findsOneWidget);
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
@@ -403,7 +403,7 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final context = tester.element(find.byType(ProvisionedStatusWidget));
     expect(find.byKey(const Key('statusHandoverQrImage')), findsNothing);
@@ -447,7 +447,7 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final copyFinder = find.byKey(const Key('statusCopyHandoverData'));
     await tester.ensureVisible(copyFinder);
@@ -485,7 +485,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The auto-verification launcher should trigger a verification modal
       expect(find.text('Other Device'), findsWidgets);

@@ -164,7 +164,7 @@ void main() {
       find.byType(TextField).at(1),
       'New Category',
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Verify create category option is shown
     expect(find.text('New Category'), findsNWidgets(2));

@@ -83,7 +83,7 @@ void main() {
         expect(saveButtonFinder, findsNothing);
 
         await tester.enterText(nameFieldFinder, 'EditedTag');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // save button is visible as there are unsaved changes
         expect(saveButtonFinder, findsOneWidget);
@@ -123,7 +123,7 @@ void main() {
         expect(saveButtonFinder, findsNothing);
 
         await tester.enterText(nameFieldFinder, 'EditedTag');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // save button is visible as there are unsaved changes
         expect(saveButtonFinder, findsOneWidget);
@@ -163,7 +163,7 @@ void main() {
         expect(saveButtonFinder, findsNothing);
 
         await tester.enterText(nameFieldFinder, 'EditedTag');
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // save button is visible as there are unsaved changes
         expect(saveButtonFinder, findsOneWidget);

@@ -79,7 +79,7 @@ void main() {
 
         await tester.enterText(nameFieldFinder, 'NewGenericTag');
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('NewGenericTag'), findsOneWidget);
 
@@ -118,7 +118,7 @@ void main() {
 
         await tester.enterText(nameFieldFinder, 'NewPersonTag');
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('NewPersonTag'), findsOneWidget);
 
@@ -157,7 +157,7 @@ void main() {
 
         await tester.enterText(nameFieldFinder, 'NewStoryTag');
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('NewStoryTag'), findsOneWidget);
 

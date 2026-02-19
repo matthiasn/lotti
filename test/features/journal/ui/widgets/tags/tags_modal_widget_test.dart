@@ -184,7 +184,7 @@ void main() {
 
       final searchFieldFinder = find.byType(CupertinoTextField);
       await tester.enterText(searchFieldFinder, 'some');
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       verify(() => mockTagsService.getMatchingTags('some')).called(1);
 
