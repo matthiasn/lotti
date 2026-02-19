@@ -3,7 +3,7 @@ Pod::Spec.new do |s|
   s.version          = '0.1.0'
   s.summary          = 'sqlite-vec FFI plugin for Flutter (macOS).'
   s.homepage         = 'https://github.com/asg017/sqlite-vec'
-  s.license          = { :type => 'MIT' }
+  s.license          = { :type => 'MIT', :file => '../LICENSE' }
   s.author           = { 'sqlite-vec' => 'https://github.com/asg017/sqlite-vec' }
   s.source           = { :path => '.' }
 
