@@ -17,6 +17,14 @@ MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
 
+SQLITE_VERSION := 3460100
+# SQLITE_YEAR must match the year in which SQLITE_VERSION was released.
+# Find the correct year at https://www.sqlite.org/download.html
+SQLITE_YEAR := 2024
+SQLITE_AMALGAMATION := sqlite-amalgamation-$(SQLITE_VERSION)
+SQLITE_URL := https://www.sqlite.org/$(SQLITE_YEAR)/$(SQLITE_AMALGAMATION).zip
+SQLITE_SHA256 := 77823cb110929c2bcb0f5d48e4833b5c59a8a6e40cdea3936b99e199dbbe5784
+
 .PHONY: test
 test:
 	$(FLUTTER_CMD) test --coverage
@@ -241,6 +249,10 @@ splash:
 .PHONY: icons
 icons:
 	dart run flutter_launcher_icons:main
+
+.PHONY: build_test_sqlite_vec
+build_test_sqlite_vec:
+	@./scripts/build_test_sqlite_vec.sh "$(SQLITE_URL)" "$(SQLITE_SHA256)" "$(SQLITE_AMALGAMATION)"
 
 .PHONY: clean_test
 clean_test: clean deps build_runner l10n test

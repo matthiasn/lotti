@@ -30,6 +30,15 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
+      - name: Cache sqlite-vec test library
+        id: cache-sqlite-vec
+        uses: actions/cache@v4
+        with:
+          path: packages/sqlite_vec/test_sqlite3_with_vec.*
+          key: ${{ runner.os }}-${{ runner.arch }}-sqlite-vec-${{ hashFiles('packages/sqlite_vec/src/sqlite-vec.c', 'scripts/build_test_sqlite_vec.sh', 'Makefile') }}
+      - name: Build sqlite-vec test library
+        if: steps.cache-sqlite-vec.outputs.cache-hit != 'true'
+        run: make build_test_sqlite_vec
       - name: Activate very_good_cli
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests
