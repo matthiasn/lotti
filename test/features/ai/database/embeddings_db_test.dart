@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:sqlite3/open.dart';
@@ -94,7 +95,6 @@ void main() {
         entityId: 'entity-1',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: vec,
         contentHash: 'hash-1',
       );
@@ -113,7 +113,6 @@ void main() {
           entityId: 'entity-1',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: vec1,
           contentHash: 'hash-1',
         )
@@ -121,7 +120,6 @@ void main() {
           entityId: 'entity-1',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: vec2,
           contentHash: 'hash-2',
         );
@@ -136,13 +134,52 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
       }
 
       expect(db.count, 5);
+    });
+
+    test('stores created_at from clock', () {
+      final fixedTime = DateTime.utc(2026, 1, 15, 10, 30);
+
+      withClock(Clock.fixed(fixedTime), () {
+        db.upsertEmbedding(
+          entityId: 'entity-clock',
+          entityType: 'journal_entry',
+          modelId: 'test-model',
+          embedding: _makeVector(2048, value: 1),
+          contentHash: 'hash-clock',
+        );
+      });
+
+      final rows = db.db.select(
+        'SELECT created_at FROM embedding_metadata '
+        "WHERE entity_id = 'entity-clock'",
+      );
+      expect(rows.first['created_at'], fixedTime.toIso8601String());
+    });
+
+    test('throws on dimension mismatch', () {
+      expect(
+        () => db.upsertEmbedding(
+          entityId: 'entity-bad',
+          entityType: 'journal_entry',
+          modelId: 'test-model',
+          embedding: _makeVector(512, value: 1),
+          contentHash: 'hash-bad',
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('does not match kEmbeddingDimensions'),
+          ),
+        ),
+      );
+      expect(db.count, 0);
     });
   });
 
@@ -152,7 +189,6 @@ void main() {
         entityId: 'entity-1',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: _makeVector(2048),
         contentHash: 'hash-1',
       );
@@ -179,7 +215,6 @@ void main() {
         entityId: 'entity-1',
         entityType: 'task',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: _makeVector(2048),
         contentHash: 'hash-1',
       );
@@ -197,7 +232,6 @@ void main() {
         entityId: 'entity-1',
         entityType: 'task',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: _makeVector(2048),
         contentHash: 'abc123',
       );
@@ -212,7 +246,6 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
@@ -232,7 +265,6 @@ void main() {
           entityId: 'close',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: 1),
           contentHash: 'hash-close',
         )
@@ -241,7 +273,6 @@ void main() {
           entityId: 'far',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: 100),
           contentHash: 'hash-far',
         );
@@ -263,7 +294,6 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
@@ -279,7 +309,6 @@ void main() {
           entityId: 'journal-1',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: 1),
           contentHash: 'hash-j1',
         )
@@ -287,7 +316,6 @@ void main() {
           entityId: 'task-1',
           entityType: 'task',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: 1),
           contentHash: 'hash-t1',
         );
@@ -323,7 +351,6 @@ void main() {
         entityId: 'entity-1',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: _makeVector(2048, value: 1),
         contentHash: 'hash-1',
       );
@@ -347,7 +374,6 @@ void main() {
         entityId: 'identical',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: Float32List.fromList(baseVector),
         contentHash: 'hash-identical',
       );
@@ -361,7 +387,6 @@ void main() {
         entityId: 'similar',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: similar,
         contentHash: 'hash-similar',
       );
@@ -372,7 +397,6 @@ void main() {
         entityId: 'different',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        dimensions: 2048,
         embedding: different,
         contentHash: 'hash-different',
       );
@@ -397,7 +421,6 @@ void main() {
           entityId: 'entity-$i',
           entityType: i.isEven ? 'journal_entry' : 'task',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
@@ -441,7 +464,6 @@ void main() {
           entityId: 'entity-$i',
           entityType: i.isEven ? 'journal_entry' : 'task',
           modelId: 'test-model',
-          dimensions: 2048,
           embedding: _makeVector(2048, value: i.toDouble()),
           contentHash: 'hash-$i',
         );

@@ -70,8 +70,9 @@ test_sqlite3_with_vec.{dylib,so}  (platform-specific shared library)
 
 The extension is then activated via:
 ```dart
+final customLib = DynamicLibrary.open(path);
 sqlite3.ensureExtensionLoaded(
-  SqliteExtension.staticallyLinked('sqlite3_vec_init'),
+  SqliteExtension.inLibrary(customLib, 'sqlite3_vec_init'),
 );
 ```
 
@@ -142,10 +143,11 @@ CREATE TABLE IF NOT EXISTS embedding_metadata (
   entity_id TEXT PRIMARY KEY,
   entity_type TEXT NOT NULL,     -- 'journal_entry', 'task', 'agent_message', etc.
   model_id TEXT NOT NULL,        -- embedding model identifier
-  dimensions INTEGER NOT NULL,   -- vector dimension count
   content_hash TEXT NOT NULL,    -- to detect when re-embedding is needed
   created_at TEXT NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_entity_type ON embedding_metadata(entity_type);
 
 -- Vector table (sqlite-vec virtual table)
 CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
@@ -167,7 +169,6 @@ class EmbeddingsDb {
     required String entityId,
     required String entityType,
     required String modelId,
-    required int dimensions,
     required Float32List embedding,
     required String contentHash,
   });
@@ -251,6 +252,7 @@ and CPU architecture.
   build step. The Dart code depends only on `package:sqlite3` which is already a dependency.
 - **Vendored C source**: We own the build. No dependency on a third-party pub.dev package.
   Upstream updates = copy two files from a new release's amalgamation archive.
-- **Dimension in schema**: Hardcoded to 2048 in the vec0 table. If different models use
-  different dimensions, we'd create separate vec0 tables per dimension (sqlite-vec requires
-  fixed dimensions per table).
+- **Dimension as constant**: `kEmbeddingDimensions = 2048` is used both in the vec0 table
+  schema and as a validation check in `upsertEmbedding`. If different models use different
+  dimensions, we'd create separate vec0 tables per dimension (sqlite-vec requires fixed
+  dimensions per table).

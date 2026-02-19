@@ -1,6 +1,12 @@
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:sqlite3/sqlite3.dart';
+
+/// The fixed embedding dimension used by the vec0 virtual table.
+///
+/// This must match the `float[N]` declaration in the vec0 schema.
+const kEmbeddingDimensions = 2048;
 
 /// Result of a vector similarity search.
 class EmbeddingSearchResult {
@@ -71,16 +77,19 @@ class EmbeddingsDb {
           entity_id TEXT PRIMARY KEY,
           entity_type TEXT NOT NULL,
           model_id TEXT NOT NULL,
-          dimensions INTEGER NOT NULL,
           content_hash TEXT NOT NULL,
           created_at TEXT NOT NULL
         );
       ''')
       ..execute('''
+        CREATE INDEX IF NOT EXISTS idx_entity_type
+          ON embedding_metadata(entity_type);
+      ''')
+      ..execute('''
         CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings
           USING vec0(
             entity_id TEXT PRIMARY KEY,
-            embedding float[2048]
+            embedding float[$kEmbeddingDimensions]
           );
       ''');
   }
@@ -92,23 +101,26 @@ class EmbeddingsDb {
   }
 
   /// Inserts or updates an embedding and its metadata.
+  ///
+  /// The [embedding] must have exactly [kEmbeddingDimensions] elements to
+  /// match the vec0 table schema.
   void upsertEmbedding({
     required String entityId,
     required String entityType,
     required String modelId,
-    required int dimensions,
     required Float32List embedding,
     required String contentHash,
   }) {
-    if (embedding.length != dimensions) {
+    if (embedding.length != kEmbeddingDimensions) {
       throw ArgumentError(
         'EmbeddingsDb.upsertEmbedding(): embedding.length '
-        '(${embedding.length}) does not match dimensions ($dimensions) '
+        '(${embedding.length}) does not match kEmbeddingDimensions '
+        '($kEmbeddingDimensions) '
         'for entityId=$entityId, entityType=$entityType, modelId=$modelId',
       );
     }
 
-    final now = DateTime.now().toUtc().toIso8601String();
+    final now = clock.now().toUtc().toIso8601String();
 
     // sqlite-vec expects the vector as a raw blob of float32 bytes.
     final blob = embedding.buffer.asUint8List(
@@ -124,10 +136,10 @@ class EmbeddingsDb {
         ..execute(
           '''
           INSERT OR REPLACE INTO embedding_metadata
-            (entity_id, entity_type, model_id, dimensions, content_hash, created_at)
-          VALUES (?, ?, ?, ?, ?, ?)
+            (entity_id, entity_type, model_id, content_hash, created_at)
+          VALUES (?, ?, ?, ?, ?)
           ''',
-          [entityId, entityType, modelId, dimensions, contentHash, now],
+          [entityId, entityType, modelId, contentHash, now],
         )
         // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
         ..execute(
