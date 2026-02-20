@@ -1068,7 +1068,7 @@ void main() {
       final events = await repo
           .generateText(
             prompt: 'p',
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3.1-pro-preview',
             temperature: 0.5,
             thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 1),
             provider: provider,

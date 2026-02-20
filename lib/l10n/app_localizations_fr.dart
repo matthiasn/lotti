@@ -88,6 +88,132 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addToDictionaryTooLong => 'Terme trop long (max 50 caractères)';
 
   @override
+  String get agentActivityLogHeading => 'Journal d\'activité';
+
+  @override
+  String get agentControlsDeleteButton => 'Delete permanently';
+
+  @override
+  String get agentControlsDeleteDialogContent =>
+      'This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.';
+
+  @override
+  String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
+  String get agentControlsDestroyButton => 'Détruire';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Cela désactivera définitivement l\'agent. Son historique sera conservé pour audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Détruire l\'agent ?';
+
+  @override
+  String get agentControlsDestroyedMessage => 'Cet agent a été détruit.';
+
+  @override
+  String get agentControlsPauseButton => 'Pause';
+
+  @override
+  String get agentControlsReanalyzeButton => 'Réanalyser';
+
+  @override
+  String get agentControlsResumeButton => 'Reprendre';
+
+  @override
+  String agentDetailErrorLoading(String error) {
+    return 'Erreur lors du chargement de l\'agent : $error';
+  }
+
+  @override
+  String get agentDetailNotFound => 'Agent introuvable.';
+
+  @override
+  String get agentDetailUnexpectedType => 'Type d\'entité inattendu.';
+
+  @override
+  String get agentLifecycleActive => 'Actif';
+
+  @override
+  String get agentLifecycleCreated => 'Créé';
+
+  @override
+  String get agentLifecycleDestroyed => 'Détruit';
+
+  @override
+  String get agentLifecyclePaused => 'En pause';
+
+  @override
+  String agentMessageContentPrefix(String contentId) {
+    return 'Contenu : $contentId';
+  }
+
+  @override
+  String get agentMessageKindAction => 'Action';
+
+  @override
+  String get agentMessageKindObservation => 'Observation';
+
+  @override
+  String get agentMessageKindSummary => 'Résumé';
+
+  @override
+  String get agentMessageKindSystem => 'Système';
+
+  @override
+  String get agentMessageKindThought => 'Pensée';
+
+  @override
+  String get agentMessageKindToolResult => 'Résultat d\'outil';
+
+  @override
+  String get agentMessageKindUser => 'Utilisateur';
+
+  @override
+  String get agentMessagesEmpty => 'Aucun message pour l\'instant.';
+
+  @override
+  String agentMessagesErrorLoading(String error) {
+    return 'Échec du chargement des messages : $error';
+  }
+
+  @override
+  String agentReportErrorLoading(String error) {
+    return 'Échec du chargement du rapport : $error';
+  }
+
+  @override
+  String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
+
+  @override
+  String get agentStateConsecutiveFailures => 'Échecs consécutifs';
+
+  @override
+  String agentStateErrorLoading(String error) {
+    return 'Échec du chargement de l\'état : $error';
+  }
+
+  @override
+  String get agentStateHeading => 'Informations d\'état';
+
+  @override
+  String get agentStateLastWake => 'Dernier réveil';
+
+  @override
+  String get agentStateNextWake => 'Prochain réveil';
+
+  @override
+  String get agentStateRevision => 'Révision';
+
+  @override
+  String get agentStateSleepingUntil => 'En sommeil jusqu\'à';
+
+  @override
+  String get agentStateWakeCount => 'Nombre de réveils';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Suggestions d\'actions';
 
   @override
@@ -1049,6 +1175,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagAutoTranscribeDescription =>
       'Transcrire automatiquement les enregistrements audio dans tes entrées. Cela nécessite une connexion Internet.';
+
+  @override
+  String get configFlagEnableAgents => 'Activer les agents';
+
+  @override
+  String get configFlagEnableAgentsDescription =>
+      'Permettre aux agents IA de surveiller et analyser vos tâches de manière autonome.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -3507,6 +3640,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Tags';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Créer un agent';
 
   @override
   String get taskCategoryAllLabel => 'tout';

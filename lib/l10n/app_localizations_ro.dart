@@ -85,6 +85,132 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addToDictionaryTooLong => 'Termen prea lung (max 50 caractere)';
 
   @override
+  String get agentActivityLogHeading => 'Jurnal de activitate';
+
+  @override
+  String get agentControlsDeleteButton => 'Delete permanently';
+
+  @override
+  String get agentControlsDeleteDialogContent =>
+      'This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.';
+
+  @override
+  String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
+  String get agentControlsDestroyButton => 'Distruge';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Agentul va fi dezactivat permanent. Istoricul său va fi păstrat pentru audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Distrugi agentul?';
+
+  @override
+  String get agentControlsDestroyedMessage => 'Acest agent a fost distrus.';
+
+  @override
+  String get agentControlsPauseButton => 'Pauză';
+
+  @override
+  String get agentControlsReanalyzeButton => 'Reanalizează';
+
+  @override
+  String get agentControlsResumeButton => 'Reia';
+
+  @override
+  String agentDetailErrorLoading(String error) {
+    return 'Eroare la încărcarea agentului: $error';
+  }
+
+  @override
+  String get agentDetailNotFound => 'Agentul nu a fost găsit.';
+
+  @override
+  String get agentDetailUnexpectedType => 'Tip de entitate neașteptat.';
+
+  @override
+  String get agentLifecycleActive => 'Activ';
+
+  @override
+  String get agentLifecycleCreated => 'Creat';
+
+  @override
+  String get agentLifecycleDestroyed => 'Distrus';
+
+  @override
+  String get agentLifecyclePaused => 'În pauză';
+
+  @override
+  String agentMessageContentPrefix(String contentId) {
+    return 'Conținut: $contentId';
+  }
+
+  @override
+  String get agentMessageKindAction => 'Acțiune';
+
+  @override
+  String get agentMessageKindObservation => 'Observație';
+
+  @override
+  String get agentMessageKindSummary => 'Rezumat';
+
+  @override
+  String get agentMessageKindSystem => 'Sistem';
+
+  @override
+  String get agentMessageKindThought => 'Gând';
+
+  @override
+  String get agentMessageKindToolResult => 'Rezultat instrument';
+
+  @override
+  String get agentMessageKindUser => 'Utilizator';
+
+  @override
+  String get agentMessagesEmpty => 'Niciun mesaj încă.';
+
+  @override
+  String agentMessagesErrorLoading(String error) {
+    return 'Eroare la încărcarea mesajelor: $error';
+  }
+
+  @override
+  String agentReportErrorLoading(String error) {
+    return 'Eroare la încărcarea raportului: $error';
+  }
+
+  @override
+  String get agentReportNone => 'Niciun raport disponibil încă.';
+
+  @override
+  String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
+
+  @override
+  String agentStateErrorLoading(String error) {
+    return 'Eroare la încărcarea stării: $error';
+  }
+
+  @override
+  String get agentStateHeading => 'Informații de stare';
+
+  @override
+  String get agentStateLastWake => 'Ultima trezire';
+
+  @override
+  String get agentStateNextWake => 'Următoarea trezire';
+
+  @override
+  String get agentStateRevision => 'Revizie';
+
+  @override
+  String get agentStateSleepingUntil => 'Doarme până la';
+
+  @override
+  String get agentStateWakeCount => 'Număr de treziri';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Sugestii de acțiuni';
 
   @override
@@ -1019,6 +1145,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagAutoTranscribeDescription =>
       'Transcrie automat înregistrările audio din intrările dvs. Acest lucru necesită o conexiune la internet.';
+
+  @override
+  String get configFlagEnableAgents => 'Activează agenții';
+
+  @override
+  String get configFlagEnableAgentsDescription =>
+      'Permite agenților AI să monitorizeze și să analizeze autonom sarcinile dvs.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -3444,6 +3577,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Etichete';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Creează agent';
 
   @override
   String get taskCategoryAllLabel => 'toate';

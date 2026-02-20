@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.866] - 2026-02-21
+### Added
+- Minimum agentic layer: Task Agent infrastructure behind `enableAgents` config
+  flag. Persistent agents that maintain task summary reports and perform
+  incremental metadata updates via tool calls (estimates, due dates, priorities,
+  checklist items, titles). Includes separate `agent.sqlite` database, wake
+  orchestration with self-notification suppression, fail-closed category
+  enforcement, and an agent detail inspection page.
+
 ## [0.9.865] - 2026-02-18
 ### Added
 - Real-time transcription via Mistral Voxtral WebSocket API with live subtitles

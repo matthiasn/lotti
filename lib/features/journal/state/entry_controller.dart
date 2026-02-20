@@ -11,6 +11,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -126,7 +127,12 @@ class EntryController extends _$EntryController {
 
   @override
   Future<EntryState?> build({required String id}) async {
+    // Eagerly initialize the agent infrastructure when any entry is viewed.
+    // The provider itself checks the config flag and is a no-op when disabled.
+    // Use listen (not watch) to avoid rebuilding this controller when the
+    // initialization provider resolves.
     ref
+      ..listen(agentInitializationProvider, (_, __) {})
       ..onDispose(() {
         _updateSubscription?.cancel();
       })

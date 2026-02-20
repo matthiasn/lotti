@@ -18,6 +18,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/helpers/smart_task_summary_trigger.dart';
 import 'package:lotti/features/ai/state/direct_task_summary_refresh_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -256,7 +257,10 @@ void main() {
     List<Override> overrides = const [],
   }) {
     final container = ProviderContainer(
-      overrides: overrides,
+      overrides: [
+        agentInitializationProvider.overrideWith((ref) async {}),
+        ...overrides,
+      ],
     );
     addTearDown(container.dispose);
     return container;

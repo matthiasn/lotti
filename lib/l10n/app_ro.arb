@@ -25,6 +25,79 @@
   "addToDictionarySaveFailed": "Salvarea dicționarului a eșuat",
   "addToDictionarySuccess": "Termen adăugat la dicționar",
   "addToDictionaryTooLong": "Termen prea lung (max 50 caractere)",
+  "agentActivityLogHeading": "Jurnal de activitate",
+  "agentControlsDeleteButton": "Delete permanently",
+  "agentControlsDeleteDialogContent": "This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.",
+  "agentControlsDeleteDialogTitle": "Delete Agent?",
+  "agentControlsDestroyButton": "Distruge",
+  "agentControlsDestroyDialogContent": "Agentul va fi dezactivat permanent. Istoricul său va fi păstrat pentru audit.",
+  "agentControlsDestroyDialogTitle": "Distrugi agentul?",
+  "agentControlsDestroyedMessage": "Acest agent a fost distrus.",
+  "agentControlsPauseButton": "Pauză",
+  "agentControlsReanalyzeButton": "Reanalizează",
+  "agentControlsResumeButton": "Reia",
+  "agentDetailErrorLoading": "Eroare la încărcarea agentului: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agentul nu a fost găsit.",
+  "agentDetailUnexpectedType": "Tip de entitate neașteptat.",
+  "agentLifecycleActive": "Activ",
+  "agentLifecycleCreated": "Creat",
+  "agentLifecycleDestroyed": "Distrus",
+  "agentLifecyclePaused": "În pauză",
+  "agentMessageContentPrefix": "Conținut: {contentId}",
+  "@agentMessageContentPrefix": {
+    "placeholders": {
+      "contentId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentMessageKindAction": "Acțiune",
+  "agentMessageKindObservation": "Observație",
+  "agentMessageKindSummary": "Rezumat",
+  "agentMessageKindSystem": "Sistem",
+  "agentMessageKindThought": "Gând",
+  "agentMessageKindToolResult": "Rezultat instrument",
+  "agentMessageKindUser": "Utilizator",
+  "agentMessagesEmpty": "Niciun mesaj încă.",
+  "agentMessagesErrorLoading": "Eroare la încărcarea mesajelor: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Eroare la încărcarea raportului: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "Niciun raport disponibil încă.",
+  "agentStateConsecutiveFailures": "Eșecuri consecutive",
+  "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "Informații de stare",
+  "agentStateLastWake": "Ultima trezire",
+  "agentStateNextWake": "Următoarea trezire",
+  "agentStateRevision": "Revizie",
+  "agentStateSleepingUntil": "Doarme până la",
+  "agentStateWakeCount": "Număr de treziri",
   "aiAssistantActionItemSuggestions": "Sugestii de acțiuni",
   "aiAssistantAnalyzeImage": "Analizează imaginea",
   "aiAssistantSummarizeTask": "Rezumă sarcina",
@@ -431,6 +504,8 @@
   "completeHabitSuccessButton": "Succes",
   "configFlagAttemptEmbeddingDescription": "Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.",
   "configFlagAutoTranscribeDescription": "Transcrie automat înregistrările audio din intrările dvs. Acest lucru necesită o conexiune la internet.",
+  "configFlagEnableAgents": "Activează agenții",
+  "configFlagEnableAgentsDescription": "Permite agenților AI să monitorizeze și să analizeze autonom sarcinile dvs.",
   "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
   "configFlagEnableAutoTaskTldrDescription": "Generează automat rezumate pentru sarcinile dvs. pentru a vă ajuta să înțelegeți rapid starea lor.",
@@ -1352,6 +1427,8 @@
   "syncStepLabels": "Etichete",
   "syncStepMeasurables": "Măsurabile",
   "syncStepTags": "Etichete",
+  "taskAgentChipLabel": "Agent",
+  "taskAgentCreateChipLabel": "Creează agent",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",
