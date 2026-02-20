@@ -1984,6 +1984,13 @@ Mitigation:
 41. `UpdateNotifications` migration to `NotificationBatch` uses dual-stream compatibility during transition.
 42. Mutating action idempotency uses persisted `actionStableId` planning; `operationId` must not depend on non-deterministic action ordinals.
 43. Notification token semantics are explicit and unambiguous: `typedTokens` are canonical, subtype tokens are namespaced, and legacy raw-string token parsing is migration-only.
+44. Persona is a first-class versioned runtime contract (`AgentPersonaVersion` + `AgentPersonaHead`), and each run trace must capture the `personaVersionId` used.
+45. Orchestrator attention triage is a typed, explainable contract (`AttentionSignal` -> `AttentionDecision`) including reason codes, evidence refs, and budget impact.
+46. Research/report outputs use explicit claim provenance contracts (`ReportSourceRef`) with required source linkage and inferred-claim labeling semantics.
+47. Agent-user clarification loops use typed durable interaction contracts (`AgentPromptItem` + `AgentPromptResponse`) with gating semantics for risk-approval dependencies.
+48. Creative outputs are governed by typed artifact contracts (`AgentCreativeArtifact` + `CreativeFeedbackEvent`) with `NEED_TO_KNOW` projection and provider/model/cost provenance.
+49. Fleet-scale runtime scheduling requires explicit quota/fairness policy contracts (`RuntimeSchedulerPolicy` + `RuntimeQuotaSnapshot`) to support large sleeping-agent populations safely.
+50. Agent-domain recovery requires typed rebuild contracts (`AgentRebuildJob` + `AgentRebuildCheckpoint`) with idempotent checkpointed replay and user-visible status.
 
 ### Consequences for implementation
 
@@ -2014,7 +2021,15 @@ Mitigation:
 - Phase 0B must publish `AgentToolContractSpec` as
   `docs/agent_tools/agent_tool_contract_spec.yaml` plus schema
   `docs/agent_tools/agent_tool_contract_spec.schema.json`.
+- Phase 0B must define/publish persona versioning contracts (`AgentPersonaVersion`, `AgentPersonaHead`) and enforce run-trace capture of `personaVersionId`.
+- Phase 0B must define/publish report claim provenance contracts (`ReportSourceRef`) with validation rules for source-linked claims and inferred-claim markers.
+- Phase 0B must define/publish structured interaction contracts (`AgentPromptItem`, `AgentPromptResponse`) including gating semantics for required prompts.
+- Phase -1B must define/publish orchestrator attention contracts (`AttentionSignal`, `AttentionDecision`) with explainability and budget-impact fields.
+- Phase -1B must define/publish fleet-scale scheduler/quota contracts (`RuntimeSchedulerPolicy`, `RuntimeQuotaSnapshot`) and fairness/starvation test obligations.
+- Phase -1B must define/publish creative artifact contracts (`AgentCreativeArtifact`, `CreativeFeedbackEvent`) including feature-gate and privacy/budget policy hooks for video generation.
+- Phase -1B must define/publish agent-domain rebuild contracts (`AgentRebuildJob`, `AgentRebuildCheckpoint`) and checkpointed crash-resume semantics.
 - Phase 5 (or equivalent UI track) must implement user-facing surfaces for agent configuration, reports, approvals, status/health, budget visibility, and policy-denial explanations.
+- Phase 5 (or equivalent UI track) must include user-facing surfaces for persona version history/approval, report provenance inspection, pending prompt-response queues, creative artifact feedback, and rebuild status.
 - `AgentLink` should define a dedicated agent-domain relation model with metadata fields sufficient for:
   - relation kind (`agent_state`, `agent_head`, `message_prev`, `summary_start`, `summary_end`, `message_payload`, etc.)
   - optional thread/message context
@@ -2056,6 +2071,13 @@ Mitigation:
 - ToolResult metadata (`changedEntityIds`, `changedTokens`) is persisted and queryable from typed message metadata.
 - Cross-domain saga/recovery for journal+agent writes is active and crash-tested.
 - Subscription token indexing is materialized across `semanticKey`, `subtypeToken`, and `entityId`.
+- Persona contract is active: `AgentPersonaVersion`/`AgentPersonaHead` persist and each mutation-producing run trace records `personaVersionId`.
+- Report provenance contract is active: source-linked claims are validated and inferred claims are explicitly marked.
+- Structured interaction contract is active: required prompt/response gates block dependent actions until resolved.
+- Orchestrator decision contract is active: attention decisions are explainable (`reasonCodes`, `evidenceRefs`, `budgetImpact`) and queryable.
+- Fleet-scale scheduler contract is active: quota/fairness policies are enforced and starvation-regression tests pass.
+- Creative artifact contract is active for enabled media classes with provider/model/cost provenance and `NEED_TO_KNOW` projection tests.
+- Agent-domain rebuild contract is active: checkpointed rebuild jobs resume after crash and expose user-visible progress/status.
 - Notification token representation is typed and unambiguous (`typedTokens` canonical, namespaced subtype tokens, no heuristic parsing in steady state).
 - Prompt/model provenance (`promptId`, `promptVersion`, `modelId`) is captured in message/trace artifacts.
 - `processedCounterByHost` pruning policy is active and bounded under retention controls.
