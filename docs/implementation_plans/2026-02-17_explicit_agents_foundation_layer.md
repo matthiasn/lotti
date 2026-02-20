@@ -48,6 +48,12 @@ Constraints:
 6. Timed AI refresh patterns exist, but are currently in-memory timers only.
    - `lib/features/ai/state/direct_task_summary_refresh_controller.dart`
 
+7. Local vector-database proof of concept is integrated (sqlite-vec + raw sqlite3), demonstrating on-device embedding storage and KNN retrieval as derived, rebuildable data.
+   - Commit: `3e23d79543f4ad8512a06ad83a63fc6d8c1d1be6`
+   - `lib/features/ai/database/embeddings_db.dart`
+   - `test/features/ai/database/embeddings_db_test.dart`
+   - `docs/implementation_plans/2026-02-19_sqlite_vec_integration.md`
+
 ## Architectural Decisions
 
 ## 0) Domain split: journal vs agent persistence
@@ -69,6 +75,21 @@ Why this works:
 - protects the "sacred log" role of the journal domain.
 - enables aggressive retention/compaction policies for verbose AI-generated state.
 - reduces churn and index pressure in journal persistence paths.
+
+### 0.1) Derived local semantic-index store (vector DB)
+
+Decision:
+
+- Keep semantic embeddings in a dedicated local derived store (`embeddings.sqlite`), separate from both `db.sqlite` and `agent.sqlite`.
+- Treat vector rows as rebuildable acceleration artifacts, not source-of-truth records.
+- Do not sync vector rows across devices in foundation scope; rebuild from local canonical content (`db.sqlite` + synced `agent.sqlite` records) when needed.
+- Keep provider/model provenance on embedding metadata (`modelId`, `contentHash`) to support invalidation and re-embedding.
+
+Implementation status signal:
+
+- local sqlite-vec integration proof-of-concept exists via commit
+  `3e23d79543f4ad8512a06ad83a63fc6d8c1d1be6`
+  (`EmbeddingsDb`, tests, CI build hook).
 
 ## 1) Alertness via workflow subscriptions
 
@@ -647,6 +668,15 @@ enum AgentRunStatus { idle, queued, running, failed }
 enum AgentMessageKind {
   observation, user, thought, action, toolResult, summary, system
 }
+enum AgentPersonaStatus { draft, active, archived }
+enum AgentPromptItemState { open, answered, expired }
+enum AgentInteractionType { yesNo, multiChoice, freeText, audio }
+enum AttentionDecisionAction {
+  defer, notify, escalate, runNow, pauseCandidate
+}
+enum CreativeArtifactMediaType { image, video }
+enum AgentRebuildMode { dryRun, execute }
+enum AgentRebuildJobStatus { queued, running, completed, failed, canceled }
 
 final class AgentConfig {
   const AgentConfig({
@@ -879,6 +909,316 @@ final class AgentReportHead {
   final String reportId;
   final DateTime updatedAt;
 }
+
+final class AgentPersonaVersion {
+  const AgentPersonaVersion({
+    required this.id,
+    required this.agentId,
+    required this.version,
+    required this.status,
+    this.voiceDirectives = const {},
+    this.toneBounds = const {},
+    this.coachingStyle,
+    this.antiSycophancyPolicy,
+    this.diffFromVersionId,
+    required this.authoredBy,
+    this.approvedBy,
+    this.approvedAt,
+    this.sourceSessionId,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String agentId;
+  final int version;
+  final AgentPersonaStatus status;
+  final JsonMap voiceDirectives;
+  final JsonMap toneBounds;
+  final String? coachingStyle;
+  final String? antiSycophancyPolicy;
+  final String? diffFromVersionId;
+  final String authoredBy; // user|agent|system
+  final String? approvedBy;
+  final DateTime? approvedAt;
+  final String? sourceSessionId;
+  final DateTime createdAt;
+}
+
+final class AgentPersonaHead {
+  const AgentPersonaHead({
+    required this.id,
+    required this.agentId,
+    required this.personaVersionId,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String agentId;
+  final String personaVersionId;
+  final DateTime updatedAt;
+}
+
+final class ReportSourceRef {
+  const ReportSourceRef({
+    required this.id,
+    required this.agentId,
+    required this.reportId,
+    required this.sectionId,
+    required this.claimId,
+    required this.sourceType, // journal|agent|web|tool_output
+    required this.sourceLocator,
+    required this.capturedAt,
+    required this.freshnessAt,
+    this.confidence,
+    required this.inferenceFlag, // observed|inferred
+  });
+
+  final String id;
+  final String agentId;
+  final String reportId;
+  final String sectionId;
+  final String claimId;
+  final String sourceType;
+  final String sourceLocator;
+  final DateTime capturedAt;
+  final DateTime freshnessAt;
+  final double? confidence;
+  final String inferenceFlag;
+}
+
+final class AgentPromptItem {
+  const AgentPromptItem({
+    required this.id,
+    required this.agentId,
+    required this.runKey,
+    required this.interactionType,
+    required this.promptText,
+    this.options = const [],
+    this.requiredBy,
+    required this.state,
+    required this.createdAt,
+    this.resolvedAt,
+  });
+
+  final String id;
+  final String agentId;
+  final String runKey;
+  final AgentInteractionType interactionType;
+  final String promptText;
+  final List<String> options;
+  final DateTime? requiredBy;
+  final AgentPromptItemState state;
+  final DateTime createdAt;
+  final DateTime? resolvedAt;
+}
+
+final class AgentPromptResponse {
+  const AgentPromptResponse({
+    required this.id,
+    required this.promptItemId,
+    required this.agentId,
+    required this.runKey,
+    required this.response,
+    this.responseEntryRef,
+    this.supersedesResponseId,
+    required this.respondedAt,
+  });
+
+  final String id;
+  final String promptItemId;
+  final String agentId;
+  final String runKey;
+  final JsonMap response;
+  final String? responseEntryRef;
+  final String? supersedesResponseId;
+  final DateTime respondedAt;
+}
+
+final class AttentionSignal {
+  const AttentionSignal({
+    required this.id,
+    required this.agentId,
+    required this.sourceType,
+    required this.sourceRefId,
+    this.runKey,
+    this.scoreHint,
+    this.evidenceRefs = const [],
+    required this.createdAt,
+  });
+
+  final String id;
+  final String agentId;
+  final String sourceType;
+  final String sourceRefId;
+  final String? runKey;
+  final double? scoreHint;
+  final List<String> evidenceRefs;
+  final DateTime createdAt;
+}
+
+final class AttentionDecision {
+  const AttentionDecision({
+    required this.id,
+    required this.orchestratorAgentId,
+    required this.targetAgentId,
+    required this.signalId,
+    required this.priorityScore,
+    required this.action,
+    this.reasonCodes = const [],
+    this.evidenceRefs = const [],
+    this.budgetImpact = const {},
+    this.expiresAt,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String orchestratorAgentId;
+  final String targetAgentId;
+  final String signalId;
+  final double priorityScore;
+  final AttentionDecisionAction action;
+  final List<String> reasonCodes;
+  final List<String> evidenceRefs;
+  final JsonMap budgetImpact;
+  final DateTime? expiresAt;
+  final DateTime createdAt;
+}
+
+final class AgentCreativeArtifact {
+  const AgentCreativeArtifact({
+    required this.id,
+    required this.agentId,
+    required this.mediaType,
+    required this.intent,
+    this.derivedFromReportId,
+    required this.promptRef,
+    this.inputAssetRefs = const [],
+    required this.provider,
+    required this.model,
+    this.cost,
+    this.tokenUsage,
+    required this.safetyPolicyVersion,
+    required this.retentionClass,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String agentId;
+  final CreativeArtifactMediaType mediaType;
+  final String intent;
+  final String? derivedFromReportId;
+  final String promptRef;
+  final List<String> inputAssetRefs;
+  final String provider;
+  final String model;
+  final double? cost;
+  final int? tokenUsage;
+  final String safetyPolicyVersion;
+  final String retentionClass;
+  final DateTime createdAt;
+}
+
+final class CreativeFeedbackEvent {
+  const CreativeFeedbackEvent({
+    required this.id,
+    required this.agentId,
+    required this.artifactId,
+    required this.feedback,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String agentId;
+  final String artifactId;
+  final JsonMap feedback;
+  final DateTime createdAt;
+}
+
+final class RuntimeSchedulerPolicy {
+  const RuntimeSchedulerPolicy({
+    required this.id,
+    required this.policyVersion,
+    required this.globalMaxConcurrentRuns,
+    required this.perAgentWakeRatePerHour,
+    required this.queueDiscipline,
+    required this.cooldownSeconds,
+    required this.fairnessStrategy,
+    required this.classBudgetByKind,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String policyVersion;
+  final int globalMaxConcurrentRuns;
+  final int perAgentWakeRatePerHour;
+  final String queueDiscipline;
+  final int cooldownSeconds;
+  final String fairnessStrategy;
+  final JsonMap classBudgetByKind;
+  final DateTime createdAt;
+}
+
+final class RuntimeQuotaSnapshot {
+  const RuntimeQuotaSnapshot({
+    required this.id,
+    required this.capturedAt,
+    required this.globalRunningCount,
+    this.perAgentQueued = const {},
+    this.spentCostByWindow = const {},
+    this.spentTokensByWindow = const {},
+  });
+
+  final String id;
+  final DateTime capturedAt;
+  final int globalRunningCount;
+  final JsonMap perAgentQueued;
+  final JsonMap spentCostByWindow;
+  final JsonMap spentTokensByWindow;
+}
+
+final class AgentRebuildJob {
+  const AgentRebuildJob({
+    required this.id,
+    required this.scopeType, // all|agentId|agentKind
+    this.scopeRefId,
+    required this.mode,
+    required this.status,
+    this.sourceCursorStart,
+    this.sourceCursorEnd,
+    this.progress = const {},
+    this.unresolvedRefs = const [],
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String scopeType;
+  final String? scopeRefId;
+  final AgentRebuildMode mode;
+  final AgentRebuildJobStatus status;
+  final String? sourceCursorStart;
+  final String? sourceCursorEnd;
+  final JsonMap progress;
+  final List<String> unresolvedRefs;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+
+final class AgentRebuildCheckpoint {
+  const AgentRebuildCheckpoint({
+    required this.id,
+    required this.jobId,
+    required this.stepKey,
+    required this.cursorRef,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String jobId;
+  final String stepKey;
+  final String cursorRef;
+  final DateTime createdAt;
+}
 ```
 
 ### Data model clarifications
@@ -896,6 +1236,9 @@ final class AgentReportHead {
 - `AgentState.consecutiveFailureCount` is synced and used for cross-device retry/backoff safety; local `AgentRuntimeState.failureStreak` remains device-local operational telemetry.
 - `AgentMessage.contentEntryId` references `AgentMessagePayload.id` in `agent_message_payloads`; large payloads are normalized, linkable, and independently synced/pruned.
 - prompt/model provenance is captured per message via `AgentMessageMetadata.promptId/promptVersion/modelId` for replay/eval attribution.
+- `AgentPersonaHead` is a single-pointer record per agent; concurrent pointer updates must resolve deterministically to the higher persona version, then tie-break by (`hostId`, `personaVersionId`).
+- `RuntimeQuotaSnapshot` and `AgentRebuildCheckpoint` are local operational telemetry/checkpoints and are excluded from sync payloads.
+- `ReportSourceRef` is the typed claim/source artifact behind report provenance (can persist in existing `agent_source_refs` table with claim/section fields in Phase 0B migration).
 
 Thread policy implications:
 
@@ -920,8 +1263,9 @@ To limit sequence-log/backfill complexity, do not add one payload type per agent
 
 Decision:
 
-- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentMessagePayload`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`).
-- `agentRuntimeState` is explicitly local-only and excluded from sync payloads.
+- Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentMessagePayload`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`, `agentPersonaVersion`, `agentPersonaHead`, `agentPromptItem`, `agentPromptResponse`, `attentionSignal`, `attentionDecision`, `agentCreativeArtifact`, `creativeFeedbackEvent`, `agentRebuildJob`, `runtimeSchedulerPolicy`).
+- local-only subtype exclusions: `agentRuntimeState`, `runtimeQuotaSnapshot`, `agentRebuildCheckpoint`, `agentCompactionJob`.
+- `agentSourceRef` payload subtype is the transport envelope for typed `ReportSourceRef` rows (claim/section/source linkage fields).
 - Agent payload bodies originate from `agent.sqlite`, not journal JSON paths.
 
 Rationale:
@@ -1109,6 +1453,18 @@ Wake-run idempotency contract:
   (`completed`, `skipped_sleeping`, `skipped_destroyed`, `failed_terminal`) and short-circuits terminal runs
 - tool `operationId`s are derived from `runKey` + `actionStableId`, so crash/retry replays do not create new side effects
 
+Extended idempotency contract for new product-level artifacts:
+
+- `attentionDecisionId` must be deterministic from
+  `hash(orchestratorAgentId, targetAgentId, signalId, policyVersion, action)`.
+- `agentPromptResponse.id` must be deterministic from
+  `hash(promptItemId, responseEntryRef | canonicalResponseHash)`.
+- `creativeFeedbackEvent.id` must be deterministic from
+  `hash(agentId, artifactId, feedbackSourceRef)`.
+- `agentRebuildCheckpoint.id` must be deterministic from
+  `hash(jobId, stepKey, cursorRef)`.
+- deterministic IDs above are used as upsert/dedupe keys during replay and sync backfill re-application.
+
 Use `AgentState.processedCounterByHost`:
 
 - merged on every successful run (`max` per host)
@@ -1174,8 +1530,26 @@ New persisted entities/tables (or equivalent serialized records):
 - `agent_reports`
 - `agent_report_heads`
 - `agent_source_refs`
+- `agent_persona_versions`
+- `agent_persona_heads`
+- `agent_prompt_items`
+- `agent_prompt_responses`
+- `attention_signals`
+- `attention_decisions`
+- `agent_creative_artifacts`
+- `creative_feedback_events`
+- `runtime_scheduler_policies`
+- `runtime_quota_snapshots` (local-only)
+- `agent_rebuild_jobs`
+- `agent_rebuild_checkpoints` (local-only)
 - `agent_links`
 - `agent_compaction_jobs` (local-only)
+
+Derived semantic-index store (local-only, rebuildable):
+
+- `embeddings.sqlite` (separate local DB file)
+- `embedding_metadata` + `vec_embeddings` (sqlite-vec virtual table)
+- no sync payloads in foundation scope; embeddings are rebuilt from canonical content as needed
 
 Agent link model:
 
@@ -1195,6 +1569,18 @@ Index additions:
 - `idx_agent_reports_agent_scope_created (agent_id, scope, created_at DESC)`
 - `idx_agent_report_heads_agent_scope (agent_id, scope)`
 - `idx_agent_runtime_states_agent (agent_id)`
+- `idx_agent_persona_versions_agent_version (agent_id, version DESC)`
+- `idx_agent_persona_heads_agent (agent_id)`
+- `idx_agent_prompt_items_agent_state_due (agent_id, state, required_by)`
+- `idx_agent_prompt_responses_prompt_responded (prompt_item_id, responded_at DESC)`
+- `idx_attention_signals_agent_created (agent_id, created_at DESC)`
+- `idx_attention_decisions_target_created (target_agent_id, created_at DESC)`
+- `idx_agent_creative_artifacts_agent_created (agent_id, created_at DESC)`
+- `idx_creative_feedback_events_artifact_created (artifact_id, created_at DESC)`
+- `idx_runtime_scheduler_policies_version (policy_version)`
+- `idx_runtime_quota_snapshots_captured (captured_at DESC)`
+- `idx_agent_rebuild_jobs_status_updated (status, updated_at DESC)`
+- `idx_agent_rebuild_checkpoints_job_step (job_id, step_key, created_at DESC)`
 - `idx_agent_compaction_jobs_ready (status, next_attempt_at)`
 - `idx_agent_compaction_jobs_thread_status (agent_id, thread_id, status)`
 - `idx_agent_source_refs_agent_source (agent_id, source_type, source_id)`
@@ -1318,6 +1704,13 @@ Delivery split (to avoid Phase -1 bottleneck while preserving safety posture):
   - stale detection compares report source cursor vs latest relevant processed cursor and report age.
 - Define memory governance and retention classes:
   - explicit artifact classes (`trace`, `action/toolResult`, `summary`, `report`, `runtime_state`) with per-class TTL and pruning policy.
+  - extend artifact classes to include
+    (`persona_version`, `attention_signal/decision`, `prompt_item/response`, `creative_artifact`, `creative_feedback`, `rebuild_job/checkpoint`, `quota_snapshot`, `vector_embedding`).
+  - retention defaults must distinguish durable-vs-ephemeral:
+    - durable by default (no auto TTL): `persona_version`, active `report_head`.
+    - medium retention: `attention_signal/decision`, resolved `prompt_item/response`, `creative_feedback`, `rebuild_job`.
+    - short retention/local-only: `runtime_state`, `quota_snapshot`, `rebuild_checkpoint`.
+    - budget-driven derived retention: `vector_embedding` and rendered creative binaries (metadata may outlive binary payload).
   - legal/privacy deletion behavior for user-requested erasure and retention overrides.
   - storage-budget enforcement and deterministic pruning order when limits are exceeded.
   - bounded retention policy for host-index maps (for example `processedCounterByHost`) to prevent unbounded per-host growth.
@@ -2010,6 +2403,8 @@ Mitigation:
 - Phase 0A must introduce `AgentDb` (`agent.sqlite`) and repository boundaries that prevent new agent internals/reports from leaking into journal persistence paths.
 - Phase 0A must enforce link-domain boundaries: agent-internal `AgentLink` records persist only to `agent_links`; journal-domain link persistence may only carry allowlisted user-facing report pointers.
 - Phase 0A must enforce typed wrapper models (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) for persistent agent fields.
+- Phase 0A must include schema and repositories for `agent_persona_versions`/`agent_persona_heads`, `agent_prompt_items`/`agent_prompt_responses`, `attention_signals`/`attention_decisions`, `agent_creative_artifacts`/`creative_feedback_events`, and `agent_rebuild_jobs`.
+- Phase 0A must include a local derived semantic-index store contract (`embeddings.sqlite` with sqlite-vec tables) marked non-authoritative and non-synced.
 - Phase 0A must persist toolResult metadata fields (`changedEntityIds`, `changedTokens`) and cross-domain saga operation logs.
 - Sync payload contracts must treat these entities as first-class and preserve tombstone semantics.
 - Sync/outbox/backfill implementations must load/store agent payload bodies from agent-domain storage.
@@ -2018,6 +2413,8 @@ Mitigation:
 - Phase 0B must codify materialized subscription token indexing for all token classes.
 - Phase 0B must codify typed notification-token contract (`typedTokens`, subtype namespace rules, legacy fallback parsing constraints) and forbid heuristic classification.
 - Phase 0B must codify summary-ID derivation including summarizer contract version.
+- Phase 0B must codify deterministic ID derivation for `AttentionDecision`, `AgentPromptResponse`, `CreativeFeedbackEvent`, and `AgentRebuildCheckpoint` replay dedupe.
+- Phase 0B must codify deterministic concurrent pointer merge semantics for `AgentPersonaHead`.
 - Phase 0B must publish `AgentToolContractSpec` as
   `docs/agent_tools/agent_tool_contract_spec.yaml` plus schema
   `docs/agent_tools/agent_tool_contract_spec.schema.json`.
@@ -2043,6 +2440,7 @@ Mitigation:
 - Policy/safety and approval controls are active for high-risk mutations.
 - User-local run traces support deterministic replay/debug of mutation-producing runs.
 - Retention classes (TTL/pruning/legal overrides) are active and verified for all agent artifact classes.
+- Derived semantic-index contract is active: local `embeddings.sqlite` (sqlite-vec) remains non-authoritative/non-synced and can be fully rebuilt from canonical stores.
 - Emergency-stop controls (`global`, `per-agent`, `tool-class`) are implemented, tested, documented, and globally prominent in the local app UI.
 - Spawn behavior is orchestrator-only via typed `SpawnRequest`, with tested depth/concurrency/budget/cooldown enforcement and deny-by-default admission.
 - Parent/child spawn lineage and decisions are queryable in run traces and replay tooling.
@@ -2067,6 +2465,7 @@ Mitigation:
 - Memory compaction active with summary spans.
 - Compaction conflict policy for divergent same-span summaries is implemented with diagnostics.
 - Summary ID derivation includes summarizer contract version for replay/version safety.
+- Deterministic replay IDs are active for `AttentionDecision`, `AgentPromptResponse`, `CreativeFeedbackEvent`, and `AgentRebuildCheckpoint`.
 - Report freshness contract is active with time-based and event-cursor staleness detection.
 - ToolResult metadata (`changedEntityIds`, `changedTokens`) is persisted and queryable from typed message metadata.
 - Cross-domain saga/recovery for journal+agent writes is active and crash-tested.
