@@ -1,0 +1,91 @@
+-- Agent domain database schema (agent.sqlite)
+-- Separate from journal domain (db.sqlite)
+
+CREATE TABLE agent_entities (
+  id TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  subtype TEXT,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME,
+  serialized TEXT NOT NULL,
+  schema_version INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
+CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
+CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
+
+CREATE TABLE agent_links (
+  id TEXT NOT NULL PRIMARY KEY,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  deleted_at DATETIME,
+  serialized TEXT NOT NULL,
+  schema_version INTEGER NOT NULL DEFAULT 1,
+  UNIQUE(from_id, to_id, type)
+);
+
+CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
+CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
+CREATE INDEX idx_agent_links_type ON agent_links(type);
+
+CREATE TABLE wake_run_log (
+  run_key TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  reason_id TEXT,
+  thread_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  logical_change_key TEXT,
+  created_at DATETIME NOT NULL,
+  started_at DATETIME,
+  completed_at DATETIME,
+  error_message TEXT
+);
+
+CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
+CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
+
+CREATE TABLE saga_log (
+  operation_id TEXT NOT NULL PRIMARY KEY,
+  run_key TEXT NOT NULL,
+  phase TEXT NOT NULL,
+  status TEXT NOT NULL,
+  tool_name TEXT NOT NULL,
+  last_error TEXT,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
+
+-- Named queries
+
+getAgentEntitiesByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND deleted_at IS NULL ORDER BY created_at DESC;
+
+getAgentEntitiesByType: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = :type AND deleted_at IS NULL ORDER BY created_at DESC;
+
+getAgentEntitiesByTypeAndSubtype: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = :type AND subtype = :subtype AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id;
+
+getAgentLinksByFromId: SELECT * FROM agent_links WHERE from_id = :fromId AND deleted_at IS NULL;
+
+getAgentLinksByFromIdAndType: SELECT * FROM agent_links WHERE from_id = :fromId AND type = :type AND deleted_at IS NULL;
+
+getAgentLinksByToId: SELECT * FROM agent_links WHERE to_id = :toId AND deleted_at IS NULL;
+
+getAgentLinksByToIdAndType: SELECT * FROM agent_links WHERE to_id = :toId AND type = :type AND deleted_at IS NULL;
+
+getWakeRunsByAgentId: SELECT * FROM wake_run_log WHERE agent_id = :agentId ORDER BY created_at DESC LIMIT :limit;
+
+getWakeRunByKey: SELECT * FROM wake_run_log WHERE run_key = :runKey;
+
+getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+getPendingSagaOps: SELECT * FROM saga_log WHERE status = 'pending' ORDER BY created_at ASC;

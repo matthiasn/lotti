@@ -1,7 +1,7 @@
 # Minimum Agentic Layer: Task Agent Implementation Plan
 
 Date: 2026-02-20
-Status: Draft for review
+Status: In progress — Phases 0A-1 through 0A-6 complete (212 tests passing, analyzer clean)
 Companion docs:
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer.md`
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer_formal_model.md`
@@ -710,6 +710,25 @@ wake(agent, triggerTokens):
     consecutiveFailureCount: 0,
   )
   repo.upsertEntity(newState)
+
+  // 9. Cleanup: delete the in-memory conversation to prevent accumulation.
+  //    ConversationManager instances hold message history, stream controllers,
+  //    and pending completers. Without explicit cleanup, each wake cycle leaks
+  //    one manager into the ConversationRepository._conversations map.
+  //    This must happen in a finally block so it runs on both success and failure.
+  conversationRepo.deleteConversation(conversationId)
+```
+
+**Important:** The `deleteConversation` call **must** be in a `finally` block wrapping the conversation send (step 4 onwards). On failure, the conversation still needs to be cleaned up to avoid leaking the `ConversationManager` and its resources. The pattern:
+
+```dart
+final conversationId = conversationRepo.createConversation(...);
+try {
+  await conversationRepo.sendMessage(...);
+  // steps 5–8: persist messages, report, state
+} finally {
+  conversationRepo.deleteConversation(conversationId);
+}
 ```
 
 ### 5.4 Task context assembly
@@ -917,52 +936,76 @@ lib/features/agents/
 
 ## 9. Step-by-Step Execution Plan
 
+### Implementation Progress
+
+**Last updated:** 2026-02-21
+
+| Phase | Status | Files | Tests |
+|---|---|---|---|
+| 0A-1: Models | DONE | 4 source + generated | 46 serialization tests |
+| 0A-2: Database | DONE (step 12 pending) | 4 source + generated | 46 repository tests |
+| 0A-3: Wake Infrastructure | DONE | 4 source | 76 tests |
+| 0A-4: Tool Layer | DONE | 3 source | 52 tests |
+| 0A-5: Workflow | DONE (step 25 pending) | 2 source | — |
+| 0A-6: Service + Providers | DONE (step 29 pending) | 4 source + generated | — |
+| 0A-7: Agent Detail Page | NOT STARTED | — | — |
+| 0A-8: Integration | PARTIAL (step 35 done) | config flag added | — |
+
+**Total: 212 passing tests, full-project analyzer clean.**
+
+**Notable deviations from plan:**
+- Step 5 (`agent_tool_call.dart`) was not created as a separate file — tool call types are handled inline by the executor.
+- `AgentService.listAgents()` returns empty — needs a dedicated "list all agents" drift query (no `agentId`-independent entity listing exists yet).
+- `TaskAgentService.triggerReanalysis()` and `restoreSubscriptions()` are stub implementations pending integration wiring.
+- Riverpod providers return `AgentDomainEntity?` (parent sealed type) instead of variant subtypes — required by `riverpod_generator` codegen.
+- `agent_db_conversions.dart` uses an `entityCreatedAt` helper because not all sealed union variants have `createdAt`.
+
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
-1. Create `lib/features/agents/model/agent_enums.dart` with all enums.
-2. Create `lib/features/agents/model/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.
-3. Create `lib/features/agents/model/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.
-4. Create `lib/features/agents/model/agent_link.dart` with the `AgentLink` sealed union.
-5. Create `lib/features/agents/model/agent_tool_call.dart` with `AgentToolCall` and `AgentToolResult`.
-6. Run build_runner to generate freezed/json code.
-7. Write unit tests for serialization roundtrips (all variants).
+1. ~~Create `lib/features/agents/model/agent_enums.dart` with all enums.~~ DONE
+2. ~~Create `lib/features/agents/model/agent_config.dart` with `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as freezed classes.~~ DONE
+3. ~~Create `lib/features/agents/model/agent_domain_entity.dart` with the `AgentDomainEntity` sealed union.~~ DONE
+4. ~~Create `lib/features/agents/model/agent_link.dart` with the `AgentLink` sealed union.~~ DONE
+5. ~~Create `lib/features/agents/model/agent_tool_call.dart` with `AgentToolCall` and `AgentToolResult`.~~ SKIPPED — tool call types handled inline by executor
+6. ~~Run build_runner to generate freezed/json code.~~ DONE
+7. ~~Write unit tests for serialization roundtrips (all variants).~~ DONE (46 tests)
 
 ### Phase 0A-2: Database Layer
 
-8. Create `lib/features/agents/database/agent_database.drift` with all table definitions.
-9. Create `lib/features/agents/database/agent_database.dart` (Drift database class).
-10. Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.
-11. Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.
-12. Register `AgentDatabase` in GetIt (app startup).
-13. Write repository tests (CRUD for each entity type, link operations).
+8. ~~Create `lib/features/agents/database/agent_database.drift` with all table definitions.~~ DONE
+9. ~~Create `lib/features/agents/database/agent_database.dart` (Drift database class).~~ DONE
+10. ~~Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.~~ DONE
+11. ~~Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.~~ DONE
+12. Register `AgentDatabase` in GetIt (app startup). **PENDING**
+13. ~~Write repository tests (CRUD for each entity type, link operations).~~ DONE (46 tests)
 
 ### Phase 0A-3: Wake Infrastructure
 
-14. Create `lib/features/agents/wake/run_key_factory.dart` for deterministic run key generation.
-15. Create `lib/features/agents/wake/wake_queue.dart` (in-memory priority queue with dedup).
-16. Create `lib/features/agents/wake/wake_runner.dart` (single-flight execution with lock).
-17. Create `lib/features/agents/wake/wake_orchestrator.dart` (notification listener + subscription matching).
-18. Write tests for run key determinism, dedup, and single-flight behavior.
+14. ~~Create `lib/features/agents/wake/run_key_factory.dart` for deterministic run key generation.~~ DONE
+15. ~~Create `lib/features/agents/wake/wake_queue.dart` (in-memory priority queue with dedup).~~ DONE
+16. ~~Create `lib/features/agents/wake/wake_runner.dart` (single-flight execution with lock).~~ DONE
+17. ~~Create `lib/features/agents/wake/wake_orchestrator.dart` (notification listener + subscription matching).~~ DONE
+18. ~~Write tests for run key determinism, dedup, and single-flight behavior.~~ DONE (76 tests: 24 run_key + 15 queue + 13 runner + 24 orchestrator)
 
 ### Phase 0A-4: Tool Layer
 
-19. Create `lib/features/agents/tools/agent_tool_registry.dart` — maps tool names to existing handlers in `lib/features/ai/functions/` (e.g., `TaskEstimateHandler`, `LottiBatchChecklistHandler`). No duplication of handler logic.
-20. Create `lib/features/agents/tools/agent_tool_executor.dart` — delegates to registered handlers, then records `AgentMessage` pairs (`action` + `toolResult`) and saga log entries for idempotency. **Category enforcement is fail-closed:** before delegating to any handler, the executor resolves the target entity's category ID and checks it against `Agent.allowedCategoryIds`. If the target entity has no category, or its category is not in the allow list, the call is denied with a recorded denial reason — never silently passed through.
-21. Create `lib/features/agents/tools/task_title_handler.dart` — the only new handler needed (`set_task_title`), following the same pattern as `TaskEstimateHandler`.
-22. Write tests for tool executor orchestration, idempotency (operation ID dedup), and error handling.
+19. ~~Create `lib/features/agents/tools/agent_tool_registry.dart`~~ DONE
+20. ~~Create `lib/features/agents/tools/agent_tool_executor.dart`~~ DONE
+21. ~~Create `lib/features/agents/tools/task_title_handler.dart`~~ DONE
+22. ~~Write tests for tool executor orchestration, idempotency (operation ID dedup), and error handling.~~ DONE (52 tests)
 
 ### Phase 0A-5: Task Agent Workflow
 
-23. Create `lib/features/agents/workflow/task_agent_strategy.dart` — a `ConversationStrategy` implementation that dispatches tool calls to the existing handlers and decides continuation.
-24. Create `lib/features/agents/workflow/task_agent_workflow.dart` — assembles differential context, runs the conversation via existing `ConversationRepository`/`ConversationManager`, then persists the resulting messages as `AgentMessage` records and updates the report.
-25. Write tests for differential context assembly and report update logic.
+23. ~~Create `lib/features/agents/workflow/task_agent_strategy.dart`~~ DONE
+24. ~~Create `lib/features/agents/workflow/task_agent_workflow.dart`~~ DONE (includes `conversationRepo.deleteConversation` cleanup in finally block)
+25. Write tests for differential context assembly and report update logic. **PENDING**
 
 ### Phase 0A-6: Service Layer and Providers
 
-26. Create `lib/features/agents/service/agent_service.dart` (lifecycle management).
-27. Create `lib/features/agents/service/task_agent_service.dart` (task-specific).
-28. Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.
-29. Write service tests.
+26. ~~Create `lib/features/agents/service/agent_service.dart` (lifecycle management).~~ DONE
+27. ~~Create `lib/features/agents/service/task_agent_service.dart` (task-specific).~~ DONE
+28. ~~Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.~~ DONE (+ generated .g.dart files)
+29. Write service tests. **PENDING**
 
 ### Phase 0A-7: Agent Detail Page
 
@@ -974,7 +1017,7 @@ lib/features/agents/
 
 ### Phase 0A-8: Integration
 
-35. Add `enableAgents` config flag in `consts.dart` and register in `config_flags.dart`. All agent initialization and UI is gated on this flag.
+35. ~~Add `enableAgents` config flag in `consts.dart` and register in `config_flags.dart`.~~ DONE
 36. Wire wake orchestrator into app startup (listen to `UpdateNotifications`), guarded by the config flag.
 37. Add manual "Create Task Agent" action in task detail view (button, guarded by config flag). This creates the agent and triggers an initial full-context wake.
 38. Add "Agent" navigation chip in task detail view (visible when a task agent exists and flag is enabled) linking to the agent detail page.

@@ -1,5 +1,10 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:mocktail/mocktail.dart';
@@ -56,6 +61,46 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeAiConfigInferenceProvider());
   registerFallbackValue(FakeChatSession());
   registerFallbackValue(FakeChecklistItemData());
+
+  // Agent domain entity fallbacks
+  registerFallbackValue(
+    AgentDomainEntity.agent(
+      id: 'fallback-agent-id',
+      agentId: 'fallback-agent-id',
+      kind: 'task_agent',
+      displayName: 'Fallback Agent',
+      lifecycle: AgentLifecycle.active,
+      mode: AgentInteractionMode.autonomous,
+      allowedCategoryIds: const {},
+      currentStateId: 'fallback-state-id',
+      config: const AgentConfig(),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      vectorClock: null,
+    ),
+  );
+  registerFallbackValue(
+    agent_model.AgentLink.basic(
+      id: 'fallback-link-id',
+      fromId: 'fallback-from-id',
+      toId: 'fallback-to-id',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      vectorClock: null,
+    ),
+  );
+
+  // Agent database fallbacks
+  registerFallbackValue(
+    WakeRunLogData(
+      runKey: 'fallback-run-key',
+      agentId: 'fallback-agent-id',
+      reason: 'subscription',
+      threadId: 'fallback-thread-id',
+      status: 'queued',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    ),
+  );
 
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);

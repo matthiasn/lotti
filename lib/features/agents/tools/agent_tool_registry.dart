@@ -1,0 +1,126 @@
+// Registry of tool names and definitions available to agents.
+
+/// Metadata describing a single tool that an agent can call.
+///
+/// Each definition includes the tool's name, a human-readable description, and
+/// a JSON Schema object that describes the expected parameters.
+class AgentToolDefinition {
+  const AgentToolDefinition({
+    required this.name,
+    required this.description,
+    required this.parameters,
+  });
+
+  /// The tool name used in function-call messages.
+  final String name;
+
+  /// Human-readable description of what the tool does.
+  final String description;
+
+  /// JSON Schema object describing the tool's parameters.
+  final Map<String, dynamic> parameters;
+}
+
+/// Registry of tool definitions available to agents.
+///
+/// Each supported agent kind exposes a static list of [AgentToolDefinition]s
+/// that can be serialised into the LLM's tool-call format at call time.
+class AgentToolRegistry {
+  AgentToolRegistry._();
+
+  /// All tools available to the Task Agent.
+  static const taskAgentTools = <AgentToolDefinition>[
+    AgentToolDefinition(
+      name: 'set_task_title',
+      description: 'Update the title of the task.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'title': {
+            'type': 'string',
+            'description': 'The new task title.',
+          },
+        },
+        'required': ['title'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'update_task_estimate',
+      description: 'Update the time estimate for the task.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'estimate': {
+            'type': 'string',
+            'description': 'Time estimate (e.g., "4h", "2d").',
+          },
+        },
+        'required': ['estimate'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'update_task_due_date',
+      description: 'Update the due date for the task.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'dueDate': {
+            'type': 'string',
+            'description': 'Due date in ISO 8601 format.',
+          },
+        },
+        'required': ['dueDate'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'update_task_priority',
+      description: 'Update the priority of the task.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'priority': {
+            'type': 'string',
+            'description': 'Priority level (e.g., "P1", "P2").',
+          },
+        },
+        'required': ['priority'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'add_multiple_checklist_items',
+      description: 'Add multiple checklist items to the task.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'items': {
+            'type': 'array',
+            'items': {'type': 'string'},
+            'description': 'List of checklist item texts to add.',
+          },
+        },
+        'required': ['items'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'update_checklist_items',
+      description: 'Update the status of existing checklist items.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'updates': {
+            'type': 'array',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'id': {'type': 'string'},
+                'isChecked': {'type': 'boolean'},
+              },
+            },
+            'description': 'List of checklist item updates.',
+          },
+        },
+        'required': ['updates'],
+      },
+    ),
+  ];
+}
