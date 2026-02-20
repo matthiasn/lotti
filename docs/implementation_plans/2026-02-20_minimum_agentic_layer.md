@@ -26,6 +26,14 @@ Implement the minimum viable agentic infrastructure to support a **Task Agent** 
 - No memory compaction (hot memory only for MVP; compaction is additive later).
 - Model hardcoded to `models/gemini-3.1-pro-preview` for MVP. Configurable model selection deferred to a later iteration. The agent does **not** use the `AiConfigPrompt` → `AiResponseType` path — that path pollutes journal domain with AI output and is being phased out. Agent inference output stays in `agent.sqlite` as `AgentMessage` and `AgentReport` records.
 - Cross-domain saga is simplified: journal-domain writes use existing `PersistenceLogic`, agent-domain writes are separate; full saga recovery deferred to Phase 0B.
+- **Feature flag:** The entire agent feature is behind a config flag (`enableAgents` in `consts.dart`, registered in `config_flags.dart`). When disabled, no agent infrastructure is initialized, no subscriptions are registered, and no agent-related UI elements appear.
+- **MVP safety boundary:** Full provider/model policy gates and `NEED_TO_KNOW` payload projection are deferred, but the following safety checks are **required before inference is enabled:**
+  1. User must have explicitly configured a provider API key (no silent inference).
+  2. Agent tool calls are scoped to `Agent.allowedCategoryIds` — fail-closed on scope violation.
+  3. Agent inference payload is bounded to the task it owns + linked entities (no arbitrary journal access).
+  4. Agent cannot create, delete, or modify entities outside its owned task's subgraph.
+  5. All tool calls are logged as `AgentMessage` records (audit trail).
+  6. Kill switch: user can pause/destroy any agent immediately via the agent detail page.
 
 ## 2. Database Architecture: `agent.sqlite`
 
@@ -116,7 +124,12 @@ CREATE INDEX idx_agent_links_type ON agent_links(type);
 
 ### 2.4 Schema: `wake_run_log` table
 
-Operational bookkeeping for idempotent wake execution:
+Operational bookkeeping for idempotent wake execution.
+
+**Atomicity contract:** The `wakeCounter` increment, `runKey` derivation, and `wake_run_log` insertion are performed in a single `agent.sqlite` transaction. This ensures:
+- No two concurrent batches can read the same counter value (SQLite serializes writes).
+- If the app crashes between counter read and log insertion, neither is committed — the counter does not advance without a corresponding log entry.
+- On recovery, any `wake_run_log` entry with `status: started` (but no `completed`) is re-enqueued using the same `runKey` (idempotent replay).
 
 ```sql
 CREATE TABLE wake_run_log (
@@ -205,6 +218,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? recentHeadMessageId,
     String? latestSummaryMessageId,
     @Default(0) int consecutiveFailureCount,
+    @Default(0) int wakeCounter,  // monotonic per-agent counter, incremented on each wake enqueue; used in runKey derivation
     @Default({}) Map<String, int> processedCounterByHost,
     DateTime? deletedAt,
   }) = AgentStateEntity;
@@ -398,6 +412,8 @@ lib/features/agents/
 - `toDbEntity(AgentDomainEntity) → AgentDbEntity` (extracts type/subtype/agentId for indexed columns)
 - `fromDbEntity(AgentDbEntity) → AgentDomainEntity` (deserializes from JSON)
 
+**`updated_at` for immutable variants:** The `agent_entities` table requires `updated_at NOT NULL` for all rows (needed by mutable variants like `agent` and `agentState`). For immutable variants (`agentMessage`, `agentMessagePayload`, `agentReport`, `unknown`) that have no `updatedAt` field in their Dart model, the conversion layer sets `updated_at = created_at` on write. On read, `updated_at` is ignored for these variants. This is a DB-layer concern only — the Dart models correctly reflect immutability by omitting the field.
+
 ### 4.2 Wake execution model
 
 ```
@@ -413,10 +429,12 @@ lib/features/agents/
 
 A `Wake` is the atomic unit of agent work. Each wake:
 
-1. **Has a deterministic `runKey`** derived from:
-   - Subscription wake: `SHA256(agentId | subscriptionId | logicalChangeKey)`
+1. **Has a deterministic `runKey`** derived from (MVP formulas — see §4.4 for rationale):
+   - Subscription wake: `SHA256(agentId | subscriptionId | batchTokensHash | wakeCounter)` — where `batchTokensHash` is the sorted hash of the raw token set and `wakeCounter` is `AgentState.wakeCounter` (monotonic, incremented on each enqueue). The counter ensures identical token sets produce distinct keys.
    - Timer wake: `SHA256(agentId | timerId | scheduledAt)`
    - User-initiated: `SHA256(agentId | sessionId | turnId)`
+
+   The `wakeCounter` increment + `runKey` derivation + `wake_run_log` insertion happen in a single `agent.sqlite` transaction (see §2.4 atomicity contract). Phase 0B upgrades subscription wake keys to use `logicalChangeKey` from `NotificationBatch` for cross-device determinism.
 
 2. **Executes through these phases:**
    ```
@@ -502,23 +520,24 @@ but that's deferred, not needed for Task Agent MVP.
 The key insight for the Task Agent is **incremental awareness**. The agent does not re-analyze the entire task on every wake. Instead:
 
 1. **Trigger payload carries change information:**
-   - The notification batch contains typed tokens (e.g., `TASK`, checklist item ID).
-   - The wake orchestrator passes the `logicalChangeKey` and matched tokens to the agent workflow.
+   - The raw `Set<String>` from `UpdateNotifications.updateStream` contains both semantic keys (e.g., `taskNotification`) and entity IDs.
+   - The wake orchestrator passes the matched token set to the agent workflow. (Phase 0B adds a typed `NotificationBatch` with `logicalChangeKey`; MVP works with the raw set.)
 
 2. **Agent state tracks watermarks:**
    - `AgentState.processedCounterByHost` tracks the last processed sync counter per host.
    - `AgentState.recentHeadMessageId` points to the last message the agent saw.
 
-3. **Context assembly is differential:**
-   - Load the agent's last report content.
-   - Load only journal entries/checklist items that changed since last wake (using entity IDs from the trigger).
-   - The LLM prompt says: "Here is the current task report. Here is what changed: [delta]. Update the report and call tools as needed."
+3. **Context assembly includes full state + highlighted delta:**
+   - Load the agent's last report content and agentJournal observations.
+   - Load the full current task context via `AiInputRepository` (so the model can cross-reference and self-correct drift).
+   - Additionally highlight the delta: which entity IDs changed since the last wake (from trigger tokens).
+   - The LLM prompt says: "Here is the current task report, your notes, and the full task state. The following entities changed since your last wake: [delta]. Update the report and call tools as needed."
 
 4. **Tool calls are surgical:**
-   - If a user checks off a checklist item, the agent sees only that delta.
+   - Even though the model sees full context, the delta highlight focuses its attention.
+   - If a user checks off a checklist item, the agent sees that specific change highlighted.
    - The agent may call `update_checklist_items` to update the report's progress section.
    - The agent may call `set_task_title` if the change warrants a title update.
-   - No full re-analysis unless the agent decides the delta is large enough.
 
 **Integration with existing `UpdateNotifications`:**
 
@@ -529,42 +548,47 @@ For MVP, we use the existing `UpdateNotifications.updateStream` directly (no `No
 3. Matches against registered agent subscriptions.
 4. Enqueues wake jobs.
 
-The full `NotificationBatch` + `logicalChangeKey` infrastructure from the formal model is a Phase 0B upgrade. For MVP, the run key is derived from `SHA256(agentId | subscriptionId | batchTokensHash)` where `batchTokensHash` is the sorted hash of the token set. This is not cross-device deterministic but is sufficient for single-device MVP.
+The full `NotificationBatch` + `logicalChangeKey` infrastructure from the formal model is a Phase 0B upgrade. For MVP, the run key is derived from `SHA256(agentId | subscriptionId | batchTokensHash | wakeCounter)` where `batchTokensHash` is the sorted hash of the token set and `wakeCounter` is `AgentState.wakeCounter` — a monotonic integer incremented on each wake enqueue and persisted in the agent state. The counter ensures that two batches with identical token sets (e.g., two successive edits to the same entity) produce distinct run keys and are not collapsed by dedup. This is not cross-device deterministic but is sufficient for single-device MVP.
 
 ### 4.5 Subscription model (MVP simplified)
 
-For MVP, subscriptions are in-memory configurations (not persisted):
+For MVP, subscriptions are in-memory but **deterministically reconstructed on app
+startup** from persisted agent state. The wake orchestrator scans all agents with
+`lifecycle == active` and rebuilds their subscriptions from `AgentState.slots`
+(e.g., `activeTaskId` → watch that task's entity IDs and `taskNotification` key).
+This ensures no wake intent is lost across app restarts.
 
 ```dart
 class AgentSubscription {
   final String id;
   final String agentId;
-  final Set<String> matchTokenKeys;   // e.g., {taskNotification}
-  final Set<String>? matchEntityIds;  // specific entity IDs to watch
-  final bool Function(Set<String> tokens)? predicate;  // optional filter
+  final Set<String> matchEntityIds;  // specific entity IDs to watch
+  final bool Function(Set<String> tokens)? predicate;  // optional additional filter
 }
 ```
 
+**Matching semantics:** A subscription matches a notification batch when **at least one token in the batch is in `matchEntityIds`**. That's it — pure entity-ID matching. Semantic keys like `taskNotification` are **not** used for subscription matching. They exist in the notification stream for other consumers (UI refresh, etc.) but the agent wake system ignores them.
+
+This is critical for self-notification suppression correctness: suppression works by entity ID comparison, so matching must also be entity-ID-based. If we matched on semantic keys, a self-caused write would still trigger via the semantic key even after its entity ID was suppressed.
+
 The Task Agent registers a subscription for:
-- `matchTokenKeys: {taskNotification}` — any task change
-- `matchEntityIds: {taskId}` — the specific task it owns
-- Plus linked entity IDs (checklist items, text entries linked to the task)
+- `matchEntityIds: {taskId, ...linkedEntityIds}` — the specific task it owns plus linked entity IDs (checklist items, text entries linked to the task)
+- The subscription is rebuilt when linked entities change (e.g., new checklist item added)
 
 ### 4.6 Notification integration with existing system
 
-The existing `UpdateNotifications` emits `Set<String>` containing both semantic keys and entity IDs. The wake orchestrator uses this directly:
+The existing `UpdateNotifications` emits `Set<String>` containing both semantic keys and entity IDs. The wake orchestrator uses entity IDs only for subscription matching:
 
 ```
 UpdateNotifications.updateStream
   → WakeOrchestrator.onBatch(Set<String> tokens)
-    → classify tokens (semantic keys vs entity IDs)
-    → for each subscription: check match
+    → extract entity IDs from tokens (ignore semantic keys for matching)
+    → apply self-notification suppression (see §10.3)
+    → for each subscription: check if any remaining entity ID is in matchEntityIds
     → if match: derive runKey, enqueue wake
 ```
 
-The orchestrator must be careful to **not wake the agent for its own writes**. This is achieved by:
-- Maintaining a `Set<String> suppressedRunKeys` of recently completed runs.
-- When the agent's tool calls emit notifications, the resulting tokens are tagged (via a thread-local or explicit parameter) so the orchestrator ignores them for the originating agent.
+Self-notification suppression is handled by vector clock comparison on mutated entity IDs (see §10.3 for the full contract). The suppression step runs before subscription matching, so self-caused entity IDs are removed from consideration before any match is attempted.
 
 ## 5. Task Agent Workflow
 
@@ -597,7 +621,12 @@ The only new tool needed is `set_task_title`, which does not exist today. It sho
 
 **Agent-side integration:**
 
-The agent's wake workflow calls these handlers directly. The additional agent-domain bookkeeping (recording the tool call as an `AgentMessage` with `kind: action` / `kind: toolResult`, and logging the `operationId` in the saga log for idempotency) is layered on top of the existing handler execution, not inside the handlers themselves.
+The agent's wake workflow calls these handlers through the `AgentToolExecutor`. The executor performs three things on top of the existing handler execution:
+
+1. **Category enforcement (fail-closed):** Before delegating to any handler, the executor resolves the target entity's category ID (from the journal-domain entity referenced in the tool call arguments) and checks it against `Agent.allowedCategoryIds`. If the category is missing or not in the allow list, execution is denied — the tool result is recorded as a denial with reason, and the handler is never invoked. This is non-negotiable; there is no bypass.
+2. **Audit logging:** Each tool call is recorded as an `AgentMessage` pair (`kind: action` before invocation, `kind: toolResult` after).
+3. **Saga log entry:** The `operationId` (derived from `runKey + actionStableId`) is logged for idempotency.
+4. **Vector clock capture for self-notification suppression:** After a successful handler call, the executor re-reads the mutated entity from `journalDb.getEntityById(entityId)` to capture its current `vectorClock`. This is collected into a `Map<String, VectorClock>` for the wake run, which the orchestrator uses for suppression (see §10.3). The re-read is necessary because existing handlers return `Future<bool>`, not the updated entity — and the vector clock is only assigned during the DB write inside `PersistenceLogic`. One extra read per successful tool call is negligible overhead.
 
 ### 5.3 Wake workflow pseudocode
 
@@ -886,7 +915,7 @@ lib/features/agents/
     └── task_agent_providers.dart
 ```
 
-## 8. Step-by-Step Execution Plan
+## 9. Step-by-Step Execution Plan
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
@@ -918,7 +947,7 @@ lib/features/agents/
 ### Phase 0A-4: Tool Layer
 
 19. Create `lib/features/agents/tools/agent_tool_registry.dart` — maps tool names to existing handlers in `lib/features/ai/functions/` (e.g., `TaskEstimateHandler`, `LottiBatchChecklistHandler`). No duplication of handler logic.
-20. Create `lib/features/agents/tools/agent_tool_executor.dart` — delegates to registered handlers, then records `AgentMessage` pairs (`action` + `toolResult`) and saga log entries for idempotency.
+20. Create `lib/features/agents/tools/agent_tool_executor.dart` — delegates to registered handlers, then records `AgentMessage` pairs (`action` + `toolResult`) and saga log entries for idempotency. **Category enforcement is fail-closed:** before delegating to any handler, the executor resolves the target entity's category ID and checks it against `Agent.allowedCategoryIds`. If the target entity has no category, or its category is not in the allow list, the call is denied with a recorded denial reason — never silently passed through.
 21. Create `lib/features/agents/tools/task_title_handler.dart` — the only new handler needed (`set_task_title`), following the same pattern as `TaskEstimateHandler`.
 22. Write tests for tool executor orchestration, idempotency (operation ID dedup), and error handling.
 
@@ -926,78 +955,84 @@ lib/features/agents/
 
 23. Create `lib/features/agents/workflow/task_agent_strategy.dart` — a `ConversationStrategy` implementation that dispatches tool calls to the existing handlers and decides continuation.
 24. Create `lib/features/agents/workflow/task_agent_workflow.dart` — assembles differential context, runs the conversation via existing `ConversationRepository`/`ConversationManager`, then persists the resulting messages as `AgentMessage` records and updates the report.
-24. Write tests for differential context assembly and report update logic.
+25. Write tests for differential context assembly and report update logic.
 
 ### Phase 0A-6: Service Layer and Providers
 
-25. Create `lib/features/agents/service/agent_service.dart` (lifecycle management).
-26. Create `lib/features/agents/service/task_agent_service.dart` (task-specific).
-27. Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.
-28. Write service tests.
+26. Create `lib/features/agents/service/agent_service.dart` (lifecycle management).
+27. Create `lib/features/agents/service/task_agent_service.dart` (task-specific).
+28. Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.
+29. Write service tests.
 
 ### Phase 0A-7: Agent Detail Page
 
-29. Create `lib/features/agents/ui/agent_detail_page.dart` — full inspection page with report, activity log, state, controls.
-30. Create `lib/features/agents/ui/agent_report_section.dart` — structured report renderer.
-31. Create `lib/features/agents/ui/agent_activity_log.dart` — chronological message list with kind badges.
-32. Create `lib/features/agents/ui/agent_controls.dart` — pause/resume/destroy/re-analyze actions.
-33. Write widget tests for the agent detail page.
+30. Create `lib/features/agents/ui/agent_detail_page.dart` — full inspection page with report, activity log, state, controls.
+31. Create `lib/features/agents/ui/agent_report_section.dart` — structured report renderer.
+32. Create `lib/features/agents/ui/agent_activity_log.dart` — chronological message list with kind badges.
+33. Create `lib/features/agents/ui/agent_controls.dart` — pause/resume/destroy/re-analyze actions.
+34. Write widget tests for the agent detail page.
 
 ### Phase 0A-8: Integration
 
-34. Wire wake orchestrator into app startup (listen to `UpdateNotifications`).
-35. Add manual "Create Task Agent" action in task detail view (button). This creates the agent and triggers an initial full-context wake.
-36. Add "Agent" navigation chip in task detail view (visible when a task agent exists) linking to the agent detail page.
-37. End-to-end integration test: create task agent → modify task → agent wakes → report updates → inspect on agent page.
+35. Add `enableAgents` config flag in `consts.dart` and register in `config_flags.dart`. All agent initialization and UI is gated on this flag.
+36. Wire wake orchestrator into app startup (listen to `UpdateNotifications`), guarded by the config flag.
+37. Add manual "Create Task Agent" action in task detail view (button, guarded by config flag). This creates the agent and triggers an initial full-context wake.
+38. Add "Agent" navigation chip in task detail view (visible when a task agent exists and flag is enabled) linking to the agent detail page.
+39. End-to-end integration test: create task agent → modify task → agent wakes → report updates → inspect on agent page.
 
-## 9. Gaps and Edge Cases to Address
+## 10. Gaps and Edge Cases to Address
 
-### 9.1 Union type checkpoint modeling
+### 10.1 Union type checkpoint modeling
 
 **Decision: entity variants in one table is correct.** The `agent_entities` table with `type` discriminator avoids the combinatorial explosion of per-type tables and matches the journal pattern. However:
 
 - **Forward compatibility:** The `AgentDomainEntity.unknown` fallback handles new entity types from future schema versions gracefully (unknown variants round-trip through JSON without data loss).
 - **Schema evolution:** Adding new variants (e.g., `agentSubscription`, `agentTimer`) in later phases only requires adding a new factory constructor to the sealed union + updating the conversions. No table migration needed.
 
-### 9.2 Cross-domain reference integrity
+### 10.2 Cross-domain reference integrity
 
 Agent records reference journal-domain entities by ID (`taskId`, `journalEntryId`). These are **soft references** — there is no foreign key constraint across databases. Edge cases:
 
 - **Deleted task:** If a task is deleted in the journal domain, the agent's `agent_task` link becomes a dangling reference. The agent should detect this on wake and transition to `dormant` or `destroyed`.
 - **Task re-creation via sync:** If a deletion is reversed by sync conflict resolution, the agent can resume. The dangling-reference check should be non-destructive.
 
-### 9.3 Self-notification suppression
+### 10.3 Self-notification suppression
 
-When the agent's tool calls modify journal entities, those modifications emit notifications that could re-trigger the agent. Solutions:
+When the agent's tool calls modify journal entities, those modifications emit notifications that could re-trigger the agent. A timing-window approach (suppress for N ms after run completes) is unreliable — notification delivery timing is not guaranteed, and a slow DB write could arrive after the window closes.
 
-- **Option A (MVP):** The wake orchestrator maintains a short-lived suppression window per agent after a run completes. Any wake triggered within that window for the same agent is deferred.
-- **Option B (Better):** Tool calls tag their notification emissions with the originating `agentId`. The orchestrator filters these out for the originating agent's subscriptions.
+**MVP approach: vector clock comparison.** The `AgentToolExecutor` collects the set of journal-domain entity IDs it mutated during a wake run, along with each entity's `vectorClock` value immediately after the mutation. After the run completes, the wake orchestrator holds these as `recentlyMutatedEntries: Map<String, VectorClock>` (entity ID → post-mutation vector clock) per agent.
 
-Recommend Option A for MVP simplicity, upgrade to Option B in Phase 0B.
+When the next notification batch arrives containing a mutated entity ID, the orchestrator reads the journal entity's current `vectorClock` and compares it to the recorded value. If the vector clocks are equal, the notification is self-caused → suppress. If the current vector clock is strictly newer (has advanced beyond the recorded value), a subsequent external edit occurred → do not suppress (wake the agent). The suppression map is cleared after one pass.
 
-### 9.4 Concurrent wake coalescing
+Vector clocks are the right comparison unit here because they are already used by the journal domain for conflict detection, they advance on every write (including sync-received writes), and they are immune to timestamp precision issues. The cost is one DB read per suppressed-candidate entity ID, negligible at MVP volumes.
+
+**Phase 0B upgrade:** Tag notification emissions at the source with the originating `agentId` so the orchestrator can filter without vector clock comparison.
+
+### 10.4 Concurrent wake coalescing
 
 If multiple changes arrive in rapid succession (e.g., user checks off 3 items quickly), the 100ms debounce window in `UpdateNotifications` naturally batches them. The wake orchestrator should further coalesce: if a wake is already queued for an agent, merge the new trigger tokens into the existing queued wake rather than creating a second one.
 
-### 9.5 Failure handling
+### 10.5 Failure handling
 
 - **LLM failure:** Increment `consecutiveFailureCount`, set `nextWakeAt` with exponential backoff. After N failures, transition to `dormant` and notify user.
 - **Tool failure:** Record error in `toolResult` message. Agent may retry on next wake or report the failure in its report.
 - **Crash during wake:** The `wake_run_log` shows `started` but never `completed`. On next app launch, a recovery scan identifies these and re-queues them (using the same `runKey` for idempotency).
 
-### 9.6 Report head atomicity
+### 10.6 Report head atomicity
 
 Updating the report and the report head pointer should be in the same database transaction (both are in `agent.sqlite`, so this is straightforward with Drift's transaction support). This ensures the head always points to a valid, committed report.
 
-### 9.7 Memory budget for MVP
+### 10.7 Memory budget for MVP
 
 For MVP, the Task Agent uses a simple memory strategy:
-- Load the last N messages (configurable, default 20) as hot context.
-- Load the current report as "standing knowledge."
+- Load the **current report** as "standing knowledge."
+- Load **all accumulated agentJournal observations** (`kind: observation`) as longitudinal context. These are compact notes (a few sentences per wake), so growth is bounded for task-scoped agents with finite lifetimes.
+- The full conversation turns from prior wakes (assistant responses, tool call/result pairs) are **not** replayed to the LLM — they exist only as audit trail.
 - No compaction, no warm/cold memory tiers.
-- This is sufficient for task-scoped agents where history is bounded.
 
-## 10. What This Plan Intentionally Defers
+Note: section 4.3 is authoritative on what the LLM sees. The LLM context is: system prompt + current report + all agentJournal observations + delta. It does **not** use a "last N messages" window — observations are the sole carry-forward memory alongside the report.
+
+## 11. What This Plan Intentionally Defers
 
 | Deferred item | Why | When |
 |---|---|---|
