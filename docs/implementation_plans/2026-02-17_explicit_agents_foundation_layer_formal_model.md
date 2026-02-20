@@ -255,7 +255,7 @@ Each device stores:
 
 - journal domain database `J_d` (`db.sqlite`),
 - agent domain database `G_d` (`agent.sqlite`),
-- local runtime-only state `R_d` (not sync-authoritative).
+- local runtime-only state `R_d` (in-memory only, never persisted; reconstructed on agent wake).
 
 ### 1.2 Time and causality
 
@@ -345,9 +345,9 @@ Runtime local state `R_a,d` includes:
 
 - `runStatus`, `failureStreak`, `hotMessageCount`, active run/session IDs.
 
-`R_a,d` is local-only and excluded from sync-authoritative merges.
+`R_a,d` is in-memory only — never persisted, never synced. It is reconstructed from `S_a` on each agent wake.
 
-Interpretation: transient operational counters can differ by device without threatening shared-state convergence.
+Interpretation: transient operational counters exist only during a wake's execution. On crash, device loss, or normal wake completion, runtime state is simply discarded. The next wake reconstructs it from durable `AgentState`.
 
 ## 3. Notification and Wake Formalization
 
@@ -473,13 +473,13 @@ A batch `B` matches `sigma` iff:
 
 1. `TokenPred(B.typedTokens)` is true,
 2. `EntityPred(changedEntities(entityIds(B.typedTokens)))` is true,
-3. `EligibilityPred(now, agentState, runtimeState)` is true.
+3. `EligibilityPred(now, agentState)` is true.
 
 $$
 \operatorname{matches}(\sigma,B)=
 P_T(T_B)\land
 P_E\!\big(\operatorname{changedEntities}(\operatorname{entityIds}(T_B))\big)\land
-P_{elig}(now,S,R)
+P_{elig}(now,S)
 $$
 
 Only `entityId` tokens trigger entity fetches.
