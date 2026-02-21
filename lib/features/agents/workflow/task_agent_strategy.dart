@@ -114,18 +114,26 @@ class TaskAgentStrategy extends ConversationStrategy {
 
       Map<String, dynamic> args;
       try {
-        args = (jsonDecode(call.function.arguments) as Map<String, dynamic>?) ??
-            <String, dynamic>{};
+        final decoded = jsonDecode(call.function.arguments);
+        if (decoded is Map<String, dynamic>) {
+          args = decoded;
+        } else {
+          // Handles null, arrays, and other non-object JSON values.
+          throw FormatException(
+            'Expected a JSON object, got ${decoded.runtimeType}',
+          );
+        }
       } catch (e) {
         developer.log(
           'Failed to parse tool call arguments for $toolName: $e',
           name: 'TaskAgentStrategy',
         );
-        const errorMsg = 'Error: invalid JSON in tool call arguments';
+        const errorMsg =
+            'Error: invalid arguments format — expected a JSON object.';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
         await _recordToolResultMessage(
           toolName: toolName,
-          errorMessage: errorMsg,
+          errorMessage: '$errorMsg Detail: $e',
         );
         continue;
       }

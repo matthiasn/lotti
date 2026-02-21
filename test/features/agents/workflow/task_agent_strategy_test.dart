@@ -219,7 +219,8 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-bad',
-            response: 'Error: invalid JSON in tool call arguments',
+            response:
+                'Error: invalid arguments format — expected a JSON object.',
           ),
         ).called(1);
 
@@ -426,7 +427,7 @@ void main() {
 
       test('handles null JSON arguments gracefully', () async {
         // When the LLM sends literal 'null' as arguments, jsonDecode returns
-        // null and the null-coalescing fallback produces an empty map.
+        // null which is not a Map — caught at the parsing stage.
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-null-args',
@@ -443,11 +444,12 @@ void main() {
           manager: mockManager,
         );
 
-        // With empty args, 'observations' is null → not a List → error path.
+        // null is not a Map<String, dynamic> → invalid format error.
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-null-args',
-            response: 'Error: "observations" must be an array of strings.',
+            response:
+                'Error: invalid arguments format — expected a JSON object.',
           ),
         ).called(1);
       });
