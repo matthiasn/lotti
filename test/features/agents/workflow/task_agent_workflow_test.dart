@@ -1735,21 +1735,19 @@ void main() {
           ),
         );
 
-        setUp(() {
+        setUp(() async {
+          await getIt.reset();
           mockLoggingService = MockLoggingService();
 
           // Register mocks needed by handlers that use getIt internally.
-          if (!getIt.isRegistered<JournalDb>()) {
-            getIt.registerSingleton<JournalDb>(mockJournalDb);
-          }
-          if (!getIt.isRegistered<LoggingService>()) {
-            getIt.registerSingleton<LoggingService>(mockLoggingService);
-          }
+          // Cannot use setUpTestGetIt here because these tests need the
+          // same mockJournalDb instance that stubFullExecutePath() stubs.
+          getIt
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<LoggingService>(mockLoggingService);
         });
 
-        tearDown(() async {
-          await getIt.reset();
-        });
+        tearDown(getIt.reset);
 
         test(
             'add_multiple_checklist_items creates items via addItemToChecklist',

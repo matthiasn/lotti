@@ -217,6 +217,12 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Handles the `update_report` tool call by capturing the markdown content
   /// and sending an acknowledgement back to the conversation.
+  /// Handles the `update_report` tool call.
+  ///
+  /// If the LLM calls this more than once per wake, the last call wins — the
+  /// previous content is silently replaced. This is by design: the agent
+  /// contract requires exactly one call, so multiple calls indicate an LLM
+  /// error and the latest version is the most refined.
   Future<void> _handleUpdateReport(
     Map<String, dynamic> args,
     String callId,

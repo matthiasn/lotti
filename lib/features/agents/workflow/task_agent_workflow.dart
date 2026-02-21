@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -163,6 +164,10 @@ class TaskAgentWorkflow {
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
+    // Capture timestamp once for all persistence in this wake (both success
+    // and failure paths) so causality tracking is consistent.
+    final now = clock.now();
+
     try {
       final executor = AgentToolExecutor(
         repository: agentRepository,
@@ -211,8 +216,6 @@ class TaskAgentWorkflow {
       final manager = conversationRepository.getConversation(conversationId);
       final finalContent = _extractFinalAssistantContent(manager);
       strategy.recordFinalResponse(finalContent);
-
-      final now = DateTime.now();
 
       // 6. Persist the final assistant response as a thought message.
       final thoughtText = strategy.finalResponse;
@@ -347,7 +350,7 @@ class TaskAgentWorkflow {
         await agentRepository.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
-            updatedAt: DateTime.now(),
+            updatedAt: now,
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),
         );
@@ -807,7 +810,10 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 
     final count = await handler.createBatchItems(parseResult);
     return ToolExecutionResult(
-      success: count > 0,
+      // Return success=true as long as parsing succeeded — a count of 0
+      // just means no items were created (no-op). This mirrors
+      // _handleChecklistUpdate and prevents redundant LLM retries.
+      success: true,
       output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
     );

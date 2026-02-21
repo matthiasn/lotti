@@ -18,7 +18,6 @@ class ToolExecutionResult {
     required this.success,
     required this.output,
     this.mutatedEntityId,
-    this.mutatedVectorClock,
     this.errorMessage,
     this.policyDenied = false,
     this.denialReason,
@@ -32,10 +31,6 @@ class ToolExecutionResult {
 
   /// ID of the journal entity that was mutated, if any.
   final String? mutatedEntityId;
-
-  /// Vector clock of [mutatedEntityId] after the mutation, captured for
-  /// self-notification suppression.
-  final VectorClock? mutatedVectorClock;
 
   /// Error description when [success] is false and the failure is not a policy
   /// denial.
@@ -176,16 +171,28 @@ class AgentToolExecutor {
       );
 
       // Record the denial in the audit log before returning.
-      await _recordMessage(
-        kind: AgentMessageKind.action,
-        metadata: AgentMessageMetadata(
-          runKey: runKey,
-          toolName: toolName,
-          operationId: operationId,
-          policyDenied: true,
-          denialReason: denialReason,
-        ),
-      );
+      // Wrapped in try/catch so a recording failure does not leak an
+      // exception — the policy decision is already made.
+      try {
+        await _recordMessage(
+          kind: AgentMessageKind.action,
+          metadata: AgentMessageMetadata(
+            runKey: runKey,
+            toolName: toolName,
+            operationId: operationId,
+            policyDenied: true,
+            denialReason: denialReason,
+          ),
+        );
+      } catch (e, s) {
+        developer.log(
+          'Failed to persist policy-denial audit message for $toolName '
+          '(runKey: $runKey, operationId: $operationId)',
+          name: 'AgentToolExecutor',
+          error: e,
+          stackTrace: s,
+        );
+      }
 
       return ToolExecutionResult(
         success: false,

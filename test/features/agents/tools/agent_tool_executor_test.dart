@@ -420,6 +420,30 @@ void main() {
         expect(result.mutatedEntityId, equals(targetEntityId));
       });
 
+      test('policy denial result is preserved when denial audit write fails',
+          () async {
+        // The upsertEntity call (denial audit message) throws.
+        when(() => mockRepository.upsertEntity(any()))
+            .thenThrow(Exception('DB down'));
+
+        final result = await executor.execute(
+          toolName: 'set_task_title',
+          args: {'title': 'New Title'},
+          targetEntityId: targetEntityId,
+          resolveCategoryId: (_) async => 'wrong-category',
+          executeHandler: () async => const ToolExecutionResult(
+            success: true,
+            output: 'should not be reached',
+          ),
+          readVectorClock: (_) async => null,
+        );
+
+        // The policy denial result must be returned despite audit failure.
+        expect(result.success, isFalse);
+        expect(result.policyDenied, isTrue);
+        expect(result.denialReason, contains('wrong-category'));
+      });
+
       test('error result is preserved when post-exception audit write fails',
           () async {
         // First upsertEntity call (action message) succeeds.
@@ -501,17 +525,14 @@ void main() {
       expect(result.policyDenied, isFalse);
       expect(result.denialReason, isNull);
       expect(result.mutatedEntityId, isNull);
-      expect(result.mutatedVectorClock, isNull);
       expect(result.errorMessage, isNull);
     });
 
     test('carries all fields when fully populated', () {
-      const vc = VectorClock({'host': 1});
       const result = ToolExecutionResult(
         success: false,
         output: 'denied',
         mutatedEntityId: 'ent-1',
-        mutatedVectorClock: vc,
         errorMessage: 'err',
         policyDenied: true,
         denialReason: 'not allowed',
@@ -520,7 +541,6 @@ void main() {
       expect(result.success, isFalse);
       expect(result.output, equals('denied'));
       expect(result.mutatedEntityId, equals('ent-1'));
-      expect(result.mutatedVectorClock, equals(vc));
       expect(result.errorMessage, equals('err'));
       expect(result.policyDenied, isTrue);
       expect(result.denialReason, equals('not allowed'));
