@@ -249,8 +249,8 @@ Examples:
 Use granular persisted records:
 
 - `Agent` (identity + lifecycle + config)
-- `AgentState` (synced durable state snapshot)
-- `AgentRuntimeState` (local-only runtime snapshot)
+- `AgentState` (durable state snapshot)
+- `AgentRuntimeState` (in-memory only, never persisted — reconstructed from `AgentState` on startup/crash)
 - `AgentMessage` (immutable log entry, one record per message)
 - `AgentMessagePayload` (normalized large content object referenced by `AgentMessage.contentEntryId`)
 - `AgentReport` (immutable user-facing snapshot)
@@ -283,10 +283,11 @@ State carries:
 - memory pointers (`recentHeadMessageId`, `latestSummaryMessageId`)
 - slots (goals/preferences/open loops)
 
-Runtime state (local-only) carries:
+Runtime state (in-memory only, never persisted) carries:
 
 - run status and active run/session IDs
 - failure streak and other operational counters
+- Reconstructed from `AgentState` on startup; lost on crash with no recovery needed
 
 Memory policy:
 
@@ -804,11 +805,11 @@ final class AgentState {
   final AgentSlots slots;
 }
 
+/// In-memory only — never persisted. Reconstructed from AgentState on startup.
 final class AgentRuntimeState {
   const AgentRuntimeState({
     required this.agentId,
     required this.runStatus,
-    required this.updatedAt,
     this.activeRunId,
     this.activeSessionId,
     this.lastRunStartedAt,
@@ -818,7 +819,6 @@ final class AgentRuntimeState {
 
   final String agentId;
   final AgentRunStatus runStatus;
-  final DateTime updatedAt;
   final String? activeRunId;
   final String? activeSessionId;
   final DateTime? lastRunStartedAt;
@@ -1226,14 +1226,14 @@ final class AgentRebuildCheckpoint {
 - `threadId` boundaries are explicit:
   autonomous runs use `agentId:run:<wakeId>`, interactive sessions use `agentId:session:<sessionId>`.
 - `Agent.allowedCategoryIds` is the strict allow-list boundary enforced by tool/query execution.
-- `AgentRuntimeState` is local-only and intentionally excluded from sync conflict resolution.
+- `AgentRuntimeState` is in-memory only (never persisted, never synced). Reconstructed from `AgentState` on startup.
 - `revision` is a local optimistic-write guard and debugging aid. Cross-device ordering/conflict handling is vector-clock based.
 - `Agent`, `AgentState`, and `AgentMessage` use typed wrappers (`AgentConfig`, `AgentSlots`, `AgentMessageMetadata`) in Phase 0A.
 - raw `JsonMap` is restricted to tool-call I/O and explicitly namespaced `extension` maps to prevent schema drift.
 - `JsonMap` is declared in this draft for readability; implementation must define/import the alias from a shared model utility location.
 - extension maps are reserved for forward-compatibility but remain empty in Phase 0A unless a namespaced key is explicitly registered in schema validation rules.
 - extension fields must never participate in merge-critical semantics or policy decisions until promoted to typed fields.
-- `AgentState.consecutiveFailureCount` is synced and used for cross-device retry/backoff safety; local `AgentRuntimeState.failureStreak` remains device-local operational telemetry.
+- `AgentState.consecutiveFailureCount` is synced and used for cross-device retry/backoff safety; `AgentRuntimeState.failureStreak` is in-memory-only operational telemetry (lost on crash, reconstructed on startup).
 - `AgentMessage.contentEntryId` references `AgentMessagePayload.id` in `agent_message_payloads`; large payloads are normalized, linkable, and independently synced/pruned.
 - prompt/model provenance is captured per message via `AgentMessageMetadata.promptId/promptVersion/modelId` for replay/eval attribution.
 - `AgentPersonaHead` is a single-pointer record per agent; concurrent pointer updates must resolve deterministically to the higher persona version, then tie-break by (`hostId`, `personaVersionId`).
@@ -1250,7 +1250,7 @@ Thread policy implications:
 Recommended persistence approach:
 
 1. Persist all agent-domain entities in dedicated `agent.sqlite` storage.
-2. Persist `AgentRuntimeState` and compaction-job execution state locally in `agent.sqlite` (not part of synced payloads).
+2. `AgentRuntimeState` is in-memory only (never persisted). Compaction-job execution state is persisted locally in `agent.sqlite` (not part of synced payloads).
 3. Persist agent-domain relationships as typed `AgentLink` records/references in `agent.sqlite`.
 4. Keep `db.sqlite` journal persistence unchanged as the canonical human-authored/observed domain.
 5. Model cross-domain relationships via ID references (`taskId`, `journalEntryId`, etc.), not journal-owned agent records.
@@ -1264,7 +1264,8 @@ To limit sequence-log/backfill complexity, do not add one payload type per agent
 Decision:
 
 - Add one agent-domain sync payload category (for example `agentEntity`) with subtype discriminator in payload body (`agent`, `agentState`, `agentMessage`, `agentMessagePayload`, `agentSubscription`, `agentTimer`, `agentReport`, `agentReportHead`, `agentSourceRef`, `agentPersonaVersion`, `agentPersonaHead`, `agentPromptItem`, `agentPromptResponse`, `attentionSignal`, `attentionDecision`, `agentCreativeArtifact`, `creativeFeedbackEvent`, `agentRebuildJob`, `runtimeSchedulerPolicy`).
-- local-only subtype exclusions: `agentRuntimeState`, `runtimeQuotaSnapshot`, `agentRebuildCheckpoint`, `agentCompactionJob`.
+- not persisted (in-memory only): `agentRuntimeState`.
+- local-only subtype exclusions (persisted but not synced): `runtimeQuotaSnapshot`, `agentRebuildCheckpoint`, `agentCompactionJob`.
 - `agentSourceRef` payload subtype is the transport envelope for typed `ReportSourceRef` rows (claim/section/source linkage fields).
 - Agent payload bodies originate from `agent.sqlite`, not journal JSON paths.
 
@@ -1399,10 +1400,9 @@ worker(job):
         result = workflow.run(context)
       append action/toolResult messages + links // tool operationIds derive from job.runKey + persisted actionStableId
       memoryCompactor.maybeCompact(agentId, threadId=job.threadId)
-      state = reducer.apply(state, result) // shared synced state only
-      runtimeState = runtimeReducer.apply(runtimeState, result) // local-only
+      state = reducer.apply(state, result)
+      runtimeState = runtimeReducer.apply(runtimeState, result) // in-memory only
       save state
-      save runtimeState
       wakeRunLog.markCompleted(job.runKey)
       notify({agentStateChangedNotification, agentId, state.id})
     catch (error):
@@ -1433,7 +1433,7 @@ When lifecycle transitions to `destroyed`, destruction is deterministic and sync
 
 1. immediately block new wake enqueue for the agent (`subscription`, `timer`, `userInitiated`, `recoveryCatchup`).
 2. cancel/disable active subscriptions and timers (soft-delete/tombstone records for sync convergence).
-3. terminate active local runtime sessions and clear local-only runtime state.
+3. terminate active local runtime sessions and discard in-memory runtime state.
 4. preserve historical messages/reports by default as soft-deleted/tombstoned records for sync safety and auditability.
 5. apply retention policy to eventually prune tombstoned artifacts where allowed.
 6. writes from stale in-flight runs after destruction must fail closed (`agent_destroyed`) with no side effects.
@@ -1485,8 +1485,8 @@ Shared/synced fields:
 - `slots`
 - `processedCounterByHost`
 
-Runtime fields (`runStatus`, `failureStreak`, `hotMessageCount`, active run/session IDs) are moved to
-`AgentRuntimeState` and are local-only, not sync-authoritative.
+Runtime fields (`runStatus`, `failureStreak`, `hotMessageCount`, active run/session IDs) live in
+`AgentRuntimeState` which is in-memory only (never persisted, never synced). Reconstructed from `AgentState` on startup.
 
 Deterministic merge rules for shared `AgentState`:
 
@@ -1521,7 +1521,7 @@ New persisted entities/tables (or equivalent serialized records):
 
 - `agents`
 - `agent_states`
-- `agent_runtime_states` (local-only)
+- ~~`agent_runtime_states`~~ removed — `AgentRuntimeState` is in-memory only
 - `agent_subscriptions`
 - `agent_subscription_tokens` (materialized tokens: `subscription_id`, `token_class`, optional `token_namespace`, `token_value`, `active`)
 - `agent_timers`
@@ -1568,7 +1568,6 @@ Index additions:
 - `idx_agent_message_payloads_agent_created (agent_id, created_at DESC)`
 - `idx_agent_reports_agent_scope_created (agent_id, scope, created_at DESC)`
 - `idx_agent_report_heads_agent_scope (agent_id, scope)`
-- `idx_agent_runtime_states_agent (agent_id)`
 - `idx_agent_persona_versions_agent_version (agent_id, version DESC)`
 - `idx_agent_persona_heads_agent (agent_id)`
 - `idx_agent_prompt_items_agent_state_due (agent_id, state, required_by)`
@@ -1703,13 +1702,13 @@ Delivery split (to avoid Phase -1 bottleneck while preserving safety posture):
   - freshness is dual-trigger: time-based max age per scope plus event-based invalidation when newer relevant source events exist.
   - stale detection compares report source cursor vs latest relevant processed cursor and report age.
 - Define memory governance and retention classes:
-  - explicit artifact classes (`trace`, `action/toolResult`, `summary`, `report`, `runtime_state`) with per-class TTL and pruning policy.
+  - explicit artifact classes (`trace`, `action/toolResult`, `summary`, `report`) with per-class TTL and pruning policy.
   - extend artifact classes to include
     (`persona_version`, `attention_signal/decision`, `prompt_item/response`, `creative_artifact`, `creative_feedback`, `rebuild_job/checkpoint`, `quota_snapshot`, `vector_embedding`).
   - retention defaults must distinguish durable-vs-ephemeral:
     - durable by default (no auto TTL): `persona_version`, active `report_head`.
     - medium retention: `attention_signal/decision`, resolved `prompt_item/response`, `creative_feedback`, `rebuild_job`.
-    - short retention/local-only: `runtime_state`, `quota_snapshot`, `rebuild_checkpoint`.
+    - short retention/local-only: `quota_snapshot`, `rebuild_checkpoint`. (`runtime_state` is in-memory only, not persisted.)
     - budget-driven derived retention: `vector_embedding` and rendered creative binaries (metadata may outlive binary payload).
   - legal/privacy deletion behavior for user-requested erasure and retention overrides.
   - storage-budget enforcement and deterministic pruning order when limits are exceeded.
@@ -1776,7 +1775,7 @@ Exit criteria:
   `AgentConfig`, `AgentSlots`, `AgentMessageMetadata`.
 - Add migration(s) / schema bootstrap for new agent-domain tables/indexes and the dedicated `AgentLink` model in `AgentDb`.
 - Add serializers and conversion helpers.
-- Split synced `AgentState` from local-only `AgentRuntimeState`.
+- `AgentRuntimeState` is in-memory only (never persisted); `AgentState` is the sole durable state.
 - Define and codify `threadId` and `revision` semantics.
 - Land persistence for `Agent.allowedCategoryIds` and interaction mode fields.
 - Add persistence for `AgentReport` and `AgentReportHead`.
@@ -2345,7 +2344,7 @@ Mitigation:
 9. Agent tooling will use a capability-gated, idempotent function-call registry with explicit high-risk preview/apply support.
 10. Strict category boundaries are first-class: `Agent.allowedCategoryIds` is mandatory and enforced on every tool read/write.
 11. Agent interaction modes (`autonomous`, `interactive`, `hybrid`) are first-class; `userInitiated` wake reason is part of the foundation.
-12. Runtime execution fields are split into local-only `AgentRuntimeState`, excluded from sync payloads.
+12. Runtime execution fields live in `AgentRuntimeState` which is in-memory only (never persisted, never synced). Reconstructed from `AgentState` on startup.
 13. `AgentMessage.kind` values `action` and `toolResult` follow a typed envelope contract (`actionRefId`, `operationId`, status/error fields).
 14. Subscription matching is defined over three token classes (`semanticKey`, `subtypeToken`, `entityId`) with explicit classifier/index support, using structured notification tokens (`tokenClass`, optional `tokenNamespace`, `tokenValue`) as the canonical representation.
 15. Wake jobs for all reasons carry deterministic enqueue-time `runKey` and `threadId`; replay idempotency uses persisted wake-run log.
@@ -2363,7 +2362,7 @@ Mitigation:
 27. Provider/model choice is user-controlled, but privacy implications must be shown in UI and explicitly confirmed by user before first use and after policy-version changes.
 28. `NEED_TO_KNOW` is a hard boundary principle: handoff, spawn, and provider payloads must use minimal allowlisted projections; oversharing is blocked by policy.
 29. Phase -1 is delivered as `-1A` (core safety/eval gates) and `-1B` (advanced multi-agent/ops contracts), with `-1B` runtime enablement feature-flagged where needed.
-30. Cross-device retry safety uses synced `AgentState.consecutiveFailureCount`; local `AgentRuntimeState.failureStreak` remains device-local telemetry.
+30. Cross-device retry safety uses synced `AgentState.consecutiveFailureCount`; `AgentRuntimeState.failureStreak` is in-memory-only telemetry (never persisted).
 31. Slot conflict merge uses logical `slotVersion` metadata, not wall-clock timestamps.
 32. Large message bodies are normalized in `agent_message_payloads` and referenced by `AgentMessage.contentEntryId`.
 33. Agent destruction is deterministic: destroyed agents block new wakes immediately, tombstone timers/subscriptions, and stale in-flight writes fail with `agent_destroyed`.
