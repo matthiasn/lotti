@@ -1,5 +1,6 @@
 {
   "@@locale": "en_GB",
+  "agentControlsReanalyzeButton": "Re-analyse",
   "aiAssistantAnalyzeImage": "Analyse image",
   "aiAssistantSummarizeTask": "Summarise task",
   "aiSetupWizardCreatesOptimized": "Creates optimised models, prompts, and a test category",
@@ -10,6 +11,7 @@
   "colorLabel": "Colour:",
   "colorPickerError": "Invalid Hex colour",
   "colorPickerHint": "Enter Hex colour or pick",
+  "configFlagEnableAgentsDescription": "Allow AI agents to autonomously monitor and analyse your tasks.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableCalendarPage": "Enable Calendar page",

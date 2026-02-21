@@ -211,11 +211,13 @@ Widget makeTestableWidgetWithScaffold(
 
 Widget makeTestableWidgetNoScroll(
   Widget child, {
+  List<Override> overrides = const [],
   MediaQueryData? mediaQueryData,
 }) {
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
   return ProviderScope(
+    overrides: overrides,
     child: MediaQuery(
       data: mq,
       child: MaterialApp(

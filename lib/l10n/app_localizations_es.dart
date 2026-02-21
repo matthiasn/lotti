@@ -87,6 +87,140 @@ class AppLocalizationsEs extends AppLocalizations {
       'Término demasiado largo (máx. 50 caracteres)';
 
   @override
+  String get agentActivityLogHeading => 'Registro de actividad';
+
+  @override
+  String agentControlsActionError(String error) {
+    return 'La acción falló: $error';
+  }
+
+  @override
+  String get agentControlsDeleteButton => 'Eliminar permanentemente';
+
+  @override
+  String get agentControlsDeleteDialogContent =>
+      'Esto eliminará permanentemente todos los datos de este agente, incluyendo su historial, informes y observaciones. Esta acción no se puede deshacer.';
+
+  @override
+  String get agentControlsDeleteDialogTitle => '¿Eliminar agente?';
+
+  @override
+  String get agentControlsDestroyButton => 'Destruir';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Esto desactivará permanentemente al agente. Su historial se conservará para auditoría.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => '¿Destruir agente?';
+
+  @override
+  String get agentControlsDestroyedMessage => 'Este agente ha sido destruido.';
+
+  @override
+  String get agentControlsPauseButton => 'Pausar';
+
+  @override
+  String get agentControlsReanalyzeButton => 'Reanalizar';
+
+  @override
+  String get agentControlsResumeButton => 'Reanudar';
+
+  @override
+  String agentDetailErrorLoading(String error) {
+    return 'Error al cargar el agente: $error';
+  }
+
+  @override
+  String get agentDetailNotFound => 'Agente no encontrado.';
+
+  @override
+  String get agentDetailUnexpectedType => 'Tipo de entidad inesperado.';
+
+  @override
+  String get agentLifecycleActive => 'Activo';
+
+  @override
+  String get agentLifecycleCreated => 'Creado';
+
+  @override
+  String get agentLifecycleDestroyed => 'Destruido';
+
+  @override
+  String get agentLifecyclePaused => 'Pausado';
+
+  @override
+  String agentMessageContentPrefix(String contentId) {
+    return 'Contenido: $contentId';
+  }
+
+  @override
+  String get agentMessageKindAction => 'Acción';
+
+  @override
+  String get agentMessageKindObservation => 'Observación';
+
+  @override
+  String get agentMessageKindSummary => 'Resumen';
+
+  @override
+  String get agentMessageKindSystem => 'Sistema';
+
+  @override
+  String get agentMessageKindThought => 'Pensamiento';
+
+  @override
+  String get agentMessageKindToolResult => 'Resultado de herramienta';
+
+  @override
+  String get agentMessageKindUser => 'Usuario';
+
+  @override
+  String get agentMessagePayloadEmpty => '(sin contenido)';
+
+  @override
+  String get agentMessagesEmpty => 'Aún no hay mensajes.';
+
+  @override
+  String agentMessagesErrorLoading(String error) {
+    return 'Error al cargar los mensajes: $error';
+  }
+
+  @override
+  String agentReportErrorLoading(String error) {
+    return 'Error al cargar el informe: $error';
+  }
+
+  @override
+  String get agentReportNone => 'Aún no hay informe disponible.';
+
+  @override
+  String get agentStateConsecutiveFailures => 'Fallos consecutivos';
+
+  @override
+  String agentStateErrorLoading(String error) {
+    return 'Error al cargar el estado: $error';
+  }
+
+  @override
+  String get agentStateHeading => 'Información de estado';
+
+  @override
+  String get agentStateLastWake => 'Último despertar';
+
+  @override
+  String get agentStateNextWake => 'Próximo despertar';
+
+  @override
+  String get agentStateRevision => 'Revisión';
+
+  @override
+  String get agentStateSleepingUntil => 'Durmiendo hasta';
+
+  @override
+  String get agentStateWakeCount => 'Conteo de despertares';
+
+  @override
   String get aiAssistantActionItemSuggestions =>
       'Sugerencias de elementos de acción';
 
@@ -1050,6 +1184,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagAutoTranscribeDescription =>
       'Transcribir automáticamente grabaciones de audio en tus entradas. Esto requiere una conexión a Internet.';
+
+  @override
+  String get configFlagEnableAgents => 'Activar agentes';
+
+  @override
+  String get configFlagEnableAgentsDescription =>
+      'Permitir que los agentes de IA supervisen y analicen tus tareas de forma autónoma.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -3500,6 +3641,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Etiquetas de hashtag';
+
+  @override
+  String get taskAgentChipLabel => 'Agente';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Crear agente';
+
+  @override
+  String taskAgentCreateError(String error) {
+    return 'Error al crear el agente: $error';
+  }
 
   @override
   String get taskCategoryAllLabel => 'todos';

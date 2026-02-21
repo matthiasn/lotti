@@ -25,6 +25,88 @@
   "addToDictionarySaveFailed": "Wörterbuch konnte nicht gespeichert werden",
   "addToDictionarySuccess": "Begriff zum Wörterbuch hinzugefügt",
   "addToDictionaryTooLong": "Begriff zu lang (max. 50 Zeichen)",
+  "agentActivityLogHeading": "Aktivitätsprotokoll",
+  "agentControlsActionError": "Aktion fehlgeschlagen: {error}",
+  "@agentControlsActionError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentControlsDeleteButton": "Endgültig löschen",
+  "agentControlsDeleteDialogContent": "Alle Daten dieses Agenten werden dauerhaft gelöscht, einschließlich Verlauf, Berichte und Beobachtungen. Dies kann nicht rückgängig gemacht werden.",
+  "agentControlsDeleteDialogTitle": "Agent löschen?",
+  "agentControlsDestroyButton": "Zerstören",
+  "agentControlsDestroyDialogContent": "Der Agent wird dauerhaft deaktiviert. Sein Verlauf wird zur Nachverfolgung aufbewahrt.",
+  "agentControlsDestroyDialogTitle": "Agent zerstören?",
+  "agentControlsDestroyedMessage": "Dieser Agent wurde zerstört.",
+  "agentControlsPauseButton": "Pausieren",
+  "agentControlsReanalyzeButton": "Erneut analysieren",
+  "agentControlsResumeButton": "Fortsetzen",
+  "agentDetailErrorLoading": "Fehler beim Laden des Agenten: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agent nicht gefunden.",
+  "agentDetailUnexpectedType": "Unerwarteter Entitätstyp.",
+  "agentLifecycleActive": "Aktiv",
+  "agentLifecycleCreated": "Erstellt",
+  "agentLifecycleDestroyed": "Zerstört",
+  "agentLifecyclePaused": "Pausiert",
+  "agentMessageContentPrefix": "Inhalt: {contentId}",
+  "@agentMessageContentPrefix": {
+    "placeholders": {
+      "contentId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentMessageKindAction": "Aktion",
+  "agentMessageKindObservation": "Beobachtung",
+  "agentMessageKindSummary": "Zusammenfassung",
+  "agentMessageKindSystem": "System",
+  "agentMessageKindThought": "Gedanke",
+  "agentMessageKindToolResult": "Werkzeugergebnis",
+  "agentMessageKindUser": "Benutzer",
+  "agentMessagePayloadEmpty": "(kein Inhalt)",
+  "agentMessagesEmpty": "Noch keine Nachrichten.",
+  "agentMessagesErrorLoading": "Nachrichten konnten nicht geladen werden: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
+  "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "Statusinformationen",
+  "agentStateLastWake": "Letztes Aufwachen",
+  "agentStateNextWake": "Nächstes Aufwachen",
+  "agentStateRevision": "Revision",
+  "agentStateSleepingUntil": "Schlafend bis",
+  "agentStateWakeCount": "Aufwachzähler",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",
   "aiAssistantSummarizeTask": "Aufgabe zusammenfassen",
@@ -431,6 +513,8 @@
   "completeHabitSuccessButton": "Erfolgreich",
   "configFlagAttemptEmbeddingDescription": "Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.",
   "configFlagAutoTranscribeDescription": "Transkribiert automatisch Audioaufnahmen in deinen Einträgen. Dies erfordert eine Internetverbindung.",
+  "configFlagEnableAgents": "Agenten aktivieren",
+  "configFlagEnableAgentsDescription": "KI-Agenten erlauben, deine Aufgaben autonom zu überwachen und zu analysieren.",
   "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAutoTaskTldrDescription": "Generiert automatisch Zusammenfassungen für deine Aufgaben, damit du deren Status schnell erfassen kannst.",
@@ -1352,6 +1436,16 @@
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Messgrößen",
   "syncStepTags": "Tags",
+  "taskAgentChipLabel": "Agent",
+  "taskAgentCreateChipLabel": "Agent erstellen",
+  "taskAgentCreateError": "Agent konnte nicht erstellt werden: {error}",
+  "@taskAgentCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",
