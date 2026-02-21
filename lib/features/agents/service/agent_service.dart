@@ -181,23 +181,25 @@ class AgentService {
   Future<bool> _updateLifecycle(
     String agentId,
     AgentLifecycle lifecycle,
-  ) async {
-    final identity = await getAgent(agentId);
-    if (identity == null) {
-      developer.log(
-        'Cannot update lifecycle: agent $agentId not found',
-        name: 'AgentService',
-      );
-      return false;
-    }
+  ) {
+    return repository.runInTransaction(() async {
+      final identity = await getAgent(agentId);
+      if (identity == null) {
+        developer.log(
+          'Cannot update lifecycle: agent $agentId not found',
+          name: 'AgentService',
+        );
+        return false;
+      }
 
-    final now = clock.now();
-    final updated = identity.copyWith(
-      lifecycle: lifecycle,
-      updatedAt: now,
-      destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
-    );
-    await repository.upsertEntity(updated);
-    return true;
+      final now = clock.now();
+      final updated = identity.copyWith(
+        lifecycle: lifecycle,
+        updatedAt: now,
+        destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
+      );
+      await repository.upsertEntity(updated);
+      return true;
+    });
   }
 }
