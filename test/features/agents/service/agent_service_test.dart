@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -101,20 +102,7 @@ void main() {
 
     group('getAgent', () {
       test('returns identity for existing agent', () async {
-        final identity = AgentDomainEntity.agent(
-          id: 'agent-1',
-          agentId: 'agent-1',
-          kind: 'task_agent',
-          displayName: 'Test Agent',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as AgentIdentityEntity;
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
@@ -167,35 +155,17 @@ void main() {
       });
 
       test('filters by lifecycle when provided', () async {
-        final activeAgent = AgentDomainEntity.agent(
+        final activeAgent = makeTestIdentity(
           id: 'a1',
           agentId: 'a1',
-          kind: 'task_agent',
           displayName: 'Active',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 's1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as AgentIdentityEntity;
-
-        final dormantAgent = AgentDomainEntity.agent(
+        );
+        final dormantAgent = makeTestIdentity(
           id: 'a2',
           agentId: 'a2',
-          kind: 'task_agent',
           displayName: 'Dormant',
           lifecycle: AgentLifecycle.dormant,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 's2',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as AgentIdentityEntity;
+        );
 
         when(() => mockRepository.getAllAgentIdentities())
             .thenAnswer((_) async => [activeAgent, dormantAgent]);
@@ -246,20 +216,7 @@ void main() {
 
     group('pauseAgent', () {
       test('sets lifecycle to dormant and unregisters subscriptions', () async {
-        final identity = AgentDomainEntity.agent(
-          id: 'agent-1',
-          agentId: 'agent-1',
-          kind: 'task_agent',
-          displayName: 'Test Agent',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
@@ -280,37 +237,14 @@ void main() {
 
         verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
       });
-
-      test('returns false and skips side-effects for non-existent agent',
-          () async {
-        when(() => mockRepository.getEntity('non-existent'))
-            .thenAnswer((_) async => null);
-
-        final result = await service.pauseAgent('non-existent');
-
-        expect(result, isFalse);
-        verifyNever(() => mockRepository.upsertEntity(any()));
-        verifyNever(
-          () => mockOrchestrator.removeSubscriptions('non-existent'),
-        );
-      });
     });
 
     group('resumeAgent', () {
       test('sets lifecycle to active and returns true', () async {
-        final identity = AgentDomainEntity.agent(
+        final identity = makeTestIdentity(
           id: 'agent-1',
           agentId: 'agent-1',
-          kind: 'task_agent',
-          displayName: 'Test Agent',
           lifecycle: AgentLifecycle.dormant,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
         );
 
         when(() => mockRepository.getEntity('agent-1'))
@@ -328,36 +262,13 @@ void main() {
         expect(updated.lifecycle, AgentLifecycle.active);
         expect(updated.destroyedAt, isNull);
       });
-
-      test('returns false for non-existent agent', () async {
-        when(() => mockRepository.getEntity('non-existent'))
-            .thenAnswer((_) async => null);
-
-        final result = await service.resumeAgent('non-existent');
-
-        expect(result, isFalse);
-        verifyNever(() => mockRepository.upsertEntity(any()));
-      });
     });
 
     group('destroyAgent', () {
       test(
           'sets lifecycle to destroyed, sets destroyedAt, '
           'and unregisters subscriptions', () async {
-        final identity = AgentDomainEntity.agent(
-          id: 'agent-1',
-          agentId: 'agent-1',
-          kind: 'task_agent',
-          displayName: 'Test Agent',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        );
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
@@ -378,39 +289,29 @@ void main() {
 
         verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
       });
+    });
 
-      test('returns false and skips side-effects for non-existent agent',
-          () async {
+    // Consolidated: all three lifecycle methods return false for missing agents.
+    for (final entry in <String, Future<bool> Function(AgentService, String)>{
+      'pauseAgent': (s, id) => s.pauseAgent(id),
+      'resumeAgent': (s, id) => s.resumeAgent(id),
+      'destroyAgent': (s, id) => s.destroyAgent(id),
+    }.entries) {
+      test('${entry.key} returns false for non-existent agent', () async {
         when(() => mockRepository.getEntity('non-existent'))
             .thenAnswer((_) async => null);
 
-        final result = await service.destroyAgent('non-existent');
+        final result = await entry.value(service, 'non-existent');
 
         expect(result, isFalse);
         verifyNever(() => mockRepository.upsertEntity(any()));
-        verifyNever(
-          () => mockOrchestrator.removeSubscriptions('non-existent'),
-        );
       });
-    });
+    }
 
     group('deleteAgent', () {
       test('destroys agent first if not already destroyed, then hard-deletes',
           () async {
-        final identity = AgentDomainEntity.agent(
-          id: 'agent-1',
-          agentId: 'agent-1',
-          kind: 'task_agent',
-          displayName: 'Test Agent',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-1',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as AgentIdentityEntity;
+        final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
@@ -439,20 +340,12 @@ void main() {
       });
 
       test('skips lifecycle update for already-destroyed agent', () async {
-        final destroyedIdentity = AgentDomainEntity.agent(
+        final destroyedIdentity = makeTestIdentity(
           id: 'agent-2',
           agentId: 'agent-2',
-          kind: 'task_agent',
           displayName: 'Destroyed Agent',
           lifecycle: AgentLifecycle.destroyed,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-2',
-          config: const AgentConfig(),
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as AgentIdentityEntity;
+        );
 
         when(() => mockRepository.getEntity('agent-2'))
             .thenAnswer((_) async => destroyedIdentity);

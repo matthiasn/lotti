@@ -1094,6 +1094,17 @@ void main() {
 
       await repo.runInTransaction(() async {
         await repo.upsertEntity(agent);
+
+        // Mid-transaction: the agent should NOT be visible outside the
+        // transaction yet (verifying true transactional isolation, not
+        // just sequential writes). We open a separate query to check.
+        final midTxVisible = await repo.getEntity(agent.id);
+        // Drift's in-memory SQLite runs in exclusive mode, so the query
+        // actually runs inside the same transaction context. We settle for
+        // verifying the write + read round-trip inside the transaction and
+        // that rollback (tested below) actually discards it.
+        expect(midTxVisible, isNotNull);
+
         await repo.upsertEntity(state);
       });
 
@@ -1104,18 +1115,33 @@ void main() {
     test('rolls back all operations when callback throws', () async {
       final agent = makeAgent();
 
-      try {
-        await repo.runInTransaction<void>(() async {
+      // The exception must propagate to the caller.
+      await expectLater(
+        repo.runInTransaction<void>(() async {
           await repo.upsertEntity(agent);
           throw Exception('deliberate failure');
-        });
-      } on Exception catch (_) {
-        // expected
-      }
+        }),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('deliberate failure'),
+          ),
+        ),
+      );
 
-      // The entity should not have been persisted.
+      // The entity should not have been persisted (rolled back).
       final entity = await repo.getEntity(agent.id);
       expect(entity, isNull);
+    });
+
+    test('returns the value produced by the callback', () async {
+      final result = await repo.runInTransaction(() async {
+        await repo.upsertEntity(makeAgent());
+        return 42;
+      });
+
+      expect(result, 42);
     });
   });
 

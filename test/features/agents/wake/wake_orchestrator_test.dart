@@ -360,7 +360,11 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1', 'entity-2'});
 
-          expect(queue.isEmpty, isTrue);
+          // Prove suppression prevented the wake — not just that the queue
+          // drained via processNext.
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
 
           controller.close();
         });
@@ -474,8 +478,11 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1'});
 
-          // Should still be suppressed.
-          expect(queue.isEmpty, isTrue);
+          // Prove suppression prevented the wake — not just that the queue
+          // drained via processNext.
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
 
           controller.close();
         });
@@ -523,12 +530,10 @@ void main() {
     group('token merging / coalescing', () {
       test('merges tokens into existing queued job for same agent', () {
         fakeAsync((async) {
-          WakeRunLogData? capturedEntry;
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntry = invocation.namedArguments[#entry] as WakeRunLogData;
-          });
+          // Pre-lock agent-1 so the first job gets deferred (stays in queue).
+          // The second batch can then merge into the queued job.
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
 
           orchestrator.addSubscription(
             AgentSubscription(
@@ -541,19 +546,30 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Emit both batches before flushing so that _onBatch processes them
-          // synchronously in sequence: the first enqueues, the second merges
-          // into the existing queued job before processNext dequeues it.
-          controller
-            ..add({'entity-1'})
-            ..add({'entity-2'});
-          async.flushMicrotasks();
+          // First batch enqueues a job (entity-1 matches).
+          emitTokens(async, controller, {'entity-1'});
+          // Job is deferred because agent-1 is locked, so it stays in queue.
 
-          // processNext should have persisted a single run that includes
-          // both trigger tokens (merged before dequeue).
-          expect(capturedEntry, isNotNull);
-          expect(capturedEntry!.agentId, 'agent-1');
+          // Second batch should merge into the existing queued job.
+          emitTokens(async, controller, {'entity-2'});
 
+          // Queue should have exactly one job (merged), not two.
+          expect(queue.length, 1);
+          final job = queue.dequeue()!;
+          expect(job.agentId, 'agent-1');
+          expect(
+            job.triggerTokens,
+            containsAll(['entity-1', 'entity-2']),
+            reason: 'Second batch tokens should have been merged into the '
+                'existing queued job',
+          );
+
+          // No wake runs should have been persisted (agent was locked).
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+
+          runner.release('agent-1');
           controller.close();
         });
       });
