@@ -38,11 +38,13 @@ import 'package:uuid/uuid.dart';
 /// 1. Load agent identity, state, current report, and agentJournal observations.
 /// 2. Build task context from journal domain via [AiInputRepository].
 /// 3. Resolve a Gemini inference provider from the AI config database.
-/// 4. Create a [ConversationRepository] conversation with tool definitions.
-/// 5. Run the conversation loop via [TaskAgentStrategy].
-/// 6. Extract updated report and new observations from the LLM response.
-/// 7. Persist report, observations, and updated state to `agent.sqlite`.
-/// 8. Clean up the in-memory conversation in a `finally` block.
+/// 4. Assemble conversation context (system prompt + user message).
+/// 5. Create a [ConversationRepository] conversation with tool definitions.
+/// 6. Persist the final assistant response as a thought message.
+/// 7. Extract and persist the updated report (from `update_report` tool call).
+/// 8. Persist new observation notes (agentJournal entries).
+/// 9. Persist updated agent state (revision, wake counter, failure count).
+/// 10. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
@@ -310,7 +312,7 @@ class TaskAgentWorkflow {
         );
       }
 
-      // 9. Update state.
+      // 9. Persist state.
       await agentRepository.upsertEntity(
         state.copyWith(
           revision: state.revision + 1,
@@ -359,7 +361,7 @@ class TaskAgentWorkflow {
 
       return WakeResult(success: false, error: e.toString());
     } finally {
-      // 9. Clean up in-memory conversation to prevent resource leaks.
+      // 10. Clean up in-memory conversation to prevent resource leaks.
       conversationRepository.deleteConversation(conversationId);
     }
   }

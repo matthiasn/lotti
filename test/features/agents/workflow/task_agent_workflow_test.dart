@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -12,6 +14,8 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -87,6 +91,17 @@ class MockConversationRepository extends ConversationRepository {
       );
     }
   }
+}
+
+/// Like [MockConversationRepository] but returns null from getConversation,
+/// simulating a scenario where the conversation was already cleaned up.
+class _NullManagerConversationRepository extends MockConversationRepository {
+  // ignore: use_super_parameters
+  _NullManagerConversationRepository(MockConversationManager mockManager)
+      : super(mockManager);
+
+  @override
+  ConversationManager? getConversation(String conversationId) => null;
 }
 
 void main() {
@@ -1670,6 +1685,223 @@ void main() {
         });
       });
 
+      group('checklist handler success paths (with getIt)', () {
+        late MockLoggingService mockLoggingService;
+
+        /// Task with no checklists (empty checklistIds), correct category.
+        final taskNoChecklists = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            title: 'Task for checklist tests',
+            statusHistory: [],
+            dateTo: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+          ),
+          meta: Metadata(
+            id: taskId,
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            categoryId: 'cat-001',
+          ),
+        );
+
+        /// Task with an existing checklist.
+        final taskWithChecklist = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            title: 'Task with checklist',
+            statusHistory: [],
+            dateTo: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            checklistIds: ['checklist-001'],
+          ),
+          meta: Metadata(
+            id: taskId,
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            categoryId: 'cat-001',
+          ),
+        );
+
+        setUp(() {
+          mockLoggingService = MockLoggingService();
+
+          // Register mocks needed by handlers that use getIt internally.
+          if (!getIt.isRegistered<JournalDb>()) {
+            getIt.registerSingleton<JournalDb>(mockJournalDb);
+          }
+          if (!getIt.isRegistered<LoggingService>()) {
+            getIt.registerSingleton<LoggingService>(mockLoggingService);
+          }
+        });
+
+        tearDown(() async {
+          await getIt.reset();
+        });
+
+        test(
+            'add_multiple_checklist_items creates items via addItemToChecklist',
+            () async {
+          stubFullExecutePath();
+
+          // Return task with existing checklist so addItemToChecklist path
+          // is used (simpler than autoCreateChecklist path).
+          when(() => mockJournalDb.journalEntityById(taskId))
+              .thenAnswer((_) async => taskWithChecklist);
+          when(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          ).thenReturn(null);
+
+          // Stub addItemToChecklist to return a real ChecklistItem.
+          when(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: any(named: 'checklistId'),
+              title: any(named: 'title'),
+              isChecked: any(named: 'isChecked'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async {
+            return ChecklistItem(
+              meta: Metadata(
+                id: 'new-item-1',
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+              ),
+              data: const ChecklistItemData(
+                title: 'Buy milk',
+                isChecked: false,
+                linkedChecklists: ['checklist-001'],
+              ),
+            );
+          });
+
+          mockConversationRepository.sendMessageDelegate = ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            if (strategy is TaskAgentStrategy) {
+              await strategy.processToolCalls(
+                toolCalls: [
+                  const ChatCompletionMessageToolCall(
+                    id: 'tc-batch',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: 'add_multiple_checklist_items',
+                      arguments: '{"items":[{"title":"Buy milk"}]}',
+                    ),
+                  ),
+                ],
+                manager: mockConversationManager,
+              );
+            }
+          };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          // Verify the handler's addItemToChecklist was actually called.
+          verify(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: 'checklist-001',
+              title: 'Buy milk',
+              isChecked: false,
+              categoryId: 'cat-001',
+            ),
+          ).called(1);
+        });
+
+        test(
+            'update_checklist_items with no checklists on task returns '
+            'empty response', () async {
+          stubFullExecutePath();
+
+          // Return task with NO checklists — executeUpdates skips all items.
+          when(() => mockJournalDb.journalEntityById(taskId))
+              .thenAnswer((_) async => taskNoChecklists);
+          when(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          ).thenReturn(null);
+
+          mockConversationRepository.sendMessageDelegate = ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            if (strategy is TaskAgentStrategy) {
+              await strategy.processToolCalls(
+                toolCalls: [
+                  const ChatCompletionMessageToolCall(
+                    id: 'tc-update',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: 'update_checklist_items',
+                      arguments: '{"items":[{"id":"item-1","isChecked":true}]}',
+                    ),
+                  ),
+                ],
+                manager: mockConversationManager,
+              );
+            }
+          };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          // The response should contain skippedItems since task has no
+          // checklists.
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-update',
+              response: any(
+                named: 'response',
+                that: contains('skippedItems'),
+              ),
+            ),
+          ).called(1);
+        });
+      });
+
       test('task entity is not a Task type returns error', () async {
         stubFullExecutePath();
 
@@ -1804,6 +2036,43 @@ void main() {
         expect(payloads, isNotEmpty);
         final payload = payloads.first as AgentMessagePayloadEntity;
         expect(payload.content['text'], 'Final analysis complete.');
+      });
+
+      test('no thought persisted when getConversation returns null', () async {
+        // Use a new repository mock that returns null for getConversation.
+        final nullManagerRepo =
+            _NullManagerConversationRepository(mockConversationManager);
+        final nullWorkflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: nullManagerRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+        );
+
+        final result = await nullWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        // No thought payload since manager was null.
+        final captured =
+            verify(() => mockAgentRepository.upsertEntity(captureAny()))
+                .captured;
+        final payloads = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
+            )
+            .toList();
+        expect(payloads, isEmpty);
       });
 
       test('no thought persisted when no assistant content', () async {

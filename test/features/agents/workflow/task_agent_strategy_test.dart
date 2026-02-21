@@ -424,6 +424,34 @@ void main() {
         ).called(1);
       });
 
+      test('handles null JSON arguments gracefully', () async {
+        // When the LLM sends literal 'null' as arguments, jsonDecode returns
+        // null and the null-coalescing fallback produces an empty map.
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-null-args',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode(null),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // With empty args, 'observations' is null → not a List → error path.
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-null-args',
+            response: 'Error: "observations" must be an array of strings.',
+          ),
+        ).called(1);
+      });
+
       test('returns error when observations is not an array', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
