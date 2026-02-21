@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -61,17 +62,21 @@ class TaskAgentService {
 
     // Update state with activeTaskId.
     final state = await repository.getAgentState(identity.agentId);
-    if (state != null) {
-      final updatedState = state.copyWith(
-        slots: state.slots.copyWith(activeTaskId: taskId),
-        updatedAt: DateTime.now(),
+    if (state == null) {
+      throw StateError(
+        'Agent ${identity.agentId} was just created but has no state entity',
       );
-      await repository.upsertEntity(updatedState);
     }
+
+    final now = clock.now();
+    final updatedState = state.copyWith(
+      slots: state.slots.copyWith(activeTaskId: taskId),
+      updatedAt: now,
+    );
+    await repository.upsertEntity(updatedState);
 
     // Create agent_task link: agent → task.
     final linkId = _uuid.v4();
-    final now = DateTime.now();
     await repository.upsertLink(
       AgentLink.agentTask(
         id: linkId,
@@ -161,14 +166,23 @@ class TaskAgentService {
     for (final agent in activeAgents) {
       if (agent.kind != _agentKind) continue;
 
-      final links = await repository.getLinksFrom(
-        agent.agentId,
-        type: 'agent_task',
-      );
+      try {
+        final links = await repository.getLinksFrom(
+          agent.agentId,
+          type: 'agent_task',
+        );
 
-      for (final link in links) {
-        _registerTaskSubscription(agent.agentId, link.toId);
-        count++;
+        for (final link in links) {
+          _registerTaskSubscription(agent.agentId, link.toId);
+          count++;
+        }
+      } catch (e, s) {
+        developer.log(
+          'Failed to restore subscriptions for agent ${agent.agentId}',
+          name: 'TaskAgentService',
+          error: e,
+          stackTrace: s,
+        );
       }
     }
 

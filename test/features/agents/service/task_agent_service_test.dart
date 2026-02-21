@@ -222,7 +222,7 @@ void main() {
         );
       });
 
-      test('handles null state gracefully (skips state update)', () async {
+      test('throws StateError when agent state is null', () async {
         final identity = makeIdentity();
 
         when(() => mockRepository.getLinksTo('task-3', type: 'agent_task'))
@@ -237,28 +237,14 @@ void main() {
         ).thenAnswer((_) async => identity);
         when(() => mockRepository.getAgentState('agent-1'))
             .thenAnswer((_) async => null);
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(
-          () => mockOrchestrator.enqueueManualWake(
-            agentId: any(named: 'agentId'),
-            reason: any(named: 'reason'),
-            triggerTokens: any(named: 'triggerTokens'),
+
+        expect(
+          () => service.createTaskAgent(
+            taskId: 'task-3',
+            allowedCategoryIds: const {},
           ),
-        ).thenReturn(null);
-
-        final result = await service.createTaskAgent(
-          taskId: 'task-3',
-          allowedCategoryIds: const {},
+          throwsStateError,
         );
-
-        expect(result.agentId, 'agent-1');
-
-        // State upsert should NOT be called when state is null
-        verifyNever(() => mockRepository.upsertEntity(any()));
-
-        // Link should still be created
-        verify(() => mockRepository.upsertLink(any())).called(1);
       });
     });
 

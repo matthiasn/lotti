@@ -208,13 +208,25 @@ class AgentToolExecutor {
       final result = await executeHandler();
 
       // 4. Capture vector clock for self-notification suppression.
+      //    Isolated in its own try/catch so a failure here does not mask the
+      //    successful tool execution result.
       if (result.success && result.mutatedEntityId != null) {
-        final vc = await readVectorClock(result.mutatedEntityId!);
-        if (vc != null) {
-          _mutatedEntries[result.mutatedEntityId!] = vc;
+        try {
+          final vc = await readVectorClock(result.mutatedEntityId!);
+          if (vc != null) {
+            _mutatedEntries[result.mutatedEntityId!] = vc;
+            developer.log(
+              'Captured vector clock for ${result.mutatedEntityId}: $vc',
+              name: 'AgentToolExecutor',
+            );
+          }
+        } catch (e, s) {
           developer.log(
-            'Captured vector clock for ${result.mutatedEntityId}: $vc',
+            'Failed to capture vector clock for ${result.mutatedEntityId} '
+            '— self-notification suppression may not work for this entity',
             name: 'AgentToolExecutor',
+            error: e,
+            stackTrace: s,
           );
         }
       }

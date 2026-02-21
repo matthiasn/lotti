@@ -34,6 +34,13 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       $customConstraints: '');
+  static const VerificationMeta _threadIdMeta =
+      const VerificationMeta('threadId');
+  late final GeneratedColumn<String> threadId = GeneratedColumn<String>(
+      'thread_id', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
@@ -76,6 +83,7 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
         agentId,
         type,
         subtype,
+        threadId,
         createdAt,
         updatedAt,
         deletedAt,
@@ -112,6 +120,10 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
     if (data.containsKey('subtype')) {
       context.handle(_subtypeMeta,
           subtype.isAcceptableOrUnknown(data['subtype']!, _subtypeMeta));
+    }
+    if (data.containsKey('thread_id')) {
+      context.handle(_threadIdMeta,
+          threadId.isAcceptableOrUnknown(data['thread_id']!, _threadIdMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -160,6 +172,8 @@ class AgentEntities extends Table with TableInfo<AgentEntities, AgentEntity> {
           .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
       subtype: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}subtype']),
+      threadId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}thread_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -187,6 +201,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
   final String agentId;
   final String type;
   final String? subtype;
+  final String? threadId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -197,6 +212,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       required this.agentId,
       required this.type,
       this.subtype,
+      this.threadId,
       required this.createdAt,
       required this.updatedAt,
       this.deletedAt,
@@ -210,6 +226,9 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
     map['type'] = Variable<String>(type);
     if (!nullToAbsent || subtype != null) {
       map['subtype'] = Variable<String>(subtype);
+    }
+    if (!nullToAbsent || threadId != null) {
+      map['thread_id'] = Variable<String>(threadId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -229,6 +248,9 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       subtype: subtype == null && nullToAbsent
           ? const Value.absent()
           : Value(subtype),
+      threadId: threadId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(threadId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -247,6 +269,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       agentId: serializer.fromJson<String>(json['agent_id']),
       type: serializer.fromJson<String>(json['type']),
       subtype: serializer.fromJson<String?>(json['subtype']),
+      threadId: serializer.fromJson<String?>(json['thread_id']),
       createdAt: serializer.fromJson<DateTime>(json['created_at']),
       updatedAt: serializer.fromJson<DateTime>(json['updated_at']),
       deletedAt: serializer.fromJson<DateTime?>(json['deleted_at']),
@@ -262,6 +285,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       'agent_id': serializer.toJson<String>(agentId),
       'type': serializer.toJson<String>(type),
       'subtype': serializer.toJson<String?>(subtype),
+      'thread_id': serializer.toJson<String?>(threadId),
       'created_at': serializer.toJson<DateTime>(createdAt),
       'updated_at': serializer.toJson<DateTime>(updatedAt),
       'deleted_at': serializer.toJson<DateTime?>(deletedAt),
@@ -275,6 +299,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
           String? agentId,
           String? type,
           Value<String?> subtype = const Value.absent(),
+          Value<String?> threadId = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
           Value<DateTime?> deletedAt = const Value.absent(),
@@ -285,6 +310,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
         agentId: agentId ?? this.agentId,
         type: type ?? this.type,
         subtype: subtype.present ? subtype.value : this.subtype,
+        threadId: threadId.present ? threadId.value : this.threadId,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -297,6 +323,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
       agentId: data.agentId.present ? data.agentId.value : this.agentId,
       type: data.type.present ? data.type.value : this.type,
       subtype: data.subtype.present ? data.subtype.value : this.subtype,
+      threadId: data.threadId.present ? data.threadId.value : this.threadId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -315,6 +342,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
           ..write('agentId: $agentId, ')
           ..write('type: $type, ')
           ..write('subtype: $subtype, ')
+          ..write('threadId: $threadId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -325,8 +353,8 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
   }
 
   @override
-  int get hashCode => Object.hash(id, agentId, type, subtype, createdAt,
-      updatedAt, deletedAt, serialized, schemaVersion);
+  int get hashCode => Object.hash(id, agentId, type, subtype, threadId,
+      createdAt, updatedAt, deletedAt, serialized, schemaVersion);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -335,6 +363,7 @@ class AgentEntity extends DataClass implements Insertable<AgentEntity> {
           other.agentId == this.agentId &&
           other.type == this.type &&
           other.subtype == this.subtype &&
+          other.threadId == this.threadId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
@@ -347,6 +376,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
   final Value<String> agentId;
   final Value<String> type;
   final Value<String?> subtype;
+  final Value<String?> threadId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -358,6 +388,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     this.agentId = const Value.absent(),
     this.type = const Value.absent(),
     this.subtype = const Value.absent(),
+    this.threadId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -370,6 +401,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     required String agentId,
     required String type,
     this.subtype = const Value.absent(),
+    this.threadId = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.deletedAt = const Value.absent(),
@@ -387,6 +419,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     Expression<String>? agentId,
     Expression<String>? type,
     Expression<String>? subtype,
+    Expression<String>? threadId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -399,6 +432,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
       if (agentId != null) 'agent_id': agentId,
       if (type != null) 'type': type,
       if (subtype != null) 'subtype': subtype,
+      if (threadId != null) 'thread_id': threadId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -413,6 +447,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
       Value<String>? agentId,
       Value<String>? type,
       Value<String?>? subtype,
+      Value<String?>? threadId,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<DateTime?>? deletedAt,
@@ -424,6 +459,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
       agentId: agentId ?? this.agentId,
       type: type ?? this.type,
       subtype: subtype ?? this.subtype,
+      threadId: threadId ?? this.threadId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -447,6 +483,9 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
     }
     if (subtype.present) {
       map['subtype'] = Variable<String>(subtype.value);
+    }
+    if (threadId.present) {
+      map['thread_id'] = Variable<String>(threadId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -476,6 +515,7 @@ class AgentEntitiesCompanion extends UpdateCompanion<AgentEntity> {
           ..write('agentId: $agentId, ')
           ..write('type: $type, ')
           ..write('subtype: $subtype, ')
+          ..write('threadId: $threadId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -2014,6 +2054,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final Index idxAgentEntitiesAgentTypeSub = Index(
       'idx_agent_entities_agent_type_sub',
       'CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities (agent_id, type, subtype, created_at DESC)');
+  late final Index idxAgentEntitiesThread = Index('idx_agent_entities_thread',
+      'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)');
   late final AgentLinks agentLinks = AgentLinks(this);
   late final Index idxAgentLinksFrom = Index('idx_agent_links_from',
       'CREATE INDEX idx_agent_links_from ON agent_links (from_id, type)');
@@ -2068,9 +2110,24 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   }
 
   Selectable<AgentEntity> getAgentEntityById(String id) {
-    return customSelect('SELECT * FROM agent_entities WHERE id = ?1',
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
         variables: [
           Variable<String>(id)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentEntity> getAgentMessagesByThread(
+      String agentId, String? threadId, int limit) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'agentMessage\' AND thread_id = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
+        variables: [
+          Variable<String>(agentId),
+          Variable<String>(threadId),
+          Variable<int>(limit)
         ],
         readsFrom: {
           agentEntities,
@@ -2209,6 +2266,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         idxAgentEntitiesAgentId,
         idxAgentEntitiesType,
         idxAgentEntitiesAgentTypeSub,
+        idxAgentEntitiesThread,
         agentLinks,
         idxAgentLinksFrom,
         idxAgentLinksTo,
@@ -2226,6 +2284,7 @@ typedef $AgentEntitiesCreateCompanionBuilder = AgentEntitiesCompanion Function({
   required String agentId,
   required String type,
   Value<String?> subtype,
+  Value<String?> threadId,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<DateTime?> deletedAt,
@@ -2238,6 +2297,7 @@ typedef $AgentEntitiesUpdateCompanionBuilder = AgentEntitiesCompanion Function({
   Value<String> agentId,
   Value<String> type,
   Value<String?> subtype,
+  Value<String?> threadId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> deletedAt,
@@ -2266,6 +2326,9 @@ class $AgentEntitiesFilterComposer
 
   ColumnFilters<String> get subtype => $composableBuilder(
       column: $table.subtype, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get threadId => $composableBuilder(
+      column: $table.threadId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -2304,6 +2367,9 @@ class $AgentEntitiesOrderingComposer
   ColumnOrderings<String> get subtype => $composableBuilder(
       column: $table.subtype, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get threadId => $composableBuilder(
+      column: $table.threadId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -2341,6 +2407,9 @@ class $AgentEntitiesAnnotationComposer
 
   GeneratedColumn<String> get subtype =>
       $composableBuilder(column: $table.subtype, builder: (column) => column);
+
+  GeneratedColumn<String> get threadId =>
+      $composableBuilder(column: $table.threadId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2385,6 +2454,7 @@ class $AgentEntitiesTableManager extends RootTableManager<
             Value<String> agentId = const Value.absent(),
             Value<String> type = const Value.absent(),
             Value<String?> subtype = const Value.absent(),
+            Value<String?> threadId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
@@ -2397,6 +2467,7 @@ class $AgentEntitiesTableManager extends RootTableManager<
             agentId: agentId,
             type: type,
             subtype: subtype,
+            threadId: threadId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             deletedAt: deletedAt,
@@ -2409,6 +2480,7 @@ class $AgentEntitiesTableManager extends RootTableManager<
             required String agentId,
             required String type,
             Value<String?> subtype = const Value.absent(),
+            Value<String?> threadId = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<DateTime?> deletedAt = const Value.absent(),
@@ -2421,6 +2493,7 @@ class $AgentEntitiesTableManager extends RootTableManager<
             agentId: agentId,
             type: type,
             subtype: subtype,
+            threadId: threadId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             deletedAt: deletedAt,

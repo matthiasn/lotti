@@ -88,16 +88,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Activity Log';
 
   @override
-  String get agentControlsDestroyButton => 'Destroy';
-
-  @override
-  String get agentControlsDestroyDialogContent =>
-      'This will permanently deactivate the agent. Its history will be preserved for audit.';
-
-  @override
-  String get agentControlsDestroyDialogTitle => 'Destroy Agent?';
-
-  @override
   String get agentControlsDeleteButton => 'Delete permanently';
 
   @override
@@ -106,6 +96,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
+  String get agentControlsDestroyButton => 'Destroy';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'This will permanently deactivate the agent. Its history will be preserved for audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Destroy Agent?';
 
   @override
   String get agentControlsDestroyedMessage => 'This agent has been destroyed.';
@@ -3552,6 +3552,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Tagy';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Vytvořit agenta';
 
   @override
   String get taskCategoryAllLabel => 'vše';

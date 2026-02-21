@@ -263,24 +263,6 @@ abstract class AppLocalizations {
   /// **'Activity Log'**
   String get agentActivityLogHeading;
 
-  /// No description provided for @agentControlsDestroyButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Destroy'**
-  String get agentControlsDestroyButton;
-
-  /// No description provided for @agentControlsDestroyDialogContent.
-  ///
-  /// In en, this message translates to:
-  /// **'This will permanently deactivate the agent. Its history will be preserved for audit.'**
-  String get agentControlsDestroyDialogContent;
-
-  /// No description provided for @agentControlsDestroyDialogTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Destroy Agent?'**
-  String get agentControlsDestroyDialogTitle;
-
   /// No description provided for @agentControlsDeleteButton.
   ///
   /// In en, this message translates to:
@@ -298,6 +280,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete Agent?'**
   String get agentControlsDeleteDialogTitle;
+
+  /// No description provided for @agentControlsDestroyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy'**
+  String get agentControlsDestroyButton;
+
+  /// No description provided for @agentControlsDestroyDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently deactivate the agent. Its history will be preserved for audit.'**
+  String get agentControlsDestroyDialogContent;
+
+  /// No description provided for @agentControlsDestroyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy Agent?'**
+  String get agentControlsDestroyDialogTitle;
 
   /// No description provided for @agentControlsDestroyedMessage.
   ///
@@ -6467,6 +6467,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tags'**
   String get syncStepTags;
+
+  /// No description provided for @taskAgentChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get taskAgentChipLabel;
+
+  /// No description provided for @taskAgentCreateChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Agent'**
+  String get taskAgentCreateChipLabel;
 
   /// No description provided for @taskCategoryAllLabel.
   ///

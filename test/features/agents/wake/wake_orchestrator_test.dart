@@ -1033,6 +1033,101 @@ void main() {
       });
     });
 
+    group('monotonic wake counter', () {
+      test('identical notifications produce different run keys', () {
+        fakeAsync((async) {
+          final capturedEntries = <WakeRunLogData>[];
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntries.add(
+              invocation.namedArguments[#entry] as WakeRunLogData,
+            );
+          });
+
+          orchestrator
+            ..wakeExecutor =
+                (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.addSubscription(
+            AgentSubscription(
+              id: 'sub-1',
+              agentId: 'agent-1',
+              matchEntityIds: {'entity-1'},
+            ),
+          );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // First notification
+          emitTokens(async, controller, {'entity-1'});
+
+          // Second identical notification — must produce a different run key
+          emitTokens(async, controller, {'entity-1'});
+
+          expect(capturedEntries.length, equals(2));
+          expect(
+            capturedEntries[0].runKey,
+            isNot(equals(capturedEntries[1].runKey)),
+            reason: 'Identical notifications must produce distinct run keys '
+                'via the monotonic wake counter',
+          );
+
+          controller.close();
+        });
+      });
+
+      test('removeSubscriptions resets counter for agent', () {
+        fakeAsync((async) {
+          final capturedEntries = <WakeRunLogData>[];
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntries.add(
+              invocation.namedArguments[#entry] as WakeRunLogData,
+            );
+          });
+
+          orchestrator
+            ..wakeExecutor =
+                (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.addSubscription(
+            AgentSubscription(
+              id: 'sub-1',
+              agentId: 'agent-1',
+              matchEntityIds: {'entity-1'},
+            ),
+          );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Fire once to increment counter
+          emitTokens(async, controller, {'entity-1'});
+
+          // Remove and re-add subscription (counter resets)
+          orchestrator.removeSubscriptions('agent-1');
+          orchestrator.addSubscription(
+            AgentSubscription(
+              id: 'sub-1',
+              agentId: 'agent-1',
+              matchEntityIds: {'entity-1'},
+            ),
+          );
+
+          // Fire again — counter is back to 0, same as the initial run key
+          emitTokens(async, controller, {'entity-1'});
+
+          expect(capturedEntries.length, equals(2));
+          // After reset, the counter starts at 0 again, producing the same
+          // run key as the first invocation.
+          expect(capturedEntries[0].runKey, equals(capturedEntries[1].runKey));
+
+          controller.close();
+        });
+      });
+    });
+
     group('AgentSubscription', () {
       test('stores all fields correctly', () {
         bool predicateCalled(Set<String> tokens) => true;

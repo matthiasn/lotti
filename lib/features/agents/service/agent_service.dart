@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -42,7 +43,7 @@ class AgentService {
     final agentId = _uuid.v4();
     final stateId = _uuid.v4();
     final linkId = _uuid.v4();
-    final now = DateTime.now();
+    final now = clock.now();
 
     final identity = AgentDomainEntity.agent(
       id: agentId,
@@ -171,11 +172,11 @@ class AgentService {
       return;
     }
 
+    final now = clock.now();
     final updated = identity.copyWith(
       lifecycle: lifecycle,
-      updatedAt: DateTime.now(),
-      destroyedAt:
-          lifecycle == AgentLifecycle.destroyed ? DateTime.now() : null,
+      updatedAt: now,
+      destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
     );
     await repository.upsertEntity(updated);
   }

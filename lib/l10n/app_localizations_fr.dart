@@ -91,16 +91,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentActivityLogHeading => 'Journal d\'activité';
 
   @override
-  String get agentControlsDestroyButton => 'Détruire';
-
-  @override
-  String get agentControlsDestroyDialogContent =>
-      'Cela désactivera définitivement l\'agent. Son historique sera conservé pour audit.';
-
-  @override
-  String get agentControlsDestroyDialogTitle => 'Détruire l\'agent ?';
-
-  @override
   String get agentControlsDeleteButton => 'Delete permanently';
 
   @override
@@ -109,6 +99,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
+  String get agentControlsDestroyButton => 'Détruire';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Cela désactivera définitivement l\'agent. Son historique sera conservé pour audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Détruire l\'agent ?';
 
   @override
   String get agentControlsDestroyedMessage => 'Cet agent a été détruit.';
@@ -3640,6 +3640,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Tags';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Créer un agent';
 
   @override
   String get taskCategoryAllLabel => 'tout';

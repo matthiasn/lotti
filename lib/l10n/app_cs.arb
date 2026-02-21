@@ -1348,6 +1348,8 @@
   "syncStepLabels": "Štítky",
   "syncStepMeasurables": "Měřitelné hodnoty",
   "syncStepTags": "Tagy",
+  "taskAgentChipLabel": "Agent",
+  "taskAgentCreateChipLabel": "Vytvořit agenta",
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",

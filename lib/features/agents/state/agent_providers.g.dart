@@ -52,7 +52,7 @@ final class AgentDatabaseProvider
   }
 }
 
-String _$agentDatabaseHash() => r'34b868b283547e682cd5d6fc3129cbbeeb0b3600';
+String _$agentDatabaseHash() => r'32b4e998e7242188077d24ec885585cafd2ae33c';
 
 /// The agent repository wrapping the database.
 

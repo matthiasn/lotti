@@ -157,7 +157,18 @@ class TaskTitleHandler {
     );
 
     try {
-      await journalRepository.updateJournalEntity(updatedTask);
+      final success = await journalRepository.updateJournalEntity(updatedTask);
+
+      if (!success) {
+        const message = 'Failed to update title: repository returned false.';
+        developer.log(message, name: 'TaskTitleHandler');
+        return TaskTitleResult(
+          success: false,
+          message: message,
+          requestedTitle: trimmed,
+          error: message,
+        );
+      }
 
       // Update local state so subsequent handlers see the new title.
       task = updatedTask;

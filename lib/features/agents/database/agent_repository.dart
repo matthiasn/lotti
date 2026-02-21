@@ -103,19 +103,17 @@ class AgentRepository {
     String threadId, {
     int? limit,
   }) async {
-    // The drift named queries do not expose a thread-id filter directly, so
-    // fall back to a type-filtered fetch and filter in Dart.
-    final rows =
-        await _db.getAgentEntitiesByType(agentId, 'agentMessage').get();
-    final messages = rows
+    final rows = await _db
+        .getAgentMessagesByThread(
+          agentId,
+          threadId,
+          limit ?? 0x7FFFFFFF,
+        )
+        .get();
+    return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<AgentMessageEntity>()
-        .where((m) => m.threadId == threadId)
         .toList();
-    if (limit != null && messages.length > limit) {
-      return messages.take(limit).toList();
-    }
-    return messages;
   }
 
   /// Fetch the latest [AgentReportEntity] for [agentId] in [scope], or `null`

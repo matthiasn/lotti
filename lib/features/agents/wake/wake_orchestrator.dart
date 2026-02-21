@@ -81,6 +81,16 @@ class WakeOrchestrator {
 
   final _subscriptions = <AgentSubscription>[];
 
+  /// Monotonic wake counter per agent.
+  ///
+  /// Incremented each time a subscription-driven wake is enqueued, ensuring
+  /// that identical token sets produce distinct run keys even when the same
+  /// notification arrives twice while the agent is busy.  The counter is
+  /// kept in-memory (reset on app restart) since persistence is not required
+  /// — the counter only needs to be unique within a single orchestrator
+  /// lifecycle.
+  final _wakeCounters = <String, int>{};
+
   /// Self-notification suppression state.
   ///
   /// Maps agentId → [_MutationRecord] (entity IDs + timestamp). When a
@@ -103,10 +113,11 @@ class WakeOrchestrator {
   /// arrive.
   void addSubscription(AgentSubscription sub) => _subscriptions.add(sub);
 
-  /// Remove all subscriptions for [agentId] and clean up mutation history.
+  /// Remove all subscriptions for [agentId] and clean up internal state.
   void removeSubscriptions(String agentId) {
     _subscriptions.removeWhere((s) => s.agentId == agentId);
     _recentlyMutatedEntries.remove(agentId);
+    _wakeCounters.remove(agentId);
   }
 
   // ── Self-notification suppression ──────────────────────────────────────────
@@ -134,6 +145,7 @@ class WakeOrchestrator {
   /// Each batch is a `Set<String>` of affected entity IDs / notification
   /// tokens as emitted by `UpdateNotifications.updateStream`.
   void start(Stream<Set<String>> notificationStream) {
+    _notificationSub?.cancel();
     _notificationSub = notificationStream.listen(_onBatch);
   }
 
@@ -206,14 +218,14 @@ class WakeOrchestrator {
       if (predicate != null && !predicate(matched)) continue;
 
       // 4. Derive a deterministic run key and enqueue.
-      //    The wakeCounter is fetched asynchronously; for MVP we use 0 as a
-      //    placeholder — the workflow layer will inject the real counter when
-      //    it builds the final run key before persisting.
+      final counter = _wakeCounters[sub.agentId] ?? 0;
+      _wakeCounters[sub.agentId] = counter + 1;
+
       final runKey = RunKeyFactory.forSubscription(
         agentId: sub.agentId,
         subscriptionId: sub.id,
         batchTokens: matched,
-        wakeCounter: 0,
+        wakeCounter: counter,
       );
 
       final job = WakeJob(

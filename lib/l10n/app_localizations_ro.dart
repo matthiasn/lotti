@@ -88,16 +88,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentActivityLogHeading => 'Jurnal de activitate';
 
   @override
-  String get agentControlsDestroyButton => 'Distruge';
-
-  @override
-  String get agentControlsDestroyDialogContent =>
-      'Agentul va fi dezactivat permanent. Istoricul său va fi păstrat pentru audit.';
-
-  @override
-  String get agentControlsDestroyDialogTitle => 'Distrugi agentul?';
-
-  @override
   String get agentControlsDeleteButton => 'Delete permanently';
 
   @override
@@ -106,6 +96,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
+  String get agentControlsDestroyButton => 'Distruge';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Agentul va fi dezactivat permanent. Istoricul său va fi păstrat pentru audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Distrugi agentul?';
 
   @override
   String get agentControlsDestroyedMessage => 'Acest agent a fost distrus.';
@@ -3577,6 +3577,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Etichete';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Creează agent';
 
   @override
   String get taskCategoryAllLabel => 'toate';

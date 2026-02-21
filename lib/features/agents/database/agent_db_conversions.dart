@@ -28,11 +28,15 @@ class AgentDbConversions {
       unknown: (e) => e.deletedAt,
     );
 
+    final threadId = entity.mapOrNull(agentMessage: (m) => m.threadId);
+
     return AgentEntitiesCompanion(
       id: Value(entity.id),
       agentId: Value(entity.agentId),
       type: Value(entityType(entity)),
       subtype: subtype != null ? Value(subtype) : const Value<String?>.absent(),
+      threadId:
+          threadId != null ? Value(threadId) : const Value<String?>.absent(),
       createdAt: Value(entityCreatedAt(entity)),
       updatedAt: Value(entityUpdatedAt(entity)),
       deletedAt: Value(deletedAt),

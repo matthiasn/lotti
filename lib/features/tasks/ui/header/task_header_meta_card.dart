@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/ui/header/task_due_date_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_wrapper.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -115,8 +116,7 @@ class _TaskAgentChip extends ConsumerWidget {
               size: 16,
               color: context.colorScheme.primary,
             ),
-            // TODO(l10n): localize label
-            label: const Text('Agent'),
+            label: Text(context.messages.taskAgentChipLabel),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -134,8 +134,7 @@ class _TaskAgentChip extends ConsumerWidget {
             size: 16,
             color: context.colorScheme.onSurfaceVariant,
           ),
-          // TODO(l10n): localize label
-          label: const Text('Create Agent'),
+          label: Text(context.messages.taskAgentCreateChipLabel),
           onPressed: () => _createTaskAgent(context, ref),
         );
       },

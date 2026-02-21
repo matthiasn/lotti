@@ -282,6 +282,29 @@ void main() {
         expect(executor.mutatedEntries, isEmpty);
       });
 
+      test('readVectorClock failure does not mask successful execution',
+          () async {
+        final result = await executor.execute(
+          toolName: 'set_task_title',
+          args: {'title': 'New Title'},
+          targetEntityId: targetEntityId,
+          resolveCategoryId: (_) async => allowedCategoryId,
+          executeHandler: () async => const ToolExecutionResult(
+            success: true,
+            output: 'done',
+            mutatedEntityId: targetEntityId,
+          ),
+          readVectorClock: (_) async => throw Exception('vc read failed'),
+        );
+
+        // The tool execution succeeded — the result should reflect that,
+        // even though readVectorClock threw.
+        expect(result.success, isTrue);
+        expect(result.output, 'done');
+        // Vector clock was not captured due to the error.
+        expect(executor.mutatedEntries, isEmpty);
+      });
+
       test('mutatedEntries is unmodifiable', () {
         expect(
           () => executor.mutatedEntries['x'] = const VectorClock({'a': 1}),

@@ -28,7 +28,9 @@ part 'agent_providers.g.dart';
 /// The agent database instance (lazy singleton).
 @Riverpod(keepAlive: true)
 AgentDatabase agentDatabase(Ref ref) {
-  return AgentDatabase();
+  final db = AgentDatabase();
+  ref.onDispose(db.close);
+  return db;
 }
 
 /// The agent repository wrapping the database.

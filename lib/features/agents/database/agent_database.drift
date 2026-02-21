@@ -6,6 +6,7 @@ CREATE TABLE agent_entities (
   agent_id TEXT NOT NULL,
   type TEXT NOT NULL,
   subtype TEXT,
+  thread_id TEXT,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   deleted_at DATETIME,
@@ -16,6 +17,7 @@ CREATE TABLE agent_entities (
 CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
+CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
 
 CREATE TABLE agent_links (
   id TEXT NOT NULL PRIMARY KEY,
@@ -72,7 +74,9 @@ getAgentEntitiesByType: SELECT * FROM agent_entities WHERE agent_id = :agentId A
 
 getAgentEntitiesByTypeAndSubtype: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = :type AND subtype = :subtype AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
-getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id;
+getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id AND deleted_at IS NULL;
+
+getAgentMessagesByThread: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'agentMessage' AND thread_id = :threadId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getAgentLinksByFromId: SELECT * FROM agent_links WHERE from_id = :fromId AND deleted_at IS NULL;
 

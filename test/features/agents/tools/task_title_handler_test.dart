@@ -129,6 +129,25 @@ void main() {
         expect(result.requestedTitle, equals('New Title'));
       });
 
+      test('returns error when repository returns false', () async {
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => false);
+
+        final handler = TaskTitleHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('New Title');
+
+        expect(result.success, isFalse);
+        expect(result.didWrite, isFalse);
+        expect(result.error, contains('repository returned false'));
+        expect(result.requestedTitle, equals('New Title'));
+        // Local task should NOT be updated on failure.
+        expect(handler.task.data.title, equals('Original Title'));
+      });
+
       test('updates local task field after successful write', () async {
         when(() => mockJournalRepo.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
