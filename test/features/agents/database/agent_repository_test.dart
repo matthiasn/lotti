@@ -832,6 +832,21 @@ void main() {
         expect(result!.status, 'running');
       });
 
+      test('updates status and startedAt', () async {
+        await repo.insertWakeRun(entry: makeWakeRun());
+
+        final startedAt = DateTime(2026, 2, 20, 9, 30);
+        await repo.updateWakeRunStatus(
+          'run-key-001',
+          'running',
+          startedAt: startedAt,
+        );
+
+        final result = await repo.getWakeRun('run-key-001');
+        expect(result!.status, 'running');
+        expect(result.startedAt, startedAt);
+      });
+
       test('updates status, completedAt and errorMessage', () async {
         await repo.insertWakeRun(entry: makeWakeRun());
 

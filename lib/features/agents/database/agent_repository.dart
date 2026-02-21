@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
 /// Typed CRUD repository wrapping [AgentDatabase] and [AgentDbConversions].
 ///
@@ -149,7 +150,7 @@ class AgentRepository {
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
   /// Insert or update a link using on-conflict update semantics against the
-  /// unique `(from_id, to_id, type)` constraint.
+  /// primary key (`id`).
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
     await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
@@ -194,16 +195,20 @@ class AgentRepository {
   Future<void> insertWakeRun({required WakeRunLogData entry}) async {
     try {
       await _db.into(_db.wakeRunLog).insert(entry.toCompanion(true));
-    } on Object catch (e) {
-      throw DuplicateInsertException('wake_run_log', entry.runKey, e);
+    } on SqliteException catch (e) {
+      if (e.resultCode == 19) {
+        throw DuplicateInsertException('wake_run_log', entry.runKey, e);
+      }
+      rethrow;
     }
   }
 
-  /// Update the [status], and optionally [completedAt] and [errorMessage], for
-  /// the wake run identified by [runKey].
+  /// Update the [status], and optionally [startedAt], [completedAt] and
+  /// [errorMessage], for the wake run identified by [runKey].
   Future<void> updateWakeRunStatus(
     String runKey,
     String status, {
+    DateTime? startedAt,
     DateTime? completedAt,
     String? errorMessage,
   }) async {
@@ -211,6 +216,7 @@ class AgentRepository {
         .write(
       WakeRunLogCompanion(
         status: Value(status),
+        startedAt: startedAt != null ? Value(startedAt) : const Value.absent(),
         completedAt:
             completedAt != null ? Value(completedAt) : const Value.absent(),
         errorMessage:
@@ -234,8 +240,11 @@ class AgentRepository {
   Future<void> insertSagaOp({required SagaLogData entry}) async {
     try {
       await _db.into(_db.sagaLog).insert(entry.toCompanion(true));
-    } on Object catch (e) {
-      throw DuplicateInsertException('saga_log', entry.operationId, e);
+    } on SqliteException catch (e) {
+      if (e.resultCode == 19) {
+        throw DuplicateInsertException('saga_log', entry.operationId, e);
+      }
+      rethrow;
     }
   }
 
