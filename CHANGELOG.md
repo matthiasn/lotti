@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.866] - 2026-02-21
+### Added
+- Task Agent: persistent AI agents that maintain task summary reports and
+  perform incremental metadata updates via tool calls (estimates, due dates,
+  priorities, checklist items, titles). Gated behind the `enableAgents` config
+  flag with a dedicated `agent.sqlite` database, wake orchestration with
+  self-notification suppression, fail-closed category enforcement, and an
+  agent detail inspection page with activity log, report viewer, and lifecycle
+  controls (pause/resume/destroy).
+
 ## [0.9.865] - 2026-02-18
 ### Added
 - Real-time transcription via Mistral Voxtral WebSocket API with live subtitles

@@ -2,6 +2,9 @@ import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 
 GeminiThinkingConfig getDefaultThinkingConfig(String modelId) {
   switch (modelId) {
+    case 'models/gemini-3.1-pro-preview':
+    case 'gemini-3.1-pro-preview':
+    // Backwards-compat: configs created before the 3→3.1 rename.
     case 'models/gemini-3-pro-preview':
     case 'gemini-3-pro-preview':
       return GeminiThinkingConfig.auto; // Advanced reasoning capabilities

@@ -3,8 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
@@ -14,11 +21,13 @@ import 'package:lotti/features/tasks/ui/header/task_header_meta_card.dart';
 import 'package:lotti/features/tasks/ui/header/task_language_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_priority_wrapper.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -26,6 +35,7 @@ import '../../../../helpers/task_progress_test_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
+import '../../../agents/test_utils.dart';
 
 class _TestEntryController extends EntryController {
   _TestEntryController(this._task);
@@ -44,6 +54,11 @@ class _TestEntryController extends EntryController {
   }
 }
 
+class _NullEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async => null;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -56,6 +71,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeTaskData());
+    registerFallbackValue(<String>{});
 
     mockPersistenceLogic = MockPersistenceLogic();
     mockEditorStateService = MockEditorStateService();
@@ -149,5 +165,479 @@ void main() {
     expect(find.byType(TaskPriorityWrapper), findsOneWidget);
     expect(find.byType(TaskCategoryWrapper), findsOneWidget);
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
+  });
+
+  group('TaskAgentChip', () {
+    testWidgets('not visible when enableAgents flag is disabled',
+        (tester) async {
+      final task = testTask;
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+        configFlagProvider.overrideWith(
+          (ref, flagName) => Stream.value(false),
+        ),
+        taskAgentProvider.overrideWith(
+          (ref, taskId) async => null,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskHeaderMetaCard(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The agent chip should not appear when the flag is disabled.
+      expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+      expect(find.byIcon(Icons.add), findsNothing);
+    });
+
+    testWidgets(
+        'shows "Create Agent" label when flag is enabled and no agent exists',
+        (tester) async {
+      final task = testTask;
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+        configFlagProvider.overrideWith(
+          (ref, flagName) => Stream.value(
+            flagName == enableAgentsFlag,
+          ),
+        ),
+        taskAgentProvider.overrideWith(
+          (ref, taskId) async => null,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskHeaderMetaCard(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TaskHeaderMetaCard));
+      expect(
+        find.text(context.messages.taskAgentCreateChipLabel),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.add), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows SizedBox.shrink during loading state',
+      (tester) async {
+        final task = testTask;
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) => Completer<AgentDomainEntity?>().future,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pump();
+
+        // During loading, no agent chip icons should appear
+        expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+        expect(find.byIcon(Icons.add), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows SizedBox.shrink when taskAgent provider errors',
+      (tester) async {
+        final task = testTask;
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) =>
+                Future<AgentDomainEntity?>.error(Exception('DB error')),
+          ),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // On error, no agent chip icons should appear
+        expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+        expect(find.byIcon(Icons.add), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows SizedBox.shrink when agent entity is not agent type',
+      (tester) async {
+        final task = testTask;
+        // Return a state entity instead of identity — mapOrNull returns null
+        final nonAgentEntity = makeTestState();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => nonAgentEntity,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Non-agent entity is filtered out, no chip visible
+        expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+        expect(find.byIcon(Icons.add), findsNothing);
+      },
+    );
+
+    testWidgets('shows "Agent" label when flag is enabled and agent exists',
+        (tester) async {
+      final task = testTask;
+      final agentEntity = makeTestIdentity();
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+        configFlagProvider.overrideWith(
+          (ref, flagName) => Stream.value(
+            flagName == enableAgentsFlag,
+          ),
+        ),
+        taskAgentProvider.overrideWith(
+          (ref, taskId) async => agentEntity,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskHeaderMetaCard(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TaskHeaderMetaCard));
+      expect(
+        find.text(context.messages.taskAgentChipLabel),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping "Create Agent" chip calls createTaskAgent and invalidates '
+      'provider',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+        final identity = makeTestIdentity();
+
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: task.meta.id,
+            allowedCategoryIds: <String>{},
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'shows error snackbar when createTaskAgent throws',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenThrow(Exception('creation failed'));
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('creation failed'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'create agent does nothing when entry state is null',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            _NullEntryController.new,
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        // createTaskAgent should NOT have been called
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'create agent passes categoryId in allowedCategoryIds',
+      (tester) async {
+        const categoryId = 'cat-123';
+        final taskWithCategory = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2022, 7, 7, 11),
+              utcOffset: 60,
+            ),
+            title: 'Task with category',
+            statusHistory: [],
+            dateTo: DateTime(2022, 7, 7, 9),
+            dateFrom: DateTime(2022, 7, 7, 9),
+          ),
+          meta: Metadata(
+            id: testTask.meta.id,
+            createdAt: DateTime(2022, 7, 7, 9),
+            dateFrom: DateTime(2022, 7, 7, 9),
+            dateTo: DateTime(2022, 7, 7, 11),
+            updatedAt: DateTime(2022, 7, 7, 11),
+            categoryId: categoryId,
+          ),
+          entryText: const EntryText(plainText: 'task text'),
+        );
+
+        final mockService = MockTaskAgentService();
+        final identity = makeTestIdentity();
+
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+
+        final overrides = <Override>[
+          entryControllerProvider(id: testTask.meta.id).overrideWith(
+            () => _TestEntryController(taskWithCategory),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: testTask.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: testTask.meta.id,
+            allowedCategoryIds: {categoryId},
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping "Agent" chip navigates to AgentDetailPage',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          // Overrides needed by AgentDetailPage after navigation.
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => agentEntity,
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => null,
+          ),
+          agentReportProvider.overrideWith(
+            (ref, agentId) async => null,
+          ),
+          agentRecentMessagesProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentServiceProvider.overrideWithValue(MockAgentService()),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(find.text(context.messages.taskAgentChipLabel));
+        await tester.pumpAndSettle();
+
+        // After navigation, the AgentDetailPage should be on screen
+        expect(find.byType(AgentDetailPage), findsOneWidget);
+      },
+    );
   });
 }

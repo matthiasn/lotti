@@ -1348,6 +1348,16 @@
   "syncStepLabels": "Štítky",
   "syncStepMeasurables": "Měřitelné hodnoty",
   "syncStepTags": "Tagy",
+  "taskAgentChipLabel": "Agent",
+  "taskAgentCreateChipLabel": "Vytvořit agenta",
+  "taskAgentCreateError": "Nepodařilo se vytvořit agenta: {error}",
+  "@taskAgentCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",

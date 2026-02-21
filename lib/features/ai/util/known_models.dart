@@ -87,14 +87,15 @@ const List<KnownModel> geminiModels = [
         'Generates images directly from task context and voice descriptions.',
   ),
   KnownModel(
-    providerModelId: 'models/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro Preview',
+    providerModelId: 'models/gemini-3.1-pro-preview',
+    name: 'Gemini 3.1 Pro Preview',
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Latest Gemini 3 with breakthrough reasoning and state-of-the-art multimodal capabilities',
+        'Latest Gemini 3.1 with enhanced reasoning, multimodal capabilities, '
+        'and function calling support for agentic workflows',
   ),
   KnownModel(
     providerModelId: 'models/gemini-3-flash-preview',
@@ -558,7 +559,7 @@ String generateModelId(String inferenceProviderId, String providerModelId) {
 
 /// Model IDs used for Gemini FTUE automation
 const ftueFlashModelId = 'models/gemini-3-flash-preview';
-const ftueProModelId = 'models/gemini-3-pro-preview';
+const ftueProModelId = 'models/gemini-3.1-pro-preview';
 const ftueImageModelId = 'models/gemini-3-pro-image-preview';
 
 /// Finds a KnownModel by its provider model ID from the geminiModels list.

@@ -30,6 +30,7 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     enableDailyOsPageFlag,
     enableEventsFlag,
     enableSessionRatingsFlag,
+    enableAgentsFlag,
   ];
 
   // Helper to get icon for each flag
@@ -61,6 +62,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return Icons.event_rounded;
       case enableSessionRatingsFlag:
         return Icons.star_rate_rounded;
+      case enableAgentsFlag:
+        return Icons.smart_toy_outlined;
       default:
         return Icons.settings;
     }
@@ -95,6 +98,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableEventsDescription;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatingsDescription;
+      case enableAgentsFlag:
+        return context.messages.configFlagEnableAgentsDescription;
       default:
         return flag.description;
     }
@@ -129,6 +134,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableEvents;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatings;
+      case enableAgentsFlag:
+        return context.messages.configFlagEnableAgents;
       default:
         return flag.name;
     }

@@ -115,6 +115,7 @@
 - After adding labels, run `make l10n` to generate the Dart files.
 - Run `make sort_arb_files` to keep arb files consistently sorted.
 - **NEVER edit the generated `lib/l10n/app_localizations_*.dart` files directly** — always edit the `.arb` source files and regenerate.
+- **Use informal tone** in all translations. The app addresses users informally: German uses "du/deine" (not "Sie/Ihre"), French uses "tu/tes" (not "vous/vos"), Spanish uses "tú/tus" (not "usted/sus"). Romanian is an exception — it uses the formal "dvs." register consistently.
 
 ## Implementation discipline
 

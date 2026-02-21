@@ -116,6 +116,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Sync Actor (isolate-based sync)?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableAgentsFlag,
+    description: 'Enable Agents?',
+    status: false,
+  ),
 };
 
 void main() {

@@ -66,6 +66,11 @@ void main() {
             description: 'Enable AI streaming responses?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableAgentsFlag,
+            description: 'Enable Agents?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -284,6 +289,43 @@ void main() {
         ),
       );
       expect(dailyOsSwitch.value, isTrue);
+    });
+    testWidgets(
+        'displays enableAgentsFlag with correct icon, title, and description',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const FlagsPage(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(FlagsPage));
+
+      final agentsCard = find.widgetWithText(
+        AnimatedModernSettingsCardWithIcon,
+        context.messages.configFlagEnableAgents,
+      );
+      expect(agentsCard, findsOneWidget);
+
+      expect(
+        find.descendant(
+          of: agentsCard,
+          matching:
+              find.text(context.messages.configFlagEnableAgentsDescription),
+        ),
+        findsOneWidget,
+      );
+
+      expect(find.byIcon(Icons.smart_toy_outlined), findsAtLeastNWidgets(1));
+
+      final agentsSwitch = tester.widget<Switch>(
+        find.descendant(
+          of: agentsCard,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(agentsSwitch.value, isFalse);
     });
   });
 }

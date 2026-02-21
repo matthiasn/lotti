@@ -257,6 +257,246 @@ abstract class AppLocalizations {
   /// **'Term too long (max 50 characters)'**
   String get addToDictionaryTooLong;
 
+  /// No description provided for @agentActivityLogHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Log'**
+  String get agentActivityLogHeading;
+
+  /// No description provided for @agentControlsActionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed: {error}'**
+  String agentControlsActionError(String error);
+
+  /// No description provided for @agentControlsDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get agentControlsDeleteButton;
+
+  /// No description provided for @agentControlsDeleteDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.'**
+  String get agentControlsDeleteDialogContent;
+
+  /// No description provided for @agentControlsDeleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Agent?'**
+  String get agentControlsDeleteDialogTitle;
+
+  /// No description provided for @agentControlsDestroyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy'**
+  String get agentControlsDestroyButton;
+
+  /// No description provided for @agentControlsDestroyDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently deactivate the agent. Its history will be preserved for audit.'**
+  String get agentControlsDestroyDialogContent;
+
+  /// No description provided for @agentControlsDestroyDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroy Agent?'**
+  String get agentControlsDestroyDialogTitle;
+
+  /// No description provided for @agentControlsDestroyedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent has been destroyed.'**
+  String get agentControlsDestroyedMessage;
+
+  /// No description provided for @agentControlsPauseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get agentControlsPauseButton;
+
+  /// No description provided for @agentControlsReanalyzeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-analyze'**
+  String get agentControlsReanalyzeButton;
+
+  /// No description provided for @agentControlsResumeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get agentControlsResumeButton;
+
+  /// No description provided for @agentDetailErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading agent: {error}'**
+  String agentDetailErrorLoading(String error);
+
+  /// No description provided for @agentDetailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent not found.'**
+  String get agentDetailNotFound;
+
+  /// No description provided for @agentDetailUnexpectedType.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected entity type.'**
+  String get agentDetailUnexpectedType;
+
+  /// No description provided for @agentLifecycleActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentLifecycleActive;
+
+  /// No description provided for @agentLifecycleCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get agentLifecycleCreated;
+
+  /// No description provided for @agentLifecycleDestroyed.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroyed'**
+  String get agentLifecycleDestroyed;
+
+  /// No description provided for @agentLifecyclePaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get agentLifecyclePaused;
+
+  /// No description provided for @agentMessageContentPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Content: {contentId}'**
+  String agentMessageContentPrefix(String contentId);
+
+  /// No description provided for @agentMessageKindAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get agentMessageKindAction;
+
+  /// No description provided for @agentMessageKindObservation.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get agentMessageKindObservation;
+
+  /// No description provided for @agentMessageKindSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get agentMessageKindSummary;
+
+  /// No description provided for @agentMessageKindSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get agentMessageKindSystem;
+
+  /// No description provided for @agentMessageKindThought.
+  ///
+  /// In en, this message translates to:
+  /// **'Thought'**
+  String get agentMessageKindThought;
+
+  /// No description provided for @agentMessageKindToolResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool Result'**
+  String get agentMessageKindToolResult;
+
+  /// No description provided for @agentMessageKindUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get agentMessageKindUser;
+
+  /// No description provided for @agentMessagePayloadEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'(no content)'**
+  String get agentMessagePayloadEmpty;
+
+  /// No description provided for @agentMessagesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet.'**
+  String get agentMessagesEmpty;
+
+  /// No description provided for @agentMessagesErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load messages: {error}'**
+  String agentMessagesErrorLoading(String error);
+
+  /// No description provided for @agentReportErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load report: {error}'**
+  String agentReportErrorLoading(String error);
+
+  /// No description provided for @agentReportNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No report available yet.'**
+  String get agentReportNone;
+
+  /// No description provided for @agentStateConsecutiveFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'Consecutive failures'**
+  String get agentStateConsecutiveFailures;
+
+  /// No description provided for @agentStateErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load state: {error}'**
+  String agentStateErrorLoading(String error);
+
+  /// No description provided for @agentStateHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'State Info'**
+  String get agentStateHeading;
+
+  /// No description provided for @agentStateLastWake.
+  ///
+  /// In en, this message translates to:
+  /// **'Last wake'**
+  String get agentStateLastWake;
+
+  /// No description provided for @agentStateNextWake.
+  ///
+  /// In en, this message translates to:
+  /// **'Next wake'**
+  String get agentStateNextWake;
+
+  /// No description provided for @agentStateRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision'**
+  String get agentStateRevision;
+
+  /// No description provided for @agentStateSleepingUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleeping until'**
+  String get agentStateSleepingUntil;
+
+  /// No description provided for @agentStateWakeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake count'**
+  String get agentStateWakeCount;
+
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///
   /// In en, this message translates to:
@@ -1900,6 +2140,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Automatically transcribe audio recordings in your entries. This requires an internet connection.'**
   String get configFlagAutoTranscribeDescription;
+
+  /// No description provided for @configFlagEnableAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Agents'**
+  String get configFlagEnableAgents;
+
+  /// No description provided for @configFlagEnableAgentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AI agents to autonomously monitor and analyze your tasks.'**
+  String get configFlagEnableAgentsDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
   ///
@@ -6227,6 +6479,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tags'**
   String get syncStepTags;
+
+  /// No description provided for @taskAgentChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get taskAgentChipLabel;
+
+  /// No description provided for @taskAgentCreateChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Agent'**
+  String get taskAgentCreateChipLabel;
+
+  /// No description provided for @taskAgentCreateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create agent: {error}'**
+  String taskAgentCreateError(String error);
 
   /// No description provided for @taskCategoryAllLabel.
   ///
