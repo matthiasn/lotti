@@ -604,7 +604,11 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
       name: 'TaskAgentWorkflow',
     );
 
-    // Load the task fresh for each tool call so handlers see the latest state.
+    // Deliberately reload the task from the database on every tool call.
+    // This guarantees each handler sees the committed state left by the
+    // previous handler (e.g. a title change is visible to the next tool).
+    // A local SQLite read by primary key is negligible cost, and caching
+    // in memory would add complexity with risk of stale state.
     final taskEntity = await journalDb.journalEntityById(taskId);
     if (taskEntity is! Task) {
       return ToolExecutionResult(

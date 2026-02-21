@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -313,7 +314,7 @@ class AgentToolExecutor {
     required AgentMessageKind kind,
     required AgentMessageMetadata metadata,
   }) async {
-    final now = DateTime.now();
+    final now = clock.now();
     await repository.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),

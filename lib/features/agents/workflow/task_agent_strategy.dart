@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -302,7 +303,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   Future<void> _recordAssistantMessage({
     List<ChatCompletionMessageToolCall>? toolCalls,
   }) async {
-    final now = DateTime.now();
+    final now = clock.now();
     final toolNames =
         toolCalls?.map((tc) => tc.function.name).toList() ?? <String>[];
 
@@ -327,7 +328,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     required String toolName,
     String? errorMessage,
   }) async {
-    final now = DateTime.now();
+    final now = clock.now();
     await repository.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),
