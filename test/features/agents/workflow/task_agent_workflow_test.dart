@@ -1309,7 +1309,7 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty string'),
+              that: contains('must be a string'),
             ),
           ),
         ).called(1);

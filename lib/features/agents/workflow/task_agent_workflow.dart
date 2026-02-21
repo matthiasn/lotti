@@ -657,11 +657,11 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     String taskId,
   ) async {
     final titleArg = args['title'];
-    if (titleArg is! String || titleArg.isEmpty) {
+    // Type guard only — emptiness is validated by TaskTitleHandler.handle.
+    if (titleArg is! String) {
       return ToolExecutionResult(
         success: false,
-        output: 'Error: "title" must be a non-empty string, '
-            'got ${titleArg.runtimeType}',
+        output: 'Error: "title" must be a string, got ${titleArg.runtimeType}',
         errorMessage: 'Type validation failed for title',
       );
     }
