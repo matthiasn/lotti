@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
@@ -81,12 +83,17 @@ class WakeOrchestrator {
 
   /// Self-notification suppression state.
   ///
-  /// Maps agentId → (entityId → VectorClock captured after the agent's last
-  /// mutation). When a notification batch arrives, tokens that match entities
-  /// the agent itself mutated are suppressed. If *all* matched tokens are
-  /// covered, the entire wake is skipped; a single external token lets the
-  /// wake through.
-  final _recentlyMutatedEntries = <String, Map<String, VectorClock>>{};
+  /// Maps agentId → [_MutationRecord] (entity IDs + timestamp). When a
+  /// notification batch arrives, tokens that match entities the agent itself
+  /// mutated are suppressed — but only if the mutation record is recent
+  /// (within [_suppressionTtl]). Stale records are ignored so that external
+  /// edits to the same entity are not incorrectly suppressed.
+  final _recentlyMutatedEntries = <String, _MutationRecord>{};
+
+  /// Duration after which self-mutation records expire and no longer suppress
+  /// notifications. Must be long enough to cover the `UpdateNotifications`
+  /// debounce window (100ms local, 1s sync) plus scheduling jitter.
+  static const _suppressionTtl = Duration(seconds: 5);
 
   StreamSubscription<Set<String>>? _notificationSub;
 
@@ -96,9 +103,10 @@ class WakeOrchestrator {
   /// arrive.
   void addSubscription(AgentSubscription sub) => _subscriptions.add(sub);
 
-  /// Remove all subscriptions for [agentId].
+  /// Remove all subscriptions for [agentId] and clean up mutation history.
   void removeSubscriptions(String agentId) {
     _subscriptions.removeWhere((s) => s.agentId == agentId);
+    _recentlyMutatedEntries.remove(agentId);
   }
 
   // ── Self-notification suppression ──────────────────────────────────────────
@@ -107,13 +115,16 @@ class WakeOrchestrator {
   ///
   /// [entries] maps entityId → VectorClock that was written.  On the next
   /// notification batch these entries will be compared against the incoming
-  /// tokens; if the agent's clock still dominates the notification is
-  /// suppressed so the agent does not wake on its own writes.
+  /// tokens; if the record is still within [_suppressionTtl] the notification
+  /// is suppressed so the agent does not wake on its own writes.
   void recordMutatedEntities(
     String agentId,
     Map<String, VectorClock> entries,
   ) {
-    _recentlyMutatedEntries[agentId] = entries;
+    _recentlyMutatedEntries[agentId] = _MutationRecord(
+      entityIds: entries.keys.toSet(),
+      recordedAt: clock.now(),
+    );
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -181,7 +192,7 @@ class WakeOrchestrator {
         reason: 'subscription',
         triggerTokens: Set<String>.from(matched),
         reasonId: sub.id,
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
@@ -196,36 +207,72 @@ class WakeOrchestrator {
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's
-  /// recently mutated entries (i.e., the agent wrote those entities itself).
+  /// recently mutated entries (i.e., the agent wrote those entities itself)
+  /// and the mutation record has not expired.
   bool _isSuppressed(String agentId, Set<String> matchedTokens) {
-    final mutated = _recentlyMutatedEntries[agentId];
-    if (mutated == null || mutated.isEmpty) return false;
+    final record = _recentlyMutatedEntries[agentId];
+    if (record == null || record.entityIds.isEmpty) return false;
+
+    // Expire stale records so external edits are not incorrectly suppressed.
+    final elapsed = clock.now().difference(record.recordedAt);
+    if (elapsed > _suppressionTtl) {
+      _recentlyMutatedEntries.remove(agentId);
+      return false;
+    }
+
     // Suppress only when every matched token corresponds to an entity that the
     // agent itself mutated.  A single external token is enough to allow the
     // wake through.
-    return matchedTokens.every(mutated.containsKey);
+    return matchedTokens.every(record.entityIds.contains);
   }
 
   // ── Dispatch ───────────────────────────────────────────────────────────────
 
-  /// Dequeue and execute the next pending wake job.
+  /// Dequeue and execute pending wake jobs.
   ///
-  /// If the target agent is already running the job is re-enqueued (it will
-  /// be processed in the next [processNext] call).  The wake run is persisted
-  /// to [AgentRepository] with status `'running'` before execution. When a
-  /// [wakeExecutor] is set, it is called to perform the actual agent work;
-  /// the final status is updated to `'completed'` or `'failed'` accordingly.
+  /// Loops through the queue processing jobs until it is empty or all
+  /// remaining jobs belong to agents that are currently running (busy).
+  /// Busy agents' jobs are re-enqueued for the next cycle.
+  ///
+  /// The wake run is persisted to [AgentRepository] with status `'running'`
+  /// before execution. When a [wakeExecutor] is set, it is called to perform
+  /// the actual agent work; the final status is updated to `'completed'` or
+  /// `'failed'` accordingly.
+  ///
+  /// When the queue becomes empty after processing, the seen-run-key history
+  /// is cleared so that future notification batches can create new run keys.
   Future<void> processNext() async {
-    final job = queue.dequeue();
-    if (job == null) return;
+    final deferred = <WakeJob>[];
 
-    final acquired = await runner.tryAcquire(job.agentId);
-    if (!acquired) {
-      // Agent is already running; put the job back for the next cycle.
-      queue.enqueue(job);
-      return;
+    try {
+      while (true) {
+        final job = queue.dequeue();
+        if (job == null) break;
+
+        final acquired = await runner.tryAcquire(job.agentId);
+        if (!acquired) {
+          // Agent is already running; defer for re-enqueue after loop.
+          deferred.add(job);
+          continue;
+        }
+
+        await _executeJob(job);
+      }
+    } finally {
+      // Re-enqueue deferred jobs (busy agents) without dedup checks.
+      deferred.forEach(queue.requeue);
+
+      // Clear run-key history only when the queue is fully drained (no
+      // deferred jobs left). This prevents stale keys from blocking future
+      // wakes while avoiding premature clearing that could allow duplicates.
+      if (queue.isEmpty) {
+        queue.clearHistory();
+      }
     }
+  }
 
+  /// Execute a single wake job: persist → run executor → update status.
+  Future<void> _executeJob(WakeJob job) async {
     final threadId = job.runKey;
 
     try {
@@ -237,46 +284,65 @@ class WakeOrchestrator {
         threadId: threadId,
         status: 'running',
         createdAt: job.createdAt,
-        startedAt: DateTime.now(),
+        startedAt: clock.now(),
       );
 
       await repository.insertWakeRun(entry: entry);
 
-      // Execute the workflow if a wake executor is registered.
       final executor = wakeExecutor;
-      if (executor != null) {
-        try {
-          final mutated = await executor(
-            job.agentId,
-            job.runKey,
-            job.triggerTokens,
-            threadId,
-          );
+      if (executor == null) {
+        developer.log(
+          'No wakeExecutor set — marking run ${job.runKey} as failed',
+          name: 'WakeOrchestrator',
+        );
+        await repository.updateWakeRunStatus(
+          job.runKey,
+          'failed',
+          errorMessage: 'No wake executor registered',
+        );
+        return;
+      }
 
-          // Record mutated entries for self-notification suppression.
-          if (mutated != null && mutated.isNotEmpty) {
-            recordMutatedEntities(job.agentId, mutated);
-          }
+      try {
+        final mutated = await executor(
+          job.agentId,
+          job.runKey,
+          job.triggerTokens,
+          threadId,
+        );
 
-          await repository.updateWakeRunStatus(
-            job.runKey,
-            'completed',
-            completedAt: DateTime.now(),
-          );
-
-          // Clear history after successful completion so that subsequent
-          // wakes don't re-process the same tokens.
-          queue.clearHistory();
-        } catch (e) {
-          await repository.updateWakeRunStatus(
-            job.runKey,
-            'failed',
-            errorMessage: e.toString(),
-          );
+        // Record mutated entries for self-notification suppression,
+        // replacing the previous cycle's entries for this agent.
+        if (mutated != null && mutated.isNotEmpty) {
+          recordMutatedEntities(job.agentId, mutated);
+        } else {
+          // No mutations this cycle — clear stale suppression data so
+          // external edits to previously-mutated entities are not blocked.
+          _recentlyMutatedEntries.remove(job.agentId);
         }
+
+        await repository.updateWakeRunStatus(
+          job.runKey,
+          'completed',
+          completedAt: clock.now(),
+        );
+      } catch (e) {
+        await repository.updateWakeRunStatus(
+          job.runKey,
+          'failed',
+          errorMessage: e.toString(),
+        );
       }
     } finally {
       runner.release(job.agentId);
     }
   }
+}
+
+/// Internal record of which entities an agent mutated and when.
+class _MutationRecord {
+  _MutationRecord({required this.entityIds, required this.recordedAt});
+
+  final Set<String> entityIds;
+  final DateTime recordedAt;
 }

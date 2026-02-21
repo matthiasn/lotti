@@ -25,6 +25,76 @@
   "addToDictionarySaveFailed": "Wörterbuch konnte nicht gespeichert werden",
   "addToDictionarySuccess": "Begriff zum Wörterbuch hinzugefügt",
   "addToDictionaryTooLong": "Begriff zu lang (max. 50 Zeichen)",
+  "agentActivityLogHeading": "Aktivitätsprotokoll",
+  "agentControlsDestroyButton": "Zerstören",
+  "agentControlsDestroyDialogContent": "Der Agent wird dauerhaft deaktiviert. Sein Verlauf wird zur Nachverfolgung aufbewahrt.",
+  "agentControlsDestroyDialogTitle": "Agent zerstören?",
+  "agentControlsDestroyedMessage": "Dieser Agent wurde zerstört.",
+  "agentControlsPauseButton": "Pausieren",
+  "agentControlsReanalyzeButton": "Erneut analysieren",
+  "agentControlsResumeButton": "Fortsetzen",
+  "agentDetailErrorLoading": "Fehler beim Laden des Agenten: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agent nicht gefunden.",
+  "agentDetailUnexpectedType": "Unerwarteter Entitätstyp.",
+  "agentLifecycleActive": "Aktiv",
+  "agentLifecycleCreated": "Erstellt",
+  "agentLifecycleDestroyed": "Zerstört",
+  "agentLifecyclePaused": "Pausiert",
+  "agentMessageContentPrefix": "Inhalt: {contentId}",
+  "@agentMessageContentPrefix": {
+    "placeholders": {
+      "contentId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentMessageKindAction": "Aktion",
+  "agentMessageKindObservation": "Beobachtung",
+  "agentMessageKindSummary": "Zusammenfassung",
+  "agentMessageKindSystem": "System",
+  "agentMessageKindThought": "Gedanke",
+  "agentMessageKindToolResult": "Werkzeugergebnis",
+  "agentMessageKindUser": "Benutzer",
+  "agentMessagesEmpty": "Noch keine Nachrichten.",
+  "agentMessagesErrorLoading": "Nachrichten konnten nicht geladen werden: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
+  "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "Statusinformationen",
+  "agentStateLastWake": "Letztes Aufwachen",
+  "agentStateNextWake": "Nächstes Aufwachen",
+  "agentStateRevision": "Revision",
+  "agentStateSleepingUntil": "Schlafend bis",
+  "agentStateWakeCount": "Aufwachzähler",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",
   "aiAssistantSummarizeTask": "Aufgabe zusammenfassen",

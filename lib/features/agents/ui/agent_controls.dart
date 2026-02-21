@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Action buttons for controlling an agent's lifecycle.
@@ -29,8 +30,7 @@ class AgentControls extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          // TODO(l10n): localize destroyed message
-          'This agent has been destroyed.',
+          context.messages.agentControlsDestroyedMessage,
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.outline,
             fontStyle: FontStyle.italic,
@@ -52,22 +52,19 @@ class AgentControls extends ConsumerWidget {
             FilledButton.tonalIcon(
               onPressed: () => _pauseAgent(ref),
               icon: const Icon(Icons.pause_rounded),
-              // TODO(l10n): localize button label
-              label: const Text('Pause'),
+              label: Text(context.messages.agentControlsPauseButton),
             ),
           if (isDormant)
             FilledButton.tonalIcon(
               onPressed: () => _resumeAgent(ref),
               icon: const Icon(Icons.play_arrow_rounded),
-              // TODO(l10n): localize button label
-              label: const Text('Resume'),
+              label: Text(context.messages.agentControlsResumeButton),
             ),
           if (isActive || isDormant)
             OutlinedButton.icon(
               onPressed: () => _triggerReanalysis(ref),
               icon: const Icon(Icons.refresh_rounded),
-              // TODO(l10n): localize button label
-              label: const Text('Re-analyze'),
+              label: Text(context.messages.agentControlsReanalyzeButton),
             ),
           if (isActive || isDormant)
             OutlinedButton.icon(
@@ -76,9 +73,8 @@ class AgentControls extends ConsumerWidget {
                 Icons.delete_forever_rounded,
                 color: context.colorScheme.error,
               ),
-              // TODO(l10n): localize button label
               label: Text(
-                'Destroy',
+                context.messages.agentControlsDestroyButton,
                 style: TextStyle(color: context.colorScheme.error),
               ),
             ),
@@ -104,30 +100,26 @@ class AgentControls extends ConsumerWidget {
   Future<void> _confirmDestroy(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        // TODO(l10n): localize dialog title
-        title: const Text('Destroy Agent?'),
-        // TODO(l10n): localize dialog content
-        content: const Text(
-          'This will permanently deactivate the agent. '
-          'Its history will be preserved for audit.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            // TODO(l10n): localize cancel button
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colorScheme.error,
+      builder: (dialogContext) {
+        final l10n = dialogContext.messages;
+        return AlertDialog(
+          title: Text(l10n.agentControlsDestroyDialogTitle),
+          content: Text(l10n.agentControlsDestroyDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancelButton),
             ),
-            // TODO(l10n): localize confirm button
-            child: const Text('Destroy'),
-          ),
-        ],
-      ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.colorScheme.error,
+              ),
+              child: Text(l10n.agentControlsDestroyButton),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed ?? false) {

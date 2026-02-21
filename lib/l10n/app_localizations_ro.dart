@@ -85,6 +85,122 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addToDictionaryTooLong => 'Termen prea lung (max 50 caractere)';
 
   @override
+  String get agentActivityLogHeading => 'Jurnal de activitate';
+
+  @override
+  String get agentControlsDestroyButton => 'Distruge';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Agentul va fi dezactivat permanent. Istoricul său va fi păstrat pentru audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Distrugi agentul?';
+
+  @override
+  String get agentControlsDestroyedMessage => 'Acest agent a fost distrus.';
+
+  @override
+  String get agentControlsPauseButton => 'Pauză';
+
+  @override
+  String get agentControlsReanalyzeButton => 'Reanalizează';
+
+  @override
+  String get agentControlsResumeButton => 'Reia';
+
+  @override
+  String agentDetailErrorLoading(String error) {
+    return 'Eroare la încărcarea agentului: $error';
+  }
+
+  @override
+  String get agentDetailNotFound => 'Agentul nu a fost găsit.';
+
+  @override
+  String get agentDetailUnexpectedType => 'Tip de entitate neașteptat.';
+
+  @override
+  String get agentLifecycleActive => 'Activ';
+
+  @override
+  String get agentLifecycleCreated => 'Creat';
+
+  @override
+  String get agentLifecycleDestroyed => 'Distrus';
+
+  @override
+  String get agentLifecyclePaused => 'În pauză';
+
+  @override
+  String agentMessageContentPrefix(String contentId) {
+    return 'Conținut: $contentId';
+  }
+
+  @override
+  String get agentMessageKindAction => 'Acțiune';
+
+  @override
+  String get agentMessageKindObservation => 'Observație';
+
+  @override
+  String get agentMessageKindSummary => 'Rezumat';
+
+  @override
+  String get agentMessageKindSystem => 'Sistem';
+
+  @override
+  String get agentMessageKindThought => 'Gând';
+
+  @override
+  String get agentMessageKindToolResult => 'Rezultat instrument';
+
+  @override
+  String get agentMessageKindUser => 'Utilizator';
+
+  @override
+  String get agentMessagesEmpty => 'Niciun mesaj încă.';
+
+  @override
+  String agentMessagesErrorLoading(String error) {
+    return 'Eroare la încărcarea mesajelor: $error';
+  }
+
+  @override
+  String agentReportErrorLoading(String error) {
+    return 'Eroare la încărcarea raportului: $error';
+  }
+
+  @override
+  String get agentReportNone => 'Niciun raport disponibil încă.';
+
+  @override
+  String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
+
+  @override
+  String agentStateErrorLoading(String error) {
+    return 'Eroare la încărcarea stării: $error';
+  }
+
+  @override
+  String get agentStateHeading => 'Informații de stare';
+
+  @override
+  String get agentStateLastWake => 'Ultima trezire';
+
+  @override
+  String get agentStateNextWake => 'Următoarea trezire';
+
+  @override
+  String get agentStateRevision => 'Revizie';
+
+  @override
+  String get agentStateSleepingUntil => 'Doarme până la';
+
+  @override
+  String get agentStateWakeCount => 'Număr de treziri';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Sugestii de acțiuni';
 
   @override

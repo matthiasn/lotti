@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Displays a chronological list of recent agent messages.
@@ -29,8 +30,7 @@ class AgentActivityLog extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          // TODO(l10n): localize error message
-          'Failed to load messages: $error',
+          context.messages.agentMessagesErrorLoading(error.toString()),
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -41,8 +41,7 @@ class AgentActivityLog extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.all(AppTheme.cardPadding),
             child: Text(
-              // TODO(l10n): localize empty state
-              'No messages yet.',
+              context.messages.agentMessagesEmpty,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -121,8 +120,7 @@ class _MessageCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
                 child: Text(
-                  // TODO(l10n): localize "Content:" prefix
-                  'Content: $contentId',
+                  context.messages.agentMessageContentPrefix(contentId),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurfaceVariant,
                   ),
@@ -188,15 +186,27 @@ class _KindBadge extends StatelessWidget {
 
   (String, Color) _kindStyle(BuildContext context, AgentMessageKind kind) {
     final scheme = context.colorScheme;
-    // TODO(l10n): localize kind labels
+    final l10n = context.messages;
     return switch (kind) {
-      AgentMessageKind.observation => ('Observation', scheme.primary),
-      AgentMessageKind.user => ('User', scheme.secondary),
-      AgentMessageKind.thought => ('Thought', scheme.tertiary),
-      AgentMessageKind.action => ('Action', scheme.primary),
-      AgentMessageKind.toolResult => ('Tool Result', scheme.secondary),
-      AgentMessageKind.summary => ('Summary', scheme.outline),
-      AgentMessageKind.system => ('System', scheme.outline),
+      AgentMessageKind.observation => (
+          l10n.agentMessageKindObservation,
+          scheme.primary
+        ),
+      AgentMessageKind.user => (l10n.agentMessageKindUser, scheme.secondary),
+      AgentMessageKind.thought => (
+          l10n.agentMessageKindThought,
+          scheme.tertiary
+        ),
+      AgentMessageKind.action => (l10n.agentMessageKindAction, scheme.primary),
+      AgentMessageKind.toolResult => (
+          l10n.agentMessageKindToolResult,
+          scheme.secondary
+        ),
+      AgentMessageKind.summary => (
+          l10n.agentMessageKindSummary,
+          scheme.outline
+        ),
+      AgentMessageKind.system => (l10n.agentMessageKindSystem, scheme.outline),
     };
   }
 }

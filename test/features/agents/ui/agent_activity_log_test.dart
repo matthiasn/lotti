@@ -10,33 +10,10 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 
 import '../../../widget_test_utils.dart';
-
-/// Test data factory for agent messages.
-AgentMessageEntity _makeMessage({
-  required String id,
-  required AgentMessageKind kind,
-  required DateTime createdAt,
-  String? toolName,
-  String? contentEntryId,
-  String? errorMessage,
-}) {
-  return AgentDomainEntity.agentMessage(
-    id: id,
-    agentId: 'agent-001',
-    threadId: 'thread-001',
-    kind: kind,
-    createdAt: createdAt,
-    vectorClock: null,
-    metadata: AgentMessageMetadata(
-      toolName: toolName,
-      errorMessage: errorMessage,
-    ),
-    contentEntryId: contentEntryId,
-  ) as AgentMessageEntity;
-}
+import '../test_utils.dart';
 
 void main() {
-  const testAgentId = 'agent-001';
+  const testAgentId = kTestAgentId;
 
   group('AgentActivityLog', () {
     Widget buildSubject({
@@ -80,12 +57,12 @@ void main() {
 
     testWidgets('shows message cards with kind badges', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 10, 30, 45),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-2',
           kind: AgentMessageKind.action,
           createdAt: DateTime(2024, 3, 15, 10, 31),
@@ -105,37 +82,36 @@ void main() {
     testWidgets('shows correct kind badge labels for all kinds',
         (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 10),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-2',
           kind: AgentMessageKind.user,
           createdAt: DateTime(2024, 3, 15, 11),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-3',
-          kind: AgentMessageKind.thought,
           createdAt: DateTime(2024, 3, 15, 12),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-4',
           kind: AgentMessageKind.action,
           createdAt: DateTime(2024, 3, 15, 13),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-5',
           kind: AgentMessageKind.toolResult,
           createdAt: DateTime(2024, 3, 15, 14),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-6',
           kind: AgentMessageKind.summary,
           createdAt: DateTime(2024, 3, 15, 15),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-7',
           kind: AgentMessageKind.system,
           createdAt: DateTime(2024, 3, 15, 16),
@@ -158,7 +134,7 @@ void main() {
 
     testWidgets('shows tool name chip for action messages', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.action,
           createdAt: DateTime(2024, 3, 15, 10),
@@ -176,7 +152,7 @@ void main() {
 
     testWidgets('shows content entry ID when present', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 10),
@@ -194,7 +170,7 @@ void main() {
 
     testWidgets('shows error message in red when present', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.toolResult,
           createdAt: DateTime(2024, 3, 15, 10),
@@ -215,7 +191,7 @@ void main() {
 
     testWidgets('shows formatted timestamp for messages', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 9, 5, 3),
@@ -232,17 +208,17 @@ void main() {
 
     testWidgets('renders multiple messages as a list', (tester) async {
       final messages = <AgentDomainEntity>[
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-1',
           kind: AgentMessageKind.observation,
           createdAt: DateTime(2024, 3, 15, 10),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-2',
           kind: AgentMessageKind.action,
           createdAt: DateTime(2024, 3, 15, 11),
         ),
-        _makeMessage(
+        makeTestMessage(
           id: 'msg-3',
           kind: AgentMessageKind.toolResult,
           createdAt: DateTime(2024, 3, 15, 12),
@@ -264,7 +240,7 @@ void main() {
         // The widget uses `mapOrNull(agentMessage:)` which returns null for
         // non-message types, falling back to SizedBox.shrink.
         final entities = <AgentDomainEntity>[
-          _makeMessage(
+          makeTestMessage(
             id: 'msg-1',
             kind: AgentMessageKind.observation,
             createdAt: DateTime(2024, 3, 15, 10),

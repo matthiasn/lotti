@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -17,67 +16,9 @@ import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../test_utils.dart';
 
-const _testAgentId = 'agent-001';
-final _testDate = DateTime(2024, 3, 15, 10, 30);
-
-AgentIdentityEntity _makeIdentity({
-  AgentLifecycle lifecycle = AgentLifecycle.active,
-  String displayName = 'Test Task Agent',
-}) {
-  return AgentDomainEntity.agent(
-    id: _testAgentId,
-    agentId: _testAgentId,
-    kind: 'task_agent',
-    displayName: displayName,
-    lifecycle: lifecycle,
-    mode: AgentInteractionMode.autonomous,
-    allowedCategoryIds: const {},
-    currentStateId: 'state-001',
-    config: const AgentConfig(),
-    createdAt: _testDate,
-    updatedAt: _testDate,
-    vectorClock: null,
-  ) as AgentIdentityEntity;
-}
-
-AgentStateEntity _makeState({
-  int revision = 3,
-  int wakeCounter = 7,
-  int consecutiveFailureCount = 0,
-  DateTime? lastWakeAt,
-  DateTime? nextWakeAt,
-  DateTime? sleepUntil,
-}) {
-  return AgentDomainEntity.agentState(
-    id: 'state-001',
-    agentId: _testAgentId,
-    revision: revision,
-    slots: const AgentSlots(),
-    updatedAt: _testDate,
-    vectorClock: null,
-    lastWakeAt: lastWakeAt,
-    nextWakeAt: nextWakeAt,
-    sleepUntil: sleepUntil,
-    consecutiveFailureCount: consecutiveFailureCount,
-    wakeCounter: wakeCounter,
-  ) as AgentStateEntity;
-}
-
-AgentReportEntity _makeReport({
-  Map<String, Object?> content = const {
-    'markdown': '# Test Report\n\nEverything is fine.',
-  },
-}) {
-  return AgentDomainEntity.agentReport(
-    id: 'report-001',
-    agentId: _testAgentId,
-    scope: 'current',
-    createdAt: _testDate,
-    vectorClock: null,
-    content: content,
-  ) as AgentReportEntity;
-}
+const String _testAgentId = kTestAgentId;
 
 /// Wraps a full-page widget (one that contains its own Scaffold) in a
 /// [ProviderScope] + [MaterialApp] with localization, without adding any
@@ -178,16 +119,16 @@ void main() {
 
     testWidgets('shows agent name in app bar', (tester) async {
       await tester.pumpWidget(
-        buildDataSubject(identity: _makeIdentity()),
+        buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
-      expect(find.text('Test Task Agent'), findsOneWidget);
+      expect(find.text('Test Agent'), findsOneWidget);
     });
 
     testWidgets('shows lifecycle badge as Active', (tester) async {
       await tester.pumpWidget(
-        buildDataSubject(identity: _makeIdentity()),
+        buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
@@ -198,7 +139,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         buildDataSubject(
-          identity: _makeIdentity(lifecycle: AgentLifecycle.dormant),
+          identity: makeTestIdentity(lifecycle: AgentLifecycle.dormant),
         ),
       );
       await tester.pump();
@@ -209,7 +150,7 @@ void main() {
     testWidgets('shows lifecycle badge as Destroyed', (tester) async {
       await tester.pumpWidget(
         buildDataSubject(
-          identity: _makeIdentity(lifecycle: AgentLifecycle.destroyed),
+          identity: makeTestIdentity(lifecycle: AgentLifecycle.destroyed),
         ),
       );
       await tester.pump();
@@ -220,7 +161,7 @@ void main() {
     testWidgets('shows lifecycle badge as Created', (tester) async {
       await tester.pumpWidget(
         buildDataSubject(
-          identity: _makeIdentity(lifecycle: AgentLifecycle.created),
+          identity: makeTestIdentity(lifecycle: AgentLifecycle.created),
         ),
       );
       await tester.pump();
@@ -254,8 +195,8 @@ void main() {
     testWidgets('shows report section when report exists', (tester) async {
       await tester.pumpWidget(
         buildDataSubject(
-          identity: _makeIdentity(),
-          report: _makeReport(),
+          identity: makeTestIdentity(),
+          report: makeTestReport(),
         ),
       );
       await tester.pump();
@@ -266,7 +207,7 @@ void main() {
     testWidgets('shows "No report available" when report is null',
         (tester) async {
       await tester.pumpWidget(
-        buildDataSubject(identity: _makeIdentity()),
+        buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
@@ -275,7 +216,7 @@ void main() {
 
     testWidgets('shows Activity Log heading', (tester) async {
       await tester.pumpWidget(
-        buildDataSubject(identity: _makeIdentity()),
+        buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
@@ -285,8 +226,8 @@ void main() {
     testWidgets('shows state info section with values', (tester) async {
       await tester.pumpWidget(
         buildDataSubject(
-          identity: _makeIdentity(),
-          state: _makeState(
+          identity: makeTestIdentity(),
+          state: makeTestState(
             revision: 5,
             wakeCounter: 12,
             consecutiveFailureCount: 2,
@@ -310,8 +251,8 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           buildDataSubject(
-            identity: _makeIdentity(),
-            state: _makeState(
+            identity: makeTestIdentity(),
+            state: makeTestState(
               sleepUntil: DateTime(2024, 3, 16, 8),
             ),
           ),
@@ -327,8 +268,8 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           buildDataSubject(
-            identity: _makeIdentity(),
-            state: _makeState(),
+            identity: makeTestIdentity(),
+            state: makeTestState(),
           ),
         );
         await tester.pump();
@@ -341,7 +282,7 @@ void main() {
 
     testWidgets('shows agent controls section', (tester) async {
       await tester.pumpWidget(
-        buildDataSubject(identity: _makeIdentity()),
+        buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 

@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 void main() {
   setUpAll(() {
@@ -29,28 +30,20 @@ void main() {
   late MockWakeOrchestrator mockOrchestrator;
   late TaskAgentService service;
 
-  final testDate = DateTime(2024, 3, 15);
-
   AgentIdentityEntity makeIdentity({
     String agentId = 'agent-1',
     String kind = 'task_agent',
     String displayName = 'Task Agent',
     AgentLifecycle lifecycle = AgentLifecycle.active,
   }) {
-    return AgentDomainEntity.agent(
+    return makeTestIdentity(
       id: agentId,
       agentId: agentId,
       kind: kind,
       displayName: displayName,
       lifecycle: lifecycle,
-      mode: AgentInteractionMode.autonomous,
-      allowedCategoryIds: const {},
       currentStateId: 'state-$agentId',
-      config: const AgentConfig(),
-      createdAt: testDate,
-      updatedAt: testDate,
-      vectorClock: null,
-    ) as AgentIdentityEntity;
+    );
   }
 
   AgentStateEntity makeState({
@@ -58,14 +51,12 @@ void main() {
     String agentId = 'agent-1',
     String? activeTaskId,
   }) {
-    return AgentDomainEntity.agentState(
+    return makeTestState(
       id: id,
       agentId: agentId,
       revision: 0,
       slots: AgentSlots(activeTaskId: activeTaskId),
-      updatedAt: testDate,
-      vectorClock: null,
-    ) as AgentStateEntity;
+    );
   }
 
   setUp(() {
@@ -183,8 +174,8 @@ void main() {
           id: 'link-1',
           fromId: 'existing-agent',
           toId: 'task-1',
-          createdAt: testDate,
-          updatedAt: testDate,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
           vectorClock: null,
         );
 
@@ -247,8 +238,8 @@ void main() {
           id: 'link-1',
           fromId: 'agent-1',
           toId: 'task-1',
-          createdAt: testDate,
-          updatedAt: testDate,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
           vectorClock: null,
         );
         final identity = makeIdentity();
@@ -282,8 +273,8 @@ void main() {
           id: 'link-1',
           fromId: 'ghost-agent',
           toId: 'task-1',
-          createdAt: testDate,
-          updatedAt: testDate,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
           vectorClock: null,
         );
 
@@ -326,16 +317,16 @@ void main() {
           id: 'link-1',
           fromId: 'ta-1',
           toId: 'task-10',
-          createdAt: testDate,
-          updatedAt: testDate,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
           vectorClock: null,
         );
         final link2 = AgentLink.agentTask(
           id: 'link-2',
           fromId: 'ta-1',
           toId: 'task-20',
-          createdAt: testDate,
-          updatedAt: testDate,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
           vectorClock: null,
         );
 

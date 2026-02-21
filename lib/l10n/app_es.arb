@@ -25,6 +25,76 @@
   "addToDictionarySaveFailed": "Error al guardar el diccionario",
   "addToDictionarySuccess": "Término añadido al diccionario",
   "addToDictionaryTooLong": "Término demasiado largo (máx. 50 caracteres)",
+  "agentActivityLogHeading": "Registro de actividad",
+  "agentControlsDestroyButton": "Destruir",
+  "agentControlsDestroyDialogContent": "Esto desactivará permanentemente al agente. Su historial se conservará para auditoría.",
+  "agentControlsDestroyDialogTitle": "¿Destruir agente?",
+  "agentControlsDestroyedMessage": "Este agente ha sido destruido.",
+  "agentControlsPauseButton": "Pausar",
+  "agentControlsReanalyzeButton": "Reanalizar",
+  "agentControlsResumeButton": "Reanudar",
+  "agentDetailErrorLoading": "Error al cargar el agente: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agente no encontrado.",
+  "agentDetailUnexpectedType": "Tipo de entidad inesperado.",
+  "agentLifecycleActive": "Activo",
+  "agentLifecycleCreated": "Creado",
+  "agentLifecycleDestroyed": "Destruido",
+  "agentLifecyclePaused": "Pausado",
+  "agentMessageContentPrefix": "Contenido: {contentId}",
+  "@agentMessageContentPrefix": {
+    "placeholders": {
+      "contentId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentMessageKindAction": "Acción",
+  "agentMessageKindObservation": "Observación",
+  "agentMessageKindSummary": "Resumen",
+  "agentMessageKindSystem": "Sistema",
+  "agentMessageKindThought": "Pensamiento",
+  "agentMessageKindToolResult": "Resultado de herramienta",
+  "agentMessageKindUser": "Usuario",
+  "agentMessagesEmpty": "Aún no hay mensajes.",
+  "agentMessagesErrorLoading": "Error al cargar los mensajes: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Error al cargar el informe: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "Aún no hay informe disponible.",
+  "agentStateConsecutiveFailures": "Fallos consecutivos",
+  "agentStateErrorLoading": "Error al cargar el estado: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "Información de estado",
+  "agentStateLastWake": "Último despertar",
+  "agentStateNextWake": "Próximo despertar",
+  "agentStateRevision": "Revisión",
+  "agentStateSleepingUntil": "Durmiendo hasta",
+  "agentStateWakeCount": "Conteo de despertares",
   "aiAssistantActionItemSuggestions": "Sugerencias de elementos de acción",
   "aiAssistantAnalyzeImage": "Analizar imagen",
   "aiAssistantSummarizeTask": "Resumir tarea",

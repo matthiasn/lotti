@@ -24,6 +24,76 @@
   "addToDictionarySaveFailed": "Failed to save dictionary",
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
+  "agentActivityLogHeading": "Activity Log",
+  "agentControlsDestroyButton": "Destroy",
+  "agentControlsDestroyDialogContent": "This will permanently deactivate the agent. Its history will be preserved for audit.",
+  "agentControlsDestroyDialogTitle": "Destroy Agent?",
+  "agentControlsDestroyedMessage": "This agent has been destroyed.",
+  "agentControlsPauseButton": "Pause",
+  "agentControlsReanalyzeButton": "Re-analyze",
+  "agentControlsResumeButton": "Resume",
+  "agentDetailErrorLoading": "Error loading agent: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agent not found.",
+  "agentDetailUnexpectedType": "Unexpected entity type.",
+  "agentLifecycleActive": "Active",
+  "agentLifecycleCreated": "Created",
+  "agentLifecycleDestroyed": "Destroyed",
+  "agentLifecyclePaused": "Paused",
+  "agentMessageContentPrefix": "Content: {contentId}",
+  "@agentMessageContentPrefix": {
+    "placeholders": {
+      "contentId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentMessageKindAction": "Action",
+  "agentMessageKindObservation": "Observation",
+  "agentMessageKindSummary": "Summary",
+  "agentMessageKindSystem": "System",
+  "agentMessageKindThought": "Thought",
+  "agentMessageKindToolResult": "Tool Result",
+  "agentMessageKindUser": "User",
+  "agentMessagesEmpty": "No messages yet.",
+  "agentMessagesErrorLoading": "Failed to load messages: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Failed to load report: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "No report available yet.",
+  "agentStateConsecutiveFailures": "Consecutive failures",
+  "agentStateErrorLoading": "Failed to load state: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "State Info",
+  "agentStateLastWake": "Last wake",
+  "agentStateNextWake": "Next wake",
+  "agentStateRevision": "Revision",
+  "agentStateSleepingUntil": "Sleeping until",
+  "agentStateWakeCount": "Wake count",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",

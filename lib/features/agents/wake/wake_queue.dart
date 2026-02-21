@@ -72,6 +72,13 @@ class WakeQueue {
     return false;
   }
 
+  /// Re-enqueue a previously dequeued job without deduplication.
+  ///
+  /// Used by the orchestrator to put back jobs whose agent is currently busy.
+  /// The run key remains in [_seenRunKeys] so that external duplicates are
+  /// still rejected.
+  void requeue(WakeJob job) => _queue.add(job);
+
   /// Whether the queue has no pending jobs.
   bool get isEmpty => _queue.isEmpty;
 

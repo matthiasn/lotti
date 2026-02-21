@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Detail page for a single agent.
@@ -34,8 +35,7 @@ class AgentDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: Center(
           child: Text(
-            // TODO(l10n): localize error message
-            'Error loading agent: $error',
+            context.messages.agentDetailErrorLoading(error.toString()),
             style: context.textTheme.bodyMedium?.copyWith(
               color: context.colorScheme.error,
             ),
@@ -48,8 +48,7 @@ class AgentDetailPage extends ConsumerWidget {
             appBar: AppBar(),
             body: Center(
               child: Text(
-                // TODO(l10n): localize not-found message
-                'Agent not found.',
+                context.messages.agentDetailNotFound,
                 style: context.textTheme.bodyLarge,
               ),
             ),
@@ -62,8 +61,7 @@ class AgentDetailPage extends ConsumerWidget {
             appBar: AppBar(),
             body: Center(
               child: Text(
-                // TODO(l10n): localize unexpected type message
-                'Unexpected entity type.',
+                context.messages.agentDetailUnexpectedType,
                 style: context.textTheme.bodyLarge,
               ),
             ),
@@ -103,8 +101,7 @@ class AgentDetailPage extends ConsumerWidget {
                       vertical: AppTheme.spacingSmall,
                     ),
                     child: Text(
-                      // TODO(l10n): localize heading
-                      'Activity Log',
+                      context.messages.agentActivityLogHeading,
                       style: context.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -145,8 +142,7 @@ class AgentDetailPage extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          // TODO(l10n): localize error
-          'Failed to load report: $error',
+          context.messages.agentReportErrorLoading(error.toString()),
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -157,8 +153,7 @@ class AgentDetailPage extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.all(AppTheme.cardPadding),
             child: Text(
-              // TODO(l10n): localize no-report message
-              'No report available yet.',
+              context.messages.agentReportNone,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -186,8 +181,7 @@ class AgentDetailPage extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          // TODO(l10n): localize error
-          'Failed to load state: $error',
+          context.messages.agentStateErrorLoading(error.toString()),
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -208,44 +202,37 @@ class AgentDetailPage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                // TODO(l10n): localize heading
-                'State Info',
+                context.messages.agentStateHeading,
                 style: context.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppTheme.spacingSmall),
               _StateRow(
-                // TODO(l10n): localize label
-                label: 'Revision',
+                label: context.messages.agentStateRevision,
                 value: state.revision.toString(),
               ),
               _StateRow(
-                // TODO(l10n): localize label
-                label: 'Wake count',
+                label: context.messages.agentStateWakeCount,
                 value: state.wakeCounter.toString(),
               ),
               _StateRow(
-                // TODO(l10n): localize label
-                label: 'Consecutive failures',
+                label: context.messages.agentStateConsecutiveFailures,
                 value: state.consecutiveFailureCount.toString(),
               ),
               if (state.lastWakeAt != null)
                 _StateRow(
-                  // TODO(l10n): localize label
-                  label: 'Last wake',
+                  label: context.messages.agentStateLastWake,
                   value: _formatDateTime(state.lastWakeAt!),
                 ),
               if (state.nextWakeAt != null)
                 _StateRow(
-                  // TODO(l10n): localize label
-                  label: 'Next wake',
+                  label: context.messages.agentStateNextWake,
                   value: _formatDateTime(state.nextWakeAt!),
                 ),
               if (state.sleepUntil != null)
                 _StateRow(
-                  // TODO(l10n): localize label
-                  label: 'Sleeping until',
+                  label: context.messages.agentStateSleepingUntil,
                   value: _formatDateTime(state.sleepUntil!),
                 ),
             ],
@@ -297,12 +284,12 @@ class _LifecycleBadge extends StatelessWidget {
     AgentLifecycle lifecycle,
   ) {
     final scheme = context.colorScheme;
-    // TODO(l10n): localize lifecycle labels
+    final l10n = context.messages;
     return switch (lifecycle) {
-      AgentLifecycle.created => ('Created', scheme.tertiary),
-      AgentLifecycle.active => ('Active', scheme.primary),
-      AgentLifecycle.dormant => ('Paused', scheme.secondary),
-      AgentLifecycle.destroyed => ('Destroyed', scheme.error),
+      AgentLifecycle.created => (l10n.agentLifecycleCreated, scheme.tertiary),
+      AgentLifecycle.active => (l10n.agentLifecycleActive, scheme.primary),
+      AgentLifecycle.dormant => (l10n.agentLifecyclePaused, scheme.secondary),
+      AgentLifecycle.destroyed => (l10n.agentLifecycleDestroyed, scheme.error),
     };
   }
 }

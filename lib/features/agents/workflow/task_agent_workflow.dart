@@ -612,12 +612,21 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     Map<String, dynamic> args,
     String taskId,
   ) async {
-    final title = args['title'] as String? ?? '';
+    final titleArg = args['title'];
+    if (titleArg is! String || titleArg.isEmpty) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "title" must be a non-empty string, '
+            'got ${titleArg.runtimeType}',
+        errorMessage: 'Type validation failed for title',
+      );
+    }
+
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,
     );
-    final result = await handler.handle(title);
+    final result = await handler.handle(titleArg);
     return TaskTitleHandler.toToolExecutionResult(result, entityId: taskId);
   }
 
@@ -628,6 +637,25 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     String taskId,
     ConversationManager manager,
   ) async {
+    // Validate the expected string argument for each tool.
+    final expectedKey = switch (toolName) {
+      'update_task_estimate' => 'estimate',
+      'update_task_due_date' => 'dueDate',
+      'update_task_priority' => 'priority',
+      _ => null,
+    };
+    if (expectedKey != null) {
+      final value = args[expectedKey];
+      if (value is! String || value.isEmpty) {
+        return ToolExecutionResult(
+          success: false,
+          output: 'Error: "$expectedKey" must be a non-empty string, '
+              'got ${value.runtimeType}',
+          errorMessage: 'Type validation failed for $expectedKey',
+        );
+      }
+    }
+
     final toolCall = ChatCompletionMessageToolCall(
       id: 'agent_$toolName',
       type: ChatCompletionMessageToolCallType.function,
@@ -692,6 +720,16 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     Map<String, dynamic> args,
     String taskId,
   ) async {
+    final items = args['items'];
+    if (items is! List || items.isEmpty) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "items" must be a non-empty array, '
+            'got ${items.runtimeType}',
+        errorMessage: 'Type validation failed for items',
+      );
+    }
+
     final autoChecklistService = AutoChecklistService(
       checklistRepository: checklistRepository,
     );
@@ -734,6 +772,16 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     Map<String, dynamic> args,
     String taskId,
   ) async {
+    final updates = args['updates'];
+    if (updates is! List || updates.isEmpty) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "updates" must be a non-empty array, '
+            'got ${updates.runtimeType}',
+        errorMessage: 'Type validation failed for updates',
+      );
+    }
+
     final handler = LottiChecklistUpdateHandler(
       task: task,
       checklistRepository: checklistRepository,

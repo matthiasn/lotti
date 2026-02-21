@@ -222,5 +222,33 @@ void main() {
         expect(queue.isEmpty, isTrue);
       });
     });
+
+    group('requeue', () {
+      test('adds job back without dedup check', () {
+        final job = makeJob(runKey: 'rk-1');
+        queue.enqueue(job);
+        final dequeued = queue.dequeue()!;
+
+        // Normal enqueue would be rejected (key already seen)
+        expect(queue.enqueue(makeJob(runKey: 'rk-1')), isFalse);
+
+        // Requeue bypasses dedup
+        queue.requeue(dequeued);
+        expect(queue.isEmpty, isFalse);
+        expect(queue.dequeue()!.runKey, 'rk-1');
+      });
+
+      test('requeued job preserves original fields', () {
+        final job = makeJob(runKey: 'rk-1', agentId: 'agent-42');
+        queue
+          ..enqueue(job)
+          ..dequeue()
+          ..requeue(job);
+
+        final result = queue.dequeue()!;
+        expect(result.runKey, 'rk-1');
+        expect(result.agentId, 'agent-42');
+      });
+    });
   });
 }
