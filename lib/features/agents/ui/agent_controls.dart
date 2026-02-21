@@ -63,6 +63,8 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                           await ref
                               .read(agentServiceProvider)
                               .deleteAgent(widget.agentId);
+                          // Pop the detail page — the agent no longer
+                          // exists, so there is nothing left to display.
                           if (context.mounted) {
                             Navigator.of(context).pop();
                           }
@@ -180,11 +182,9 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
     ref.invalidate(agentIdentityProvider(widget.agentId));
   }
 
-  Future<void> _triggerReanalysis() async {
-    await _runAction(() async {
-      ref.read(taskAgentServiceProvider).triggerReanalysis(widget.agentId);
-    });
-  }
+  Future<void> _triggerReanalysis() => _runAction(() async {
+        ref.read(taskAgentServiceProvider).triggerReanalysis(widget.agentId);
+      });
 
   /// Shows a confirmation dialog, then runs [onConfirmed] with busy-state
   /// guard and error handling.

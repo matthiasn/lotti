@@ -7,12 +7,6 @@ import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Message kinds whose payload text is shown in an expandable section.
-const Set<AgentMessageKind> _expandableKinds = {
-  AgentMessageKind.observation,
-  AgentMessageKind.thought,
-};
-
 /// Displays a chronological list of recent agent messages.
 ///
 /// Each message shows a timestamp, a colored kind badge, content preview
@@ -88,6 +82,11 @@ class _MessageCard extends ConsumerStatefulWidget {
 }
 
 class _MessageCardState extends ConsumerState<_MessageCard> {
+  static const Set<AgentMessageKind> _expandableKinds = {
+    AgentMessageKind.observation,
+    AgentMessageKind.thought,
+  };
+
   bool _expanded = false;
 
   @override
@@ -151,7 +150,11 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
                   child: Text(
-                    context.messages.agentMessageContentPrefix(contentId),
+                    context.messages.agentMessageContentPrefix(
+                      contentId.length > 32
+                          ? '${contentId.substring(0, 32)}…'
+                          : contentId,
+                    ),
                     style: context.textTheme.bodySmall?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
