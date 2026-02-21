@@ -89,8 +89,8 @@ class TaskTitleHandler {
 
   /// The task being processed.
   ///
-  /// Intentionally mutable so that subsequent operations in the same wake
-  /// session see the updated title without reloading from the database.
+  /// Mutable so that after a successful update the handler's local reference
+  /// reflects the new state (e.g. for the [onTaskUpdated] callback).
   Task task;
 
   /// Repository for persisting task updates to the database.

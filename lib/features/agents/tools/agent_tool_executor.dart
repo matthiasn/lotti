@@ -110,6 +110,8 @@ class AgentToolExecutor {
   /// The conversation thread ID for the current wake.
   final String threadId;
 
+  static const _uuid = Uuid();
+
   final _mutatedEntries = <String, VectorClock>{};
 
   /// All entities mutated during this execution session, keyed by entity ID.
@@ -307,7 +309,7 @@ class AgentToolExecutor {
     final now = DateTime.now();
     await repository.upsertEntity(
       AgentDomainEntity.agentMessage(
-        id: const Uuid().v4(),
+        id: _uuid.v4(),
         agentId: agentId,
         threadId: threadId,
         kind: kind,

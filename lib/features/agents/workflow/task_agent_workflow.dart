@@ -507,10 +507,12 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     if (journalObservations.isNotEmpty) {
       buffer.writeln('## Your Prior Observations');
       // Cap to most recent 20 to prevent unbounded context growth.
-      // journalObservations is ordered newest-first from the DB query.
-      final recentObs = journalObservations.length > 20
-          ? journalObservations.sublist(0, 20)
-          : journalObservations;
+      // journalObservations is ordered newest-first from the DB query;
+      // reverse so the LLM sees them in chronological order.
+      final recentObs = (journalObservations.length > 20
+              ? journalObservations.sublist(0, 20)
+              : journalObservations)
+          .reversed;
       for (final obs in recentObs) {
         final text = await _resolveObservationText(obs);
         buffer.writeln('- [${obs.createdAt.toIso8601String()}] $text');
