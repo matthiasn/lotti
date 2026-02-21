@@ -215,8 +215,8 @@ void main() {
         final itemProps = itemsSchema['properties'] as Map;
         expect((itemProps['id'] as Map)['type'], equals('string'));
         expect((itemProps['isChecked'] as Map)['type'], equals('boolean'));
-        expect(itemsSchema['required'], contains('id'));
-        expect(itemsSchema['required'], contains('isChecked'));
+        expect((itemProps['title'] as Map)['type'], equals('string'));
+        expect(itemsSchema['required'], equals(['id']));
         expect(itemsSchema['additionalProperties'], isFalse);
         expect(tool.parameters['required'], contains('items'));
       });

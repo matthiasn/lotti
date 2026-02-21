@@ -859,12 +859,21 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
 
     final count = await handler.executeUpdates(parseResult);
+    final hasRealFailures = count == 0 &&
+        handler.skippedItems.any(
+          (s) => s.reason != 'No changes detected',
+        );
     return ToolExecutionResult(
       // Return success=true as long as parsing succeeded — a count of 0
       // just means all items were already in the requested state (no-op).
       success: true,
       output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
+      // Surface real failures (not found, wrong task, DB error) so
+      // monitoring/auditing can detect them without failing the LLM call.
+      errorMessage: hasRealFailures
+          ? 'All ${handler.skippedItems.length} item(s) skipped or failed'
+          : null,
     );
   }
 

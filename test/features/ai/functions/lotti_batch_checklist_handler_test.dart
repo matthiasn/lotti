@@ -21,6 +21,8 @@ const _uuid = Uuid();
 
 // Test data factory
 class TestDataFactory {
+  static final _testDate = DateTime(2024, 3, 15);
+
   static Task createTask({
     String? id,
     String? title,
@@ -30,10 +32,10 @@ class TestDataFactory {
     return Task(
       meta: Metadata(
         id: taskId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: _testDate,
+        updatedAt: _testDate,
+        dateFrom: _testDate,
+        dateTo: _testDate,
         categoryId: 'test-category',
       ),
       data: TaskData(
@@ -41,12 +43,12 @@ class TestDataFactory {
         checklistIds: checklistIds ?? [],
         status: TaskStatus.open(
           id: 'status-1',
-          createdAt: DateTime.now(),
+          createdAt: _testDate,
           utcOffset: 0,
         ),
         statusHistory: const [],
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        dateFrom: _testDate,
+        dateTo: _testDate,
       ),
     );
   }
@@ -311,10 +313,10 @@ void main() {
           (_) async => Checklist(
             meta: Metadata(
               id: 'new-checklist',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistData(
@@ -329,10 +331,10 @@ void main() {
           (_) async => Checklist(
             meta: Metadata(
               id: 'new-checklist',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistData(
@@ -374,10 +376,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -399,10 +401,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -424,10 +426,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -441,8 +443,8 @@ void main() {
         // Act
         final count = await handler.createBatchItems(result);
 
-        // Assert (creation happened; focus on payload correctness)
-        expect(count >= 0, true);
+        // Assert all 3 items from the input were created.
+        expect(count, equals(3));
 
         // Lightweight integration check for tool response
         final toolResponse = handler.createToolResponse(result);
@@ -501,10 +503,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: itemId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -585,10 +587,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -663,10 +665,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(
@@ -859,10 +861,10 @@ void main() {
           (_) async => Checklist(
             meta: Metadata(
               id: 'new-checklist',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistData(
@@ -907,10 +909,10 @@ void main() {
           return ChecklistItem(
             meta: Metadata(
               id: _uuid.v4(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               categoryId: 'test-category',
             ),
             data: ChecklistItemData(

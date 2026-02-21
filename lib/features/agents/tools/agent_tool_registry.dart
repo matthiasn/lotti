@@ -128,7 +128,9 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: 'update_checklist_items',
-      description: 'Update the status of existing checklist items.',
+      description:
+          'Update existing checklist items. Each item needs its id and at '
+          'least one of isChecked or title.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -145,8 +147,14 @@ class AgentToolRegistry {
                   'type': 'boolean',
                   'description': 'Whether the item is checked.',
                 },
+                'title': {
+                  'type': 'string',
+                  'description':
+                      'New title for the item (e.g. fix a transcription '
+                          'error). Max 400 characters.',
+                },
               },
-              'required': ['id', 'isChecked'],
+              'required': ['id'],
               'additionalProperties': false,
             },
             'description': 'List of checklist item updates.',

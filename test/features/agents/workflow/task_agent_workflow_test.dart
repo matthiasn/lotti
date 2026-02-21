@@ -826,21 +826,23 @@ void main() {
         );
       }
 
-      test('unknown tool returns error in tool result', () async {
-        // The tool call goes through executor which needs category resolution.
-        // Since task entity is null, executor returns a policy denial — but
-        // that tests the _executeToolHandler dispatch path.
+      test('tool call with missing task entity triggers policy denial',
+          () async {
+        // journalEntityById returns null, so category resolution yields null
+        // and the executor's fail-closed policy denies the call. This verifies
+        // the wake doesn't crash on a missing task.
         final result = await executeWithToolCall(
           'nonexistent_tool',
           '{}',
         );
 
-        // The execute should still succeed overall (tool errors don't fail
-        // the wake).
+        // Tool errors don't fail the overall wake.
         expect(result.success, isTrue);
       });
 
-      test('set_task_title with empty title returns error', () async {
+      test('set_task_title with missing task entity is denied gracefully',
+          () async {
+        // Same as above — task entity is null so executor denies the call.
         final result = await executeWithToolCall(
           'set_task_title',
           '{"title":""}',
@@ -1099,16 +1101,18 @@ void main() {
       });
 
       test('caps observations to 20 most recent', () async {
-        // Create 25 observations.
+        // Create 25 observations ordered newest-first (as the DB returns).
         final observations = List.generate(25, (i) {
+          // Index 0 = newest (hour 24), index 24 = oldest (hour 0).
+          final hour = 24 - i;
           return AgentDomainEntity.agentMessage(
-            id: 'obs-$i',
+            id: 'obs-$hour',
             agentId: agentId,
             threadId: threadId,
             kind: AgentMessageKind.observation,
-            createdAt: DateTime(2024, 6, 15, i),
+            createdAt: DateTime(2024, 6, 15, hour),
             vectorClock: null,
-            contentEntryId: 'pay-$i',
+            contentEntryId: 'pay-$hour',
             metadata: const AgentMessageMetadata(runKey: runKey),
           ) as AgentMessageEntity;
         });
@@ -1131,12 +1135,12 @@ void main() {
             await executeAndCaptureMessage(observations: observations);
 
         expect(message, isNotNull);
-        // Only the first 20 should appear (indices 0-19).
-        expect(message, contains('Obs 0'));
-        expect(message, contains('Obs 19'));
-        // Index 20+ should NOT appear.
-        expect(message, isNot(contains('Obs 20')));
-        expect(message, isNot(contains('Obs 24')));
+        // The 20 most recent (hours 5-24) should appear; oldest 5 dropped.
+        expect(message, contains('Obs 5'));
+        expect(message, contains('Obs 24'));
+        // Oldest observations (hours 0-4) should NOT appear.
+        expect(message, isNot(contains('Obs 0')));
+        expect(message, isNot(contains('Obs 4')));
       });
     });
 
