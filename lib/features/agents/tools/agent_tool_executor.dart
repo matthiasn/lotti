@@ -45,8 +45,8 @@ class ToolExecutionResult {
   final String? denialReason;
 }
 
-/// Orchestrates tool calls on behalf of an agent with category enforcement,
-/// audit logging, and saga tracking.
+/// Orchestrates tool calls on behalf of an agent with category enforcement
+/// and audit logging.
 ///
 /// ## Responsibilities
 ///
@@ -61,6 +61,14 @@ class ToolExecutionResult {
 /// 5. **Vector-clock capture** — reads the post-mutation vector clock and
 ///    stores it in [mutatedEntries] so the caller can suppress self-generated
 ///    notifications.
+///
+/// ## Idempotency (planned)
+///
+/// Each execution is tagged with a deterministic `operationId` derived from the
+/// run key, tool name, arguments, and target entity. This ID is persisted in
+/// audit messages and is designed to support idempotency checks when wake-retry
+/// logic is added. Currently no retry mechanism exists, so the executor does
+/// not query for prior completions — but the infrastructure is in place.
 ///
 /// ## Usage
 ///

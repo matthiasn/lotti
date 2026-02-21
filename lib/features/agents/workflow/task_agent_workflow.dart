@@ -217,36 +217,9 @@ class TaskAgentWorkflow {
       final finalContent = _extractFinalAssistantContent(manager);
       strategy.recordFinalResponse(finalContent);
 
-      // 6. Persist the final assistant response as a thought message.
-      final thoughtText = strategy.finalResponse;
-      if (thoughtText != null) {
-        final thoughtPayloadId = _uuid.v4();
-        await agentRepository.upsertEntity(
-          AgentDomainEntity.agentMessagePayload(
-            id: thoughtPayloadId,
-            agentId: agentId,
-            createdAt: now,
-            vectorClock: null,
-            content: <String, Object?>{'text': thoughtText},
-          ),
-        );
-        await agentRepository.upsertEntity(
-          AgentDomainEntity.agentMessage(
-            id: _uuid.v4(),
-            agentId: agentId,
-            threadId: threadId,
-            kind: AgentMessageKind.thought,
-            createdAt: now,
-            vectorClock: null,
-            contentEntryId: thoughtPayloadId,
-            metadata: AgentMessageMetadata(runKey: runKey),
-          ),
-        );
-      }
-
-      // 7. Extract and persist updated report (from update_report tool call).
-      //    The agent contract requires calling update_report exactly once per
-      //    wake. Log a warning when it's missing so we can detect non-compliance.
+      // 6–9. Persist all wake outputs atomically. Wrapping in a transaction
+      // ensures the state revision is only bumped if all outputs (thought,
+      // report, observations) are successfully written.
       final reportContent = strategy.extractReportContent();
       if (reportContent.isEmpty) {
         developer.log(
@@ -256,75 +229,107 @@ class TaskAgentWorkflow {
           name: 'TaskAgentWorkflow',
         );
       }
-      if (reportContent.isNotEmpty) {
-        final reportId = _uuid.v4();
 
-        await agentRepository.upsertEntity(
-          AgentDomainEntity.agentReport(
-            id: reportId,
-            agentId: agentId,
-            scope: 'current',
-            createdAt: now,
-            vectorClock: null,
-            content: reportContent,
-          ),
-        );
-
-        // Update the report head pointer.
-        final existingHead =
-            await agentRepository.getReportHead(agentId, 'current');
-        final headId = existingHead?.id ?? _uuid.v4();
-
-        await agentRepository.upsertEntity(
-          AgentDomainEntity.agentReportHead(
-            id: headId,
-            agentId: agentId,
-            scope: 'current',
-            reportId: reportId,
-            updatedAt: now,
-            vectorClock: null,
-          ),
-        );
-      }
-
-      // 8. Persist new observation notes (agentJournal entries).
       final observations = strategy.extractObservations();
-      for (final note in observations) {
-        final payloadId = _uuid.v4();
+
+      await agentRepository.runInTransaction(() async {
+        // 6. Persist the final assistant response as a thought message.
+        final thoughtText = strategy.finalResponse;
+        if (thoughtText != null) {
+          final thoughtPayloadId = _uuid.v4();
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentMessagePayload(
+              id: thoughtPayloadId,
+              agentId: agentId,
+              createdAt: now,
+              vectorClock: null,
+              content: <String, Object?>{'text': thoughtText},
+            ),
+          );
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentMessage(
+              id: _uuid.v4(),
+              agentId: agentId,
+              threadId: threadId,
+              kind: AgentMessageKind.thought,
+              createdAt: now,
+              vectorClock: null,
+              contentEntryId: thoughtPayloadId,
+              metadata: AgentMessageMetadata(runKey: runKey),
+            ),
+          );
+        }
+
+        // 7. Extract and persist updated report (from update_report tool call).
+        if (reportContent.isNotEmpty) {
+          final reportId = _uuid.v4();
+
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: reportId,
+              agentId: agentId,
+              scope: 'current',
+              createdAt: now,
+              vectorClock: null,
+              content: reportContent,
+            ),
+          );
+
+          // Update the report head pointer.
+          final existingHead =
+              await agentRepository.getReportHead(agentId, 'current');
+          final headId = existingHead?.id ?? _uuid.v4();
+
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentReportHead(
+              id: headId,
+              agentId: agentId,
+              scope: 'current',
+              reportId: reportId,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          );
+        }
+
+        // 8. Persist new observation notes (agentJournal entries).
+        for (final note in observations) {
+          final payloadId = _uuid.v4();
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentMessagePayload(
+              id: payloadId,
+              agentId: agentId,
+              createdAt: now,
+              vectorClock: null,
+              content: <String, Object?>{'text': note},
+            ),
+          );
+
+          await agentRepository.upsertEntity(
+            AgentDomainEntity.agentMessage(
+              id: _uuid.v4(),
+              agentId: agentId,
+              threadId: threadId,
+              kind: AgentMessageKind.observation,
+              createdAt: now,
+              vectorClock: null,
+              contentEntryId: payloadId,
+              metadata: AgentMessageMetadata(runKey: runKey),
+            ),
+          );
+        }
+
+        // 9. Persist state.
         await agentRepository.upsertEntity(
-          AgentDomainEntity.agentMessagePayload(
-            id: payloadId,
-            agentId: agentId,
-            createdAt: now,
-            vectorClock: null,
-            content: <String, Object?>{'text': note},
+          state.copyWith(
+            revision: state.revision + 1,
+            lastWakeAt: now,
+            updatedAt: now,
+            consecutiveFailureCount: 0,
+            wakeCounter: state.wakeCounter + 1,
           ),
         );
-
-        await agentRepository.upsertEntity(
-          AgentDomainEntity.agentMessage(
-            id: _uuid.v4(),
-            agentId: agentId,
-            threadId: threadId,
-            kind: AgentMessageKind.observation,
-            createdAt: now,
-            vectorClock: null,
-            contentEntryId: payloadId,
-            metadata: AgentMessageMetadata(runKey: runKey),
-          ),
-        );
-      }
-
-      // 9. Persist state.
-      await agentRepository.upsertEntity(
-        state.copyWith(
-          revision: state.revision + 1,
-          lastWakeAt: now,
-          updatedAt: now,
-          consecutiveFailureCount: 0,
-          wakeCounter: state.wakeCounter + 1,
-        ),
-      );
+      });
 
       developer.log(
         'Wake completed for agent $agentId: '
