@@ -24,7 +24,7 @@ class AgentDatabase extends _$AgentDatabase {
           ),
         );
 
-  bool inMemoryDatabase = false;
+  final bool inMemoryDatabase;
 
   @override
   int get schemaVersion => 1;

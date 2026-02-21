@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 
 void main() {
   const id = 'report-id-1';
@@ -90,6 +91,69 @@ void main() {
       expect(entity, isA<AgentReportEntity>());
       final report = entity as AgentReportEntity;
       expect(report.content, '');
+    });
+  });
+
+  group('AgentDbConversions — unknown entity variant', () {
+    test('toEntityCompanion handles unknown variant correctly', () {
+      final entity = AgentDomainEntity.unknown(
+        id: 'unknown-001',
+        agentId: agentId,
+        createdAt: createdAt,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('unknown-001'));
+      expect(companion.agentId, const Value(agentId));
+      expect(companion.type, const Value('unknown'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(createdAt));
+      expect(companion.deletedAt, const Value<DateTime?>(null));
+    });
+
+    test('fromEntityRow roundtrips unknown variant', () {
+      final entity = AgentDomainEntity.unknown(
+        id: 'unknown-002',
+        agentId: agentId,
+        createdAt: createdAt,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: companion.id.value,
+        agentId: agentId,
+        type: 'unknown',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<AgentUnknownEntity>());
+      expect(result.id, 'unknown-002');
+      expect(result.agentId, agentId);
+    });
+  });
+
+  group('AgentDbConversions — messagePayload link variant', () {
+    test('toLinkCompanion handles messagePayload link correctly', () {
+      final link = model.AgentLink.messagePayload(
+        id: 'link-mp-001',
+        fromId: 'msg-001',
+        toId: 'payload-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      expect(companion.id, const Value('link-mp-001'));
+      expect(companion.fromId, const Value('msg-001'));
+      expect(companion.toId, const Value('payload-001'));
+      expect(companion.type, const Value('message_payload'));
     });
   });
 

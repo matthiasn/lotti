@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -142,12 +143,14 @@ void main() {
 
   SagaLogData makeSagaOp({
     String operationId = 'op-001',
+    String agentId = testAgentId,
     String runKey = 'run-key-001',
     String status = 'pending',
     String toolName = 'create_entry',
   }) {
     return SagaLogData(
       operationId: operationId,
+      agentId: agentId,
       runKey: runKey,
       phase: 'execution',
       status: status,
@@ -348,6 +351,29 @@ void main() {
         expect(state.revision, 1);
       });
 
+      test('returns the most recent state when multiple exist', () async {
+        await repo.upsertEntity(makeAgentState(id: 'state-old'));
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-new',
+            agentId: testAgentId,
+            revision: 2,
+            slots: const AgentSlots(activeTaskId: 'task-2'),
+            updatedAt: DateTime(2026, 2, 21),
+            vectorClock: const VectorClock({'node-1': 3}),
+          ),
+        );
+
+        final state = await repo.getAgentState(testAgentId);
+
+        expect(state, isNotNull);
+        // The query orders by created_at DESC; the second entity was inserted
+        // later, so it should be returned as the latest state.
+        expect(state!.id, 'state-new');
+        expect(state.revision, 2);
+        expect(state.slots.activeTaskId, 'task-2');
+      });
+
       test('returns null when no state exists', () async {
         final state = await repo.getAgentState(testAgentId);
         expect(state, isNull);
@@ -542,6 +568,32 @@ void main() {
         final result = await repo.getReportHead(testAgentId, 'daily');
         expect(result, isNull);
       });
+    });
+  });
+
+  group('getAllAgentIdentities', () {
+    test('returns all agent identity entities', () async {
+      await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
+      await repo.upsertEntity(makeAgent(id: 'agent-b', agentId: 'b-001'));
+      // Non-agent entities should not be included.
+      await repo.upsertEntity(makeAgentState());
+      await repo.upsertEntity(makeMessage());
+
+      final identities = await repo.getAllAgentIdentities();
+
+      expect(identities.length, 2);
+      expect(
+        identities.map((e) => e.id),
+        containsAll(['agent-a', 'agent-b']),
+      );
+    });
+
+    test('returns empty list when no agents exist', () async {
+      await repo.upsertEntity(makeAgentState());
+
+      final identities = await repo.getAllAgentIdentities();
+
+      expect(identities, isEmpty);
     });
   });
 
@@ -751,6 +803,20 @@ void main() {
       expect(result.errorMessage, isNull);
     });
 
+    test('insertWakeRun throws on duplicate runKey', () async {
+      await repo.insertWakeRun(entry: makeWakeRun());
+
+      await expectLater(
+        repo.insertWakeRun(entry: makeWakeRun()),
+        throwsA(
+          isA<DuplicateInsertException>()
+              .having((e) => e.table, 'table', 'wake_run_log')
+              .having((e) => e.key, 'key', 'run-key-001')
+              .having((e) => e.cause, 'cause', isNotNull),
+        ),
+      );
+    });
+
     test('getWakeRun returns null for unknown runKey', () async {
       final result = await repo.getWakeRun('no-such-key');
       expect(result, isNull);
@@ -823,6 +889,20 @@ void main() {
       expect(pending.first.toolName, 'create_entry');
     });
 
+    test('insertSagaOp throws on duplicate operationId', () async {
+      await repo.insertSagaOp(entry: makeSagaOp());
+
+      await expectLater(
+        repo.insertSagaOp(entry: makeSagaOp()),
+        throwsA(
+          isA<DuplicateInsertException>()
+              .having((e) => e.table, 'table', 'saga_log')
+              .having((e) => e.key, 'key', 'op-001')
+              .having((e) => e.cause, 'cause', isNotNull),
+        ),
+      );
+    });
+
     test('getPendingSagaOps returns only pending entries', () async {
       await repo.insertSagaOp(entry: makeSagaOp(operationId: 'op-pending'));
       await repo.insertSagaOp(
@@ -873,6 +953,7 @@ void main() {
       await repo.insertSagaOp(
         entry: SagaLogData(
           operationId: 'op-late',
+          agentId: testAgentId,
           runKey: 'run-key-001',
           phase: 'execution',
           status: 'pending',
@@ -884,6 +965,7 @@ void main() {
       await repo.insertSagaOp(
         entry: SagaLogData(
           operationId: 'op-early',
+          agentId: testAgentId,
           runKey: 'run-key-001',
           phase: 'execution',
           status: 'pending',
@@ -936,6 +1018,49 @@ void main() {
       expect(await repo.getLinksTo(testAgentId), isEmpty);
     });
 
+    test('deletes entity-to-entity links belonging to the agent', () async {
+      // Create entities owned by the agent.
+      await repo.upsertEntity(makeMessage(id: 'msg-A'));
+      await repo.upsertEntity(makeMessage(id: 'msg-B'));
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: 'payload-A',
+          agentId: testAgentId,
+          createdAt: testDate,
+          vectorClock: null,
+          content: const {'text': 'hello'},
+        ),
+      );
+
+      // Create entity-to-entity links (from_id and to_id are entity IDs,
+      // not the agentId itself).
+      await repo.upsertLink(model.AgentLink.messagePrev(
+        id: 'link-prev',
+        fromId: 'msg-B',
+        toId: 'msg-A',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      ));
+      await repo.upsertLink(model.AgentLink.messagePayload(
+        id: 'link-payload',
+        fromId: 'msg-A',
+        toId: 'payload-A',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      ));
+
+      expect(await repo.getLinksFrom('msg-B'), hasLength(1));
+      expect(await repo.getLinksFrom('msg-A'), hasLength(1));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      // Both entity-to-entity links must be deleted.
+      expect(await repo.getLinksFrom('msg-B'), isEmpty);
+      expect(await repo.getLinksFrom('msg-A'), isEmpty);
+    });
+
     test('deletes all wake runs for the target agent', () async {
       await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-a'));
       await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-b'));
@@ -951,6 +1076,24 @@ void main() {
         await db.getWakeRunsByAgentId(testAgentId, 100).get(),
         isEmpty,
       );
+    });
+
+    test('deletes saga ops even when wake run rows are missing', () async {
+      // Saga ops exist but no corresponding wake_run_log rows.
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'orphan-op-1'),
+      );
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'orphan-op-2', status: 'done'),
+      );
+
+      final allOpsBefore = await db.select(db.sagaLog).get();
+      expect(allOpsBefore, hasLength(2));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      final allOpsAfter = await db.select(db.sagaLog).get();
+      expect(allOpsAfter, isEmpty);
     });
 
     test('deletes saga ops associated with target agent wake runs', () async {
@@ -1039,7 +1182,11 @@ void main() {
         entry: makeSagaOp(operationId: 'op-target', runKey: 'run-target'),
       );
       await repo.insertSagaOp(
-        entry: makeSagaOp(operationId: 'op-other', runKey: 'run-other'),
+        entry: makeSagaOp(
+          operationId: 'op-other',
+          agentId: otherAgentId,
+          runKey: 'run-other',
+        ),
       );
 
       await repo.hardDeleteAgent(testAgentId);
@@ -1093,6 +1240,7 @@ void main() {
       await repo.insertSagaOp(
         entry: SagaLogData(
           operationId: 'op-other',
+          agentId: otherAgentId,
           runKey: 'other-run',
           phase: 'execution',
           status: 'done',

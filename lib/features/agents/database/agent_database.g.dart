@@ -1611,6 +1611,13 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       $customConstraints: 'NOT NULL PRIMARY KEY');
+  static const VerificationMeta _agentIdMeta =
+      const VerificationMeta('agentId');
+  late final GeneratedColumn<String> agentId = GeneratedColumn<String>(
+      'agent_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      $customConstraints: 'NOT NULL');
   static const VerificationMeta _runKeyMeta = const VerificationMeta('runKey');
   late final GeneratedColumn<String> runKey = GeneratedColumn<String>(
       'run_key', aliasedName, false,
@@ -1660,6 +1667,7 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
   @override
   List<GeneratedColumn> get $columns => [
         operationId,
+        agentId,
         runKey,
         phase,
         status,
@@ -1685,6 +1693,12 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
               data['operation_id']!, _operationIdMeta));
     } else if (isInserting) {
       context.missing(_operationIdMeta);
+    }
+    if (data.containsKey('agent_id')) {
+      context.handle(_agentIdMeta,
+          agentId.isAcceptableOrUnknown(data['agent_id']!, _agentIdMeta));
+    } else if (isInserting) {
+      context.missing(_agentIdMeta);
     }
     if (data.containsKey('run_key')) {
       context.handle(_runKeyMeta,
@@ -1737,6 +1751,8 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
     return SagaLogData(
       operationId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}operation_id'])!,
+      agentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}agent_id'])!,
       runKey: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}run_key'])!,
       phase: attachedDatabase.typeMapping
@@ -1765,6 +1781,7 @@ class SagaLog extends Table with TableInfo<SagaLog, SagaLogData> {
 
 class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   final String operationId;
+  final String agentId;
   final String runKey;
   final String phase;
   final String status;
@@ -1774,6 +1791,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   final DateTime updatedAt;
   const SagaLogData(
       {required this.operationId,
+      required this.agentId,
       required this.runKey,
       required this.phase,
       required this.status,
@@ -1785,6 +1803,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['operation_id'] = Variable<String>(operationId);
+    map['agent_id'] = Variable<String>(agentId);
     map['run_key'] = Variable<String>(runKey);
     map['phase'] = Variable<String>(phase);
     map['status'] = Variable<String>(status);
@@ -1800,6 +1819,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   SagaLogCompanion toCompanion(bool nullToAbsent) {
     return SagaLogCompanion(
       operationId: Value(operationId),
+      agentId: Value(agentId),
       runKey: Value(runKey),
       phase: Value(phase),
       status: Value(status),
@@ -1817,6 +1837,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SagaLogData(
       operationId: serializer.fromJson<String>(json['operation_id']),
+      agentId: serializer.fromJson<String>(json['agent_id']),
       runKey: serializer.fromJson<String>(json['run_key']),
       phase: serializer.fromJson<String>(json['phase']),
       status: serializer.fromJson<String>(json['status']),
@@ -1831,6 +1852,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'operation_id': serializer.toJson<String>(operationId),
+      'agent_id': serializer.toJson<String>(agentId),
       'run_key': serializer.toJson<String>(runKey),
       'phase': serializer.toJson<String>(phase),
       'status': serializer.toJson<String>(status),
@@ -1843,6 +1865,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
 
   SagaLogData copyWith(
           {String? operationId,
+          String? agentId,
           String? runKey,
           String? phase,
           String? status,
@@ -1852,6 +1875,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
           DateTime? updatedAt}) =>
       SagaLogData(
         operationId: operationId ?? this.operationId,
+        agentId: agentId ?? this.agentId,
         runKey: runKey ?? this.runKey,
         phase: phase ?? this.phase,
         status: status ?? this.status,
@@ -1864,6 +1888,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
     return SagaLogData(
       operationId:
           data.operationId.present ? data.operationId.value : this.operationId,
+      agentId: data.agentId.present ? data.agentId.value : this.agentId,
       runKey: data.runKey.present ? data.runKey.value : this.runKey,
       phase: data.phase.present ? data.phase.value : this.phase,
       status: data.status.present ? data.status.value : this.status,
@@ -1878,6 +1903,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   String toString() {
     return (StringBuffer('SagaLogData(')
           ..write('operationId: $operationId, ')
+          ..write('agentId: $agentId, ')
           ..write('runKey: $runKey, ')
           ..write('phase: $phase, ')
           ..write('status: $status, ')
@@ -1890,13 +1916,14 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
   }
 
   @override
-  int get hashCode => Object.hash(operationId, runKey, phase, status, toolName,
-      lastError, createdAt, updatedAt);
+  int get hashCode => Object.hash(operationId, agentId, runKey, phase, status,
+      toolName, lastError, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SagaLogData &&
           other.operationId == this.operationId &&
+          other.agentId == this.agentId &&
           other.runKey == this.runKey &&
           other.phase == this.phase &&
           other.status == this.status &&
@@ -1908,6 +1935,7 @@ class SagaLogData extends DataClass implements Insertable<SagaLogData> {
 
 class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   final Value<String> operationId;
+  final Value<String> agentId;
   final Value<String> runKey;
   final Value<String> phase;
   final Value<String> status;
@@ -1918,6 +1946,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   final Value<int> rowid;
   const SagaLogCompanion({
     this.operationId = const Value.absent(),
+    this.agentId = const Value.absent(),
     this.runKey = const Value.absent(),
     this.phase = const Value.absent(),
     this.status = const Value.absent(),
@@ -1929,6 +1958,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   });
   SagaLogCompanion.insert({
     required String operationId,
+    required String agentId,
     required String runKey,
     required String phase,
     required String status,
@@ -1938,6 +1968,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   })  : operationId = Value(operationId),
+        agentId = Value(agentId),
         runKey = Value(runKey),
         phase = Value(phase),
         status = Value(status),
@@ -1946,6 +1977,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
         updatedAt = Value(updatedAt);
   static Insertable<SagaLogData> custom({
     Expression<String>? operationId,
+    Expression<String>? agentId,
     Expression<String>? runKey,
     Expression<String>? phase,
     Expression<String>? status,
@@ -1957,6 +1989,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   }) {
     return RawValuesInsertable({
       if (operationId != null) 'operation_id': operationId,
+      if (agentId != null) 'agent_id': agentId,
       if (runKey != null) 'run_key': runKey,
       if (phase != null) 'phase': phase,
       if (status != null) 'status': status,
@@ -1970,6 +2003,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
 
   SagaLogCompanion copyWith(
       {Value<String>? operationId,
+      Value<String>? agentId,
       Value<String>? runKey,
       Value<String>? phase,
       Value<String>? status,
@@ -1980,6 +2014,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
       Value<int>? rowid}) {
     return SagaLogCompanion(
       operationId: operationId ?? this.operationId,
+      agentId: agentId ?? this.agentId,
       runKey: runKey ?? this.runKey,
       phase: phase ?? this.phase,
       status: status ?? this.status,
@@ -1996,6 +2031,9 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
     final map = <String, Expression>{};
     if (operationId.present) {
       map['operation_id'] = Variable<String>(operationId.value);
+    }
+    if (agentId.present) {
+      map['agent_id'] = Variable<String>(agentId.value);
     }
     if (runKey.present) {
       map['run_key'] = Variable<String>(runKey.value);
@@ -2028,6 +2066,7 @@ class SagaLogCompanion extends UpdateCompanion<SagaLogData> {
   String toString() {
     return (StringBuffer('SagaLogCompanion(')
           ..write('operationId: $operationId, ')
+          ..write('agentId: $agentId, ')
           ..write('runKey: $runKey, ')
           ..write('phase: $phase, ')
           ..write('status: $status, ')
@@ -2069,6 +2108,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final Index idxWakeRunLogStatus = Index('idx_wake_run_log_status',
       'CREATE INDEX idx_wake_run_log_status ON wake_run_log (status)');
   late final SagaLog sagaLog = SagaLog(this);
+  late final Index idxSagaLogAgent = Index('idx_saga_log_agent',
+      'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)');
   late final Index idxSagaLogStatus = Index('idx_saga_log_status',
       'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)');
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId) {
@@ -2232,7 +2273,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Future<int> deleteAgentLinks(String agentId) {
     return customUpdate(
-      'DELETE FROM agent_links WHERE from_id = ?1 OR to_id = ?1',
+      'DELETE FROM agent_links WHERE from_id = ?1 OR to_id = ?1 OR from_id IN (SELECT id FROM agent_entities WHERE agent_id = ?1) OR to_id IN (SELECT id FROM agent_entities WHERE agent_id = ?1)',
       variables: [Variable<String>(agentId)],
       updates: {agentLinks},
       updateKind: UpdateKind.delete,
@@ -2250,7 +2291,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Future<int> deleteAgentSagaOps(String agentId) {
     return customUpdate(
-      'DELETE FROM saga_log WHERE run_key IN (SELECT run_key FROM wake_run_log WHERE agent_id = ?1)',
+      'DELETE FROM saga_log WHERE agent_id = ?1',
       variables: [Variable<String>(agentId)],
       updates: {sagaLog},
       updateKind: UpdateKind.delete,
@@ -2275,6 +2316,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         idxWakeRunLogAgent,
         idxWakeRunLogStatus,
         sagaLog,
+        idxSagaLogAgent,
         idxSagaLogStatus
       ];
 }
@@ -3010,6 +3052,7 @@ typedef $WakeRunLogProcessedTableManager = ProcessedTableManager<
     PrefetchHooks Function()>;
 typedef $SagaLogCreateCompanionBuilder = SagaLogCompanion Function({
   required String operationId,
+  required String agentId,
   required String runKey,
   required String phase,
   required String status,
@@ -3021,6 +3064,7 @@ typedef $SagaLogCreateCompanionBuilder = SagaLogCompanion Function({
 });
 typedef $SagaLogUpdateCompanionBuilder = SagaLogCompanion Function({
   Value<String> operationId,
+  Value<String> agentId,
   Value<String> runKey,
   Value<String> phase,
   Value<String> status,
@@ -3041,6 +3085,9 @@ class $SagaLogFilterComposer extends Composer<_$AgentDatabase, SagaLog> {
   });
   ColumnFilters<String> get operationId => $composableBuilder(
       column: $table.operationId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get agentId => $composableBuilder(
+      column: $table.agentId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get runKey => $composableBuilder(
       column: $table.runKey, builder: (column) => ColumnFilters(column));
@@ -3075,6 +3122,9 @@ class $SagaLogOrderingComposer extends Composer<_$AgentDatabase, SagaLog> {
   ColumnOrderings<String> get operationId => $composableBuilder(
       column: $table.operationId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get agentId => $composableBuilder(
+      column: $table.agentId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get runKey => $composableBuilder(
       column: $table.runKey, builder: (column) => ColumnOrderings(column));
 
@@ -3107,6 +3157,9 @@ class $SagaLogAnnotationComposer extends Composer<_$AgentDatabase, SagaLog> {
   });
   GeneratedColumn<String> get operationId => $composableBuilder(
       column: $table.operationId, builder: (column) => column);
+
+  GeneratedColumn<String> get agentId =>
+      $composableBuilder(column: $table.agentId, builder: (column) => column);
 
   GeneratedColumn<String> get runKey =>
       $composableBuilder(column: $table.runKey, builder: (column) => column);
@@ -3154,6 +3207,7 @@ class $SagaLogTableManager extends RootTableManager<
               $SagaLogAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<String> operationId = const Value.absent(),
+            Value<String> agentId = const Value.absent(),
             Value<String> runKey = const Value.absent(),
             Value<String> phase = const Value.absent(),
             Value<String> status = const Value.absent(),
@@ -3165,6 +3219,7 @@ class $SagaLogTableManager extends RootTableManager<
           }) =>
               SagaLogCompanion(
             operationId: operationId,
+            agentId: agentId,
             runKey: runKey,
             phase: phase,
             status: status,
@@ -3176,6 +3231,7 @@ class $SagaLogTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             required String operationId,
+            required String agentId,
             required String runKey,
             required String phase,
             required String status,
@@ -3187,6 +3243,7 @@ class $SagaLogTableManager extends RootTableManager<
           }) =>
               SagaLogCompanion.insert(
             operationId: operationId,
+            agentId: agentId,
             runKey: runKey,
             phase: phase,
             status: status,

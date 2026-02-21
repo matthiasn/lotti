@@ -55,6 +55,7 @@ CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
 
 CREATE TABLE saga_log (
   operation_id TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
   run_key TEXT NOT NULL,
   phase TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -64,6 +65,7 @@ CREATE TABLE saga_log (
   updated_at DATETIME NOT NULL
 );
 
+CREATE INDEX idx_saga_log_agent ON saga_log(agent_id);
 CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
 
 -- Named queries
@@ -96,8 +98,8 @@ getPendingSagaOps: SELECT * FROM saga_log WHERE status = 'pending' ORDER BY crea
 
 deleteAgentEntities: DELETE FROM agent_entities WHERE agent_id = :agentId;
 
-deleteAgentLinks: DELETE FROM agent_links WHERE from_id = :agentId OR to_id = :agentId;
+deleteAgentLinks: DELETE FROM agent_links WHERE from_id = :agentId OR to_id = :agentId OR from_id IN (SELECT id FROM agent_entities WHERE agent_id = :agentId) OR to_id IN (SELECT id FROM agent_entities WHERE agent_id = :agentId);
 
 deleteAgentWakeRuns: DELETE FROM wake_run_log WHERE agent_id = :agentId;
 
-deleteAgentSagaOps: DELETE FROM saga_log WHERE run_key IN (SELECT run_key FROM wake_run_log WHERE agent_id = :agentId);
+deleteAgentSagaOps: DELETE FROM saga_log WHERE agent_id = :agentId;

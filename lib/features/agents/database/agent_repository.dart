@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -21,8 +22,8 @@ class AgentRepository {
 
   // ── Entity CRUD ────────────────────────────────────────────────────────────
 
-  /// Insert or replace an [AgentDomainEntity] using the `id` as the conflict
-  /// target (ON CONFLICT REPLACE semantics via [InsertMode.insertOrReplace]).
+  /// Insert or update an [AgentDomainEntity] using the `id` as the conflict
+  /// target (ON CONFLICT DO UPDATE — updates supplied columns in place).
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     final companion = AgentDbConversions.toEntityCompanion(entity);
     await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
@@ -68,28 +69,14 @@ class AgentRepository {
     AgentMessageKind kind, {
     int? limit,
   }) async {
-    final List<AgentEntity> rows;
-    if (limit != null) {
-      rows = await _db
-          .getAgentEntitiesByTypeAndSubtype(
-            agentId,
-            'agentMessage',
-            kind.name,
-            limit,
-          )
-          .get();
-    } else {
-      rows = await _db
-          .getAgentEntitiesByTypeAndSubtype(
-            agentId,
-            'agentMessage',
-            kind.name,
-            // SQLite does not accept NULL for LIMIT in this query; use a large
-            // sentinel to mean "all rows".
-            0x7FFFFFFF,
-          )
-          .get();
-    }
+    final rows = await _db
+        .getAgentEntitiesByTypeAndSubtype(
+          agentId,
+          'agentMessage',
+          kind.name,
+          limit ?? -1,
+        )
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<AgentMessageEntity>()
@@ -107,7 +94,7 @@ class AgentRepository {
         .getAgentMessagesByThread(
           agentId,
           threadId,
-          limit ?? 0x7FFFFFFF,
+          limit ?? -1,
         )
         .get();
     return rows
@@ -161,8 +148,8 @@ class AgentRepository {
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
-  /// Insert or replace a link using the unique `(from_id, to_id, type)`
-  /// constraint.
+  /// Insert or update a link using on-conflict update semantics against the
+  /// unique `(from_id, to_id, type)` constraint.
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
     await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
@@ -202,10 +189,14 @@ class AgentRepository {
   // ── Wake run log ───────────────────────────────────────────────────────────
 
   /// Insert a new [WakeRunLogData] entry.
+  ///
+  /// Throws [DuplicateInsertException] if the run key already exists.
   Future<void> insertWakeRun({required WakeRunLogData entry}) async {
-    await _db
-        .into(_db.wakeRunLog)
-        .insertOnConflictUpdate(entry.toCompanion(true));
+    try {
+      await _db.into(_db.wakeRunLog).insert(entry.toCompanion(true));
+    } on Object catch (e) {
+      throw DuplicateInsertException('wake_run_log', entry.runKey, e);
+    }
   }
 
   /// Update the [status], and optionally [completedAt] and [errorMessage], for
@@ -238,8 +229,14 @@ class AgentRepository {
   // ── Saga log ───────────────────────────────────────────────────────────────
 
   /// Insert a new [SagaLogData] entry.
+  ///
+  /// Throws [DuplicateInsertException] if the operation ID already exists.
   Future<void> insertSagaOp({required SagaLogData entry}) async {
-    await _db.into(_db.sagaLog).insertOnConflictUpdate(entry.toCompanion(true));
+    try {
+      await _db.into(_db.sagaLog).insert(entry.toCompanion(true));
+    } on Object catch (e) {
+      throw DuplicateInsertException('saga_log', entry.operationId, e);
+    }
   }
 
   /// Update the [status], and optionally [lastError], for the saga operation
@@ -273,10 +270,12 @@ class AgentRepository {
   /// This is irreversible. Only call for agents whose lifecycle is
   /// [AgentLifecycle.destroyed].
   Future<void> hardDeleteAgent(String agentId) async {
-    // Saga ops reference wake_run_log via run_key, so delete them first.
-    await _db.deleteAgentSagaOps(agentId);
-    await _db.deleteAgentWakeRuns(agentId);
-    await _db.deleteAgentLinks(agentId);
-    await _db.deleteAgentEntities(agentId);
+    await _db.transaction(() async {
+      // Saga ops reference wake_run_log via run_key, so delete them first.
+      await _db.deleteAgentSagaOps(agentId);
+      await _db.deleteAgentWakeRuns(agentId);
+      await _db.deleteAgentLinks(agentId);
+      await _db.deleteAgentEntities(agentId);
+    });
   }
 }

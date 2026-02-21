@@ -250,7 +250,7 @@ Use granular persisted records:
 
 - `Agent` (identity + lifecycle + config)
 - `AgentState` (durable state snapshot)
-- `AgentRuntimeState` (in-memory only, never persisted — reconstructed from `AgentState` on startup/crash)
+- `AgentRuntimeState` (in-memory only, never persisted — lost on crash and reconstructed at next startup from `AgentState`)
 - `AgentMessage` (immutable log entry, one record per message)
 - `AgentMessagePayload` (normalized large content object referenced by `AgentMessage.contentEntryId`)
 - `AgentReport` (immutable user-facing snapshot)
@@ -805,7 +805,8 @@ final class AgentState {
   final AgentSlots slots;
 }
 
-/// In-memory only — never persisted. Reconstructed from AgentState on startup.
+/// In-memory only — never persisted; lost on crash and reconstructed from
+/// AgentState at next startup.
 final class AgentRuntimeState {
   const AgentRuntimeState({
     required this.agentId,
