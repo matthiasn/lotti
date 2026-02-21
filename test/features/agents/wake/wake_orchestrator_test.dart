@@ -91,6 +91,75 @@ void main() {
         });
       });
 
+      test('addSubscription replaces existing subscription with same id', () {
+        fakeAsync((async) {
+          // Add a subscription matching entity-1.
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            // Replace it with one matching entity-2 (same id).
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-2'},
+              ),
+            );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // entity-1 should no longer match (replaced).
+          emitTokens(async, controller, {'entity-1'});
+          expect(queue.isEmpty, isTrue);
+
+          // entity-2 should match (the replacement).
+          emitTokens(async, controller, {'entity-2'});
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
+
+          controller.close();
+        });
+      });
+
+      test(
+          'addSubscription with same id does not create duplicates '
+          'that cause duplicate wake jobs', () {
+        fakeAsync((async) {
+          // Add the same subscription twice.
+          for (var i = 0; i < 2; i++) {
+            orchestrator.addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            );
+          }
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitTokens(async, controller, {'entity-1'});
+
+          // Should produce exactly one wake run, not two.
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
+
+          controller.close();
+        });
+      });
+
       test('removeSubscriptions removes all subscriptions for an agent', () {
         fakeAsync((async) {
           orchestrator
@@ -1031,30 +1100,48 @@ void main() {
         });
       });
 
-      test('releases lock even when repository throws', () {
+      test('catches insertWakeRun failure, releases lock, and continues drain',
+          () {
         fakeAsync((async) {
+          var insertCallCount = 0;
           when(() => mockRepository.insertWakeRun(entry: any(named: 'entry')))
-              .thenAnswer((_) async => throw Exception('DB failure'));
-
-          final job = WakeJob(
-            runKey: 'rk-1',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            createdAt: DateTime(2024, 3, 15),
-          );
-          queue.enqueue(job);
-
-          // processNext propagates the exception (try/finally, no catch),
-          // but the finally block should still release the lock.
-          var threwException = false;
-          orchestrator.processNext().catchError((_) {
-            threwException = true;
+              .thenAnswer((_) async {
+            insertCallCount++;
+            if (insertCallCount == 1) throw Exception('DB failure');
           });
+
+          // Enqueue two jobs for different agents.
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-fail',
+                agentId: 'agent-1',
+                reason: 'subscription',
+                triggerTokens: {'tok-a'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-ok',
+                agentId: 'agent-2',
+                reason: 'subscription',
+                triggerTokens: {'tok-b'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          // processNext should NOT throw — the error is caught internally.
+          orchestrator.processNext();
           async.flushMicrotasks();
 
-          expect(threwException, isTrue);
+          // Both locks should be released.
           expect(runner.isRunning('agent-1'), isFalse);
+          expect(runner.isRunning('agent-2'), isFalse);
+
+          // The second job should still have been processed despite the
+          // first one failing.
+          expect(insertCallCount, 2);
         });
       });
 

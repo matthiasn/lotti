@@ -196,16 +196,13 @@ void main() {
         expect(queue.length, 1);
       });
 
-      test('does not affect queued jobs', () {
+      test('asserts when called with pending jobs', () {
         queue
           ..enqueue(makeJob(runKey: 'rk-1'))
-          ..enqueue(makeJob(runKey: 'rk-2'))
-          ..clearHistory();
+          ..enqueue(makeJob(runKey: 'rk-2'));
 
-        // Jobs are still in the queue
-        expect(queue.length, 2);
-        expect(queue.dequeue()!.runKey, 'rk-1');
-        expect(queue.dequeue()!.runKey, 'rk-2');
+        // Calling clearHistory with pending jobs is a programming error.
+        expect(queue.clearHistory, throwsA(isA<AssertionError>()));
       });
     });
 

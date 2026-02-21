@@ -33,19 +33,6 @@ class AgentSubscription {
   final bool Function(Set<String> tokens)? predicate;
 }
 
-/// Notification-driven wake orchestrator.
-///
-/// Responsibilities:
-/// - Listens to the `UpdateNotifications` stream (a `Stream<Set<String>>`).
-/// - Matches incoming notification batches against registered
-///   [AgentSubscription]s.
-/// - Suppresses self-notifications (writes made by the agent itself) using
-///   token-presence tracking via `recordMutatedEntities`. When all matched
-///   tokens correspond to entities that the agent itself mutated in its last
-///   wake cycle, the notification is suppressed.
-/// - Enqueues [WakeJob]s into [WakeQueue] with deterministic run keys.
-/// - Dispatches queued jobs through [WakeRunner] (single-flight per agent).
-/// - Persists every wake attempt to the [AgentRepository] wake-run log.
 /// Signature for the callback that executes a wake cycle.
 ///
 /// [agentId] is the target agent's ID.
@@ -62,6 +49,19 @@ typedef WakeExecutor = Future<Map<String, VectorClock>?> Function(
   String threadId,
 );
 
+/// Notification-driven wake orchestrator.
+///
+/// Responsibilities:
+/// - Listens to the `UpdateNotifications` stream (a `Stream<Set<String>>`).
+/// - Matches incoming notification batches against registered
+///   [AgentSubscription]s.
+/// - Suppresses self-notifications (writes made by the agent itself) using
+///   token-presence tracking via `recordMutatedEntities`. When all matched
+///   tokens correspond to entities that the agent itself mutated in its last
+///   wake cycle, the notification is suppressed.
+/// - Enqueues [WakeJob]s into [WakeQueue] with deterministic run keys.
+/// - Dispatches queued jobs through [WakeRunner] (single-flight per agent).
+/// - Persists every wake attempt to the [AgentRepository] wake-run log.
 class WakeOrchestrator {
   WakeOrchestrator({
     required this.repository,
@@ -122,7 +122,18 @@ class WakeOrchestrator {
 
   /// Register a subscription so that the agent is woken when matching tokens
   /// arrive.
-  void addSubscription(AgentSubscription sub) => _subscriptions.add(sub);
+  ///
+  /// If a subscription with the same [AgentSubscription.id] already exists it
+  /// is replaced, preventing duplicate wake jobs when `restoreSubscriptions`
+  /// runs more than once (e.g. on hot restart).
+  void addSubscription(AgentSubscription sub) {
+    final idx = _subscriptions.indexWhere((s) => s.id == sub.id);
+    if (idx >= 0) {
+      _subscriptions[idx] = sub;
+    } else {
+      _subscriptions.add(sub);
+    }
+  }
 
   /// Remove all subscriptions for [agentId] and clean up internal state.
   void removeSubscriptions(String agentId) {
@@ -177,8 +188,15 @@ class WakeOrchestrator {
   ///
   /// Each batch is a `Set<String>` of affected entity IDs / notification
   /// tokens as emitted by `UpdateNotifications.updateStream`.
-  void start(Stream<Set<String>> notificationStream) {
-    _notificationSub?.cancel();
+  ///
+  /// If a previous subscription exists it is fully cancelled before the new
+  /// one is attached, preventing stale event delivery.
+  Future<void> start(Stream<Set<String>> notificationStream) async {
+    final oldSub = _notificationSub;
+    if (oldSub != null) {
+      _notificationSub = null;
+      await oldSub.cancel();
+    }
     _notificationSub = notificationStream.listen(_onBatch);
   }
 
@@ -376,6 +394,9 @@ class WakeOrchestrator {
   }
 
   /// Execute a single wake job: persist → run executor → update status.
+  ///
+  /// All exceptions are caught and logged so that a single failing job does
+  /// not abort the drain loop and starve other queued jobs.
   Future<void> _executeJob(WakeJob job) async {
     final threadId = job.runKey;
 
@@ -391,7 +412,15 @@ class WakeOrchestrator {
         startedAt: clock.now(),
       );
 
-      await repository.insertWakeRun(entry: entry);
+      try {
+        await repository.insertWakeRun(entry: entry);
+      } catch (e) {
+        developer.log(
+          'Failed to persist wake run ${job.runKey}: $e',
+          name: 'WakeOrchestrator',
+        );
+        return;
+      }
 
       final executor = wakeExecutor;
       if (executor == null) {
@@ -438,6 +467,10 @@ class WakeOrchestrator {
           completedAt: clock.now(),
         );
       } catch (e) {
+        developer.log(
+          'Wake executor failed for run ${job.runKey}: $e',
+          name: 'WakeOrchestrator',
+        );
         await repository.updateWakeRunStatus(
           job.runKey,
           'failed',

@@ -267,7 +267,9 @@ void main() {
         when(() => mockOrchestrator.removeSubscriptions('agent-1'))
             .thenReturn(null);
 
-        await service.pauseAgent('agent-1');
+        final result = await service.pauseAgent('agent-1');
+
+        expect(result, isTrue);
 
         final captured = verify(
           () => mockRepository.upsertEntity(captureAny()),
@@ -279,23 +281,23 @@ void main() {
         verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
       });
 
-      test('handles non-existent agent gracefully', () async {
+      test('returns false and skips side-effects for non-existent agent',
+          () async {
         when(() => mockRepository.getEntity('non-existent'))
             .thenAnswer((_) async => null);
-        when(() => mockOrchestrator.removeSubscriptions('non-existent'))
-            .thenReturn(null);
 
-        // Should not throw
-        await service.pauseAgent('non-existent');
+        final result = await service.pauseAgent('non-existent');
 
+        expect(result, isFalse);
         verifyNever(() => mockRepository.upsertEntity(any()));
-        verify(() => mockOrchestrator.removeSubscriptions('non-existent'))
-            .called(1);
+        verifyNever(
+          () => mockOrchestrator.removeSubscriptions('non-existent'),
+        );
       });
     });
 
     group('resumeAgent', () {
-      test('sets lifecycle to active', () async {
+      test('sets lifecycle to active and returns true', () async {
         final identity = AgentDomainEntity.agent(
           id: 'agent-1',
           agentId: 'agent-1',
@@ -315,7 +317,9 @@ void main() {
             .thenAnswer((_) async => identity);
         when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
 
-        await service.resumeAgent('agent-1');
+        final result = await service.resumeAgent('agent-1');
+
+        expect(result, isTrue);
 
         final captured = verify(
           () => mockRepository.upsertEntity(captureAny()),
@@ -325,12 +329,13 @@ void main() {
         expect(updated.destroyedAt, isNull);
       });
 
-      test('handles non-existent agent gracefully', () async {
+      test('returns false for non-existent agent', () async {
         when(() => mockRepository.getEntity('non-existent'))
             .thenAnswer((_) async => null);
 
-        await service.resumeAgent('non-existent');
+        final result = await service.resumeAgent('non-existent');
 
+        expect(result, isFalse);
         verifyNever(() => mockRepository.upsertEntity(any()));
       });
     });
@@ -360,7 +365,9 @@ void main() {
         when(() => mockOrchestrator.removeSubscriptions('agent-1'))
             .thenReturn(null);
 
-        await service.destroyAgent('agent-1');
+        final result = await service.destroyAgent('agent-1');
+
+        expect(result, isTrue);
 
         final captured = verify(
           () => mockRepository.upsertEntity(captureAny()),
@@ -372,17 +379,18 @@ void main() {
         verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
       });
 
-      test('handles non-existent agent gracefully', () async {
+      test('returns false and skips side-effects for non-existent agent',
+          () async {
         when(() => mockRepository.getEntity('non-existent'))
             .thenAnswer((_) async => null);
-        when(() => mockOrchestrator.removeSubscriptions('non-existent'))
-            .thenReturn(null);
 
-        await service.destroyAgent('non-existent');
+        final result = await service.destroyAgent('non-existent');
 
+        expect(result, isFalse);
         verifyNever(() => mockRepository.upsertEntity(any()));
-        verify(() => mockOrchestrator.removeSubscriptions('non-existent'))
-            .called(1);
+        verifyNever(
+          () => mockOrchestrator.removeSubscriptions('non-existent'),
+        );
       });
     });
 

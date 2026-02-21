@@ -119,19 +119,29 @@ class AgentService {
 
   /// Transition agent to [AgentLifecycle.dormant] and unregister
   /// wake subscriptions.
-  Future<void> pauseAgent(String agentId) async {
-    await _updateLifecycle(agentId, AgentLifecycle.dormant);
+  ///
+  /// Returns `true` if the agent was found and paused, `false` if the agent
+  /// does not exist.
+  Future<bool> pauseAgent(String agentId) async {
+    final updated = await _updateLifecycle(agentId, AgentLifecycle.dormant);
+    if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
     developer.log('Paused agent $agentId', name: 'AgentService');
+    return true;
   }
 
   /// Transition agent to [AgentLifecycle.active].
   ///
   /// The caller is responsible for re-registering subscriptions after this
   /// call (subscription details are agent-kind-specific).
-  Future<void> resumeAgent(String agentId) async {
-    await _updateLifecycle(agentId, AgentLifecycle.active);
+  ///
+  /// Returns `true` if the agent was found and resumed, `false` if the agent
+  /// does not exist.
+  Future<bool> resumeAgent(String agentId) async {
+    final updated = await _updateLifecycle(agentId, AgentLifecycle.active);
+    if (!updated) return false;
     developer.log('Resumed agent $agentId', name: 'AgentService');
+    return true;
   }
 
   /// Transition agent to [AgentLifecycle.destroyed] and unregister
@@ -139,10 +149,15 @@ class AgentService {
   ///
   /// Does not delete data — the agent's history is preserved for audit.
   /// To permanently remove all data, call [deleteAgent] afterwards.
-  Future<void> destroyAgent(String agentId) async {
-    await _updateLifecycle(agentId, AgentLifecycle.destroyed);
+  ///
+  /// Returns `true` if the agent was found and destroyed, `false` if the
+  /// agent does not exist.
+  Future<bool> destroyAgent(String agentId) async {
+    final updated = await _updateLifecycle(agentId, AgentLifecycle.destroyed);
+    if (!updated) return false;
     orchestrator.removeSubscriptions(agentId);
     developer.log('Destroyed agent $agentId', name: 'AgentService');
+    return true;
   }
 
   /// Permanently delete all data for a **destroyed** agent.
@@ -161,7 +176,9 @@ class AgentService {
     developer.log('Deleted all data for agent $agentId', name: 'AgentService');
   }
 
-  Future<void> _updateLifecycle(
+  /// Returns `true` when the agent was found and its lifecycle was updated,
+  /// `false` when the agent does not exist.
+  Future<bool> _updateLifecycle(
     String agentId,
     AgentLifecycle lifecycle,
   ) async {
@@ -171,7 +188,7 @@ class AgentService {
         'Cannot update lifecycle: agent $agentId not found',
         name: 'AgentService',
       );
-      return;
+      return false;
     }
 
     final now = clock.now();
@@ -181,5 +198,6 @@ class AgentService {
       destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
     );
     await repository.upsertEntity(updated);
+    return true;
   }
 }
