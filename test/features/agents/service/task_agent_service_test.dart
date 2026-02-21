@@ -352,6 +352,53 @@ void main() {
       });
     });
 
+    group('restoreSubscriptionsForAgent', () {
+      test('registers subscriptions for a single agent', () async {
+        final link1 = AgentLink.agentTask(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'task-10',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final link2 = AgentLink.agentTask(
+          id: 'link-2',
+          fromId: 'agent-1',
+          toId: 'task-20',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+        ).thenAnswer((_) async => [link1, link2]);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+
+        await service.restoreSubscriptionsForAgent('agent-1');
+
+        final captured = verify(
+          () => mockOrchestrator.addSubscription(captureAny()),
+        ).captured.cast<AgentSubscription>();
+
+        expect(captured, hasLength(2));
+        expect(captured[0].matchEntityIds, contains('task-10'));
+        expect(captured[1].matchEntityIds, contains('task-20'));
+      });
+
+      test('handles no links gracefully', () async {
+        when(
+          () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+
+        await service.restoreSubscriptionsForAgent('agent-1');
+
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+    });
+
     group('restoreSubscriptions', () {
       test('registers subscriptions for active task agents', () async {
         final taskAgent = makeIdentity(agentId: 'ta-1');
