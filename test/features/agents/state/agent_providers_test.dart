@@ -556,12 +556,13 @@ void main() {
         await container.read(agentInitializationProvider.future);
 
         // Prime the providers so we can detect invalidation.
-        container.listen(agentReportProvider(kTestAgentId), (_, __) {});
-        container.listen(agentStateProvider(kTestAgentId), (_, __) {});
-        container.listen(
-          agentRecentMessagesProvider(kTestAgentId),
-          (_, __) {},
-        );
+        container
+          ..listen(agentReportProvider(kTestAgentId), (_, __) {})
+          ..listen(agentStateProvider(kTestAgentId), (_, __) {})
+          ..listen(
+            agentRecentMessagesProvider(kTestAgentId),
+            (_, __) {},
+          );
         await container.read(agentReportProvider(kTestAgentId).future);
         await container.read(agentStateProvider(kTestAgentId).future);
         await container.read(agentRecentMessagesProvider(kTestAgentId).future);

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -18,16 +20,19 @@ void main() {
 
   late MockAgentService mockAgentService;
   late MockTaskAgentService mockTaskAgentService;
+  late MockAgentRepository mockAgentRepository;
 
   setUp(() {
     mockAgentService = MockAgentService();
     mockTaskAgentService = MockTaskAgentService();
+    mockAgentRepository = MockAgentRepository();
   });
 
   Widget buildSubject({
     required AgentLifecycle lifecycle,
     AgentService? agentService,
     TaskAgentService? taskAgentService,
+    AgentRepository? agentRepository,
   }) {
     return makeTestableWidgetWithScaffold(
       AgentControls(
@@ -39,8 +44,11 @@ void main() {
             .overrideWithValue(agentService ?? mockAgentService),
         taskAgentServiceProvider
             .overrideWithValue(taskAgentService ?? mockTaskAgentService),
+        agentRepositoryProvider
+            .overrideWithValue(agentRepository ?? mockAgentRepository),
         // Override identity provider to prevent real DB access on invalidation
         agentIdentityProvider.overrideWith((ref, agentId) async => null),
+        taskAgentProvider.overrideWith((ref, taskId) async => null),
       ],
     );
   }
@@ -305,6 +313,12 @@ void main() {
     testWidgets(
       'Delete dialog Confirm calls deleteAgent',
       (tester) async {
+        when(
+          () => mockAgentRepository.getLinksFrom(
+            testAgentId,
+            type: 'agent_task',
+          ),
+        ).thenAnswer((_) async => []);
         when(() => mockAgentService.deleteAgent(testAgentId))
             .thenAnswer((_) async {});
 
@@ -321,6 +335,50 @@ void main() {
         await tester.tap(deleteButtons.last);
         await tester.pump();
 
+        verify(() => mockAgentService.deleteAgent(testAgentId)).called(1);
+      },
+    );
+
+    testWidgets(
+      'Delete looks up agent_task links for provider invalidation',
+      (tester) async {
+        const linkedTaskId = 'task-42';
+        final link = model.AgentLink.agentTask(
+          id: 'link-1',
+          fromId: testAgentId,
+          toId: linkedTaskId,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepository.getLinksFrom(
+            testAgentId,
+            type: 'agent_task',
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(() => mockAgentService.deleteAgent(testAgentId))
+            .thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildSubject(lifecycle: AgentLifecycle.destroyed),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Delete permanently'));
+        await tester.pump();
+
+        final deleteButtons = find.text('Delete permanently');
+        await tester.tap(deleteButtons.last);
+        await tester.pump();
+
+        verify(
+          () => mockAgentRepository.getLinksFrom(
+            testAgentId,
+            type: 'agent_task',
+          ),
+        ).called(1);
         verify(() => mockAgentService.deleteAgent(testAgentId)).called(1);
       },
     );
@@ -553,6 +611,12 @@ void main() {
       'Delete permanently button is disabled while busy',
       (tester) async {
         final completer = Completer<void>();
+        when(
+          () => mockAgentRepository.getLinksFrom(
+            testAgentId,
+            type: 'agent_task',
+          ),
+        ).thenAnswer((_) async => []);
         when(() => mockAgentService.deleteAgent(testAgentId))
             .thenAnswer((_) => completer.future);
 

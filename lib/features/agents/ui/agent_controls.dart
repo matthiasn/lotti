@@ -60,9 +60,24 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                         confirmLabel:
                             context.messages.agentControlsDeleteButton,
                         onConfirmed: () async {
+                          // Look up the task link before deletion so we
+                          // can invalidate the cached task-agent provider.
+                          final repo = ref.read(agentRepositoryProvider);
+                          final links = await repo.getLinksFrom(
+                            widget.agentId,
+                            type: 'agent_task',
+                          );
+
                           await ref
                               .read(agentServiceProvider)
                               .deleteAgent(widget.agentId);
+
+                          // Invalidate the task-level lookup so the chip
+                          // switches from "Agent" back to "Create Agent".
+                          for (final link in links) {
+                            ref.invalidate(taskAgentProvider(link.toId));
+                          }
+
                           // Pop the detail page — the agent no longer
                           // exists, so there is nothing left to display.
                           if (context.mounted) {
