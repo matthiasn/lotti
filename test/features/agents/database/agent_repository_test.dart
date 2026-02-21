@@ -781,6 +781,18 @@ void main() {
       // The updated vectorClock value confirms the second write took effect.
       expect(results.first.updatedAt, DateTime(2026, 2, 21));
     });
+
+    test('upsertLink with new id but duplicate (from, to, type) throws',
+        () async {
+      await repo.upsertLink(makeBasicLink(id: 'link-original'));
+
+      // Same (fromId, toId, type) but a different id — violates the UNIQUE
+      // constraint on (from_id, to_id, type).
+      await expectLater(
+        repo.upsertLink(makeBasicLink(id: 'link-duplicate-triplet')),
+        throwsA(isException),
+      );
+    });
   });
 
   // ── Wake run log ────────────────────────────────────────────────────────────

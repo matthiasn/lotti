@@ -81,7 +81,7 @@ CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type,
 
 | `type` value | Dart model | Purpose |
 |---|---|---|
-| `agent` | `AgentEntity` | Identity, lifecycle, config, allowed categories |
+| `agent` | `AgentIdentityEntity` | Identity, lifecycle, config, allowed categories |
 | `agentState` | `AgentStateEntity` | Durable state snapshot (slots, pointers, schedule) |
 | `agentMessage` | `AgentMessageEntity` | Immutable log entry (observation, action, toolResult, etc.) |
 | `agentMessagePayload` | `AgentMessagePayloadEntity` | Normalized large content (report body, tool args) |
@@ -260,7 +260,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required String scope,
     required DateTime createdAt,
     required VectorClock? vectorClock,
-    required Map<String, Object?> content,
+    @Default('') String content,
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,
