@@ -14,7 +14,7 @@ void main() {
   final createdAt = DateTime(2026, 2, 21);
   final updatedAt = DateTime(2026, 2, 21);
 
-  AgentEntity _makeRow(Map<String, dynamic> serializedJson) {
+  AgentEntity makeRow(Map<String, dynamic> serializedJson) {
     return AgentEntity(
       id: id,
       agentId: agentId,
@@ -26,7 +26,7 @@ void main() {
     );
   }
 
-  Map<String, dynamic> _baseReportJson({required Object content}) {
+  Map<String, dynamic> baseReportJson({required Object content}) {
     return {
       'runtimeType': 'agentReport',
       'id': id,
@@ -42,8 +42,8 @@ void main() {
     test(
         'old-format Map content with "markdown" key is migrated to String value',
         () {
-      final row = _makeRow(
-        _baseReportJson(content: {'markdown': '# Report'}),
+      final row = makeRow(
+        baseReportJson(content: {'markdown': '# Report'}),
       );
 
       final entity = AgentDbConversions.fromEntityRow(row);
@@ -55,8 +55,8 @@ void main() {
 
     test('new-format String content passes through unchanged', () {
       const markdownString = '# Already a String';
-      final row = _makeRow(
-        _baseReportJson(content: markdownString),
+      final row = makeRow(
+        baseReportJson(content: markdownString),
       );
 
       final entity = AgentDbConversions.fromEntityRow(row);
@@ -69,8 +69,8 @@ void main() {
     test(
         'old-format Map content with no "markdown" key falls back to first value',
         () {
-      final row = _makeRow(
-        _baseReportJson(content: {'html': '<h1>Report</h1>'}),
+      final row = makeRow(
+        baseReportJson(content: {'html': '<h1>Report</h1>'}),
       );
 
       final entity = AgentDbConversions.fromEntityRow(row);
@@ -81,8 +81,8 @@ void main() {
     });
 
     test('old-format Map content with empty map returns empty string', () {
-      final row = _makeRow(
-        _baseReportJson(content: <String, dynamic>{}),
+      final row = makeRow(
+        baseReportJson(content: <String, dynamic>{}),
       );
 
       final entity = AgentDbConversions.fromEntityRow(row);

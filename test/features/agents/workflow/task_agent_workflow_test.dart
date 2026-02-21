@@ -606,7 +606,7 @@ void main() {
                   type: ChatCompletionMessageToolCallType.function,
                   function: ChatCompletionMessageFunctionCall(
                     name: 'update_report',
-                    arguments: '{"markdown":"# Report\\nAll good."}',
+                    arguments: r'{"markdown":"# Report\nAll good."}',
                   ),
                 ),
               ],
@@ -652,7 +652,7 @@ void main() {
 
       test('persists thought message when LLM produces final text', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          ChatCompletionMessage.assistant(
+          const ChatCompletionMessage.assistant(
             content: 'I analyzed the task and it looks good.',
           ),
         ]);
@@ -1461,10 +1461,10 @@ void main() {
           const ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('hello'),
           ),
-          ChatCompletionMessage.assistant(
+          const ChatCompletionMessage.assistant(
             content: 'First response',
           ),
-          ChatCompletionMessage.assistant(
+          const ChatCompletionMessage.assistant(
             content: 'Final analysis complete.',
           ),
         ]);
@@ -1521,8 +1521,8 @@ void main() {
 
       test('skips assistant messages with empty content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          ChatCompletionMessage.assistant(content: ''),
-          ChatCompletionMessage.assistant(
+          const ChatCompletionMessage.assistant(content: ''),
+          const ChatCompletionMessage.assistant(
             content: 'Non-empty response',
           ),
         ]);

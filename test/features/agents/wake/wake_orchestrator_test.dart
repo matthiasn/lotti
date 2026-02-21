@@ -956,7 +956,7 @@ void main() {
           orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
             executionCount++;
             if (executionCount == 1) return gate.future;
-            return Future.value(null);
+            return Future.value();
           };
 
           // Enqueue and start draining the first job.
@@ -1096,9 +1096,9 @@ void main() {
             );
           });
 
-          orchestrator
-            ..wakeExecutor =
-                (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+          // ignore: cascade_invocations
           orchestrator.addSubscription(
             AgentSubscription(
               id: 'sub-1',
@@ -1139,9 +1139,9 @@ void main() {
             );
           });
 
-          orchestrator
-            ..wakeExecutor =
-                (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+          // ignore: cascade_invocations
           orchestrator.addSubscription(
             AgentSubscription(
               id: 'sub-1',
@@ -1158,6 +1158,7 @@ void main() {
 
           // Remove and re-add subscription (counter resets)
           orchestrator.removeSubscriptions('agent-1');
+          // ignore: cascade_invocations
           orchestrator.addSubscription(
             AgentSubscription(
               id: 'sub-1',

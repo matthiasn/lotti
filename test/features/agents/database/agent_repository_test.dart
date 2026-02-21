@@ -976,8 +976,7 @@ void main() {
     });
 
     test('does not delete entities belonging to other agents', () async {
-      await repo
-          .upsertEntity(makeAgent(id: 'entity-target', agentId: testAgentId));
+      await repo.upsertEntity(makeAgent(id: 'entity-target'));
       await repo
           .upsertEntity(makeAgent(id: 'entity-other', agentId: otherAgentId));
       await repo.upsertEntity(
@@ -998,7 +997,6 @@ void main() {
     test('does not delete links belonging to other agents', () async {
       await repo.upsertLink(makeBasicLink(
         id: 'link-target-agent',
-        fromId: testAgentId,
         toId: 'some-target',
       ));
       await repo.upsertLink(makeBasicLink(
