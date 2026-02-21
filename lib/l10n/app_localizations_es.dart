@@ -150,11 +150,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentLifecyclePaused => 'Pausado';
 
   @override
-  String agentMessageContentPrefix(String contentId) {
-    return 'Contenido: $contentId';
-  }
-
-  @override
   String get agentMessageKindAction => 'Acción';
 
   @override

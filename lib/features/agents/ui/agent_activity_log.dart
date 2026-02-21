@@ -82,11 +82,6 @@ class _MessageCard extends ConsumerStatefulWidget {
 }
 
 class _MessageCardState extends ConsumerState<_MessageCard> {
-  static const Set<AgentMessageKind> _expandableKinds = {
-    AgentMessageKind.observation,
-    AgentMessageKind.thought,
-  };
-
   bool _expanded = false;
 
   @override
@@ -94,8 +89,7 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
     final message = widget.message;
     final toolName = message.metadata.toolName;
     final contentId = message.contentEntryId;
-    final isExpandable =
-        contentId != null && _expandableKinds.contains(message.kind);
+    final isExpandable = contentId != null;
 
     return Card(
       margin: const EdgeInsets.symmetric(
@@ -146,22 +140,6 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
               ),
               if (_expanded && contentId != null)
                 _ExpandedPayload(payloadId: contentId),
-              if (!_expanded && contentId != null && !isExpandable)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
-                  child: Text(
-                    context.messages.agentMessageContentPrefix(
-                      contentId.length > 32
-                          ? '${contentId.substring(0, 32)}…'
-                          : contentId,
-                    ),
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
               if (message.metadata.errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),

@@ -170,8 +170,7 @@ void main() {
       expect(find.text('analyzeTask'), findsOneWidget);
     });
 
-    testWidgets('shows content entry ID for non-expandable kinds',
-        (tester) async {
+    testWidgets('action kind with contentId is expandable', (tester) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
@@ -182,11 +181,23 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        buildSubject(messagesValue: AsyncValue.data(messages)),
+        buildSubject(
+          messagesValue: AsyncValue.data(messages),
+          payloadOverride: (ref, id) async => 'action payload text',
+        ),
       );
       await tester.pump();
 
-      expect(find.text('Content: entry-abc-123'), findsOneWidget);
+      // Expand icon should be shown for any kind with a contentId.
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Tap to expand and see the payload text.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+      // Extra pump for the async provider to resolve.
+      await tester.pump();
+
+      expect(find.text('action payload text'), findsOneWidget);
     });
 
     testWidgets('observation messages are expandable with payload text',
@@ -448,27 +459,33 @@ void main() {
     );
 
     testWidgets(
-      'non-expandable kind with contentId shows no expand icon',
+      'toolResult kind with contentId is expandable',
       (tester) async {
         final messages = <AgentDomainEntity>[
           makeTestMessage(
             id: 'msg-1',
-            kind: AgentMessageKind.action,
+            kind: AgentMessageKind.toolResult,
             createdAt: DateTime(2024, 3, 15, 10),
             contentEntryId: 'entry-123',
           ),
         ];
 
         await tester.pumpWidget(
-          buildSubject(messagesValue: AsyncValue.data(messages)),
+          buildSubject(
+            messagesValue: AsyncValue.data(messages),
+            payloadOverride: (ref, id) async => 'tool result payload',
+          ),
         );
         await tester.pump();
 
-        // Action kind with contentId is NOT expandable
-        expect(find.byIcon(Icons.expand_more), findsNothing);
-        expect(find.byIcon(Icons.expand_less), findsNothing);
-        // But shows content preview
-        expect(find.textContaining('entry-123'), findsOneWidget);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+        await tester.tap(find.byType(InkWell));
+        await tester.pump();
+        // Extra pump for the async provider to resolve.
+        await tester.pump();
+
+        expect(find.text('tool result payload'), findsOneWidget);
       },
     );
 

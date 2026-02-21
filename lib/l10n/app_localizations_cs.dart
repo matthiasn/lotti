@@ -148,11 +148,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentLifecyclePaused => 'Pozastaven';
 
   @override
-  String agentMessageContentPrefix(String contentId) {
-    return 'Obsah: $contentId';
-  }
-
-  @override
   String get agentMessageKindAction => 'Akce';
 
   @override

@@ -58,14 +58,6 @@
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",
   "agentLifecyclePaused": "Pozastaven",
-  "agentMessageContentPrefix": "Obsah: {contentId}",
-  "@agentMessageContentPrefix": {
-    "placeholders": {
-      "contentId": {
-        "type": "String"
-      }
-    }
-  },
   "agentMessageKindAction": "Akce",
   "agentMessageKindObservation": "Pozorování",
   "agentMessageKindSummary": "Shrnutí",

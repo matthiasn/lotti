@@ -58,14 +58,6 @@
   "agentLifecycleCreated": "Créé",
   "agentLifecycleDestroyed": "Détruit",
   "agentLifecyclePaused": "En pause",
-  "agentMessageContentPrefix": "Contenu : {contentId}",
-  "@agentMessageContentPrefix": {
-    "placeholders": {
-      "contentId": {
-        "type": "String"
-      }
-    }
-  },
   "agentMessageKindAction": "Action",
   "agentMessageKindObservation": "Observation",
   "agentMessageKindSummary": "Résumé",

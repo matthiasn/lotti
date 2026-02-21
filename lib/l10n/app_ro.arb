@@ -58,14 +58,6 @@
   "agentLifecycleCreated": "Creat",
   "agentLifecycleDestroyed": "Distrus",
   "agentLifecyclePaused": "În pauză",
-  "agentMessageContentPrefix": "Conținut: {contentId}",
-  "@agentMessageContentPrefix": {
-    "placeholders": {
-      "contentId": {
-        "type": "String"
-      }
-    }
-  },
   "agentMessageKindAction": "Acțiune",
   "agentMessageKindObservation": "Observație",
   "agentMessageKindSummary": "Rezumat",

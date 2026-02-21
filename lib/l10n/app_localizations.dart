@@ -371,12 +371,6 @@ abstract class AppLocalizations {
   /// **'Paused'**
   String get agentLifecyclePaused;
 
-  /// No description provided for @agentMessageContentPrefix.
-  ///
-  /// In en, this message translates to:
-  /// **'Content: {contentId}'**
-  String agentMessageContentPrefix(String contentId);
-
   /// No description provided for @agentMessageKindAction.
   ///
   /// In en, this message translates to:
