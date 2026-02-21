@@ -133,6 +133,19 @@ void main() {
     inferenceProviderType: InferenceProviderType.gemini,
   ) as AiConfigInferenceProvider;
 
+  final geminiModel = AiConfig.model(
+    id: 'model-gemini-3-1-pro',
+    name: 'Gemini 3.1 Pro Preview',
+    providerModelId: 'models/gemini-3.1-pro-preview',
+    inferenceProviderId: 'gemini-provider-001',
+    createdAt: DateTime(2024),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Test model',
+  ) as AiConfigModel;
+
   setUp(() {
     mockAgentRepository = MockAgentRepository();
     mockConversationManager = MockConversationManager();
@@ -249,8 +262,7 @@ void main() {
         when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
             .thenAnswer((_) async => '{}');
         when(
-          () => mockAiConfigRepository
-              .getConfigsByType(AiConfigType.inferenceProvider),
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => []);
 
         final result = await workflow.execute(
@@ -283,9 +295,11 @@ void main() {
         when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
             .thenAnswer((_) async => '{}');
         when(
-          () => mockAiConfigRepository
-              .getConfigsByType(AiConfigType.inferenceProvider),
-        ).thenAnswer((_) async => [geminiProvider]);
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
 
@@ -388,9 +402,11 @@ void main() {
         when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
             .thenAnswer((_) async => '{}');
         when(
-          () => mockAiConfigRepository
-              .getConfigsByType(AiConfigType.inferenceProvider),
-        ).thenAnswer((_) async => [geminiProvider]);
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
 
         // Make sendMessage throw to trigger the catch branch.
         mockConversationRepository.sendMessageDelegate = ({

@@ -311,22 +311,53 @@ class TaskAgentWorkflow {
 
   // ── Private helpers ──────────────────────────────────────────────────────
 
-  /// Resolves the first configured Gemini inference provider.
+  /// Resolves the Gemini inference provider for the agent's model.
   ///
-  /// Returns `null` if no Gemini provider is configured or the provider has
-  /// no API key set.
+  /// Looks up the configured [AiConfigModel] whose `providerModelId` matches
+  /// [_modelId], then resolves the associated inference provider. This ensures
+  /// the agent uses the correct provider even when multiple Gemini providers
+  /// are configured.
+  ///
+  /// Returns `null` if the model is not configured, the provider is missing,
+  /// or the provider has no API key set.
   Future<AiConfigInferenceProvider?> _resolveGeminiProvider() async {
-    final providers = await aiConfigRepository
-        .getConfigsByType(AiConfigType.inferenceProvider);
+    final models =
+        await aiConfigRepository.getConfigsByType(AiConfigType.model);
 
-    for (final config in providers) {
-      if (config is AiConfigInferenceProvider &&
-          config.inferenceProviderType == InferenceProviderType.gemini &&
-          config.apiKey.isNotEmpty) {
-        return config;
-      }
+    // Find the configured model matching our hardcoded model ID.
+    final matchingModel = models.whereType<AiConfigModel>().where(
+          (m) => m.providerModelId == _modelId,
+        );
+
+    if (matchingModel.isEmpty) {
+      developer.log(
+        'Model $_modelId not found in configured models',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
     }
-    return null;
+
+    // Resolve the inference provider associated with this model.
+    final providerId = matchingModel.first.inferenceProviderId;
+    final provider = await aiConfigRepository.getConfigById(providerId);
+
+    if (provider is! AiConfigInferenceProvider) {
+      developer.log(
+        'Provider $providerId for model $_modelId is not an inference provider',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
+    }
+
+    if (provider.apiKey.isEmpty) {
+      developer.log(
+        'Provider $providerId has no API key configured',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
+    }
+
+    return provider;
   }
 
   /// Builds the system prompt for the Task Agent.

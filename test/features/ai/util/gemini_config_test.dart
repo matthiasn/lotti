@@ -5,13 +5,14 @@ import 'package:lotti/features/ai/util/gemini_config.dart';
 void main() {
   group('getDefaultThinkingConfig', () {
     group('Gemini 3 Pro Preview', () {
-      test('returns auto config for models/gemini-3-pro-preview', () {
-        final config = getDefaultThinkingConfig('models/gemini-3-pro-preview');
+      test('returns auto config for models/gemini-3.1-pro-preview', () {
+        final config =
+            getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
         expect(config, equals(GeminiThinkingConfig.auto));
       });
 
-      test('returns auto config for gemini-3-pro-preview', () {
-        final config = getDefaultThinkingConfig('gemini-3-pro-preview');
+      test('returns auto config for gemini-3.1-pro-preview', () {
+        final config = getDefaultThinkingConfig('gemini-3.1-pro-preview');
         expect(config, equals(GeminiThinkingConfig.auto));
       });
     });
@@ -83,15 +84,15 @@ void main() {
 
     group('Configuration properties', () {
       test('Gemini 3 Pro uses advanced reasoning capabilities', () {
-        final config = getDefaultThinkingConfig('gemini-3-pro-preview');
+        final config = getDefaultThinkingConfig('gemini-3.1-pro-preview');
         // Verify it uses auto config which enables thinking
         expect(config, equals(GeminiThinkingConfig.auto));
       });
 
       test('all known models return valid configs', () {
         final modelIds = [
-          'models/gemini-3-pro-preview',
-          'gemini-3-pro-preview',
+          'models/gemini-3.1-pro-preview',
+          'gemini-3.1-pro-preview',
           'models/gemini-2.5-pro',
           'gemini-2.5-pro',
           'models/gemini-2.5-flash',
@@ -113,14 +114,15 @@ void main() {
     group('Model ID formats', () {
       test('handles models with "models/" prefix consistently', () {
         final withPrefix =
-            getDefaultThinkingConfig('models/gemini-3-pro-preview');
-        final withoutPrefix = getDefaultThinkingConfig('gemini-3-pro-preview');
+            getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
+        final withoutPrefix =
+            getDefaultThinkingConfig('gemini-3.1-pro-preview');
         expect(withPrefix, equals(withoutPrefix));
       });
 
       test('handles case sensitivity correctly', () {
         // Model IDs should be case-sensitive (lowercase expected)
-        final lowercase = getDefaultThinkingConfig('gemini-3-pro-preview');
+        final lowercase = getDefaultThinkingConfig('gemini-3.1-pro-preview');
         final uppercase = getDefaultThinkingConfig('GEMINI-3-PRO-PREVIEW');
 
         // Uppercase falls through to default (auto)
