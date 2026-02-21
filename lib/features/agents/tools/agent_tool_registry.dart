@@ -32,7 +32,9 @@ class AgentToolRegistry {
   static const taskAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
       name: 'set_task_title',
-      description: 'Update the title of the task.',
+      description: 'Set the title of the task. Only use when the task has no '
+          'title yet. Do not change an existing title unless the user '
+          'explicitly asks for it.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -46,16 +48,19 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: 'update_task_estimate',
-      description: 'Update the time estimate for the task.',
+      description: 'Set the time estimate for completing the task. '
+          'Only set or update the estimate when the user explicitly asks '
+          'for it, or when no estimate exists and you have high confidence.',
       parameters: {
         'type': 'object',
         'properties': {
-          'estimate': {
-            'type': 'string',
-            'description': 'Time estimate (e.g., "4h", "2d").',
+          'minutes': {
+            'type': 'integer',
+            'description': 'Estimated remaining work in minutes (1–1440). '
+                'Examples: 30 for half an hour, 240 for 4 hours.',
           },
         },
-        'required': ['estimate'],
+        'required': ['minutes'],
       },
     ),
     AgentToolDefinition(
@@ -120,6 +125,23 @@ class AgentToolRegistry {
           },
         },
         'required': ['updates'],
+      },
+    ),
+    AgentToolDefinition(
+      name: 'update_report',
+      description:
+          'Publish the updated task report. You MUST call this tool exactly '
+          'once at the end of every wake with the full updated report as '
+          'markdown.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'markdown': {
+            'type': 'string',
+            'description': 'The full updated report as a markdown document.',
+          },
+        },
+        'required': ['markdown'],
       },
     ),
     AgentToolDefinition(

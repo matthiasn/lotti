@@ -258,6 +258,70 @@ void main() {
       });
     });
 
+    group('forManual', () {
+      test('produces deterministic key for same inputs', () {
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final key1 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'creation',
+          timestamp: ts,
+        );
+        final key2 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'creation',
+          timestamp: ts,
+        );
+
+        expect(key1, equals(key2));
+      });
+
+      test('differs when reason changes', () {
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final key1 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'creation',
+          timestamp: ts,
+        );
+        final key2 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'reanalysis',
+          timestamp: ts,
+        );
+
+        expect(key1, isNot(equals(key2)));
+      });
+
+      test('differs when timestamp changes', () {
+        final key1 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'creation',
+          timestamp: DateTime(2024, 3, 15, 10, 30),
+        );
+        final key2 = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'creation',
+          timestamp: DateTime(2024, 3, 15, 10, 31),
+        );
+
+        expect(key1, isNot(equals(key2)));
+      });
+
+      test('matches manual SHA-256 computation', () {
+        const agentId = 'agent-1';
+        const reason = 'creation';
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final expected = _sha256('$agentId|$reason|${ts.toIso8601String()}');
+
+        final actual = RunKeyFactory.forManual(
+          agentId: agentId,
+          reason: reason,
+          timestamp: ts,
+        );
+
+        expect(actual, equals(expected));
+      });
+    });
+
     group('operationId', () {
       test('produces deterministic key for same inputs', () {
         final id1 = RunKeyFactory.operationId(

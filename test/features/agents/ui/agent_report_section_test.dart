@@ -7,7 +7,7 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('AgentReportSection', () {
-    Widget buildSubject(Map<String, Object?> content) {
+    Widget buildSubject(String content) {
       return makeTestableWidget(
         AgentReportSection(content: content),
       );
@@ -15,9 +15,7 @@ void main() {
 
     testWidgets('renders markdown content via GptMarkdown', (tester) async {
       const markdown = '# Task Report\n\nTask is progressing well.';
-      await tester.pumpWidget(
-        buildSubject({'markdown': markdown}),
-      );
+      await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
       final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
@@ -25,39 +23,15 @@ void main() {
     });
 
     testWidgets('renders Card wrapper around markdown', (tester) async {
-      await tester.pumpWidget(
-        buildSubject({'markdown': '# Report Title'}),
-      );
+      await tester.pumpWidget(buildSubject('# Report Title'));
       await tester.pump();
 
       expect(find.byType(Card), findsOneWidget);
       expect(find.byType(GptMarkdown), findsOneWidget);
     });
 
-    testWidgets('handles empty markdown gracefully', (tester) async {
-      await tester.pumpWidget(
-        buildSubject({'markdown': ''}),
-      );
-      await tester.pump();
-
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byType(GptMarkdown), findsNothing);
-    });
-
-    testWidgets('handles missing markdown key gracefully', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(<String, Object?>{}),
-      );
-      await tester.pump();
-
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byType(GptMarkdown), findsNothing);
-    });
-
-    testWidgets('handles null markdown value gracefully', (tester) async {
-      await tester.pumpWidget(
-        buildSubject({'markdown': null}),
-      );
+    testWidgets('handles empty content gracefully', (tester) async {
+      await tester.pumpWidget(buildSubject(''));
       await tester.pump();
 
       expect(find.byType(Card), findsOneWidget);
@@ -66,9 +40,7 @@ void main() {
 
     testWidgets('passes full markdown string to GptMarkdown', (tester) async {
       const markdown = '## Achieved\n- Task 1 done\n- Task 2 done';
-      await tester.pumpWidget(
-        buildSubject({'markdown': markdown}),
-      );
+      await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
       final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
@@ -80,9 +52,7 @@ void main() {
           'Good progress overall.\n\n'
           '## Completed\n- Feature A\n\n'
           '## Remaining\n- Feature B\n';
-      await tester.pumpWidget(
-        buildSubject({'markdown': markdown}),
-      );
+      await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
       final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));

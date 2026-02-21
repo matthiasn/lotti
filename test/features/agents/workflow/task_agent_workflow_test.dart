@@ -313,8 +313,7 @@ void main() {
         when(() => mockConversationManager.messages).thenReturn([]);
       });
 
-      test('creates conversation, sends message, persists report and state',
-          () async {
+      test('creates conversation, sends message, and persists state', () async {
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
           runKey: runKey,
@@ -324,9 +323,8 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Verify report was persisted (at least report + report head + state).
-        verify(() => mockAgentRepository.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(3));
+        // With no tool calls or final text, only state update is persisted.
+        verify(() => mockAgentRepository.upsertEntity(any())).called(1);
 
         // Verify conversation was cleaned up in finally.
         expect(
@@ -379,11 +377,11 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Should persist: assistant message (from processToolCalls) + report
-        // + report head + 2 observation payloads + 2 observation messages
-        // + state update = 8 total.
+        // Should persist: assistant message (from processToolCalls)
+        // + 2 observation payloads + 2 observation messages
+        // + state update = 6 total.
         verify(() => mockAgentRepository.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(7));
+            .called(greaterThanOrEqualTo(6));
       });
 
       test('cleans up conversation in finally block even on success', () async {

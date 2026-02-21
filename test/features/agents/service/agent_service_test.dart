@@ -216,7 +216,7 @@ void main() {
           scope: 'current',
           createdAt: DateTime(2024, 3, 15),
           vectorClock: null,
-          content: const {'summary': 'All good'},
+          content: 'All good',
         ) as AgentReportEntity;
 
         when(() => mockRepository.getLatestReport('agent-1', 'current'))
@@ -227,7 +227,7 @@ void main() {
         expect(result, isNotNull);
         expect(result!.id, 'report-1');
         expect(result.scope, 'current');
-        expect(result.content, {'summary': 'All good'});
+        expect(result.content, 'All good');
         verify(() => mockRepository.getLatestReport('agent-1', 'current'))
             .called(1);
       });
@@ -383,6 +383,107 @@ void main() {
         verifyNever(() => mockRepository.upsertEntity(any()));
         verify(() => mockOrchestrator.removeSubscriptions('non-existent'))
             .called(1);
+      });
+    });
+
+    group('deleteAgent', () {
+      test('destroys agent first if not already destroyed, then hard-deletes',
+          () async {
+        final identity = AgentDomainEntity.agent(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          kind: 'task_agent',
+          displayName: 'Test Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ) as AgentIdentityEntity;
+
+        when(() => mockRepository.getEntity('agent-1'))
+            .thenAnswer((_) async => identity);
+        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+        when(() => mockOrchestrator.removeSubscriptions('agent-1'))
+            .thenReturn(null);
+        when(() => mockRepository.hardDeleteAgent('agent-1'))
+            .thenAnswer((_) async {});
+
+        await service.deleteAgent('agent-1');
+
+        // destroyAgent path: upsertEntity called with destroyed lifecycle
+        final captured = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updated = captured.first as AgentIdentityEntity;
+        expect(updated.lifecycle, AgentLifecycle.destroyed);
+        expect(updated.destroyedAt, isNotNull);
+
+        // subscriptions removed via destroyAgent
+        verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
+
+        // hard-delete called after destroy
+        verify(() => mockRepository.hardDeleteAgent('agent-1')).called(1);
+      });
+
+      test('skips lifecycle update for already-destroyed agent', () async {
+        final destroyedIdentity = AgentDomainEntity.agent(
+          id: 'agent-2',
+          agentId: 'agent-2',
+          kind: 'task_agent',
+          displayName: 'Destroyed Agent',
+          lifecycle: AgentLifecycle.destroyed,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ) as AgentIdentityEntity;
+
+        when(() => mockRepository.getEntity('agent-2'))
+            .thenAnswer((_) async => destroyedIdentity);
+        when(() => mockOrchestrator.removeSubscriptions('agent-2'))
+            .thenReturn(null);
+        when(() => mockRepository.hardDeleteAgent('agent-2'))
+            .thenAnswer((_) async {});
+
+        await service.deleteAgent('agent-2');
+
+        // no lifecycle update for an already-destroyed agent
+        verifyNever(() => mockRepository.upsertEntity(any()));
+
+        // subscriptions still removed
+        verify(() => mockOrchestrator.removeSubscriptions('agent-2')).called(1);
+
+        // hard-delete still called
+        verify(() => mockRepository.hardDeleteAgent('agent-2')).called(1);
+      });
+
+      test('handles non-existent agent gracefully', () async {
+        when(() => mockRepository.getEntity('non-existent'))
+            .thenAnswer((_) async => null);
+        when(() => mockOrchestrator.removeSubscriptions('non-existent'))
+            .thenReturn(null);
+        when(() => mockRepository.hardDeleteAgent('non-existent'))
+            .thenAnswer((_) async {});
+
+        await service.deleteAgent('non-existent');
+
+        // no lifecycle update when agent not found
+        verifyNever(() => mockRepository.upsertEntity(any()));
+
+        // subscriptions removed even when agent not found
+        verify(() => mockOrchestrator.removeSubscriptions('non-existent'))
+            .called(1);
+
+        // hard-delete still called
+        verify(() => mockRepository.hardDeleteAgent('non-existent')).called(1);
       });
     });
   });

@@ -98,6 +98,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentControlsDestroyDialogTitle => 'Destroy Agent?';
 
   @override
+  String get agentControlsDeleteButton => 'Delete permanently';
+
+  @override
+  String get agentControlsDeleteDialogContent =>
+      'This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.';
+
+  @override
+  String get agentControlsDeleteDialogTitle => 'Delete Agent?';
+
+  @override
   String get agentControlsDestroyedMessage => 'This agent has been destroyed.';
 
   @override
@@ -1118,6 +1128,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagAutoTranscribeDescription =>
       'Automatically transcribe audio recordings in your entries. This requires an internet connection.';
+
+  @override
+  String get configFlagEnableAgents => 'Enable Agents';
+
+  @override
+  String get configFlagEnableAgentsDescription =>
+      'Allow AI agents to autonomously monitor and analyze your tasks.';
 
   @override
   String get configFlagEnableAiStreaming =>

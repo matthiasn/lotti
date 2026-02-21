@@ -135,10 +135,27 @@ class AgentService {
   /// wake subscriptions.
   ///
   /// Does not delete data — the agent's history is preserved for audit.
+  /// To permanently remove all data, call [deleteAgent] afterwards.
   Future<void> destroyAgent(String agentId) async {
     await _updateLifecycle(agentId, AgentLifecycle.destroyed);
     orchestrator.removeSubscriptions(agentId);
     developer.log('Destroyed agent $agentId', name: 'AgentService');
+  }
+
+  /// Permanently delete all data for a **destroyed** agent.
+  ///
+  /// Destroys the agent first if it is not already destroyed, then hard-deletes
+  /// all entities, links, wake runs, and saga ops from the database.
+  Future<void> deleteAgent(String agentId) async {
+    final identity = await getAgent(agentId);
+    if (identity != null && identity.lifecycle != AgentLifecycle.destroyed) {
+      await destroyAgent(agentId);
+    } else {
+      orchestrator.removeSubscriptions(agentId);
+    }
+
+    await repository.hardDeleteAgent(agentId);
+    developer.log('Deleted all data for agent $agentId', name: 'AgentService');
   }
 
   Future<void> _updateLifecycle(

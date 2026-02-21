@@ -46,6 +46,17 @@ class RunKeyFactory {
     return _sha256('$agentId|$sessionId|$turnId');
   }
 
+  /// Manual (system/user) wake: SHA256(agentId | reason | timestamp).
+  ///
+  /// Uses the ISO-8601 timestamp to ensure uniqueness across invocations.
+  static String forManual({
+    required String agentId,
+    required String reason,
+    required DateTime timestamp,
+  }) {
+    return _sha256('$agentId|$reason|${timestamp.toIso8601String()}');
+  }
+
   /// Operation ID for a tool call within a run:
   /// SHA256(runKey | actionStableId).
   static String operationId({

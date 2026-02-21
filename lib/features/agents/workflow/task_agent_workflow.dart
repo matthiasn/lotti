@@ -209,39 +209,69 @@ class TaskAgentWorkflow {
       final finalContent = _extractFinalAssistantContent(manager);
       strategy.recordFinalResponse(finalContent);
 
-      // 6. Extract and persist updated report.
       final now = DateTime.now();
+
+      // 6. Persist the final assistant response as a thought message.
+      final thoughtText = strategy.finalResponse;
+      if (thoughtText != null) {
+        final thoughtPayloadId = _uuid.v4();
+        await agentRepository.upsertEntity(
+          AgentDomainEntity.agentMessagePayload(
+            id: thoughtPayloadId,
+            agentId: agentId,
+            createdAt: now,
+            vectorClock: null,
+            content: <String, Object?>{'text': thoughtText},
+          ),
+        );
+        await agentRepository.upsertEntity(
+          AgentDomainEntity.agentMessage(
+            id: _uuid.v4(),
+            agentId: agentId,
+            threadId: threadId,
+            kind: AgentMessageKind.thought,
+            createdAt: now,
+            vectorClock: null,
+            contentEntryId: thoughtPayloadId,
+            metadata: AgentMessageMetadata(runKey: runKey),
+          ),
+        );
+      }
+
+      // 7. Extract and persist updated report (from update_report tool call).
       final reportContent = strategy.extractReportContent();
-      final reportId = _uuid.v4();
+      if (reportContent.isNotEmpty) {
+        final reportId = _uuid.v4();
 
-      await agentRepository.upsertEntity(
-        AgentDomainEntity.agentReport(
-          id: reportId,
-          agentId: agentId,
-          scope: 'current',
-          createdAt: now,
-          vectorClock: null,
-          content: reportContent,
-        ),
-      );
+        await agentRepository.upsertEntity(
+          AgentDomainEntity.agentReport(
+            id: reportId,
+            agentId: agentId,
+            scope: 'current',
+            createdAt: now,
+            vectorClock: null,
+            content: reportContent,
+          ),
+        );
 
-      // Update the report head pointer.
-      final existingHead =
-          await agentRepository.getReportHead(agentId, 'current');
-      final headId = existingHead?.id ?? _uuid.v4();
+        // Update the report head pointer.
+        final existingHead =
+            await agentRepository.getReportHead(agentId, 'current');
+        final headId = existingHead?.id ?? _uuid.v4();
 
-      await agentRepository.upsertEntity(
-        AgentDomainEntity.agentReportHead(
-          id: headId,
-          agentId: agentId,
-          scope: 'current',
-          reportId: reportId,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      );
+        await agentRepository.upsertEntity(
+          AgentDomainEntity.agentReportHead(
+            id: headId,
+            agentId: agentId,
+            scope: 'current',
+            reportId: reportId,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        );
+      }
 
-      // 7. Persist new observation notes (agentJournal entries).
+      // 8. Persist new observation notes (agentJournal entries).
       final observations = strategy.extractObservations();
       for (final note in observations) {
         final payloadId = _uuid.v4();
@@ -269,7 +299,7 @@ class TaskAgentWorkflow {
         );
       }
 
-      // 8. Update state.
+      // 9. Update state.
       await agentRepository.upsertEntity(
         state.copyWith(
           revision: state.revision + 1,
@@ -383,18 +413,19 @@ for a single task. Your job is to:
 1. Analyze the current task state and any changes since your last wake.
 2. Call tools when appropriate to update task metadata (estimates, due dates,
    priorities, checklist items, title, labels).
-3. Produce an updated report summarizing the task's current state.
+3. Publish an updated report via the `update_report` tool.
 4. Record observations worth remembering for future wakes.
 
-## Output Format
+## Report
 
-Respond with a markdown document. The format is free-form — use whatever
+You MUST call `update_report` exactly once at the end of every wake with the
+full updated report as markdown. The format is free-form — use whatever
 headings, lists, and structure best describe the task's current state. A
 typical report might include sections like TLDR, Goal, Status, Achieved,
 Remaining, and Learnings, but you are free to add, remove, or rename
 sections as needed. The report format can evolve naturally over time.
 
-Example:
+Example report markdown:
 
 ```
 # Implement authentication module
@@ -422,6 +453,12 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 - Use `record_observations` to record private notes worth remembering for
   future wakes (patterns, insights, failure notes). Do NOT embed observations
   in the report text — always use the tool.
+- **Title**: Only set the title when the task has no title yet. Do not
+  change an existing title unless the user explicitly asks for it.
+- **Estimates**: Only set or update an estimate when the user explicitly
+  requests it, or when no estimate exists and you have high confidence.
+  Do not retroactively adjust estimates based on time already spent
+  unless specifically asked to do so.
 
 ## Important
 
@@ -441,12 +478,10 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
   }) async {
     final buffer = StringBuffer();
 
-    if (lastReport != null) {
+    if (lastReport != null && lastReport.content.isNotEmpty) {
       buffer
         ..writeln('## Current Report')
-        ..writeln('```json')
         ..writeln(lastReport.content)
-        ..writeln('```')
         ..writeln();
     } else {
       buffer
@@ -496,8 +531,9 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
 
     buffer.writeln(
-      'Update the report based on the current state. '
-      'Add observations if warranted. Call tools if needed.',
+      'Analyze the current state, call tools if needed, then call '
+      '`update_report` with the full updated report. '
+      'Add observations if warranted.',
     );
 
     return buffer.toString();
@@ -622,6 +658,18 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
       );
     }
 
+    // Guard: only set the title when the task has no title yet.
+    // Changing an existing title requires explicit user instruction.
+    final currentTitle = task.data.title;
+    if (currentTitle.isNotEmpty) {
+      return ToolExecutionResult(
+        success: true,
+        output: 'Title already set to "$currentTitle". '
+            'Use this tool only when no title exists or when the user '
+            'explicitly asks to change it.',
+      );
+    }
+
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,
@@ -637,21 +685,33 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     String taskId,
     ConversationManager manager,
   ) async {
-    // Validate the expected string argument for each tool.
-    final expectedKey = switch (toolName) {
-      'update_task_estimate' => 'estimate',
+    // Validate the expected string argument for string-typed tools.
+    final expectedStringKey = switch (toolName) {
       'update_task_due_date' => 'dueDate',
       'update_task_priority' => 'priority',
       _ => null,
     };
-    if (expectedKey != null) {
-      final value = args[expectedKey];
+    if (expectedStringKey != null) {
+      final value = args[expectedStringKey];
       if (value is! String || value.isEmpty) {
         return ToolExecutionResult(
           success: false,
-          output: 'Error: "$expectedKey" must be a non-empty string, '
+          output: 'Error: "$expectedStringKey" must be a non-empty string, '
               'got ${value.runtimeType}',
-          errorMessage: 'Type validation failed for $expectedKey',
+          errorMessage: 'Type validation failed for $expectedStringKey',
+        );
+      }
+    }
+
+    // Validate minutes for estimate tool (handler expects an integer).
+    if (toolName == 'update_task_estimate') {
+      final value = args['minutes'];
+      if (value is! int) {
+        return ToolExecutionResult(
+          success: false,
+          output: 'Error: "minutes" must be an integer, '
+              'got ${value.runtimeType}: $value',
+          errorMessage: 'Type validation failed for minutes',
         );
       }
     }

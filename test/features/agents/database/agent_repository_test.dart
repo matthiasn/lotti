@@ -89,7 +89,7 @@ void main() {
       scope: scope,
       createdAt: testDate,
       vectorClock: const VectorClock({'node-1': 4}),
-      content: const {'summary': 'All good'},
+      content: 'All good',
       confidence: 0.95,
     ) as AgentReportEntity;
   }
@@ -239,7 +239,7 @@ void main() {
         expect(report.id, entity.id);
         expect(report.scope, 'daily');
         expect(report.confidence, 0.95);
-        expect(report.content['summary'], 'All good');
+        expect(report.content, 'All good');
       });
 
       test('agentReportHead variant persists and restores correctly', () async {
@@ -476,7 +476,7 @@ void main() {
         expect(result, isNotNull);
         expect(result!.id, report.id);
         expect(result.scope, 'daily');
-        expect(result.content['summary'], 'All good');
+        expect(result.content, 'All good');
       });
 
       test('returns null when no report head exists for the scope', () async {
@@ -898,6 +898,232 @@ void main() {
       expect(pending.length, 2);
       expect(pending.first.operationId, 'op-early');
       expect(pending.last.operationId, 'op-late');
+    });
+  });
+
+  // ── hardDeleteAgent ─────────────────────────────────────────────────────────
+
+  group('hardDeleteAgent', () {
+    final deleteDate = DateTime(2026, 2, 21);
+
+    test('deletes all entities for the target agent', () async {
+      await repo.upsertEntity(makeAgent());
+      await repo.upsertEntity(makeAgentState());
+      await repo.upsertEntity(makeMessage());
+
+      // Sanity-check that data exists before deletion.
+      expect(await repo.getEntitiesByAgentId(testAgentId), hasLength(3));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(await repo.getEntitiesByAgentId(testAgentId), isEmpty);
+    });
+
+    test('deletes all links for the target agent', () async {
+      await repo.upsertLink(makeBasicLink(id: 'link-from-agent'));
+      await repo.upsertLink(makeBasicLink(
+        id: 'link-to-agent',
+        fromId: 'some-other-entity',
+        toId: testAgentId,
+      ));
+
+      expect(await repo.getLinksFrom(testAgentId), hasLength(1));
+      expect(await repo.getLinksTo(testAgentId), hasLength(1));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(await repo.getLinksFrom(testAgentId), isEmpty);
+      expect(await repo.getLinksTo(testAgentId), isEmpty);
+    });
+
+    test('deletes all wake runs for the target agent', () async {
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-a'));
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-b'));
+
+      expect(
+        await db.getWakeRunsByAgentId(testAgentId, 100).get(),
+        hasLength(2),
+      );
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(
+        await db.getWakeRunsByAgentId(testAgentId, 100).get(),
+        isEmpty,
+      );
+    });
+
+    test('deletes saga ops associated with target agent wake runs', () async {
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-saga'));
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'saga-op-1', runKey: 'run-saga'),
+      );
+      await repo.insertSagaOp(
+        entry: makeSagaOp(
+          operationId: 'saga-op-2',
+          runKey: 'run-saga',
+          status: 'done',
+        ),
+      );
+
+      final allOpsBefore = await db.select(db.sagaLog).get();
+      expect(allOpsBefore, hasLength(2));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      final allOpsAfter = await db.select(db.sagaLog).get();
+      expect(allOpsAfter, isEmpty);
+    });
+
+    test('does not delete entities belonging to other agents', () async {
+      await repo
+          .upsertEntity(makeAgent(id: 'entity-target', agentId: testAgentId));
+      await repo
+          .upsertEntity(makeAgent(id: 'entity-other', agentId: otherAgentId));
+      await repo.upsertEntity(
+        makeAgentState(id: 'state-other', agentId: otherAgentId),
+      );
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(await repo.getEntitiesByAgentId(testAgentId), isEmpty);
+      final otherEntities = await repo.getEntitiesByAgentId(otherAgentId);
+      expect(otherEntities, hasLength(2));
+      expect(
+        otherEntities.map((e) => e.id),
+        containsAll(['entity-other', 'state-other']),
+      );
+    });
+
+    test('does not delete links belonging to other agents', () async {
+      await repo.upsertLink(makeBasicLink(
+        id: 'link-target-agent',
+        fromId: testAgentId,
+        toId: 'some-target',
+      ));
+      await repo.upsertLink(makeBasicLink(
+        id: 'link-other-agent',
+        fromId: otherAgentId,
+        toId: 'some-other-target',
+      ));
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(await repo.getLinksFrom(testAgentId), isEmpty);
+      final otherLinks = await repo.getLinksFrom(otherAgentId);
+      expect(otherLinks, hasLength(1));
+      expect(otherLinks.first.id, 'link-other-agent');
+    });
+
+    test('does not delete wake runs belonging to other agents', () async {
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-target'));
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-other', agentId: otherAgentId),
+      );
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      expect(
+        await db.getWakeRunsByAgentId(testAgentId, 100).get(),
+        isEmpty,
+      );
+      final otherRuns = await db.getWakeRunsByAgentId(otherAgentId, 100).get();
+      expect(otherRuns, hasLength(1));
+      expect(otherRuns.first.runKey, 'run-other');
+    });
+
+    test('does not delete saga ops belonging to other agents', () async {
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-target'));
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-other', agentId: otherAgentId),
+      );
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'op-target', runKey: 'run-target'),
+      );
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'op-other', runKey: 'run-other'),
+      );
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      final remainingOps = await db.select(db.sagaLog).get();
+      expect(remainingOps, hasLength(1));
+      expect(remainingOps.first.operationId, 'op-other');
+    });
+
+    test('is a no-op when agent has no data', () async {
+      // No data inserted for testAgentId — must not throw.
+      await expectLater(
+        repo.hardDeleteAgent(testAgentId),
+        completes,
+      );
+
+      expect(await repo.getEntitiesByAgentId(testAgentId), isEmpty);
+      expect(await repo.getLinksFrom(testAgentId), isEmpty);
+      expect(await db.getWakeRunsByAgentId(testAgentId, 100).get(), isEmpty);
+      expect(await db.select(db.sagaLog).get(), isEmpty);
+    });
+
+    test('deletes all data across all tables in one call', () async {
+      // Populate all four tables for testAgentId and some data for otherAgentId.
+      await repo.upsertEntity(makeAgent());
+      await repo.upsertEntity(makeAgentState());
+      await repo.upsertLink(makeBasicLink());
+      await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-full'));
+      await repo.insertSagaOp(
+        entry: makeSagaOp(operationId: 'op-full', runKey: 'run-full'),
+      );
+
+      // Other agent data that must survive.
+      await repo.upsertEntity(
+          makeAgent(id: 'other-agent-entity', agentId: otherAgentId));
+      await repo.upsertLink(makeBasicLink(
+        id: 'other-agent-link',
+        fromId: otherAgentId,
+        toId: 'other-target',
+      ));
+      await repo.insertWakeRun(
+        entry: WakeRunLogData(
+          runKey: 'other-run',
+          agentId: otherAgentId,
+          reason: 'trigger',
+          threadId: 'thread-other',
+          status: 'done',
+          createdAt: deleteDate,
+        ),
+      );
+      await repo.insertSagaOp(
+        entry: SagaLogData(
+          operationId: 'op-other',
+          runKey: 'other-run',
+          phase: 'execution',
+          status: 'done',
+          toolName: 'noop',
+          createdAt: deleteDate,
+          updatedAt: deleteDate,
+        ),
+      );
+
+      await repo.hardDeleteAgent(testAgentId);
+
+      // Target agent data is gone.
+      expect(await repo.getEntitiesByAgentId(testAgentId), isEmpty);
+      expect(await repo.getLinksFrom(testAgentId), isEmpty);
+      expect(
+        await db.getWakeRunsByAgentId(testAgentId, 100).get(),
+        isEmpty,
+      );
+
+      // Other agent data is intact.
+      expect(await repo.getEntitiesByAgentId(otherAgentId), hasLength(1));
+      expect(await repo.getLinksFrom(otherAgentId), hasLength(1));
+      expect(
+        await db.getWakeRunsByAgentId(otherAgentId, 100).get(),
+        hasLength(1),
+      );
+      final remainingOps = await db.select(db.sagaLog).get();
+      expect(remainingOps, hasLength(1));
+      expect(remainingOps.first.operationId, 'op-other');
     });
   });
 }

@@ -296,10 +296,7 @@ void main() {
           scope: 'weekly-summary',
           createdAt: createdAt,
           vectorClock: vectorClock,
-          content: {
-            'summary': 'Completed 5 tasks this week.',
-            'score': 0.87,
-          },
+          content: '# Weekly Summary\n\nCompleted 5 tasks this week.',
           confidence: 0.92,
           provenance: {'model': 'gemini-3.1-pro-preview', 'wakeId': 'wake-042'},
         );
@@ -317,7 +314,7 @@ void main() {
           scope: 'daily',
           createdAt: createdAt,
           vectorClock: null,
-          content: {'note': 'nothing to report'},
+          content: 'Nothing to report.',
         );
 
         final roundtripped = roundtrip(original);
@@ -328,14 +325,28 @@ void main() {
         expect(report.provenance, isEmpty);
       });
 
-      test('runtimeType discriminator key is "agentReport"', () {
-        final entity = AgentDomainEntity.agentReport(
+      test('roundtrips with default empty content', () {
+        final original = AgentDomainEntity.agentReport(
           id: 'report-003',
           agentId: 'agent-001',
           scope: 'test',
           createdAt: createdAt,
           vectorClock: null,
-          content: {},
+        );
+
+        final roundtripped = roundtrip(original);
+        expect(roundtripped, equals(original));
+        final report = roundtripped as AgentReportEntity;
+        expect(report.content, isEmpty);
+      });
+
+      test('runtimeType discriminator key is "agentReport"', () {
+        final entity = AgentDomainEntity.agentReport(
+          id: 'report-004',
+          agentId: 'agent-001',
+          scope: 'test',
+          createdAt: createdAt,
+          vectorClock: null,
         );
 
         final json = entity.toJson();

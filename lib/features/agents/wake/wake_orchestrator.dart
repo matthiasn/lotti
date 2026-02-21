@@ -159,6 +159,36 @@ class WakeOrchestrator {
     // provided as an extension point called by the owning service on startup.
   }
 
+  // ── Manual wake enqueue ──────────────────────────────────────────────────
+
+  /// Enqueue a user- or system-initiated wake for [agentId].
+  ///
+  /// Unlike notification-driven wakes, this bypasses subscription matching and
+  /// self-notification suppression.  Used for initial creation wakes and
+  /// manual re-analysis triggers.
+  void enqueueManualWake({
+    required String agentId,
+    required String reason,
+    Set<String> triggerTokens = const {},
+  }) {
+    final runKey = RunKeyFactory.forManual(
+      agentId: agentId,
+      reason: reason,
+      timestamp: clock.now(),
+    );
+
+    final job = WakeJob(
+      runKey: runKey,
+      agentId: agentId,
+      reason: reason,
+      triggerTokens: triggerTokens,
+      createdAt: clock.now(),
+    );
+
+    queue.enqueue(job);
+    unawaited(processNext());
+  }
+
   // ── Internal notification handling ─────────────────────────────────────────
 
   void _onBatch(Set<String> tokens) {

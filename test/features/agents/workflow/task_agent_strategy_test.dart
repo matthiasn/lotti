@@ -471,55 +471,224 @@ void main() {
     });
 
     group('getContinuationPrompt', () {
-      test('returns null', () {
+      test('returns continuation prompt when no report submitted', () {
+        expect(strategy.getContinuationPrompt(mockManager), isNotNull);
+        expect(
+          strategy.getContinuationPrompt(mockManager),
+          contains('update_report'),
+        );
+      });
+
+      test('returns null after report is submitted', () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-report',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_report',
+                arguments: jsonEncode({'markdown': '# Report'}),
+              ),
+            ),
+          ],
+          manager: mockManager,
+        );
+
         expect(strategy.getContinuationPrompt(mockManager), isNull);
       });
     });
 
-    group('recordFinalResponse and extractReportContent', () {
-      test('extracts full markdown content from response', () {
-        const response = '# Task Summary\n\nTask is progressing well.\n\n'
-            '## Details\n- Item 1\n- Item 2';
+    group('update_report tool', () {
+      test('captures report markdown from tool call', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({
+                'markdown': '# Task Summary\n\nAll good.',
+              }),
+            ),
+          ),
+        ];
 
-        strategy.recordFinalResponse(response);
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
 
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], response);
+        expect(
+          strategy.extractReportContent(),
+          '# Task Summary\n\nAll good.',
+        );
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-report',
+            response: 'Report updated.',
+          ),
+        ).called(1);
       });
 
-      test('returns empty markdown when no response recorded', () {
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], '');
+      test('uses last update_report call when called multiple times', () async {
+        for (final (id, markdown) in [
+          ('call-1', '# First'),
+          ('call-2', '# Second'),
+        ]) {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: id,
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_report',
+                arguments: jsonEncode({'markdown': markdown}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+        }
+
+        expect(strategy.extractReportContent(), '# Second');
       });
 
-      test('returns empty markdown when null response recorded', () {
+      test('trims whitespace from report markdown', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({
+                'markdown': '  # Report\n\nContent  \n\n',
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), '# Report\n\nContent');
+      });
+
+      test('returns error for empty markdown', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({'markdown': '  '}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), isEmpty);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-report',
+            response: 'Error: "markdown" must be a non-empty string.',
+          ),
+        ).called(1);
+      });
+
+      test('returns error for non-string markdown', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({'markdown': 42}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), isEmpty);
+      });
+
+      test('does not delegate to executor', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({'markdown': '# Report'}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+      });
+
+      test('returns empty when update_report never called', () {
+        expect(strategy.extractReportContent(), isEmpty);
+      });
+    });
+
+    group('recordFinalResponse and finalResponse', () {
+      test('captures final response for thought persistence', () {
+        strategy.recordFinalResponse('Some thinking content');
+        expect(strategy.finalResponse, 'Some thinking content');
+      });
+
+      test('returns null when no response recorded', () {
+        expect(strategy.finalResponse, isNull);
+      });
+
+      test('returns null when null response recorded', () {
         strategy.recordFinalResponse(null);
-
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], '');
+        expect(strategy.finalResponse, isNull);
       });
 
-      test('returns empty markdown when empty response recorded', () {
+      test('returns null when empty response recorded', () {
         strategy.recordFinalResponse('');
-
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], '');
+        expect(strategy.finalResponse, isNull);
       });
 
       test('uses last response when multiple are recorded', () {
         strategy
-          ..recordFinalResponse('# First Report')
-          ..recordFinalResponse('# Second Report');
-
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], '# Second Report');
+          ..recordFinalResponse('First thought')
+          ..recordFinalResponse('Second thought');
+        expect(strategy.finalResponse, 'Second thought');
       });
 
-      test('trims whitespace from report', () {
-        strategy.recordFinalResponse('  # Report\n\nContent  \n\n');
-
-        final report = strategy.extractReportContent();
-        expect(report['markdown'], '# Report\n\nContent');
+      test('does not affect report content', () {
+        strategy.recordFinalResponse('<think>reasoning</think># Report');
+        expect(strategy.extractReportContent(), isEmpty);
       });
     });
 

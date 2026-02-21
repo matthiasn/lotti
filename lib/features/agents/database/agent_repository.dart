@@ -266,4 +266,19 @@ class AgentRepository {
   Future<List<SagaLogData>> getPendingSagaOps() async {
     return _db.getPendingSagaOps().get();
   }
+
+  // ── Hard delete ─────────────────────────────────────────────────────────
+
+  /// Permanently delete **all** data for [agentId]: entities, links, saga ops,
+  /// and wake-run log entries.
+  ///
+  /// This is irreversible. Only call for agents whose lifecycle is
+  /// [AgentLifecycle.destroyed].
+  Future<void> hardDeleteAgent(String agentId) async {
+    // Saga ops reference wake_run_log via run_key, so delete them first.
+    await _db.deleteAgentSagaOps(agentId);
+    await _db.deleteAgentWakeRuns(agentId);
+    await _db.deleteAgentLinks(agentId);
+    await _db.deleteAgentEntities(agentId);
+  }
 }

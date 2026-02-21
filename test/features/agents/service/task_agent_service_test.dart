@@ -100,6 +100,13 @@ void main() {
         when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
         when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
 
         final result = await service.createTaskAgent(
           taskId: 'task-1',
@@ -133,6 +140,15 @@ void main() {
         expect(sub.agentId, 'agent-1');
         expect(sub.matchEntityIds, contains('task-1'));
         expect(sub.id, 'agent-1_task_task-1');
+
+        // Verify initial wake was enqueued
+        verify(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'creation',
+            triggerTokens: {'task-1'},
+          ),
+        ).called(1);
       });
 
       test('uses default display name when none provided', () async {
@@ -153,6 +169,13 @@ void main() {
         when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
         when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
 
         await service.createTaskAgent(
           taskId: 'task-2',
@@ -216,6 +239,13 @@ void main() {
             .thenAnswer((_) async => null);
         when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
 
         final result = await service.createTaskAgent(
           taskId: 'task-3',
@@ -290,12 +320,23 @@ void main() {
     });
 
     group('triggerReanalysis', () {
-      test('completes without throwing (MVP stub)', () {
-        // Should not throw or crash
-        expect(
-          () => service.triggerReanalysis('agent-1'),
-          returnsNormally,
-        );
+      test('enqueues a manual wake with reason reanalysis', () {
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
+
+        service.triggerReanalysis('agent-1');
+
+        verify(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'reanalysis',
+          ),
+        ).called(1);
       });
     });
 

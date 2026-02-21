@@ -86,6 +86,13 @@ class TaskAgentService {
     // Register subscription for changes to this task.
     _registerTaskSubscription(identity.agentId, taskId);
 
+    // Enqueue the initial wake so the agent runs immediately after creation.
+    orchestrator.enqueueManualWake(
+      agentId: identity.agentId,
+      reason: 'creation',
+      triggerTokens: {taskId},
+    );
+
     developer.log(
       'Created task agent ${identity.agentId} for task $taskId',
       name: 'TaskAgentService',
@@ -115,10 +122,10 @@ class TaskAgentService {
       'Manual re-analysis triggered for agent $agentId',
       name: 'TaskAgentService',
     );
-    // The orchestrator will handle this as a user-initiated wake.
-    // For MVP, we directly enqueue a job via the orchestrator.
-    // The workflow layer will pick it up and run the full context.
-    // TODO(agents): Implement user-initiated wake enqueue path.
+    orchestrator.enqueueManualWake(
+      agentId: agentId,
+      reason: 'reanalysis',
+    );
   }
 
   /// Register a wake subscription for a task agent.

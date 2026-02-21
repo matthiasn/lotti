@@ -150,11 +150,12 @@ void main() {
       expect(find.text('analyzeTask'), findsOneWidget);
     });
 
-    testWidgets('shows content entry ID when present', (tester) async {
+    testWidgets('shows content entry ID for non-expandable kinds',
+        (tester) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
-          kind: AgentMessageKind.observation,
+          kind: AgentMessageKind.action,
           createdAt: DateTime(2024, 3, 15, 10),
           contentEntryId: 'entry-abc-123',
         ),
@@ -166,6 +167,49 @@ void main() {
       await tester.pump();
 
       expect(find.text('Content: entry-abc-123'), findsOneWidget);
+    });
+
+    testWidgets('observation messages are expandable with payload text',
+        (tester) async {
+      final messages = <AgentDomainEntity>[
+        makeTestMessage(
+          id: 'msg-1',
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'payload-001',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentActivityLog(agentId: testAgentId),
+          overrides: [
+            agentRecentMessagesProvider.overrideWith(
+              (ref, agentId) async => messages,
+            ),
+            agentMessagePayloadTextProvider.overrideWith(
+              (ref, payloadId) async => 'This is the observation text',
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // Expand icon should be visible
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Text should not be visible initially
+      expect(find.text('This is the observation text'), findsNothing);
+
+      // Tap to expand
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+      // Extra pump for the async provider to resolve
+      await tester.pump();
+
+      // Now the observation text should be visible
+      expect(find.text('This is the observation text'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
     });
 
     testWidgets('shows error message in red when present', (tester) async {

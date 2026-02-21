@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 7 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(7));
+    test('contains exactly 8 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(8));
     });
 
     test('all tools have non-empty name and description', () {
@@ -86,10 +86,8 @@ void main() {
 
       test('has correct name and description', () {
         expect(tool.name, equals('set_task_title'));
-        expect(
-          tool.description,
-          equals('Update the title of the task.'),
-        );
+        expect(tool.description, contains('Set the title'));
+        expect(tool.description, contains('no title yet'));
       });
 
       test('requires a string title parameter', () {
@@ -112,11 +110,11 @@ void main() {
         expect(tool.name, equals('update_task_estimate'));
       });
 
-      test('requires a string estimate parameter', () {
+      test('requires an integer minutes parameter', () {
         final properties = tool.parameters['properties'] as Map;
-        final estimateProp = properties['estimate'] as Map;
-        expect(estimateProp['type'], equals('string'));
-        expect(tool.parameters['required'], contains('estimate'));
+        final minutesProp = properties['minutes'] as Map;
+        expect(minutesProp['type'], equals('integer'));
+        expect(tool.parameters['required'], contains('minutes'));
       });
     });
 
@@ -206,6 +204,27 @@ void main() {
         expect((itemProps['id'] as Map)['type'], equals('string'));
         expect((itemProps['isChecked'] as Map)['type'], equals('boolean'));
         expect(tool.parameters['required'], contains('updates'));
+      });
+    });
+
+    group('update_report', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools
+            .firstWhere((t) => t.name == 'update_report');
+      });
+
+      test('has correct name and description', () {
+        expect(tool.name, equals('update_report'));
+        expect(tool.description, contains('report'));
+      });
+
+      test('requires a string markdown parameter', () {
+        final properties = tool.parameters['properties'] as Map;
+        final markdownProp = properties['markdown'] as Map;
+        expect(markdownProp['type'], equals('string'));
+        expect(tool.parameters['required'], contains('markdown'));
       });
     });
 

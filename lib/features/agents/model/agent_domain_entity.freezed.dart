@@ -338,7 +338,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String scope,
             DateTime createdAt,
             VectorClock? vectorClock,
-            Map<String, Object?> content,
+            String content,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt)?
@@ -520,7 +520,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String scope,
             DateTime createdAt,
             VectorClock? vectorClock,
-            Map<String, Object?> content,
+            String content,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt)
@@ -706,7 +706,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String scope,
             DateTime createdAt,
             VectorClock? vectorClock,
-            Map<String, Object?> content,
+            String content,
             double? confidence,
             Map<String, Object?> provenance,
             DateTime? deletedAt)?
@@ -1751,13 +1751,12 @@ class AgentReportEntity implements AgentDomainEntity {
       required this.scope,
       required this.createdAt,
       required this.vectorClock,
-      required final Map<String, Object?> content,
+      this.content = '',
       this.confidence,
       final Map<String, Object?> provenance = const {},
       this.deletedAt,
       final String? $type})
-      : _content = content,
-        _provenance = provenance,
+      : _provenance = provenance,
         $type = $type ?? 'agentReport';
   factory AgentReportEntity.fromJson(Map<String, dynamic> json) =>
       _$AgentReportEntityFromJson(json);
@@ -1770,13 +1769,8 @@ class AgentReportEntity implements AgentDomainEntity {
   final DateTime createdAt;
   @override
   final VectorClock? vectorClock;
-  final Map<String, Object?> _content;
-  Map<String, Object?> get content {
-    if (_content is EqualUnmodifiableMapView) return _content;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableMapView(_content);
-  }
-
+  @JsonKey()
+  final String content;
   final double? confidence;
   final Map<String, Object?> _provenance;
   @JsonKey()
@@ -1819,7 +1813,7 @@ class AgentReportEntity implements AgentDomainEntity {
                 other.createdAt == createdAt) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
-            const DeepCollectionEquality().equals(other._content, _content) &&
+            (identical(other.content, content) || other.content == content) &&
             (identical(other.confidence, confidence) ||
                 other.confidence == confidence) &&
             const DeepCollectionEquality()
@@ -1837,7 +1831,7 @@ class AgentReportEntity implements AgentDomainEntity {
       scope,
       createdAt,
       vectorClock,
-      const DeepCollectionEquality().hash(_content),
+      content,
       confidence,
       const DeepCollectionEquality().hash(_provenance),
       deletedAt);
@@ -1862,7 +1856,7 @@ abstract mixin class $AgentReportEntityCopyWith<$Res>
       String scope,
       DateTime createdAt,
       VectorClock? vectorClock,
-      Map<String, Object?> content,
+      String content,
       double? confidence,
       Map<String, Object?> provenance,
       DateTime? deletedAt});
@@ -1913,9 +1907,9 @@ class _$AgentReportEntityCopyWithImpl<$Res>
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
       content: null == content
-          ? _self._content
+          ? _self.content
           : content // ignore: cast_nullable_to_non_nullable
-              as Map<String, Object?>,
+              as String,
       confidence: freezed == confidence
           ? _self.confidence
           : confidence // ignore: cast_nullable_to_non_nullable

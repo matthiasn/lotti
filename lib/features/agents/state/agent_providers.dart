@@ -134,6 +134,24 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   return messages;
 }
 
+/// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+///
+/// Returns the `text` field from the payload content map, or `null` if the
+/// payload doesn't exist or has no text.
+@riverpod
+Future<String?> agentMessagePayloadText(
+  Ref ref,
+  String payloadId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+  final entity = await repository.getEntity(payloadId);
+  if (entity is AgentMessagePayloadEntity) {
+    final text = entity.content['text'];
+    if (text is String && text.isNotEmpty) return text;
+  }
+  return null;
+}
+
 /// The task agent workflow with all dependencies resolved.
 @Riverpod(keepAlive: true)
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
@@ -194,6 +212,12 @@ Future<void> agentInitialization(Ref ref) async {
       triggerTokens: triggers,
       threadId: threadId,
     );
+
+    // Invalidate UI providers so the detail page refreshes.
+    ref
+      ..invalidate(agentReportProvider(agentId))
+      ..invalidate(agentStateProvider(agentId))
+      ..invalidate(agentRecentMessagesProvider(agentId));
 
     // Convert the dynamic map to VectorClock map for suppression.
     // The workflow returns Map<String, dynamic> where values are VectorClocks.

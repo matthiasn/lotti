@@ -4,20 +4,20 @@ import 'package:lotti/themes/theme.dart';
 
 /// Displays the contents of an agent report rendered as markdown.
 ///
-/// Expects a `content` map with a single `'markdown'` key whose value is the
-/// free-form markdown text produced by the agent. The markdown is rendered
-/// using [GptMarkdown]. An empty or missing value results in an empty card.
+/// Expects a plain markdown string produced by the agent via the
+/// `update_report` tool call. The markdown is rendered using [GptMarkdown].
+/// An empty value results in an empty card.
 class AgentReportSection extends StatelessWidget {
   const AgentReportSection({
     required this.content,
     super.key,
   });
 
-  final Map<String, Object?> content;
+  final String content;
 
   @override
   Widget build(BuildContext context) {
-    final markdown = content['markdown'] as String? ?? '';
+    final markdown = content;
 
     return Card(
       margin: const EdgeInsets.symmetric(

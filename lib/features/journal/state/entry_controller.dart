@@ -129,8 +129,10 @@ class EntryController extends _$EntryController {
   Future<EntryState?> build({required String id}) async {
     // Eagerly initialize the agent infrastructure when any entry is viewed.
     // The provider itself checks the config flag and is a no-op when disabled.
+    // Use listen (not watch) to avoid rebuilding this controller when the
+    // initialization provider resolves.
     ref
-      ..watch(agentInitializationProvider)
+      ..listen(agentInitializationProvider, (_, __) {})
       ..onDispose(() {
         _updateSubscription?.cancel();
       })

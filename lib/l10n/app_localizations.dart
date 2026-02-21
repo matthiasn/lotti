@@ -281,6 +281,24 @@ abstract class AppLocalizations {
   /// **'Destroy Agent?'**
   String get agentControlsDestroyDialogTitle;
 
+  /// No description provided for @agentControlsDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get agentControlsDeleteButton;
+
+  /// No description provided for @agentControlsDeleteDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete all data for this agent, including its history, reports, and observations. This cannot be undone.'**
+  String get agentControlsDeleteDialogContent;
+
+  /// No description provided for @agentControlsDeleteDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Agent?'**
+  String get agentControlsDeleteDialogTitle;
+
   /// No description provided for @agentControlsDestroyedMessage.
   ///
   /// In en, this message translates to:
@@ -2110,6 +2128,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Automatically transcribe audio recordings in your entries. This requires an internet connection.'**
   String get configFlagAutoTranscribeDescription;
+
+  /// No description provided for @configFlagEnableAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Agents'**
+  String get configFlagEnableAgents;
+
+  /// No description provided for @configFlagEnableAgentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AI agents to autonomously monitor and analyze your tasks.'**
+  String get configFlagEnableAgentsDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
   ///

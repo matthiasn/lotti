@@ -34,15 +34,20 @@ typedef ExecuteToolHandler = Future<ToolExecutionResult> Function(
 ///
 /// Dispatches tool calls to existing journal-domain handlers wrapped by
 /// [AgentToolExecutor] for category enforcement, audit logging, and
-/// self-notification suppression. The `record_observations` tool is handled
-/// locally — observations are accumulated in memory and retrieved via
-/// [extractObservations] after the conversation completes.
+/// self-notification suppression. Two tools are handled locally:
+///
+/// - `update_report` — the LLM publishes its report via this tool call;
+///   the markdown is accumulated and retrieved via [extractReportContent].
+/// - `record_observations` — private notes for future wakes; accumulated
+///   and retrieved via [extractObservations].
 ///
 /// Each message (assistant response, tool call, tool result) is persisted to
 /// `agent.sqlite` as an [AgentMessageEntity].
 ///
 /// After the conversation completes, callers use [extractReportContent] and
-/// [extractObservations] to obtain the LLM's output.
+/// [extractObservations] to obtain the LLM's output. The final assistant text
+/// response (which may contain `<think>` tags or other reasoning) is captured
+/// separately via [recordFinalResponse] and can be persisted as a thought.
 class TaskAgentStrategy extends ConversationStrategy {
   TaskAgentStrategy({
     required this.executor,
@@ -84,9 +89,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Executes a named tool handler with arguments.
   final ExecuteToolHandler executeToolHandler;
 
-  final _assistantResponses = <String>[];
+  String? _reportMarkdown;
+  String? _finalResponse;
   final _observations = <String>[];
   static const _uuid = Uuid();
+
+  /// Tool name for the report publishing tool.
+  static const reportToolName = 'update_report';
 
   /// Tool name for the observation recording tool.
   static const observationToolName = 'record_observations';
@@ -125,8 +134,13 @@ class TaskAgentStrategy extends ConversationStrategy {
         name: 'TaskAgentStrategy',
       );
 
-      // Handle record_observations locally — it doesn't modify journal
-      // entities so it doesn't need audit logging or category enforcement.
+      // Handle update_report and record_observations locally — they don't
+      // modify journal entities so they don't need audit logging or category
+      // enforcement.
+      if (toolName == reportToolName) {
+        _handleUpdateReport(args, call.id, manager);
+        continue;
+      }
       if (toolName == observationToolName) {
         _handleRecordObservations(args, call.id, manager);
         continue;
@@ -164,34 +178,33 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
-    // No explicit continuation prompt needed — the tool results already
-    // appeared in the conversation via addToolResponse. The LLM will see
-    // them and decide whether to call more tools or produce its final
-    // response.
-    return null;
+    if (_reportMarkdown != null) {
+      // Report already submitted — no further turns needed.
+      return null;
+    }
+    return 'Continue. If you have finished your analysis, call `update_report` '
+        'with the full updated report.';
   }
 
   /// Called by the workflow after the conversation loop finishes to capture
-  /// the assistant's final text response.
+  /// the assistant's final text response (for thought persistence).
   void recordFinalResponse(String? content) {
     if (content != null && content.isNotEmpty) {
-      _assistantResponses.add(content);
+      _finalResponse = content;
     }
   }
 
-  /// Extracts the updated report content from the LLM's final response.
+  /// Returns the raw final assistant response for thought persistence.
   ///
-  /// The full final response is used as the report markdown. Observations
-  /// are captured separately via the `record_observations` tool call.
+  /// This may contain `<think>` tags or other reasoning — it is NOT the
+  /// report. The report is captured via the `update_report` tool call.
+  String? get finalResponse => _finalResponse;
+
+  /// Extracts the report content published via the `update_report` tool call.
   ///
-  /// The report is stored as `{"markdown": "<report text>"}` in
-  /// [AgentReportEntity.content].
-  Map<String, Object?> extractReportContent() {
-    if (_assistantResponses.isEmpty) {
-      return <String, Object?>{'markdown': ''};
-    }
-    return <String, Object?>{'markdown': _assistantResponses.last.trim()};
-  }
+  /// Returns the markdown string, or empty string if the LLM never called
+  /// `update_report`.
+  String extractReportContent() => _reportMarkdown ?? '';
 
   /// Returns observations accumulated from `record_observations` tool calls.
   ///
@@ -201,6 +214,34 @@ class TaskAgentStrategy extends ConversationStrategy {
   List<String> extractObservations() => List.unmodifiable(_observations);
 
   // ── Internal handlers ──────────────────────────────────────────────────
+
+  /// Handles the `update_report` tool call by capturing the markdown content
+  /// and sending an acknowledgement back to the conversation.
+  void _handleUpdateReport(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) {
+    final markdown = args['markdown'];
+    if (markdown is String && markdown.trim().isNotEmpty) {
+      _reportMarkdown = markdown.trim();
+
+      developer.log(
+        'Report updated (${_reportMarkdown!.length} chars)',
+        name: 'TaskAgentStrategy',
+      );
+
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Report updated.',
+      );
+    } else {
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: "markdown" must be a non-empty string.',
+      );
+    }
+  }
 
   /// Handles the `record_observations` tool call by accumulating observations
   /// and sending an acknowledgement back to the conversation.

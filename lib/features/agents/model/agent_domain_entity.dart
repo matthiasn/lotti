@@ -82,7 +82,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required String scope,
     required DateTime createdAt,
     required VectorClock? vectorClock,
-    required Map<String, Object?> content,
+    @Default('') String content,
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,

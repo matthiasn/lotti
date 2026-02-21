@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
-import 'package:sqlite3/open.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 /// Returns the platform-specific filename for the test sqlite3+vec library.
@@ -24,8 +23,12 @@ String get _testLibPath {
   return '$root/packages/sqlite_vec/test_sqlite3_with_vec.$ext';
 }
 
-/// Overrides the sqlite3 library to use a custom build that includes
-/// sqlite-vec statically linked. Must be called once before any sqlite3 usage.
+/// Registers the sqlite-vec extension with the global [sqlite3] instance.
+///
+/// The actual library override (`open.overrideFor`) is set in
+/// `flutter_test_config.dart` so it runs before any test accesses `sqlite3`.
+/// This function only needs to register the extension as an auto-extension
+/// so that new connections get vec0 virtual-table support.
 void _loadSqliteVecForTests() {
   final path = _testLibPath;
   if (!File(path).existsSync()) {
@@ -35,20 +38,6 @@ void _loadSqliteVecForTests() {
     );
   }
 
-  final OperatingSystem os;
-  if (Platform.isMacOS) {
-    os = OperatingSystem.macOS;
-  } else if (Platform.isWindows) {
-    os = OperatingSystem.windows;
-  } else {
-    os = OperatingSystem.linux;
-  }
-  open.overrideFor(os, () => DynamicLibrary.open(path));
-
-  // Use inLibrary instead of staticallyLinked so the init symbol is looked up
-  // in our custom library. In CI (very_good test), all tests share one process
-  // and sqlite3 may already be initialised with the system library — looking
-  // up the symbol there would fail.
   final customLib = DynamicLibrary.open(path);
   sqlite3.ensureExtensionLoaded(
     SqliteExtension.inLibrary(customLib, 'sqlite3_vec_init'),

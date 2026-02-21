@@ -109,9 +109,7 @@ AgentReportEntity makeTestReport({
   String scope = 'current',
   DateTime? createdAt,
   VectorClock? vectorClock,
-  Map<String, Object?> content = const {
-    'markdown': '# Test Report\n\nEverything is fine.',
-  },
+  String content = '# Test Report\n\nEverything is fine.',
   double? confidence,
 }) {
   return AgentDomainEntity.agentReport(

@@ -41,10 +41,26 @@ class AgentDbConversions {
   }
 
   /// Convert a Drift [AgentEntity] row back to a Freezed [AgentDomainEntity].
+  ///
+  /// Applies forward-migration fixups for schema changes that occurred before
+  /// the schema_version column was actively bumped:
+  /// - `agentReport.content`: migrated from `Map<String, Object?>` → `String`.
   static AgentDomainEntity fromEntityRow(AgentEntity row) {
-    return AgentDomainEntity.fromJson(
-      jsonDecode(row.serialized) as Map<String, dynamic>,
-    );
+    final json = jsonDecode(row.serialized) as Map<String, dynamic>;
+    _migrateReportContent(json);
+    return AgentDomainEntity.fromJson(json);
+  }
+
+  /// If [json] is an `agentReport` whose `content` is still a Map (pre-migration
+  /// format), replace it with the `markdown` value from that map (or the first
+  /// string value, falling back to an empty string).
+  static void _migrateReportContent(Map<String, dynamic> json) {
+    if (json['runtimeType'] != 'agentReport') return;
+    final content = json['content'];
+    if (content is Map) {
+      json['content'] =
+          (content['markdown'] ?? content.values.firstOrNull ?? '').toString();
+    }
   }
 
   // ── link ──────────────────────────────────────────────────────────────────

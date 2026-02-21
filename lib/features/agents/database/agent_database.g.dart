@@ -2164,6 +2164,42 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(sagaLog.mapFromRow);
   }
 
+  Future<int> deleteAgentEntities(String agentId) {
+    return customUpdate(
+      'DELETE FROM agent_entities WHERE agent_id = ?1',
+      variables: [Variable<String>(agentId)],
+      updates: {agentEntities},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> deleteAgentLinks(String agentId) {
+    return customUpdate(
+      'DELETE FROM agent_links WHERE from_id = ?1 OR to_id = ?1',
+      variables: [Variable<String>(agentId)],
+      updates: {agentLinks},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> deleteAgentWakeRuns(String agentId) {
+    return customUpdate(
+      'DELETE FROM wake_run_log WHERE agent_id = ?1',
+      variables: [Variable<String>(agentId)],
+      updates: {wakeRunLog},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> deleteAgentSagaOps(String agentId) {
+    return customUpdate(
+      'DELETE FROM saga_log WHERE run_key IN (SELECT run_key FROM wake_run_log WHERE agent_id = ?1)',
+      variables: [Variable<String>(agentId)],
+      updates: {sagaLog},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

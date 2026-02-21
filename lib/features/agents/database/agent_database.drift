@@ -89,3 +89,11 @@ getWakeRunByKey: SELECT * FROM wake_run_log WHERE run_key = :runKey;
 getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND deleted_at IS NULL ORDER BY created_at DESC;
 
 getPendingSagaOps: SELECT * FROM saga_log WHERE status = 'pending' ORDER BY created_at ASC;
+
+deleteAgentEntities: DELETE FROM agent_entities WHERE agent_id = :agentId;
+
+deleteAgentLinks: DELETE FROM agent_links WHERE from_id = :agentId OR to_id = :agentId;
+
+deleteAgentWakeRuns: DELETE FROM wake_run_log WHERE agent_id = :agentId;
+
+deleteAgentSagaOps: DELETE FROM saga_log WHERE run_key IN (SELECT run_key FROM wake_run_log WHERE agent_id = :agentId);

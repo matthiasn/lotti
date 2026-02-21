@@ -29,12 +29,29 @@ class AgentControls extends ConsumerWidget {
     if (isDestroyed) {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
-        child: Text(
-          context.messages.agentControlsDestroyedMessage,
-          style: context.textTheme.bodyMedium?.copyWith(
-            color: context.colorScheme.outline,
-            fontStyle: FontStyle.italic,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.messages.agentControlsDestroyedMessage,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.outline,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingSmall),
+            OutlinedButton.icon(
+              onPressed: () => _confirmDelete(context, ref),
+              icon: Icon(
+                Icons.delete_forever_rounded,
+                color: context.colorScheme.error,
+              ),
+              label: Text(
+                context.messages.agentControlsDeleteButton,
+                style: TextStyle(color: context.colorScheme.error),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -125,6 +142,39 @@ class AgentControls extends ConsumerWidget {
     if (confirmed ?? false) {
       await ref.read(agentServiceProvider).destroyAgent(agentId);
       ref.invalidate(agentIdentityProvider(agentId));
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final l10n = dialogContext.messages;
+        return AlertDialog(
+          title: Text(l10n.agentControlsDeleteDialogTitle),
+          content: Text(l10n.agentControlsDeleteDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancelButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.colorScheme.error,
+              ),
+              child: Text(l10n.agentControlsDeleteButton),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed ?? false) {
+      await ref.read(agentServiceProvider).deleteAgent(agentId);
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 }

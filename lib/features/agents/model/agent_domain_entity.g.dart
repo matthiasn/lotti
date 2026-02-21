@@ -215,7 +215,7 @@ AgentReportEntity _$AgentReportEntityFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
-      content: json['content'] as Map<String, dynamic>,
+      content: json['content'] as String? ?? '',
       confidence: (json['confidence'] as num?)?.toDouble(),
       provenance: json['provenance'] as Map<String, dynamic>? ?? const {},
       deletedAt: json['deletedAt'] == null

@@ -6,6 +6,13 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Message kinds whose payload text is shown in an expandable section.
+/// Message kinds whose payload text is shown in an expandable section.
+const Set<AgentMessageKind> _expandableKinds = {
+  AgentMessageKind.observation,
+  AgentMessageKind.thought,
+};
+
 /// Displays a chronological list of recent agent messages.
 ///
 /// Each message shows a timestamp, a colored kind badge, content preview
@@ -68,15 +75,25 @@ class AgentActivityLog extends ConsumerWidget {
   }
 }
 
-class _MessageCard extends StatelessWidget {
+class _MessageCard extends ConsumerStatefulWidget {
   const _MessageCard({required this.message});
 
   final AgentMessageEntity message;
 
   @override
+  ConsumerState<_MessageCard> createState() => _MessageCardState();
+}
+
+class _MessageCardState extends ConsumerState<_MessageCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final message = widget.message;
     final toolName = message.metadata.toolName;
     final contentId = message.contentEntryId;
+    final isExpandable =
+        contentId != null && _expandableKinds.contains(message.kind);
 
     return Card(
       margin: const EdgeInsets.symmetric(
@@ -85,62 +102,75 @@ class _MessageCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _KindBadge(kind: message.kind),
-                const SizedBox(width: AppTheme.spacingSmall),
-                Expanded(
-                  child: Text(
-                    _formatTimestamp(message.createdAt),
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: context.colorScheme.outline,
-                    ),
-                  ),
-                ),
-                if (toolName != null)
-                  Chip(
-                    label: Text(
-                      toolName,
+      child: InkWell(
+        onTap:
+            isExpandable ? () => setState(() => _expanded = !_expanded) : null,
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _KindBadge(kind: message.kind),
+                  const SizedBox(width: AppTheme.spacingSmall),
+                  Expanded(
+                    child: Text(
+                      _formatTimestamp(message.createdAt),
                       style: context.textTheme.labelSmall?.copyWith(
-                        fontFamily: 'monospace',
-                        fontSize: fontSizeSmall,
+                        color: context.colorScheme.outline,
                       ),
                     ),
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
                   ),
-              ],
-            ),
-            if (contentId != null)
-              Padding(
-                padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
-                child: Text(
-                  context.messages.agentMessageContentPrefix(contentId),
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                  if (toolName != null)
+                    Chip(
+                      label: Text(
+                        toolName,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          fontFamily: 'monospace',
+                          fontSize: fontSizeSmall,
+                        ),
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (isExpandable)
+                    Icon(
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                ],
               ),
-            if (message.metadata.errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
-                child: Text(
-                  message.metadata.errorMessage!,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.error,
+              if (_expanded && contentId != null)
+                _ExpandedPayload(payloadId: contentId),
+              if (!_expanded && contentId != null && !isExpandable)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
+                  child: Text(
+                    context.messages.agentMessageContentPrefix(contentId),
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-          ],
+              if (message.metadata.errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
+                  child: Text(
+                    message.metadata.errorMessage!,
+                    style: context.textTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.error,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -152,6 +182,41 @@ class _MessageCard extends StatelessWidget {
     final second = dt.second.toString().padLeft(2, '0');
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
         '${dt.day.toString().padLeft(2, '0')} $hour:$minute:$second';
+  }
+}
+
+/// Loads and displays the text content of an observation payload.
+class _ExpandedPayload extends ConsumerWidget {
+  const _ExpandedPayload({required this.payloadId});
+
+  final String payloadId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textAsync = ref.watch(agentMessagePayloadTextProvider(payloadId));
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
+      child: textAsync.when(
+        loading: () => const SizedBox(
+          height: 16,
+          width: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        error: (error, _) => Text(
+          error.toString(),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.error,
+          ),
+        ),
+        data: (text) => Text(
+          text ?? '(no content)',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
   }
 }
 

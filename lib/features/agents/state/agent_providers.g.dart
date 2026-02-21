@@ -684,6 +684,106 @@ final class AgentRecentMessagesFamily extends $Family
   String toString() => r'agentRecentMessagesProvider';
 }
 
+/// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+///
+/// Returns the `text` field from the payload content map, or `null` if the
+/// payload doesn't exist or has no text.
+
+@ProviderFor(agentMessagePayloadText)
+final agentMessagePayloadTextProvider = AgentMessagePayloadTextFamily._();
+
+/// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+///
+/// Returns the `text` field from the payload content map, or `null` if the
+/// payload doesn't exist or has no text.
+
+final class AgentMessagePayloadTextProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
+    with $FutureModifier<String?>, $FutureProvider<String?> {
+  /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+  ///
+  /// Returns the `text` field from the payload content map, or `null` if the
+  /// payload doesn't exist or has no text.
+  AgentMessagePayloadTextProvider._(
+      {required AgentMessagePayloadTextFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentMessagePayloadTextProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentMessagePayloadTextHash();
+
+  @override
+  String toString() {
+    return r'agentMessagePayloadTextProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String?> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentMessagePayloadText(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentMessagePayloadTextProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentMessagePayloadTextHash() =>
+    r'95b9c1d028dbfc17b9b14b68057bf7f61a4e7fca';
+
+/// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+///
+/// Returns the `text` field from the payload content map, or `null` if the
+/// payload doesn't exist or has no text.
+
+final class AgentMessagePayloadTextFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<String?>, String> {
+  AgentMessagePayloadTextFamily._()
+      : super(
+          retry: null,
+          name: r'agentMessagePayloadTextProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
+  ///
+  /// Returns the `text` field from the payload content map, or `null` if the
+  /// payload doesn't exist or has no text.
+
+  AgentMessagePayloadTextProvider call(
+    String payloadId,
+  ) =>
+      AgentMessagePayloadTextProvider._(argument: payloadId, from: this);
+
+  @override
+  String toString() => r'agentMessagePayloadTextProvider';
+}
+
 /// The task agent workflow with all dependencies resolved.
 
 @ProviderFor(taskAgentWorkflow)
@@ -799,4 +899,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'0c7c7b4632d08929f06f5717310c195f14464e36';
+    r'f8b328251cc8648b2e09a49e66bef30ba2dc8e1c';

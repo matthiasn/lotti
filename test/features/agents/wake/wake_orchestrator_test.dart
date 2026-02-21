@@ -947,6 +947,92 @@ void main() {
       });
     });
 
+    group('enqueueManualWake', () {
+      test('enqueues a job and triggers processNext', () {
+        fakeAsync((async) {
+          (orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async => null,
+          ))
+              .enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'creation',
+            triggerTokens: {'task-1'},
+          );
+
+          async.flushMicrotasks();
+
+          // The job should have been executed (run persisted + completed).
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+          verify(
+            () => mockRepository.updateWakeRunStatus(
+              any(),
+              'completed',
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('uses the provided reason in the wake job', () {
+        fakeAsync((async) {
+          (orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async => null,
+          ))
+              .enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'reanalysis',
+          );
+
+          async.flushMicrotasks();
+
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured;
+          final entry = captured.first as WakeRunLogData;
+          expect(entry.reason, 'reanalysis');
+          expect(entry.agentId, 'agent-1');
+        });
+      });
+
+      test('bypasses self-notification suppression', () {
+        fakeAsync((async) {
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async => null,
+          )
+            // Record mutations for agent-1 that include task-1.
+            ..recordMutatedEntities('agent-1', {
+              'task-1': const VectorClock({}),
+            })
+            // Manual wake should still go through despite suppression state.
+            ..enqueueManualWake(
+              agentId: 'agent-1',
+              reason: 'creation',
+              triggerTokens: {'task-1'},
+            );
+
+          async.flushMicrotasks();
+
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+        });
+      });
+    });
+
     group('AgentSubscription', () {
       test('stores all fields correctly', () {
         bool predicateCalled(Set<String> tokens) => true;
