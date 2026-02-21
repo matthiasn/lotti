@@ -34,11 +34,15 @@ typedef ExecuteToolHandler = Future<ToolExecutionResult> Function(
 ///
 /// Dispatches tool calls to existing journal-domain handlers wrapped by
 /// [AgentToolExecutor] for category enforcement, audit logging, and
-/// self-notification suppression. Each message (assistant response, tool call,
-/// tool result) is persisted to `agent.sqlite` as an [AgentMessageEntity].
+/// self-notification suppression. The `record_observations` tool is handled
+/// locally — observations are accumulated in memory and retrieved via
+/// [extractObservations] after the conversation completes.
+///
+/// Each message (assistant response, tool call, tool result) is persisted to
+/// `agent.sqlite` as an [AgentMessageEntity].
 ///
 /// After the conversation completes, callers use [extractReportContent] and
-/// [extractObservations] to obtain the LLM's structured output.
+/// [extractObservations] to obtain the LLM's output.
 class TaskAgentStrategy extends ConversationStrategy {
   TaskAgentStrategy({
     required this.executor,
@@ -81,7 +85,11 @@ class TaskAgentStrategy extends ConversationStrategy {
   final ExecuteToolHandler executeToolHandler;
 
   final _assistantResponses = <String>[];
+  final _observations = <String>[];
   static const _uuid = Uuid();
+
+  /// Tool name for the observation recording tool.
+  static const observationToolName = 'record_observations';
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -116,6 +124,13 @@ class TaskAgentStrategy extends ConversationStrategy {
         'Processing tool call: $toolName with args: $args',
         name: 'TaskAgentStrategy',
       );
+
+      // Handle record_observations locally — it doesn't modify journal
+      // entities so it doesn't need audit logging or category enforcement.
+      if (toolName == observationToolName) {
+        _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
 
       // Delegate to the executor which handles category enforcement, audit
       // logging, saga tracking, and vector-clock capture.
@@ -166,9 +181,8 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Extracts the updated report content from the LLM's final response.
   ///
-  /// The LLM produces a markdown document. Everything before the
-  /// `## Observations` heading is the report; the observations section
-  /// (if present) is separated out and handled by [extractObservations].
+  /// The full final response is used as the report markdown. Observations
+  /// are captured separately via the `record_observations` tool call.
   ///
   /// The report is stored as `{"markdown": "<report text>"}` in
   /// [AgentReportEntity.content].
@@ -176,51 +190,46 @@ class TaskAgentStrategy extends ConversationStrategy {
     if (_assistantResponses.isEmpty) {
       return <String, Object?>{'markdown': ''};
     }
-
-    final lastResponse = _assistantResponses.last;
-    final parts = _splitObservations(lastResponse);
-    return <String, Object?>{'markdown': parts.report.trim()};
+    return <String, Object?>{'markdown': _assistantResponses.last.trim()};
   }
 
-  /// Extracts new observation notes (agentJournal entries) from the LLM's
-  /// final response.
+  /// Returns observations accumulated from `record_observations` tool calls.
   ///
-  /// The LLM is instructed to include an `## Observations` section with
-  /// bullet points. Each bullet becomes a separate observation string.
-  /// Returns an empty list when no observations section is present.
-  List<String> extractObservations() {
-    if (_assistantResponses.isEmpty) return [];
+  /// The LLM calls the `record_observations` tool during the conversation
+  /// to record private notes for future wakes. Each call may contain
+  /// multiple observation strings, all of which are accumulated here.
+  List<String> extractObservations() => List.unmodifiable(_observations);
 
-    final lastResponse = _assistantResponses.last;
-    final parts = _splitObservations(lastResponse);
+  // ── Internal handlers ──────────────────────────────────────────────────
 
-    if (parts.observations == null) return [];
-
-    // Parse bullet points from the observations section.
-    return parts.observations!
-        .split('\n')
-        .map((line) => line.replaceFirst(RegExp(r'^\s*[-*]\s*'), '').trim())
-        .where((line) => line.isNotEmpty)
-        .toList();
-  }
-
-  /// Splits the LLM response into report and observations sections.
-  ///
-  /// Looks for a `## Observations` heading (case-insensitive). Everything
-  /// before it is the report, everything after is the observations text.
-  static ({String report, String? observations}) _splitObservations(
-    String response,
+  /// Handles the `record_observations` tool call by accumulating observations
+  /// and sending an acknowledgement back to the conversation.
+  void _handleRecordObservations(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
   ) {
-    final pattern = RegExp(r'^##\s+observations\s*$',
-        multiLine: true, caseSensitive: false);
-    final match = pattern.firstMatch(response);
-    if (match == null) {
-      return (report: response, observations: null);
+    final rawList = args['observations'];
+    if (rawList is List) {
+      final notes =
+          rawList.whereType<String>().where((s) => s.trim().isNotEmpty);
+      _observations.addAll(notes);
+
+      developer.log(
+        'Recorded ${notes.length} observations',
+        name: 'TaskAgentStrategy',
+      );
+
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Recorded ${notes.length} observation(s).',
+      );
+    } else {
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: "observations" must be an array of strings.',
+      );
     }
-    return (
-      report: response.substring(0, match.start),
-      observations: response.substring(match.end),
-    );
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

@@ -335,9 +335,10 @@ void main() {
         );
       });
 
-      test('persists observations when LLM returns structured JSON with them',
+      test('persists observations from record_observations tool calls',
           () async {
-        // Set up sendMessage to capture the strategy and record a response.
+        // Set up sendMessage to simulate the strategy accumulating
+        // observations via the record_observations tool during conversation.
         mockConversationRepository.sendMessageDelegate = ({
           required conversationId,
           required message,
@@ -348,17 +349,25 @@ void main() {
           temperature = 0.7,
           strategy,
         }) async {
-          // Simulate the strategy receiving a final response with observations.
+          // Simulate the LLM calling record_observations by directly
+          // invoking processToolCalls with a record_observations call.
           if (strategy is TaskAgentStrategy) {
-            strategy.recordFinalResponse(
-              '# Updated\n\nReport content.\n\n'
-              '## Observations\n- Pattern A\n- Pattern B',
+            await strategy.processToolCalls(
+              toolCalls: [
+                const ChatCompletionMessageToolCall(
+                  id: 'obs-call',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: 'record_observations',
+                    arguments: '{"observations":["Pattern A","Pattern B"]}',
+                  ),
+                ),
+              ],
+              manager: mockConversationManager,
             );
           }
         };
 
-        // Mock manager returning a message so extractFinalAssistantContent
-        // finds nothing (the strategy already has the response).
         when(() => mockConversationManager.messages).thenReturn([]);
 
         final result = await workflow.execute(
@@ -370,8 +379,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Should persist: report + report head + 2 observation payloads
-        // + 2 observation messages + state update = 7 total.
+        // Should persist: assistant message (from processToolCalls) + report
+        // + report head + 2 observation payloads + 2 observation messages
+        // + state update = 8 total.
         verify(() => mockAgentRepository.upsertEntity(any()))
             .called(greaterThanOrEqualTo(7));
       });

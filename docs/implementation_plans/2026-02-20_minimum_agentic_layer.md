@@ -1,7 +1,7 @@
 # Minimum Agentic Layer: Task Agent Implementation Plan
 
 Date: 2026-02-20
-Status: Phase 0A complete — all 8 sub-phases done (323 tests passing, analyzer clean, zero warnings)
+Status: Phase 0A complete — all 8 sub-phases done, production wiring complete (320 tests passing, analyzer clean, zero warnings)
 Companion docs:
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer.md`
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer_formal_model.md`
@@ -606,14 +606,15 @@ The Task Agent has access to these tools (reusing existing infrastructure where 
 
 | Tool name | Existing handler | Location |
 |---|---|---|
-| `set_task_title` | None (new — title update via `journalRepository.updateJournalEntity`) | New handler needed |
-| `set_task_language` | `set_task_language` inline handler | `lotti_conversation_processor.dart` |
-| `update_task_estimate` | `TaskEstimateHandler` | `task_estimate_handler.dart` |
-| `update_task_due_date` | `TaskDueDateHandler` | `task_due_date_handler.dart` |
-| `update_task_priority` | `TaskPriorityHandler` | `task_priority_handler.dart` |
-| `add_multiple_checklist_items` | `LottiBatchChecklistHandler` | `lotti_batch_checklist_handler.dart` |
-| `update_checklist_items` | `LottiChecklistUpdateHandler` | `lotti_checklist_update_handler.dart` |
-| `assign_task_labels` | `LabelAssignmentProcessor` | `label_assignment_processor.dart` |
+| `set_task_title` | `TaskTitleHandler` (new) | `agents/tools/task_title_handler.dart` |
+| `update_task_estimate` | `TaskEstimateHandler` | `ai/functions/task_estimate_handler.dart` |
+| `update_task_due_date` | `TaskDueDateHandler` | `ai/functions/task_due_date_handler.dart` |
+| `update_task_priority` | `TaskPriorityHandler` | `ai/functions/task_priority_handler.dart` |
+| `add_multiple_checklist_items` | `LottiBatchChecklistHandler` | `ai/functions/lotti_batch_checklist_handler.dart` |
+| `update_checklist_items` | `LottiChecklistUpdateHandler` | `ai/functions/lotti_checklist_update_handler.dart` |
+| `record_observations` | Handled locally by `TaskAgentStrategy` | `agents/workflow/task_agent_strategy.dart` |
+
+**Note on `record_observations`:** This tool does not modify journal-domain data — it accumulates private observation notes in memory during the conversation. It bypasses the `AgentToolExecutor` (no category enforcement or audit logging needed). The strategy collects observations via this tool call and exposes them via `extractObservations()` after the conversation completes. This is more reliable than parsing observations from the LLM's text response, since the structured tool call arguments are always well-formed.
 
 All existing handlers live under `lib/features/ai/functions/` and produce side effects in journal domain via `journalRepository.updateJournalEntity()` and `checklistRepository`. These are the established interface for AI-produced mutations and should be reused directly by the agent — not wrapped or duplicated.
 
@@ -685,8 +686,8 @@ wake(agent, triggerTokens):
   //    for the API calls; the agent layer writes in parallel.
 
   // 6. Persist new observation notes (agentJournal entries)
-  //    The LLM produces these as part of its response — things worth
-  //    remembering for future wakes.
+  //    The LLM calls `record_observations` tool during conversation.
+  //    The strategy accumulates them; we persist them here.
   for note in strategy.extractObservations():
     repo.upsertEntity(AgentMessageEntity(
       kind: AgentMessageKind.observation,
@@ -752,8 +753,9 @@ The agent has its own prompt, separate from the existing `taskSummaryPrompt` in
 
 **System prompt** includes:
 - Agent role and personality
-- Tool definitions (set_task_title, update_task_estimate, etc.)
-- Instructions for producing both an updated report AND new agentJournal observations
+- Tool definitions (set_task_title, update_task_estimate, etc., plus `record_observations`)
+- Instructions for producing an updated report as free-form markdown
+- Instructions to call `record_observations` tool for private notes (not embedded in the report)
 - Guidelines for when to call tools vs when to just update the report
 
 **User message on first wake** (no prior report):
@@ -768,48 +770,46 @@ The agent has its own prompt, separate from the existing `taskSummaryPrompt` in
 - Full current task context from `AiInputRepository` (so the agent can cross-reference)
 - Instruction: "Update the report based on what changed. Add observations if warranted. Call tools if needed."
 
-**LLM output structure** (structured output or parsed from response):
-- Updated report content
-- New agentJournal observations (zero or more)
-- Tool calls (handled by `ConversationManager` multi-turn loop)
+**LLM output structure:**
+- Updated report as free-form markdown (the final text response)
+- New agentJournal observations via `record_observations` tool call (zero or more)
+- Journal-domain mutations via tool calls (handled by `ConversationManager` multi-turn loop)
 
 ### 5.6 Report format
 
-The report follows a format inspired by the existing task summary output
-(TLDR, goal, progress, remaining, learnings) but stored as structured JSON
-in `AgentReportEntity.content`:
+The report is free-form markdown stored as `{"markdown": "<text>"}` in
+`AgentReportEntity.content`. The format is not prescriptive — the LLM uses
+whatever headings, lists, and structure best describe the task's current state.
+A typical report might include sections like TLDR, Goal, Status, Achieved,
+Remaining, and Learnings, but the agent is free to evolve the format over time.
 
-```json
-{
-  "title": "Implement authentication module",
-  "tldr": "OAuth2 integration 60% complete. Login UI done, logout and tests remaining. Due Feb 25.",
-  "goal": "Add OAuth2-based user authentication with token refresh and full test coverage.",
-  "status": "in_progress",
-  "priority": "P1",
-  "estimate": "4h",
-  "dueDate": "2026-02-25",
-  "achieved": [
-    "Set up OAuth provider configuration",
-    "Implemented token refresh logic",
-    "Built login UI with error handling"
-  ],
-  "remaining": [
-    "Add logout flow with token revocation",
-    "Write integration tests for auth endpoints"
-  ],
-  "learnings": [
-    "Token refresh needed custom interceptor — standard library didn't support it"
-  ],
-  "checklistProgress": {
-    "total": 5,
-    "completed": 3
-  },
-  "lastUpdated": "2026-02-20T14:30:00Z"
-}
+Example:
+
+```markdown
+# Implement authentication module
+
+**Status:** in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
+
+OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
+
+## Achieved
+- Set up OAuth provider configuration
+- Implemented token refresh logic
+- Built login UI with error handling
+
+## Remaining
+- Add logout flow with token revocation
+- Write integration tests for auth endpoints
 ```
 
-This is stored in `AgentReportEntity.content` and is viewable without any LLM call.
-The report format can evolve per agent kind — this is the Task Agent's format.
+The markdown is rendered in the UI via `GptMarkdown`. This approach was chosen
+over structured JSON because the prompt naturally evolves (adding/removing
+sections is trivial in markdown, tightly coupled in a JSON schema).
+
+**Observations** are NOT embedded in the report text. The LLM calls the
+`record_observations` tool to persist private notes. This avoids brittle
+regex parsing of the LLM's text output and ensures observations are always
+captured reliably as structured tool call arguments.
 
 ## 6. Management Interface
 
@@ -951,12 +951,12 @@ lib/features/agents/
 | 0A-7: Agent Detail Page | DONE | 4 source | 56 widget tests |
 | 0A-8: Integration | DONE (step 39 deferred) | config flag + providers + UI wiring | — |
 
-**Total: 323 passing tests, full-project analyzer clean (zero issues).**
+**Total: 320 passing tests, full-project analyzer clean (zero issues).**
 
 **Notable deviations from plan:**
 - Step 5 (`agent_tool_call.dart`) was not created as a separate file — tool call types are handled inline by the executor.
 - Step 12 (Register AgentDatabase in GetIt) is not needed — the agent feature uses Riverpod providers exclusively, not GetIt.
-- `TaskAgentService.triggerReanalysis()` and `restoreSubscriptions()` are stub implementations pending integration wiring.
+- `TaskAgentService.restoreSubscriptions()` is now fully implemented (queries active agents, filters for task_agent kind, registers subscriptions).
 - Riverpod providers return `AgentDomainEntity?` (parent sealed type) instead of variant subtypes — required by `riverpod_generator` codegen.
 - `agent_db_conversions.dart` uses an `entityCreatedAt` helper because not all sealed union variants have `createdAt`.
 - Added `getAllAgentIdentities` drift query to support `AgentService.listAgents()` with optional lifecycle filtering.
@@ -964,6 +964,12 @@ lib/features/agents/
 - Integration wiring uses `agentInitializationProvider` (keepAlive Riverpod provider) instead of GetIt startup hook.
 - `_TaskAgentChip` in `task_header_meta_card.dart` combines both "Create Agent" and "Agent" navigation into one widget.
 - Step 39 (end-to-end integration test) deferred — requires running inference with a real API key.
+- Report format changed from structured JSON to free-form markdown (rendered via `GptMarkdown`) — more flexible, less coupled to a fixed schema.
+- Observations are captured via a `record_observations` tool call (not parsed from the LLM's text response) — structurally reliable, no regex splitting.
+- `actionStableId` uses `SplayTreeMap` for canonical JSON key ordering.
+- `processNext()` is now event-driven — `_onBatch` calls `unawaited(processNext())` after enqueueing.
+- `agentInitializationProvider` is consumed from `entry_controller.dart`, wiring the `TaskAgentWorkflow` into the orchestrator via a `WakeExecutor` callback.
+- Tool registry has 7 tools (6 journal-domain + `record_observations`).
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 

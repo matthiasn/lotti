@@ -283,6 +283,183 @@ void main() {
       });
     });
 
+    group('record_observations tool', () {
+      test('accumulates observations from tool call', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Pattern A', 'Pattern B'],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), ['Pattern A', 'Pattern B']);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-obs',
+            response: 'Recorded 2 observation(s).',
+          ),
+        ).called(1);
+      });
+
+      test('accumulates across multiple tool calls', () async {
+        final firstBatch = [
+          ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Note 1'],
+              }),
+            ),
+          ),
+        ];
+
+        final secondBatch = [
+          ChatCompletionMessageToolCall(
+            id: 'call-2',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Note 2', 'Note 3'],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: firstBatch,
+          manager: mockManager,
+        );
+        await strategy.processToolCalls(
+          toolCalls: secondBatch,
+          manager: mockManager,
+        );
+
+        expect(
+          strategy.extractObservations(),
+          ['Note 1', 'Note 2', 'Note 3'],
+        );
+      });
+
+      test('filters empty strings from observations', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Valid', '', '  ', 'Also valid'],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), ['Valid', 'Also valid']);
+      });
+
+      test('filters non-string values from observations', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Valid', 42, null, 'Also valid'],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), ['Valid', 'Also valid']);
+      });
+
+      test('returns error when observations is not an array', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': 'not an array',
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), isEmpty);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-obs',
+            response: 'Error: "observations" must be an array of strings.',
+          ),
+        ).called(1);
+      });
+
+      test('does not delegate to executor', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': ['Note'],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+      });
+    });
+
     group('shouldContinue', () {
       test('delegates to manager.canContinue()', () {
         when(mockManager.canContinue).thenReturn(true);
@@ -300,7 +477,7 @@ void main() {
     });
 
     group('recordFinalResponse and extractReportContent', () {
-      test('extracts markdown content from response', () {
+      test('extracts full markdown content from response', () {
         const response = '# Task Summary\n\nTask is progressing well.\n\n'
             '## Details\n- Item 1\n- Item 2';
 
@@ -308,19 +485,6 @@ void main() {
 
         final report = strategy.extractReportContent();
         expect(report['markdown'], response);
-      });
-
-      test('separates report from observations section', () {
-        const response = '# Task Summary\n\nTask is progressing well.\n\n'
-            '## Observations\n- Learned about API limits\n- Found a bug';
-
-        strategy.recordFinalResponse(response);
-
-        final report = strategy.extractReportContent();
-        expect(
-          report['markdown'],
-          '# Task Summary\n\nTask is progressing well.',
-        );
       });
 
       test('returns empty markdown when no response recorded', () {
@@ -351,89 +515,24 @@ void main() {
         expect(report['markdown'], '# Second Report');
       });
 
-      test('handles observations heading case-insensitively', () {
-        const response = '# Report\n\nContent here.\n\n'
-            '## OBSERVATIONS\n- Note 1';
-
-        strategy.recordFinalResponse(response);
+      test('trims whitespace from report', () {
+        strategy.recordFinalResponse('  # Report\n\nContent  \n\n');
 
         final report = strategy.extractReportContent();
-        expect(
-          report['markdown'],
-          '# Report\n\nContent here.',
-        );
+        expect(report['markdown'], '# Report\n\nContent');
       });
     });
 
     group('extractObservations', () {
-      test('parses bullet points from observations section', () {
-        const response = '# Report\n\n## Observations\n'
-            '- Observation 1\n'
-            '- Observation 2\n'
-            '- Observation 3';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, hasLength(3));
-        expect(observations[0], 'Observation 1');
-        expect(observations[1], 'Observation 2');
-        expect(observations[2], 'Observation 3');
+      test('returns empty list when no observations recorded', () {
+        expect(strategy.extractObservations(), isEmpty);
       });
 
-      test('handles asterisk bullet points', () {
-        const response = '# Report\n\n## Observations\n'
-            '* Note A\n'
-            '* Note B';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, ['Note A', 'Note B']);
-      });
-
-      test('skips blank lines in observations section', () {
-        const response = '# Report\n\n## Observations\n'
-            '- Note 1\n'
-            '\n'
-            '- Note 2\n';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, ['Note 1', 'Note 2']);
-      });
-
-      test('returns empty list when no observations section', () {
-        const response = '# Report\n\nJust a report, no observations.';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, isEmpty);
-      });
-
-      test('returns empty list when no responses recorded', () {
-        final observations = strategy.extractObservations();
-        expect(observations, isEmpty);
-      });
-
-      test('handles observations heading case-insensitively', () {
-        const response = '# Report\n\n## observations\n- Lower case note';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, ['Lower case note']);
-      });
-
-      test('handles empty observations section', () {
-        const response = '# Report\n\n## Observations\n';
-
-        strategy.recordFinalResponse(response);
-        final observations = strategy.extractObservations();
-
-        expect(observations, isEmpty);
+      test('returns unmodifiable list', () {
+        expect(
+          () => strategy.extractObservations().add('should fail'),
+          throwsA(isA<UnsupportedError>()),
+        );
       });
     });
   });

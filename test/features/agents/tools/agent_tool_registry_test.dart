@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 6 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(6));
+    test('contains exactly 7 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(7));
     });
 
     test('all tools have non-empty name and description', () {
@@ -206,6 +206,31 @@ void main() {
         expect((itemProps['id'] as Map)['type'], equals('string'));
         expect((itemProps['isChecked'] as Map)['type'], equals('boolean'));
         expect(tool.parameters['required'], contains('updates'));
+      });
+    });
+
+    group('record_observations', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools
+            .firstWhere((t) => t.name == 'record_observations');
+      });
+
+      test('has correct name and description', () {
+        expect(tool.name, equals('record_observations'));
+        expect(tool.description, contains('observations'));
+      });
+
+      test('requires an array observations parameter with string items', () {
+        final properties = tool.parameters['properties'] as Map;
+        final obsProp = properties['observations'] as Map;
+        expect(obsProp['type'], equals('array'));
+        expect(
+          (obsProp['items'] as Map)['type'],
+          equals('string'),
+        );
+        expect(tool.parameters['required'], contains('observations'));
       });
     });
   });

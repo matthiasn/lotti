@@ -122,5 +122,22 @@ class AgentToolRegistry {
         'required': ['updates'],
       },
     ),
+    AgentToolDefinition(
+      name: 'record_observations',
+      description:
+          'Record private observations for future wakes. Use this to note '
+          'patterns, insights, failure notes, or anything worth remembering.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'observations': {
+            'type': 'array',
+            'items': {'type': 'string'},
+            'description': 'List of observation strings to persist.',
+          },
+        },
+        'required': ['observations'],
+      },
+    ),
   ];
 }

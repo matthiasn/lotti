@@ -394,11 +394,6 @@ typical report might include sections like TLDR, Goal, Status, Achieved,
 Remaining, and Learnings, but you are free to add, remove, or rename
 sections as needed. The report format can evolve naturally over time.
 
-After the report, include an `## Observations` section with private notes
-worth remembering for future wakes (patterns, insights, failure notes).
-Each observation should be a bullet point. If there are no observations,
-omit the section entirely.
-
 Example:
 
 ```
@@ -416,9 +411,6 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 ## Remaining
 - Add logout flow with token revocation
 - Write integration tests for auth endpoints
-
-## Observations
-- Token refresh needed custom interceptor — standard library didn't support it
 ```
 
 ## Tool Usage Guidelines
@@ -427,6 +419,9 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
+- Use `record_observations` to record private notes worth remembering for
+  future wakes (patterns, insights, failure notes). Do NOT embed observations
+  in the report text — always use the tool.
 
 ## Important
 
