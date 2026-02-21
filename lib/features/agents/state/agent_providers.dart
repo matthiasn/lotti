@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -9,6 +10,14 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
@@ -125,6 +134,21 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   return messages;
 }
 
+/// The task agent workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
+  return TaskAgentWorkflow(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiInputRepository: ref.watch(aiInputRepositoryProvider),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    journalDb: getIt<JournalDb>(),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    journalRepository: ref.watch(journalRepositoryProvider),
+    checklistRepository: ref.watch(checklistRepositoryProvider),
+  );
+}
+
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
 ///
@@ -155,6 +179,33 @@ Future<void> agentInitialization(Ref ref) async {
   );
 
   final orchestrator = ref.watch(wakeOrchestratorProvider);
+  final workflow = ref.watch(taskAgentWorkflowProvider);
+
+  // Wire the workflow executor into the orchestrator so that processNext()
+  // delegates to TaskAgentWorkflow.execute().
+  orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
+    final agentService = ref.read(agentServiceProvider);
+    final identity = await agentService.getAgent(agentId);
+    if (identity == null) return null;
+
+    final result = await workflow.execute(
+      agentIdentity: identity,
+      runKey: runKey,
+      triggerTokens: triggers,
+      threadId: threadId,
+    );
+
+    // Convert the dynamic map to VectorClock map for suppression.
+    // The workflow returns Map<String, dynamic> where values are VectorClocks.
+    final mutated = <String, VectorClock>{};
+    for (final entry in result.mutatedEntries.entries) {
+      if (entry.value is VectorClock) {
+        mutated[entry.key] = entry.value as VectorClock;
+      }
+    }
+    return mutated;
+  };
+
   final updateNotifications = getIt<UpdateNotifications>();
   orchestrator.start(updateNotifications.updateStream);
 

@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../mocks/mocks.dart';
@@ -65,8 +66,7 @@ AgentStateEntity _makeState({
 
 AgentReportEntity _makeReport({
   Map<String, Object?> content = const {
-    'title': 'Test Report',
-    'tldr': 'Everything is fine.',
+    'markdown': '# Test Report\n\nEverything is fine.',
   },
 }) {
   return AgentDomainEntity.agentReport(
@@ -260,8 +260,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Test Report'), findsOneWidget);
-      expect(find.text('Everything is fine.'), findsOneWidget);
+      expect(find.byType(AgentReportSection), findsOneWidget);
     });
 
     testWidgets('shows "No report available" when report is null',

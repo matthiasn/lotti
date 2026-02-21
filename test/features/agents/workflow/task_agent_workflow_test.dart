@@ -92,6 +92,8 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockCloudInferenceRepository mockCloudInferenceRepository;
   late MockConversationManager mockConversationManager;
+  late MockJournalRepository mockJournalRepository;
+  late MockChecklistRepository mockChecklistRepository;
   late TaskAgentWorkflow workflow;
 
   const agentId = 'agent-001';
@@ -155,6 +157,8 @@ void main() {
     mockAiConfigRepository = MockAiConfigRepository();
     mockJournalDb = MockJournalDb();
     mockCloudInferenceRepository = MockCloudInferenceRepository();
+    mockJournalRepository = MockJournalRepository();
+    mockChecklistRepository = MockChecklistRepository();
 
     registerFallbackValue(
       AgentDomainEntity.unknown(
@@ -175,6 +179,8 @@ void main() {
       aiConfigRepository: mockAiConfigRepository,
       journalDb: mockJournalDb,
       cloudInferenceRepository: mockCloudInferenceRepository,
+      journalRepository: mockJournalRepository,
+      checklistRepository: mockChecklistRepository,
     );
   });
 
@@ -345,8 +351,8 @@ void main() {
           // Simulate the strategy receiving a final response with observations.
           if (strategy is TaskAgentStrategy) {
             strategy.recordFinalResponse(
-              '{"report":{"title":"Updated"},'
-              '"observations":["Pattern A","Pattern B"]}',
+              '# Updated\n\nReport content.\n\n'
+              '## Observations\n- Pattern A\n- Pattern B',
             );
           }
         };

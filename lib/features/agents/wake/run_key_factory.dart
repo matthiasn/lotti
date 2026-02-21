@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -64,7 +65,8 @@ class RunKeyFactory {
     required Map<String, dynamic> args,
     required List<String> targetRefs,
   }) {
-    final argsHash = _sha256(jsonEncode(args));
+    final argsHash =
+        _sha256(jsonEncode(SplayTreeMap<String, dynamic>.from(args)));
     final refsJoined = (List<String>.from(targetRefs)..sort()).join(',');
     return _sha256('$toolName|$argsHash|$refsJoined');
   }

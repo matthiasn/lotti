@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,14 +9,23 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
+import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
+import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
+import 'package:lotti/features/ai/functions/task_priority_handler.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -40,6 +50,8 @@ class TaskAgentWorkflow {
     required this.aiConfigRepository,
     required this.journalDb,
     required this.cloudInferenceRepository,
+    required this.journalRepository,
+    required this.checklistRepository,
   });
 
   final AgentRepository agentRepository;
@@ -48,6 +60,8 @@ class TaskAgentWorkflow {
   final AiConfigRepository aiConfigRepository;
   final JournalDb journalDb;
   final CloudInferenceRepository cloudInferenceRepository;
+  final JournalRepository journalRepository;
+  final ChecklistRepository checklistRepository;
 
   static const _uuid = Uuid();
 
@@ -132,7 +146,7 @@ class TaskAgentWorkflow {
 
     // 4. Assemble conversation context.
     final systemPrompt = _buildSystemPrompt();
-    final userMessage = _buildUserMessage(
+    final userMessage = await _buildUserMessage(
       lastReport: lastReport,
       journalObservations: journalObservations,
       taskDetailsJson: taskDetailsJson,
@@ -374,28 +388,37 @@ for a single task. Your job is to:
 
 ## Output Format
 
-You MUST respond with a JSON object containing exactly two keys:
+Respond with a markdown document. The format is free-form — use whatever
+headings, lists, and structure best describe the task's current state. A
+typical report might include sections like TLDR, Goal, Status, Achieved,
+Remaining, and Learnings, but you are free to add, remove, or rename
+sections as needed. The report format can evolve naturally over time.
 
-```json
-{
-  "report": {
-    "title": "Short task title",
-    "tldr": "One-sentence summary of current state",
-    "goal": "What the task aims to achieve",
-    "status": "not_started | in_progress | blocked | completed",
-    "priority": "P1 | P2 | P3 | P4",
-    "estimate": "Time estimate if known",
-    "dueDate": "ISO 8601 date if known",
-    "achieved": ["List of completed items"],
-    "remaining": ["List of remaining items"],
-    "learnings": ["Notable patterns or insights"],
-    "checklistProgress": {"total": 0, "completed": 0},
-    "lastUpdated": "ISO 8601 timestamp"
-  },
-  "observations": [
-    "Private notes about patterns or changes worth remembering"
-  ]
-}
+After the report, include an `## Observations` section with private notes
+worth remembering for future wakes (patterns, insights, failure notes).
+Each observation should be a bullet point. If there are no observations,
+omit the section entirely.
+
+Example:
+
+```
+# Implement authentication module
+
+**Status:** in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
+
+OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
+
+## Achieved
+- Set up OAuth provider configuration
+- Implemented token refresh logic
+- Built login UI with error handling
+
+## Remaining
+- Add logout flow with token revocation
+- Write integration tests for auth endpoints
+
+## Observations
+- Token refresh needed custom interceptor — standard library didn't support it
 ```
 
 ## Tool Usage Guidelines
@@ -414,13 +437,13 @@ You MUST respond with a JSON object containing exactly two keys:
   }
 
   /// Builds the user message for a wake cycle.
-  String _buildUserMessage({
+  Future<String> _buildUserMessage({
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> journalObservations,
     required String taskDetailsJson,
     required String linkedTasksJson,
     required Set<String> triggerTokens,
-  }) {
+  }) async {
     final buffer = StringBuffer();
 
     if (lastReport != null) {
@@ -441,9 +464,13 @@ You MUST respond with a JSON object containing exactly two keys:
 
     if (journalObservations.isNotEmpty) {
       buffer.writeln('## Your Prior Observations');
-      for (final obs in journalObservations) {
-        buffer.writeln('- [${obs.createdAt.toIso8601String()}] '
-            '${obs.contentEntryId ?? "(no content)"}');
+      // Cap to last 20 to prevent unbounded context growth.
+      final recentObs = journalObservations.length > 20
+          ? journalObservations.sublist(journalObservations.length - 20)
+          : journalObservations;
+      for (final obs in recentObs) {
+        final text = await _resolveObservationText(obs);
+        buffer.writeln('- [${obs.createdAt.toIso8601String()}] $text');
       }
       buffer.writeln();
     }
@@ -481,6 +508,23 @@ You MUST respond with a JSON object containing exactly two keys:
     return buffer.toString();
   }
 
+  /// Resolves the text content of an observation message.
+  ///
+  /// Looks up the [AgentMessagePayloadEntity] via the message's
+  /// `contentEntryId` and extracts the `text` field from its content map.
+  /// Falls back to a placeholder when the payload is missing or malformed.
+  Future<String> _resolveObservationText(AgentMessageEntity obs) async {
+    final payloadId = obs.contentEntryId;
+    if (payloadId == null) return '(no content)';
+
+    final payload = await agentRepository.getEntity(payloadId);
+    if (payload is AgentMessagePayloadEntity) {
+      final text = payload.content['text'];
+      if (text is String && text.isNotEmpty) return text;
+    }
+    return '(no content)';
+  }
+
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
   List<ChatCompletionTool> _buildToolDefinitions() {
@@ -499,9 +543,8 @@ You MUST respond with a JSON object containing exactly two keys:
   /// Executes a tool handler by delegating to the appropriate existing
   /// journal-domain handler.
   ///
-  /// For MVP, this uses a simple dispatch table. Each tool call returns a
-  /// [ToolExecutionResult] that the [AgentToolExecutor] wraps with audit
-  /// logging and policy enforcement.
+  /// Each tool call returns a [ToolExecutionResult] that the
+  /// [AgentToolExecutor] wraps with audit logging and policy enforcement.
   Future<ToolExecutionResult> _executeToolHandler(
     String toolName,
     Map<String, dynamic> args,
@@ -513,31 +556,52 @@ You MUST respond with a JSON object containing exactly two keys:
       name: 'TaskAgentWorkflow',
     );
 
-    // For MVP, tool handler execution is a placeholder that returns the tool
-    // name and args as confirmation. The actual handler wiring (connecting to
-    // TaskEstimateHandler, TaskDueDateHandler, etc.) will be completed when
-    // the wake orchestrator integrates with the workflow layer.
-    //
-    // Each handler follows the same pattern:
-    //   1. Load the task from journalDb.
-    //   2. Apply the mutation via the handler's processToolCall method.
-    //   3. Return a ToolExecutionResult with the outcome.
-    //
-    // The dispatch is intentionally kept as a simple switch so that adding
-    // new tools requires only a new case branch.
+    // Load the task fresh for each tool call so handlers see the latest state.
+    final taskEntity = await journalDb.journalEntityById(taskId);
+    if (taskEntity is! Task) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Task $taskId not found or is not a Task entity',
+        errorMessage: 'Task lookup failed',
+      );
+    }
+
     switch (toolName) {
       case 'set_task_title':
+        return _handleSetTaskTitle(taskEntity, args, taskId);
+
       case 'update_task_estimate':
-      case 'update_task_due_date':
-      case 'update_task_priority':
-      case 'add_multiple_checklist_items':
-      case 'update_checklist_items':
-        return ToolExecutionResult(
-          success: true,
-          output: 'Tool $toolName acknowledged with args: $args. '
-              'Handler integration pending.',
-          mutatedEntityId: taskId,
+        return _handleProcessToolCall(
+          taskEntity,
+          toolName,
+          args,
+          taskId,
+          manager,
         );
+
+      case 'update_task_due_date':
+        return _handleProcessToolCall(
+          taskEntity,
+          toolName,
+          args,
+          taskId,
+          manager,
+        );
+
+      case 'update_task_priority':
+        return _handleProcessToolCall(
+          taskEntity,
+          toolName,
+          args,
+          taskId,
+          manager,
+        );
+
+      case 'add_multiple_checklist_items':
+        return _handleBatchChecklist(taskEntity, toolName, args, taskId);
+
+      case 'update_checklist_items':
+        return _handleChecklistUpdate(taskEntity, toolName, args, taskId);
 
       default:
         return ToolExecutionResult(
@@ -546,6 +610,164 @@ You MUST respond with a JSON object containing exactly two keys:
           errorMessage: 'Tool $toolName is not registered for the Task Agent',
         );
     }
+  }
+
+  Future<ToolExecutionResult> _handleSetTaskTitle(
+    Task task,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final title = args['title'] as String? ?? '';
+    final handler = TaskTitleHandler(
+      task: task,
+      journalRepository: journalRepository,
+    );
+    final result = await handler.handle(title);
+    return TaskTitleHandler.toToolExecutionResult(result, entityId: taskId);
+  }
+
+  Future<ToolExecutionResult> _handleProcessToolCall(
+    Task task,
+    String toolName,
+    Map<String, dynamic> args,
+    String taskId,
+    ConversationManager manager,
+  ) async {
+    final toolCall = ChatCompletionMessageToolCall(
+      id: 'agent_$toolName',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: toolName,
+        arguments: jsonEncode(args),
+      ),
+    );
+
+    switch (toolName) {
+      case 'update_task_estimate':
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: journalRepository,
+        );
+        final result = await handler.processToolCall(toolCall, manager);
+        return ToolExecutionResult(
+          success: result.success,
+          output: result.message,
+          mutatedEntityId: result.didWrite ? taskId : null,
+          errorMessage: result.error,
+        );
+
+      case 'update_task_due_date':
+        final handler = TaskDueDateHandler(
+          task: task,
+          journalRepository: journalRepository,
+        );
+        final result = await handler.processToolCall(toolCall, manager);
+        return ToolExecutionResult(
+          success: result.success,
+          output: result.message,
+          mutatedEntityId: result.didWrite ? taskId : null,
+          errorMessage: result.error,
+        );
+
+      case 'update_task_priority':
+        final handler = TaskPriorityHandler(
+          task: task,
+          journalRepository: journalRepository,
+        );
+        final result = await handler.processToolCall(toolCall, manager);
+        return ToolExecutionResult(
+          success: result.success,
+          output: result.message,
+          mutatedEntityId: result.didWrite ? taskId : null,
+          errorMessage: result.error,
+        );
+
+      default:
+        return ToolExecutionResult(
+          success: false,
+          output: 'Unknown tool: $toolName',
+          errorMessage: 'Unhandled tool in _handleProcessToolCall',
+        );
+    }
+  }
+
+  Future<ToolExecutionResult> _handleBatchChecklist(
+    Task task,
+    String toolName,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final autoChecklistService = AutoChecklistService(
+      checklistRepository: checklistRepository,
+    );
+
+    final handler = LottiBatchChecklistHandler(
+      task: task,
+      autoChecklistService: autoChecklistService,
+      checklistRepository: checklistRepository,
+    );
+
+    final toolCall = ChatCompletionMessageToolCall(
+      id: 'agent_$toolName',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: toolName,
+        arguments: jsonEncode(args),
+      ),
+    );
+
+    final parseResult = handler.processFunctionCall(toolCall);
+    if (!parseResult.success) {
+      return ToolExecutionResult(
+        success: false,
+        output: parseResult.error ?? 'Failed to parse checklist items',
+        errorMessage: parseResult.error,
+      );
+    }
+
+    final count = await handler.createBatchItems(parseResult);
+    return ToolExecutionResult(
+      success: count > 0,
+      output: 'Created $count checklist items',
+      mutatedEntityId: count > 0 ? taskId : null,
+    );
+  }
+
+  Future<ToolExecutionResult> _handleChecklistUpdate(
+    Task task,
+    String toolName,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final handler = LottiChecklistUpdateHandler(
+      task: task,
+      checklistRepository: checklistRepository,
+    );
+
+    final toolCall = ChatCompletionMessageToolCall(
+      id: 'agent_$toolName',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: toolName,
+        arguments: jsonEncode(args),
+      ),
+    );
+
+    final parseResult = handler.processFunctionCall(toolCall);
+    if (!parseResult.success) {
+      return ToolExecutionResult(
+        success: false,
+        output: parseResult.error ?? 'Failed to parse checklist updates',
+        errorMessage: parseResult.error,
+      );
+    }
+
+    final count = await handler.executeUpdates(parseResult);
+    return ToolExecutionResult(
+      success: count > 0,
+      output: 'Updated $count checklist items',
+      mutatedEntityId: count > 0 ? taskId : null,
+    );
   }
 
   /// Extracts the final assistant text content from the conversation manager.

@@ -300,100 +300,79 @@ void main() {
     });
 
     group('recordFinalResponse and extractReportContent', () {
-      test('stores content for later extraction', () {
-        final jsonResponse = jsonEncode({
-          'report': {
-            'title': 'Task Summary',
-            'status': 'in_progress',
-          },
-          'observations': ['Note 1'],
-        });
+      test('extracts markdown content from response', () {
+        const response = '# Task Summary\n\nTask is progressing well.\n\n'
+            '## Details\n- Item 1\n- Item 2';
 
-        strategy.recordFinalResponse(jsonResponse);
+        strategy.recordFinalResponse(response);
 
         final report = strategy.extractReportContent();
-        expect(report['title'], 'Task Summary');
-        expect(report['status'], 'in_progress');
+        expect(report['markdown'], response);
       });
 
-      test('does not store null content', () {
+      test('separates report from observations section', () {
+        const response = '# Task Summary\n\nTask is progressing well.\n\n'
+            '## Observations\n- Learned about API limits\n- Found a bug';
+
+        strategy.recordFinalResponse(response);
+
+        final report = strategy.extractReportContent();
+        expect(
+          report['markdown'],
+          '# Task Summary\n\nTask is progressing well.',
+        );
+      });
+
+      test('returns empty markdown when no response recorded', () {
+        final report = strategy.extractReportContent();
+        expect(report['markdown'], '');
+      });
+
+      test('returns empty markdown when null response recorded', () {
         strategy.recordFinalResponse(null);
 
         final report = strategy.extractReportContent();
-        expect(report['error'], 'No assistant response received');
+        expect(report['markdown'], '');
       });
 
-      test('does not store empty content', () {
+      test('returns empty markdown when empty response recorded', () {
         strategy.recordFinalResponse('');
 
         final report = strategy.extractReportContent();
-        expect(report['error'], 'No assistant response received');
-      });
-
-      test('parses JSON with report key', () {
-        final jsonResponse = jsonEncode({
-          'report': {
-            'title': 'My Task',
-            'tldr': 'In progress',
-            'status': 'in_progress',
-          },
-          'observations': <String>[],
-        });
-
-        strategy.recordFinalResponse(jsonResponse);
-        final report = strategy.extractReportContent();
-
-        expect(report['title'], 'My Task');
-        expect(report['tldr'], 'In progress');
-        expect(report['status'], 'in_progress');
-      });
-
-      test('handles JSON without report wrapper', () {
-        final jsonResponse = jsonEncode({
-          'title': 'Direct report',
-          'status': 'completed',
-        });
-
-        strategy.recordFinalResponse(jsonResponse);
-        final report = strategy.extractReportContent();
-
-        expect(report['title'], 'Direct report');
-        expect(report['status'], 'completed');
-      });
-
-      test('handles raw text fallback when JSON parsing fails', () {
-        strategy.recordFinalResponse('This is raw text, not JSON');
-
-        final report = strategy.extractReportContent();
-        expect(report['rawText'], 'This is raw text, not JSON');
+        expect(report['markdown'], '');
       });
 
       test('uses last response when multiple are recorded', () {
         strategy
-          ..recordFinalResponse(jsonEncode({
-            'report': {'title': 'First'}
-          }))
-          ..recordFinalResponse(jsonEncode({
-            'report': {'title': 'Second'}
-          }));
+          ..recordFinalResponse('# First Report')
+          ..recordFinalResponse('# Second Report');
 
         final report = strategy.extractReportContent();
-        expect(report['title'], 'Second');
+        expect(report['markdown'], '# Second Report');
+      });
+
+      test('handles observations heading case-insensitively', () {
+        const response = '# Report\n\nContent here.\n\n'
+            '## OBSERVATIONS\n- Note 1';
+
+        strategy.recordFinalResponse(response);
+
+        final report = strategy.extractReportContent();
+        expect(
+          report['markdown'],
+          '# Report\n\nContent here.',
+        );
       });
     });
 
     group('extractObservations', () {
-      test('parses observations array from JSON', () {
-        final jsonResponse = jsonEncode({
-          'report': {'title': 'Test'},
-          'observations': [
-            'Observation 1',
-            'Observation 2',
-            'Observation 3',
-          ],
-        });
+      test('parses bullet points from observations section', () {
+        const response = '# Report\n\n## Observations\n'
+            '- Observation 1\n'
+            '- Observation 2\n'
+            '- Observation 3';
 
-        strategy.recordFinalResponse(jsonResponse);
+        strategy.recordFinalResponse(response);
         final observations = strategy.extractObservations();
 
         expect(observations, hasLength(3));
@@ -402,36 +381,33 @@ void main() {
         expect(observations[2], 'Observation 3');
       });
 
-      test('filters non-string values from observations', () {
-        final jsonResponse = jsonEncode({
-          'report': {'title': 'Test'},
-          'observations': ['Valid', 42, null, 'Also valid'],
-        });
+      test('handles asterisk bullet points', () {
+        const response = '# Report\n\n## Observations\n'
+            '* Note A\n'
+            '* Note B';
 
-        strategy.recordFinalResponse(jsonResponse);
+        strategy.recordFinalResponse(response);
         final observations = strategy.extractObservations();
 
-        expect(observations, ['Valid', 'Also valid']);
+        expect(observations, ['Note A', 'Note B']);
       });
 
-      test('handles non-array observations value gracefully', () {
-        final jsonResponse = jsonEncode({
-          'report': {'title': 'Test'},
-          'observations': 'not an array',
-        });
+      test('skips blank lines in observations section', () {
+        const response = '# Report\n\n## Observations\n'
+            '- Note 1\n'
+            '\n'
+            '- Note 2\n';
 
-        strategy.recordFinalResponse(jsonResponse);
+        strategy.recordFinalResponse(response);
         final observations = strategy.extractObservations();
 
-        expect(observations, isEmpty);
+        expect(observations, ['Note 1', 'Note 2']);
       });
 
-      test('returns empty list when no observations key', () {
-        final jsonResponse = jsonEncode({
-          'report': {'title': 'Test'},
-        });
+      test('returns empty list when no observations section', () {
+        const response = '# Report\n\nJust a report, no observations.';
 
-        strategy.recordFinalResponse(jsonResponse);
+        strategy.recordFinalResponse(response);
         final observations = strategy.extractObservations();
 
         expect(observations, isEmpty);
@@ -442,10 +418,21 @@ void main() {
         expect(observations, isEmpty);
       });
 
-      test('returns empty list when response is not valid JSON', () {
-        strategy.recordFinalResponse('plain text response');
+      test('handles observations heading case-insensitively', () {
+        const response = '# Report\n\n## observations\n- Lower case note';
 
+        strategy.recordFinalResponse(response);
         final observations = strategy.extractObservations();
+
+        expect(observations, ['Lower case note']);
+      });
+
+      test('handles empty observations section', () {
+        const response = '# Report\n\n## Observations\n';
+
+        strategy.recordFinalResponse(response);
+        final observations = strategy.extractObservations();
+
         expect(observations, isEmpty);
       });
     });

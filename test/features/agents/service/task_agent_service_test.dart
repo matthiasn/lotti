@@ -309,12 +309,103 @@ void main() {
     });
 
     group('restoreSubscriptions', () {
-      test('completes without throwing (MVP stub)', () async {
-        // Should not throw or crash
-        await expectLater(
-          service.restoreSubscriptions(),
-          completes,
+      test('registers subscriptions for active task agents', () async {
+        final taskAgent = makeIdentity(agentId: 'ta-1');
+        final otherAgent = makeIdentity(
+          agentId: 'other-1',
+          kind: 'summary_agent',
         );
+
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [taskAgent, otherAgent]);
+
+        final link1 = AgentLink.agentTask(
+          id: 'link-1',
+          fromId: 'ta-1',
+          toId: 'task-10',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        final link2 = AgentLink.agentTask(
+          id: 'link-2',
+          fromId: 'ta-1',
+          toId: 'task-20',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        when(() => mockRepository.getLinksFrom('ta-1', type: 'agent_task'))
+            .thenAnswer((_) async => [link1, link2]);
+
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+
+        await service.restoreSubscriptions();
+
+        // Verify addSubscription called twice (once per link)
+        final captured = verify(
+          () => mockOrchestrator.addSubscription(captureAny()),
+        ).captured;
+
+        expect(captured, hasLength(2));
+
+        final sub1 = captured[0] as AgentSubscription;
+        expect(sub1.agentId, 'ta-1');
+        expect(sub1.matchEntityIds, contains('task-10'));
+        expect(sub1.id, 'ta-1_task_task-10');
+
+        final sub2 = captured[1] as AgentSubscription;
+        expect(sub2.agentId, 'ta-1');
+        expect(sub2.matchEntityIds, contains('task-20'));
+        expect(sub2.id, 'ta-1_task_task-20');
+
+        // Verify getLinksFrom was NOT called for the non-task agent
+        verifyNever(
+          () => mockRepository.getLinksFrom('other-1', type: 'agent_task'),
+        );
+      });
+
+      test('skips non-task_agent agents', () async {
+        final summaryAgent = makeIdentity(
+          agentId: 'summary-1',
+          kind: 'summary_agent',
+        );
+        final reviewAgent = makeIdentity(
+          agentId: 'review-1',
+          kind: 'review_agent',
+        );
+
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [summaryAgent, reviewAgent]);
+
+        await service.restoreSubscriptions();
+
+        // No links should be fetched for non-task agents
+        verifyNever(
+            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
+        // No subscriptions should be registered
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+
+      test('handles empty agent list gracefully', () async {
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.restoreSubscriptions();
+
+        verifyNever(
+            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
     });
   });

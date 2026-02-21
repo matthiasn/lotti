@@ -166,53 +166,61 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Extracts the updated report content from the LLM's final response.
   ///
-  /// The LLM is instructed to produce a JSON block with a `report` key.
-  /// If parsing fails, the raw text is returned as the report body.
+  /// The LLM produces a markdown document. Everything before the
+  /// `## Observations` heading is the report; the observations section
+  /// (if present) is separated out and handled by [extractObservations].
+  ///
+  /// The report is stored as `{"markdown": "<report text>"}` in
+  /// [AgentReportEntity.content].
   Map<String, Object?> extractReportContent() {
     if (_assistantResponses.isEmpty) {
-      return <String, Object?>{'error': 'No assistant response received'};
+      return <String, Object?>{'markdown': ''};
     }
 
     final lastResponse = _assistantResponses.last;
-
-    // Try to parse as JSON first — the LLM is instructed to output structured
-    // JSON containing `report` and `observations` keys.
-    try {
-      final parsed = jsonDecode(lastResponse) as Map<String, dynamic>;
-      final report = parsed['report'];
-      if (report is Map<String, dynamic>) {
-        return report;
-      }
-      // If the entire response is the report (no wrapper), use it directly.
-      return parsed;
-    } catch (_) {
-      // Fall back to wrapping the raw text.
-      return <String, Object?>{'rawText': lastResponse};
-    }
+    final parts = _splitObservations(lastResponse);
+    return <String, Object?>{'markdown': parts.report.trim()};
   }
 
   /// Extracts new observation notes (agentJournal entries) from the LLM's
   /// final response.
   ///
-  /// The LLM is instructed to produce a JSON block with an `observations`
-  /// array. Returns an empty list when parsing fails or no observations are
-  /// present.
+  /// The LLM is instructed to include an `## Observations` section with
+  /// bullet points. Each bullet becomes a separate observation string.
+  /// Returns an empty list when no observations section is present.
   List<String> extractObservations() {
     if (_assistantResponses.isEmpty) return [];
 
     final lastResponse = _assistantResponses.last;
+    final parts = _splitObservations(lastResponse);
 
-    try {
-      final parsed = jsonDecode(lastResponse) as Map<String, dynamic>;
-      final observations = parsed['observations'];
-      if (observations is List) {
-        return observations.whereType<String>().toList();
-      }
-    } catch (_) {
-      // No structured observations available.
+    if (parts.observations == null) return [];
+
+    // Parse bullet points from the observations section.
+    return parts.observations!
+        .split('\n')
+        .map((line) => line.replaceFirst(RegExp(r'^\s*[-*]\s*'), '').trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+  }
+
+  /// Splits the LLM response into report and observations sections.
+  ///
+  /// Looks for a `## Observations` heading (case-insensitive). Everything
+  /// before it is the report, everything after is the observations text.
+  static ({String report, String? observations}) _splitObservations(
+    String response,
+  ) {
+    final pattern = RegExp(r'^##\s+observations\s*$',
+        multiLine: true, caseSensitive: false);
+    final match = pattern.firstMatch(response);
+    if (match == null) {
+      return (report: response, observations: null);
     }
-
-    return [];
+    return (
+      report: response.substring(0, match.start),
+      observations: response.substring(match.end),
+    );
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

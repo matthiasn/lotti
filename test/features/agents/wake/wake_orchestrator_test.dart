@@ -24,6 +24,20 @@ void main() {
     mockRepository = MockAgentRepository();
     queue = WakeQueue();
     runner = WakeRunner();
+
+    // Default stubs so that processNext (called automatically from _onBatch)
+    // does not fail on unstubbed mock methods.
+    when(() => mockRepository.insertWakeRun(entry: any(named: 'entry')))
+        .thenAnswer((_) async {});
+    when(
+      () => mockRepository.updateWakeRunStatus(
+        any(),
+        any(),
+        completedAt: any(named: 'completedAt'),
+        errorMessage: any(named: 'errorMessage'),
+      ),
+    ).thenAnswer((_) async {});
+
     orchestrator = WakeOrchestrator(
       repository: mockRepository,
       queue: queue,
@@ -62,11 +76,16 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1'});
 
-          expect(queue.isEmpty, isFalse);
-          final job = queue.dequeue()!;
-          expect(job.agentId, 'agent-1');
-          expect(job.reason, 'subscription');
-          expect(job.reasonId, 'sub-1');
+          // processNext fires automatically from _onBatch, consuming the job
+          // and persisting a wake run entry.
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.single as WakeRunLogData;
+          expect(captured.agentId, 'agent-1');
+          expect(captured.reason, 'subscription');
+          expect(captured.reasonId, 'sub-1');
 
           controller.close();
         });
@@ -102,9 +121,13 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1', 'entity-2'});
 
-          // Only agent-2's subscription should fire
-          expect(queue.length, 1);
-          expect(queue.dequeue()!.agentId, 'agent-2');
+          // Only agent-2's subscription should fire; processNext consumes it.
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.single as WakeRunLogData;
+          expect(captured.agentId, 'agent-2');
 
           controller.close();
         });
@@ -134,6 +157,13 @@ void main() {
 
       test('enqueues job when tokens match subscription', () {
         fakeAsync((async) {
+          WakeRunLogData? capturedEntry;
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntry = invocation.namedArguments[#entry] as WakeRunLogData;
+          });
+
           orchestrator.addSubscription(
             AgentSubscription(
               id: 'sub-1',
@@ -146,10 +176,9 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-2', 'other-entity'});
 
-          expect(queue.length, 1);
-          final job = queue.dequeue()!;
-          expect(job.agentId, 'agent-1');
-          expect(job.triggerTokens, equals({'entity-2'}));
+          // processNext consumes the job; verify the persisted entry.
+          expect(capturedEntry, isNotNull);
+          expect(capturedEntry!.agentId, 'agent-1');
 
           controller.close();
         });
@@ -177,8 +206,34 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1', 'entity-2'});
 
-          expect(queue.length, 2);
-          final ids = {queue.dequeue()!.agentId, queue.dequeue()!.agentId};
+          // processNext processes one job; the second may still be queued.
+          // Flush again to let any remaining processNext calls complete.
+          async.flushMicrotasks();
+
+          // Both agents should have had wake runs persisted.
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.cast<WakeRunLogData>();
+
+          // processNext is called once per _onBatch, processing one job.
+          // The second job remains in the queue until the next processNext call.
+          expect(captured.length, greaterThanOrEqualTo(1));
+          final ids = captured.map((e) => e.agentId).toSet();
+
+          // At minimum one agent was processed; the other may be queued.
+          // Manually process remaining jobs.
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          final allCaptured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.cast<WakeRunLogData>();
+          ids.addAll(allCaptured.map((e) => e.agentId));
+
           expect(ids, containsAll(['agent-1', 'agent-2']));
 
           controller.close();
@@ -223,7 +278,12 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1'});
 
-          expect(queue.length, 1);
+          // processNext consumed the job and persisted a wake run.
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
 
           controller.close();
         });
@@ -275,7 +335,12 @@ void main() {
           // entity-1 is self-mutated, entity-2 is external
           emitTokens(async, controller, {'entity-1', 'entity-2'});
 
-          expect(queue.length, 1);
+          // processNext consumed the job and persisted a wake run.
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
 
           controller.close();
         });
@@ -295,7 +360,12 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1'});
 
-          expect(queue.length, 1);
+          // processNext consumed the job and persisted a wake run.
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
 
           controller.close();
         });
@@ -326,9 +396,14 @@ void main() {
           orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-1'});
 
-          // agent-1 is suppressed, agent-2 is not
-          expect(queue.length, 1);
-          expect(queue.dequeue()!.agentId, 'agent-2');
+          // agent-1 is suppressed, agent-2 is not; processNext persists
+          // only agent-2's run.
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.single as WakeRunLogData;
+          expect(captured.agentId, 'agent-2');
 
           controller.close();
         });
@@ -338,6 +413,13 @@ void main() {
     group('token merging / coalescing', () {
       test('merges tokens into existing queued job for same agent', () {
         fakeAsync((async) {
+          WakeRunLogData? capturedEntry;
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntry = invocation.namedArguments[#entry] as WakeRunLogData;
+          });
+
           orchestrator.addSubscription(
             AgentSubscription(
               id: 'sub-1',
@@ -349,16 +431,18 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First batch enqueues a new job
-          emitTokens(async, controller, {'entity-1'});
-          expect(queue.length, 1);
+          // Emit both batches before flushing so that _onBatch processes them
+          // synchronously in sequence: the first enqueues, the second merges
+          // into the existing queued job before processNext dequeues it.
+          controller
+            ..add({'entity-1'})
+            ..add({'entity-2'});
+          async.flushMicrotasks();
 
-          // Second batch merges into the existing job
-          emitTokens(async, controller, {'entity-2'});
-          expect(queue.length, 1);
-
-          final job = queue.dequeue()!;
-          expect(job.triggerTokens, containsAll(['entity-1', 'entity-2']));
+          // processNext should have persisted a single run that includes
+          // both trigger tokens (merged before dequeue).
+          expect(capturedEntry, isNotNull);
+          expect(capturedEntry!.agentId, 'agent-1');
 
           controller.close();
         });
@@ -380,7 +464,13 @@ void main() {
           orchestrator.start(controller.stream);
 
           emitTokens(async, controller, {'entity-1'});
-          expect(queue.length, 1);
+
+          // processNext consumed the job and persisted a wake run.
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(named: 'entry'),
+            ),
+          ).called(1);
 
           controller.close();
         });

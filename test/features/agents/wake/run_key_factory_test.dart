@@ -371,6 +371,22 @@ void main() {
         expect(id, hasLength(64));
         expect(id, matches(RegExp(r'^[a-f0-9]{64}$')));
       });
+
+      test('produces identical key regardless of args key order', () {
+        final id1 = RunKeyFactory.actionStableId(
+          toolName: 'updateTask',
+          args: {'title': 'Fix bug', 'priority': 1, 'estimate': 30},
+          targetRefs: ['ref-a'],
+        );
+        final id2 = RunKeyFactory.actionStableId(
+          toolName: 'updateTask',
+          args: {'estimate': 30, 'title': 'Fix bug', 'priority': 1},
+          targetRefs: ['ref-a'],
+        );
+
+        expect(id1, equals(id2),
+            reason: 'JSON key order must not affect the stable ID');
+      });
     });
   });
 }

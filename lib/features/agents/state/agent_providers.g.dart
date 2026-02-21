@@ -684,6 +684,54 @@ final class AgentRecentMessagesFamily extends $Family
   String toString() => r'agentRecentMessagesProvider';
 }
 
+/// The task agent workflow with all dependencies resolved.
+
+@ProviderFor(taskAgentWorkflow)
+final taskAgentWorkflowProvider = TaskAgentWorkflowProvider._();
+
+/// The task agent workflow with all dependencies resolved.
+
+final class TaskAgentWorkflowProvider extends $FunctionalProvider<
+    TaskAgentWorkflow,
+    TaskAgentWorkflow,
+    TaskAgentWorkflow> with $Provider<TaskAgentWorkflow> {
+  /// The task agent workflow with all dependencies resolved.
+  TaskAgentWorkflowProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'taskAgentWorkflowProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$taskAgentWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<TaskAgentWorkflow> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  TaskAgentWorkflow create(Ref ref) {
+    return taskAgentWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TaskAgentWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TaskAgentWorkflow>(value),
+    );
+  }
+}
+
+String _$taskAgentWorkflowHash() => r'5d799c5ac7cbc0932327282fffab0d39c48f20d2';
+
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
 ///
@@ -751,4 +799,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'ff4394ceba1c1d02f8261f4e0516592168fcaadc';
+    r'0c7c7b4632d08929f06f5717310c195f14464e36';

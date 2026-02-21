@@ -38,29 +38,54 @@ class AgentSubscription {
 /// - Matches incoming notification batches against registered
 ///   [AgentSubscription]s.
 /// - Suppresses self-notifications (writes made by the agent itself) using
-///   vector-clock tracking via [recordMutatedEntities].
+///   token-presence tracking via `recordMutatedEntities`. When all matched
+///   tokens correspond to entities that the agent itself mutated in its last
+///   wake cycle, the notification is suppressed.
 /// - Enqueues [WakeJob]s into [WakeQueue] with deterministic run keys.
 /// - Dispatches queued jobs through [WakeRunner] (single-flight per agent).
 /// - Persists every wake attempt to the [AgentRepository] wake-run log.
+/// Signature for the callback that executes a wake cycle.
+///
+/// [agentId] is the target agent's ID.
+/// [runKey] is the deterministic run key.
+/// [triggers] is the set of entity IDs that triggered the wake.
+/// [threadId] scopes the conversation for this wake.
+///
+/// Returns a map of mutated entity IDs → vector clocks for self-notification
+/// suppression. An empty map or `null` indicates no mutations occurred.
+typedef WakeExecutor = Future<Map<String, VectorClock>?> Function(
+  String agentId,
+  String runKey,
+  Set<String> triggers,
+  String threadId,
+);
+
 class WakeOrchestrator {
   WakeOrchestrator({
     required this.repository,
     required this.queue,
     required this.runner,
+    this.wakeExecutor,
   });
 
   final AgentRepository repository;
   final WakeQueue queue;
   final WakeRunner runner;
 
+  /// Optional callback that performs the actual agent execution during
+  /// [processNext]. When set, the orchestrator delegates to this function
+  /// after acquiring the run lock and persisting the wake-run entry.
+  WakeExecutor? wakeExecutor;
+
   final _subscriptions = <AgentSubscription>[];
 
   /// Self-notification suppression state.
   ///
-  /// Maps agentId → (entityId → VectorClock that was current after the
-  /// agent's last mutation).  When a notification batch arrives, any token
-  /// that maps to an entity whose stored clock still dominates the incoming
-  /// batch is suppressed.
+  /// Maps agentId → (entityId → VectorClock captured after the agent's last
+  /// mutation). When a notification batch arrives, tokens that match entities
+  /// the agent itself mutated are suppressed. If *all* matched tokens are
+  /// covered, the entire wake is skipped; a single external token lets the
+  /// wake through.
   final _recentlyMutatedEntries = <String, Map<String, VectorClock>>{};
 
   StreamSubscription<Set<String>>? _notificationSub;
@@ -165,6 +190,9 @@ class WakeOrchestrator {
         queue.enqueue(job);
       }
     }
+
+    // Dispatch queued jobs after processing the batch.
+    unawaited(processNext());
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's
@@ -184,9 +212,9 @@ class WakeOrchestrator {
   ///
   /// If the target agent is already running the job is re-enqueued (it will
   /// be processed in the next [processNext] call).  The wake run is persisted
-  /// to [AgentRepository] with status `'queued'` before execution, then
-  /// updated to `'running'`.  The workflow layer is responsible for updating
-  /// the final status to `'completed'` or `'failed'`.
+  /// to [AgentRepository] with status `'running'` before execution. When a
+  /// [wakeExecutor] is set, it is called to perform the actual agent work;
+  /// the final status is updated to `'completed'` or `'failed'` accordingly.
   Future<void> processNext() async {
     final job = queue.dequeue();
     if (job == null) return;
@@ -198,16 +226,15 @@ class WakeOrchestrator {
       return;
     }
 
+    final threadId = job.runKey;
+
     try {
       final entry = WakeRunLogData(
         runKey: job.runKey,
         agentId: job.agentId,
         reason: job.reason,
         reasonId: job.reasonId,
-        // A thread ID scopes the message log for this wake; the workflow layer
-        // may override this with a richer value.  Use the run key as a stable
-        // default so the thread is always uniquely addressable.
-        threadId: job.runKey,
+        threadId: threadId,
         status: 'running',
         createdAt: job.createdAt,
         startedAt: DateTime.now(),
@@ -215,8 +242,39 @@ class WakeOrchestrator {
 
       await repository.insertWakeRun(entry: entry);
 
-      // The workflow layer hooks in here to perform the actual agent
-      // execution.  Infrastructure is complete once the run is logged.
+      // Execute the workflow if a wake executor is registered.
+      final executor = wakeExecutor;
+      if (executor != null) {
+        try {
+          final mutated = await executor(
+            job.agentId,
+            job.runKey,
+            job.triggerTokens,
+            threadId,
+          );
+
+          // Record mutated entries for self-notification suppression.
+          if (mutated != null && mutated.isNotEmpty) {
+            recordMutatedEntities(job.agentId, mutated);
+          }
+
+          await repository.updateWakeRunStatus(
+            job.runKey,
+            'completed',
+            completedAt: DateTime.now(),
+          );
+
+          // Clear history after successful completion so that subsequent
+          // wakes don't re-process the same tokens.
+          queue.clearHistory();
+        } catch (e) {
+          await repository.updateWakeRunStatus(
+            job.runKey,
+            'failed',
+            errorMessage: e.toString(),
+          );
+        }
+      }
     } finally {
       runner.release(job.agentId);
     }

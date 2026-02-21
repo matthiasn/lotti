@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -137,12 +138,35 @@ class TaskAgentService {
   /// Re-register subscriptions for all active task agents.
   ///
   /// Called during app startup to restore orchestrator state from the database.
+  /// Iterates all active agent identities, finds their `agent_task` links, and
+  /// registers wake subscriptions for each.
   Future<void> restoreSubscriptions() async {
-    // For MVP, iterate all agent_task links and register subscriptions.
-    // This is O(n) in the number of task agents, which is fine for MVP.
-    // TODO(agents): Add a more efficient query for active task agent links.
     developer.log(
       'Restoring task agent subscriptions...',
+      name: 'TaskAgentService',
+    );
+
+    final activeAgents = await agentService.listAgents(
+      lifecycle: AgentLifecycle.active,
+    );
+
+    var count = 0;
+    for (final agent in activeAgents) {
+      if (agent.kind != _agentKind) continue;
+
+      final links = await repository.getLinksFrom(
+        agent.agentId,
+        type: 'agent_task',
+      );
+
+      for (final link in links) {
+        _registerTaskSubscription(agent.agentId, link.toId);
+        count++;
+      }
+    }
+
+    developer.log(
+      'Restored $count task agent subscriptions',
       name: 'TaskAgentService',
     );
   }
