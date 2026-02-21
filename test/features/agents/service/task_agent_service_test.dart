@@ -412,6 +412,46 @@ void main() {
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
+      test('catches getLinksFrom error and continues to next agent', () async {
+        final failingAgent = makeIdentity(agentId: 'ta-fail');
+        final okAgent = makeIdentity(agentId: 'ta-ok');
+
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [failingAgent, okAgent]);
+
+        // First agent's link lookup throws.
+        when(() => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'))
+            .thenThrow(Exception('DB error'));
+
+        // Second agent's link lookup succeeds.
+        final link = AgentLink.agentTask(
+          id: 'link-ok',
+          fromId: 'ta-ok',
+          toId: 'task-ok',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        when(() => mockRepository.getLinksFrom('ta-ok', type: 'agent_task'))
+            .thenAnswer((_) async => [link]);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+
+        // Should not throw — error is caught internally.
+        await service.restoreSubscriptions();
+
+        // The second agent's subscription should still be registered.
+        final captured = verify(
+          () => mockOrchestrator.addSubscription(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final sub = captured.first as AgentSubscription;
+        expect(sub.agentId, 'ta-ok');
+        expect(sub.matchEntityIds, contains('task-ok'));
+      });
+
       test('handles empty agent list gracefully', () async {
         when(
           () => mockAgentService.listAgents(

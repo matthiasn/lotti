@@ -1087,6 +1087,38 @@ void main() {
 
   // ── hardDeleteAgent ─────────────────────────────────────────────────────────
 
+  group('runInTransaction', () {
+    test('commits all operations atomically', () async {
+      final agent = makeAgent();
+      final state = makeAgentState();
+
+      await repo.runInTransaction(() async {
+        await repo.upsertEntity(agent);
+        await repo.upsertEntity(state);
+      });
+
+      final entities = await repo.getEntitiesByAgentId(testAgentId);
+      expect(entities, hasLength(2));
+    });
+
+    test('rolls back all operations when callback throws', () async {
+      final agent = makeAgent();
+
+      try {
+        await repo.runInTransaction<void>(() async {
+          await repo.upsertEntity(agent);
+          throw Exception('deliberate failure');
+        });
+      } on Exception catch (_) {
+        // expected
+      }
+
+      // The entity should not have been persisted.
+      final entity = await repo.getEntity(agent.id);
+      expect(entity, isNull);
+    });
+  });
+
   group('hardDeleteAgent', () {
     final deleteDate = DateTime(2026, 2, 21);
 

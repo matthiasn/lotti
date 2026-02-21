@@ -586,6 +586,40 @@ void main() {
         });
       });
 
+      test('start replaces previous subscription when called twice', () async {
+        orchestrator.addSubscription(
+          AgentSubscription(
+            id: 'sub-1',
+            agentId: 'agent-1',
+            matchEntityIds: {'entity-1'},
+          ),
+        );
+
+        final controller1 = StreamController<Set<String>>.broadcast();
+        final controller2 = StreamController<Set<String>>.broadcast();
+
+        await orchestrator.start(controller1.stream);
+        // Calling start again should cancel the first subscription.
+        await orchestrator.start(controller2.stream);
+
+        // Emit on the old stream — should NOT trigger a wake.
+        controller1.add({'entity-1'});
+        await Future<void>.delayed(Duration.zero);
+        verifyNever(
+          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+        );
+
+        // Emit on the new stream — should trigger a wake.
+        controller2.add({'entity-1'});
+        await Future<void>.delayed(Duration.zero);
+        verify(
+          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+        ).called(1);
+
+        await controller1.close();
+        await controller2.close();
+      });
+
       test('stop cancels notification subscription', () {
         fakeAsync((async) {
           orchestrator.addSubscription(
@@ -1142,6 +1176,78 @@ void main() {
           // The second job should still have been processed despite the
           // first one failing.
           expect(insertCallCount, 2);
+        });
+      });
+
+      test('suppresses deferred subscription job that becomes self-mutated',
+          () {
+        fakeAsync((async) {
+          // Agent-1 is busy (pre-locked). A subscription job is enqueued and
+          // deferred because the agent is running. While deferred, the
+          // orchestrator records mutations that cover all trigger tokens.
+          // When the deferred job is re-processed, the drain suppression
+          // re-check should skip it.
+
+          final gate = Completer<Map<String, VectorClock>?>();
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              if (runKey.contains('manual')) {
+                return gate.future;
+              }
+              return Future.value();
+            };
+
+          // Enqueue a manual wake that will hold the lock.
+          final manualJob = WakeJob(
+            runKey: 'manual-rk',
+            agentId: 'agent-1',
+            reason: 'manual',
+            triggerTokens: <String>{},
+            createdAt: DateTime(2024, 3, 15),
+          );
+          queue.enqueue(manualJob);
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Agent-1 is now busy executing the manual job.
+          // Enqueue a subscription job that will be deferred.
+          final subJob = WakeJob(
+            runKey: 'sub-rk',
+            agentId: 'agent-1',
+            reason: 'subscription',
+            triggerTokens: {'entity-1'},
+            createdAt: DateTime(2024, 3, 15),
+          );
+          queue.enqueue(subJob);
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Complete the manual job with mutations covering entity-1.
+          gate.complete({
+            'entity-1': const VectorClock({'node-1': 1}),
+          });
+          async.flushMicrotasks();
+
+          // The deferred subscription job should now be suppressed because
+          // entity-1 was self-mutated by the manual execution.
+          // Only the manual run's insertWakeRun should have been called.
+          final captured = verify(
+            () => mockRepository.insertWakeRun(
+              entry: captureAny(named: 'entry'),
+            ),
+          ).captured.cast<WakeRunLogData>();
+
+          // Only the manual wake run should have been persisted;
+          // the subscription job should have been suppressed at re-check.
+          expect(captured.length, 1);
+          expect(captured.first.reason, 'manual');
         });
       });
 
