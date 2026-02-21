@@ -650,7 +650,7 @@ final class AgentRecentMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentRecentMessagesHash() =>
-    r'166acdef4acb84aabd89b74c550e7d4b4a555146';
+    r'6466b11233bdd295ff9781cf2b3d075158c8bd09';
 
 /// Fetch recent messages for an agent by [agentId].
 ///
@@ -683,3 +683,72 @@ final class AgentRecentMessagesFamily extends $Family
   @override
   String toString() => r'agentRecentMessagesProvider';
 }
+
+/// Initializes the agent infrastructure when the `enableAgents` config flag
+/// is enabled.
+///
+/// This provider:
+/// 1. Watches the `enableAgents` config flag.
+/// 2. When enabled, starts the [WakeOrchestrator] listening to
+///    `UpdateNotifications.updateStream`.
+/// 3. Restores task agent subscriptions from persisted state.
+///
+/// Must be watched (e.g. from a top-level widget or app initialization) to
+/// take effect.
+
+@ProviderFor(agentInitialization)
+final agentInitializationProvider = AgentInitializationProvider._();
+
+/// Initializes the agent infrastructure when the `enableAgents` config flag
+/// is enabled.
+///
+/// This provider:
+/// 1. Watches the `enableAgents` config flag.
+/// 2. When enabled, starts the [WakeOrchestrator] listening to
+///    `UpdateNotifications.updateStream`.
+/// 3. Restores task agent subscriptions from persisted state.
+///
+/// Must be watched (e.g. from a top-level widget or app initialization) to
+/// take effect.
+
+final class AgentInitializationProvider
+    extends $FunctionalProvider<AsyncValue<void>, void, FutureOr<void>>
+    with $FutureModifier<void>, $FutureProvider<void> {
+  /// Initializes the agent infrastructure when the `enableAgents` config flag
+  /// is enabled.
+  ///
+  /// This provider:
+  /// 1. Watches the `enableAgents` config flag.
+  /// 2. When enabled, starts the [WakeOrchestrator] listening to
+  ///    `UpdateNotifications.updateStream`.
+  /// 3. Restores task agent subscriptions from persisted state.
+  ///
+  /// Must be watched (e.g. from a top-level widget or app initialization) to
+  /// take effect.
+  AgentInitializationProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'agentInitializationProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentInitializationHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<void> create(Ref ref) {
+    return agentInitialization(ref);
+  }
+}
+
+String _$agentInitializationHash() =>
+    r'ff4394ceba1c1d02f8261f4e0516592168fcaadc';

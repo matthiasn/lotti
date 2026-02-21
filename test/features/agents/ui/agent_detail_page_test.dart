@@ -1,0 +1,355 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+const _testAgentId = 'agent-001';
+final _testDate = DateTime(2024, 3, 15, 10, 30);
+
+AgentIdentityEntity _makeIdentity({
+  AgentLifecycle lifecycle = AgentLifecycle.active,
+  String displayName = 'Test Task Agent',
+}) {
+  return AgentDomainEntity.agent(
+    id: _testAgentId,
+    agentId: _testAgentId,
+    kind: 'task_agent',
+    displayName: displayName,
+    lifecycle: lifecycle,
+    mode: AgentInteractionMode.autonomous,
+    allowedCategoryIds: const {},
+    currentStateId: 'state-001',
+    config: const AgentConfig(),
+    createdAt: _testDate,
+    updatedAt: _testDate,
+    vectorClock: null,
+  ) as AgentIdentityEntity;
+}
+
+AgentStateEntity _makeState({
+  int revision = 3,
+  int wakeCounter = 7,
+  int consecutiveFailureCount = 0,
+  DateTime? lastWakeAt,
+  DateTime? nextWakeAt,
+  DateTime? sleepUntil,
+}) {
+  return AgentDomainEntity.agentState(
+    id: 'state-001',
+    agentId: _testAgentId,
+    revision: revision,
+    slots: const AgentSlots(),
+    updatedAt: _testDate,
+    vectorClock: null,
+    lastWakeAt: lastWakeAt,
+    nextWakeAt: nextWakeAt,
+    sleepUntil: sleepUntil,
+    consecutiveFailureCount: consecutiveFailureCount,
+    wakeCounter: wakeCounter,
+  ) as AgentStateEntity;
+}
+
+AgentReportEntity _makeReport({
+  Map<String, Object?> content = const {
+    'title': 'Test Report',
+    'tldr': 'Everything is fine.',
+  },
+}) {
+  return AgentDomainEntity.agentReport(
+    id: 'report-001',
+    agentId: _testAgentId,
+    scope: 'current',
+    createdAt: _testDate,
+    vectorClock: null,
+    content: content,
+  ) as AgentReportEntity;
+}
+
+/// Wraps a full-page widget (one that contains its own Scaffold) in a
+/// [ProviderScope] + [MaterialApp] with localization, without adding any
+/// extra Scaffold or scroll wrapper.
+Widget _makeTestableFullPage(
+  Widget child, {
+  List<Override> overrides = const [],
+}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MediaQuery(
+      data: phoneMediaQueryData,
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          FormBuilderLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+      ),
+    ),
+  );
+}
+
+void main() {
+  late MockAgentService mockAgentService;
+  late MockTaskAgentService mockTaskAgentService;
+
+  setUp(() {
+    mockAgentService = MockAgentService();
+    mockTaskAgentService = MockTaskAgentService();
+  });
+
+  /// Builds [AgentDetailPage] with provider overrides.
+  Widget buildSubject({
+    FutureOr<AgentDomainEntity?> Function(Ref, String)? identityOverride,
+    FutureOr<AgentDomainEntity?> Function(Ref, String)? stateOverride,
+    FutureOr<AgentDomainEntity?> Function(Ref, String)? reportOverride,
+    FutureOr<List<AgentDomainEntity>> Function(Ref, String)? messagesOverride,
+  }) {
+    return _makeTestableFullPage(
+      const AgentDetailPage(agentId: _testAgentId),
+      overrides: [
+        agentIdentityProvider.overrideWith(
+          identityOverride ?? (ref, agentId) async => null,
+        ),
+        agentStateProvider.overrideWith(
+          stateOverride ?? (ref, agentId) async => null,
+        ),
+        agentReportProvider.overrideWith(
+          reportOverride ?? (ref, agentId) async => null,
+        ),
+        agentRecentMessagesProvider.overrideWith(
+          messagesOverride ?? (ref, agentId) async => <AgentDomainEntity>[],
+        ),
+        agentServiceProvider.overrideWithValue(mockAgentService),
+        taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+      ],
+    );
+  }
+
+  /// Helper that builds the subject with simple data overrides.
+  Widget buildDataSubject({
+    AgentDomainEntity? identity,
+    AgentDomainEntity? state,
+    AgentDomainEntity? report,
+    List<AgentDomainEntity> messages = const [],
+  }) {
+    return buildSubject(
+      identityOverride: (ref, agentId) async => identity,
+      stateOverride: (ref, agentId) async => state,
+      reportOverride: (ref, agentId) async => report,
+      messagesOverride: (ref, agentId) async => messages,
+    );
+  }
+
+  group('AgentDetailPage', () {
+    testWidgets('shows loading indicator while identity loads', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) =>
+              Completer<AgentDomainEntity?>().future,
+          stateOverride: (ref, agentId) =>
+              Completer<AgentDomainEntity?>().future,
+          reportOverride: (ref, agentId) =>
+              Completer<AgentDomainEntity?>().future,
+          messagesOverride: (ref, agentId) =>
+              Completer<List<AgentDomainEntity>>().future,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows agent name in app bar', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: _makeIdentity()),
+      );
+      await tester.pump();
+
+      expect(find.text('Test Task Agent'), findsOneWidget);
+    });
+
+    testWidgets('shows lifecycle badge as Active', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: _makeIdentity()),
+      );
+      await tester.pump();
+
+      expect(find.text('Active'), findsOneWidget);
+    });
+
+    testWidgets('shows lifecycle badge as Paused for dormant agent',
+        (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(
+          identity: _makeIdentity(lifecycle: AgentLifecycle.dormant),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Paused'), findsOneWidget);
+    });
+
+    testWidgets('shows lifecycle badge as Destroyed', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(
+          identity: _makeIdentity(lifecycle: AgentLifecycle.destroyed),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Destroyed'), findsOneWidget);
+    });
+
+    testWidgets('shows lifecycle badge as Created', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(
+          identity: _makeIdentity(lifecycle: AgentLifecycle.created),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Created'), findsOneWidget);
+    });
+
+    testWidgets('shows "Agent not found" when identity is null',
+        (tester) async {
+      await tester.pumpWidget(buildDataSubject());
+      await tester.pump();
+
+      expect(find.text('Agent not found.'), findsOneWidget);
+    });
+
+    testWidgets('shows error message when identity fails', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) =>
+              Future<AgentDomainEntity?>.error(Exception('Network error')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Error loading agent'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows report section when report exists', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(
+          identity: _makeIdentity(),
+          report: _makeReport(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Test Report'), findsOneWidget);
+      expect(find.text('Everything is fine.'), findsOneWidget);
+    });
+
+    testWidgets('shows "No report available" when report is null',
+        (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: _makeIdentity()),
+      );
+      await tester.pump();
+
+      expect(find.text('No report available yet.'), findsOneWidget);
+    });
+
+    testWidgets('shows Activity Log heading', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: _makeIdentity()),
+      );
+      await tester.pump();
+
+      expect(find.text('Activity Log'), findsOneWidget);
+    });
+
+    testWidgets('shows state info section with values', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(
+          identity: _makeIdentity(),
+          state: _makeState(
+            revision: 5,
+            wakeCounter: 12,
+            consecutiveFailureCount: 2,
+            lastWakeAt: DateTime(2024, 3, 15, 9, 30),
+            nextWakeAt: DateTime(2024, 3, 15, 14),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('State Info'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget); // Revision value
+      expect(find.text('12'), findsOneWidget); // Wake count value
+      expect(find.text('2'), findsOneWidget); // Consecutive failures
+      expect(find.text('2024-03-15 09:30'), findsOneWidget); // Last wake
+      expect(find.text('2024-03-15 14:00'), findsOneWidget); // Next wake
+    });
+
+    testWidgets(
+      'shows sleepUntil in state info when present',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDataSubject(
+            identity: _makeIdentity(),
+            state: _makeState(
+              sleepUntil: DateTime(2024, 3, 16, 8),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('2024-03-16 08:00'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hides optional date fields when null',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDataSubject(
+            identity: _makeIdentity(),
+            state: _makeState(),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Last wake'), findsNothing);
+        expect(find.text('Next wake'), findsNothing);
+        expect(find.text('Sleeping until'), findsNothing);
+      },
+    );
+
+    testWidgets('shows agent controls section', (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: _makeIdentity()),
+      );
+      await tester.pump();
+
+      // Active lifecycle should show Pause, Re-analyze, and Destroy
+      expect(find.text('Pause'), findsOneWidget);
+      expect(find.text('Re-analyze'), findsOneWidget);
+      expect(find.text('Destroy'), findsOneWidget);
+    });
+  });
+}

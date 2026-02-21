@@ -16,6 +16,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -268,6 +269,8 @@ class MockAgentRepository extends Mock implements AgentRepository {}
 class MockAgentService extends Mock implements AgentService {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
+
+class MockTaskAgentService extends Mock implements TaskAgentService {}
 
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 

@@ -1,7 +1,7 @@
 # Minimum Agentic Layer: Task Agent Implementation Plan
 
 Date: 2026-02-20
-Status: In progress — Phases 0A-1 through 0A-6 complete (212 tests passing, analyzer clean)
+Status: Phase 0A complete — all 8 sub-phases done (323 tests passing, analyzer clean, zero warnings)
 Companion docs:
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer.md`
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer_formal_model.md`
@@ -943,22 +943,27 @@ lib/features/agents/
 | Phase | Status | Files | Tests |
 |---|---|---|---|
 | 0A-1: Models | DONE | 4 source + generated | 46 serialization tests |
-| 0A-2: Database | DONE (step 12 pending) | 4 source + generated | 46 repository tests |
+| 0A-2: Database | DONE | 5 source + generated | 46 repository tests |
 | 0A-3: Wake Infrastructure | DONE | 4 source | 76 tests |
 | 0A-4: Tool Layer | DONE | 3 source | 52 tests |
-| 0A-5: Workflow | DONE (step 25 pending) | 2 source | — |
-| 0A-6: Service + Providers | DONE (step 29 pending) | 4 source + generated | — |
-| 0A-7: Agent Detail Page | NOT STARTED | — | — |
-| 0A-8: Integration | PARTIAL (step 35 done) | config flag added | — |
+| 0A-5: Workflow | DONE | 2 source | 30 tests |
+| 0A-6: Service + Providers | DONE | 4 source + generated | 25 tests |
+| 0A-7: Agent Detail Page | DONE | 4 source | 56 widget tests |
+| 0A-8: Integration | DONE (step 39 deferred) | config flag + providers + UI wiring | — |
 
-**Total: 212 passing tests, full-project analyzer clean.**
+**Total: 323 passing tests, full-project analyzer clean (zero issues).**
 
 **Notable deviations from plan:**
 - Step 5 (`agent_tool_call.dart`) was not created as a separate file — tool call types are handled inline by the executor.
-- `AgentService.listAgents()` returns empty — needs a dedicated "list all agents" drift query (no `agentId`-independent entity listing exists yet).
+- Step 12 (Register AgentDatabase in GetIt) is not needed — the agent feature uses Riverpod providers exclusively, not GetIt.
 - `TaskAgentService.triggerReanalysis()` and `restoreSubscriptions()` are stub implementations pending integration wiring.
 - Riverpod providers return `AgentDomainEntity?` (parent sealed type) instead of variant subtypes — required by `riverpod_generator` codegen.
 - `agent_db_conversions.dart` uses an `entityCreatedAt` helper because not all sealed union variants have `createdAt`.
+- Added `getAllAgentIdentities` drift query to support `AgentService.listAgents()` with optional lifecycle filtering.
+- UI strings use `// TODO(l10n):` placeholder comments — localization to arb files deferred to a later step.
+- Integration wiring uses `agentInitializationProvider` (keepAlive Riverpod provider) instead of GetIt startup hook.
+- `_TaskAgentChip` in `task_header_meta_card.dart` combines both "Create Agent" and "Agent" navigation into one widget.
+- Step 39 (end-to-end integration test) deferred — requires running inference with a real API key.
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
@@ -976,7 +981,7 @@ lib/features/agents/
 9. ~~Create `lib/features/agents/database/agent_database.dart` (Drift database class).~~ DONE
 10. ~~Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.~~ DONE
 11. ~~Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.~~ DONE
-12. Register `AgentDatabase` in GetIt (app startup). **PENDING**
+12. ~~Register `AgentDatabase` in GetIt (app startup).~~ NOT NEEDED — agent feature uses Riverpod providers exclusively
 13. ~~Write repository tests (CRUD for each entity type, link operations).~~ DONE (46 tests)
 
 ### Phase 0A-3: Wake Infrastructure
@@ -998,30 +1003,30 @@ lib/features/agents/
 
 23. ~~Create `lib/features/agents/workflow/task_agent_strategy.dart`~~ DONE
 24. ~~Create `lib/features/agents/workflow/task_agent_workflow.dart`~~ DONE (includes `conversationRepo.deleteConversation` cleanup in finally block)
-25. Write tests for differential context assembly and report update logic. **PENDING**
+25. ~~Write tests for differential context assembly and report update logic.~~ DONE (19 strategy + 11 workflow tests)
 
 ### Phase 0A-6: Service Layer and Providers
 
 26. ~~Create `lib/features/agents/service/agent_service.dart` (lifecycle management).~~ DONE
 27. ~~Create `lib/features/agents/service/task_agent_service.dart` (task-specific).~~ DONE
 28. ~~Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.~~ DONE (+ generated .g.dart files)
-29. Write service tests. **PENDING**
+29. ~~Write service tests.~~ DONE (14 agent_service + 11 task_agent_service tests)
 
 ### Phase 0A-7: Agent Detail Page
 
-30. Create `lib/features/agents/ui/agent_detail_page.dart` — full inspection page with report, activity log, state, controls.
-31. Create `lib/features/agents/ui/agent_report_section.dart` — structured report renderer.
-32. Create `lib/features/agents/ui/agent_activity_log.dart` — chronological message list with kind badges.
-33. Create `lib/features/agents/ui/agent_controls.dart` — pause/resume/destroy/re-analyze actions.
-34. Write widget tests for the agent detail page.
+30. ~~Create `lib/features/agents/ui/agent_detail_page.dart` — full inspection page with report, activity log, state, controls.~~ DONE
+31. ~~Create `lib/features/agents/ui/agent_report_section.dart` — structured report renderer.~~ DONE
+32. ~~Create `lib/features/agents/ui/agent_activity_log.dart` — chronological message list with kind badges.~~ DONE
+33. ~~Create `lib/features/agents/ui/agent_controls.dart` — pause/resume/destroy/re-analyze actions.~~ DONE
+34. ~~Write widget tests for the agent detail page.~~ DONE (56 tests: 14 detail page + 16 report section + 15 controls + 11 activity log)
 
 ### Phase 0A-8: Integration
 
 35. ~~Add `enableAgents` config flag in `consts.dart` and register in `config_flags.dart`.~~ DONE
-36. Wire wake orchestrator into app startup (listen to `UpdateNotifications`), guarded by the config flag.
-37. Add manual "Create Task Agent" action in task detail view (button, guarded by config flag). This creates the agent and triggers an initial full-context wake.
-38. Add "Agent" navigation chip in task detail view (visible when a task agent exists and flag is enabled) linking to the agent detail page.
-39. End-to-end integration test: create task agent → modify task → agent wakes → report updates → inspect on agent page.
+36. ~~Wire wake orchestrator into app startup (listen to `UpdateNotifications`), guarded by the config flag.~~ DONE — `agentInitializationProvider` (keepAlive) watches flag, starts orchestrator, restores subscriptions
+37. ~~Add manual "Create Task Agent" action in task detail view (button, guarded by config flag).~~ DONE — `_TaskAgentChip` in `task_header_meta_card.dart`
+38. ~~Add "Agent" navigation chip in task detail view (visible when a task agent exists and flag is enabled) linking to the agent detail page.~~ DONE — same `_TaskAgentChip` widget
+39. End-to-end integration test: create task agent → modify task → agent wakes → report updates → inspect on agent page. **DEFERRED** — requires running inference; will be added when live testing begins.
 
 ## 10. Gaps and Edge Cases to Address
 
