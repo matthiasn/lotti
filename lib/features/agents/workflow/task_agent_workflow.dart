@@ -240,7 +240,17 @@ class TaskAgentWorkflow {
       }
 
       // 7. Extract and persist updated report (from update_report tool call).
+      //    The agent contract requires calling update_report exactly once per
+      //    wake. Log a warning when it's missing so we can detect non-compliance.
       final reportContent = strategy.extractReportContent();
+      if (reportContent.isEmpty) {
+        developer.log(
+          'Agent $agentId did not publish a report during this wake '
+          '(runKey: $runKey). This violates the "must call update_report" '
+          'contract.',
+          name: 'TaskAgentWorkflow',
+        );
+      }
       if (reportContent.isNotEmpty) {
         final reportId = _uuid.v4();
 
@@ -640,18 +650,6 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
       );
     }
 
-    // Guard: only set the title when the task has no title yet.
-    // Changing an existing title requires explicit user instruction.
-    final currentTitle = task.data.title;
-    if (currentTitle.isNotEmpty) {
-      return ToolExecutionResult(
-        success: true,
-        output: 'Title already set to "$currentTitle". '
-            'Use this tool only when no title exists or when the user '
-            'explicitly asks to change it.',
-      );
-    }
-
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,
@@ -806,7 +804,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     final count = await handler.createBatchItems(parseResult);
     return ToolExecutionResult(
       success: count > 0,
-      output: 'Created $count checklist items',
+      output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
     );
   }
@@ -852,8 +850,10 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 
     final count = await handler.executeUpdates(parseResult);
     return ToolExecutionResult(
-      success: count > 0,
-      output: 'Updated $count checklist items',
+      // Return success=true as long as parsing succeeded — a count of 0
+      // just means all items were already in the requested state (no-op).
+      success: true,
+      output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
     );
   }

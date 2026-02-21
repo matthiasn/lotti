@@ -1030,6 +1030,67 @@ void main() {
         expect(message, isNot(contains('## Changed Since Last Wake')));
       });
 
+      test(
+          'shows "(no content)" for observation with empty string text payload',
+          () async {
+        final obs = AgentDomainEntity.agentMessage(
+          id: 'obs-empty',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 15, 9),
+          vectorClock: null,
+          contentEntryId: 'payload-empty-text',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        final payload = AgentDomainEntity.agentMessagePayload(
+          id: 'payload-empty-text',
+          agentId: agentId,
+          createdAt: DateTime(2024, 6, 15, 9),
+          vectorClock: null,
+          content: <String, Object?>{'text': ''},
+        );
+
+        when(() => mockAgentRepository.getEntity('payload-empty-text'))
+            .thenAnswer((_) async => payload);
+
+        final message = await executeAndCaptureMessage(observations: [obs]);
+
+        expect(message, isNotNull);
+        expect(message, contains('(no content)'));
+      });
+
+      test('shows "(no content)" for observation with non-string text payload',
+          () async {
+        final obs = AgentDomainEntity.agentMessage(
+          id: 'obs-wrong-type',
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.observation,
+          createdAt: DateTime(2024, 6, 15, 9),
+          vectorClock: null,
+          contentEntryId: 'payload-wrong-type',
+          metadata: const AgentMessageMetadata(runKey: runKey),
+        ) as AgentMessageEntity;
+
+        final payload = AgentDomainEntity.agentMessagePayload(
+          id: 'payload-wrong-type',
+          agentId: agentId,
+          createdAt: DateTime(2024, 6, 15, 9),
+          vectorClock: null,
+          content: <String, Object?>{'text': 42},
+        );
+
+        when(() => mockAgentRepository.getEntity('payload-wrong-type'))
+            .thenAnswer((_) async => payload);
+
+        final message = await executeAndCaptureMessage(observations: [obs]);
+
+        expect(message, isNotNull);
+        expect(message, contains('(no content)'));
+      });
+
       test('caps observations to 20 most recent', () async {
         // Create 25 observations.
         final observations = List.generate(25, (i) {
@@ -1180,23 +1241,14 @@ void main() {
         );
       }
 
-      test('set_task_title guard: title already set', () async {
-        // testTask has title 'Add tests for journal page' — guard should block.
+      test('set_task_title delegates to handler when title exists', () async {
+        // Handler receives the call — the workflow no longer hard-guards
+        // against existing titles (the prompt instructs the agent).
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
           '{"title":"New Title"}',
         );
         expect(result.success, isTrue);
-        // Verify the tool response mentions title already set.
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: contains('Title already set'),
-            ),
-          ),
-        ).called(1);
       });
 
       test('set_task_title succeeds on empty title', () async {
@@ -1339,6 +1391,41 @@ void main() {
         ).called(1);
       });
 
+      test('update_checklist_items with empty array returns error', () async {
+        final result = await executeWithToolCallOnRealTask(
+          'update_checklist_items',
+          '{"items":[]}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('non-empty array'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('add_multiple_checklist_items with empty array returns error',
+          () async {
+        final result = await executeWithToolCallOnRealTask(
+          'add_multiple_checklist_items',
+          '{"items":[]}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('non-empty array'),
+            ),
+          ),
+        ).called(1);
+      });
+
       test('update_task_estimate accepts numeric string minutes', () async {
         when(() => mockJournalRepository.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
@@ -1421,6 +1508,174 @@ void main() {
             ),
           ),
         ).called(1);
+      });
+
+      group('successful handler execution paths', () {
+        /// A Task without estimate, due date, and with default priority —
+        /// all three handlers will proceed to write when given this task.
+        final taskForUpdates = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            title: 'Task without metadata',
+            statusHistory: [],
+            dateTo: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+          ),
+          meta: Metadata(
+            id: taskId,
+            createdAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            categoryId: 'cat-001',
+          ),
+        );
+
+        test('update_task_estimate succeeds and reports mutation', () async {
+          when(() => mockJournalRepository.updateJournalEntity(any()))
+              .thenAnswer((_) async => true);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_estimate',
+            '{"minutes":60}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('estimate updated'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_due_date succeeds and reports mutation', () async {
+          when(() => mockJournalRepository.updateJournalEntity(any()))
+              .thenAnswer((_) async => true);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_due_date',
+            '{"dueDate":"2024-06-30"}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('due date updated'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_priority succeeds and reports mutation', () async {
+          when(() => mockJournalRepository.updateJournalEntity(any()))
+              .thenAnswer((_) async => true);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_priority',
+            '{"priority":"P1"}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('priority updated'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_estimate with already-set estimate is skipped',
+            () async {
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_estimate',
+            '{"minutes":30}',
+            // Uses taskWithCategory which has estimate: Duration(hours: 4)
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('already set'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_due_date with invalid format returns error',
+            () async {
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_due_date',
+            '{"dueDate":"not-a-date"}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Invalid due date'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_priority with invalid priority returns error',
+            () async {
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_priority',
+            '{"priority":"P9"}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Invalid priority'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_task_estimate with persistence failure returns error',
+            () async {
+          when(() => mockJournalRepository.updateJournalEntity(any()))
+              .thenThrow(Exception('DB write failed'));
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_task_estimate',
+            '{"minutes":60}',
+            task: taskForUpdates,
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Failed'),
+              ),
+            ),
+          ).called(1);
+        });
       });
 
       test('task entity is not a Task type returns error', () async {

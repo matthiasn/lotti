@@ -135,10 +135,14 @@ void main() {
         expect(tool.name, equals('update_task_due_date'));
       });
 
-      test('requires a string dueDate parameter', () {
+      test('requires a string dueDate parameter with YYYY-MM-DD format', () {
         final properties = tool.parameters['properties'] as Map;
         final dueDateProp = properties['dueDate'] as Map;
         expect(dueDateProp['type'], equals('string'));
+        expect(
+          dueDateProp['description'] as String,
+          contains('YYYY-MM-DD'),
+        );
         expect(tool.parameters['required'], contains('dueDate'));
       });
     });

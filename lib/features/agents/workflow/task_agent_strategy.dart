@@ -135,14 +135,14 @@ class TaskAgentStrategy extends ConversationStrategy {
       );
 
       // Handle update_report and record_observations locally — they don't
-      // modify journal entities so they don't need audit logging or category
-      // enforcement.
+      // modify journal entities so they don't need category enforcement,
+      // but we still persist audit messages for completeness.
       if (toolName == reportToolName) {
-        _handleUpdateReport(args, call.id, manager);
+        await _handleUpdateReport(args, call.id, manager);
         continue;
       }
       if (toolName == observationToolName) {
-        _handleRecordObservations(args, call.id, manager);
+        await _handleRecordObservations(args, call.id, manager);
         continue;
       }
 
@@ -217,11 +217,11 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Handles the `update_report` tool call by capturing the markdown content
   /// and sending an acknowledgement back to the conversation.
-  void _handleUpdateReport(
+  Future<void> _handleUpdateReport(
     Map<String, dynamic> args,
     String callId,
     ConversationManager manager,
-  ) {
+  ) async {
     final markdown = args['markdown'];
     if (markdown is String && markdown.trim().isNotEmpty) {
       _reportMarkdown = markdown.trim();
@@ -235,21 +235,29 @@ class TaskAgentStrategy extends ConversationStrategy {
         toolCallId: callId,
         response: 'Report updated.',
       );
+
+      await _recordToolResultMessage(toolName: reportToolName);
     } else {
+      const errorMsg = 'Error: "markdown" must be a non-empty string.';
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Error: "markdown" must be a non-empty string.',
+        response: errorMsg,
+      );
+
+      await _recordToolResultMessage(
+        toolName: reportToolName,
+        errorMessage: errorMsg,
       );
     }
   }
 
   /// Handles the `record_observations` tool call by accumulating observations
   /// and sending an acknowledgement back to the conversation.
-  void _handleRecordObservations(
+  Future<void> _handleRecordObservations(
     Map<String, dynamic> args,
     String callId,
     ConversationManager manager,
-  ) {
+  ) async {
     final rawList = args['observations'];
     if (rawList is List) {
       final notes =
@@ -265,10 +273,18 @@ class TaskAgentStrategy extends ConversationStrategy {
         toolCallId: callId,
         response: 'Recorded ${notes.length} observation(s).',
       );
+
+      await _recordToolResultMessage(toolName: observationToolName);
     } else {
+      const errorMsg = 'Error: "observations" must be an array of strings.';
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Error: "observations" must be an array of strings.',
+        response: errorMsg,
+      );
+
+      await _recordToolResultMessage(
+        toolName: observationToolName,
+        errorMessage: errorMsg,
       );
     }
   }

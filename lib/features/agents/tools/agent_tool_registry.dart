@@ -73,7 +73,7 @@ class AgentToolRegistry {
         'properties': {
           'dueDate': {
             'type': 'string',
-            'description': 'Due date in ISO 8601 format.',
+            'description': 'Due date in YYYY-MM-DD format (e.g., 2024-06-30).',
           },
         },
         'required': ['dueDate'],

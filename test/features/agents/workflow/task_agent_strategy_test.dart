@@ -395,6 +395,35 @@ void main() {
         expect(strategy.extractObservations(), ['Valid', 'Also valid']);
       });
 
+      test('records zero observations from empty array', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-obs',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': <String>[],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractObservations(), isEmpty);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-obs',
+            response: 'Recorded 0 observation(s).',
+          ),
+        ).called(1);
+      });
+
       test('returns error when observations is not an array', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
