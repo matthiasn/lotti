@@ -21,6 +21,15 @@ class AgentRepository {
 
   final AgentDatabase _db;
 
+  /// Run [action] inside a database transaction.
+  ///
+  /// All operations within the callback are committed atomically; if any
+  /// operation throws, the entire transaction is rolled back. Drift supports
+  /// nested transactions via savepoints.
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return _db.transaction(action);
+  }
+
   // ── Entity CRUD ────────────────────────────────────────────────────────────
 
   /// Insert or update an [AgentDomainEntity] using the `id` as the conflict
@@ -57,7 +66,8 @@ class AgentRepository {
   ///
   /// Queries by `type = 'agentState'` and casts the first result.
   Future<AgentStateEntity?> getAgentState(String agentId) async {
-    final rows = await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
+    final rows =
+        await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
     return entity.mapOrNull(agentState: (e) => e);

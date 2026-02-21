@@ -14,9 +14,15 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -258,6 +264,17 @@ class MockGeolocationService extends Mock implements GeolocationService {}
 
 // --- Repository mocks (frequently duplicated inline) ---
 
+class MockAgentRepository extends Mock implements AgentRepository {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
+
+class MockAgentService extends Mock implements AgentService {}
+
+class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
+
+class MockTaskAgentService extends Mock implements TaskAgentService {}
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
@@ -285,6 +302,11 @@ class MockBackfillRequestService extends Mock
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
+
+class MockCloudInferenceRepository extends Mock
+    implements CloudInferenceRepository {}
+
+class MockConversationManager extends Mock implements ConversationManager {}
 
 // --- Additional Fake classes ---
 

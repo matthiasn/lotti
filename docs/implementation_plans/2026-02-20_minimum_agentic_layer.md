@@ -400,6 +400,7 @@ lib/features/agents/
 - Schema versioned independently from `db.sqlite`.
 
 **`AgentRepository`** provides typed access:
+- `runInTransaction<T>(Future<T> Function() action)` — run multiple operations atomically; rolls back on throw; supports nesting via savepoints
 - `upsertEntity(AgentDomainEntity entity)` — insert or update any entity variant
 - `getEntity(String id)` → `AgentDomainEntity?`
 - `getEntitiesByAgentId(String agentId, {String? type})` → `List<AgentDomainEntity>`
@@ -421,10 +422,10 @@ lib/features/agents/
 ```
 lib/features/agents/
 ├── wake/
-│   ├── wake_queue.dart              # In-memory priority queue
-│   ├── wake_orchestrator.dart       # Listens to notifications, matches subscriptions
-│   ├── wake_runner.dart             # Single-flight execution engine
-│   └── run_key_factory.dart         # Deterministic run key generation
+│   ├── wake_queue.dart              # In-memory FIFO queue with run-key dedup, token merging, defensive copies
+│   ├── wake_orchestrator.dart       # Listens to notifications, matches subscriptions, self-notification suppression
+│   ├── wake_runner.dart             # Single-flight execution engine (per-agent lock)
+│   └── run_key_factory.dart         # Deterministic run key generation (SHA-256)
 ```
 
 **Wake unit of execution:**
@@ -825,18 +826,20 @@ lib/features/agents/
 ```
 
 **`AgentService`** provides:
-- `createAgent(kind, displayName, config)` → creates Agent + initial State + registers subscriptions
-- `getAgent(agentId)` → `AgentDomainEntity?`
+- `createAgent(kind, displayName, config)` → creates Agent + initial State + AgentStateLink atomically inside `runInTransaction`; returns `AgentIdentityEntity`
+- `getAgent(agentId)` → `AgentIdentityEntity?`
 - `listAgents({AgentLifecycle? filter})` → all agents that ever existed
 - `getAgentReport(agentId, scope)` → latest report without LLM
-- `destroyAgent(agentId)` → lifecycle transition to destroyed, unregister subscriptions
-- `pauseAgent(agentId)` → lifecycle transition to dormant
-- `resumeAgent(agentId)` → lifecycle transition to active
+- `pauseAgent(agentId)` → `Future<bool>` — lifecycle transition to dormant, unregister subscriptions; returns `false` if agent not found
+- `resumeAgent(agentId)` → `Future<bool>` — lifecycle transition to active; returns `false` if agent not found
+- `destroyAgent(agentId)` → `Future<bool>` — lifecycle transition to destroyed, unregister subscriptions; returns `false` if agent not found
+- `deleteAgent(agentId)` → permanently hard-deletes all data for a **destroyed** agent
 
 **`TaskAgentService`** provides:
-- `createTaskAgent(taskId)` → creates a Task Agent for a specific task
+- `createTaskAgent(taskId, allowedCategoryIds, {displayName})` → creates a Task Agent for a specific task; duplicate check is performed both as an optimistic fast-path and definitively inside `runInTransaction` to prevent TOCTOU races
 - `getTaskAgentForTask(taskId)` → finds agent by `agent_task` link
 - `triggerReanalysis(agentId)` → manual re-wake with full context
+- `restoreSubscriptions()` → rebuilds in-memory wake subscriptions for all active task agents from persisted links; catches per-agent errors to prevent one broken agent from blocking others
 
 ### 6.2 Riverpod providers
 
@@ -945,15 +948,15 @@ lib/features/agents/
 | Phase | Status | Files | Tests |
 |---|---|---|---|
 | 0A-1: Models | DONE | 4 source + generated | 46 serialization tests |
-| 0A-2: Database | DONE | 5 source + generated | 46 repository tests |
-| 0A-3: Wake Infrastructure | DONE | 4 source | 76 tests |
+| 0A-2: Database | DONE | 5 source + generated | 70 repository tests |
+| 0A-3: Wake Infrastructure | DONE | 4 source | 103 tests (42 orchestrator + 19 queue + 14 runner + 28 run_key) |
 | 0A-4: Tool Layer | DONE | 3 source | 52 tests |
 | 0A-5: Workflow | DONE | 2 source | 30 tests |
-| 0A-6: Service + Providers | DONE | 4 source + generated | 25 tests |
+| 0A-6: Service + Providers | DONE | 4 source + generated | 32 tests (19 agent_service + 13 task_agent_service) |
 | 0A-7: Agent Detail Page | DONE | 4 source | 56 widget tests |
 | 0A-8: Integration | DONE (step 39 deferred) | config flag + providers + UI wiring | — |
 
-**Total: 320 passing tests, full-project analyzer clean (zero issues).**
+**Total: ~389 passing tests, full-project analyzer clean (zero issues).**
 
 **Notable deviations from plan:**
 - Step 5 (`agent_tool_call.dart`) was not created as a separate file — tool call types are handled inline by the executor.
@@ -972,6 +975,17 @@ lib/features/agents/
 - `processNext()` is now event-driven — `_onBatch` calls `unawaited(processNext())` after enqueueing.
 - `agentInitializationProvider` is consumed from `entry_controller.dart`, wiring the `TaskAgentWorkflow` into the orchestrator via a `WakeExecutor` callback.
 - Tool registry has 7 tools (6 journal-domain + `record_observations`).
+- `AgentService.createAgent` wraps all 3 DB operations (identity, state, link) in `runInTransaction` for atomicity.
+- `TaskAgentService.createTaskAgent` wraps DB operations in `runInTransaction` with an in-transaction duplicate check to prevent TOCTOU races (the pre-transaction check is kept as an optimistic fast-path).
+- `AgentService.pauseAgent`, `resumeAgent`, `destroyAgent` return `Future<bool>` (false when agent not found), skipping side-effects like `removeSubscriptions` when the agent doesn't exist.
+- `WakeOrchestrator.addSubscription` uses replace-by-id semantics — a subscription with the same `id` replaces the existing one, preventing duplicates on hot restart.
+- `WakeOrchestrator.start()` is `Future<void>` — awaits cancellation of the previous subscription before attaching the new one.
+- `WakeOrchestrator._executeJob` has an inner try/catch around `insertWakeRun` so that a DB persistence failure doesn't abort the drain loop for other jobs.
+- `WakeOrchestrator` pre-registers suppression data before executor runs and re-checks suppression for deferred jobs (two-layer defense against self-wake, see §10.3).
+- `WakeJob` constructor makes a defensive copy of `triggerTokens` via `Set<String>.of()`.
+- `WakeQueue.clearHistory()` has a debug assertion that the queue is empty.
+- `enqueueManualWake` captures a single `clock.now()` into a local for both `RunKeyFactory.forManual` and `WakeJob.createdAt`.
+- `TaskAgentService.restoreSubscriptions` catches per-agent errors to avoid one broken agent blocking all others.
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 
@@ -990,7 +1004,7 @@ lib/features/agents/
 10. ~~Create `lib/features/agents/database/agent_db_conversions.dart` for type mapping.~~ DONE
 11. ~~Create `lib/features/agents/database/agent_repository.dart` with CRUD operations.~~ DONE
 12. ~~Register `AgentDatabase` in GetIt (app startup).~~ NOT NEEDED — agent feature uses Riverpod providers exclusively
-13. ~~Write repository tests (CRUD for each entity type, link operations).~~ DONE (46 tests)
+13. ~~Write repository tests (CRUD for each entity type, link operations, transaction support).~~ DONE (70 tests)
 
 ### Phase 0A-3: Wake Infrastructure
 
@@ -998,7 +1012,7 @@ lib/features/agents/
 15. ~~Create `lib/features/agents/wake/wake_queue.dart` (in-memory priority queue with dedup).~~ DONE
 16. ~~Create `lib/features/agents/wake/wake_runner.dart` (single-flight execution with lock).~~ DONE
 17. ~~Create `lib/features/agents/wake/wake_orchestrator.dart` (notification listener + subscription matching).~~ DONE
-18. ~~Write tests for run key determinism, dedup, and single-flight behavior.~~ DONE (76 tests: 24 run_key + 15 queue + 13 runner + 24 orchestrator)
+18. ~~Write tests for run key determinism, dedup, and single-flight behavior.~~ DONE (103 tests: 28 run_key + 19 queue + 14 runner + 42 orchestrator)
 
 ### Phase 0A-4: Tool Layer
 
@@ -1018,7 +1032,7 @@ lib/features/agents/
 26. ~~Create `lib/features/agents/service/agent_service.dart` (lifecycle management).~~ DONE
 27. ~~Create `lib/features/agents/service/task_agent_service.dart` (task-specific).~~ DONE
 28. ~~Create `lib/features/agents/state/agent_providers.dart` and `task_agent_providers.dart`.~~ DONE (+ generated .g.dart files)
-29. ~~Write service tests.~~ DONE (14 agent_service + 11 task_agent_service tests)
+29. ~~Write service tests.~~ DONE (19 agent_service + 13 task_agent_service tests)
 
 ### Phase 0A-7: Agent Detail Page
 
@@ -1056,13 +1070,19 @@ Agent records reference journal-domain entities by ID (`taskId`, `journalEntryId
 
 When the agent's tool calls modify journal entities, those modifications emit notifications that could re-trigger the agent. A timing-window approach (suppress for N ms after run completes) is unreliable — notification delivery timing is not guaranteed, and a slow DB write could arrive after the window closes.
 
-**MVP approach: vector clock comparison.** The `AgentToolExecutor` collects the set of journal-domain entity IDs it mutated during a wake run, along with each entity's `vectorClock` value immediately after the mutation. After the run completes, the wake orchestrator holds these as `recentlyMutatedEntries: Map<String, VectorClock>` (entity ID → post-mutation vector clock) per agent.
+**MVP approach: entity-ID-set comparison with two-layer defense.**
 
-When the next notification batch arrives containing a mutated entity ID, the orchestrator reads the journal entity's current `vectorClock` and compares it to the recorded value. If the vector clocks are equal, the notification is self-caused → suppress. If the current vector clock is strictly newer (has advanced beyond the recorded value), a subsequent external edit occurred → do not suppress (wake the agent). The suppression map is cleared after one pass.
+The wake orchestrator tracks which entity IDs each agent mutated during its last wake run via `recentlyMutatedEntries: Map<String, _MutationRecord>` (agentId → set of entity IDs + timestamp). Suppression expires after a 5-second TTL to avoid incorrectly blocking external edits. When a notification batch arrives, if **all** matched tokens are covered by the agent's recent mutations and the record is within TTL, the notification is suppressed.
 
-Vector clocks are the right comparison unit here because they are already used by the journal domain for conflict detection, they advance on every write (including sync-received writes), and they are immune to timestamp precision issues. The cost is one DB read per suppressed-candidate entity ID, negligible at MVP volumes.
+**Two-layer defense against mid-execution self-wake:**
 
-**Phase 0B upgrade:** Tag notification emissions at the source with the originating `agentId` so the orchestrator can filter without vector clock comparison.
+1. **Pre-registration:** Before the executor runs, `_preRegisterSuppression` populates the suppression map with all entity IDs from the agent's subscriptions as a conservative over-approximation. This closes the race window between the executor's DB writes and the `recordMutatedEntities` call — any notification matching these IDs during execution is suppressed.
+
+2. **Deferred job re-check:** When a queued job was deferred because the agent was busy, the drain loop re-checks suppression after the agent completes. If the deferred job's trigger tokens are now covered by the agent's mutation record, it is silently dropped.
+
+After execution completes, the pre-registered suppression is replaced with the actual mutation set (or cleared if no mutations occurred), so only genuinely self-written entities remain suppressed.
+
+**Phase 0B upgrade:** Tag notification emissions at the source with the originating `agentId` so the orchestrator can filter without entity-ID-set comparison. Upgrade to full vector clock comparison for finer-grained suppression.
 
 ### 10.4 Concurrent wake coalescing
 
