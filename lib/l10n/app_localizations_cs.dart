@@ -85,6 +85,135 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addToDictionaryTooLong => 'Výraz je příliš dlouhý (max. 50 znaků)';
 
   @override
+  String get agentActivityLogHeading => 'Protokol aktivity';
+
+  @override
+  String agentControlsActionError(String error) {
+    return 'Akce se nezdařila: $error';
+  }
+
+  @override
+  String get agentControlsDeleteButton => 'Smazat trvale';
+
+  @override
+  String get agentControlsDeleteDialogContent =>
+      'Všechna data tohoto agenta budou trvale smazána, včetně historie, reportů a pozorování. Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get agentControlsDeleteDialogTitle => 'Smazat agenta?';
+
+  @override
+  String get agentControlsDestroyButton => 'Zničit';
+
+  @override
+  String get agentControlsDestroyDialogContent =>
+      'Agent bude trvale deaktivován. Jeho historie bude zachována pro audit.';
+
+  @override
+  String get agentControlsDestroyDialogTitle => 'Zničit agenta?';
+
+  @override
+  String get agentControlsDestroyedMessage => 'Tento agent byl zničen.';
+
+  @override
+  String get agentControlsPauseButton => 'Pozastavit';
+
+  @override
+  String get agentControlsReanalyzeButton => 'Znovu analyzovat';
+
+  @override
+  String get agentControlsResumeButton => 'Pokračovat';
+
+  @override
+  String agentDetailErrorLoading(String error) {
+    return 'Chyba při načítání agenta: $error';
+  }
+
+  @override
+  String get agentDetailNotFound => 'Agent nebyl nalezen.';
+
+  @override
+  String get agentDetailUnexpectedType => 'Neočekávaný typ entity.';
+
+  @override
+  String get agentLifecycleActive => 'Aktivní';
+
+  @override
+  String get agentLifecycleCreated => 'Vytvořen';
+
+  @override
+  String get agentLifecycleDestroyed => 'Zničen';
+
+  @override
+  String get agentLifecyclePaused => 'Pozastaven';
+
+  @override
+  String get agentMessageKindAction => 'Akce';
+
+  @override
+  String get agentMessageKindObservation => 'Pozorování';
+
+  @override
+  String get agentMessageKindSummary => 'Shrnutí';
+
+  @override
+  String get agentMessageKindSystem => 'Systém';
+
+  @override
+  String get agentMessageKindThought => 'Myšlenka';
+
+  @override
+  String get agentMessageKindToolResult => 'Výsledek nástroje';
+
+  @override
+  String get agentMessageKindUser => 'Uživatel';
+
+  @override
+  String get agentMessagePayloadEmpty => '(bez obsahu)';
+
+  @override
+  String get agentMessagesEmpty => 'Zatím žádné zprávy.';
+
+  @override
+  String agentMessagesErrorLoading(String error) {
+    return 'Nepodařilo se načíst zprávy: $error';
+  }
+
+  @override
+  String agentReportErrorLoading(String error) {
+    return 'Nepodařilo se načíst report: $error';
+  }
+
+  @override
+  String get agentReportNone => 'Report zatím není k dispozici.';
+
+  @override
+  String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';
+
+  @override
+  String agentStateErrorLoading(String error) {
+    return 'Nepodařilo se načíst stav: $error';
+  }
+
+  @override
+  String get agentStateHeading => 'Informace o stavu';
+
+  @override
+  String get agentStateLastWake => 'Poslední probuzení';
+
+  @override
+  String get agentStateNextWake => 'Příští probuzení';
+
+  @override
+  String get agentStateRevision => 'Revize';
+
+  @override
+  String get agentStateSleepingUntil => 'Spí do';
+
+  @override
+  String get agentStateWakeCount => 'Počet probuzení';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Návrhy akčních položek';
 
   @override
@@ -1014,6 +1143,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagAutoTranscribeDescription =>
       'Automaticky přepisujte zvukové nahrávky ve vašich položkách. To vyžaduje připojení k internetu.';
+
+  @override
+  String get configFlagEnableAgents => 'Povolit agenty';
+
+  @override
+  String get configFlagEnableAgentsDescription =>
+      'Umožni AI agentům autonomně sledovat a analyzovat tvé úkoly.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -3419,6 +3555,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Tagy';
+
+  @override
+  String get taskAgentChipLabel => 'Agent';
+
+  @override
+  String get taskAgentCreateChipLabel => 'Vytvořit agenta';
+
+  @override
+  String taskAgentCreateError(String error) {
+    return 'Nepodařilo se vytvořit agenta: $error';
+  }
 
   @override
   String get taskCategoryAllLabel => 'vše';

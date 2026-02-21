@@ -25,6 +25,80 @@
   "addToDictionarySaveFailed": "Nepodařilo se uložit slovník",
   "addToDictionarySuccess": "Výraz byl přidán do slovníku",
   "addToDictionaryTooLong": "Výraz je příliš dlouhý (max. 50 znaků)",
+  "agentActivityLogHeading": "Protokol aktivity",
+  "agentControlsActionError": "Akce se nezdařila: {error}",
+  "@agentControlsActionError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentControlsDeleteButton": "Smazat trvale",
+  "agentControlsDeleteDialogContent": "Všechna data tohoto agenta budou trvale smazána, včetně historie, reportů a pozorování. Tuto akci nelze vrátit zpět.",
+  "agentControlsDeleteDialogTitle": "Smazat agenta?",
+  "agentControlsDestroyButton": "Zničit",
+  "agentControlsDestroyDialogContent": "Agent bude trvale deaktivován. Jeho historie bude zachována pro audit.",
+  "agentControlsDestroyDialogTitle": "Zničit agenta?",
+  "agentControlsDestroyedMessage": "Tento agent byl zničen.",
+  "agentControlsPauseButton": "Pozastavit",
+  "agentControlsReanalyzeButton": "Znovu analyzovat",
+  "agentControlsResumeButton": "Pokračovat",
+  "agentDetailErrorLoading": "Chyba při načítání agenta: {error}",
+  "@agentDetailErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentDetailNotFound": "Agent nebyl nalezen.",
+  "agentDetailUnexpectedType": "Neočekávaný typ entity.",
+  "agentLifecycleActive": "Aktivní",
+  "agentLifecycleCreated": "Vytvořen",
+  "agentLifecycleDestroyed": "Zničen",
+  "agentLifecyclePaused": "Pozastaven",
+  "agentMessageKindAction": "Akce",
+  "agentMessageKindObservation": "Pozorování",
+  "agentMessageKindSummary": "Shrnutí",
+  "agentMessageKindSystem": "Systém",
+  "agentMessageKindThought": "Myšlenka",
+  "agentMessageKindToolResult": "Výsledek nástroje",
+  "agentMessageKindUser": "Uživatel",
+  "agentMessagePayloadEmpty": "(bez obsahu)",
+  "agentMessagesEmpty": "Zatím žádné zprávy.",
+  "agentMessagesErrorLoading": "Nepodařilo se načíst zprávy: {error}",
+  "@agentMessagesErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportErrorLoading": "Nepodařilo se načíst report: {error}",
+  "@agentReportErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentReportNone": "Report zatím není k dispozici.",
+  "agentStateConsecutiveFailures": "Po sobě jdoucí selhání",
+  "agentStateErrorLoading": "Nepodařilo se načíst stav: {error}",
+  "@agentStateErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStateHeading": "Informace o stavu",
+  "agentStateLastWake": "Poslední probuzení",
+  "agentStateNextWake": "Příští probuzení",
+  "agentStateRevision": "Revize",
+  "agentStateSleepingUntil": "Spí do",
+  "agentStateWakeCount": "Počet probuzení",
   "aiAssistantActionItemSuggestions": "Návrhy akčních položek",
   "aiAssistantAnalyzeImage": "Analyzovat obrázek",
   "aiAssistantSummarizeTask": "Shrnout úkol",
@@ -431,6 +505,8 @@
   "completeHabitSuccessButton": "Úspěch",
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
   "configFlagAutoTranscribeDescription": "Automaticky přepisujte zvukové nahrávky ve vašich položkách. To vyžaduje připojení k internetu.",
+  "configFlagEnableAgents": "Povolit agenty",
+  "configFlagEnableAgentsDescription": "Umožni AI agentům autonomně sledovat a analyzovat tvé úkoly.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAutoTaskTldrDescription": "Automaticky generujte shrnutí svých úkolů, abyste rychle pochopili jejich stav.",
@@ -1348,6 +1424,16 @@
   "syncStepLabels": "Štítky",
   "syncStepMeasurables": "Měřitelné hodnoty",
   "syncStepTags": "Tagy",
+  "taskAgentChipLabel": "Agent",
+  "taskAgentCreateChipLabel": "Vytvořit agenta",
+  "taskAgentCreateError": "Nepodařilo se vytvořit agenta: {error}",
+  "@taskAgentCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",

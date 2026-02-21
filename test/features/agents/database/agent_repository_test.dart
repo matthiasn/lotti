@@ -344,8 +344,7 @@ void main() {
         await repo.upsertEntity(makeAgentState());
         await repo.upsertEntity(makeMessage());
 
-        final limited =
-            await repo.getEntitiesByAgentId(testAgentId, limit: 2);
+        final limited = await repo.getEntitiesByAgentId(testAgentId, limit: 2);
 
         expect(limited.length, 2);
 
