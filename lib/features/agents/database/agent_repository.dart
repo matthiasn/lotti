@@ -57,7 +57,8 @@ class AgentRepository {
   ///
   /// Queries by `type = 'agentState'` and casts the first result.
   Future<AgentStateEntity?> getAgentState(String agentId) async {
-    final rows = await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
+    final rows =
+        await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
     return entity.mapOrNull(agentState: (e) => e);
