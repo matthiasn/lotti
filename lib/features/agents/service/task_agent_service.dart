@@ -53,40 +53,44 @@ class TaskAgentService {
       );
     }
 
-    final identity = await agentService.createAgent(
-      kind: _agentKind,
-      displayName: displayName ?? 'Task Agent',
-      config: const AgentConfig(),
-      allowedCategoryIds: allowedCategoryIds,
-    );
-
-    // Update state with activeTaskId.
-    final state = await repository.getAgentState(identity.agentId);
-    if (state == null) {
-      throw StateError(
-        'Agent ${identity.agentId} was just created but has no state entity',
+    final identity = await repository.runInTransaction(() async {
+      final identity = await agentService.createAgent(
+        kind: _agentKind,
+        displayName: displayName ?? 'Task Agent',
+        config: const AgentConfig(),
+        allowedCategoryIds: allowedCategoryIds,
       );
-    }
 
-    final now = clock.now();
-    final updatedState = state.copyWith(
-      slots: state.slots.copyWith(activeTaskId: taskId),
-      updatedAt: now,
-    );
-    await repository.upsertEntity(updatedState);
+      // Update state with activeTaskId.
+      final state = await repository.getAgentState(identity.agentId);
+      if (state == null) {
+        throw StateError(
+          'Agent ${identity.agentId} was just created but has no state entity',
+        );
+      }
 
-    // Create agent_task link: agent → task.
-    final linkId = _uuid.v4();
-    await repository.upsertLink(
-      AgentLink.agentTask(
-        id: linkId,
-        fromId: identity.agentId,
-        toId: taskId,
-        createdAt: now,
+      final now = clock.now();
+      final updatedState = state.copyWith(
+        slots: state.slots.copyWith(activeTaskId: taskId),
         updatedAt: now,
-        vectorClock: null,
-      ),
-    );
+      );
+      await repository.upsertEntity(updatedState);
+
+      // Create agent_task link: agent → task.
+      final linkId = _uuid.v4();
+      await repository.upsertLink(
+        AgentLink.agentTask(
+          id: linkId,
+          fromId: identity.agentId,
+          toId: taskId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+
+      return identity;
+    });
 
     // Register subscription for changes to this task.
     _registerTaskSubscription(identity.agentId, taskId);

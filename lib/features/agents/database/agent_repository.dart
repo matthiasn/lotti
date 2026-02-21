@@ -21,6 +21,15 @@ class AgentRepository {
 
   final AgentDatabase _db;
 
+  /// Run [action] inside a database transaction.
+  ///
+  /// All operations within the callback are committed atomically; if any
+  /// operation throws, the entire transaction is rolled back. Drift supports
+  /// nested transactions via savepoints.
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return _db.transaction(action);
+  }
+
   // ── Entity CRUD ────────────────────────────────────────────────────────────
 
   /// Insert or update an [AgentDomainEntity] using the `id` as the conflict

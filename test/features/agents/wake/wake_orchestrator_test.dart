@@ -919,6 +919,118 @@ void main() {
         });
       });
 
+      test(
+          'pre-registers suppression before executor runs, '
+          'preventing self-wake from mid-execution notifications', () {
+        fakeAsync((async) {
+          // Use a completer to pause the executor mid-flight so we can
+          // inject a notification that would match the agent's subscription.
+          final gate = Completer<Map<String, VectorClock>?>();
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              return gate.future;
+            };
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Fire the first notification to start the executor.
+          emitTokens(async, controller, {'entity-1'});
+
+          // Executor is now paused on `gate`. Fire a second notification
+          // for the same entity while the agent is executing.
+          emitTokens(async, controller, {'entity-1'});
+
+          // The second notification should have been suppressed by the
+          // pre-registered suppression data, so no new job should be queued
+          // (the queue should be empty since the first job was dequeued and
+          // is currently executing).
+          expect(queue.isEmpty, isTrue);
+
+          // Complete the executor — returns the mutation set.
+          gate.complete({
+            'entity-1': const VectorClock({'node-1': 1}),
+          });
+          async.flushMicrotasks();
+
+          // Only one wake run should have been persisted (the original).
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+
+          controller.close();
+        });
+      });
+
+      test(
+          'replaces pre-registered suppression with actual mutations '
+          'so external changes are not blocked', () {
+        fakeAsync((async) {
+          // Executor mutates entity-1 but not entity-2.
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1', 'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              // Only entity-1 was actually mutated.
+              return {
+                'entity-1': const VectorClock({'node-1': 1})
+              };
+            };
+
+          // Trigger the first execution.
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'subscription',
+              triggerTokens: {'entity-1'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          clearInteractions(mockRepository);
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockRepository.updateWakeRunStatus(
+              any(),
+              any(),
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Now a notification arrives for entity-2 only (external change).
+          // It should NOT be suppressed because only entity-1 is in the
+          // actual mutation record.
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitTokens(async, controller, {'entity-2'});
+
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+
+          controller.close();
+        });
+      });
+
       test('releases lock even when repository throws', () {
         fakeAsync((async) {
           when(() => mockRepository.insertWakeRun(entry: any(named: 'entry')))

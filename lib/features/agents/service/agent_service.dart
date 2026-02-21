@@ -78,9 +78,11 @@ class AgentService {
       vectorClock: null,
     );
 
-    await repository.upsertEntity(identity);
-    await repository.upsertEntity(state);
-    await repository.upsertLink(link);
+    await repository.runInTransaction(() async {
+      await repository.upsertEntity(identity);
+      await repository.upsertEntity(state);
+      await repository.upsertLink(link);
+    });
 
     developer.log(
       'Created agent $agentId (kind: $kind, name: $displayName)',

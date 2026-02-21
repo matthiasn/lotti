@@ -264,7 +264,10 @@ class MockGeolocationService extends Mock implements GeolocationService {}
 
 // --- Repository mocks (frequently duplicated inline) ---
 
-class MockAgentRepository extends Mock implements AgentRepository {}
+class MockAgentRepository extends Mock implements AgentRepository {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
 
 class MockAgentService extends Mock implements AgentService {}
 

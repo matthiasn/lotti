@@ -149,6 +149,28 @@ class WakeOrchestrator {
     );
   }
 
+  /// Pre-register suppression for [agentId] before execution starts.
+  ///
+  /// Uses the union of all subscribed entity IDs for this agent as a
+  /// conservative over-approximation.  Any notification matching these IDs
+  /// that arrives while the executor is running will be suppressed, closing
+  /// the window between DB writes and [recordMutatedEntities].  After
+  /// execution, the actual mutation set replaces this pre-registered data.
+  void _preRegisterSuppression(String agentId) {
+    final subscribedIds = <String>{};
+    for (final sub in _subscriptions) {
+      if (sub.agentId == agentId) {
+        subscribedIds.addAll(sub.matchEntityIds);
+      }
+    }
+    if (subscribedIds.isNotEmpty) {
+      _recentlyMutatedEntries[agentId] = _MutationRecord(
+        entityIds: subscribedIds,
+        recordedAt: clock.now(),
+      );
+    }
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   /// Start listening to [notificationStream].
@@ -328,6 +350,16 @@ class WakeOrchestrator {
           continue;
         }
 
+        // Re-check suppression for jobs that were enqueued during an agent's
+        // execution — before recordMutatedEntities was called. Without this
+        // check, a notification that fires between the executor's DB writes
+        // and the suppression recording would slip through unsuppressed.
+        if (job.reason == 'subscription' &&
+            _isSuppressed(job.agentId, job.triggerTokens)) {
+          runner.release(job.agentId);
+          continue;
+        }
+
         await _executeJob(job);
       }
     } finally {
@@ -376,6 +408,13 @@ class WakeOrchestrator {
       }
 
       try {
+        // Pre-register suppression data BEFORE executing, using the agent's
+        // subscribed entity IDs as a conservative over-approximation.  This
+        // prevents a race where the executor writes to the DB, the stream
+        // emits a notification, and _onBatch enqueues a self-wake before
+        // the executor returns and recordMutatedEntities is called.
+        _preRegisterSuppression(job.agentId);
+
         final mutated = await executor(
           job.agentId,
           job.runKey,
@@ -383,13 +422,13 @@ class WakeOrchestrator {
           threadId,
         );
 
-        // Record mutated entries for self-notification suppression,
-        // replacing the previous cycle's entries for this agent.
+        // Replace the pre-registered suppression with the actual mutation
+        // set so that only genuinely self-written entities are suppressed.
         if (mutated != null && mutated.isNotEmpty) {
           recordMutatedEntities(job.agentId, mutated);
         } else {
-          // No mutations this cycle — clear stale suppression data so
-          // external edits to previously-mutated entities are not blocked.
+          // No mutations this cycle — clear the pre-registered suppression
+          // so external edits are not incorrectly blocked.
           _recentlyMutatedEntries.remove(job.agentId);
         }
 
