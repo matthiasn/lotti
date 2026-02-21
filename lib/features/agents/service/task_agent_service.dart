@@ -45,7 +45,7 @@ class TaskAgentService {
     required Set<String> allowedCategoryIds,
     String? displayName,
   }) async {
-    // Check for existing task agent.
+    // Optimistic fast-path check (avoids unnecessary work in the common case).
     final existing = await getTaskAgentForTask(taskId);
     if (existing != null) {
       throw StateError(
@@ -54,6 +54,20 @@ class TaskAgentService {
     }
 
     final identity = await repository.runInTransaction(() async {
+      // Definitive duplicate check inside the transaction to prevent TOCTOU
+      // races: a concurrent createTaskAgent call could have committed between
+      // the fast-path check above and this point.
+      final linksForTask = await repository.getLinksTo(
+        taskId,
+        type: 'agent_task',
+      );
+      if (linksForTask.isNotEmpty) {
+        throw StateError(
+          'A task agent already exists for task $taskId '
+          '(agent ${linksForTask.first.fromId})',
+        );
+      }
+
       final identity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName ?? 'Task Agent',

@@ -234,10 +234,11 @@ class WakeOrchestrator {
     required String reason,
     Set<String> triggerTokens = const {},
   }) {
+    final now = clock.now();
     final runKey = RunKeyFactory.forManual(
       agentId: agentId,
       reason: reason,
-      timestamp: clock.now(),
+      timestamp: now,
     );
 
     final job = WakeJob(
@@ -245,7 +246,7 @@ class WakeOrchestrator {
       agentId: agentId,
       reason: reason,
       triggerTokens: triggerTokens,
-      createdAt: clock.now(),
+      createdAt: now,
     );
 
     queue.enqueue(job);

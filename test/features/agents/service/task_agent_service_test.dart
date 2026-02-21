@@ -222,6 +222,43 @@ void main() {
         );
       });
 
+      test(
+          'throws StateError from in-transaction check when concurrent '
+          'create races past the fast-path', () async {
+        // First call (fast-path) returns empty, second call (in-transaction)
+        // finds a duplicate — simulating a concurrent create.
+        var callCount = 0;
+        final concurrentLink = AgentLink.agentTask(
+          id: 'link-race',
+          fromId: 'racing-agent',
+          toId: 'task-race',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(() => mockRepository.getLinksTo('task-race', type: 'agent_task'))
+            .thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return []; // fast-path: no agent yet
+          return [concurrentLink]; // in-transaction: duplicate appeared
+        });
+
+        expect(
+          () => service.createTaskAgent(
+            taskId: 'task-race',
+            allowedCategoryIds: const {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains('task-race'), contains('racing-agent')),
+            ),
+          ),
+        );
+      });
+
       test('throws StateError when agent state is null', () async {
         final identity = makeIdentity();
 
