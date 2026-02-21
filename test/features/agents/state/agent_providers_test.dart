@@ -198,6 +198,27 @@ void main() {
 
       expect(result, isEmpty);
     });
+
+    test('filters out non-AgentMessageEntity types', () async {
+      final msg = makeTestMessage(id: 'msg-1');
+      final report = makeTestReport(id: 'report-1');
+      final state = makeTestState(id: 'state-1');
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => [msg, report, state]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentRecentMessagesProvider(kTestAgentId).future);
+
+      expect(result, hasLength(1));
+      expect((result[0] as AgentMessageEntity).id, 'msg-1');
+    });
   });
 
   group('agentMessagePayloadTextProvider', () {
@@ -277,6 +298,26 @@ void main() {
         createdAt: DateTime(2024, 3, 15),
         vectorClock: null,
         content: const {'other': 'data'},
+      );
+
+      when(() => mockRepository.getEntity(payloadId))
+          .thenAnswer((_) async => payloadEntity);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagePayloadTextProvider(payloadId).future);
+
+      expect(result, isNull);
+    });
+
+    test('returns null when payload text is not a String', () async {
+      const payloadId = 'payload-int-text';
+      final payloadEntity = AgentDomainEntity.agentMessagePayload(
+        id: payloadId,
+        agentId: kTestAgentId,
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: const {'text': 42},
       );
 
       when(() => mockRepository.getEntity(payloadId))
@@ -463,6 +504,93 @@ void main() {
             threadId: 'thread-1',
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor invalidates UI providers after successful execution',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+
+        // Stub providers that will be read after invalidation.
+        when(() => mockService.getAgentReport(kTestAgentId))
+            .thenAnswer((_) async => null);
+        when(() => mockRepository.getAgentState(kTestAgentId))
+            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentMessage',
+            limit: 50,
+          ),
+        ).thenAnswer((_) async => []);
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        // Prime the providers so we can detect invalidation.
+        container.listen(agentReportProvider(kTestAgentId), (_, __) {});
+        container.listen(agentStateProvider(kTestAgentId), (_, __) {});
+        container.listen(
+          agentRecentMessagesProvider(kTestAgentId),
+          (_, __) {},
+        );
+        await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentStateProvider(kTestAgentId).future);
+        await container.read(agentRecentMessagesProvider(kTestAgentId).future);
+
+        // Execute the wakeExecutor — this should invalidate all three
+        // providers, causing them to re-fetch on next read.
+        await capturedExecutor!(
+          kTestAgentId,
+          'run-key-2',
+          {'tok-b'},
+          'thread-2',
+        );
+
+        // Force the invalidated providers to re-execute.
+        await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentStateProvider(kTestAgentId).future);
+        await container.read(agentRecentMessagesProvider(kTestAgentId).future);
+
+        // Each provider was read once to prime, then once after
+        // invalidation — two calls total.
+        verify(() => mockService.getAgentReport(kTestAgentId)).called(2);
+        verify(() => mockRepository.getAgentState(kTestAgentId)).called(2);
+        verify(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentMessage',
+            limit: 50,
+          ),
+        ).called(2);
       },
     );
 
