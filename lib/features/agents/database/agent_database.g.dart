@@ -2112,11 +2112,12 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_saga_log_agent ON saga_log (agent_id)');
   late final Index idxSagaLogStatus = Index('idx_saga_log_status',
       'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)');
-  Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId) {
+  Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC',
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
         variables: [
-          Variable<String>(agentId)
+          Variable<String>(agentId),
+          Variable<int>(limit)
         ],
         readsFrom: {
           agentEntities,

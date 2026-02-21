@@ -62,7 +62,7 @@ class AgentRepository {
     if (type != null) {
       rows = await _db.getAgentEntitiesByType(agentId, type, limit).get();
     } else {
-      rows = await _db.getAgentEntitiesByAgentId(agentId).get();
+      rows = await _db.getAgentEntitiesByAgentId(agentId, limit).get();
     }
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
