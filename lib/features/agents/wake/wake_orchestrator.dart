@@ -89,6 +89,17 @@ class WakeOrchestrator {
   /// kept in-memory (reset on app restart) since persistence is not required
   /// — the counter only needs to be unique within a single orchestrator
   /// lifecycle.
+  /// Single-flight guard for [processNext].
+  ///
+  /// Prevents overlapping drain loops that could clear queue history while
+  /// another drain still holds deferred jobs in its local list.  When a drain
+  /// is already in progress, new [_onBatch] / [enqueueManualWake] callers
+  /// set [_drainRequested] so the active drain re-checks after finishing.
+  bool _isDraining = false;
+
+  /// Set when a drain is requested while one is already in progress.
+  bool _drainRequested = false;
+
   final _wakeCounters = <String, int>{};
 
   /// Self-notification suppression state.
@@ -284,6 +295,25 @@ class WakeOrchestrator {
   /// When the queue becomes empty after processing, the seen-run-key history
   /// is cleared so that future notification batches can create new run keys.
   Future<void> processNext() async {
+    if (_isDraining) {
+      _drainRequested = true;
+      return;
+    }
+
+    _isDraining = true;
+    try {
+      // Re-enter the drain loop when new work arrived while we were busy.
+      do {
+        _drainRequested = false;
+        await _drain();
+      } while (_drainRequested);
+    } finally {
+      _isDraining = false;
+    }
+  }
+
+  /// Single pass: dequeue and execute all ready jobs.
+  Future<void> _drain() async {
     final deferred = <WakeJob>[];
 
     try {

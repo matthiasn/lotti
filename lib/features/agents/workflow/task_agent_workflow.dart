@@ -494,9 +494,10 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 
     if (journalObservations.isNotEmpty) {
       buffer.writeln('## Your Prior Observations');
-      // Cap to last 20 to prevent unbounded context growth.
+      // Cap to most recent 20 to prevent unbounded context growth.
+      // journalObservations is ordered newest-first from the DB query.
       final recentObs = journalObservations.length > 20
-          ? journalObservations.sublist(journalObservations.length - 20)
+          ? journalObservations.sublist(0, 20)
           : journalObservations;
       for (final obs in recentObs) {
         final text = await _resolveObservationText(obs);
@@ -717,7 +718,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
 
     final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_$toolName',
+      id: 'agent_${toolName}_${_uuid.v4()}',
       type: ChatCompletionMessageToolCallType.function,
       function: ChatCompletionMessageFunctionCall(
         name: toolName,
@@ -801,7 +802,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     );
 
     final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_$toolName',
+      id: 'agent_${toolName}_${_uuid.v4()}',
       type: ChatCompletionMessageToolCallType.function,
       function: ChatCompletionMessageFunctionCall(
         name: toolName,
@@ -848,7 +849,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     );
 
     final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_$toolName',
+      id: 'agent_${toolName}_${_uuid.v4()}',
       type: ChatCompletionMessageToolCallType.function,
       function: ChatCompletionMessageFunctionCall(
         name: toolName,

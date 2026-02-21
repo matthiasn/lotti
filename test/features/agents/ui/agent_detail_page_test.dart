@@ -280,6 +280,51 @@ void main() {
       },
     );
 
+    testWidgets('shows "Unexpected entity type" for non-agent identity',
+        (tester) async {
+      // Return an agentState (non-agent) entity as identity.
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestState()),
+      );
+      await tester.pump();
+
+      expect(find.text('Unexpected entity type.'), findsOneWidget);
+    });
+
+    testWidgets('shows report error message when report fails', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          stateOverride: (ref, agentId) async => makeTestState(),
+          reportOverride: (ref, agentId) =>
+              Future<AgentDomainEntity?>.error(Exception('Report DB error')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Failed to load report'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows state error message when state fails', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          stateOverride: (ref, agentId) =>
+              Future<AgentDomainEntity?>.error(Exception('State DB error')),
+          reportOverride: (ref, agentId) async => null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Failed to load state'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows agent controls section', (tester) async {
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestIdentity()),

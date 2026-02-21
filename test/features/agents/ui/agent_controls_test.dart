@@ -241,6 +241,83 @@ void main() {
     );
 
     testWidgets(
+      'Destroyed state shows Delete permanently button',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(lifecycle: AgentLifecycle.destroyed),
+        );
+        await tester.pump();
+
+        expect(find.text('Delete permanently'), findsOneWidget);
+        expect(find.byIcon(Icons.delete_forever_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Delete permanently button shows confirmation dialog',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(lifecycle: AgentLifecycle.destroyed),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Delete permanently'));
+        await tester.pump();
+
+        expect(find.text('Delete Agent?'), findsOneWidget);
+        expect(
+          find.text(
+            'This will permanently delete all data for this agent, '
+            'including its history, reports, and observations. '
+            'This cannot be undone.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Delete dialog Cancel does not call deleteAgent',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(lifecycle: AgentLifecycle.destroyed),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Delete permanently'));
+        await tester.pump();
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pump();
+
+        verifyNever(() => mockAgentService.deleteAgent(any()));
+      },
+    );
+
+    testWidgets(
+      'Delete dialog Confirm calls deleteAgent',
+      (tester) async {
+        when(() => mockAgentService.deleteAgent(testAgentId))
+            .thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildSubject(lifecycle: AgentLifecycle.destroyed),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Delete permanently'));
+        await tester.pump();
+
+        // Tap the "Delete permanently" button in the dialog.
+        final deleteButtons = find.text('Delete permanently');
+        await tester.tap(deleteButtons.last);
+        await tester.pump();
+
+        verify(() => mockAgentService.deleteAgent(testAgentId)).called(1);
+      },
+    );
+
+    testWidgets(
       'shows no action buttons when lifecycle is created',
       (tester) async {
         await tester.pumpWidget(

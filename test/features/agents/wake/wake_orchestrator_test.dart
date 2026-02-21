@@ -945,6 +945,57 @@ void main() {
           expect(runner.isRunning('agent-1'), isFalse);
         });
       });
+
+      test('single-flight guard processes jobs enqueued during drain', () {
+        fakeAsync((async) {
+          // Use a completer to pause the first job mid-execution so we can
+          // enqueue a second job while the drain is in-flight.
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            executionCount++;
+            if (executionCount == 1) return gate.future;
+            return Future.value(null);
+          };
+
+          // Enqueue and start draining the first job.
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'test',
+              triggerTokens: {'tok-a'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Drain is blocked on gate. Enqueue a second job for a different
+          // agent and call processNext again — the guard should defer it.
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-2',
+              agentId: 'agent-2',
+              reason: 'test',
+              triggerTokens: {'tok-b'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Only the first job should have started so far.
+          expect(executionCount, 1);
+
+          // Complete the first job — the drain should pick up the second.
+          gate.complete(null);
+          async.flushMicrotasks();
+
+          expect(executionCount, 2);
+        });
+      });
     });
 
     group('enqueueManualWake', () {
