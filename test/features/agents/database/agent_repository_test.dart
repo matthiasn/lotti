@@ -338,6 +338,20 @@ void main() {
 
         expect(results, isEmpty);
       });
+
+      test('limit caps results without type filter', () async {
+        await repo.upsertEntity(makeAgent());
+        await repo.upsertEntity(makeAgentState());
+        await repo.upsertEntity(makeMessage());
+
+        final limited =
+            await repo.getEntitiesByAgentId(testAgentId, limit: 2);
+
+        expect(limited.length, 2);
+
+        final unlimited = await repo.getEntitiesByAgentId(testAgentId);
+        expect(unlimited.length, 3);
+      });
     });
 
     group('getAgentState', () {

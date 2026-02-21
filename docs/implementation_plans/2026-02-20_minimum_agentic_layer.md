@@ -1,7 +1,7 @@
 # Minimum Agentic Layer: Task Agent Implementation Plan
 
 Date: 2026-02-20
-Status: Phase 0A complete — all 8 sub-phases done, production wiring complete (320 tests passing, analyzer clean, zero warnings)
+Status: Phase 0A complete — all 8 sub-phases done, production wiring complete, code reviewed (run `make analyze` and `make test` to verify)
 Companion docs:
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer.md`
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer_formal_model.md`
@@ -952,11 +952,11 @@ lib/features/agents/
 | 0A-3: Wake Infrastructure | DONE | 4 source | 103 tests (42 orchestrator + 19 queue + 14 runner + 28 run_key) |
 | 0A-4: Tool Layer | DONE | 3 source | 52 tests |
 | 0A-5: Workflow | DONE | 2 source | 30 tests |
-| 0A-6: Service + Providers | DONE | 4 source + generated | 32 tests (19 agent_service + 13 task_agent_service) |
-| 0A-7: Agent Detail Page | DONE | 4 source | 56 widget tests |
-| 0A-8: Integration | DONE (step 39 deferred) | config flag + providers + UI wiring | — |
+| 0A-6: Service + Providers | DONE | 4 source + generated | 34 tests (19 agent_service + 15 task_agent_service) |
+| 0A-7: Agent Detail Page | DONE | 5 source | UI + date format tests |
+| 0A-8: Integration | DONE (step 39 deferred) | config flag + providers + UI wiring | 27 provider + task agent tests |
 
-**Total: ~389 passing tests, full-project analyzer clean (zero issues).**
+**Total: 525 passing tests, full-project analyzer clean (zero issues).**
 
 **Notable deviations from plan:**
 - Step 5 (`agent_tool_call.dart`) was not created as a separate file — tool call types are handled inline by the executor.
@@ -986,6 +986,10 @@ lib/features/agents/
 - `WakeQueue.clearHistory()` has a debug assertion that the queue is empty.
 - `enqueueManualWake` captures a single `clock.now()` into a local for both `RunKeyFactory.forManual` and `WakeJob.createdAt`.
 - `TaskAgentService.restoreSubscriptions` catches per-agent errors to avoid one broken agent blocking all others.
+- `TaskAgentService.restoreSubscriptionsForAgent(agentId)` added to restore subscriptions for a single agent after resume (called from `AgentControls._resumeAgent`).
+- `_MessageCard` uses `ValueKey(msg.id)` to preserve expansion state across list updates.
+- `agent_date_format.dart` provides shared `DateFormat`-based formatting utilities for the agent UI.
+- `agentInitializationProvider` registers `ref.onDispose` before async awaits to guarantee cleanup even if an await throws.
 
 ### Phase 0A-1: Database Schema and Models (Foundation)
 

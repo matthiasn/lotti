@@ -70,7 +70,7 @@ CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
 
 -- Named queries
 
-getAgentEntitiesByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND deleted_at IS NULL ORDER BY created_at DESC;
+getAgentEntitiesByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getAgentEntitiesByType: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = :type AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 

@@ -50,7 +50,7 @@ final class EntryControllerProvider
   }
 }
 
-String _$entryControllerHash() => r'c103626b7162d992a8d22eaec10260c1f96169a5';
+String _$entryControllerHash() => r'1e77f476477ec3f8de84135786e12ce8712455aa';
 
 final class EntryControllerFamily extends $Family
     with

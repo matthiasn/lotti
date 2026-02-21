@@ -165,6 +165,24 @@ class TaskAgentService {
     );
   }
 
+  /// Re-register wake subscriptions for a single agent.
+  ///
+  /// Call this after resuming a paused agent so that automatic
+  /// wake-on-task-change is restored for the current session.
+  Future<void> restoreSubscriptionsForAgent(String agentId) async {
+    final links = await repository.getLinksFrom(
+      agentId,
+      type: 'agent_task',
+    );
+    for (final link in links) {
+      _registerTaskSubscription(agentId, link.toId);
+    }
+    developer.log(
+      'Restored ${links.length} subscriptions for agent $agentId',
+      name: 'TaskAgentService',
+    );
+  }
+
   /// Re-register subscriptions for all active task agents.
   ///
   /// Called during app startup to restore orchestrator state from the database.

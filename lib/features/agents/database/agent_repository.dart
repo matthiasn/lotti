@@ -46,17 +46,21 @@ class AgentRepository {
     return AgentDbConversions.fromEntityRow(rows.first);
   }
 
-  /// Fetch all non-deleted entities for [agentId], optionally filtered by
-  /// [type] (the string value stored in the `type` column, e.g. `'agentMessage'`).
+  /// Fetch non-deleted entities for [agentId], optionally filtered by [type]
+  /// (the string value stored in the `type` column, e.g. `'agentMessage'`).
+  ///
+  /// Results are always sorted newest-first (`created_at DESC`). Pass [limit]
+  /// to cap the number of rows returned (defaults to unlimited).
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,
+    int limit = -1,
   }) async {
     final List<AgentEntity> rows;
     if (type != null) {
-      rows = await _db.getAgentEntitiesByType(agentId, type, -1).get();
+      rows = await _db.getAgentEntitiesByType(agentId, type, limit).get();
     } else {
-      rows = await _db.getAgentEntitiesByAgentId(agentId).get();
+      rows = await _db.getAgentEntitiesByAgentId(agentId, limit).get();
     }
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
