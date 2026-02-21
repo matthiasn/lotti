@@ -893,7 +893,13 @@ void main() {
           isA<DuplicateInsertException>()
               .having((e) => e.table, 'table', 'wake_run_log')
               .having((e) => e.key, 'key', 'run-key-001')
-              .having((e) => e.cause, 'cause', isNotNull),
+              .having((e) => e.cause, 'cause', isNotNull)
+              .having(
+                (e) => e.toString(),
+                'toString',
+                'DuplicateInsertException: duplicate key "run-key-001" '
+                    'in wake_run_log',
+              ),
         ),
       );
     });
