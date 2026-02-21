@@ -1437,6 +1437,61 @@ void main() {
         ).called(1);
       });
 
+      group('handler parse failures (getIt required)', () {
+        late MockLoggingService mockLoggingService;
+
+        setUp(() async {
+          await getIt.reset();
+          mockLoggingService = MockLoggingService();
+          getIt
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<LoggingService>(mockLoggingService);
+        });
+
+        tearDown(getIt.reset);
+
+        test(
+            'add_multiple_checklist_items with string items triggers '
+            'parse failure', () async {
+          // Items pass the wrapper's List type check but the handler
+          // rejects string entries — exercises processFunctionCall failure.
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":["Buy milk","Pay bills"]}',
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('must be an object'),
+              ),
+            ),
+          ).called(1);
+        });
+
+        test('update_checklist_items with missing id triggers parse failure',
+            () async {
+          // Items pass the wrapper's List/non-empty checks but the handler
+          // rejects missing "id" — exercises processFunctionCall failure.
+          final result = await executeWithToolCallOnRealTask(
+            'update_checklist_items',
+            '{"items":[{"isChecked":true}]}',
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('missing required "id"'),
+              ),
+            ),
+          ).called(1);
+        });
+      });
+
       test('update_task_estimate accepts numeric string minutes', () async {
         when(() => mockJournalRepository.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
