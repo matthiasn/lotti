@@ -1071,6 +1071,204 @@ void main() {
       });
     });
 
+    group('failedItems tracking', () {
+      test('tracks failures when addItemToChecklist returns null', () async {
+        final taskWithChecklist = TestDataFactory.createTask(
+          id: testTask.meta.id,
+          checklistIds: ['checklist-1'],
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'title': 'succeeds'},
+              {'title': 'fails'},
+              {'title': 'also fails'},
+            ],
+            'taskId': taskWithChecklist.meta.id,
+          },
+        );
+
+        when(() => mockJournalDb.journalEntityById(taskWithChecklist.meta.id))
+            .thenAnswer((_) async => taskWithChecklist);
+
+        var callIndex = 0;
+        when(() => mockChecklistRepository.addItemToChecklist(
+              checklistId: 'checklist-1',
+              title: any(named: 'title'),
+              isChecked: any(named: 'isChecked'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((invocation) async {
+          callIndex++;
+          if (callIndex == 1) {
+            return ChecklistItem(
+              meta: Metadata(
+                id: _uuid.v4(),
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                categoryId: 'test-category',
+              ),
+              data: ChecklistItemData(
+                title: invocation.namedArguments[#title] as String,
+                isChecked: false,
+                linkedChecklists: const [],
+              ),
+            );
+          }
+          return null; // Simulate creation failure
+        });
+
+        final count = await handler.createBatchItems(result);
+
+        expect(count, equals(1));
+        expect(handler.failedItems, hasLength(2));
+        expect(handler.failedItems[0].title, 'fails');
+        expect(handler.failedItems[0].reason, 'Creation returned null');
+        expect(handler.failedItems[1].title, 'also fails');
+      });
+
+      test('tracks failures when autoCreateChecklist fails', () async {
+        // Task with no checklists → uses autoCreateChecklist path
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'title': 'item A'},
+              {'title': 'item B'},
+            ],
+            'taskId': testTask.meta.id,
+          },
+        );
+
+        when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+            .thenAnswer((_) async => testTask);
+
+        when(() => mockAutoChecklistService.autoCreateChecklist(
+              taskId: testTask.meta.id,
+              suggestions: any(named: 'suggestions'),
+              title: 'TODOs',
+            )).thenAnswer((_) async => (
+              success: false,
+              checklistId: null,
+              createdItems: null,
+              error: 'DB error',
+            ));
+
+        final count = await handler.createBatchItems(result);
+
+        expect(count, equals(0));
+        expect(handler.failedItems, hasLength(2));
+        expect(handler.failedItems[0].title, 'item A');
+        expect(handler.failedItems[0].reason, 'Checklist creation failed');
+        expect(handler.failedItems[1].title, 'item B');
+      });
+
+      test('createToolResponse includes failure details on partial failure',
+          () async {
+        final taskWithChecklist = TestDataFactory.createTask(
+          id: testTask.meta.id,
+          checklistIds: ['checklist-1'],
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'title': 'succeeds'},
+              {'title': 'fails'},
+            ],
+            'taskId': taskWithChecklist.meta.id,
+          },
+        );
+
+        when(() => mockJournalDb.journalEntityById(taskWithChecklist.meta.id))
+            .thenAnswer((_) async => taskWithChecklist);
+
+        var callIndex = 0;
+        when(() => mockChecklistRepository.addItemToChecklist(
+              checklistId: 'checklist-1',
+              title: any(named: 'title'),
+              isChecked: any(named: 'isChecked'),
+              categoryId: any(named: 'categoryId'),
+            )).thenAnswer((invocation) async {
+          callIndex++;
+          if (callIndex == 1) {
+            return ChecklistItem(
+              meta: Metadata(
+                id: _uuid.v4(),
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                categoryId: 'test-category',
+              ),
+              data: ChecklistItemData(
+                title: invocation.namedArguments[#title] as String,
+                isChecked: false,
+                linkedChecklists: const [],
+              ),
+            );
+          }
+          return null;
+        });
+
+        await handler.createBatchItems(result);
+        final response = handler.createToolResponse(result);
+
+        expect(response, contains('Created 1 checklist item: "succeeds".'));
+        expect(
+            response, contains('Failed 1: "fails" (Creation returned null)'));
+      });
+
+      test('createToolResponse reports all failures when zero items created',
+          () async {
+        // autoCreateChecklist failure path → all items fail
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'add_multiple_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'title': 'item A'},
+            ],
+            'taskId': testTask.meta.id,
+          },
+        );
+
+        when(() => mockJournalDb.journalEntityById(testTask.meta.id))
+            .thenAnswer((_) async => testTask);
+
+        when(() => mockAutoChecklistService.autoCreateChecklist(
+              taskId: testTask.meta.id,
+              suggestions: any(named: 'suggestions'),
+              title: 'TODOs',
+            )).thenAnswer((_) async => (
+              success: false,
+              checklistId: null,
+              createdItems: null,
+              error: 'DB error',
+            ));
+
+        await handler.createBatchItems(result);
+        final response = handler.createToolResponse(result);
+
+        expect(
+          response,
+          'No checklist items were created. '
+          'Failed 1: "item A" (Checklist creation failed).',
+        );
+      });
+    });
+
     group('getRetryPrompt', () {
       test('should create retry prompt', () {
         // Arrange

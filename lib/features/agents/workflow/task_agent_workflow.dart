@@ -820,6 +820,11 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
       success: true,
       output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
+      // Surface creation failures so monitoring/auditing can detect them
+      // without failing the LLM call.
+      errorMessage: handler.failedItems.isNotEmpty
+          ? '${handler.failedItems.length} item(s) failed to be created'
+          : null,
     );
   }
 
