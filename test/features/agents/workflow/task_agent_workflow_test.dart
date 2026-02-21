@@ -15,8 +15,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../test_data/test_data.dart';
 
 /// Minimal mock of [ConversationRepository] that avoids Riverpod build().
 ///
@@ -165,15 +165,7 @@ void main() {
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
 
-    registerFallbackValue(
-      AgentDomainEntity.unknown(
-        id: 'fallback',
-        agentId: 'fallback',
-        createdAt: DateTime(2024, 3, 15),
-      ),
-    );
-    registerFallbackValue(AiConfigType.inferenceProvider);
-    registerFallbackValue(testTask as JournalEntity);
+    registerAllFallbackValues();
 
     when(() => mockAgentRepository.upsertEntity(any()))
         .thenAnswer((_) async => {});

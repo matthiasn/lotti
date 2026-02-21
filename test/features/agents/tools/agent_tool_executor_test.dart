@@ -388,6 +388,67 @@ void main() {
       });
     });
 
+    group('audit write resilience', () {
+      test('success result is preserved when post-success audit write fails',
+          () async {
+        // First upsertEntity call (action message) succeeds.
+        // Second call (toolResult message) throws.
+        var callCount = 0;
+        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 2) {
+            throw Exception('DB write failed');
+          }
+        });
+
+        final result = await executor.execute(
+          toolName: 'set_task_title',
+          args: {'title': 'New Title'},
+          targetEntityId: targetEntityId,
+          resolveCategoryId: (_) async => allowedCategoryId,
+          executeHandler: () async => const ToolExecutionResult(
+            success: true,
+            output: 'Title updated',
+            mutatedEntityId: targetEntityId,
+          ),
+          readVectorClock: (_) async => null,
+        );
+
+        // The original successful result must be returned unchanged.
+        expect(result.success, isTrue);
+        expect(result.output, equals('Title updated'));
+        expect(result.mutatedEntityId, equals(targetEntityId));
+      });
+
+      test('error result is preserved when post-exception audit write fails',
+          () async {
+        // First upsertEntity call (action message) succeeds.
+        // Second call (error toolResult message) throws.
+        var callCount = 0;
+        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 2) {
+            throw Exception('Audit DB also down');
+          }
+        });
+
+        final result = await executor.execute(
+          toolName: 'set_task_title',
+          args: {'title': 'New Title'},
+          targetEntityId: targetEntityId,
+          resolveCategoryId: (_) async => allowedCategoryId,
+          executeHandler: () async => throw Exception('Handler explosion'),
+          readVectorClock: (_) async => null,
+        );
+
+        // The original error result must be returned, not the audit write
+        // error.
+        expect(result.success, isFalse);
+        expect(result.output, contains('Handler explosion'));
+        expect(result.errorMessage, contains('Handler explosion'));
+      });
+    });
+
     group('operation ID determinism', () {
       test(
           'two executions with identical tool/args/target produce same '

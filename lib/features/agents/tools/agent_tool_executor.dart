@@ -232,15 +232,27 @@ class AgentToolExecutor {
       }
 
       // 5. Record result message.
-      await _recordMessage(
-        kind: AgentMessageKind.toolResult,
-        metadata: AgentMessageMetadata(
-          runKey: runKey,
-          toolName: toolName,
-          operationId: operationId,
-          errorMessage: result.errorMessage,
-        ),
-      );
+      //    Isolated in its own try/catch so an audit-write failure does not
+      //    mask or alter the original successful ToolExecutionResult.
+      try {
+        await _recordMessage(
+          kind: AgentMessageKind.toolResult,
+          metadata: AgentMessageMetadata(
+            runKey: runKey,
+            toolName: toolName,
+            operationId: operationId,
+            errorMessage: result.errorMessage,
+          ),
+        );
+      } catch (e, s) {
+        developer.log(
+          'Failed to persist toolResult audit message for $toolName '
+          '(runKey: $runKey, operationId: $operationId)',
+          name: 'AgentToolExecutor',
+          error: e,
+          stackTrace: s,
+        );
+      }
 
       developer.log(
         'Tool $toolName completed: success=${result.success}',
@@ -256,21 +268,35 @@ class AgentToolExecutor {
         stackTrace: s,
       );
 
-      await _recordMessage(
-        kind: AgentMessageKind.toolResult,
-        metadata: AgentMessageMetadata(
-          runKey: runKey,
-          toolName: toolName,
-          operationId: operationId,
-          errorMessage: e.toString(),
-        ),
-      );
-
-      return ToolExecutionResult(
+      final errorResult = ToolExecutionResult(
         success: false,
         output: 'Error: $e',
         errorMessage: e.toString(),
       );
+
+      // Persist the error audit message. Isolated in its own try/catch so
+      // an audit-write failure does not mask the original error result.
+      try {
+        await _recordMessage(
+          kind: AgentMessageKind.toolResult,
+          metadata: AgentMessageMetadata(
+            runKey: runKey,
+            toolName: toolName,
+            operationId: operationId,
+            errorMessage: e.toString(),
+          ),
+        );
+      } catch (auditError, auditStack) {
+        developer.log(
+          'Failed to persist error toolResult audit message for $toolName '
+          '(runKey: $runKey, operationId: $operationId)',
+          name: 'AgentToolExecutor',
+          error: auditError,
+          stackTrace: auditStack,
+        );
+      }
+
+      return errorResult;
     }
   }
 
