@@ -1,7 +1,7 @@
 # Explicit Agents Foundation Layer Plan
 
 Date: 2026-02-17
-Status: Approved for implementation; execution order locked (no production code changes yet)
+Status: Approved for implementation; Phase 0A complete (see `2026-02-20_minimum_agentic_layer.md` for implementation progress)
 Scope: Foundation layer for explicit local-first agents (lifecycle, state, memory, wake/alertness, sync-safe storage)
 
 ## Objective
