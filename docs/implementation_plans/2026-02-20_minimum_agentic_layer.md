@@ -157,6 +157,7 @@ Cross-domain write tracking (simplified for MVP):
 ```sql
 CREATE TABLE saga_log (
   operation_id TEXT NOT NULL PRIMARY KEY,
+  agent_id TEXT NOT NULL,
   run_key TEXT NOT NULL,
   phase TEXT NOT NULL,           -- 'journal_pending', 'journal_done', 'agent_done'
   status TEXT NOT NULL,          -- 'pending', 'completed', 'failed'
@@ -166,6 +167,7 @@ CREATE TABLE saga_log (
   updated_at DATETIME NOT NULL
 );
 
+CREATE INDEX idx_saga_log_agent ON saga_log(agent_id);
 CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
 ```
 
@@ -777,7 +779,7 @@ The agent has its own prompt, separate from the existing `taskSummaryPrompt` in
 
 ### 5.6 Report format
 
-The report is free-form markdown stored as `{"markdown": "<text>"}` in
+The report is free-form markdown stored as a plain `String` in
 `AgentReportEntity.content`. The format is not prescriptive — the LLM uses
 whatever headings, lists, and structure best describe the task's current state.
 A typical report might include sections like TLDR, Goal, Status, Achieved,
