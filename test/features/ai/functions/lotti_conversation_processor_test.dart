@@ -1012,19 +1012,19 @@ void main() {
 
       // The exception is caught inside createBatchItems (which logs and
       // returns 0), so the coalesced flush sends the normal tool response
-      // with an empty createdItems list rather than an error string.
+      // indicating no items were created rather than an error string.
       verify(() => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-1',
             response: any(
               named: 'response',
-              that: contains('"createdItems":[]'),
+              that: contains('No checklist items were created.'),
             ),
           )).called(1);
       verify(() => mockConversationManager.addToolResponse(
             toolCallId: 'tool-batch-2',
             response: any(
               named: 'response',
-              that: contains('"createdItems":[]'),
+              that: contains('No checklist items were created.'),
             ),
           )).called(1);
 

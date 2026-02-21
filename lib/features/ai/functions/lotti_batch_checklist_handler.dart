@@ -28,6 +28,7 @@ class LottiBatchChecklistHandler extends FunctionHandler {
   final Set<String> _createdDescriptions = {};
   final List<String> _successfulItems = [];
   final List<Map<String, dynamic>> _createdDetails = [];
+  final List<FailedItemDetail> _failedItems = [];
 
   @override
   String get functionName => 'add_multiple_checklist_items';
@@ -185,6 +186,7 @@ Do NOT recreate the items that were already successful.''';
         .toList();
     var successCount = 0;
     _createdDetails.clear();
+    _failedItems.clear();
 
     try {
       // Get current task state
@@ -236,6 +238,16 @@ Do NOT recreate the items that were already successful.''';
               task = refreshedEntity;
               onTaskUpdated?.call(refreshedEntity);
             }
+          } else {
+            // Checklist creation failed — record all items as failed.
+            for (final item in checklistItems) {
+              _failedItems.add(
+                FailedItemDetail(
+                  title: item.title,
+                  reason: 'Checklist creation failed',
+                ),
+              );
+            }
           }
         }
       } else {
@@ -262,6 +274,10 @@ Do NOT recreate the items that were already successful.''';
               'title': title,
               'isChecked': isChecked,
             });
+          } else {
+            _failedItems.add(
+              FailedItemDetail(title: title, reason: 'Creation returned null'),
+            );
           }
         }
 
@@ -297,11 +313,56 @@ Do NOT recreate the items that were already successful.''';
 
   List<String> get successfulItems => List.unmodifiable(_successfulItems);
 
+  /// Items that failed to be created during [createBatchItems].
+  List<FailedItemDetail> get failedItems => List.unmodifiable(_failedItems);
+
   @override
   String createToolResponse(FunctionCallResult result) {
-    if (result.success) {
-      return jsonEncode({'createdItems': _createdDetails});
+    if (!result.success) {
+      return 'Error creating checklist items: ${result.error}';
     }
-    return 'Error creating checklist items: ${result.error}';
+
+    if (_createdDetails.isEmpty) {
+      if (_failedItems.isNotEmpty) {
+        final failedTitles =
+            _failedItems.map((f) => '"${f.title}" (${f.reason})').join(', ');
+        return 'No checklist items were created. '
+            'Failed ${_failedItems.length}: $failedTitles.';
+      }
+      return 'No checklist items were created.';
+    }
+
+    final count = _createdDetails.length;
+    final titles = _createdDetails.map((d) => '"${d['title']}"').join(', ');
+
+    final checkedCount =
+        _createdDetails.where((d) => d['isChecked'] == true).length;
+    final checkedNote =
+        checkedCount > 0 ? ' ($checkedCount already checked)' : '';
+
+    final buffer = StringBuffer(
+      'Created $count checklist item${count == 1 ? '' : 's'}$checkedNote: $titles.',
+    );
+
+    if (_failedItems.isNotEmpty) {
+      final failedTitles =
+          _failedItems.map((f) => '"${f.title}" (${f.reason})').join(', ');
+      buffer.write(
+        ' Failed ${_failedItems.length}: $failedTitles.',
+      );
+    }
+
+    return buffer.toString();
   }
+}
+
+/// Details of an item that failed to be created.
+class FailedItemDetail {
+  const FailedItemDetail({
+    required this.title,
+    required this.reason,
+  });
+
+  final String title;
+  final String reason;
 }

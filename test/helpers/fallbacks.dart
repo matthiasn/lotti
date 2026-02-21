@@ -115,6 +115,18 @@ void registerAllFallbackValues() {
     ),
   );
 
+  // Agent domain entity variant fallbacks
+  registerFallbackValue(
+    AgentDomainEntity.unknown(
+      id: 'fallback-unknown',
+      agentId: 'fallback-unknown-agent',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    ),
+  );
+
+  // Enum fallbacks
+  registerFallbackValue(AiConfigType.inferenceProvider);
+
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);
   registerFallbackValue(Duration.zero);

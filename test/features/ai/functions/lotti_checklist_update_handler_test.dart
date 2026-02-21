@@ -890,18 +890,11 @@ void main() {
         await handler.executeUpdates(result);
 
         final response = handler.createToolResponse(result);
-        final decoded = jsonDecode(response) as Map<String, dynamic>;
 
-        expect(decoded['updatedItems'], isA<List<dynamic>>());
-        expect(decoded['skippedItems'], isA<List<dynamic>>());
-
-        final updated = (decoded['updatedItems'] as List<dynamic>).first
-            as Map<String, dynamic>;
-        expect(updated['id'], 'item-1');
-        expect(updated['isChecked'], true);
-        expect(updated['title'], 'Updated');
-        expect(updated['changes'], contains('isChecked'));
-        expect(updated['changes'], contains('title'));
+        expect(response, contains('Updated 1 item'));
+        expect(response, contains('"Updated"'));
+        expect(response, contains('isChecked'));
+        expect(response, contains('title'));
       });
 
       test('should create error response for failure', () {

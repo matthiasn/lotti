@@ -354,25 +354,37 @@ Please retry with the correct format.''';
 
   @override
   String createToolResponse(FunctionCallResult result) {
-    if (result.success) {
-      return jsonEncode({
-        'updatedItems': _updatedItems
-            .map((item) => {
-                  'id': item.id,
-                  'title': item.title,
-                  'isChecked': item.isChecked,
-                  'changes': item.changes,
-                })
-            .toList(),
-        'skippedItems': _skippedItems
-            .map((item) => {
-                  'id': item.id,
-                  'reason': item.reason,
-                })
-            .toList(),
-      });
+    if (!result.success) {
+      return 'Error updating checklist items: ${result.error}';
     }
-    return 'Error updating checklist items: ${result.error}';
+
+    final parts = <String>[];
+
+    if (_updatedItems.isNotEmpty) {
+      final descriptions = _updatedItems.map((item) {
+        final changeSummary = item.changes.join(' & ');
+        return '"${item.title}" ($changeSummary)';
+      }).join(', ');
+      parts.add(
+        'Updated ${_updatedItems.length} '
+        'item${_updatedItems.length == 1 ? '' : 's'}: $descriptions.',
+      );
+    }
+
+    if (_skippedItems.isNotEmpty) {
+      final reasons =
+          _skippedItems.map((item) => '${item.id}: ${item.reason}').join(', ');
+      parts.add(
+        'Skipped ${_skippedItems.length} '
+        'item${_skippedItems.length == 1 ? '' : 's'}: $reasons.',
+      );
+    }
+
+    if (parts.isEmpty) {
+      return 'No checklist items were updated or skipped.';
+    }
+
+    return parts.join(' ');
   }
 }
 
