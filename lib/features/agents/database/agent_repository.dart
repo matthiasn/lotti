@@ -46,13 +46,11 @@ class AgentRepository {
     return AgentDbConversions.fromEntityRow(rows.first);
   }
 
-  /// Fetch all non-deleted entities for [agentId], optionally filtered by
-  /// [type] (the string value stored in the `type` column, e.g.
-  /// `'agentMessage'`).
+  /// Fetch non-deleted entities for [agentId], optionally filtered by [type]
+  /// (the string value stored in the `type` column, e.g. `'agentMessage'`).
   ///
-  /// When [type] is provided, results are sorted newest-first (`created_at
-  /// DESC`). Pass [limit] to cap the number of rows returned (defaults to
-  /// unlimited).
+  /// Results are always sorted newest-first (`created_at DESC`). Pass [limit]
+  /// to cap the number of rows returned (defaults to unlimited).
   Future<List<AgentDomainEntity>> getEntitiesByAgentId(
     String agentId, {
     String? type,

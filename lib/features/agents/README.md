@@ -10,7 +10,7 @@ The agent feature is gated behind the `enableAgents` config flag. When disabled,
 
 1. **Observes** a single task's knowledge graph (the task itself, linked entries, checklists, time entries) from the journal domain in `db.sqlite`. The agent does not own this data.
 2. **Maintains** its internal operational state in a separate `agent.sqlite` database: reports, messages, wake history, and tool call records.
-3. **Produces** a persistent "task summary" report as free-form markdown, viewable without LLM recompute, rendered via `GptMarkdown`.
+3. **Produces** a persistent "task summary" report as free-form Markdown, viewable without LLM recompute, rendered via `GptMarkdown`.
 4. **Calls tools** to mutate journal-domain data via existing handlers (`TaskEstimateHandler`, `TaskDueDateHandler`, `TaskPriorityHandler`, `LottiBatchChecklistHandler`, `LottiChecklistUpdateHandler`, `TaskTitleHandler`).
 5. **Records observations** via the `record_observations` tool — private notes accumulated across wakes for longitudinal awareness.
 6. **Wakes incrementally**: sees what changed since its last wake, updates only what is affected, and persists its new state.
@@ -70,7 +70,7 @@ High-level agent lifecycle management:
 
 Riverpod providers for dependency injection:
 
-- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`. The `agentInitializationProvider` wires the workflow into the orchestrator and starts listening to `UpdateNotifications`.
+- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`. The `agentInitializationProvider` wires the workflow into the orchestrator and starts listening to `UpdateNotifications`.
 - **`task_agent_providers.dart`** — `keepAlive` provider for `TaskAgentService`, auto-disposed async provider for `taskAgent(taskId)`.
 
 ### UI (`ui/`)
@@ -78,7 +78,7 @@ Riverpod providers for dependency injection:
 Agent inspection interface:
 
 - **`agent_detail_page.dart`** — Full inspection page with report, activity log, state, and controls.
-- **`agent_report_section.dart`** — Renders free-form markdown report via `GptMarkdown`.
+- **`agent_report_section.dart`** — Renders free-form Markdown report via `GptMarkdown`.
 - **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Uses `ValueKey` per message to preserve expansion state across list updates.
 - **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
 - **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
@@ -94,7 +94,7 @@ On each wake, the LLM sees: system prompt + current report + all agentJournal ob
 
 ### Observation capture
 
-Observations are captured via the `record_observations` tool call during the conversation, not by parsing the LLM's text output. This is structurally reliable — the tool call arguments are always well-formed JSON, avoiding brittle regex parsing of markdown headings. The `TaskAgentStrategy` intercepts this tool locally (no `AgentToolExecutor` involvement since it doesn't modify journal entities) and accumulates observations in memory. After the conversation completes, `extractObservations()` returns the accumulated list for persistence.
+Observations are captured via the `record_observations` tool call during the conversation, not by parsing the LLM's text output. This is structurally reliable — the tool call arguments are always well-formed JSON, avoiding brittle regex parsing of Markdown headings. The `TaskAgentStrategy` intercepts this tool locally (no `AgentToolExecutor` involvement since it doesn't modify journal entities) and accumulates observations in memory. After the conversation completes, `extractObservations()` returns the accumulated list for persistence.
 
 ## Safety Boundaries
 
@@ -147,7 +147,7 @@ lib/features/agents/
 │   └── task_agent_providers.dart    # Task agent providers
 └── ui/
     ├── agent_detail_page.dart       # Inspection page
-    ├── agent_report_section.dart    # Markdown report renderer
+    ├── agent_report_section.dart    # Report renderer (Markdown)
     ├── agent_activity_log.dart      # Message log with expandable payloads
     ├── agent_controls.dart          # Action buttons
     └── agent_date_format.dart       # Shared date formatting utilities
@@ -164,9 +164,9 @@ Tests mirror the source structure under `test/features/agents/`:
 - **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`
 - **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture
 - **State tests** — Riverpod provider unit tests for agent report, state, identity, messages, payload text, initialization, and task agent lookup
-- **UI tests** — Widget tests for agent detail page, markdown report rendering, activity log, controls, date formatting
+- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting
 
-Total: 525 passing tests.
+Run `make test` to verify current test count and status.
 
 ## Deferred Items
 

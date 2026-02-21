@@ -650,7 +650,7 @@ final class AgentRecentMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentRecentMessagesHash() =>
-    r'6466b11233bdd295ff9781cf2b3d075158c8bd09';
+    r'b3ba2514f7114cce58a42c2b954c986d4818a086';
 
 /// Fetch recent messages for an agent by [agentId].
 ///
@@ -830,7 +830,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'5d799c5ac7cbc0932327282fffab0d39c48f20d2';
+String _$taskAgentWorkflowHash() => r'd4cd489d996f238b08950fc6390969276e05afa1';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
@@ -899,4 +899,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'f8b328251cc8648b2e09a49e66bef30ba2dc8e1c';
+    r'db7a4a8c04591a861cc2e82ccca2ac7712e90c22';

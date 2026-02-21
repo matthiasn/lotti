@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -18,6 +17,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -154,7 +154,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     aiInputRepository: ref.watch(aiInputRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-    journalDb: getIt<JournalDb>(),
+    journalDb: ref.watch(journalDbProvider),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
@@ -196,6 +196,7 @@ Future<void> agentInitialization(Ref ref) async {
 
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
+  final taskAgentService = ref.watch(taskAgentServiceProvider);
 
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
@@ -233,6 +234,5 @@ Future<void> agentInitialization(Ref ref) async {
   final updateNotifications = getIt<UpdateNotifications>();
   await orchestrator.start(updateNotifications.updateStream);
 
-  final taskAgentService = ref.watch(taskAgentServiceProvider);
   await taskAgentService.restoreSubscriptions();
 }

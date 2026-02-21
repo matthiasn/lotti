@@ -1,7 +1,7 @@
 # Minimum Agentic Layer: Task Agent Implementation Plan
 
 Date: 2026-02-20
-Status: Phase 0A complete — all 8 sub-phases done, production wiring complete, code reviewed (525 tests passing, analyzer clean, zero warnings)
+Status: Phase 0A complete — all 8 sub-phases done, production wiring complete, code reviewed (run `make analyze` and `make test` to verify)
 Companion docs:
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer.md`
 - `docs/implementation_plans/2026-02-17_explicit_agents_foundation_layer_formal_model.md`
