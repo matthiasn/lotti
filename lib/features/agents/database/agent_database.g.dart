@@ -2123,12 +2123,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
-  Selectable<AgentEntity> getAgentEntitiesByType(String agentId, String type) {
+  Selectable<AgentEntity> getAgentEntitiesByType(
+      String agentId, String type, int limit) {
     return customSelect(
-        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND deleted_at IS NULL ORDER BY created_at DESC',
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = ?2 AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?3',
         variables: [
           Variable<String>(agentId),
-          Variable<String>(type)
+          Variable<String>(type),
+          Variable<int>(limit)
         ],
         readsFrom: {
           agentEntities,

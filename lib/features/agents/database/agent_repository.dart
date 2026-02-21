@@ -45,7 +45,7 @@ class AgentRepository {
   }) async {
     final List<AgentEntity> rows;
     if (type != null) {
-      rows = await _db.getAgentEntitiesByType(agentId, type).get();
+      rows = await _db.getAgentEntitiesByType(agentId, type, -1).get();
     } else {
       rows = await _db.getAgentEntitiesByAgentId(agentId).get();
     }
@@ -57,7 +57,7 @@ class AgentRepository {
   ///
   /// Queries by `type = 'agentState'` and casts the first result.
   Future<AgentStateEntity?> getAgentState(String agentId) async {
-    final rows = await _db.getAgentEntitiesByType(agentId, 'agentState').get();
+    final rows = await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
     return entity.mapOrNull(agentState: (e) => e);
