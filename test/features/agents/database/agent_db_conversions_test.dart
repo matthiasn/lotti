@@ -157,6 +157,89 @@ void main() {
     });
   });
 
+  group('AgentDbConversions.toEntityCompanion — subtype population', () {
+    test('populates subtype with kind for agent entities', () {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: agentId,
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.subtype, const Value('task_agent'));
+    });
+
+    test('populates subtype with kind name for agentMessage entities', () {
+      final entity = AgentDomainEntity.agentMessage(
+        id: 'msg-1',
+        agentId: agentId,
+        threadId: 'thread-1',
+        kind: AgentMessageKind.observation,
+        createdAt: createdAt,
+        metadata: const AgentMessageMetadata(runKey: 'rk-1'),
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.subtype, const Value('observation'));
+    });
+
+    test('populates subtype with scope for agentReport entities', () {
+      final entity = AgentDomainEntity.agentReport(
+        id: 'report-1',
+        agentId: agentId,
+        scope: 'weekly',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.subtype, const Value('weekly'));
+    });
+
+    test('populates subtype with scope for agentReportHead entities', () {
+      final entity = AgentDomainEntity.agentReportHead(
+        id: 'head-1',
+        agentId: agentId,
+        scope: 'daily',
+        reportId: 'report-1',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.subtype, const Value('daily'));
+    });
+
+    test('leaves subtype absent for agentState entities', () {
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: agentId,
+        revision: 1,
+        slots: const AgentSlots(),
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.subtype, const Value<String?>.absent());
+    });
+  });
+
   group('AgentDbConversions.toEntityCompanion — thread_id population', () {
     test('populates threadId for agentMessage entities', () {
       final message = AgentDomainEntity.agentMessage(

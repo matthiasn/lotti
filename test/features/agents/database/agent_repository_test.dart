@@ -568,6 +568,75 @@ void main() {
         final result = await repo.getReportHead(testAgentId, 'daily');
         expect(result, isNull);
       });
+
+      test('returns correct head when multiple scopes exist', () async {
+        await repo.upsertEntity(makeReportHead(
+          id: 'head-daily',
+          reportId: 'report-daily',
+        ));
+        await repo.upsertEntity(makeReportHead(
+          id: 'head-weekly',
+          scope: 'weekly',
+          reportId: 'report-weekly',
+        ));
+        await repo.upsertEntity(makeReportHead(
+          id: 'head-monthly',
+          scope: 'monthly',
+          reportId: 'report-monthly',
+        ));
+
+        final daily = await repo.getReportHead(testAgentId, 'daily');
+        final weekly = await repo.getReportHead(testAgentId, 'weekly');
+        final monthly = await repo.getReportHead(testAgentId, 'monthly');
+
+        expect(daily, isNotNull);
+        expect(daily!.reportId, 'report-daily');
+        expect(weekly, isNotNull);
+        expect(weekly!.reportId, 'report-weekly');
+        expect(monthly, isNotNull);
+        expect(monthly!.reportId, 'report-monthly');
+      });
+
+      test('does not return head from a different agent', () async {
+        await repo.upsertEntity(makeReportHead(
+          id: 'head-agent-1',
+          reportId: 'report-1',
+        ));
+        await repo.upsertEntity(
+          AgentDomainEntity.agentReportHead(
+            id: 'head-agent-2',
+            agentId: otherAgentId,
+            scope: 'daily',
+            reportId: 'report-2',
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        final result = await repo.getReportHead(testAgentId, 'daily');
+        final otherResult = await repo.getReportHead(otherAgentId, 'daily');
+
+        expect(result, isNotNull);
+        expect(result!.reportId, 'report-1');
+        expect(otherResult, isNotNull);
+        expect(otherResult!.reportId, 'report-2');
+      });
+
+      test('subtype column stores scope for indexed lookup', () async {
+        await repo.upsertEntity(makeReportHead());
+
+        // Verify the raw row has subtype = 'daily' (the indexed column).
+        final rows = await db
+            .getAgentEntitiesByTypeAndSubtype(
+              testAgentId,
+              'agentReportHead',
+              'daily',
+              1,
+            )
+            .get();
+        expect(rows, hasLength(1));
+        expect(rows.first.subtype, 'daily');
+      });
     });
   });
 

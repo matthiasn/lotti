@@ -116,11 +116,14 @@ class AgentDbConversions {
 
   /// Extract the subtype for the `agent_entities.subtype` column.
   ///
-  /// Returns the message kind name for [AgentMessageEntity], `null` for all
-  /// other variants.
+  /// Populates the subtype for variants that have a natural sub-classification,
+  /// enabling indexed lookups via `idx_agent_entities_agent_type_sub`.
   static String? entitySubtype(AgentDomainEntity entity) {
     return entity.mapOrNull(
+      agent: (a) => a.kind,
       agentMessage: (msg) => msg.kind.name,
+      agentReport: (report) => report.scope,
+      agentReportHead: (head) => head.scope,
     );
   }
 

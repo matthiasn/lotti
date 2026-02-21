@@ -126,14 +126,12 @@ class AgentRepository {
     String agentId,
     String scope,
   ) async {
-    final rows =
-        await _db.getAgentEntitiesByType(agentId, 'agentReportHead').get();
-    for (final row in rows) {
-      final entity = AgentDbConversions.fromEntityRow(row);
-      final head = entity.mapOrNull(agentReportHead: (e) => e);
-      if (head != null && head.scope == scope) return head;
-    }
-    return null;
+    final rows = await _db
+        .getAgentEntitiesByTypeAndSubtype(agentId, 'agentReportHead', scope, 1)
+        .get();
+    if (rows.isEmpty) return null;
+    final entity = AgentDbConversions.fromEntityRow(rows.first);
+    return entity.mapOrNull(agentReportHead: (e) => e);
   }
 
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
