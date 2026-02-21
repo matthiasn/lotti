@@ -89,6 +89,8 @@ class WakeOrchestrator {
   /// kept in-memory (reset on app restart) since persistence is not required
   /// — the counter only needs to be unique within a single orchestrator
   /// lifecycle.
+  final _wakeCounters = <String, int>{};
+
   /// Single-flight guard for [processNext].
   ///
   /// Prevents overlapping drain loops that could clear queue history while
@@ -99,8 +101,6 @@ class WakeOrchestrator {
 
   /// Set when a drain is requested while one is already in progress.
   bool _drainRequested = false;
-
-  final _wakeCounters = <String, int>{};
 
   /// Self-notification suppression state.
   ///
@@ -429,7 +429,7 @@ class WakeOrchestrator {
           'No wakeExecutor set — marking run ${job.runKey} as failed',
           name: 'WakeOrchestrator',
         );
-        await repository.updateWakeRunStatus(
+        await _safeUpdateStatus(
           job.runKey,
           'failed',
           errorMessage: 'No wake executor registered',
@@ -462,7 +462,7 @@ class WakeOrchestrator {
           _recentlyMutatedEntries.remove(job.agentId);
         }
 
-        await repository.updateWakeRunStatus(
+        await _safeUpdateStatus(
           job.runKey,
           'completed',
           completedAt: clock.now(),
@@ -472,7 +472,7 @@ class WakeOrchestrator {
           'Wake executor failed for run ${job.runKey}: $e',
           name: 'WakeOrchestrator',
         );
-        await repository.updateWakeRunStatus(
+        await _safeUpdateStatus(
           job.runKey,
           'failed',
           errorMessage: e.toString(),
@@ -480,6 +480,29 @@ class WakeOrchestrator {
       }
     } finally {
       runner.release(job.agentId);
+    }
+  }
+
+  /// Update wake run status, swallowing any DB errors so they don't escape
+  /// `_executeJob` / `_drain` / `processNext`.
+  Future<void> _safeUpdateStatus(
+    String runKey,
+    String status, {
+    DateTime? completedAt,
+    String? errorMessage,
+  }) async {
+    try {
+      await repository.updateWakeRunStatus(
+        runKey,
+        status,
+        completedAt: completedAt,
+        errorMessage: errorMessage,
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to update wake run status for $runKey to $status: $e',
+        name: 'WakeOrchestrator',
+      );
     }
   }
 }

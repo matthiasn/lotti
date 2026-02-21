@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:mocktail/mocktail.dart';
@@ -102,8 +103,21 @@ void registerAllFallbackValues() {
     ),
   );
 
+  // Agent config fallback
+  registerFallbackValue(const AgentConfig());
+
+  // Agent subscription fallback
+  registerFallbackValue(
+    AgentSubscription(
+      id: 'fallback-sub',
+      agentId: 'fallback-agent',
+      matchEntityIds: const {},
+    ),
+  );
+
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);
   registerFallbackValue(Duration.zero);
   registerFallbackValue(Uri());
+  registerFallbackValue(<String>{});
 }

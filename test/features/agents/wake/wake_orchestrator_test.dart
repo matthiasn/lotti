@@ -586,6 +586,8 @@ void main() {
         });
       });
 
+      // Uses real async (not fakeAsync) because StreamSubscription.cancel()
+      // on broadcast streams does not resolve within fakeAsync.flushMicrotasks.
       test('start replaces previous subscription when called twice', () async {
         orchestrator.addSubscription(
           AgentSubscription(
@@ -599,19 +601,19 @@ void main() {
         final controller2 = StreamController<Set<String>>.broadcast();
 
         await orchestrator.start(controller1.stream);
-        // Calling start again should cancel the first subscription.
+        // Calling start again cancels the first subscription.
         await orchestrator.start(controller2.stream);
 
         // Emit on the old stream — should NOT trigger a wake.
         controller1.add({'entity-1'});
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         verifyNever(
           () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
         );
 
         // Emit on the new stream — should trigger a wake.
         controller2.add({'entity-1'});
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         verify(
           () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
         ).called(1);
@@ -1248,6 +1250,116 @@ void main() {
           // the subscription job should have been suppressed at re-check.
           expect(captured.length, 1);
           expect(captured.first.reason, 'manual');
+        });
+      });
+
+      test('continues drain when updateWakeRunStatus throws on completion', () {
+        fakeAsync((async) {
+          var executorCallCount = 0;
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async {
+            executorCallCount++;
+            return null;
+          };
+
+          // Make updateWakeRunStatus throw on the first call (completion
+          // status update for agent-1) but succeed on the second (agent-2).
+          var updateCallCount = 0;
+          when(
+            () => mockRepository.updateWakeRunStatus(
+              any(),
+              any(),
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).thenAnswer((_) async {
+            updateCallCount++;
+            if (updateCallCount == 1) throw Exception('DB write failed');
+          });
+
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-1',
+                agentId: 'agent-1',
+                reason: 'subscription',
+                triggerTokens: {'tok-a'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                reason: 'subscription',
+                triggerTokens: {'tok-b'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Both executors should have run despite the status update failure.
+          expect(executorCallCount, 2);
+          // Both locks should be released.
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(runner.isRunning('agent-2'), isFalse);
+        });
+      });
+
+      test('continues drain when updateWakeRunStatus throws on failure', () {
+        fakeAsync((async) {
+          // Executor throws for agent-1; the subsequent updateWakeRunStatus
+          // ('failed') also throws. Agent-2 should still be processed.
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async {
+            if (agentId == 'agent-1') throw Exception('Executor error');
+            return null;
+          };
+
+          var updateCallCount = 0;
+          when(
+            () => mockRepository.updateWakeRunStatus(
+              any(),
+              any(),
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).thenAnswer((_) async {
+            updateCallCount++;
+            // First update is for agent-1's 'failed' status — throw.
+            if (updateCallCount == 1) throw Exception('DB write failed');
+          });
+
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-1',
+                agentId: 'agent-1',
+                reason: 'subscription',
+                triggerTokens: {'tok-a'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                reason: 'subscription',
+                triggerTokens: {'tok-b'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Both locks should be released.
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(runner.isRunning('agent-2'), isFalse);
+          // Agent-2's status update should have succeeded.
+          expect(updateCallCount, 2);
         });
       });
 

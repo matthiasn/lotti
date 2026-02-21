@@ -12,18 +12,7 @@ import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 void main() {
-  setUpAll(() {
-    registerAllFallbackValues();
-    registerFallbackValue(
-      AgentSubscription(
-        id: 'fallback-sub',
-        agentId: 'fallback-agent',
-        matchEntityIds: const {},
-      ),
-    );
-    registerFallbackValue(const AgentConfig());
-    registerFallbackValue(<String>{});
-  });
+  setUpAll(registerAllFallbackValues);
 
   late MockAgentService mockAgentService;
   late MockAgentRepository mockRepository;
