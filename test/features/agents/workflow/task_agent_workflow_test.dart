@@ -1888,14 +1888,14 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          // The response should contain skippedItems since task has no
+          // The response should mention skipped items since task has no
           // checklists.
           verify(
             () => mockConversationManager.addToolResponse(
               toolCallId: 'tc-update',
               response: any(
                 named: 'response',
-                that: contains('skippedItems'),
+                that: contains('Skipped'),
               ),
             ),
           ).called(1);

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -446,15 +444,13 @@ void main() {
         // Assert (creation happened; focus on payload correctness)
         expect(count >= 0, true);
 
-        // Lightweight integration check for createdItems payload
+        // Lightweight integration check for tool response
         final toolResponse = handler.createToolResponse(result);
-        final decoded = jsonDecode(toolResponse) as Map<String, dynamic>;
-        final created =
-            (decoded['createdItems'] as List).cast<Map<String, dynamic>>();
-        expect(created.length, 3);
-        expect(created.map((e) => e['title']).toList(),
-            ['cheese', 'tomatoes', 'pepperoni']);
-        expect(created.every((e) => e['isChecked'] == false), true);
+        expect(
+          toolResponse,
+          'Created 3 checklist items: '
+          '"cheese", "tomatoes", "pepperoni".',
+        );
 
         // Verify the checklist was created with correct items
         final capturedCall =
@@ -545,15 +541,13 @@ void main() {
               isChecked: false,
               categoryId: any(named: 'categoryId'),
             )).called(1);
-        // Lightweight integration check for createdItems payload
+        // Lightweight integration check for tool response
         final toolResponse = handler.createToolResponse(result);
-        final decoded = jsonDecode(toolResponse) as Map<String, dynamic>;
-        final created =
-            (decoded['createdItems'] as List).cast<Map<String, dynamic>>();
-        expect(created.length, 3);
-        expect(created.map((e) => e['title']).toList(),
-            ['cheese', 'tomatoes', 'pepperoni']);
-        expect(created.every((e) => e['isChecked'] == false), true);
+        expect(
+          toolResponse,
+          'Created 3 checklist items: '
+          '"cheese", "tomatoes", "pepperoni".',
+        );
       });
 
       test('createdItems should include isChecked state when provided',
@@ -610,14 +604,10 @@ void main() {
 
         // Assert
         final toolResponse = handler.createToolResponse(result);
-        final decoded = jsonDecode(toolResponse) as Map<String, dynamic>;
-        final created =
-            (decoded['createdItems'] as List).cast<Map<String, dynamic>>();
-        expect(created.length, 2);
-        expect(created.map((e) => e['title']).toList(), ['done', 'todo']);
-        // First is checked, second is not
-        expect(created[0]['isChecked'], true);
-        expect(created[1]['isChecked'], false);
+        expect(
+          toolResponse,
+          'Created 2 checklist items (1 already checked): "done", "todo".',
+        );
       });
 
       test('should create all provided items (no de-dup)', () async {
@@ -1058,7 +1048,7 @@ void main() {
         final response = handler.createToolResponse(result);
 
         // Assert
-        expect(response, contains('"createdItems"'));
+        expect(response, contains('Created 2 checklist items'));
       });
 
       test('should create error response', () {

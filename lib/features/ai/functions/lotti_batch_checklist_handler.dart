@@ -299,9 +299,22 @@ Do NOT recreate the items that were already successful.''';
 
   @override
   String createToolResponse(FunctionCallResult result) {
-    if (result.success) {
-      return jsonEncode({'createdItems': _createdDetails});
+    if (!result.success) {
+      return 'Error creating checklist items: ${result.error}';
     }
-    return 'Error creating checklist items: ${result.error}';
+
+    if (_createdDetails.isEmpty) {
+      return 'No checklist items were created.';
+    }
+
+    final count = _createdDetails.length;
+    final titles = _createdDetails.map((d) => '"${d['title']}"').join(', ');
+
+    final checkedCount =
+        _createdDetails.where((d) => d['isChecked'] == true).length;
+    final checkedNote =
+        checkedCount > 0 ? ' ($checkedCount already checked)' : '';
+
+    return 'Created $count checklist item${count == 1 ? '' : 's'}$checkedNote: $titles.';
   }
 }
