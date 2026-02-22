@@ -648,4 +648,64 @@ void main() {
       });
     });
   });
+
+  group('localUpdateStream', () {
+    test('emits for local notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final localEmitted = <Set<String>>[];
+        updateNotifications.localUpdateStream.listen(localEmitted.add);
+
+        updateNotifications.notify({'local-1'});
+        async.elapse(
+          const Duration(milliseconds: _TestConstants.regularTimerDelay),
+        );
+
+        expect(localEmitted, hasLength(1));
+        expect(localEmitted.first, contains('local-1'));
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('does NOT emit for sync-originated notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final localEmitted = <Set<String>>[];
+        final allEmitted = <Set<String>>[];
+        updateNotifications.localUpdateStream.listen(localEmitted.add);
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        updateNotifications.notify({'sync-1'}, fromSync: true);
+        async.elapse(
+          const Duration(milliseconds: _TestConstants.syncTimerDelay),
+        );
+
+        // updateStream receives sync notifications.
+        expect(allEmitted, hasLength(1));
+        expect(allEmitted.first, contains('sync-1'));
+
+        // localUpdateStream must NOT receive sync notifications.
+        expect(localEmitted, isEmpty);
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('closed on dispose', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        var done = false;
+        updateNotifications.localUpdateStream.listen(
+          (_) {},
+          onDone: () => done = true,
+        );
+
+        unawaited(updateNotifications.dispose());
+        async.flushMicrotasks();
+
+        expect(done, isTrue);
+      });
+    });
+  });
 }

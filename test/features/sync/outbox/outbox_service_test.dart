@@ -15,6 +15,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -3790,6 +3794,86 @@ void main() {
       final themingMsg = decodedMessage as SyncThemingSelection;
       expect(themingMsg.lightThemeName, 'Light');
       expect(themingMsg.darkThemeName, 'Dark');
+    });
+
+    test('SyncAgentEntity enqueues with correct subject', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-xyz',
+        agentId: 'agent-xyz',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'agentEntity:agent-xyz');
+
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncAgentEntity'),
+            contains('subject=agentEntity:agent-xyz'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
+    });
+
+    test('SyncAgentLink enqueues with correct subject', () async {
+      final link = AgentLink.agentTask(
+        id: 'link-abc',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'agentLink:link-abc');
+
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncAgentLink'),
+            contains('subject=agentLink:link-abc'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
   });
 }

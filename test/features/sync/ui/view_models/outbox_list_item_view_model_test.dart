@@ -185,5 +185,106 @@ void main() {
         capturedContext.messages.syncPayloadBackfillResponse,
       );
     });
+    testWidgets('shows agent entity payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 12,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        message: jsonEncode({
+          'runtimeType': 'agentEntity',
+          'agentEntity': {
+            'runtimeType': 'agent',
+            'id': 'entity-001',
+            'agentId': 'agent-001',
+            'kind': 'task_agent',
+            'displayName': 'Test Agent',
+            'lifecycle': 'active',
+            'mode': 'autonomous',
+            'allowedCategoryIds': <String>[],
+            'currentStateId': 'state-001',
+            'config': <String, dynamic>{},
+            'createdAt': '2024-01-01T00:00:00.000',
+            'updatedAt': '2024-01-01T00:00:00.000',
+          },
+          'status': 'update',
+        }),
+        subject: 'agentEntity:entity-001',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadAgentEntity,
+      );
+    });
+
+    testWidgets('shows agent link payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 13,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        message: jsonEncode({
+          'runtimeType': 'agentLink',
+          'agentLink': {
+            'runtimeType': 'basic',
+            'id': 'link-001',
+            'fromId': 'agent-001',
+            'toId': 'entity-001',
+            'createdAt': '2024-01-01T00:00:00.000',
+            'updatedAt': '2024-01-01T00:00:00.000',
+          },
+          'status': 'update',
+        }),
+        subject: 'agentLink:link-001',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadAgentLink,
+      );
+    });
   });
 }

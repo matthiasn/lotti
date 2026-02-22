@@ -75,7 +75,7 @@ class ToolExecutionResult {
 ///
 /// ```dart
 /// final executor = AgentToolExecutor(
-///   repository: agentRepo,
+///   syncService: agentSyncService,
 ///   allowedCategoryIds: {'cat-id-1'},
 ///   runKey: 'abc123',
 ///   agentId: 'agent-uuid',

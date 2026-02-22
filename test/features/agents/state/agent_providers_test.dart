@@ -7,10 +7,15 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart'
+    show outboxServiceProvider;
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,6 +23,8 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 void main() {
   setUpAll(() {
@@ -44,6 +51,23 @@ void main() {
     addTearDown(container.dispose);
     return container;
   }
+
+  group('agentSyncServiceProvider', () {
+    test('creates AgentSyncService with correct dependencies', () async {
+      final mockOutboxService = MockOutboxService();
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final syncService = container.read(agentSyncServiceProvider);
+
+      expect(syncService, isA<AgentSyncService>());
+    });
+  });
 
   group('agentReportProvider', () {
     test('returns report entity when service finds one', () async {
@@ -1102,6 +1126,43 @@ void main() {
         ).called(2);
       },
     );
+
+    test('wires orchestrator into SyncEventProcessor when registered',
+        () async {
+      final mockProcessor = _MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockProcessor.wakeOrchestrator = mockOrchestrator).called(1);
+    });
+
+    test('clears SyncEventProcessor orchestrator on dispose', () async {
+      final mockProcessor = _MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+
+      await container.read(agentInitializationProvider.future);
+
+      sub.close();
+      container.dispose();
+
+      verify(() => mockProcessor.wakeOrchestrator = null).called(1);
+    });
 
     test('stops orchestrator on dispose', () async {
       final container = createInitContainer(enableAgents: true);

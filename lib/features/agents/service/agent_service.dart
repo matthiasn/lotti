@@ -13,7 +13,8 @@ import 'package:uuid/uuid.dart';
 /// High-level agent lifecycle management.
 ///
 /// Provides operations for creating, listing, pausing, resuming, and destroying
-/// agents. Each mutation persists to [AgentRepository] and, where relevant,
+/// agents. Each mutation writes via [AgentSyncService] (which enqueues changes
+/// for cross-device sync) and reads via [AgentRepository]. Where relevant, it
 /// updates the [WakeOrchestrator]'s subscription state so that wake triggers
 /// are registered or withdrawn immediately.
 class AgentService {
