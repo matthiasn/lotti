@@ -44,6 +44,29 @@
   "agentControlsPauseButton": "Pausieren",
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
+  "agentConversationEmpty": "Noch keine Konversationen.",
+  "agentConversationThreadHeader": "Wake {runKey}",
+  "@agentConversationThreadHeader": {
+    "placeholders": {
+      "runKey": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationThreadSummary": "{messageCount} Nachrichten, {toolCallCount} Tool-Aufrufe · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Fehler beim Laden des Agenten: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -75,6 +98,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "Noch keine Beobachtungen aufgezeichnet.",
   "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {
@@ -83,7 +107,11 @@
       }
     }
   },
+  "agentReportHistoryBadge": "Bericht",
+  "agentReportHistoryEmpty": "Noch keine Berichts-Snapshots.",
+  "agentReportHistoryError": "Fehler beim Laden der Berichtshistorie.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentRunningIndicator": "Läuft",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
   "@agentStateErrorLoading": {
@@ -99,6 +127,11 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Schlafend bis",
   "agentStateWakeCount": "Aufwachzähler",
+  "agentTabActivity": "Aktivität",
+  "agentTabConversations": "Konversationen",
+  "agentTabObservations": "Beobachtungen",
+  "agentTabReports": "Berichte",
+  "agentThreadReportLabel": "Bericht aus diesem Wake-Zyklus",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",
   "aiAssistantSummarizeTask": "Aufgabe zusammenfassen",

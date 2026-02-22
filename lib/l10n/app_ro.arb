@@ -44,6 +44,29 @@
   "agentControlsPauseButton": "Pauză",
   "agentControlsReanalyzeButton": "Reanalizează",
   "agentControlsResumeButton": "Reia",
+  "agentConversationEmpty": "Nicio conversație încă.",
+  "agentConversationThreadHeader": "Trezire {runKey}",
+  "@agentConversationThreadHeader": {
+    "placeholders": {
+      "runKey": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationThreadSummary": "{messageCount} mesaje, {toolCallCount} apeluri de instrumente · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Eroare la încărcarea agentului: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -75,6 +98,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "Nu au fost înregistrate observații încă.",
   "agentReportErrorLoading": "Eroare la încărcarea raportului: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {
@@ -83,7 +107,11 @@
       }
     }
   },
+  "agentReportHistoryBadge": "Raport",
+  "agentReportHistoryEmpty": "Nu există încă instantanee ale raportului.",
+  "agentReportHistoryError": "A apărut o eroare la încărcarea istoricului rapoartelor.",
   "agentReportNone": "Niciun raport disponibil încă.",
+  "agentRunningIndicator": "În execuție",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
   "@agentStateErrorLoading": {
@@ -99,6 +127,11 @@
   "agentStateRevision": "Revizie",
   "agentStateSleepingUntil": "Doarme până la",
   "agentStateWakeCount": "Număr de treziri",
+  "agentTabActivity": "Activitate",
+  "agentTabConversations": "Conversații",
+  "agentTabObservations": "Observații",
+  "agentTabReports": "Rapoarte",
+  "agentThreadReportLabel": "Raport generat în acest ciclu",
   "aiAssistantActionItemSuggestions": "Sugestii de acțiuni",
   "aiAssistantAnalyzeImage": "Analizează imaginea",
   "aiAssistantSummarizeTask": "Rezumă sarcina",

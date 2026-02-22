@@ -127,6 +127,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentControlsResumeButton => 'Fortsetzen';
 
   @override
+  String get agentConversationEmpty => 'Noch keine Konversationen.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Wake $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount Nachrichten, $toolCallCount Tool-Aufrufe · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Fehler beim Laden des Agenten: $error';
   }
@@ -182,12 +196,29 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty =>
+      'Noch keine Beobachtungen aufgezeichnet.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Bericht konnte nicht geladen werden: $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Bericht';
+
+  @override
+  String get agentReportHistoryEmpty => 'Noch keine Berichts-Snapshots.';
+
+  @override
+  String get agentReportHistoryError =>
+      'Fehler beim Laden der Berichtshistorie.';
+
+  @override
   String get agentReportNone => 'Noch kein Bericht verfügbar.';
+
+  @override
+  String get agentRunningIndicator => 'Läuft';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';
@@ -214,6 +245,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Aufwachzähler';
+
+  @override
+  String get agentTabActivity => 'Aktivität';
+
+  @override
+  String get agentTabConversations => 'Konversationen';
+
+  @override
+  String get agentTabObservations => 'Beobachtungen';
+
+  @override
+  String get agentTabReports => 'Berichte';
+
+  @override
+  String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Vorschläge für Aktionspunkte';

@@ -41,11 +41,14 @@ import 'package:uuid/uuid.dart';
 /// 3. Resolve a Gemini inference provider from the AI config database.
 /// 4. Assemble conversation context (system prompt + user message).
 /// 5. Create a [ConversationRepository] conversation with tool definitions.
-/// 6. Persist the final assistant response as a thought message.
-/// 7. Extract and persist the updated report (from `update_report` tool call).
-/// 8. Persist new observation notes (agentJournal entries).
-/// 9. Persist updated agent state (revision, wake counter, failure count).
-/// 10. Clean up the in-memory conversation in a `finally` block.
+/// 6. Persist the user message as an [AgentMessageKind.user] entity for
+///    inspectability (non-fatal if it fails).
+/// 7. Invoke the LLM and execute tool calls via [AgentToolExecutor].
+/// 8. Persist the final assistant response as a thought message.
+/// 9. Extract and persist the updated report (from `update_report` tool call).
+/// 10. Persist new observation notes (agentJournal entries).
+/// 11. Persist updated agent state (revision, wake counter, failure count).
+/// 12. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
@@ -168,6 +171,39 @@ class TaskAgentWorkflow {
     // and failure paths) so causality tracking is consistent.
     final now = clock.now();
 
+    // 5a. Persist the user message for inspectability before sending to LLM.
+    try {
+      final userPayloadId = _uuid.v4();
+      await agentRepository.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: userPayloadId,
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: <String, Object?>{'text': userMessage},
+        ),
+      );
+      await agentRepository.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.user,
+          createdAt: now,
+          vectorClock: null,
+          contentEntryId: userPayloadId,
+          metadata: AgentMessageMetadata(runKey: runKey),
+        ),
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to persist user message for agent $agentId',
+        name: 'TaskAgentWorkflow',
+        error: e,
+      );
+      // Non-fatal: continue with execution even if audit fails.
+    }
+
     try {
       final executor = AgentToolExecutor(
         repository: agentRepository,
@@ -272,6 +308,7 @@ class TaskAgentWorkflow {
               createdAt: now,
               vectorClock: null,
               content: reportContent,
+              threadId: threadId,
             ),
           );
 
@@ -472,7 +509,9 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
 - Use `record_observations` to record private notes worth remembering for
-  future wakes (patterns, insights, failure notes). Do NOT embed observations
+  future wakes. Keep observations short — only noteworthy highlights:
+  blockers, scope changes, missed estimates, key decisions. Skip routine
+  progress that the report already captures. Do NOT embed observations
   in the report text — always use the tool.
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
@@ -513,7 +552,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
 
     if (journalObservations.isNotEmpty) {
-      buffer.writeln('## Your Prior Observations');
+      buffer.writeln('## Agent Journal');
       // Cap to most recent 20 to prevent unbounded context growth.
       // journalObservations is ordered newest-first from the DB query;
       // reverse so the LLM sees them in chronological order.

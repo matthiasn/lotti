@@ -128,6 +128,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentControlsResumeButton => 'Reprendre';
 
   @override
+  String get agentConversationEmpty => 'Pas encore de conversations.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Réveil $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount messages, $toolCallCount appels d\'outils · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Erreur lors du chargement de l\'agent : $error';
   }
@@ -183,12 +197,29 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty =>
+      'Aucune observation enregistrée pour le moment.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Échec du chargement du rapport : $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Rapport';
+
+  @override
+  String get agentReportHistoryEmpty => 'Pas encore d\'instantanés de rapport.';
+
+  @override
+  String get agentReportHistoryError =>
+      'Une erreur est survenue lors du chargement de l\'historique des rapports.';
+
+  @override
   String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
+
+  @override
+  String get agentRunningIndicator => 'En cours';
 
   @override
   String get agentStateConsecutiveFailures => 'Échecs consécutifs';
@@ -215,6 +246,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Nombre de réveils';
+
+  @override
+  String get agentTabActivity => 'Activité';
+
+  @override
+  String get agentTabConversations => 'Conversations';
+
+  @override
+  String get agentTabObservations => 'Observations';
+
+  @override
+  String get agentTabReports => 'Rapports';
+
+  @override
+  String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Suggestions d\'actions';

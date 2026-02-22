@@ -44,6 +44,29 @@
   "agentControlsPauseButton": "Pause",
   "agentControlsReanalyzeButton": "Réanalyser",
   "agentControlsResumeButton": "Reprendre",
+  "agentConversationEmpty": "Pas encore de conversations.",
+  "agentConversationThreadHeader": "Réveil {runKey}",
+  "@agentConversationThreadHeader": {
+    "placeholders": {
+      "runKey": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} appels d'outils · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Erreur lors du chargement de l'agent : {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -75,6 +98,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "Aucune observation enregistrée pour le moment.",
   "agentReportErrorLoading": "Échec du chargement du rapport : {error}",
   "@agentReportErrorLoading": {
     "placeholders": {
@@ -83,7 +107,11 @@
       }
     }
   },
+  "agentReportHistoryBadge": "Rapport",
+  "agentReportHistoryEmpty": "Pas encore d'instantanés de rapport.",
+  "agentReportHistoryError": "Une erreur est survenue lors du chargement de l'historique des rapports.",
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
+  "agentRunningIndicator": "En cours",
   "agentStateConsecutiveFailures": "Échecs consécutifs",
   "agentStateErrorLoading": "Échec du chargement de l'état : {error}",
   "@agentStateErrorLoading": {
@@ -99,6 +127,11 @@
   "agentStateRevision": "Révision",
   "agentStateSleepingUntil": "En sommeil jusqu'à",
   "agentStateWakeCount": "Nombre de réveils",
+  "agentTabActivity": "Activité",
+  "agentTabConversations": "Conversations",
+  "agentTabObservations": "Observations",
+  "agentTabReports": "Rapports",
+  "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "aiAssistantActionItemSuggestions": "Suggestions d'actions",
   "aiAssistantAnalyzeImage": "Analyser l'image",
   "aiAssistantSummarizeTask": "Résumer la tâche",

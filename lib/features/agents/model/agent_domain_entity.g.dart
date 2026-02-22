@@ -221,6 +221,7 @@ AgentReportEntity _$AgentReportEntityFromJson(Map<String, dynamic> json) =>
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
+      threadId: json['threadId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -235,6 +236,7 @@ Map<String, dynamic> _$AgentReportEntityToJson(AgentReportEntity instance) =>
       'confidence': instance.confidence,
       'provenance': instance.provenance,
       'deletedAt': instance.deletedAt?.toIso8601String(),
+      'threadId': instance.threadId,
       'runtimeType': instance.$type,
     };
 

@@ -329,6 +329,25 @@ abstract class AppLocalizations {
   /// **'Resume'**
   String get agentControlsResumeButton;
 
+  /// No description provided for @agentConversationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet.'**
+  String get agentConversationEmpty;
+
+  /// No description provided for @agentConversationThreadHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake {runKey}'**
+  String agentConversationThreadHeader(String runKey);
+
+  /// No description provided for @agentConversationThreadSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{messageCount} messages, {toolCallCount} tool calls · {shortId}'**
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId);
+
   /// No description provided for @agentDetailErrorLoading.
   ///
   /// In en, this message translates to:
@@ -431,17 +450,47 @@ abstract class AppLocalizations {
   /// **'Failed to load messages: {error}'**
   String agentMessagesErrorLoading(String error);
 
+  /// No description provided for @agentObservationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No observations recorded yet.'**
+  String get agentObservationsEmpty;
+
   /// No description provided for @agentReportErrorLoading.
   ///
   /// In en, this message translates to:
   /// **'Failed to load report: {error}'**
   String agentReportErrorLoading(String error);
 
+  /// No description provided for @agentReportHistoryBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get agentReportHistoryBadge;
+
+  /// No description provided for @agentReportHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No report snapshots yet.'**
+  String get agentReportHistoryEmpty;
+
+  /// No description provided for @agentReportHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred while loading the report history.'**
+  String get agentReportHistoryError;
+
   /// No description provided for @agentReportNone.
   ///
   /// In en, this message translates to:
   /// **'No report available yet.'**
   String get agentReportNone;
+
+  /// No description provided for @agentRunningIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get agentRunningIndicator;
 
   /// No description provided for @agentStateConsecutiveFailures.
   ///
@@ -490,6 +539,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wake count'**
   String get agentStateWakeCount;
+
+  /// No description provided for @agentTabActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get agentTabActivity;
+
+  /// No description provided for @agentTabConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get agentTabConversations;
+
+  /// No description provided for @agentTabObservations.
+  ///
+  /// In en, this message translates to:
+  /// **'Observations'**
+  String get agentTabObservations;
+
+  /// No description provided for @agentTabReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get agentTabReports;
+
+  /// No description provided for @agentThreadReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report produced during this wake'**
+  String get agentThreadReportLabel;
 
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///

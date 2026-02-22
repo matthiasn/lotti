@@ -125,6 +125,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentControlsResumeButton => 'Pokračovat';
 
   @override
+  String get agentConversationEmpty => 'No conversations yet.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Wake $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount messages, $toolCallCount tool calls · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Chyba při načítání agenta: $error';
   }
@@ -180,12 +194,28 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty => 'No observations recorded yet.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Nepodařilo se načíst report: $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Report';
+
+  @override
+  String get agentReportHistoryEmpty => 'No report snapshots yet.';
+
+  @override
+  String get agentReportHistoryError =>
+      'An error occurred while loading the report history.';
+
+  @override
   String get agentReportNone => 'Report zatím není k dispozici.';
+
+  @override
+  String get agentRunningIndicator => 'Running';
 
   @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';
@@ -212,6 +242,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Počet probuzení';
+
+  @override
+  String get agentTabActivity => 'Activity';
+
+  @override
+  String get agentTabConversations => 'Conversations';
+
+  @override
+  String get agentTabObservations => 'Observations';
+
+  @override
+  String get agentTabReports => 'Reports';
+
+  @override
+  String get agentThreadReportLabel => 'Report produced during this wake';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Návrhy akčních položek';

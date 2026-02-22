@@ -351,6 +351,9 @@ void main() {
         taskAgentProvider.overrideWith(
           (ref, taskId) async => agentEntity,
         ),
+        agentIsRunningProvider.overrideWith(
+          (ref, agentId) => Stream.value(false),
+        ),
       ];
 
       await tester.pumpWidget(
@@ -368,6 +371,54 @@ void main() {
       );
       expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
     });
+
+    testWidgets(
+      'shows spinner instead of icon when agent is running',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(true),
+          ),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        // Pump multiple times to let the stream provider and async providers
+        // resolve through their loading → data transitions.
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Spinner should appear instead of the static icon.
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
+
+        // Tooltip should show the running indicator label.
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        expect(
+          find.byTooltip(context.messages.agentRunningIndicator),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
       'tapping "Create Agent" chip calls createTaskAgent and invalidates '
@@ -618,6 +669,18 @@ void main() {
           ),
           agentRecentMessagesProvider.overrideWith(
             (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
+          agentReportHistoryProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentObservationMessagesProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentMessagesByThreadProvider.overrideWith(
+            (ref, agentId) async => <String, List<AgentDomainEntity>>{},
           ),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),

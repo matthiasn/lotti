@@ -125,6 +125,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentControlsResumeButton => 'Resume';
 
   @override
+  String get agentConversationEmpty => 'No conversations yet.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Wake $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount messages, $toolCallCount tool calls · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Error loading agent: $error';
   }
@@ -180,12 +194,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty => 'No observations recorded yet.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Failed to load report: $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Report';
+
+  @override
+  String get agentReportHistoryEmpty => 'No report snapshots yet.';
+
+  @override
+  String get agentReportHistoryError =>
+      'An error occurred while loading the report history.';
+
+  @override
   String get agentReportNone => 'No report available yet.';
+
+  @override
+  String get agentRunningIndicator => 'Running';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';
@@ -212,6 +242,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Wake count';
+
+  @override
+  String get agentTabActivity => 'Activity';
+
+  @override
+  String get agentTabConversations => 'Conversations';
+
+  @override
+  String get agentTabObservations => 'Observations';
+
+  @override
+  String get agentTabReports => 'Reports';
+
+  @override
+  String get agentThreadReportLabel => 'Report produced during this wake';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Action Item Suggestions';

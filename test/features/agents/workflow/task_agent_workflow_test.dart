@@ -336,8 +336,8 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // With no tool calls or final text, only state update is persisted.
-        verify(() => mockAgentRepository.upsertEntity(any())).called(1);
+        // User message (payload + message) + state update = 3 upsert calls.
+        verify(() => mockAgentRepository.upsertEntity(any())).called(3);
 
         // Verify conversation was cleaned up in finally.
         expect(
@@ -678,17 +678,22 @@ void main() {
             verify(() => mockAgentRepository.upsertEntity(captureAny()))
                 .captured;
 
-        // Find the payload entity.
+        // Find the thought payload entity (the one with the LLM response,
+        // not the user message payload).
         final payloads = captured
             .whereType<AgentDomainEntity>()
             .where(
               (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
             )
+            .cast<AgentMessagePayloadEntity>()
             .toList();
-        expect(payloads, isNotEmpty);
-        final payload = payloads.first as AgentMessagePayloadEntity;
-        expect(
-            payload.content['text'], 'I analyzed the task and it looks good.');
+        // At least 2 payloads: user message + thought.
+        expect(payloads.length, greaterThanOrEqualTo(2));
+        final thoughtPayload = payloads.firstWhere(
+          (p) => p.content['text'] == 'I analyzed the task and it looks good.',
+        );
+        expect(thoughtPayload.content['text'],
+            'I analyzed the task and it looks good.');
       });
 
       test('uses existing report head ID when one exists', () async {
@@ -960,7 +965,7 @@ void main() {
         final message = await executeAndCaptureMessage(observations: [obs]);
 
         expect(message, isNotNull);
-        expect(message, contains('## Your Prior Observations'));
+        expect(message, contains('## Agent Journal'));
         expect(message, contains('Task needs refactoring'));
       });
 
@@ -2089,10 +2094,14 @@ void main() {
             .where(
               (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
             )
+            .cast<AgentMessagePayloadEntity>()
             .toList();
-        expect(payloads, isNotEmpty);
-        final payload = payloads.first as AgentMessagePayloadEntity;
-        expect(payload.content['text'], 'Final analysis complete.');
+        // User message payload + thought payload.
+        expect(payloads.length, greaterThanOrEqualTo(2));
+        final thoughtPayload = payloads.firstWhere(
+          (p) => p.content['text'] == 'Final analysis complete.',
+        );
+        expect(thoughtPayload.content['text'], 'Final analysis complete.');
       });
 
       test('no thought persisted when getConversation returns null', () async {
@@ -2119,7 +2128,7 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // No thought payload since manager was null.
+        // Only user message payload (no thought payload since manager null).
         final captured =
             verify(() => mockAgentRepository.upsertEntity(captureAny()))
                 .captured;
@@ -2128,8 +2137,13 @@ void main() {
             .where(
               (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
             )
+            .cast<AgentMessagePayloadEntity>()
             .toList();
-        expect(payloads, isEmpty);
+        // User message payload exists, but no thought payload.
+        expect(payloads, hasLength(1));
+        // Verify it's the user message, not a thought.
+        final text = payloads.first.content['text'] as String?;
+        expect(text, contains('Current Task Context'));
       });
 
       test('no thought persisted when no assistant content', () async {
@@ -2155,9 +2169,12 @@ void main() {
             .where(
               (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
             )
+            .cast<AgentMessagePayloadEntity>()
             .toList();
-        // No thought payload when no assistant content.
-        expect(payloads, isEmpty);
+        // Only user message payload, no thought payload.
+        expect(payloads, hasLength(1));
+        final text = payloads.first.content['text'] as String?;
+        expect(text, contains('Current Task Context'));
       });
 
       test('skips assistant messages with empty content', () async {
@@ -2184,10 +2201,14 @@ void main() {
             .where(
               (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
             )
+            .cast<AgentMessagePayloadEntity>()
             .toList();
-        expect(payloads, isNotEmpty);
-        final payload = payloads.first as AgentMessagePayloadEntity;
-        expect(payload.content['text'], 'Non-empty response');
+        // User message payload + thought payload.
+        expect(payloads.length, greaterThanOrEqualTo(2));
+        final thoughtPayload = payloads.firstWhere(
+          (p) => p.content['text'] == 'Non-empty response',
+        );
+        expect(thoughtPayload.content['text'], 'Non-empty response');
       });
     });
 

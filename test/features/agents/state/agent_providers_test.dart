@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/utils/consts.dart';
@@ -331,6 +333,475 @@ void main() {
     });
   });
 
+  group('agentMessagesByThreadProvider', () {
+    test('groups messages by threadId', () async {
+      final msg1 = makeTestMessage(
+        id: 'msg-1',
+        threadId: 'thread-a',
+        createdAt: DateTime(2024, 3, 15, 10),
+      );
+      final msg2 = makeTestMessage(
+        id: 'msg-2',
+        threadId: 'thread-b',
+        createdAt: DateTime(2024, 3, 15, 11),
+      );
+      final msg3 = makeTestMessage(
+        id: 'msg-3',
+        threadId: 'thread-a',
+        createdAt: DateTime(2024, 3, 15, 12),
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [msg1, msg2, msg3]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      expect(result, hasLength(2));
+      expect(result['thread-a'], hasLength(2));
+      expect(result['thread-b'], hasLength(1));
+    });
+
+    test('sorts messages within each thread chronologically', () async {
+      final msg1 = makeTestMessage(
+        id: 'msg-1',
+        threadId: 'thread-a',
+        createdAt: DateTime(2024, 3, 15, 12),
+      );
+      final msg2 = makeTestMessage(
+        id: 'msg-2',
+        threadId: 'thread-a',
+        createdAt: DateTime(2024, 3, 15, 10),
+      );
+      final msg3 = makeTestMessage(
+        id: 'msg-3',
+        threadId: 'thread-a',
+        createdAt: DateTime(2024, 3, 15, 11),
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [msg1, msg2, msg3]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      final thread = result['thread-a']!;
+      expect((thread[0] as AgentMessageEntity).id, 'msg-2');
+      expect((thread[1] as AgentMessageEntity).id, 'msg-3');
+      expect((thread[2] as AgentMessageEntity).id, 'msg-1');
+    });
+
+    test('returns empty map when no messages exist', () async {
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      expect(result, isEmpty);
+    });
+
+    test('filters out non-AgentMessageEntity types', () async {
+      final msg = makeTestMessage(id: 'msg-1', threadId: 'thread-a');
+      final report = makeTestReport(id: 'report-1');
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [msg, report]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      expect(result, hasLength(1));
+      expect(result['thread-a'], hasLength(1));
+    });
+
+    test('passes limit=200 to repository', () async {
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      await container.read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      verify(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).called(1);
+    });
+
+    test('sorts threads most-recent-first by latest message', () async {
+      // thread-a: latest message at 10:00
+      // thread-b: latest message at 14:00
+      // thread-c: latest message at 12:00
+      final messages = [
+        makeTestMessage(
+          id: 'a1',
+          threadId: 'thread-a',
+          createdAt: DateTime(2024, 3, 15, 10),
+        ),
+        makeTestMessage(
+          id: 'b1',
+          threadId: 'thread-b',
+          createdAt: DateTime(2024, 3, 15, 14),
+        ),
+        makeTestMessage(
+          id: 'c1',
+          threadId: 'thread-c',
+          createdAt: DateTime(2024, 3, 15, 12),
+        ),
+      ];
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => messages);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentMessagesByThreadProvider(kTestAgentId).future);
+
+      final threadIds = result.keys.toList();
+      expect(threadIds, ['thread-b', 'thread-c', 'thread-a']);
+    });
+  });
+
+  group('agentObservationMessagesProvider', () {
+    test('returns only observation messages', () async {
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15, 10),
+      );
+      final thought = makeTestMessage(
+        id: 'thought-1',
+        createdAt: DateTime(2024, 3, 15, 11),
+      );
+      final action = makeTestMessage(
+        id: 'action-1',
+        kind: AgentMessageKind.action,
+        createdAt: DateTime(2024, 3, 15, 12),
+      );
+      final obs2 = makeTestMessage(
+        id: 'obs-2',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15, 13),
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [obs, thought, action, obs2]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentObservationMessagesProvider(kTestAgentId).future);
+
+      expect(result, hasLength(2));
+      expect((result[0] as AgentMessageEntity).id, 'obs-1');
+      expect((result[1] as AgentMessageEntity).id, 'obs-2');
+    });
+
+    test('returns empty list when no observations exist', () async {
+      final thought = makeTestMessage(
+        id: 'thought-1',
+        createdAt: DateTime(2024, 3, 15, 10),
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [thought]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentObservationMessagesProvider(kTestAgentId).future);
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty list when no messages exist at all', () async {
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentObservationMessagesProvider(kTestAgentId).future);
+
+      expect(result, isEmpty);
+    });
+
+    test('filters out non-AgentMessageEntity types', () async {
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+      );
+      final report = makeTestReport(id: 'report-1');
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentMessage',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [obs, report]);
+
+      final container = createContainer();
+      final result = await container
+          .read(agentObservationMessagesProvider(kTestAgentId).future);
+
+      expect(result, hasLength(1));
+      expect((result[0] as AgentMessageEntity).id, 'obs-1');
+    });
+  });
+
+  group('agentReportHistoryProvider', () {
+    test('returns report entities ordered most-recent-first', () async {
+      final report1 = makeTestReport(
+        id: 'report-1',
+        content: 'First report',
+      );
+      final report2 = makeTestReport(
+        id: 'report-2',
+        content: 'Second report',
+      );
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentReport',
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => [report2, report1]);
+
+      final container = createContainer();
+      final result =
+          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+
+      expect(result, hasLength(2));
+      expect((result[0] as AgentReportEntity).id, 'report-2');
+      expect((result[1] as AgentReportEntity).id, 'report-1');
+    });
+
+    test('returns empty list when no reports exist', () async {
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentReport',
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      final result =
+          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+
+      expect(result, isEmpty);
+    });
+
+    test('filters out non-AgentReportEntity types', () async {
+      final report = makeTestReport(id: 'report-1');
+      final msg = makeTestMessage(id: 'msg-1', threadId: 'thread-a');
+
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentReport',
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => [report, msg]);
+
+      final container = createContainer();
+      final result =
+          await container.read(agentReportHistoryProvider(kTestAgentId).future);
+
+      expect(result, hasLength(1));
+      expect((result[0] as AgentReportEntity).id, 'report-1');
+    });
+
+    test('passes limit=50 and type=agentReport to repository', () async {
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentReport',
+          limit: 50,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      await container.read(agentReportHistoryProvider(kTestAgentId).future);
+
+      verify(
+        () => mockRepository.getEntitiesByAgentId(
+          kTestAgentId,
+          type: 'agentReport',
+          limit: 50,
+        ),
+      ).called(1);
+    });
+  });
+
+  group('agentIsRunningProvider', () {
+    test('yields initial false when agent is not running', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(
+        agentIsRunningProvider(kTestAgentId),
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      // Let the stream provider initialize.
+      await pumpEventQueue();
+
+      final value = container.read(agentIsRunningProvider(kTestAgentId));
+      expect(value.value, isFalse);
+    });
+
+    test('yields true after agent acquires lock', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final values = <bool>[];
+      final sub = container.listen(
+        agentIsRunningProvider(kTestAgentId),
+        (_, next) {
+          if (next.hasValue) values.add(next.value!);
+        },
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+
+      await runner.tryAcquire(kTestAgentId);
+      await pumpEventQueue();
+
+      final value = container.read(agentIsRunningProvider(kTestAgentId));
+      expect(value.value, isTrue);
+    });
+
+    test('yields false again after agent is released', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(
+        agentIsRunningProvider(kTestAgentId),
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+
+      await runner.tryAcquire(kTestAgentId);
+      await pumpEventQueue();
+      expect(
+        container.read(agentIsRunningProvider(kTestAgentId)).value,
+        isTrue,
+      );
+
+      runner.release(kTestAgentId);
+      await pumpEventQueue();
+      expect(
+        container.read(agentIsRunningProvider(kTestAgentId)).value,
+        isFalse,
+      );
+    });
+
+    test('yields initial true when agent is already running', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      // Acquire lock before creating the provider.
+      await runner.tryAcquire(kTestAgentId);
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(
+        agentIsRunningProvider(kTestAgentId),
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+
+      final value = container.read(agentIsRunningProvider(kTestAgentId));
+      expect(value.value, isTrue);
+
+      runner.release(kTestAgentId);
+    });
+  });
+
   group('agentInitializationProvider', () {
     late MockWakeOrchestrator mockOrchestrator;
     late MockTaskAgentWorkflow mockWorkflow;
@@ -537,7 +1008,14 @@ void main() {
           () => mockRepository.getEntitiesByAgentId(
             kTestAgentId,
             type: 'agentMessage',
-            limit: 50,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentReport',
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -555,19 +1033,33 @@ void main() {
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
 
-        // Prime the providers so we can detect invalidation.
+        // Prime all providers so we can detect invalidation.
         container
           ..listen(agentReportProvider(kTestAgentId), (_, __) {})
+          ..listen(agentReportHistoryProvider(kTestAgentId), (_, __) {})
           ..listen(agentStateProvider(kTestAgentId), (_, __) {})
           ..listen(
             agentRecentMessagesProvider(kTestAgentId),
             (_, __) {},
+          )
+          ..listen(
+            agentObservationMessagesProvider(kTestAgentId),
+            (_, __) {},
+          )
+          ..listen(
+            agentMessagesByThreadProvider(kTestAgentId),
+            (_, __) {},
           );
         await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentReportHistoryProvider(kTestAgentId).future);
         await container.read(agentStateProvider(kTestAgentId).future);
         await container.read(agentRecentMessagesProvider(kTestAgentId).future);
+        await container
+            .read(agentObservationMessagesProvider(kTestAgentId).future);
+        await container
+            .read(agentMessagesByThreadProvider(kTestAgentId).future);
 
-        // Execute the wakeExecutor — this should invalidate all three
+        // Execute the wakeExecutor — this should invalidate all six
         // providers, causing them to re-fetch on next read.
         await capturedExecutor!(
           kTestAgentId,
@@ -578,18 +1070,34 @@ void main() {
 
         // Force the invalidated providers to re-execute.
         await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentReportHistoryProvider(kTestAgentId).future);
         await container.read(agentStateProvider(kTestAgentId).future);
         await container.read(agentRecentMessagesProvider(kTestAgentId).future);
+        await container
+            .read(agentObservationMessagesProvider(kTestAgentId).future);
+        await container
+            .read(agentMessagesByThreadProvider(kTestAgentId).future);
 
         // Each provider was read once to prime, then once after
         // invalidation — two calls total.
         verify(() => mockService.getAgentReport(kTestAgentId)).called(2);
         verify(() => mockRepository.getAgentState(kTestAgentId)).called(2);
+        // agentRecentMessages (limit=50) + agentObservationMessages (limit=200)
+        // + agentMessagesByThread (limit=200) = 3 message reads per cycle,
+        // agentReportHistory (limit=50) = 1 report read per cycle,
+        // 2 cycles = 8 total.
         verify(
           () => mockRepository.getEntitiesByAgentId(
             kTestAgentId,
             type: 'agentMessage',
-            limit: 50,
+            limit: any(named: 'limit'),
+          ),
+        ).called(6);
+        verify(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentReport',
+            limit: any(named: 'limit'),
           ),
         ).called(2);
       },

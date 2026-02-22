@@ -1041,8 +1041,8 @@ void main() {
       });
 
       test(
-          'pre-registers suppression before executor runs, '
-          'preventing self-wake from mid-execution notifications', () {
+          'mid-execution signals are queued but suppressed during drain '
+          'when they match self-mutations', () {
         fakeAsync((async) {
           // Use a completer to pause the executor mid-flight so we can
           // inject a notification that would match the agent's subscription.
@@ -1070,22 +1070,71 @@ void main() {
           // for the same entity while the agent is executing.
           emitTokens(async, controller, {'entity-1'});
 
-          // The second notification should have been suppressed by the
-          // pre-registered suppression data, so no new job should be queued
-          // (the queue should be empty since the first job was dequeued and
-          // is currently executing).
-          expect(queue.isEmpty, isTrue);
+          // The second notification is NOT suppressed by _onBatch (so
+          // external signals during execution are preserved). Instead it
+          // is queued and will be suppressed during the drain re-check
+          // using the pre-registered suppression data.
+          expect(queue.isEmpty, isFalse);
 
-          // Complete the executor — returns the mutation set.
+          // Complete the executor — returns the mutation set confirming
+          // entity-1 was self-written.
           gate.complete({
             'entity-1': const VectorClock({'node-1': 1}),
           });
           async.flushMicrotasks();
 
+          // The queued job should have been suppressed during drain
+          // re-check (pre-registered suppression covers entity-1).
           // Only one wake run should have been persisted (the original).
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
+
+          controller.close();
+        });
+      });
+
+      test(
+          'external signal for different entity during execution '
+          'triggers a second wake', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1', 'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              return gate.future;
+            };
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // First signal starts execution for entity-1.
+          emitTokens(async, controller, {'entity-1'});
+
+          // While executing, an external change to entity-2 arrives.
+          emitTokens(async, controller, {'entity-2'});
+
+          // The signal should be queued (not suppressed by _onBatch).
+          expect(queue.isEmpty, isFalse);
+
+          // Complete first execution — only entity-1 was mutated.
+          gate.complete({
+            'entity-1': const VectorClock({'node-1': 1}),
+          });
+          async.flushMicrotasks();
+
+          // entity-2 was NOT in the mutation set, so it should NOT be
+          // suppressed during drain re-check. A second wake should run.
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(2);
 
           controller.close();
         });
@@ -1609,6 +1658,153 @@ void main() {
           expect(capturedEntries[0].runKey, equals(capturedEntries[1].runKey));
 
           controller.close();
+        });
+      });
+    });
+
+    group('post-execution drain', () {
+      test('schedules drain after job completes to pick up deferred work', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async {
+            executionCount++;
+            if (executionCount == 1) return gate.future;
+            return null;
+          };
+
+          // First job starts executing (holds agent-1's lock).
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'manual',
+              triggerTokens: <String>{},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+          expect(executionCount, 1);
+
+          // While agent-1 is executing, enqueue a second job for agent-1.
+          // processNext defers it because agent-1 is busy.
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-2',
+              agentId: 'agent-1',
+              reason: 'manual',
+              triggerTokens: <String>{},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Only the first job has executed.
+          expect(executionCount, 1);
+
+          // Complete first execution — deferred job is re-enqueued but not
+          // yet picked up (no immediate processNext since drain already ran).
+          gate.complete(null);
+          async
+            ..flushMicrotasks()
+
+            // After 30s, the post-execution timer fires processNext.
+            ..elapse(WakeOrchestrator.postExecutionDrainDelay)
+            ..flushMicrotasks();
+
+          // The deferred job should now have been processed.
+          expect(executionCount, 2);
+        });
+      });
+
+      test('does not reset existing timer when another job completes', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-2',
+                agentId: 'agent-2',
+                matchEntityIds: {'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          // Enqueue and process two jobs — both complete, scheduling timer.
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          async.flushMicrotasks();
+
+          // Both executed immediately.
+          expect(executionCount, 2);
+
+          // Advance 15 seconds (timer started at ~0s).
+          async.elapse(const Duration(seconds: 15));
+
+          // A new job completes after 15s — timer should NOT be reset.
+          emitTokens(async, controller, {'entity-1'});
+          async.flushMicrotasks();
+          expect(executionCount, 3);
+
+          // Advance remaining 15s to reach original 30s mark.
+          async
+            ..elapse(const Duration(seconds: 15))
+            ..flushMicrotasks();
+
+          // Timer should fire at original 30s, not 30s after the 3rd job.
+          // This verifies the timer was not reset.
+          controller.close();
+        });
+      });
+
+      test('stop cancels pending drain timer', () {
+        fakeAsync((async) {
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'test',
+              triggerTokens: {'tok-a'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Timer is now pending. Stop the orchestrator.
+          orchestrator.stop();
+          async.flushMicrotasks();
+
+          // Advance past the drain delay — timer should not fire.
+          clearInteractions(mockRepository);
+          async
+            ..elapse(WakeOrchestrator.postExecutionDrainDelay * 2)
+            ..flushMicrotasks();
+
+          // No additional processNext should have been triggered.
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
         });
       });
     });

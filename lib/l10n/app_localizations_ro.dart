@@ -125,6 +125,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentControlsResumeButton => 'Reia';
 
   @override
+  String get agentConversationEmpty => 'Nicio conversație încă.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Trezire $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount mesaje, $toolCallCount apeluri de instrumente · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Eroare la încărcarea agentului: $error';
   }
@@ -180,12 +194,30 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty =>
+      'Nu au fost înregistrate observații încă.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Eroare la încărcarea raportului: $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Raport';
+
+  @override
+  String get agentReportHistoryEmpty =>
+      'Nu există încă instantanee ale raportului.';
+
+  @override
+  String get agentReportHistoryError =>
+      'A apărut o eroare la încărcarea istoricului rapoartelor.';
+
+  @override
   String get agentReportNone => 'Niciun raport disponibil încă.';
+
+  @override
+  String get agentRunningIndicator => 'În execuție';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
@@ -212,6 +244,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Număr de treziri';
+
+  @override
+  String get agentTabActivity => 'Activitate';
+
+  @override
+  String get agentTabConversations => 'Conversații';
+
+  @override
+  String get agentTabObservations => 'Observații';
+
+  @override
+  String get agentTabReports => 'Rapoarte';
+
+  @override
+  String get agentThreadReportLabel => 'Raport generat în acest ciclu';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Sugestii de acțiuni';

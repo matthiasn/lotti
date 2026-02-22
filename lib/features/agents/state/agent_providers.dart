@@ -4,6 +4,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -47,7 +48,20 @@ WakeQueue wakeQueue(Ref ref) {
 /// The single-flight wake runner.
 @Riverpod(keepAlive: true)
 WakeRunner wakeRunner(Ref ref) {
-  return WakeRunner();
+  final runner = WakeRunner();
+  ref.onDispose(runner.dispose);
+  return runner;
+}
+
+/// Whether a specific agent is currently running.
+///
+/// Yields the initial synchronous value, then updates reactively whenever the
+/// agent starts or stops running.
+@riverpod
+Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
+  final runner = ref.watch(wakeRunnerProvider);
+  yield runner.isRunning(agentId);
+  yield* runner.runningAgentIds.map((ids) => ids.contains(agentId)).distinct();
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
@@ -146,6 +160,86 @@ Future<String?> agentMessagePayloadText(
   return null;
 }
 
+/// Fetch recent messages grouped by thread ID for an agent.
+///
+/// Returns a map of threadId → list of [AgentMessageEntity] sorted
+/// chronologically within each thread. Threads are sorted most-recent-first
+/// (by the latest message in each thread).
+@riverpod
+Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
+  Ref ref,
+  String agentId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+  final entities = await repository.getEntitiesByAgentId(
+    agentId,
+    type: 'agentMessage',
+    limit: 200,
+  );
+  final messages = entities.whereType<AgentMessageEntity>().toList();
+  final grouped = <String, List<AgentDomainEntity>>{};
+  for (final msg in messages) {
+    grouped.putIfAbsent(msg.threadId, () => []).add(msg);
+  }
+  // Sort each thread chronologically (oldest first within thread).
+  for (final thread in grouped.values) {
+    thread.sort((a, b) {
+      final aMsg = a as AgentMessageEntity;
+      final bMsg = b as AgentMessageEntity;
+      return aMsg.createdAt.compareTo(bMsg.createdAt);
+    });
+  }
+
+  // Sort threads most-recent-first by the latest message in each thread.
+  final sortedEntries = grouped.entries.toList()
+    ..sort((a, b) {
+      final aLatest = (a.value.last as AgentMessageEntity).createdAt;
+      final bLatest = (b.value.last as AgentMessageEntity).createdAt;
+      return bLatest.compareTo(aLatest);
+    });
+
+  return Map.fromEntries(sortedEntries);
+}
+
+/// Fetch recent observation messages for an agent by [agentId].
+///
+/// Returns only messages with kind [AgentMessageKind.observation], ordered
+/// most-recent first.
+@riverpod
+Future<List<AgentDomainEntity>> agentObservationMessages(
+  Ref ref,
+  String agentId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+  final entities = await repository.getEntitiesByAgentId(
+    agentId,
+    type: 'agentMessage',
+    limit: 200,
+  );
+  return entities
+      .whereType<AgentMessageEntity>()
+      .where((msg) => msg.kind == AgentMessageKind.observation)
+      .toList();
+}
+
+/// Fetch all report snapshots for an agent by [agentId], most-recent first.
+///
+/// Each wake overwrites the report, so older snapshots let the user trace
+/// how the report evolved over time.
+@riverpod
+Future<List<AgentDomainEntity>> agentReportHistory(
+  Ref ref,
+  String agentId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+  final entities = await repository.getEntitiesByAgentId(
+    agentId,
+    type: 'agentReport',
+    limit: 50,
+  );
+  return entities.whereType<AgentReportEntity>().toList();
+}
+
 /// The task agent workflow with all dependencies resolved.
 @Riverpod(keepAlive: true)
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
@@ -225,8 +319,11 @@ Future<void> agentInitialization(Ref ref) async {
     // Invalidate UI providers so the detail page refreshes.
     ref
       ..invalidate(agentReportProvider(agentId))
+      ..invalidate(agentReportHistoryProvider(agentId))
       ..invalidate(agentStateProvider(agentId))
-      ..invalidate(agentRecentMessagesProvider(agentId));
+      ..invalidate(agentRecentMessagesProvider(agentId))
+      ..invalidate(agentObservationMessagesProvider(agentId))
+      ..invalidate(agentMessagesByThreadProvider(agentId));
 
     return result.mutatedEntries;
   };

@@ -81,6 +81,20 @@ class WakeOrchestrator {
 
   final _subscriptions = <AgentSubscription>[];
 
+  /// Pending post-execution drain timer.
+  ///
+  /// Scheduled after a job completes to pick up signals that arrived while
+  /// the agent was running and were deferred. Only one timer exists at a time;
+  /// if a timer is already pending it is left alone (not reset) to prevent
+  /// starvation when agents complete in quick succession.
+  Timer? _pendingDrainTimer;
+
+  /// Delay before the post-execution drain fires.
+  ///
+  /// Gives rapid-fire signals time to coalesce before the next wake, while
+  /// ensuring timely response to deferred work.
+  static const postExecutionDrainDelay = Duration(seconds: 30);
+
   /// Monotonic wake counter per agent.
   ///
   /// Incremented each time a subscription-driven wake is enqueued, ensuring
@@ -109,7 +123,22 @@ class WakeOrchestrator {
   /// mutated are suppressed — but only if the mutation record is recent
   /// (within [_suppressionTtl]). Stale records are ignored so that external
   /// edits to the same entity are not incorrectly suppressed.
+  ///
+  /// This map stores only **confirmed** mutations from completed executions.
+  /// Pre-execution suppression (a broader approximation) is stored separately
+  /// in [_preRegisteredSuppression] and only checked during the drain re-check
+  /// (not during `_onBatch`), so that genuine external signals arriving during
+  /// execution are not incorrectly dropped.
   final _recentlyMutatedEntries = <String, _MutationRecord>{};
+
+  /// Pre-execution suppression data.
+  ///
+  /// Set before execution starts using the agent's subscribed entity IDs as a
+  /// conservative over-approximation. Only checked during the drain re-check
+  /// (line `_drain`) to catch self-notifications that slipped through between
+  /// DB writes and `recordMutatedEntities`. NOT checked during `_onBatch`,
+  /// where it would incorrectly suppress genuine external signals.
+  final _preRegisteredSuppression = <String, _MutationRecord>{};
 
   /// Duration after which self-mutation records expire and no longer suppress
   /// notifications. Must be long enough to cover the `UpdateNotifications`
@@ -139,6 +168,7 @@ class WakeOrchestrator {
   void removeSubscriptions(String agentId) {
     _subscriptions.removeWhere((s) => s.agentId == agentId);
     _recentlyMutatedEntries.remove(agentId);
+    _preRegisteredSuppression.remove(agentId);
     _wakeCounters.remove(agentId);
   }
 
@@ -175,7 +205,7 @@ class WakeOrchestrator {
       }
     }
     if (subscribedIds.isNotEmpty) {
-      _recentlyMutatedEntries[agentId] = _MutationRecord(
+      _preRegisteredSuppression[agentId] = _MutationRecord(
         entityIds: subscribedIds,
         recordedAt: clock.now(),
       );
@@ -200,8 +230,10 @@ class WakeOrchestrator {
     _notificationSub = notificationStream.listen(_onBatch);
   }
 
-  /// Stop listening and cancel the subscription.
+  /// Stop listening, cancel the subscription, and clean up timers.
   Future<void> stop() async {
+    _pendingDrainTimer?.cancel();
+    _pendingDrainTimer = null;
     await _notificationSub?.cancel();
     _notificationSub = null;
   }
@@ -273,11 +305,13 @@ class WakeOrchestrator {
       final counter = _wakeCounters[sub.agentId] ?? 0;
       _wakeCounters[sub.agentId] = counter + 1;
 
+      final now = clock.now();
       final runKey = RunKeyFactory.forSubscription(
         agentId: sub.agentId,
         subscriptionId: sub.id,
         batchTokens: matched,
         wakeCounter: counter,
+        timestamp: now,
       );
 
       final job = WakeJob(
@@ -317,6 +351,27 @@ class WakeOrchestrator {
     // Suppress only when every matched token corresponds to an entity that the
     // agent itself mutated.  A single external token is enough to allow the
     // wake through.
+    return matchedTokens.every(record.entityIds.contains);
+  }
+
+  /// Returns `true` when all [matchedTokens] are covered by the agent's
+  /// pre-registered suppression (conservative over-approximation set before
+  /// execution starts).
+  ///
+  /// Only used during the drain re-check, NOT during `_onBatch`.
+  bool _isPreRegisteredSuppressed(
+    String agentId,
+    Set<String> matchedTokens,
+  ) {
+    final record = _preRegisteredSuppression[agentId];
+    if (record == null || record.entityIds.isEmpty) return false;
+
+    final elapsed = clock.now().difference(record.recordedAt);
+    if (elapsed > _suppressionTtl) {
+      _preRegisteredSuppression.remove(agentId);
+      return false;
+    }
+
     return matchedTokens.every(record.entityIds.contains);
   }
 
@@ -370,11 +425,15 @@ class WakeOrchestrator {
         }
 
         // Re-check suppression for jobs that were enqueued during an agent's
-        // execution — before recordMutatedEntities was called. Without this
-        // check, a notification that fires between the executor's DB writes
-        // and the suppression recording would slip through unsuppressed.
+        // execution — before recordMutatedEntities was called. Check both
+        // confirmed mutations and pre-registered suppression (the latter
+        // covers the window between DB writes and recordMutatedEntities).
         if (job.reason == 'subscription' &&
-            _isSuppressed(job.agentId, job.triggerTokens)) {
+            (_isSuppressed(job.agentId, job.triggerTokens) ||
+                _isPreRegisteredSuppressed(
+                  job.agentId,
+                  job.triggerTokens,
+                ))) {
           runner.release(job.agentId);
           continue;
         }
@@ -452,13 +511,14 @@ class WakeOrchestrator {
           threadId,
         );
 
-        // Replace the pre-registered suppression with the actual mutation
-        // set so that only genuinely self-written entities are suppressed.
+        // Clear the pre-registered suppression and record actual mutations
+        // so that only genuinely self-written entities are suppressed.
+        _preRegisteredSuppression.remove(job.agentId);
         if (mutated != null && mutated.isNotEmpty) {
           recordMutatedEntities(job.agentId, mutated);
         } else {
-          // No mutations this cycle — clear the pre-registered suppression
-          // so external edits are not incorrectly blocked.
+          // No mutations this cycle — clear confirmed suppression so
+          // external edits are not incorrectly blocked.
           _recentlyMutatedEntries.remove(job.agentId);
         }
 
@@ -468,6 +528,7 @@ class WakeOrchestrator {
           completedAt: clock.now(),
         );
       } catch (e) {
+        _preRegisteredSuppression.remove(job.agentId);
         developer.log(
           'Wake executor failed for run ${job.runKey}: $e',
           name: 'WakeOrchestrator',
@@ -480,7 +541,24 @@ class WakeOrchestrator {
       }
     } finally {
       runner.release(job.agentId);
+      _schedulePostExecutionDrain();
     }
+  }
+
+  /// Schedule a delayed drain to process signals that arrived during execution.
+  ///
+  /// If a timer is already pending, this is a no-op — the existing timer is
+  /// left alone rather than reset. This prevents starvation where rapid agent
+  /// completions keep pushing the drain further out.
+  void _schedulePostExecutionDrain() {
+    if (_pendingDrainTimer != null) return;
+    _pendingDrainTimer = Timer(
+      postExecutionDrainDelay,
+      () {
+        _pendingDrainTimer = null;
+        unawaited(processNext());
+      },
+    );
   }
 
   /// Update wake run status, swallowing any DB errors so they don't escape

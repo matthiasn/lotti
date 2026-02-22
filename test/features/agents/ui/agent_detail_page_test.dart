@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -31,6 +32,14 @@ void main() {
     FutureOr<AgentDomainEntity?> Function(Ref, String)? stateOverride,
     FutureOr<AgentDomainEntity?> Function(Ref, String)? reportOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)? messagesOverride,
+    FutureOr<Map<String, List<AgentDomainEntity>>> Function(Ref, String)?
+        threadOverride,
+    FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
+        observationsOverride,
+    FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
+        reportHistoryOverride,
+    Stream<bool> Function(Ref, String)? isRunningOverride,
+    List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
       const AgentDetailPage(agentId: _testAgentId),
@@ -47,8 +56,23 @@ void main() {
         agentRecentMessagesProvider.overrideWith(
           messagesOverride ?? (ref, agentId) async => <AgentDomainEntity>[],
         ),
+        agentMessagesByThreadProvider.overrideWith(
+          threadOverride ??
+              (ref, agentId) async => <String, List<AgentDomainEntity>>{},
+        ),
+        agentObservationMessagesProvider.overrideWith(
+          observationsOverride ?? (ref, agentId) async => <AgentDomainEntity>[],
+        ),
+        agentReportHistoryProvider.overrideWith(
+          reportHistoryOverride ??
+              (ref, agentId) async => <AgentDomainEntity>[],
+        ),
+        agentIsRunningProvider.overrideWith(
+          isRunningOverride ?? (ref, agentId) => Stream.value(false),
+        ),
         agentServiceProvider.overrideWithValue(mockAgentService),
         taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+        ...extraOverrides,
       ],
     );
   }
@@ -184,13 +208,17 @@ void main() {
       expect(find.text('No report available yet.'), findsOneWidget);
     });
 
-    testWidgets('shows Activity Log heading', (tester) async {
+    testWidgets('shows Activity, Reports, Conversations, and Observations tabs',
+        (tester) async {
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
-      expect(find.text('Activity Log'), findsOneWidget);
+      expect(find.text('Activity'), findsOneWidget);
+      expect(find.text('Reports'), findsOneWidget);
+      expect(find.text('Conversations'), findsOneWidget);
+      expect(find.text('Observations'), findsOneWidget);
     });
 
     testWidgets('shows state info section with values', (tester) async {
@@ -262,15 +290,23 @@ void main() {
     });
 
     testWidgets('shows report error message when report fails', (tester) async {
+      final reportError = Exception('Report DB error');
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),
           stateOverride: (ref, agentId) async => makeTestState(),
-          reportOverride: (ref, agentId) =>
-              Future<AgentDomainEntity?>.error(Exception('Report DB error')),
+          extraOverrides: [
+            agentReportProvider(_testAgentId).overrideWithValue(
+              AsyncValue<AgentDomainEntity?>.error(
+                reportError,
+                StackTrace.current,
+              ),
+            ),
+          ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.textContaining('Failed to load report'),
@@ -279,15 +315,23 @@ void main() {
     });
 
     testWidgets('shows state error message when state fails', (tester) async {
+      final stateError = Exception('State DB error');
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),
-          stateOverride: (ref, agentId) =>
-              Future<AgentDomainEntity?>.error(Exception('State DB error')),
           reportOverride: (ref, agentId) async => null,
+          extraOverrides: [
+            agentStateProvider(_testAgentId).overrideWithValue(
+              AsyncValue<AgentDomainEntity?>.error(
+                stateError,
+                StackTrace.current,
+              ),
+            ),
+          ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.textContaining('Failed to load state'),
@@ -439,6 +483,40 @@ void main() {
         expect(section.content, reportContent);
       },
     );
+
+    testWidgets('shows running spinner when agent is running', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          isRunningOverride: (ref, agentId) => Stream.value(true),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The running spinner should appear in the app bar.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // The tooltip with the running indicator label should be present.
+      expect(find.byType(Tooltip), findsOneWidget);
+    });
+
+    testWidgets('hides running spinner when agent is not running',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          isRunningOverride: (ref, agentId) => Stream.value(false),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // No spinner in the app bar.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // No tooltip for running indicator.
+      expect(find.byTooltip('Running'), findsNothing);
+    });
 
     testWidgets(
       'shows dormant controls for dormant agent',
