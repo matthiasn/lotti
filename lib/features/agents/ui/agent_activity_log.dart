@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -11,16 +12,39 @@ import 'package:lotti/themes/theme.dart';
 ///
 /// Each message shows a timestamp, a colored kind badge, content preview
 /// (truncated), and the tool name for action/toolResult kinds.
+///
+/// Use the default constructor to watch the [agentRecentMessagesProvider],
+/// or [AgentActivityLog.fromMessages] to render a pre-fetched list.
 class AgentActivityLog extends ConsumerWidget {
   const AgentActivityLog({
     required this.agentId,
     super.key,
-  });
+  })  : _preloadedMessages = null,
+        expandToolCalls = false;
+
+  /// Render a pre-fetched list of messages (e.g., from a thread group).
+  ///
+  /// When [expandToolCalls] is true, action and toolResult messages are
+  /// initially expanded so the user can see arguments and results at a glance.
+  const AgentActivityLog.fromMessages({
+    required this.agentId,
+    required List<AgentMessageEntity> messages,
+    this.expandToolCalls = false,
+    super.key,
+  }) : _preloadedMessages = messages;
 
   final String agentId;
+  final List<AgentMessageEntity>? _preloadedMessages;
+
+  /// When true, action/toolResult cards start expanded.
+  final bool expandToolCalls;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (_preloadedMessages != null) {
+      return _buildMessageList(context, _preloadedMessages!);
+    }
+
     final messagesAsync = ref.watch(agentRecentMessagesProvider(agentId));
 
     return messagesAsync.when(
@@ -50,6 +74,84 @@ class AgentActivityLog extends ConsumerWidget {
           );
         }
 
+        return _buildMessageList(context, messages);
+      },
+    );
+  }
+
+  Widget _buildMessageList(
+    BuildContext context,
+    List<AgentDomainEntity> messages,
+  ) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: messages.length,
+      separatorBuilder: (_, __) =>
+          const SizedBox(height: AppTheme.spacingXSmall),
+      itemBuilder: (context, index) {
+        final entity = messages[index];
+        return entity.mapOrNull(
+              agentMessage: (msg) => _MessageCard(
+                key: ValueKey(msg.id),
+                message: msg,
+                initiallyExpanded: expandToolCalls && _isToolCall(msg.kind),
+              ),
+            ) ??
+            const SizedBox.shrink();
+      },
+    );
+  }
+
+  static bool _isToolCall(AgentMessageKind kind) =>
+      kind == AgentMessageKind.action || kind == AgentMessageKind.toolResult;
+}
+
+/// Displays only observation messages, all expanded by default.
+///
+/// Watches [agentObservationMessagesProvider] and renders each observation
+/// card with its payload text immediately visible, so the user can scan
+/// the agent's insights without expanding individual cards.
+class AgentObservationLog extends ConsumerWidget {
+  const AgentObservationLog({
+    required this.agentId,
+    super.key,
+  });
+
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final observationsAsync =
+        ref.watch(agentObservationMessagesProvider(agentId));
+
+    return observationsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppTheme.cardPadding),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          context.messages.agentMessagesErrorLoading(error.toString()),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.error,
+          ),
+        ),
+      ),
+      data: (messages) {
+        if (messages.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
+            child: Text(
+              context.messages.agentObservationsEmpty,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
+
         return ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -62,6 +164,7 @@ class AgentActivityLog extends ConsumerWidget {
                   agentMessage: (msg) => _MessageCard(
                     key: ValueKey(msg.id),
                     message: msg,
+                    initiallyExpanded: true,
                   ),
                 ) ??
                 const SizedBox.shrink();
@@ -72,17 +175,176 @@ class AgentActivityLog extends ConsumerWidget {
   }
 }
 
+/// Displays report history snapshots as expandable cards.
+///
+/// Each card shows the report's timestamp and, when expanded, the full
+/// markdown content. Most recent report is expanded by default.
+class AgentReportHistoryLog extends ConsumerWidget {
+  const AgentReportHistoryLog({
+    required this.agentId,
+    super.key,
+  });
+
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(agentReportHistoryProvider(agentId));
+
+    return historyAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppTheme.cardPadding),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          error.toString(),
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.error,
+          ),
+        ),
+      ),
+      data: (reports) {
+        if (reports.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(AppTheme.cardPadding),
+            child: Text(
+              context.messages.agentReportHistoryEmpty,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: reports.length,
+          itemBuilder: (context, index) {
+            final entity = reports[index];
+            final report = entity.mapOrNull(agentReport: (r) => r);
+            if (report == null) return const SizedBox.shrink();
+
+            return _ReportSnapshotCard(
+              report: report,
+              initiallyExpanded: index == 0,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ReportSnapshotCard extends StatefulWidget {
+  const _ReportSnapshotCard({
+    required this.report,
+    this.initiallyExpanded = false,
+  });
+
+  final AgentReportEntity report;
+  final bool initiallyExpanded;
+
+  @override
+  State<_ReportSnapshotCard> createState() => _ReportSnapshotCardState();
+}
+
+class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final report = widget.report;
+    final timestamp = formatAgentDateTime(report.createdAt);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPaddingHalf,
+        vertical: AppTheme.spacingXSmall,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+      ),
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTheme.spacingSmall,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          context.colorScheme.tertiary.withValues(alpha: 0.12),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.spacingXSmall),
+                      border: Border.all(
+                        color:
+                            context.colorScheme.tertiary.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      context.messages.agentReportHistoryBadge,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.tertiary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingSmall),
+                  Expanded(
+                    child: Text(
+                      timestamp,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (_expanded && report.content.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
+                  child: GptMarkdown(report.content),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageCard extends ConsumerStatefulWidget {
-  const _MessageCard({required this.message, super.key});
+  const _MessageCard({
+    required this.message,
+    this.initiallyExpanded = false,
+    super.key,
+  });
 
   final AgentMessageEntity message;
+  final bool initiallyExpanded;
 
   @override
   ConsumerState<_MessageCard> createState() => _MessageCardState();
 }
 
 class _MessageCardState extends ConsumerState<_MessageCard> {
-  bool _expanded = false;
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +401,10 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                 ],
               ),
               if (_expanded && contentId != null)
-                _ExpandedPayload(payloadId: contentId),
+                _ExpandedPayload(
+                  payloadId: contentId,
+                  kind: message.kind,
+                ),
               if (message.metadata.errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
@@ -160,11 +425,21 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
   }
 }
 
-/// Loads and displays the text content of an observation payload.
+/// Loads and displays the text content of a message payload.
+///
+/// For action and toolResult kinds, content is rendered in monospace
+/// (selectable) to improve readability of JSON arguments and tool output.
 class _ExpandedPayload extends ConsumerWidget {
-  const _ExpandedPayload({required this.payloadId});
+  const _ExpandedPayload({
+    required this.payloadId,
+    required this.kind,
+  });
 
   final String payloadId;
+  final AgentMessageKind kind;
+
+  bool get _isCode =>
+      kind == AgentMessageKind.action || kind == AgentMessageKind.toolResult;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -184,12 +459,33 @@ class _ExpandedPayload extends ConsumerWidget {
             color: context.colorScheme.error,
           ),
         ),
-        data: (text) => Text(
-          text ?? context.messages.agentMessagePayloadEmpty,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurface,
-          ),
-        ),
+        data: (text) {
+          final content = text ?? context.messages.agentMessagePayloadEmpty;
+
+          if (_isCode) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppTheme.spacingSmall),
+              decoration: BoxDecoration(
+                color: context.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
+              ),
+              child: SelectableText(
+                content,
+                style: monoTabularStyle(fontSize: fontSizeSmall).copyWith(
+                  color: context.colorScheme.onSurface,
+                ),
+              ),
+            );
+          }
+
+          return SelectableText(
+            content,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurface,
+            ),
+          );
+        },
       ),
     );
   }

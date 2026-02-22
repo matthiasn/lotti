@@ -41,15 +41,15 @@ The wake system handles agent activation in response to data changes:
 
 - **`run_key_factory.dart`** — Deterministic SHA-256 run key generation for subscription, timer, and user-initiated wakes. Uses `SplayTreeMap` for canonical JSON key ordering in `actionStableId`. Also generates `operationId` for saga idempotency.
 - **`wake_queue.dart`** — In-memory FIFO queue with run-key deduplication and token coalescing. Rapid-fire notifications for the same agent merge into one pending job.
-- **`wake_runner.dart`** — Single-flight execution engine. Each agent can have at most one concurrent wake; additional requests wait or re-enqueue.
-- **`wake_orchestrator.dart`** — Notification listener that matches `UpdateNotifications` tokens against agent subscriptions, applies self-notification suppression via token-presence tracking, and dispatches wake jobs. Event-driven: `_onBatch` calls `unawaited(processNext())` after enqueueing. The `WakeExecutor` callback connects to `TaskAgentWorkflow` for actual agent execution.
+- **`wake_runner.dart`** — Single-flight execution engine. Each agent can have at most one concurrent wake; additional requests wait or re-enqueue. Exposes a `runningAgentIds` broadcast stream for reactive UI feedback.
+- **`wake_orchestrator.dart`** — Notification listener that matches `UpdateNotifications` tokens against agent subscriptions, applies self-notification suppression via token-presence tracking, and dispatches wake jobs. Event-driven: `_onBatch` calls `unawaited(processNext())` after enqueueing. Includes a post-execution drain timer (30s) that picks up signals deferred while the agent was busy, preventing lost concurrent signals. The `WakeExecutor` callback connects to `TaskAgentWorkflow` for actual agent execution.
 
 ### Tools (`tools/`)
 
 Tool definitions and execution with safety enforcement:
 
 - **`agent_tool_registry.dart`** — Declarative tool definitions (name, description, JSON Schema parameters) for the 7 Task Agent tools: `set_task_title`, `update_task_estimate`, `update_task_due_date`, `update_task_priority`, `add_multiple_checklist_items`, `update_checklist_items`, `record_observations`.
-- **`agent_tool_executor.dart`** — Orchestrates tool execution with **fail-closed category enforcement** (checks `allowedCategoryIds` before any handler invocation), audit message persistence, and vector clock capture for self-notification suppression.
+- **`agent_tool_executor.dart`** — Orchestrates tool execution with **fail-closed category enforcement** (checks `allowedCategoryIds` before any handler invocation), audit message persistence with payload content (tool arguments for action messages, tool output for result messages), and vector clock capture for self-notification suppression.
 - **`task_title_handler.dart`** — The only new handler (all others reuse existing handlers from `lib/features/ai/functions/`). Updates a task's title via `journalRepository.updateJournalEntity`.
 
 ### Workflow (`workflow/`)
@@ -57,7 +57,7 @@ Tool definitions and execution with safety enforcement:
 The full wake cycle implementation:
 
 - **`task_agent_strategy.dart`** — `ConversationStrategy` implementation that dispatches LLM tool calls to `AgentToolExecutor`. The `record_observations` tool is intercepted locally (no executor needed since it doesn't modify journal entities) — observations accumulate in memory and are retrieved via `extractObservations()`. The final text response becomes the report via `extractReportContent()`. Each message turn is persisted to `agent.sqlite` for durability.
-- **`task_agent_workflow.dart`** — Assembles context (agent state, current report, agentJournal observations, task details from `AiInputRepository`, trigger delta), resolves a Gemini inference provider, runs the conversation via `ConversationRepository`, persists the updated report and observations, and updates agent state. Includes `conversationRepository.deleteConversation(conversationId)` cleanup in a `finally` block.
+- **`task_agent_workflow.dart`** — Assembles context (agent state, current report, agentJournal observations, task details from `AiInputRepository`, trigger delta), resolves a Gemini inference provider, runs the conversation via `ConversationRepository`, persists the updated report and observations, and updates agent state. Persists the user message as an `agentMessage` (kind=user) for inspectability. Includes `conversationRepository.deleteConversation(conversationId)` cleanup in a `finally` block.
 
 ### Service Layer (`service/`)
 
@@ -70,16 +70,17 @@ High-level agent lifecycle management:
 
 Riverpod providers for dependency injection:
 
-- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`. The `agentInitializationProvider` wires the workflow into the orchestrator and starts listening to `UpdateNotifications`.
+- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`, `agentIsRunning` (reactive stream), `agentMessagesByThread` (grouped by wake cycle). The `agentInitializationProvider` wires the workflow into the orchestrator and starts listening to `UpdateNotifications`.
 - **`task_agent_providers.dart`** — `keepAlive` provider for `TaskAgentService`, auto-disposed async provider for `taskAgent(taskId)`.
 
 ### UI (`ui/`)
 
 Agent inspection interface:
 
-- **`agent_detail_page.dart`** — Full inspection page with report, activity log, state, and controls.
+- **`agent_detail_page.dart`** — Full inspection page with report, tabbed message views (Activity/Conversations/Observations), state info, and controls. Shows a running-state spinner in the app bar when the agent is actively executing.
 - **`agent_report_section.dart`** — Renders free-form Markdown report via `GptMarkdown`.
-- **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Uses `ValueKey` per message to preserve expansion state across list updates.
+- **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Tool call arguments and results render in monospace with a surface-tinted background. Uses `ValueKey` per message to preserve expansion state. Supports both provider-based and pre-fetched message lists via `AgentActivityLog.fromMessages`. Also contains `AgentObservationLog` — a filtered view showing only observation entries, all expanded by default for at-a-glance readability.
+- **`agent_conversation_log.dart`** — Thread-grouped conversation view: messages grouped by `threadId` (wake cycle), sorted most-recent-first, each rendered as an `ExpansionTile` with timestamp, message count, and tool call count.
 - **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
 - **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
 
@@ -146,9 +147,10 @@ lib/features/agents/
 │   ├── agent_providers.dart         # Riverpod providers
 │   └── task_agent_providers.dart    # Task agent providers
 └── ui/
-    ├── agent_detail_page.dart       # Inspection page
+    ├── agent_detail_page.dart       # Inspection page (tabbed, running spinner)
     ├── agent_report_section.dart    # Report renderer (Markdown)
     ├── agent_activity_log.dart      # Message log with expandable payloads
+    ├── agent_conversation_log.dart  # Thread-grouped conversation view
     ├── agent_controls.dart          # Action buttons
     └── agent_date_format.dart       # Shared date formatting utilities
 ```

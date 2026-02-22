@@ -13,19 +13,25 @@ class RunKeyFactory {
   RunKeyFactory._();
 
   /// Subscription wake: SHA256(agentId | subscriptionId | batchTokensHash |
-  /// wakeCounter).
+  /// wakeCounter | timestamp).
   ///
-  /// The [wakeCounter] (from `AgentStateEntity`) is included so that a second
-  /// wake cycle for the same subscription produces a fresh key even when
-  /// [batchTokens] is identical.
+  /// The [wakeCounter] and [timestamp] together guarantee uniqueness even
+  /// across app restarts (where the in-memory counter resets to zero) and
+  /// hot reloads. Without the timestamp, a counter reset would reproduce
+  /// run keys already persisted in `wake_run_log`, causing UNIQUE constraint
+  /// failures that silently drop the wake.
   static String forSubscription({
     required String agentId,
     required String subscriptionId,
     required Set<String> batchTokens,
     required int wakeCounter,
+    required DateTime timestamp,
   }) {
     final batchTokensHash = _hashTokens(batchTokens);
-    return _sha256('$agentId|$subscriptionId|$batchTokensHash|$wakeCounter');
+    return _sha256(
+      '$agentId|$subscriptionId|$batchTokensHash|$wakeCounter'
+      '|${timestamp.toIso8601String()}',
+    );
   }
 
   /// Timer wake: SHA256(agentId | timerId | scheduledAt).

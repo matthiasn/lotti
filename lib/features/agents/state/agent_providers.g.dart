@@ -189,7 +189,105 @@ final class WakeRunnerProvider
   }
 }
 
-String _$wakeRunnerHash() => r'6272c9e1c8679202c52f774487a93d979713b61e';
+String _$wakeRunnerHash() => r'1136b7407940255b856748fe11f9a7b1c49c722c';
+
+/// Whether a specific agent is currently running.
+///
+/// Yields the initial synchronous value, then updates reactively whenever the
+/// agent starts or stops running.
+
+@ProviderFor(agentIsRunning)
+final agentIsRunningProvider = AgentIsRunningFamily._();
+
+/// Whether a specific agent is currently running.
+///
+/// Yields the initial synchronous value, then updates reactively whenever the
+/// agent starts or stops running.
+
+final class AgentIsRunningProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
+  /// Whether a specific agent is currently running.
+  ///
+  /// Yields the initial synchronous value, then updates reactively whenever the
+  /// agent starts or stops running.
+  AgentIsRunningProvider._(
+      {required AgentIsRunningFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentIsRunningProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentIsRunningHash();
+
+  @override
+  String toString() {
+    return r'agentIsRunningProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentIsRunning(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentIsRunningProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentIsRunningHash() => r'7b5990fac89b7c820ed6bca412aabf16f7302aa4';
+
+/// Whether a specific agent is currently running.
+///
+/// Yields the initial synchronous value, then updates reactively whenever the
+/// agent starts or stops running.
+
+final class AgentIsRunningFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<bool>, String> {
+  AgentIsRunningFamily._()
+      : super(
+          retry: null,
+          name: r'agentIsRunningProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Whether a specific agent is currently running.
+  ///
+  /// Yields the initial synchronous value, then updates reactively whenever the
+  /// agent starts or stops running.
+
+  AgentIsRunningProvider call(
+    String agentId,
+  ) =>
+      AgentIsRunningProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentIsRunningProvider';
+}
 
 /// The wake orchestrator (notification listener + subscription matching).
 
@@ -784,6 +882,326 @@ final class AgentMessagePayloadTextFamily extends $Family
   String toString() => r'agentMessagePayloadTextProvider';
 }
 
+/// Fetch recent messages grouped by thread ID for an agent.
+///
+/// Returns a map of threadId → list of [AgentMessageEntity] sorted
+/// chronologically within each thread. Threads are sorted most-recent-first
+/// (by the latest message in each thread).
+
+@ProviderFor(agentMessagesByThread)
+final agentMessagesByThreadProvider = AgentMessagesByThreadFamily._();
+
+/// Fetch recent messages grouped by thread ID for an agent.
+///
+/// Returns a map of threadId → list of [AgentMessageEntity] sorted
+/// chronologically within each thread. Threads are sorted most-recent-first
+/// (by the latest message in each thread).
+
+final class AgentMessagesByThreadProvider extends $FunctionalProvider<
+        AsyncValue<Map<String, List<AgentDomainEntity>>>,
+        Map<String, List<AgentDomainEntity>>,
+        FutureOr<Map<String, List<AgentDomainEntity>>>>
+    with
+        $FutureModifier<Map<String, List<AgentDomainEntity>>>,
+        $FutureProvider<Map<String, List<AgentDomainEntity>>> {
+  /// Fetch recent messages grouped by thread ID for an agent.
+  ///
+  /// Returns a map of threadId → list of [AgentMessageEntity] sorted
+  /// chronologically within each thread. Threads are sorted most-recent-first
+  /// (by the latest message in each thread).
+  AgentMessagesByThreadProvider._(
+      {required AgentMessagesByThreadFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentMessagesByThreadProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentMessagesByThreadHash();
+
+  @override
+  String toString() {
+    return r'agentMessagesByThreadProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, List<AgentDomainEntity>>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, List<AgentDomainEntity>>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentMessagesByThread(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentMessagesByThreadProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentMessagesByThreadHash() =>
+    r'8a9ce557afd32ef6ee78f10072ec8ac49588a938';
+
+/// Fetch recent messages grouped by thread ID for an agent.
+///
+/// Returns a map of threadId → list of [AgentMessageEntity] sorted
+/// chronologically within each thread. Threads are sorted most-recent-first
+/// (by the latest message in each thread).
+
+final class AgentMessagesByThreadFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+            FutureOr<Map<String, List<AgentDomainEntity>>>, String> {
+  AgentMessagesByThreadFamily._()
+      : super(
+          retry: null,
+          name: r'agentMessagesByThreadProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch recent messages grouped by thread ID for an agent.
+  ///
+  /// Returns a map of threadId → list of [AgentMessageEntity] sorted
+  /// chronologically within each thread. Threads are sorted most-recent-first
+  /// (by the latest message in each thread).
+
+  AgentMessagesByThreadProvider call(
+    String agentId,
+  ) =>
+      AgentMessagesByThreadProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentMessagesByThreadProvider';
+}
+
+/// Fetch recent observation messages for an agent by [agentId].
+///
+/// Returns only messages with kind [AgentMessageKind.observation], ordered
+/// most-recent first (up to 50).
+
+@ProviderFor(agentObservationMessages)
+final agentObservationMessagesProvider = AgentObservationMessagesFamily._();
+
+/// Fetch recent observation messages for an agent by [agentId].
+///
+/// Returns only messages with kind [AgentMessageKind.observation], ordered
+/// most-recent first (up to 50).
+
+final class AgentObservationMessagesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Fetch recent observation messages for an agent by [agentId].
+  ///
+  /// Returns only messages with kind [AgentMessageKind.observation], ordered
+  /// most-recent first (up to 50).
+  AgentObservationMessagesProvider._(
+      {required AgentObservationMessagesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentObservationMessagesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentObservationMessagesHash();
+
+  @override
+  String toString() {
+    return r'agentObservationMessagesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentObservationMessages(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentObservationMessagesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentObservationMessagesHash() =>
+    r'06431568cc56d8332417fe369bb98ec9820079a3';
+
+/// Fetch recent observation messages for an agent by [agentId].
+///
+/// Returns only messages with kind [AgentMessageKind.observation], ordered
+/// most-recent first (up to 50).
+
+final class AgentObservationMessagesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  AgentObservationMessagesFamily._()
+      : super(
+          retry: null,
+          name: r'agentObservationMessagesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch recent observation messages for an agent by [agentId].
+  ///
+  /// Returns only messages with kind [AgentMessageKind.observation], ordered
+  /// most-recent first (up to 50).
+
+  AgentObservationMessagesProvider call(
+    String agentId,
+  ) =>
+      AgentObservationMessagesProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentObservationMessagesProvider';
+}
+
+/// Fetch all report snapshots for an agent by [agentId], most-recent first.
+///
+/// Each wake overwrites the report, so older snapshots let the user trace
+/// how the report evolved over time.
+
+@ProviderFor(agentReportHistory)
+final agentReportHistoryProvider = AgentReportHistoryFamily._();
+
+/// Fetch all report snapshots for an agent by [agentId], most-recent first.
+///
+/// Each wake overwrites the report, so older snapshots let the user trace
+/// how the report evolved over time.
+
+final class AgentReportHistoryProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Fetch all report snapshots for an agent by [agentId], most-recent first.
+  ///
+  /// Each wake overwrites the report, so older snapshots let the user trace
+  /// how the report evolved over time.
+  AgentReportHistoryProvider._(
+      {required AgentReportHistoryFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentReportHistoryProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentReportHistoryHash();
+
+  @override
+  String toString() {
+    return r'agentReportHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentReportHistory(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentReportHistoryProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentReportHistoryHash() =>
+    r'29fe477e1a79c0363211d49156cf9b7432054824';
+
+/// Fetch all report snapshots for an agent by [agentId], most-recent first.
+///
+/// Each wake overwrites the report, so older snapshots let the user trace
+/// how the report evolved over time.
+
+final class AgentReportHistoryFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  AgentReportHistoryFamily._()
+      : super(
+          retry: null,
+          name: r'agentReportHistoryProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch all report snapshots for an agent by [agentId], most-recent first.
+  ///
+  /// Each wake overwrites the report, so older snapshots let the user trace
+  /// how the report evolved over time.
+
+  AgentReportHistoryProvider call(
+    String agentId,
+  ) =>
+      AgentReportHistoryProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentReportHistoryProvider';
+}
+
 /// The task agent workflow with all dependencies resolved.
 
 @ProviderFor(taskAgentWorkflow)
@@ -899,4 +1317,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'db7a4a8c04591a861cc2e82ccca2ac7712e90c22';
+    r'd21a1758d8fa059482e29777ff27ee0e9abc564e';

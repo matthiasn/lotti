@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -192,6 +193,7 @@ class AgentToolExecutor {
             policyDenied: true,
             denialReason: denialReason,
           ),
+          payloadText: jsonEncode(args),
         );
       } catch (e, s) {
         developer.log(
@@ -219,6 +221,7 @@ class AgentToolExecutor {
         toolName: toolName,
         operationId: operationId,
       ),
+      payloadText: jsonEncode(args),
     );
 
     // 3. Execute the handler.
@@ -261,6 +264,7 @@ class AgentToolExecutor {
             operationId: operationId,
             errorMessage: result.errorMessage,
           ),
+          payloadText: result.output,
         );
       } catch (e, s) {
         developer.log(
@@ -303,6 +307,7 @@ class AgentToolExecutor {
             operationId: operationId,
             errorMessage: e.toString(),
           ),
+          payloadText: 'Error: $e',
         );
       } catch (auditError, auditStack) {
         developer.log(
@@ -321,8 +326,24 @@ class AgentToolExecutor {
   Future<void> _recordMessage({
     required AgentMessageKind kind,
     required AgentMessageMetadata metadata,
+    String? payloadText,
   }) async {
     final now = clock.now();
+    String? contentEntryId;
+
+    if (payloadText != null) {
+      contentEntryId = _uuid.v4();
+      await repository.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: contentEntryId,
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: <String, Object?>{'text': payloadText},
+        ),
+      );
+    }
+
     await repository.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),
@@ -332,6 +353,7 @@ class AgentToolExecutor {
         createdAt: now,
         // Agent messages receive vector clocks at sync time, not at creation.
         vectorClock: null,
+        contentEntryId: contentEntryId,
         metadata: metadata,
       ),
     );

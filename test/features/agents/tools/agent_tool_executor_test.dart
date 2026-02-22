@@ -79,7 +79,8 @@ void main() {
         );
       });
 
-      test('records denial in audit log as action message', () async {
+      test('records denial in audit log as action message with payload',
+          () async {
         await executor.execute(
           toolName: 'set_task_title',
           args: {'title': 'New Title'},
@@ -92,17 +93,21 @@ void main() {
           readVectorClock: (_) async => null,
         );
 
-        // Exactly one upsertEntity call for the denial action message.
+        // Two upsertEntity calls: payload + action message.
         final captured =
             verify(() => mockRepository.upsertEntity(captureAny())).captured;
-        expect(captured, hasLength(1));
-        final entity = captured.first as AgentDomainEntity;
-        final message = entity as AgentMessageEntity;
+        expect(captured, hasLength(2));
+
+        final payload = captured[0] as AgentMessagePayloadEntity;
+        expect(payload.agentId, equals(agentId));
+
+        final message = captured[1] as AgentMessageEntity;
         expect(message.agentId, equals(agentId));
         expect(message.threadId, equals(threadId));
         expect(message.metadata.policyDenied, isTrue);
         expect(message.metadata.denialReason, isNotNull);
         expect(message.metadata.toolName, equals('set_task_title'));
+        expect(message.contentEntryId, equals(payload.id));
       });
 
       test('does not call executeHandler when denied', () async {
@@ -146,7 +151,7 @@ void main() {
     });
 
     group('action and result message persistence', () {
-      test('persists action message before handler and result after', () async {
+      test('persists action+result messages with payloads', () async {
         await executor.execute(
           toolName: 'set_task_title',
           args: {'title': 'New Title'},
@@ -159,23 +164,29 @@ void main() {
           readVectorClock: (_) async => null,
         );
 
-        // Should have been called exactly twice: action + toolResult.
+        // 4 calls: actionPayload + action + resultPayload + toolResult.
         final captured =
             verify(() => mockRepository.upsertEntity(captureAny())).captured;
-        expect(captured, hasLength(2));
+        expect(captured, hasLength(4));
 
-        final actionMessage = captured[0] as AgentMessageEntity;
-        final resultMessage = captured[1] as AgentMessageEntity;
+        final actionPayload = captured[0] as AgentMessagePayloadEntity;
+        final actionMessage = captured[1] as AgentMessageEntity;
+        final resultPayload = captured[2] as AgentMessagePayloadEntity;
+        final resultMessage = captured[3] as AgentMessageEntity;
 
         expect(actionMessage.metadata.toolName, equals('set_task_title'));
         expect(actionMessage.metadata.runKey, equals(runKey));
         expect(actionMessage.metadata.operationId, isNotNull);
         expect(actionMessage.metadata.policyDenied, isFalse);
+        expect(actionMessage.contentEntryId, equals(actionPayload.id));
+        expect(actionPayload.content['text'], contains('New Title'));
 
         expect(resultMessage.metadata.toolName, equals('set_task_title'));
         expect(resultMessage.metadata.runKey, equals(runKey));
         expect(resultMessage.metadata.operationId, isNotNull);
         expect(resultMessage.metadata.errorMessage, isNull);
+        expect(resultMessage.contentEntryId, equals(resultPayload.id));
+        expect(resultPayload.content['text'], equals('done'));
       });
 
       test('result message contains error when handler returns error',
@@ -195,13 +206,17 @@ void main() {
 
         final captured =
             verify(() => mockRepository.upsertEntity(captureAny())).captured;
-        expect(captured, hasLength(2));
+        // 4 calls: actionPayload + action + resultPayload + toolResult.
+        expect(captured, hasLength(4));
 
-        final resultMessage = captured[1] as AgentMessageEntity;
+        final resultMessage = captured[3] as AgentMessageEntity;
         expect(
           resultMessage.metadata.errorMessage,
           equals('Title must not be empty'),
         );
+
+        final resultPayload = captured[2] as AgentMessagePayloadEntity;
+        expect(resultPayload.content['text'], equals('Invalid title'));
       });
     });
 
@@ -377,26 +392,31 @@ void main() {
 
         final captured =
             verify(() => mockRepository.upsertEntity(captureAny())).captured;
-        // action + toolResult (with error)
-        expect(captured, hasLength(2));
+        // actionPayload + action + errorPayload + toolResult (with error)
+        expect(captured, hasLength(4));
 
-        final resultMessage = captured[1] as AgentMessageEntity;
+        final resultMessage = captured[3] as AgentMessageEntity;
         expect(
           resultMessage.metadata.errorMessage,
           contains('Crash'),
         );
+
+        final errorPayload = captured[2] as AgentMessagePayloadEntity;
+        expect(errorPayload.content['text'], contains('Error'));
+        expect(errorPayload.content['text'], contains('Crash'));
       });
     });
 
     group('audit write resilience', () {
       test('success result is preserved when post-success audit write fails',
           () async {
-        // First upsertEntity call (action message) succeeds.
-        // Second call (toolResult message) throws.
+        // With payloads: calls are actionPayload(1), action(2),
+        // resultPayload(3), result(4).
+        // Throw on the result payload write (3rd call).
         var callCount = 0;
         when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
           callCount++;
-          if (callCount == 2) {
+          if (callCount == 3) {
             throw Exception('DB write failed');
           }
         });
@@ -446,12 +466,13 @@ void main() {
 
       test('error result is preserved when post-exception audit write fails',
           () async {
-        // First upsertEntity call (action message) succeeds.
-        // Second call (error toolResult message) throws.
+        // With payloads: calls are actionPayload(1), action(2),
+        // errorPayload(3), errorResult(4).
+        // Throw on the error payload write (3rd call).
         var callCount = 0;
         when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
           callCount++;
-          if (callCount == 2) {
+          if (callCount == 3) {
             throw Exception('Audit DB also down');
           }
         });

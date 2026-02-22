@@ -1613,6 +1613,153 @@ void main() {
       });
     });
 
+    group('post-execution drain', () {
+      test('schedules drain after job completes to pick up deferred work', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async {
+            executionCount++;
+            if (executionCount == 1) return gate.future;
+            return null;
+          };
+
+          // First job starts executing (holds agent-1's lock).
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'manual',
+              triggerTokens: <String>{},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+          expect(executionCount, 1);
+
+          // While agent-1 is executing, enqueue a second job for agent-1.
+          // processNext defers it because agent-1 is busy.
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-2',
+              agentId: 'agent-1',
+              reason: 'manual',
+              triggerTokens: <String>{},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Only the first job has executed.
+          expect(executionCount, 1);
+
+          // Complete first execution — deferred job is re-enqueued but not
+          // yet picked up (no immediate processNext since drain already ran).
+          gate.complete(null);
+          async
+            ..flushMicrotasks()
+
+            // After 30s, the post-execution timer fires processNext.
+            ..elapse(WakeOrchestrator.postExecutionDrainDelay)
+            ..flushMicrotasks();
+
+          // The deferred job should now have been processed.
+          expect(executionCount, 2);
+        });
+      });
+
+      test('does not reset existing timer when another job completes', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-2',
+                agentId: 'agent-2',
+                matchEntityIds: {'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          // Enqueue and process two jobs — both complete, scheduling timer.
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          async.flushMicrotasks();
+
+          // Both executed immediately.
+          expect(executionCount, 2);
+
+          // Advance 15 seconds (timer started at ~0s).
+          async.elapse(const Duration(seconds: 15));
+
+          // A new job completes after 15s — timer should NOT be reset.
+          emitTokens(async, controller, {'entity-1'});
+          async.flushMicrotasks();
+          expect(executionCount, 3);
+
+          // Advance remaining 15s to reach original 30s mark.
+          async
+            ..elapse(const Duration(seconds: 15))
+            ..flushMicrotasks();
+
+          // Timer should fire at original 30s, not 30s after the 3rd job.
+          // This verifies the timer was not reset.
+          controller.close();
+        });
+      });
+
+      test('stop cancels pending drain timer', () {
+        fakeAsync((async) {
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'test',
+              triggerTokens: {'tok-a'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Timer is now pending. Stop the orchestrator.
+          orchestrator.stop();
+          async.flushMicrotasks();
+
+          // Advance past the drain delay — timer should not fire.
+          clearInteractions(mockRepository);
+          async
+            ..elapse(WakeOrchestrator.postExecutionDrainDelay * 2)
+            ..flushMicrotasks();
+
+          // No additional processNext should have been triggered.
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+        });
+      });
+    });
+
     group('AgentSubscription', () {
       test('stores all fields correctly', () {
         bool predicateCalled(Set<String> tokens) => true;

@@ -8,6 +8,13 @@ import 'dart:async';
 /// [waitForCompletion] and re-try.
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
+  final _runningController = StreamController<Set<String>>.broadcast();
+
+  /// Stream that emits the current set of active agent IDs whenever it changes.
+  ///
+  /// Emits after every [tryAcquire] and [release] call. Consumers can filter
+  /// for a specific agent ID using `.map((ids) => ids.contains(agentId))`.
+  Stream<Set<String>> get runningAgentIds => _runningController.stream;
 
   /// Attempt to acquire the single-flight lock for [agentId].
   ///
@@ -16,6 +23,7 @@ class WakeRunner {
   Future<bool> tryAcquire(String agentId) async {
     if (_activeLocks.containsKey(agentId)) return false;
     _activeLocks[agentId] = Completer<void>();
+    _runningController.add(activeAgentIds);
     return true;
   }
 
@@ -25,6 +33,7 @@ class WakeRunner {
   /// to prevent the lock from leaking.
   void release(String agentId) {
     _activeLocks.remove(agentId)?.complete();
+    _runningController.add(activeAgentIds);
   }
 
   /// Suspend until the currently active run for [agentId] finishes.
@@ -40,4 +49,11 @@ class WakeRunner {
 
   /// Snapshot of the IDs of all agents that are currently running.
   Set<String> get activeAgentIds => Set.unmodifiable(_activeLocks.keys.toSet());
+
+  /// Close the running-state stream controller.
+  ///
+  /// Call when the runner is no longer needed to prevent resource leaks.
+  void dispose() {
+    _runningController.close();
+  }
 }

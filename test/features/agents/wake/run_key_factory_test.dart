@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 
+final _fixedTime = DateTime(2024, 3, 15, 10, 30);
+
 /// Helper to compute SHA-256 the same way RunKeyFactory does internally.
 String _sha256(String input) => sha256.convert(utf8.encode(input)).toString();
 
@@ -16,12 +18,14 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a', 'tok-b'},
           wakeCounter: 3,
+          timestamp: _fixedTime,
         );
         final key2 = RunKeyFactory.forSubscription(
           agentId: 'agent-1',
           subscriptionId: 'sub-1',
           batchTokens: {'tok-b', 'tok-a'},
           wakeCounter: 3,
+          timestamp: _fixedTime,
         );
 
         expect(key1, equals(key2),
@@ -34,12 +38,14 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
         final key2 = RunKeyFactory.forSubscription(
           agentId: 'agent-2',
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
 
         expect(key1, isNot(equals(key2)));
@@ -51,12 +57,14 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
         final key2 = RunKeyFactory.forSubscription(
           agentId: 'agent-1',
           subscriptionId: 'sub-2',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
 
         expect(key1, isNot(equals(key2)));
@@ -68,12 +76,14 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
         final key2 = RunKeyFactory.forSubscription(
           agentId: 'agent-1',
           subscriptionId: 'sub-1',
           batchTokens: {'tok-b'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
 
         expect(key1, isNot(equals(key2)));
@@ -85,12 +95,14 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
         final key2 = RunKeyFactory.forSubscription(
           agentId: 'agent-1',
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 1,
+          timestamp: _fixedTime,
         );
 
         expect(key1, isNot(equals(key2)));
@@ -102,6 +114,7 @@ void main() {
           subscriptionId: 'sub-1',
           batchTokens: {'tok-a'},
           wakeCounter: 0,
+          timestamp: _fixedTime,
         );
 
         expect(key, hasLength(64));
@@ -117,7 +130,8 @@ void main() {
         final sortedTokens = batchTokens.toList()..sort();
         final batchTokensHash = _sha256(sortedTokens.join('|'));
         final expected = _sha256(
-          '$agentId|$subscriptionId|$batchTokensHash|$wakeCounter',
+          '$agentId|$subscriptionId|$batchTokensHash|$wakeCounter'
+          '|${_fixedTime.toIso8601String()}',
         );
 
         final actual = RunKeyFactory.forSubscription(
@@ -125,9 +139,29 @@ void main() {
           subscriptionId: subscriptionId,
           batchTokens: batchTokens,
           wakeCounter: wakeCounter,
+          timestamp: _fixedTime,
         );
 
         expect(actual, equals(expected));
+      });
+
+      test('differs when timestamp changes', () {
+        final key1 = RunKeyFactory.forSubscription(
+          agentId: 'agent-1',
+          subscriptionId: 'sub-1',
+          batchTokens: {'tok-a'},
+          wakeCounter: 0,
+          timestamp: DateTime(2024, 3, 15, 10, 30),
+        );
+        final key2 = RunKeyFactory.forSubscription(
+          agentId: 'agent-1',
+          subscriptionId: 'sub-1',
+          batchTokens: {'tok-a'},
+          wakeCounter: 0,
+          timestamp: DateTime(2024, 3, 15, 10, 31),
+        );
+
+        expect(key1, isNot(equals(key2)));
       });
     });
 

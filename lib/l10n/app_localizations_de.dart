@@ -127,6 +127,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentControlsResumeButton => 'Fortsetzen';
 
   @override
+  String get agentConversationEmpty => 'Noch keine Konversationen.';
+
+  @override
+  String agentConversationThreadHeader(String runKey) {
+    return 'Wake $runKey';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Fehler beim Laden des Agenten: $error';
   }
@@ -182,12 +190,25 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get agentObservationsEmpty =>
+      'Noch keine Beobachtungen aufgezeichnet.';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Bericht konnte nicht geladen werden: $error';
   }
 
   @override
+  String get agentReportHistoryBadge => 'Bericht';
+
+  @override
+  String get agentReportHistoryEmpty => 'Noch keine Berichts-Snapshots.';
+
+  @override
   String get agentReportNone => 'Noch kein Bericht verfügbar.';
+
+  @override
+  String get agentRunningIndicator => 'Aktiv';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';
@@ -214,6 +235,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Aufwachzähler';
+
+  @override
+  String get agentTabActivity => 'Aktivität';
+
+  @override
+  String get agentTabConversations => 'Konversationen';
+
+  @override
+  String get agentTabObservations => 'Beobachtungen';
+
+  @override
+  String get agentTabReports => 'Berichte';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Vorschläge für Aktionspunkte';

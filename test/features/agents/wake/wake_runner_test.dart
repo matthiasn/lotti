@@ -197,5 +197,99 @@ void main() {
         });
       });
     });
+
+    group('runningAgentIds stream', () {
+      test('emits updated set on acquire', () {
+        fakeAsync((async) {
+          final emissions = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions.add);
+
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          expect(emissions, hasLength(1));
+          expect(emissions.last, equals({'agent-1'}));
+        });
+      });
+
+      test('emits updated set on release', () {
+        fakeAsync((async) {
+          final emissions = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions.add);
+
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+          runner.release('agent-1');
+          async.flushMicrotasks();
+
+          expect(emissions, hasLength(2));
+          expect(emissions[0], equals({'agent-1'}));
+          expect(emissions[1], isEmpty);
+        });
+      });
+
+      test('emits cumulative set for multiple agents', () {
+        fakeAsync((async) {
+          final emissions = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions.add);
+
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+          runner.tryAcquire('agent-2');
+          async.flushMicrotasks();
+
+          expect(emissions, hasLength(2));
+          expect(emissions[0], equals({'agent-1'}));
+          expect(emissions[1], equals({'agent-1', 'agent-2'}));
+        });
+      });
+
+      test('does not emit on failed acquire (already locked)', () {
+        fakeAsync((async) {
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          final emissions = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions.add);
+
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          expect(emissions, isEmpty);
+        });
+      });
+
+      test('is broadcast — supports multiple listeners', () {
+        fakeAsync((async) {
+          final emissions1 = <Set<String>>[];
+          final emissions2 = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions1.add);
+          runner.runningAgentIds.listen(emissions2.add);
+
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          expect(emissions1, hasLength(1));
+          expect(emissions2, hasLength(1));
+        });
+      });
+    });
+
+    group('dispose', () {
+      test('closes the runningAgentIds stream', () {
+        fakeAsync((async) {
+          var done = false;
+          runner.runningAgentIds.listen(
+            (_) {},
+            onDone: () => done = true,
+          );
+
+          runner.dispose();
+          async.flushMicrotasks();
+
+          expect(done, isTrue);
+        });
+      });
+    });
   });
 }

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
+import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -69,6 +70,9 @@ class AgentDetailPage extends ConsumerWidget {
           );
         }
 
+        final isRunning =
+            ref.watch(agentIsRunningProvider(identity.agentId)).value ?? false;
+
         return Scaffold(
           appBar: AppBar(
             title: Row(
@@ -81,6 +85,20 @@ class AgentDetailPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: AppTheme.spacingSmall),
                 _LifecycleBadge(lifecycle: identity.lifecycle),
+                if (isRunning) ...[
+                  const SizedBox(width: AppTheme.spacingMedium),
+                  Tooltip(
+                    message: context.messages.agentRunningIndicator,
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: context.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -95,20 +113,8 @@ class AgentDetailPage extends ConsumerWidget {
                   // Report section
                   _buildReportSection(context, reportAsync),
 
-                  // Activity log heading
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.cardPadding,
-                      vertical: AppTheme.spacingSmall,
-                    ),
-                    child: Text(
-                      context.messages.agentActivityLogHeading,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  AgentActivityLog(agentId: agentId),
+                  // Messages (tabbed: Activity / Conversations)
+                  _AgentMessagesSection(agentId: agentId),
 
                   const Divider(indent: 16, endIndent: 16),
 
@@ -240,6 +246,72 @@ class AgentDetailPage extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Tabbed section showing agent messages in three views:
+/// - Activity: flat chronological log
+/// - Conversations: grouped by thread (wake cycle)
+/// - Observations: observation-only entries, expanded by default
+class _AgentMessagesSection extends StatefulWidget {
+  const _AgentMessagesSection({required this.agentId});
+
+  final String agentId;
+
+  @override
+  State<_AgentMessagesSection> createState() => _AgentMessagesSectionState();
+}
+
+class _AgentMessagesSectionState extends State<_AgentMessagesSection>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.cardPadding,
+          ),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: context.messages.agentTabActivity),
+              Tab(text: context.messages.agentTabReports),
+              Tab(text: context.messages.agentTabConversations),
+              Tab(text: context.messages.agentTabObservations),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+        IndexedStack(
+          index: _tabController.index,
+          children: [
+            AgentActivityLog(agentId: widget.agentId),
+            AgentReportHistoryLog(agentId: widget.agentId),
+            AgentConversationLog(agentId: widget.agentId),
+            AgentObservationLog(agentId: widget.agentId),
+          ],
+        ),
+      ],
     );
   }
 }
