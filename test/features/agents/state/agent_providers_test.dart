@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -49,6 +51,55 @@ void main() {
     addTearDown(container.dispose);
     return container;
   }
+
+  group('agentDatabaseProvider', () {
+    test('returns getIt instance when registered', () async {
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      final mockDb = AgentDatabase(inMemoryDatabase: true);
+      addTearDown(mockDb.close);
+      getIt.registerSingleton<AgentDatabase>(mockDb);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final db = container.read(agentDatabaseProvider);
+      expect(db, same(mockDb));
+    });
+
+    test('creates new instance when getIt has no registration', () async {
+      // No getIt setup — provider falls back to creating its own instance.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final db = container.read(agentDatabaseProvider);
+      expect(db, isA<AgentDatabase>());
+    });
+  });
+
+  group('agentRepositoryProvider', () {
+    test('returns getIt instance when registered', () async {
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      getIt.registerSingleton<AgentRepository>(mockRepository);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final repo = container.read(agentRepositoryProvider);
+      expect(repo, same(mockRepository));
+    });
+
+    test('creates new instance when getIt has no registration', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final repo = container.read(agentRepositoryProvider);
+      expect(repo, isA<AgentRepository>());
+    });
+  });
 
   group('agentSyncServiceProvider', () {
     test('creates AgentSyncService with correct dependencies', () async {
