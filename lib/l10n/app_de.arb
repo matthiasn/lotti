@@ -44,6 +44,15 @@
   "agentControlsPauseButton": "Pausieren",
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
+  "agentConversationEmpty": "Noch keine Konversationen.",
+  "agentConversationThreadHeader": "Wake {runKey}",
+  "@agentConversationThreadHeader": {
+    "placeholders": {
+      "runKey": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Fehler beim Laden des Agenten: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -75,6 +84,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "Noch keine Beobachtungen aufgezeichnet.",
   "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {
@@ -83,7 +93,10 @@
       }
     }
   },
+  "agentReportHistoryBadge": "Bericht",
+  "agentReportHistoryEmpty": "Noch keine Berichts-Snapshots.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentRunningIndicator": "Aktiv",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
   "@agentStateErrorLoading": {
@@ -99,6 +112,10 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Schlafend bis",
   "agentStateWakeCount": "Aufwachzähler",
+  "agentTabActivity": "Aktivität",
+  "agentTabConversations": "Konversationen",
+  "agentTabObservations": "Beobachtungen",
+  "agentTabReports": "Berichte",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",
   "aiAssistantSummarizeTask": "Aufgabe zusammenfassen",

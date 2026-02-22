@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -74,10 +75,10 @@ class _TaskMetadataRow extends StatelessWidget {
               ),
               TaskCategoryWrapper(taskId: taskId),
               TaskLanguageWrapper(taskId: taskId),
-              _TaskAgentChip(taskId: taskId),
             ],
           ),
         ),
+        _TaskAgentChip(taskId: taskId),
       ],
     );
   }
@@ -112,13 +113,27 @@ class _TaskAgentChip extends ConsumerWidget {
           final identity = agentEntity.mapOrNull(agent: (e) => e);
           if (identity == null) return const SizedBox.shrink();
 
+          final isRunning =
+              ref.watch(agentIsRunningProvider(identity.agentId)).value ??
+                  false;
+
           return ActionChip(
-            avatar: Icon(
-              Icons.smart_toy_outlined,
-              size: 16,
-              color: context.colorScheme.primary,
-            ),
+            avatar: isRunning
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: context.colorScheme.primary,
+                    ),
+                  )
+                : Icon(
+                    Icons.smart_toy_outlined,
+                    size: 16,
+                    color: context.colorScheme.primary,
+                  ),
             label: Text(context.messages.taskAgentChipLabel),
+            tooltip: isRunning ? context.messages.agentRunningIndicator : null,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(

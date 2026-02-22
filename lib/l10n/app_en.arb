@@ -43,6 +43,15 @@
   "agentControlsPauseButton": "Pause",
   "agentControlsReanalyzeButton": "Re-analyze",
   "agentControlsResumeButton": "Resume",
+  "agentConversationEmpty": "No conversations yet.",
+  "agentConversationThreadHeader": "Wake {runKey}",
+  "@agentConversationThreadHeader": {
+    "placeholders": {
+      "runKey": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Error loading agent: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -74,6 +83,7 @@
       }
     }
   },
+  "agentObservationsEmpty": "No observations recorded yet.",
   "agentReportErrorLoading": "Failed to load report: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {
@@ -82,7 +92,10 @@
       }
     }
   },
+  "agentReportHistoryBadge": "Report",
+  "agentReportHistoryEmpty": "No report snapshots yet.",
   "agentReportNone": "No report available yet.",
+  "agentRunningIndicator": "Running",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {
@@ -98,6 +111,10 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
+  "agentTabActivity": "Activity",
+  "agentTabConversations": "Conversations",
+  "agentTabObservations": "Observations",
+  "agentTabReports": "Reports",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",

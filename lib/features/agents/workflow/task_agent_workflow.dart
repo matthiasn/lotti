@@ -168,6 +168,39 @@ class TaskAgentWorkflow {
     // and failure paths) so causality tracking is consistent.
     final now = clock.now();
 
+    // 5a. Persist the user message for inspectability before sending to LLM.
+    try {
+      final userPayloadId = _uuid.v4();
+      await agentRepository.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: userPayloadId,
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: <String, Object?>{'text': userMessage},
+        ),
+      );
+      await agentRepository.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          threadId: threadId,
+          kind: AgentMessageKind.user,
+          createdAt: now,
+          vectorClock: null,
+          contentEntryId: userPayloadId,
+          metadata: AgentMessageMetadata(runKey: runKey),
+        ),
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to persist user message for agent $agentId',
+        name: 'TaskAgentWorkflow',
+        error: e,
+      );
+      // Non-fatal: continue with execution even if audit fails.
+    }
+
     try {
       final executor = AgentToolExecutor(
         repository: agentRepository,

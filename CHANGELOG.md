@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.867] - 2026-02-22
+### Added
+- Agent running-state feedback: reactive spinner indicators on the task page
+  agent chip and agent detail page app bar show when an agent is actively
+  executing.
+- Agent inspectability: tool call arguments and results are now persisted as
+  message payloads and viewable in expandable activity log cards with monospace
+  formatting. User messages sent to the LLM are also persisted.
+- Conversation view: agent detail page now has tabbed Activity/Conversations
+  views, with the conversation tab grouping messages by wake cycle (thread).
+- Post-execution signal drain: signals arriving while an agent is running are
+  no longer lost — a 30-second drain timer picks up deferred work after
+  execution completes.
+
 ## [0.9.866] - 2026-02-21
 ### Added
 - Task Agent: persistent AI agents that maintain task summary reports and

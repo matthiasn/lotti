@@ -81,6 +81,20 @@ class WakeOrchestrator {
 
   final _subscriptions = <AgentSubscription>[];
 
+  /// Pending post-execution drain timer.
+  ///
+  /// Scheduled after a job completes to pick up signals that arrived while
+  /// the agent was running and were deferred. Only one timer exists at a time;
+  /// if a timer is already pending it is left alone (not reset) to prevent
+  /// starvation when agents complete in quick succession.
+  Timer? _pendingDrainTimer;
+
+  /// Delay before the post-execution drain fires.
+  ///
+  /// Gives rapid-fire signals time to coalesce before the next wake, while
+  /// ensuring timely response to deferred work.
+  static const postExecutionDrainDelay = Duration(seconds: 30);
+
   /// Monotonic wake counter per agent.
   ///
   /// Incremented each time a subscription-driven wake is enqueued, ensuring
@@ -200,8 +214,10 @@ class WakeOrchestrator {
     _notificationSub = notificationStream.listen(_onBatch);
   }
 
-  /// Stop listening and cancel the subscription.
+  /// Stop listening, cancel the subscription, and clean up timers.
   Future<void> stop() async {
+    _pendingDrainTimer?.cancel();
+    _pendingDrainTimer = null;
     await _notificationSub?.cancel();
     _notificationSub = null;
   }
@@ -273,11 +289,13 @@ class WakeOrchestrator {
       final counter = _wakeCounters[sub.agentId] ?? 0;
       _wakeCounters[sub.agentId] = counter + 1;
 
+      final now = clock.now();
       final runKey = RunKeyFactory.forSubscription(
         agentId: sub.agentId,
         subscriptionId: sub.id,
         batchTokens: matched,
         wakeCounter: counter,
+        timestamp: now,
       );
 
       final job = WakeJob(
@@ -480,7 +498,24 @@ class WakeOrchestrator {
       }
     } finally {
       runner.release(job.agentId);
+      _schedulePostExecutionDrain();
     }
+  }
+
+  /// Schedule a delayed drain to process signals that arrived during execution.
+  ///
+  /// If a timer is already pending, this is a no-op — the existing timer is
+  /// left alone rather than reset. This prevents starvation where rapid agent
+  /// completions keep pushing the drain further out.
+  void _schedulePostExecutionDrain() {
+    if (_pendingDrainTimer != null) return;
+    _pendingDrainTimer = Timer(
+      postExecutionDrainDelay,
+      () {
+        _pendingDrainTimer = null;
+        unawaited(processNext());
+      },
+    );
   }
 
   /// Update wake run status, swallowing any DB errors so they don't escape

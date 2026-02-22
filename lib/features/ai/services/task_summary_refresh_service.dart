@@ -7,9 +7,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_summary_refresh_service.g.dart';
 
-/// Service that handles task summary refresh operations for checklists
-/// This centralizes the logic that was duplicated across repositories
-@riverpod
+/// Service that handles task summary refresh operations for checklists.
+///
+/// Must be `keepAlive` because it is used by keepAlive repositories
+/// (ChecklistRepository, JournalRepository). An auto-disposed provider's
+/// Ref becomes invalid once no listeners remain, causing "Cannot use Ref
+/// after disposed" errors when the repository calls back into this service
+/// asynchronously.
+@Riverpod(keepAlive: true)
 TaskSummaryRefreshService taskSummaryRefreshService(Ref ref) {
   return TaskSummaryRefreshService(ref);
 }

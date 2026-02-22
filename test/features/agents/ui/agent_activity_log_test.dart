@@ -12,6 +12,22 @@ import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
+// Re-usable observation messages for AgentObservationLog tests.
+List<AgentDomainEntity> _makeObservationMessages() => [
+      makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15, 10),
+        contentEntryId: 'payload-obs-1',
+      ),
+      makeTestMessage(
+        id: 'obs-2',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15, 11),
+        contentEntryId: 'payload-obs-2',
+      ),
+    ];
+
 void main() {
   const testAgentId = kTestAgentId;
 
@@ -549,5 +565,415 @@ void main() {
         expect(find.text('Observation'), findsOneWidget);
       },
     );
+  });
+
+  group('AgentObservationLog', () {
+    Widget buildObservationSubject({
+      required AsyncValue<List<AgentDomainEntity>> observationsValue,
+      FutureOr<String?> Function(Ref, String)? payloadOverride,
+    }) {
+      return makeTestableWidgetWithScaffold(
+        const AgentObservationLog(agentId: testAgentId),
+        overrides: [
+          agentObservationMessagesProvider.overrideWith(
+            (ref, agentId) => observationsValue.when(
+              data: (data) async => data,
+              loading: () => Completer<List<AgentDomainEntity>>().future,
+              error: Future<List<AgentDomainEntity>>.error,
+            ),
+          ),
+          if (payloadOverride != null)
+            agentMessagePayloadTextProvider.overrideWith(payloadOverride),
+        ],
+      );
+    }
+
+    testWidgets('shows loading indicator while observations load',
+        (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue:
+              const AsyncValue<List<AgentDomainEntity>>.loading(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows error message when loading fails', (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue: AsyncValue<List<AgentDomainEntity>>.error(
+            Exception('DB error'),
+            StackTrace.current,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('DB error'), findsOneWidget);
+    });
+
+    testWidgets('shows empty state when no observations exist', (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue: const AsyncValue.data([]),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('No observations recorded yet.'), findsOneWidget);
+    });
+
+    testWidgets('shows observation cards expanded by default', (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue: AsyncValue.data(_makeObservationMessages()),
+          payloadOverride: (ref, payloadId) async =>
+              'Observation insight $payloadId',
+        ),
+      );
+      await tester.pump();
+      // Extra pump for async payload resolution.
+      await tester.pump();
+
+      // Both observation payloads should be visible without tapping.
+      expect(
+        find.text('Observation insight payload-obs-1'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Observation insight payload-obs-2'),
+        findsOneWidget,
+      );
+      // Collapse icons should be shown (not expand).
+      expect(find.byIcon(Icons.expand_less), findsNWidgets(2));
+    });
+
+    testWidgets('can collapse an initially expanded observation',
+        (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue: AsyncValue.data([
+            makeTestMessage(
+              id: 'obs-1',
+              kind: AgentMessageKind.observation,
+              createdAt: DateTime(2024, 3, 15, 10),
+              contentEntryId: 'payload-obs-1',
+            ),
+          ]),
+          payloadOverride: (ref, payloadId) async => 'Insight text',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Initially expanded — text visible.
+      expect(find.text('Insight text'), findsOneWidget);
+
+      // Tap to collapse.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      expect(find.text('Insight text'), findsNothing);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    });
+
+    testWidgets('shows only observation kind badges', (tester) async {
+      await tester.pumpWidget(
+        buildObservationSubject(
+          observationsValue: AsyncValue.data(_makeObservationMessages()),
+        ),
+      );
+      await tester.pump();
+
+      // All cards should show Observation badges.
+      expect(find.text('Observation'), findsNWidgets(2));
+      // No other kind badges should appear.
+      expect(find.text('Thought'), findsNothing);
+      expect(find.text('Action'), findsNothing);
+      expect(find.text('Tool Result'), findsNothing);
+    });
+  });
+
+  group('AgentActivityLog.fromMessages with expandToolCalls', () {
+    Widget buildFromMessages({
+      required List<AgentMessageEntity> messages,
+      bool expandToolCalls = false,
+      FutureOr<String?> Function(Ref, String)? payloadOverride,
+    }) {
+      return makeTestableWidgetWithScaffold(
+        AgentActivityLog.fromMessages(
+          agentId: testAgentId,
+          messages: messages,
+          expandToolCalls: expandToolCalls,
+        ),
+        overrides: [
+          if (payloadOverride != null)
+            agentMessagePayloadTextProvider.overrideWith(payloadOverride),
+        ],
+      );
+    }
+
+    testWidgets('action messages are collapsed by default', (tester) async {
+      final messages = [
+        makeTestMessage(
+          id: 'msg-1',
+          kind: AgentMessageKind.action,
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'payload-1',
+          toolName: 'set_task_title',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildFromMessages(
+          messages: messages,
+          payloadOverride: (ref, id) async => '{"title": "New Title"}',
+        ),
+      );
+      await tester.pump();
+
+      // Should show expand icon (collapsed).
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.text('{"title": "New Title"}'), findsNothing);
+    });
+
+    testWidgets('action messages start expanded when expandToolCalls is true',
+        (tester) async {
+      final messages = [
+        makeTestMessage(
+          id: 'msg-1',
+          kind: AgentMessageKind.action,
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'payload-1',
+          toolName: 'set_task_title',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildFromMessages(
+          messages: messages,
+          expandToolCalls: true,
+          payloadOverride: (ref, id) async => '{"title": "New Title"}',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Should show collapse icon (expanded).
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.text('{"title": "New Title"}'), findsOneWidget);
+    });
+
+    testWidgets(
+        'toolResult messages start expanded when expandToolCalls is true',
+        (tester) async {
+      final messages = [
+        makeTestMessage(
+          id: 'msg-1',
+          kind: AgentMessageKind.toolResult,
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'payload-1',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildFromMessages(
+          messages: messages,
+          expandToolCalls: true,
+          payloadOverride: (ref, id) async => 'Success: title updated',
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.text('Success: title updated'), findsOneWidget);
+    });
+
+    testWidgets('non-tool messages remain collapsed with expandToolCalls',
+        (tester) async {
+      final messages = [
+        makeTestMessage(
+          id: 'msg-1',
+          createdAt: DateTime(2024, 3, 15, 10),
+          contentEntryId: 'payload-1',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildFromMessages(
+          messages: messages,
+          expandToolCalls: true,
+          payloadOverride: (ref, id) async => 'thinking...',
+        ),
+      );
+      await tester.pump();
+
+      // Thought is not a tool call, so it should remain collapsed.
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.text('thinking...'), findsNothing);
+    });
+  });
+
+  group('AgentReportHistoryLog', () {
+    Widget buildReportHistory({
+      required AsyncValue<List<AgentDomainEntity>> reportsValue,
+    }) {
+      return makeTestableWidgetWithScaffold(
+        const AgentReportHistoryLog(agentId: testAgentId),
+        overrides: [
+          agentReportHistoryProvider.overrideWith(
+            (ref, agentId) => reportsValue.when(
+              data: (data) async => data,
+              loading: () => Completer<List<AgentDomainEntity>>().future,
+              error: Future<List<AgentDomainEntity>>.error,
+            ),
+          ),
+        ],
+      );
+    }
+
+    testWidgets('shows loading indicator', (tester) async {
+      await tester.pumpWidget(
+        buildReportHistory(
+          reportsValue: const AsyncValue<List<AgentDomainEntity>>.loading(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows error message', (tester) async {
+      await tester.pumpWidget(
+        buildReportHistory(
+          reportsValue: AsyncValue<List<AgentDomainEntity>>.error(
+            Exception('DB error'),
+            StackTrace.current,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('DB error'), findsOneWidget);
+    });
+
+    testWidgets('shows empty state when no reports', (tester) async {
+      await tester.pumpWidget(
+        buildReportHistory(
+          reportsValue: const AsyncValue.data([]),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('No report snapshots yet.'), findsOneWidget);
+    });
+
+    testWidgets('shows report cards with timestamps', (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-1',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          content: '# First Report',
+        ),
+        makeTestReport(
+          id: 'report-2',
+          createdAt: DateTime(2024, 3, 15, 14),
+          content: '# Second Report',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pump();
+
+      // Both cards should have the "Report" badge.
+      expect(find.text('Report'), findsNWidgets(2));
+      // Timestamps should be shown (formatAgentDateTime uses HH:mm, no seconds).
+      expect(find.text('2024-03-15 10:30'), findsOneWidget);
+      expect(find.text('2024-03-15 14:00'), findsOneWidget);
+    });
+
+    testWidgets('first report is expanded by default', (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-1',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: 'Report content here',
+        ),
+        makeTestReport(
+          id: 'report-2',
+          createdAt: DateTime(2024, 3, 15, 14),
+          content: 'Second report content',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // First report expanded — GptMarkdown renders content.
+      // The second report should be collapsed.
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    });
+
+    testWidgets('tapping a collapsed report expands it', (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-1',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: 'Only report',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially expanded (index 0).
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+      // Tap to collapse.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Tap to expand again.
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    });
+
+    testWidgets('ignores non-report entities in the list', (tester) async {
+      final mixed = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-1',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: 'A report',
+        ),
+        // Include a non-report entity.
+        makeTestMessage(
+          id: 'msg-1',
+          createdAt: DateTime(2024, 3, 15, 11),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(mixed)),
+      );
+      await tester.pump();
+
+      // Only the report card should render.
+      expect(find.text('Report'), findsOneWidget);
+    });
   });
 }
