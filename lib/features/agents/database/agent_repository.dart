@@ -159,6 +159,15 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch all non-deleted agent entities, ordered by `created_at` ascending.
+  ///
+  /// Used by the maintenance sync step to enqueue all agent entities for
+  /// cross-device synchronization.
+  Future<List<AgentDomainEntity>> getAllEntities() async {
+    final rows = await _db.getAllAgentEntities().get();
+    return rows.map(AgentDbConversions.fromEntityRow).toList();
+  }
+
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
   /// Insert or update a link using on-conflict update semantics against the
@@ -196,6 +205,15 @@ class AgentRepository {
     } else {
       rows = await _db.getAgentLinksByToId(toId).get();
     }
+    return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Fetch all non-deleted agent links, ordered by `created_at` ascending.
+  ///
+  /// Used by the maintenance sync step to enqueue all agent links for
+  /// cross-device synchronization.
+  Future<List<model.AgentLink>> getAllLinks() async {
+    final rows = await _db.getAllAgentLinks().get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 

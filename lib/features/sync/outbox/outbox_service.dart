@@ -299,6 +299,14 @@ class OutboxService {
             msg: msg,
             commonFields: commonFields,
           ),
+        final SyncAgentEntity msg => _enqueueAgentEntity(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncAgentLink msg => _enqueueAgentLink(
+            msg: msg,
+            commonFields: commonFields,
+          ),
       };
 
       // Schedule next send unless merge already did (returns true)
@@ -1005,6 +1013,28 @@ class OutboxService {
         subject: 'backfillResponse:${msg.hostId}:${msg.counter}',
         logMessage: 'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
             'counter=${msg.counter} deleted=${msg.deleted}',
+      );
+
+  Future<bool> _enqueueAgentEntity({
+    required SyncAgentEntity msg,
+    required OutboxCompanion commonFields,
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'agentEntity:${msg.agentEntity.id}',
+        logMessage: 'enqueue type=SyncAgentEntity '
+            'subject=agentEntity:${msg.agentEntity.id}',
+      );
+
+  Future<bool> _enqueueAgentLink({
+    required SyncAgentLink msg,
+    required OutboxCompanion commonFields,
+  }) =>
+      _enqueueSimple(
+        commonFields: commonFields,
+        subject: 'agentLink:${msg.agentLink.id}',
+        logMessage: 'enqueue type=SyncAgentLink '
+            'subject=agentLink:${msg.agentLink.id}',
       );
 
   Future<void> dispose() async {

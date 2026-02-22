@@ -19,6 +19,8 @@ class SyncModal extends ConsumerWidget {
       SyncStep.dashboards,
       SyncStep.habits,
       SyncStep.aiSettings,
+      SyncStep.agentEntities,
+      SyncStep.agentLinks,
     ];
     final selectedStepsNotifier =
         ValueNotifier<Set<SyncStep>>(orderedSteps.toSet());
@@ -249,6 +251,10 @@ class SyncModal extends ConsumerWidget {
         return context.messages.syncStepHabits;
       case SyncStep.aiSettings:
         return context.messages.syncStepAiSettings;
+      case SyncStep.agentEntities:
+        return context.messages.syncStepAgentEntities;
+      case SyncStep.agentLinks:
+        return context.messages.syncStepAgentLinks;
       case SyncStep.complete:
         return context.messages.syncStepComplete;
     }

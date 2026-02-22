@@ -14,14 +14,22 @@ void main() {
 
   late MockAgentRepository mockRepository;
   late MockWakeOrchestrator mockOrchestrator;
+  late MockAgentSyncService mockSyncService;
   late AgentService service;
 
   setUp(() {
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
+    mockSyncService = MockAgentSyncService();
+
+    // Stub syncService write methods
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+
     service = AgentService(
       repository: mockRepository,
       orchestrator: mockOrchestrator,
+      syncService: mockSyncService,
     );
   });
 
@@ -29,9 +37,6 @@ void main() {
     group('createAgent', () {
       test('creates identity, state, and link, then returns identity',
           () async {
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
-
         final identity = await service.createAgent(
           kind: 'task_agent',
           displayName: 'Test Agent',
@@ -50,7 +55,7 @@ void main() {
 
         // Verify identity entity was persisted
         final identityCalls = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         expect(identityCalls, hasLength(2));
 
@@ -64,13 +69,10 @@ void main() {
         expect(savedState.slots, const AgentSlots());
 
         // Verify link was created
-        verify(() => mockRepository.upsertLink(any())).called(1);
+        verify(() => mockSyncService.upsertLink(any())).called(1);
       });
 
       test('creates identity with default empty allowedCategoryIds', () async {
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
-
         final identity = await service.createAgent(
           kind: 'task_agent',
           displayName: 'Agent No Categories',
@@ -82,9 +84,6 @@ void main() {
 
       test('creates state with currentStateId matching state entity id',
           () async {
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
-
         final identity = await service.createAgent(
           kind: 'task_agent',
           displayName: 'Agent',
@@ -92,7 +91,7 @@ void main() {
         );
 
         final calls = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final savedState = calls[1] as AgentStateEntity;
 
@@ -220,7 +219,7 @@ void main() {
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
         when(() => mockOrchestrator.removeSubscriptions('agent-1'))
             .thenReturn(null);
 
@@ -229,7 +228,7 @@ void main() {
         expect(result, isTrue);
 
         final captured = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.lifecycle, AgentLifecycle.dormant);
@@ -249,14 +248,14 @@ void main() {
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
 
         final result = await service.resumeAgent('agent-1');
 
         expect(result, isTrue);
 
         final captured = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.lifecycle, AgentLifecycle.active);
@@ -272,7 +271,7 @@ void main() {
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
         when(() => mockOrchestrator.removeSubscriptions('agent-1'))
             .thenReturn(null);
 
@@ -281,7 +280,7 @@ void main() {
         expect(result, isTrue);
 
         final captured = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.lifecycle, AgentLifecycle.destroyed);
@@ -304,7 +303,7 @@ void main() {
         final result = await entry.value(service, 'non-existent');
 
         expect(result, isFalse);
-        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       });
     }
 
@@ -315,7 +314,7 @@ void main() {
 
         when(() => mockRepository.getEntity('agent-1'))
             .thenAnswer((_) async => identity);
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
         when(() => mockOrchestrator.removeSubscriptions('agent-1'))
             .thenReturn(null);
         when(() => mockRepository.hardDeleteAgent('agent-1'))
@@ -325,7 +324,7 @@ void main() {
 
         // destroyAgent path: upsertEntity called with destroyed lifecycle
         final captured = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         expect(captured, hasLength(1));
         final updated = captured.first as AgentIdentityEntity;
@@ -357,7 +356,7 @@ void main() {
         await service.deleteAgent('agent-2');
 
         // no lifecycle update for an already-destroyed agent
-        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockSyncService.upsertEntity(any()));
 
         // subscriptions still removed
         verify(() => mockOrchestrator.removeSubscriptions('agent-2')).called(1);
@@ -377,7 +376,7 @@ void main() {
         await service.deleteAgent('non-existent');
 
         // no lifecycle update when agent not found
-        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockSyncService.upsertEntity(any()));
 
         // subscriptions removed even when agent not found
         verify(() => mockOrchestrator.removeSubscriptions('non-existent'))

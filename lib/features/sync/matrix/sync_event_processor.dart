@@ -13,6 +13,11 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -515,6 +520,16 @@ class SyncEventProcessor {
   /// Backfill response handler, injected after construction
   /// to resolve circular dependency in DI setup.
   BackfillResponseHandler? backfillResponseHandler;
+
+  /// Agent repository, injected after construction to avoid circular
+  /// dependency. When set, incoming agent entities and links are upserted
+  /// directly (no outbox enqueue — prevents echo loops).
+  AgentRepository? agentRepository;
+
+  /// Wake orchestrator, injected after agent infrastructure starts. Used to
+  /// remove subscriptions when an incoming sync message pauses or destroys
+  /// an agent.
+  WakeOrchestrator? wakeOrchestrator;
   void Function(SyncApplyDiagnostics diag)? applyObserver;
 
   /// Startup timestamp - events with backfill requests older than this
@@ -1193,6 +1208,92 @@ class SyncEventProcessor {
           _loggingService.captureEvent(
             'backfillResponse.ignored no handler configured',
             domain: 'SYNC_BACKFILL',
+            subDomain: 'apply',
+          );
+        }
+        return null;
+      // Agent entities use last-writer-wins semantics (no vector clock
+      // comparison). Agent state mutations are causally ordered — wakes
+      // run serially and each update overwrites prior state — so
+      // concurrent conflicting edits don't arise in practice.
+      // Maintenance sync serves as catch-up for missed messages.
+      case SyncAgentEntity(:final agentEntity):
+        if (agentRepository != null) {
+          await agentRepository!.upsertEntity(agentEntity);
+          // Remove wake subscriptions when an agent is paused or destroyed
+          // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
+          // locally.
+          if (wakeOrchestrator != null &&
+              agentEntity is AgentIdentityEntity &&
+              agentEntity.lifecycle != AgentLifecycle.active) {
+            wakeOrchestrator!.removeSubscriptions(agentEntity.agentId);
+          }
+          // Restore wake subscriptions when an agent is resumed remotely —
+          // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
+          // locally after AgentService.resumeAgent.
+          if (wakeOrchestrator != null &&
+              agentEntity is AgentIdentityEntity &&
+              agentEntity.lifecycle == AgentLifecycle.active &&
+              agentEntity.kind == 'task_agent') {
+            final links = await agentRepository!.getLinksFrom(
+              agentEntity.agentId,
+              type: 'agent_task',
+            );
+            for (final link in links) {
+              wakeOrchestrator!.addSubscription(
+                AgentSubscription(
+                  id: '${agentEntity.agentId}_task_${link.toId}',
+                  agentId: agentEntity.agentId,
+                  matchEntityIds: {link.toId},
+                ),
+              );
+            }
+          }
+          _loggingService.captureEvent(
+            'apply agentEntity id=${agentEntity.id}',
+            domain: 'AGENT_SYNC',
+            subDomain: 'apply',
+          );
+        } else {
+          _loggingService.captureEvent(
+            'agentEntity.ignored no repository',
+            domain: 'AGENT_SYNC',
+            subDomain: 'apply',
+          );
+        }
+        return null;
+      case SyncAgentLink(:final agentLink):
+        if (agentRepository != null) {
+          await agentRepository!.upsertLink(agentLink);
+          // Restore wake subscription when an agent_task link arrives for an
+          // active task_agent. This handles the case where the link arrives
+          // after the identity — the SyncAgentEntity handler queries existing
+          // links, which may be empty if the link hasn't been synced yet.
+          // addSubscription is idempotent (replaces by ID), so both handlers
+          // firing for the same agent is harmless.
+          if (wakeOrchestrator != null && agentLink is AgentTaskLink) {
+            final agent = await agentRepository!.getEntity(agentLink.fromId);
+            if (agent is AgentIdentityEntity &&
+                agent.lifecycle == AgentLifecycle.active &&
+                agent.kind == 'task_agent') {
+              wakeOrchestrator!.addSubscription(
+                AgentSubscription(
+                  id: '${agentLink.fromId}_task_${agentLink.toId}',
+                  agentId: agentLink.fromId,
+                  matchEntityIds: {agentLink.toId},
+                ),
+              );
+            }
+          }
+          _loggingService.captureEvent(
+            'apply agentLink id=${agentLink.id}',
+            domain: 'AGENT_SYNC',
+            subDomain: 'apply',
+          );
+        } else {
+          _loggingService.captureEvent(
+            'agentLink.ignored no repository',
+            domain: 'AGENT_SYNC',
             subDomain: 'apply',
           );
         }

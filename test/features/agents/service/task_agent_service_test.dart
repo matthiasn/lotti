@@ -17,6 +17,7 @@ void main() {
   late MockAgentService mockAgentService;
   late MockAgentRepository mockRepository;
   late MockWakeOrchestrator mockOrchestrator;
+  late MockAgentSyncService mockSyncService;
   late TaskAgentService service;
 
   AgentIdentityEntity makeIdentity({
@@ -52,10 +53,17 @@ void main() {
     mockAgentService = MockAgentService();
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
+    mockSyncService = MockAgentSyncService();
+
+    // Stub syncService write methods
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+
     service = TaskAgentService(
       agentService: mockAgentService,
       repository: mockRepository,
       orchestrator: mockOrchestrator,
+      syncService: mockSyncService,
     );
   });
 
@@ -85,9 +93,7 @@ void main() {
         when(() => mockRepository.getAgentState('agent-1'))
             .thenAnswer((_) async => state);
 
-        // State and link upsert
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
           () => mockOrchestrator.enqueueManualWake(
@@ -108,14 +114,14 @@ void main() {
 
         // Verify state was updated with activeTaskId
         final stateCalls = verify(
-          () => mockRepository.upsertEntity(captureAny()),
+          () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
         final updatedState = stateCalls.first as AgentStateEntity;
         expect(updatedState.slots.activeTaskId, 'task-1');
 
         // Verify agent_task link was created
         final linkCalls = verify(
-          () => mockRepository.upsertLink(captureAny()),
+          () => mockSyncService.upsertLink(captureAny()),
         ).captured;
         final link = linkCalls.first as AgentTaskLink;
         expect(link.fromId, 'agent-1');
@@ -155,8 +161,7 @@ void main() {
         ).thenAnswer((_) async => identity);
         when(() => mockRepository.getAgentState('agent-1'))
             .thenAnswer((_) async => makeState());
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
-        when(() => mockRepository.upsertLink(any())).thenAnswer((_) async {});
+        // syncService stubs set up in setUp
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
           () => mockOrchestrator.enqueueManualWake(
@@ -537,6 +542,44 @@ void main() {
         verifyNever(
             () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
         verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+    });
+
+    group('syncService routing', () {
+      test('routes entity and link writes through syncService', () async {
+        final identity = makeIdentity();
+
+        when(() => mockRepository.getLinksTo('task-sync', type: 'agent_task'))
+            .thenAnswer((_) async => []);
+        when(
+          () => mockAgentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => makeState());
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
+
+        await service.createTaskAgent(
+          taskId: 'task-sync',
+          allowedCategoryIds: {'cat-1'},
+        );
+
+        // Entity and link writes go through syncService, not repository.
+        verify(() => mockSyncService.upsertEntity(any())).called(1);
+        verify(() => mockSyncService.upsertLink(any())).called(1);
+        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockRepository.upsertLink(any()));
       });
     });
   });

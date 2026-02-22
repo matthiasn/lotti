@@ -29,11 +29,14 @@ void main() {
         runner: wakeRunner,
       );
 
+      final mockSyncService = MockAgentSyncService();
+
       final container = ProviderContainer(
         overrides: [
           agentServiceProvider.overrideWithValue(mockAgentService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
           wakeOrchestratorProvider.overrideWithValue(orchestrator),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
         ],
       );
       addTearDown(container.dispose);
@@ -44,6 +47,7 @@ void main() {
       expect(service.agentService, same(mockAgentService));
       expect(service.repository, same(mockRepository));
       expect(service.orchestrator, same(orchestrator));
+      expect(service.syncService, same(mockSyncService));
     });
   });
 

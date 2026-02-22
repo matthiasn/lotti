@@ -6,6 +6,8 @@ enum SyncStep {
   dashboards,
   habits,
   aiSettings,
+  agentEntities,
+  agentLinks,
   complete,
 }
 

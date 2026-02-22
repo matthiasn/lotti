@@ -6397,6 +6397,18 @@ abstract class AppLocalizations {
   /// **'Sync is not logged in'**
   String get syncNotLoggedInToast;
 
+  /// No description provided for @syncPayloadAgentEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent entity'**
+  String get syncPayloadAgentEntity;
+
+  /// No description provided for @syncPayloadAgentLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent link'**
+  String get syncPayloadAgentLink;
+
   /// No description provided for @syncPayloadAiConfig.
   ///
   /// In en, this message translates to:
@@ -6504,6 +6516,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get syncSkip;
+
+  /// No description provided for @syncStepAgentEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent entities'**
+  String get syncStepAgentEntities;
+
+  /// No description provided for @syncStepAgentLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent links'**
+  String get syncStepAgentLinks;
 
   /// No description provided for @syncStepAiSettings.
   ///

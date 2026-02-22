@@ -3522,6 +3522,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncNotLoggedInToast => 'Synchronizace není přihlášena';
 
   @override
+  String get syncPayloadAgentEntity => 'Agent entity';
+
+  @override
+  String get syncPayloadAgentLink => 'Agent link';
+
+  @override
   String get syncPayloadAiConfig => 'Nastavení AI';
 
   @override
@@ -3576,6 +3582,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncSkip => 'Přeskočit';
+
+  @override
+  String get syncStepAgentEntities => 'Agent entities';
+
+  @override
+  String get syncStepAgentLinks => 'Agent links';
 
   @override
   String get syncStepAiSettings => 'AI nastavení';

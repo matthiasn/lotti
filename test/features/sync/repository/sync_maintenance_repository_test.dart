@@ -51,6 +51,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
+  late MockAgentRepository mockAgentRepository;
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
@@ -64,6 +65,7 @@ void main() {
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockLoggingService();
     mockAiConfigRepository = MockAiConfigRepository();
+    mockAgentRepository = MockAgentRepository();
 
     when(
       () => mockLoggingService.captureException(
@@ -79,6 +81,7 @@ void main() {
       outboxService: mockOutboxService,
       loggingService: mockLoggingService,
       aiConfigRepository: mockAiConfigRepository,
+      agentRepository: mockAgentRepository,
     );
   });
 

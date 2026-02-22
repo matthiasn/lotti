@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -16,9 +17,11 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show journalDbProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,17 +29,38 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'agent_providers.g.dart';
 
 /// The agent database instance (lazy singleton).
+///
+/// Uses the getIt-registered instance when available (production) to avoid
+/// double-opening agent.sqlite. Falls back to creating a new instance
+/// (tests / standalone).
 @Riverpod(keepAlive: true)
 AgentDatabase agentDatabase(Ref ref) {
+  if (getIt.isRegistered<AgentDatabase>()) {
+    return getIt<AgentDatabase>();
+  }
   final db = AgentDatabase();
   ref.onDispose(db.close);
   return db;
 }
 
 /// The agent repository wrapping the database.
+///
+/// Uses the getIt-registered instance when available (production).
 @Riverpod(keepAlive: true)
 AgentRepository agentRepository(Ref ref) {
+  if (getIt.isRegistered<AgentRepository>()) {
+    return getIt<AgentRepository>();
+  }
   return AgentRepository(ref.watch(agentDatabaseProvider));
+}
+
+/// Sync-aware write wrapper for agent entities and links.
+@Riverpod(keepAlive: true)
+AgentSyncService agentSyncService(Ref ref) {
+  return AgentSyncService(
+    repository: ref.watch(agentRepositoryProvider),
+    outboxService: ref.watch(outboxServiceProvider),
+  );
 }
 
 /// The in-memory wake queue.
@@ -80,6 +104,7 @@ AgentService agentService(Ref ref) {
   return AgentService(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
   );
 }
 
@@ -252,6 +277,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
   );
 }
 
@@ -329,7 +355,21 @@ Future<void> agentInitialization(Ref ref) async {
   };
 
   final updateNotifications = getIt<UpdateNotifications>();
-  await orchestrator.start(updateNotifications.updateStream);
+  // Use localUpdateStream so that sync-originated entity changes do not
+  // trigger agent wakes — the source device already ran the agent.
+  await orchestrator.start(updateNotifications.localUpdateStream);
+
+  // Wire the wake orchestrator into the sync event processor so that
+  // incoming agent lifecycle changes (pause/destroy from another device)
+  // remove local wake subscriptions.
+  if (getIt.isRegistered<SyncEventProcessor>()) {
+    getIt<SyncEventProcessor>().wakeOrchestrator = orchestrator;
+    ref.onDispose(() {
+      if (getIt.isRegistered<SyncEventProcessor>()) {
+        getIt<SyncEventProcessor>().wakeOrchestrator = null;
+      }
+    });
+  }
 
   await taskAgentService.restoreSubscriptions();
 }

@@ -17,6 +17,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -272,6 +273,11 @@ class MockAgentRepository extends Mock implements AgentRepository {
 }
 
 class MockAgentService extends Mock implements AgentService {}
+
+class MockAgentSyncService extends Mock implements AgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 

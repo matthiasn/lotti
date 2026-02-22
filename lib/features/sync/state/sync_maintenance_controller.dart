@@ -31,6 +31,8 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.dashboards,
       SyncStep.habits,
       SyncStep.aiSettings,
+      SyncStep.agentEntities,
+      SyncStep.agentLinks,
     ].where(selectedSteps.contains).toList();
 
     if (orderedSteps.isEmpty) {
@@ -68,6 +70,8 @@ class SyncMaintenanceController extends Notifier<SyncState> {
       SyncStep.dashboards: _repository.syncDashboards,
       SyncStep.habits: _repository.syncHabits,
       SyncStep.aiSettings: _repository.syncAiSettings,
+      SyncStep.agentEntities: _repository.syncAgentEntities,
+      SyncStep.agentLinks: _repository.syncAgentLinks,
     };
 
     final syncOperations = orderedSteps

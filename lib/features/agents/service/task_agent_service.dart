@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,11 +21,16 @@ class TaskAgentService {
     required this.agentService,
     required this.repository,
     required this.orchestrator,
+    required this.syncService,
   });
 
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+
+  /// Sync-aware write service. All entity/link writes go through this so
+  /// they are automatically enqueued for cross-device sync.
+  final AgentSyncService syncService;
 
   static const _uuid = Uuid();
   static const _agentKind = 'task_agent';
@@ -53,7 +59,7 @@ class TaskAgentService {
       );
     }
 
-    final identity = await repository.runInTransaction(() async {
+    final identity = await syncService.runInTransaction(() async {
       // Definitive duplicate check inside the transaction to prevent TOCTOU
       // races: a concurrent createTaskAgent call could have committed between
       // the fast-path check above and this point.
@@ -88,11 +94,11 @@ class TaskAgentService {
         slots: state.slots.copyWith(activeTaskId: taskId),
         updatedAt: now,
       );
-      await repository.upsertEntity(updatedState);
+      await syncService.upsertEntity(updatedState);
 
       // Create agent_task link: agent → task.
       final linkId = _uuid.v4();
-      await repository.upsertLink(
+      await syncService.upsertLink(
         AgentLink.agentTask(
           id: linkId,
           fromId: identity.agentId,

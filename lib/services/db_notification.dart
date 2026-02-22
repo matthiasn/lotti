@@ -4,13 +4,23 @@ class UpdateNotifications {
   UpdateNotifications();
 
   final _controller = StreamController<Set<String>>.broadcast();
+  final _localController = StreamController<Set<String>>.broadcast();
   final _affectedIds = <String>{};
   final _affectedIdsFromSync = <String>{};
   Timer? _timer;
   Timer? _fromSyncTimer;
   bool _isDisposed = false;
 
+  /// Stream of all update notifications (both local and sync-originated).
+  ///
+  /// Used by UI widgets and other consumers that need to react to all changes.
   Stream<Set<String>> get updateStream => _controller.stream;
+
+  /// Stream of only locally-originated update notifications.
+  ///
+  /// Used by agent wake orchestration so that sync-originated changes do not
+  /// trigger agent wakes — the source device already ran the agent.
+  Stream<Set<String>> get localUpdateStream => _localController.stream;
 
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (_isDisposed) return;
@@ -29,7 +39,9 @@ class UpdateNotifications {
 
       _timer ??= Timer(const Duration(milliseconds: 100), () {
         if (_affectedIds.isNotEmpty) {
-          _controller.add({..._affectedIds});
+          final batch = {..._affectedIds};
+          _controller.add(batch);
+          _localController.add(batch);
           _affectedIds.clear();
         }
         _timer = null;
@@ -47,6 +59,7 @@ class UpdateNotifications {
     _affectedIds.clear();
     _affectedIdsFromSync.clear();
     await _controller.close();
+    await _localController.close();
   }
 }
 

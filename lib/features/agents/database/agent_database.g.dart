@@ -2301,6 +2301,24 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     );
   }
 
+  Selectable<AgentEntity> getAllAgentEntities() {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
+        variables: [],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentLink> getAllAgentLinks() {
+    return customSelect(
+        'SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC',
+        variables: [],
+        readsFrom: {
+          agentLinks,
+        }).asyncMap(agentLinks.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

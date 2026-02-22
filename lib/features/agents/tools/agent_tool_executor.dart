@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:uuid/uuid.dart';
@@ -93,15 +93,16 @@ class ToolExecutionResult {
 /// ```
 class AgentToolExecutor {
   AgentToolExecutor({
-    required this.repository,
+    required this.syncService,
     required this.allowedCategoryIds,
     required this.runKey,
     required this.agentId,
     required this.threadId,
   });
 
-  /// The agent-domain repository used to persist audit messages.
-  final AgentRepository repository;
+  /// Sync-aware write service for persisting audit messages. All writes go
+  /// through this so they are automatically enqueued for cross-device sync.
+  final AgentSyncService syncService;
 
   /// Set of category IDs that this executor is permitted to mutate.
   final Set<String> allowedCategoryIds;
@@ -333,7 +334,7 @@ class AgentToolExecutor {
 
     if (payloadText != null) {
       contentEntryId = _uuid.v4();
-      await repository.upsertEntity(
+      await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: contentEntryId,
           agentId: agentId,
@@ -344,7 +345,7 @@ class AgentToolExecutor {
       );
     }
 
-    await repository.upsertEntity(
+    await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),
         agentId: agentId,

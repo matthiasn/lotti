@@ -9,16 +9,28 @@ part of 'agent_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// The agent database instance (lazy singleton).
+///
+/// Uses the getIt-registered instance when available (production) to avoid
+/// double-opening agent.sqlite. Falls back to creating a new instance
+/// (tests / standalone).
 
 @ProviderFor(agentDatabase)
 final agentDatabaseProvider = AgentDatabaseProvider._();
 
 /// The agent database instance (lazy singleton).
+///
+/// Uses the getIt-registered instance when available (production) to avoid
+/// double-opening agent.sqlite. Falls back to creating a new instance
+/// (tests / standalone).
 
 final class AgentDatabaseProvider
     extends $FunctionalProvider<AgentDatabase, AgentDatabase, AgentDatabase>
     with $Provider<AgentDatabase> {
   /// The agent database instance (lazy singleton).
+  ///
+  /// Uses the getIt-registered instance when available (production) to avoid
+  /// double-opening agent.sqlite. Falls back to creating a new instance
+  /// (tests / standalone).
   AgentDatabaseProvider._()
       : super(
           from: null,
@@ -52,18 +64,24 @@ final class AgentDatabaseProvider
   }
 }
 
-String _$agentDatabaseHash() => r'32b4e998e7242188077d24ec885585cafd2ae33c';
+String _$agentDatabaseHash() => r'e62af5d3a906357e3deb2ef9164298a58173c29f';
 
 /// The agent repository wrapping the database.
+///
+/// Uses the getIt-registered instance when available (production).
 
 @ProviderFor(agentRepository)
 final agentRepositoryProvider = AgentRepositoryProvider._();
 
 /// The agent repository wrapping the database.
+///
+/// Uses the getIt-registered instance when available (production).
 
 final class AgentRepositoryProvider extends $FunctionalProvider<AgentRepository,
     AgentRepository, AgentRepository> with $Provider<AgentRepository> {
   /// The agent repository wrapping the database.
+  ///
+  /// Uses the getIt-registered instance when available (production).
   AgentRepositoryProvider._()
       : super(
           from: null,
@@ -97,7 +115,54 @@ final class AgentRepositoryProvider extends $FunctionalProvider<AgentRepository,
   }
 }
 
-String _$agentRepositoryHash() => r'9506f288080ed0c5c3a258a6d765c745f4d40258';
+String _$agentRepositoryHash() => r'55b7d18ace0a5b32143870a40fa06b80765762f2';
+
+/// Sync-aware write wrapper for agent entities and links.
+
+@ProviderFor(agentSyncService)
+final agentSyncServiceProvider = AgentSyncServiceProvider._();
+
+/// Sync-aware write wrapper for agent entities and links.
+
+final class AgentSyncServiceProvider extends $FunctionalProvider<
+    AgentSyncService,
+    AgentSyncService,
+    AgentSyncService> with $Provider<AgentSyncService> {
+  /// Sync-aware write wrapper for agent entities and links.
+  AgentSyncServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'agentSyncServiceProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentSyncServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AgentSyncService> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AgentSyncService create(Ref ref) {
+    return agentSyncService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AgentSyncService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AgentSyncService>(value),
+    );
+  }
+}
+
+String _$agentSyncServiceHash() => r'6f6862cbc8b443e39b34eab5d5fe38a57480ea5e';
 
 /// The in-memory wake queue.
 
@@ -380,7 +445,7 @@ final class AgentServiceProvider
   }
 }
 
-String _$agentServiceHash() => r'b7c9b91f8ce7c5f41c20f632b73f34207062343f';
+String _$agentServiceHash() => r'6009a2c80577a05731e21a2cf7a569111cb42603';
 
 /// Fetch the latest report for an agent by [agentId].
 ///
@@ -957,7 +1022,7 @@ final class AgentMessagesByThreadProvider extends $FunctionalProvider<
 }
 
 String _$agentMessagesByThreadHash() =>
-    r'8a9ce557afd32ef6ee78f10072ec8ac49588a938';
+    r'9e42ca788f338c75783ad330cf52894e1e43ff69';
 
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
@@ -996,7 +1061,7 @@ final class AgentMessagesByThreadFamily extends $Family
 /// Fetch recent observation messages for an agent by [agentId].
 ///
 /// Returns only messages with kind [AgentMessageKind.observation], ordered
-/// most-recent first (up to 50).
+/// most-recent first.
 
 @ProviderFor(agentObservationMessages)
 final agentObservationMessagesProvider = AgentObservationMessagesFamily._();
@@ -1004,7 +1069,7 @@ final agentObservationMessagesProvider = AgentObservationMessagesFamily._();
 /// Fetch recent observation messages for an agent by [agentId].
 ///
 /// Returns only messages with kind [AgentMessageKind.observation], ordered
-/// most-recent first (up to 50).
+/// most-recent first.
 
 final class AgentObservationMessagesProvider extends $FunctionalProvider<
         AsyncValue<List<AgentDomainEntity>>,
@@ -1016,7 +1081,7 @@ final class AgentObservationMessagesProvider extends $FunctionalProvider<
   /// Fetch recent observation messages for an agent by [agentId].
   ///
   /// Returns only messages with kind [AgentMessageKind.observation], ordered
-  /// most-recent first (up to 50).
+  /// most-recent first.
   AgentObservationMessagesProvider._(
       {required AgentObservationMessagesFamily super.from,
       required String super.argument})
@@ -1071,7 +1136,7 @@ String _$agentObservationMessagesHash() =>
 /// Fetch recent observation messages for an agent by [agentId].
 ///
 /// Returns only messages with kind [AgentMessageKind.observation], ordered
-/// most-recent first (up to 50).
+/// most-recent first.
 
 final class AgentObservationMessagesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
@@ -1087,7 +1152,7 @@ final class AgentObservationMessagesFamily extends $Family
   /// Fetch recent observation messages for an agent by [agentId].
   ///
   /// Returns only messages with kind [AgentMessageKind.observation], ordered
-  /// most-recent first (up to 50).
+  /// most-recent first.
 
   AgentObservationMessagesProvider call(
     String agentId,
@@ -1248,7 +1313,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'd4cd489d996f238b08950fc6390969276e05afa1';
+String _$taskAgentWorkflowHash() => r'3f3acc3ecfaa422c740d143473d620d0aa48b8d5';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
@@ -1317,4 +1382,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'd21a1758d8fa059482e29777ff27ee0e9abc564e';
+    r'448c72356ecbd16338b5cb60b1b56cdfe8621093';

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
@@ -59,9 +60,14 @@ class TaskAgentWorkflow {
     required this.cloudInferenceRepository,
     required this.journalRepository,
     required this.checklistRepository,
+    required this.syncService,
   });
 
   final AgentRepository agentRepository;
+
+  /// Sync-aware write service. All entity writes go through this so they
+  /// are automatically enqueued for cross-device sync.
+  final AgentSyncService syncService;
   final ConversationRepository conversationRepository;
   final AiInputRepository aiInputRepository;
   final AiConfigRepository aiConfigRepository;
@@ -174,7 +180,7 @@ class TaskAgentWorkflow {
     // 5a. Persist the user message for inspectability before sending to LLM.
     try {
       final userPayloadId = _uuid.v4();
-      await agentRepository.upsertEntity(
+      await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: userPayloadId,
           agentId: agentId,
@@ -183,7 +189,7 @@ class TaskAgentWorkflow {
           content: <String, Object?>{'text': userMessage},
         ),
       );
-      await agentRepository.upsertEntity(
+      await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
           id: _uuid.v4(),
           agentId: agentId,
@@ -206,7 +212,7 @@ class TaskAgentWorkflow {
 
     try {
       final executor = AgentToolExecutor(
-        repository: agentRepository,
+        syncService: syncService,
         allowedCategoryIds: agentIdentity.allowedCategoryIds,
         runKey: runKey,
         agentId: agentId,
@@ -215,7 +221,7 @@ class TaskAgentWorkflow {
 
       final strategy = TaskAgentStrategy(
         executor: executor,
-        repository: agentRepository,
+        syncService: syncService,
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
@@ -268,12 +274,12 @@ class TaskAgentWorkflow {
 
       final observations = strategy.extractObservations();
 
-      await agentRepository.runInTransaction(() async {
+      await syncService.runInTransaction(() async {
         // 6. Persist the final assistant response as a thought message.
         final thoughtText = strategy.finalResponse;
         if (thoughtText != null) {
           final thoughtPayloadId = _uuid.v4();
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentMessagePayload(
               id: thoughtPayloadId,
               agentId: agentId,
@@ -282,7 +288,7 @@ class TaskAgentWorkflow {
               content: <String, Object?>{'text': thoughtText},
             ),
           );
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentMessage(
               id: _uuid.v4(),
               agentId: agentId,
@@ -300,7 +306,7 @@ class TaskAgentWorkflow {
         if (reportContent.isNotEmpty) {
           final reportId = _uuid.v4();
 
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentReport(
               id: reportId,
               agentId: agentId,
@@ -317,7 +323,7 @@ class TaskAgentWorkflow {
               await agentRepository.getReportHead(agentId, 'current');
           final headId = existingHead?.id ?? _uuid.v4();
 
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentReportHead(
               id: headId,
               agentId: agentId,
@@ -332,7 +338,7 @@ class TaskAgentWorkflow {
         // 8. Persist new observation notes (agentJournal entries).
         for (final note in observations) {
           final payloadId = _uuid.v4();
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentMessagePayload(
               id: payloadId,
               agentId: agentId,
@@ -342,7 +348,7 @@ class TaskAgentWorkflow {
             ),
           );
 
-          await agentRepository.upsertEntity(
+          await syncService.upsertEntity(
             AgentDomainEntity.agentMessage(
               id: _uuid.v4(),
               agentId: agentId,
@@ -357,7 +363,7 @@ class TaskAgentWorkflow {
         }
 
         // 9. Persist state.
-        await agentRepository.upsertEntity(
+        await syncService.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
             lastWakeAt: now,
@@ -389,7 +395,7 @@ class TaskAgentWorkflow {
 
       // Update failure count in state.
       try {
-        await agentRepository.upsertEntity(
+        await syncService.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
             updatedAt: now,

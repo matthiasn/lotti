@@ -864,6 +864,9 @@ class _TestNotifications implements UpdateNotifications {
   Stream<Set<String>> get updateStream => _controller.stream;
 
   @override
+  Stream<Set<String>> get localUpdateStream => _controller.stream;
+
+  @override
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     _controller.add(affectedIds);
   }

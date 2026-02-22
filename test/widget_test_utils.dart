@@ -60,6 +60,8 @@ Future<TestGetItMocks> setUpTestGetIt({
 
   when(() => mockUpdateNotifications.updateStream)
       .thenAnswer((_) => const Stream.empty());
+  when(() => mockUpdateNotifications.localUpdateStream)
+      .thenAnswer((_) => const Stream.empty());
   when(() => mockJournalDb.journalEntityById(any()))
       .thenAnswer((_) async => null);
   when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
@@ -97,6 +99,8 @@ void ensureThemingServicesRegistered() {
   if (!getIt.isRegistered<UpdateNotifications>()) {
     final mockUpdateNotifications = MockUpdateNotifications();
     when(() => mockUpdateNotifications.updateStream)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockUpdateNotifications.localUpdateStream)
         .thenAnswer((_) => const Stream.empty());
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
   }
