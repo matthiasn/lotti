@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [0.9.868] - 2026-02-22
+### Added
+- Agent cross-device sync: agent entities and links are now synchronized via
+  Matrix using `SyncAgentEntity` and `SyncAgentLink` message variants. Incoming
+  agents restore wake subscriptions so task agents resume monitoring on the
+  receiving device.
+- Sync maintenance support for agents: the maintenance UI includes
+  "Agent Entities" and "Agent Links" re-sync steps that broadcast all local
+  agent data to peer devices.
+- Zone-based transaction isolation in `AgentSyncService`: outbox messages are
+  buffered during transactions and flushed only on successful commit. Nested
+  transactions are supported via a depth counter; rollback discards all buffered
+  messages.
+
 ## [0.9.867] - 2026-02-22
 ### Added
 - Agent running-state feedback: reactive spinner indicators on the task page

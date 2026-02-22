@@ -63,14 +63,20 @@ The full wake cycle implementation:
 
 High-level agent lifecycle management:
 
-- **`agent_service.dart`** — `AgentService` provides `createAgent`, `getAgent`, `listAgents`, `getAgentReport`, `pauseAgent`, `resumeAgent`, `destroyAgent`. Lifecycle transitions update the identity entity and manage wake subscriptions.
+- **`agent_service.dart`** — `AgentService` provides `createAgent`, `getAgent`, `listAgents`, `getAgentReport`, `pauseAgent`, `resumeAgent`, `destroyAgent`. Each mutation writes via `AgentSyncService` (which enqueues changes for cross-device sync) and reads via `AgentRepository`. Lifecycle transitions update the identity entity and manage wake subscriptions.
 - **`task_agent_service.dart`** — `TaskAgentService` provides task-specific operations: `createTaskAgent` (creates agent + state + link + subscription), `getTaskAgentForTask` (lookup via `agent_task` link), `triggerReanalysis` (manual re-wake), `restoreSubscriptions` (queries active agents, filters for task_agent kind, registers subscriptions on app startup), `restoreSubscriptionsForAgent` (re-registers subscriptions for a single agent after resume).
+
+### Sync (`sync/`)
+
+Cross-device synchronization of agent state:
+
+- **`agent_sync_service.dart`** — `AgentSyncService` wraps `AgentRepository` with sync-aware writes. Every `upsertEntity` / `upsertLink` call persists to `agent.sqlite` and enqueues a `SyncAgentEntity` / `SyncAgentLink` outbox message. Supports zone-based transaction isolation: `runInTransaction` buffers outbox messages and flushes them only on successful commit. Nested transactions are supported via a depth counter — inner commits leave messages buffered until the outermost transaction completes. Rollback (exception) at any level discards all buffered messages. Concurrent transaction chains are isolated via Dart zones, each carrying its own buffer and depth counter.
 
 ### State (`state/`)
 
 Riverpod providers for dependency injection:
 
-- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`, `agentIsRunning` (reactive stream), `agentMessagesByThread` (grouped by wake cycle). The `agentInitializationProvider` wires the workflow into the orchestrator and starts listening to `UpdateNotifications`.
+- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `AgentSyncService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`, `agentIsRunning` (reactive stream), `agentMessagesByThread` (grouped by wake cycle). The `agentInitializationProvider` wires the workflow into the orchestrator, starts listening to `UpdateNotifications`, and wires the `WakeOrchestrator` into `SyncEventProcessor` for incoming agent subscription restoration.
 - **`task_agent_providers.dart`** — `keepAlive` provider for `TaskAgentService`, auto-disposed async provider for `taskAgent(taskId)`.
 
 ### UI (`ui/`)
@@ -109,7 +115,7 @@ Observations are captured via the `record_observations` tool call during the con
 
 The agent infrastructure is connected for production via:
 
-1. **`agentInitializationProvider`** (keepAlive) — watches the `enableAgents` config flag. When enabled, starts the `WakeOrchestrator` listening to `UpdateNotifications.updateStream`, wires the `TaskAgentWorkflow` into the orchestrator via a `WakeExecutor` callback, and restores subscriptions for active agents.
+1. **`agentInitializationProvider`** (keepAlive) — watches the `enableAgents` config flag. When enabled, starts the `WakeOrchestrator` listening to `UpdateNotifications.updateStream`, wires the `TaskAgentWorkflow` into the orchestrator via a `WakeExecutor` callback, restores subscriptions for active agents, and wires the `WakeOrchestrator` into `SyncEventProcessor` so incoming `SyncAgentLink` messages can restore subscriptions.
 2. **`entry_controller.dart`** — watches `agentInitializationProvider` to eagerly initialize the agent infrastructure when any entry is viewed.
 3. **`WakeOrchestrator.processNext()`** — event-driven dispatch: `_onBatch` calls `unawaited(processNext())` after enqueueing wake jobs. The executor calls `TaskAgentWorkflow.execute()`, updates wake run status, records mutated entries for self-notification suppression, and clears queue history after success.
 
@@ -143,6 +149,8 @@ lib/features/agents/
 ├── service/
 │   ├── agent_service.dart           # Lifecycle management
 │   └── task_agent_service.dart      # Task-agent-specific operations
+├── sync/
+│   └── agent_sync_service.dart      # Sync-aware writes + transaction isolation
 ├── state/
 │   ├── agent_providers.dart         # Riverpod providers
 │   └── task_agent_providers.dart    # Task agent providers
@@ -163,6 +171,7 @@ Tests mirror the source structure under `test/features/agents/`:
 - **Database tests** — Repository CRUD for entities, links, wake run log, saga log (46 tests)
 - **Wake tests** — Run key determinism (incl. canonical key ordering), queue dedup, single-flight, orchestrator matching + dispatch (76 tests)
 - **Tool tests** — Category enforcement, audit logging, vector clock capture, handler dispatch, registry validation incl. `record_observations` (54 tests)
+- **Sync tests** — Transaction isolation (buffer, flush, nested commit/rollback, zone isolation), entity/link upsert with outbox enqueue
 - **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`
 - **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture
 - **State tests** — Riverpod provider unit tests for agent report, state, identity, messages, payload text, initialization, and task agent lookup
@@ -178,5 +187,4 @@ Run `make test` to verify current test count and status.
 | Full saga recovery | MVP uses idempotency checks | 0B |
 | Persisted subscriptions | In-memory sufficient for single-device | 0B |
 | Memory compaction | Task agents have bounded history | 0C |
-| Sync payloads | Local-first focus | 0B |
 | Configurable model selection | Hardcoded to Gemini for MVP | 0B |

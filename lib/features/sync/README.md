@@ -37,9 +37,9 @@ that keeps the pipeline testable and observable.
 | **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
 | **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment descriptor observation, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
 | **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
-| **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. |
+| **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. Also handles `SyncAgentEntity` and `SyncAgentLink` variants: upserts agent data via `AgentSyncService`, restores wake subscriptions for active task agents on incoming identity entities, and restores subscriptions on incoming `agent_task` links when the linked agent is active. |
 | **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
-| **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages, resolves attachments, and hands work to `MatrixMessageSender`. |
+| **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages, resolves attachments, and hands work to `MatrixMessageSender`. Handles `SyncAgentEntity` and `SyncAgentLink` message variants alongside journal entities and links. |
 | **UserActivityGate** (`features/user_activity/state/user_activity_gate.dart`) | Exposes reactive idleness signals so heavy timeline processing defers while the user is active. |
 | **SyncSequenceLogService** (`sequence/sync_sequence_log_service.dart`) | Tracks (hostId, counter) pairs for gap detection; enables self-healing backfill. |
 | **BackfillRequestService** (`backfill/backfill_request_service.dart`) | Periodically scans for missing entries and broadcasts batched backfill requests. |
@@ -463,8 +463,8 @@ Key helpers:
   `/settings/sync/matrix/maintenance` for deleting the Sync database,
   replaying sync definitions, and forcing a re-sync window.
   - Supported definition sync steps: Tags, Measurables, Labels, Categories,
-    Dashboards, Habits, and AI Settings. Each step reports per-step progress
-    and totals; you can select any subset to sync.
+    Dashboards, Habits, AI Settings, Agent Entities, and Agent Links. Each step
+    reports per-step progress and totals; you can select any subset to sync.
 - Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
   its own on/off toggle. The global Matrix sync flag governs enablement.
 - Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,
@@ -528,8 +528,8 @@ landed fixes, and how to verify behaviour using Matrix Stats and logs.
 - Sent metrics
   - `MatrixService.sendMatrixMsg` maps each `SyncMessage` variant to a typed bucket
     (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`, `aiConfig`,
-    `aiConfigDelete`) and debounces emissions; unit tests cover each variant along
-    with timer cancellation on `dispose`.
+    `aiConfigDelete`, `agentEntity`, `agentLink`) and debounces emissions; unit
+    tests cover each variant along with timer cancellation on `dispose`.
 - Vector‑clock aware JSON
   - `SmartJournalEntityLoader` reads local JSON first; if a vector clock is
     provided and the local is older, it uses `AttachmentIndex` to fetch the
