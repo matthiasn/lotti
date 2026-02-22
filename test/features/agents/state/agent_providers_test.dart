@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -53,46 +52,19 @@ void main() {
   }
 
   group('agentDatabaseProvider', () {
-    test('returns getIt instance when registered', () async {
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
-
-      final mockDb = AgentDatabase(inMemoryDatabase: true);
-      addTearDown(mockDb.close);
-      getIt.registerSingleton<AgentDatabase>(mockDb);
-
+    test('creates database and closes on dispose', () async {
       final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final db = container.read(agentDatabaseProvider);
-      expect(db, same(mockDb));
-    });
-
-    test('creates new instance when getIt has no registration', () async {
-      // No getIt setup — provider falls back to creating its own instance.
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
 
       final db = container.read(agentDatabaseProvider);
       expect(db, isA<AgentDatabase>());
+
+      // Dispose should close the database without error.
+      container.dispose();
     });
   });
 
   group('agentRepositoryProvider', () {
-    test('returns getIt instance when registered', () async {
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
-
-      getIt.registerSingleton<AgentRepository>(mockRepository);
-
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final repo = container.read(agentRepositoryProvider);
-      expect(repo, same(mockRepository));
-    });
-
-    test('creates new instance when getIt has no registration', () async {
+    test('creates repository wrapping the database', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -102,7 +74,7 @@ void main() {
   });
 
   group('agentSyncServiceProvider', () {
-    test('creates AgentSyncService with correct dependencies', () async {
+    test('injects repository and outbox service', () async {
       final mockOutboxService = MockOutboxService();
       final container = ProviderContainer(
         overrides: [
@@ -114,7 +86,20 @@ void main() {
 
       final syncService = container.read(agentSyncServiceProvider);
 
-      expect(syncService, isA<AgentSyncService>());
+      // Verify the repository was injected.
+      expect(syncService.repository, same(mockRepository));
+
+      // Verify the outbox service was injected by exercising upsertEntity.
+      final entity = makeTestIdentity();
+      when(() => mockRepository.upsertEntity(any()))
+          .thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncService.upsertEntity(entity);
+
+      verify(() => mockRepository.upsertEntity(entity)).called(1);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
   });
 
@@ -1176,7 +1161,7 @@ void main() {
       },
     );
 
-    test('wires orchestrator into SyncEventProcessor when registered',
+    test('wires repository and orchestrator into SyncEventProcessor',
         () async {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
@@ -1192,9 +1177,11 @@ void main() {
       await container.read(agentInitializationProvider.future);
 
       verify(() => mockProcessor.wakeOrchestrator = mockOrchestrator).called(1);
+      verify(() => mockProcessor.agentRepository = any(that: isNotNull))
+          .called(1);
     });
 
-    test('clears SyncEventProcessor orchestrator on dispose', () async {
+    test('clears SyncEventProcessor fields on dispose', () async {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
@@ -1211,6 +1198,7 @@ void main() {
       container.dispose();
 
       verify(() => mockProcessor.wakeOrchestrator = null).called(1);
+      verify(() => mockProcessor.agentRepository = null).called(1);
     });
 
     test('stops orchestrator on dispose', () async {

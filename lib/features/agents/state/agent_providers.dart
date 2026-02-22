@@ -29,28 +29,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'agent_providers.g.dart';
 
 /// The agent database instance (lazy singleton).
-///
-/// Uses the getIt-registered instance when available (production) to avoid
-/// double-opening agent.sqlite. Falls back to creating a new instance
-/// (tests / standalone).
 @Riverpod(keepAlive: true)
 AgentDatabase agentDatabase(Ref ref) {
-  if (getIt.isRegistered<AgentDatabase>()) {
-    return getIt<AgentDatabase>();
-  }
   final db = AgentDatabase();
   ref.onDispose(db.close);
   return db;
 }
 
 /// The agent repository wrapping the database.
-///
-/// Uses the getIt-registered instance when available (production).
 @Riverpod(keepAlive: true)
 AgentRepository agentRepository(Ref ref) {
-  if (getIt.isRegistered<AgentRepository>()) {
-    return getIt<AgentRepository>();
-  }
   return AgentRepository(ref.watch(agentDatabaseProvider));
 }
 
@@ -359,14 +347,20 @@ Future<void> agentInitialization(Ref ref) async {
   // trigger agent wakes — the source device already ran the agent.
   await orchestrator.start(updateNotifications.localUpdateStream);
 
-  // Wire the wake orchestrator into the sync event processor so that
-  // incoming agent lifecycle changes (pause/destroy from another device)
-  // remove local wake subscriptions.
+  // Wire the agent repository and wake orchestrator into the sync event
+  // processor so that incoming agent data is persisted and incoming lifecycle
+  // changes (pause/destroy from another device) restore/remove subscriptions.
   if (getIt.isRegistered<SyncEventProcessor>()) {
-    getIt<SyncEventProcessor>().wakeOrchestrator = orchestrator;
+    final processor = getIt<SyncEventProcessor>();
+    final repository = ref.read(agentRepositoryProvider);
+    processor
+      ..agentRepository = repository
+      ..wakeOrchestrator = orchestrator;
     ref.onDispose(() {
       if (getIt.isRegistered<SyncEventProcessor>()) {
-        getIt<SyncEventProcessor>().wakeOrchestrator = null;
+        getIt<SyncEventProcessor>()
+          ..agentRepository = null
+          ..wakeOrchestrator = null;
       }
     });
   }

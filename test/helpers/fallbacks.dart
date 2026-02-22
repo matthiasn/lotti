@@ -91,6 +91,9 @@ void registerAllFallbackValues() {
     ),
   );
 
+  // Agent repository fallback (for setter verification with `any()`)
+  registerFallbackValue(MockAgentRepository());
+
   // Agent database fallbacks
   registerFallbackValue(
     WakeRunLogData(

@@ -12,8 +12,6 @@ import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
@@ -307,14 +305,6 @@ Future<void> registerSingletons() async {
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
-
-  // Inject agent repository for cross-device agent sync
-  final agentDb = AgentDatabase();
-  final agentRepo = AgentRepository(agentDb);
-  syncEventProcessor.agentRepository = agentRepo;
-  getIt
-    ..registerSingleton<AgentDatabase>(agentDb, dispose: (db) => db.close())
-    ..registerSingleton<AgentRepository>(agentRepo);
 
   // Start the backfill request service
   backfillRequestService.start();
