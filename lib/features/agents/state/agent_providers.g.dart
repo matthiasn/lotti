@@ -9,28 +9,16 @@ part of 'agent_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// The agent database instance (lazy singleton).
-///
-/// Uses the getIt-registered instance when available (production) to avoid
-/// double-opening agent.sqlite. Falls back to creating a new instance
-/// (tests / standalone).
 
 @ProviderFor(agentDatabase)
 final agentDatabaseProvider = AgentDatabaseProvider._();
 
 /// The agent database instance (lazy singleton).
-///
-/// Uses the getIt-registered instance when available (production) to avoid
-/// double-opening agent.sqlite. Falls back to creating a new instance
-/// (tests / standalone).
 
 final class AgentDatabaseProvider
     extends $FunctionalProvider<AgentDatabase, AgentDatabase, AgentDatabase>
     with $Provider<AgentDatabase> {
   /// The agent database instance (lazy singleton).
-  ///
-  /// Uses the getIt-registered instance when available (production) to avoid
-  /// double-opening agent.sqlite. Falls back to creating a new instance
-  /// (tests / standalone).
   AgentDatabaseProvider._()
       : super(
           from: null,
@@ -64,24 +52,18 @@ final class AgentDatabaseProvider
   }
 }
 
-String _$agentDatabaseHash() => r'e62af5d3a906357e3deb2ef9164298a58173c29f';
+String _$agentDatabaseHash() => r'32b4e998e7242188077d24ec885585cafd2ae33c';
 
 /// The agent repository wrapping the database.
-///
-/// Uses the getIt-registered instance when available (production).
 
 @ProviderFor(agentRepository)
 final agentRepositoryProvider = AgentRepositoryProvider._();
 
 /// The agent repository wrapping the database.
-///
-/// Uses the getIt-registered instance when available (production).
 
 final class AgentRepositoryProvider extends $FunctionalProvider<AgentRepository,
     AgentRepository, AgentRepository> with $Provider<AgentRepository> {
   /// The agent repository wrapping the database.
-  ///
-  /// Uses the getIt-registered instance when available (production).
   AgentRepositoryProvider._()
       : super(
           from: null,
@@ -115,7 +97,7 @@ final class AgentRepositoryProvider extends $FunctionalProvider<AgentRepository,
   }
 }
 
-String _$agentRepositoryHash() => r'55b7d18ace0a5b32143870a40fa06b80765762f2';
+String _$agentRepositoryHash() => r'9506f288080ed0c5c3a258a6d765c745f4d40258';
 
 /// Sync-aware write wrapper for agent entities and links.
 
@@ -354,6 +336,125 @@ final class AgentIsRunningFamily extends $Family
   String toString() => r'agentIsRunningProvider';
 }
 
+/// Stream that emits when a specific agent's data changes (from sync or local
+/// wake). Detail providers watch this to self-invalidate.
+///
+/// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+/// because Riverpod deduplicates `AsyncData` values using `==`. Since
+/// `null == null`, a `Stream<void>` would only notify watchers on the first
+/// emission. Each `Set` instance is identity-distinct, ensuring every
+/// notification triggers a provider rebuild.
+
+@ProviderFor(agentUpdateStream)
+final agentUpdateStreamProvider = AgentUpdateStreamFamily._();
+
+/// Stream that emits when a specific agent's data changes (from sync or local
+/// wake). Detail providers watch this to self-invalidate.
+///
+/// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+/// because Riverpod deduplicates `AsyncData` values using `==`. Since
+/// `null == null`, a `Stream<void>` would only notify watchers on the first
+/// emission. Each `Set` instance is identity-distinct, ensuring every
+/// notification triggers a provider rebuild.
+
+final class AgentUpdateStreamProvider extends $FunctionalProvider<
+        AsyncValue<Set<String>>, Set<String>, Stream<Set<String>>>
+    with $FutureModifier<Set<String>>, $StreamProvider<Set<String>> {
+  /// Stream that emits when a specific agent's data changes (from sync or local
+  /// wake). Detail providers watch this to self-invalidate.
+  ///
+  /// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+  /// because Riverpod deduplicates `AsyncData` values using `==`. Since
+  /// `null == null`, a `Stream<void>` would only notify watchers on the first
+  /// emission. Each `Set` instance is identity-distinct, ensuring every
+  /// notification triggers a provider rebuild.
+  AgentUpdateStreamProvider._(
+      {required AgentUpdateStreamFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentUpdateStreamProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentUpdateStreamHash();
+
+  @override
+  String toString() {
+    return r'agentUpdateStreamProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<Set<String>> $createElement(
+          $ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<Set<String>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentUpdateStream(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentUpdateStreamProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentUpdateStreamHash() => r'b2ad428362e088c14beb6e64ff9b9dc5745ef8f4';
+
+/// Stream that emits when a specific agent's data changes (from sync or local
+/// wake). Detail providers watch this to self-invalidate.
+///
+/// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+/// because Riverpod deduplicates `AsyncData` values using `==`. Since
+/// `null == null`, a `Stream<void>` would only notify watchers on the first
+/// emission. Each `Set` instance is identity-distinct, ensuring every
+/// notification triggers a provider rebuild.
+
+final class AgentUpdateStreamFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<Set<String>>, String> {
+  AgentUpdateStreamFamily._()
+      : super(
+          retry: null,
+          name: r'agentUpdateStreamProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Stream that emits when a specific agent's data changes (from sync or local
+  /// wake). Detail providers watch this to self-invalidate.
+  ///
+  /// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+  /// because Riverpod deduplicates `AsyncData` values using `==`. Since
+  /// `null == null`, a `Stream<void>` would only notify watchers on the first
+  /// emission. Each `Set` instance is identity-distinct, ensuring every
+  /// notification triggers a provider rebuild.
+
+  AgentUpdateStreamProvider call(
+    String agentId,
+  ) =>
+      AgentUpdateStreamProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentUpdateStreamProvider';
+}
+
 /// The wake orchestrator (notification listener + subscription matching).
 
 @ProviderFor(wakeOrchestrator)
@@ -514,7 +615,7 @@ final class AgentReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentReportHash() => r'3486a3f41e21d68715d5c5ebb1f01282a814c28e';
+String _$agentReportHash() => r'a3db3955b73c6821bbc73c4f96fb86266660973b';
 
 /// Fetch the latest report for an agent by [agentId].
 ///
@@ -611,7 +712,7 @@ final class AgentStateProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentStateHash() => r'dbd935967aadac6b9e3f362e56e121b6dea0608b';
+String _$agentStateHash() => r'08465c11bf7cb2c5cb0c8e064ba4502af5773c6e';
 
 /// Fetch agent state for an agent by [agentId].
 ///
@@ -708,7 +809,7 @@ final class AgentIdentityProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentIdentityHash() => r'dd9c1bbef6f8172514ec1fda9e61d31bb226c72f';
+String _$agentIdentityHash() => r'01933854263e081557cf5c5ed035f70a61a92bd2';
 
 /// Fetch agent identity by [agentId].
 ///
@@ -813,7 +914,7 @@ final class AgentRecentMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentRecentMessagesHash() =>
-    r'b3ba2514f7114cce58a42c2b954c986d4818a086';
+    r'e2f7d7c0351250705af48635b57b674fdefb7721';
 
 /// Fetch recent messages for an agent by [agentId].
 ///
@@ -1022,7 +1123,7 @@ final class AgentMessagesByThreadProvider extends $FunctionalProvider<
 }
 
 String _$agentMessagesByThreadHash() =>
-    r'9e42ca788f338c75783ad330cf52894e1e43ff69';
+    r'391b4396f7dce55356e51185d5e112580acc23f1';
 
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
@@ -1131,7 +1232,7 @@ final class AgentObservationMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentObservationMessagesHash() =>
-    r'06431568cc56d8332417fe369bb98ec9820079a3';
+    r'f6f7cadcd29a155a6ccfe0457ab02a1b3648c67d';
 
 /// Fetch recent observation messages for an agent by [agentId].
 ///
@@ -1235,7 +1336,7 @@ final class AgentReportHistoryProvider extends $FunctionalProvider<
 }
 
 String _$agentReportHistoryHash() =>
-    r'29fe477e1a79c0363211d49156cf9b7432054824';
+    r'95dd6cf095f3d23687d372dc216cb29c4062845f';
 
 /// Fetch all report snapshots for an agent by [agentId], most-recent first.
 ///
@@ -1382,4 +1483,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'448c72356ecbd16338b5cb60b1b56cdfe8621093';
+    r'd3848498343cb1b1d4917aae7cc490df960e0a0d';

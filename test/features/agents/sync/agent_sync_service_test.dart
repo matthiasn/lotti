@@ -555,6 +555,32 @@ void main() {
           ),
         );
       });
+
+      test(
+        'partial enqueue failure still attempts all messages',
+        () async {
+          var callCount = 0;
+          when(() => mockOutboxService.enqueueMessage(any()))
+              .thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              throw Exception('outbox write failed');
+            }
+          });
+
+          await expectLater(
+            syncService.runInTransaction(() async {
+              await syncService.upsertEntity(testEntity);
+              await syncService.upsertLink(testBasicLink);
+            }),
+            throwsA(isA<Exception>()),
+          );
+
+          // Both messages should have been attempted despite the first
+          // one failing.
+          verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+        },
+      );
     });
   });
 }

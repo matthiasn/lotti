@@ -530,6 +530,7 @@ class SyncEventProcessor {
   /// remove subscriptions when an incoming sync message pauses or destroys
   /// an agent.
   WakeOrchestrator? wakeOrchestrator;
+
   void Function(SyncApplyDiagnostics diag)? applyObserver;
 
   /// Startup timestamp - events with backfill requests older than this
@@ -1249,6 +1250,10 @@ class SyncEventProcessor {
               );
             }
           }
+          _updateNotifications.notify(
+            {agentEntity.agentId, agentNotification},
+            fromSync: true,
+          );
           _loggingService.captureEvent(
             'apply agentEntity id=${agentEntity.id}',
             domain: 'AGENT_SYNC',
@@ -1287,6 +1292,10 @@ class SyncEventProcessor {
               );
             }
           }
+          _updateNotifications.notify(
+            {agentLink.fromId, agentNotification},
+            fromSync: true,
+          );
           _loggingService.captureEvent(
             'apply agentLink id=${agentLink.id}',
             domain: 'AGENT_SYNC',

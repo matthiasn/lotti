@@ -29,66 +29,70 @@ class AgentConversationLog extends ConsumerWidget {
     final threadsAsync = ref.watch(agentMessagesByThreadProvider(agentId));
     final reportsAsync = ref.watch(agentReportHistoryProvider(agentId));
 
-    return threadsAsync.when(
-      loading: () => const Padding(
+    final threads = threadsAsync.value;
+
+    if (threadsAsync.isLoading && threads == null) {
+      return const Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Padding(
+      );
+    }
+
+    if (threadsAsync.hasError && threads == null) {
+      return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages.agentMessagesErrorLoading(error.toString()),
-          style: context.textTheme.bodySmall?.copyWith(
+          context.messages
+              .agentMessagesErrorLoading(threadsAsync.error.toString()),
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
-      ),
-      data: (threads) {
-        if (threads.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: Text(
-              context.messages.agentConversationEmpty,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
+      );
+    }
 
-        // Build a threadId → report lookup from report history.
-        final reportsByThread = <String, AgentReportEntity>{};
-        final reports = reportsAsync.value ?? [];
-        for (final entity in reports) {
-          final report =
-              entity.mapOrNull(agentReport: (AgentReportEntity r) => r);
-          if (report?.threadId != null) {
-            reportsByThread[report!.threadId!] = report;
-          }
-        }
+    if (threads == null || threads.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          context.messages.agentConversationEmpty,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
 
-        // Sort threads most-recent-first by latest message timestamp.
-        final sortedKeys = threads.keys.toList()
-          ..sort((a, b) {
-            final aLast = threads[a]!.last as AgentMessageEntity;
-            final bLast = threads[b]!.last as AgentMessageEntity;
-            return bLast.createdAt.compareTo(aLast.createdAt);
-          });
+    // Build a threadId → report lookup from report history.
+    final reportsByThread = <String, AgentReportEntity>{};
+    final reports = reportsAsync.value ?? [];
+    for (final entity in reports) {
+      final report = entity.mapOrNull(agentReport: (AgentReportEntity r) => r);
+      if (report?.threadId != null) {
+        reportsByThread[report!.threadId!] = report;
+      }
+    }
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: sortedKeys.length,
-          itemBuilder: (context, index) {
-            final threadId = sortedKeys[index];
-            final messages = threads[threadId]!;
-            return _ThreadTile(
-              threadId: threadId,
-              messages: messages.cast<AgentMessageEntity>(),
-              report: reportsByThread[threadId],
-              initiallyExpanded: index == 0,
-            );
-          },
+    // Sort threads most-recent-first by latest message timestamp.
+    final sortedKeys = threads.keys.toList()
+      ..sort((a, b) {
+        final aLast = threads[a]!.last as AgentMessageEntity;
+        final bLast = threads[b]!.last as AgentMessageEntity;
+        return bLast.createdAt.compareTo(aLast.createdAt);
+      });
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: sortedKeys.length,
+      itemBuilder: (context, index) {
+        final threadId = sortedKeys[index];
+        final messages = threads[threadId]!;
+        return _ThreadTile(
+          threadId: threadId,
+          messages: messages.cast<AgentMessageEntity>(),
+          report: reportsByThread[threadId],
+          initiallyExpanded: index == 0,
         );
       },
     );

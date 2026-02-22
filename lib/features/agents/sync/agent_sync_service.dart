@@ -154,8 +154,20 @@ class AgentSyncService {
         zoneValues: {_txKey: ctx},
       );
       // Flush only after successful commit of the outermost transaction.
+      // Process all messages even if individual enqueues fail, so that a
+      // single failure doesn't silently drop the rest of the batch.
+      Object? firstError;
+      StackTrace? firstStack;
       for (final msg in ctx.pendingMessages) {
-        await _outboxService.enqueueMessage(msg);
+        try {
+          await _outboxService.enqueueMessage(msg);
+        } catch (e, s) {
+          firstError ??= e;
+          firstStack ??= s;
+        }
+      }
+      if (firstError != null) {
+        Error.throwWithStackTrace(firstError, firstStack!);
       }
       return result;
     } finally {

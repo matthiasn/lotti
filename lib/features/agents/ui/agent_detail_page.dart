@@ -7,7 +7,6 @@ import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
-import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -27,152 +26,118 @@ class AgentDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final stateAsync = ref.watch(agentStateProvider(agentId));
-    final reportAsync = ref.watch(agentReportProvider(agentId));
 
-    return identityAsync.when(
-      loading: () => const Scaffold(
+    // Use .value to preserve previous data during stream-triggered reloads,
+    // preventing a flash-to-empty while the provider re-fetches.
+    final identityEntity = identityAsync.value;
+
+    // Still show initial loading spinner on first load.
+    if (identityAsync.isLoading && identityEntity == null) {
+      return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Scaffold(
+      );
+    }
+
+    if (identityAsync.hasError && identityEntity == null) {
+      return Scaffold(
         appBar: AppBar(),
         body: Center(
           child: Text(
-            context.messages.agentDetailErrorLoading(error.toString()),
+            context.messages.agentDetailErrorLoading(
+              identityAsync.error.toString(),
+            ),
             style: context.textTheme.bodyMedium?.copyWith(
               color: context.colorScheme.error,
             ),
           ),
         ),
-      ),
-      data: (identityEntity) {
-        if (identityEntity == null) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: Center(
+      );
+    }
+
+    if (identityEntity == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Text(
+            context.messages.agentDetailNotFound,
+            style: context.textTheme.bodyLarge,
+          ),
+        ),
+      );
+    }
+
+    final identity = identityEntity.mapOrNull(agent: (e) => e);
+    if (identity == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Text(
+            context.messages.agentDetailUnexpectedType,
+            style: context.textTheme.bodyLarge,
+          ),
+        ),
+      );
+    }
+
+    final isRunning =
+        ref.watch(agentIsRunningProvider(identity.agentId)).value ?? false;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Flexible(
               child: Text(
-                context.messages.agentDetailNotFound,
-                style: context.textTheme.bodyLarge,
+                identity.displayName,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          );
-        }
-
-        final identity = identityEntity.mapOrNull(agent: (e) => e);
-        if (identity == null) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: Center(
-              child: Text(
-                context.messages.agentDetailUnexpectedType,
-                style: context.textTheme.bodyLarge,
-              ),
-            ),
-          );
-        }
-
-        final isRunning =
-            ref.watch(agentIsRunningProvider(identity.agentId)).value ?? false;
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    identity.displayName,
-                    overflow: TextOverflow.ellipsis,
+            const SizedBox(width: AppTheme.spacingSmall),
+            _LifecycleBadge(lifecycle: identity.lifecycle),
+            if (isRunning) ...[
+              const SizedBox(width: AppTheme.spacingMedium),
+              Tooltip(
+                message: context.messages.agentRunningIndicator,
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(width: AppTheme.spacingSmall),
-                _LifecycleBadge(lifecycle: identity.lifecycle),
-                if (isRunning) ...[
-                  const SizedBox(width: AppTheme.spacingMedium),
-                  Tooltip(
-                    message: context.messages.agentRunningIndicator,
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                bottom: AppTheme.spacingLarge,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Report section
-                  _buildReportSection(context, reportAsync),
-
-                  // Messages (tabbed: Activity, Reports, Conversations, Observations)
-                  _AgentMessagesSection(agentId: agentId),
-
-                  const Divider(indent: 16, endIndent: 16),
-
-                  // Controls
-                  AgentControls(
-                    agentId: agentId,
-                    lifecycle: identity.lifecycle,
-                  ),
-
-                  const Divider(indent: 16, endIndent: 16),
-
-                  // State info
-                  _buildStateInfo(context, stateAsync),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildReportSection(
-    BuildContext context,
-    AsyncValue<AgentDomainEntity?> reportAsync,
-  ) {
-    return reportAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(AppTheme.cardPadding),
-        child: Center(child: CircularProgressIndicator()),
+            ],
+          ],
+        ),
       ),
-      error: (error, _) => Padding(
-        padding: const EdgeInsets.all(AppTheme.cardPadding),
-        child: Text(
-          context.messages.agentReportErrorLoading(error.toString()),
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.error,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            bottom: AppTheme.spacingLarge,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Messages (tabbed: Activity, Reports, Conversations, Observations)
+              _AgentMessagesSection(agentId: agentId),
+
+              const Divider(indent: 16, endIndent: 16),
+
+              // Controls
+              AgentControls(
+                agentId: agentId,
+                lifecycle: identity.lifecycle,
+              ),
+
+              const Divider(indent: 16, endIndent: 16),
+
+              // State info
+              _buildStateInfo(context, stateAsync),
+            ],
           ),
         ),
       ),
-      data: (reportEntity) {
-        if (reportEntity == null) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: Text(
-              context.messages.agentReportNone,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
-
-        final report = reportEntity.mapOrNull(agentReport: (e) => e);
-        if (report == null) return const SizedBox.shrink();
-
-        return AgentReportSection(content: report.content);
-      },
     );
   }
 
@@ -180,72 +145,73 @@ class AgentDetailPage extends ConsumerWidget {
     BuildContext context,
     AsyncValue<AgentDomainEntity?> stateAsync,
   ) {
-    return stateAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.all(AppTheme.cardPadding),
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Padding(
-        padding: const EdgeInsets.all(AppTheme.cardPadding),
+    // Use .value to preserve previous data during reloads.
+    final stateEntity = stateAsync.value;
+
+    if (stateAsync.hasError && stateEntity == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.spacingSmall,
+        ),
         child: Text(
-          context.messages.agentStateErrorLoading(error.toString()),
-          style: context.textTheme.bodySmall?.copyWith(
+          context.messages.agentStateErrorLoading(stateAsync.error.toString()),
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
+      );
+    }
+
+    if (stateEntity == null) return const SizedBox.shrink();
+
+    final state = stateEntity.mapOrNull(agentState: (e) => e);
+    if (state == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: AppTheme.spacingSmall,
       ),
-      data: (stateEntity) {
-        if (stateEntity == null) return const SizedBox.shrink();
-
-        final state = stateEntity.mapOrNull(agentState: (e) => e);
-        if (state == null) return const SizedBox.shrink();
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.cardPadding,
-            vertical: AppTheme.spacingSmall,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.agentStateHeading,
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.messages.agentStateHeading,
-                style: context.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingSmall),
-              _StateRow(
-                label: context.messages.agentStateRevision,
-                value: state.revision.toString(),
-              ),
-              _StateRow(
-                label: context.messages.agentStateWakeCount,
-                value: state.wakeCounter.toString(),
-              ),
-              _StateRow(
-                label: context.messages.agentStateConsecutiveFailures,
-                value: state.consecutiveFailureCount.toString(),
-              ),
-              if (state.lastWakeAt != null)
-                _StateRow(
-                  label: context.messages.agentStateLastWake,
-                  value: formatAgentDateTime(state.lastWakeAt!),
-                ),
-              if (state.nextWakeAt != null)
-                _StateRow(
-                  label: context.messages.agentStateNextWake,
-                  value: formatAgentDateTime(state.nextWakeAt!),
-                ),
-              if (state.sleepUntil != null)
-                _StateRow(
-                  label: context.messages.agentStateSleepingUntil,
-                  value: formatAgentDateTime(state.sleepUntil!),
-                ),
-            ],
+          const SizedBox(height: AppTheme.spacingSmall),
+          _StateRow(
+            label: context.messages.agentStateRevision,
+            value: state.revision.toString(),
           ),
-        );
-      },
+          _StateRow(
+            label: context.messages.agentStateWakeCount,
+            value: state.wakeCounter.toString(),
+          ),
+          _StateRow(
+            label: context.messages.agentStateConsecutiveFailures,
+            value: state.consecutiveFailureCount.toString(),
+          ),
+          if (state.lastWakeAt != null)
+            _StateRow(
+              label: context.messages.agentStateLastWake,
+              value: formatAgentDateTime(state.lastWakeAt!),
+            ),
+          if (state.nextWakeAt != null)
+            _StateRow(
+              label: context.messages.agentStateNextWake,
+              value: formatAgentDateTime(state.nextWakeAt!),
+            ),
+          if (state.sleepUntil != null)
+            _StateRow(
+              label: context.messages.agentStateSleepingUntil,
+              value: formatAgentDateTime(state.sleepUntil!),
+            ),
+        ],
+      ),
     );
   }
 }

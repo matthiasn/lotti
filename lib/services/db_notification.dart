@@ -83,3 +83,4 @@ const tagsNotification = 'TAGS_CHANGED';
 const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
+const agentNotification = 'AGENT_CHANGED';

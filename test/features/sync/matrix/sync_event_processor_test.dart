@@ -833,6 +833,12 @@ void main() {
           subDomain: 'apply',
         ),
       ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
     });
 
     test('processes agent state entity', () async {
@@ -967,6 +973,12 @@ void main() {
           any<Object>(that: contains('agentLink')),
           domain: 'AGENT_SYNC',
           subDomain: 'apply',
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
         ),
       ).called(1);
     });

@@ -76,6 +76,20 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
   yield* runner.runningAgentIds.map((ids) => ids.contains(agentId)).distinct();
 }
 
+/// Stream that emits when a specific agent's data changes (from sync or local
+/// wake). Detail providers watch this to self-invalidate.
+///
+/// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+/// because Riverpod deduplicates `AsyncData` values using `==`. Since
+/// `null == null`, a `Stream<void>` would only notify watchers on the first
+/// emission. Each `Set` instance is identity-distinct, ensuring every
+/// notification triggers a provider rebuild.
+@riverpod
+Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
+  final notifications = getIt<UpdateNotifications>();
+  return notifications.updateStream.where((ids) => ids.contains(agentId));
+}
+
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
@@ -104,6 +118,7 @@ Future<AgentDomainEntity?> agentReport(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentServiceProvider);
   return service.getAgentReport(agentId);
 }
@@ -116,6 +131,7 @@ Future<AgentDomainEntity?> agentState(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   return repository.getAgentState(agentId);
 }
@@ -128,6 +144,7 @@ Future<AgentDomainEntity?> agentIdentity(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentServiceProvider);
   return service.getAgent(agentId);
 }
@@ -142,6 +159,7 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
 
   // The DB query returns rows sorted by created_at DESC with the given limit,
@@ -183,6 +201,7 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -223,6 +242,7 @@ Future<List<AgentDomainEntity>> agentObservationMessages(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -244,6 +264,7 @@ Future<List<AgentDomainEntity>> agentReportHistory(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -330,14 +351,8 @@ Future<void> agentInitialization(Ref ref) async {
       threadId: threadId,
     );
 
-    // Invalidate UI providers so the detail page refreshes.
-    ref
-      ..invalidate(agentReportProvider(agentId))
-      ..invalidate(agentReportHistoryProvider(agentId))
-      ..invalidate(agentStateProvider(agentId))
-      ..invalidate(agentRecentMessagesProvider(agentId))
-      ..invalidate(agentObservationMessagesProvider(agentId))
-      ..invalidate(agentMessagesByThreadProvider(agentId));
+    // Notify the update stream so all detail providers self-invalidate.
+    getIt<UpdateNotifications>().notify({agentId, agentNotification});
 
     return result.mutatedEntries;
   };
