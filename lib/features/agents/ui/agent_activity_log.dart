@@ -228,6 +228,7 @@ class AgentReportHistoryLog extends ConsumerWidget {
             if (report == null) return const SizedBox.shrink();
 
             return _ReportSnapshotCard(
+              key: ValueKey(report.id),
               report: report,
               initiallyExpanded: index == 0,
             );
@@ -242,6 +243,7 @@ class _ReportSnapshotCard extends StatefulWidget {
   const _ReportSnapshotCard({
     required this.report,
     this.initiallyExpanded = false,
+    super.key,
   });
 
   final AgentReportEntity report;

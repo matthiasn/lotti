@@ -37,7 +37,7 @@ class AgentConversationLog extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          error.toString(),
+          context.messages.agentMessagesErrorLoading(error.toString()),
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -110,10 +110,10 @@ class _ThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstMsg = messages.first;
+    final lastMsg = messages.last;
     final toolCallCount =
         messages.where((m) => m.kind == AgentMessageKind.action).length;
-    final timestamp = formatAgentDateTime(firstMsg.createdAt);
+    final timestamp = formatAgentDateTime(lastMsg.createdAt);
 
     final shortId = threadId.length > 7 ? threadId.substring(0, 7) : threadId;
 
@@ -140,7 +140,7 @@ class _ThreadTile extends StatelessWidget {
       ),
       children: [
         AgentActivityLog.fromMessages(
-          agentId: firstMsg.agentId,
+          agentId: lastMsg.agentId,
           messages: messages,
           expandToolCalls: true,
         ),
