@@ -38,6 +38,7 @@ void main() {
         observationsOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
         reportHistoryOverride,
+    Stream<bool> Function(Ref, String)? isRunningOverride,
     List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
@@ -67,7 +68,7 @@ void main() {
               (ref, agentId) async => <AgentDomainEntity>[],
         ),
         agentIsRunningProvider.overrideWith(
-          (ref, agentId) => Stream.value(false),
+          isRunningOverride ?? (ref, agentId) => Stream.value(false),
         ),
         agentServiceProvider.overrideWithValue(mockAgentService),
         taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
@@ -482,6 +483,40 @@ void main() {
         expect(section.content, reportContent);
       },
     );
+
+    testWidgets('shows running spinner when agent is running', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          isRunningOverride: (ref, agentId) => Stream.value(true),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The running spinner should appear in the app bar.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // The tooltip with the running indicator label should be present.
+      expect(find.byType(Tooltip), findsOneWidget);
+    });
+
+    testWidgets('hides running spinner when agent is not running',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) async => makeTestIdentity(),
+          isRunningOverride: (ref, agentId) => Stream.value(false),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // No spinner in the app bar.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // No tooltip for running indicator.
+      expect(find.byTooltip('Running'), findsNothing);
+    });
 
     testWidgets(
       'shows dormant controls for dormant agent',
