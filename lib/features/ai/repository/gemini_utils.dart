@@ -81,6 +81,7 @@ class GeminiUtils {
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
     String? systemMessage,
+    String? modelId,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
   }) {
@@ -96,7 +97,7 @@ class GeminiUtils {
     final generationConfig = <String, dynamic>{
       'temperature': temperature,
       if (maxTokens != null) 'maxOutputTokens': maxTokens,
-      'thinkingConfig': thinkingConfig.toJson(),
+      'thinkingConfig': thinkingConfig.toJson(modelId: modelId),
     };
 
     final request = <String, dynamic>{
@@ -105,17 +106,7 @@ class GeminiUtils {
       if (tools != null && tools.isNotEmpty)
         'tools': [
           {
-            'functionDeclarations': tools
-                .map(
-                  (t) => {
-                    'name': t.function.name,
-                    if (t.function.description != null)
-                      'description': t.function.description,
-                    if (t.function.parameters != null)
-                      'parameters': t.function.parameters,
-                  },
-                )
-                .toList(),
+            'functionDeclarations': _buildFunctionDeclarations(tools),
           },
         ],
     };
@@ -155,6 +146,7 @@ class GeminiUtils {
     required GeminiThinkingConfig thinkingConfig,
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
+    String? modelId,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
   }) {
@@ -182,7 +174,7 @@ class GeminiUtils {
     final generationConfig = <String, dynamic>{
       'temperature': temperature,
       if (maxTokens != null) 'maxOutputTokens': maxTokens,
-      'thinkingConfig': thinkingConfig.toJson(),
+      'thinkingConfig': thinkingConfig.toJson(modelId: modelId),
     };
 
     final request = <String, dynamic>{
@@ -191,17 +183,7 @@ class GeminiUtils {
       if (tools != null && tools.isNotEmpty)
         'tools': [
           {
-            'functionDeclarations': tools
-                .map(
-                  (t) => {
-                    'name': t.function.name,
-                    if (t.function.description != null)
-                      'description': t.function.description,
-                    if (t.function.parameters != null)
-                      'parameters': t.function.parameters,
-                  },
-                )
-                .toList(),
+            'functionDeclarations': _buildFunctionDeclarations(tools),
           },
         ],
     };
@@ -413,6 +395,58 @@ class GeminiUtils {
       },
       developer: (_) => null, // Not supported by Gemini
     );
+  }
+
+  /// Converts OpenAI-style [ChatCompletionTool] objects to Gemini
+  /// `functionDeclarations`, stripping JSON Schema keywords that Gemini's
+  /// native API does not support (e.g. `additionalProperties`).
+  static List<Map<String, dynamic>> _buildFunctionDeclarations(
+    List<ChatCompletionTool> tools,
+  ) {
+    return tools
+        .map(
+          (t) => {
+            'name': t.function.name,
+            if (t.function.description != null)
+              'description': t.function.description,
+            if (t.function.parameters != null)
+              'parameters': _stripAdditionalProperties(
+                t.function.parameters!,
+              ),
+          },
+        )
+        .toList();
+  }
+
+  /// Recursively strips `additionalProperties` from a JSON Schema map.
+  ///
+  /// Gemini's native API does not support the `additionalProperties` keyword
+  /// in function parameter schemas and returns a 400 error when it is present.
+  /// This method removes it at every nesting level (including inside `items`
+  /// and `properties` sub-schemas) so that OpenAI-style tool definitions can
+  /// be forwarded to Gemini without modification at the call site.
+  static Map<String, dynamic> _stripAdditionalProperties(
+    Map<String, dynamic> schema,
+  ) {
+    final result = <String, dynamic>{};
+    for (final entry in schema.entries) {
+      if (entry.key == 'additionalProperties') continue;
+
+      final value = entry.value;
+      if (value is Map<String, dynamic>) {
+        result[entry.key] = _stripAdditionalProperties(value);
+      } else if (value is List) {
+        result[entry.key] = value.map((e) {
+          if (e is Map<String, dynamic>) {
+            return _stripAdditionalProperties(e);
+          }
+          return e;
+        }).toList();
+      } else {
+        result[entry.key] = value;
+      }
+    }
+    return result;
   }
 
   /// Strips leading SSE `data:` prefixes and JSON array framing tokens.
