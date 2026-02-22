@@ -62,6 +62,7 @@ class KnownModel {
 
 /// Known models for each inference provider type
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
+  InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
@@ -73,6 +74,67 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
+
+/// Alibaba Cloud models - Qwen family via DashScope (OpenAI-compatible)
+///
+/// These models run on Alibaba Cloud's DashScope API, which is fully
+/// OpenAI-compatible. They include text, vision, and reasoning models.
+/// API keys are obtained from the Alibaba Cloud Model Studio console.
+const List<KnownModel> alibabaModels = [
+  KnownModel(
+    providerModelId: 'qwen3-max',
+    name: 'Qwen3 Max',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Top-tier Qwen3 MoE model with 1T parameters. Best for complex '
+        'reasoning, analysis, and generation tasks.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-flash',
+    name: 'Qwen Flash',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Fast and affordable model optimized for speed. Great for quick '
+        'tasks, summaries, and high-throughput workloads.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-plus',
+    name: 'Qwen3 VL Plus',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Top vision-language model with image understanding. Supports '
+        'multiple images per request via standard OpenAI vision format.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-flash',
+    name: 'Qwen3 VL Flash',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Fast vision-language model for efficient image analysis and '
+        'visual question answering.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-omni-flash',
+    name: 'Qwen3 Omni Flash',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Multimodal model with audio understanding. Supports up to '
+        '20 minutes of audio for transcription and analysis. '
+        'Accepts AMR, WAV, AAC, and MP3 formats.',
+  ),
+];
 
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [

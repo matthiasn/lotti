@@ -230,6 +230,8 @@
   "aiInferenceErrorUnknownTitle": "Chyba",
   "aiInferenceErrorViewLogButton": "Zobrazit log",
   "aiModelSettings": "Nastavení AI modelu",
+  "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",
+  "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Rodina AI asistentů Claude od Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderGeminiDescription": "Google Gemini AI modely",

@@ -6,6 +6,17 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.da
 void main() {
   group('ProviderChipConstants', () {
     group('getProviderColor - Dark Theme', () {
+      test('returns correct dark color for Alibaba provider', () {
+        const type = InferenceProviderType.alibaba;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: true,
+        );
+
+        expect(color, equals(const Color(0xFFFFAB40))); // Alibaba Orange dark
+      });
+
       test('returns correct dark color for Anthropic provider', () {
         const type = InferenceProviderType.anthropic;
 
@@ -108,6 +119,17 @@ void main() {
     });
 
     group('getProviderColor - Light Theme', () {
+      test('returns correct light color for Alibaba provider', () {
+        const type = InferenceProviderType.alibaba;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: false,
+        );
+
+        expect(color, equals(const Color(0xFFFF6D00))); // Alibaba Orange light
+      });
+
       test('returns correct light color for Anthropic provider', () {
         const type = InferenceProviderType.anthropic;
 

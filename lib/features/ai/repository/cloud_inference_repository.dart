@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
@@ -389,6 +390,11 @@ class CloudInferenceRepository {
       );
     }
 
+    final effectiveAudioBase64 =
+        provider.inferenceProviderType.requiresDataUriForAudio
+            ? 'data:;base64,$audioBase64'
+            : audioBase64;
+
     return client
         .createChatCompletionStream(
           request: _createBaseRequest(
@@ -399,7 +405,7 @@ class CloudInferenceRepository {
                     ChatCompletionMessageContentPart.text(text: prompt),
                     ChatCompletionMessageContentPart.audio(
                       inputAudio: ChatCompletionMessageInputAudio(
-                        data: audioBase64,
+                        data: effectiveAudioBase64,
                         format: audioFormat,
                       ),
                     ),

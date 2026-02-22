@@ -258,6 +258,11 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
   // Establish initial dependency on today's unified data
   ref.watch(unifiedDailyOsDataControllerProvider(date: currentDate));
 
+  // Use a Completer to break out of the loop when the provider is disposed,
+  // preventing ref.read() calls on an already-disposed Ref.
+  final disposed = Completer<void>();
+  ref.onDispose(disposed.complete);
+
   while (true) {
     final now = clock.now();
     final today = now.dayAtMidnight;
@@ -289,7 +294,13 @@ Stream<String?> activeFocusCategoryId(Ref ref) async* {
 
     yield result;
 
-    await Future<void>.delayed(const Duration(seconds: 15));
+    // Race the 15-second delay against disposal — exit if disposed first
+    await Future.any([
+      Future<void>.delayed(const Duration(seconds: 15)),
+      disposed.future,
+    ]);
+
+    if (disposed.isCompleted) return;
   }
 }
 

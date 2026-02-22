@@ -1007,6 +1007,18 @@ abstract class AppLocalizations {
   /// **'AI Model Settings'**
   String get aiModelSettings;
 
+  /// No description provided for @aiProviderAlibabaDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Cloud\'s Qwen family of models via DashScope API'**
+  String get aiProviderAlibabaDescription;
+
+  /// No description provided for @aiProviderAlibabaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Cloud (Qwen)'**
+  String get aiProviderAlibabaName;
+
   /// No description provided for @aiProviderAnthropicDescription.
   ///
   /// In en, this message translates to:
