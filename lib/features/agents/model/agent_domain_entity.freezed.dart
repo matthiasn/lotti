@@ -341,7 +341,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             double? confidence,
             Map<String, Object?> provenance,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? threadId)?
         agentReport,
     TResult Function(String id, String agentId, String scope, String reportId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
@@ -422,7 +423,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.content,
             _that.confidence,
             _that.provenance,
-            _that.deletedAt);
+            _that.deletedAt,
+            _that.threadId);
       case AgentReportHeadEntity() when agentReportHead != null:
         return agentReportHead(
             _that.id,
@@ -523,7 +525,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             double? confidence,
             Map<String, Object?> provenance,
-            DateTime? deletedAt)
+            DateTime? deletedAt,
+            String? threadId)
         agentReport,
     required TResult Function(
             String id,
@@ -609,7 +612,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.content,
             _that.confidence,
             _that.provenance,
-            _that.deletedAt);
+            _that.deletedAt,
+            _that.threadId);
       case AgentReportHeadEntity():
         return agentReportHead(
             _that.id,
@@ -709,7 +713,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             double? confidence,
             Map<String, Object?> provenance,
-            DateTime? deletedAt)?
+            DateTime? deletedAt,
+            String? threadId)?
         agentReport,
     TResult? Function(String id, String agentId, String scope, String reportId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
@@ -789,7 +794,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.content,
             _that.confidence,
             _that.provenance,
-            _that.deletedAt);
+            _that.deletedAt,
+            _that.threadId);
       case AgentReportHeadEntity() when agentReportHead != null:
         return agentReportHead(
             _that.id,
@@ -1755,6 +1761,7 @@ class AgentReportEntity implements AgentDomainEntity {
       this.confidence,
       final Map<String, Object?> provenance = const {},
       this.deletedAt,
+      this.threadId,
       final String? $type})
       : _provenance = provenance,
         $type = $type ?? 'agentReport';
@@ -1782,6 +1789,7 @@ class AgentReportEntity implements AgentDomainEntity {
 
   @override
   final DateTime? deletedAt;
+  final String? threadId;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
@@ -1819,7 +1827,9 @@ class AgentReportEntity implements AgentDomainEntity {
             const DeepCollectionEquality()
                 .equals(other._provenance, _provenance) &&
             (identical(other.deletedAt, deletedAt) ||
-                other.deletedAt == deletedAt));
+                other.deletedAt == deletedAt) &&
+            (identical(other.threadId, threadId) ||
+                other.threadId == threadId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1834,11 +1844,12 @@ class AgentReportEntity implements AgentDomainEntity {
       content,
       confidence,
       const DeepCollectionEquality().hash(_provenance),
-      deletedAt);
+      deletedAt,
+      threadId);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentReport(id: $id, agentId: $agentId, scope: $scope, createdAt: $createdAt, vectorClock: $vectorClock, content: $content, confidence: $confidence, provenance: $provenance, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentReport(id: $id, agentId: $agentId, scope: $scope, createdAt: $createdAt, vectorClock: $vectorClock, content: $content, confidence: $confidence, provenance: $provenance, deletedAt: $deletedAt, threadId: $threadId)';
   }
 }
 
@@ -1859,7 +1870,8 @@ abstract mixin class $AgentReportEntityCopyWith<$Res>
       String content,
       double? confidence,
       Map<String, Object?> provenance,
-      DateTime? deletedAt});
+      DateTime? deletedAt,
+      String? threadId});
 }
 
 /// @nodoc
@@ -1884,6 +1896,7 @@ class _$AgentReportEntityCopyWithImpl<$Res>
     Object? confidence = freezed,
     Object? provenance = null,
     Object? deletedAt = freezed,
+    Object? threadId = freezed,
   }) {
     return _then(AgentReportEntity(
       id: null == id
@@ -1922,6 +1935,10 @@ class _$AgentReportEntityCopyWithImpl<$Res>
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      threadId: freezed == threadId
+          ? _self.threadId
+          : threadId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }

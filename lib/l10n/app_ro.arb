@@ -96,6 +96,7 @@
   "agentReportHistoryBadge": "Raport",
   "agentReportHistoryEmpty": "Nu există încă instantanee ale raportului.",
   "agentReportNone": "Niciun raport disponibil încă.",
+  "agentThreadReportLabel": "Raport generat în acest ciclu",
   "agentRunningIndicator": "În execuție",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",

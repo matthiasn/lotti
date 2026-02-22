@@ -205,6 +205,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentReportNone => 'No report available yet.';
 
   @override
+  String get agentThreadReportLabel => 'Report produced during this wake';
+
+  @override
   String get agentRunningIndicator => 'Running';
 
   @override

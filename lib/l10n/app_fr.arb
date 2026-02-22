@@ -96,6 +96,7 @@
   "agentReportHistoryBadge": "Rapport",
   "agentReportHistoryEmpty": "Pas encore d'instantanés de rapport.",
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
+  "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "agentRunningIndicator": "En cours",
   "agentStateConsecutiveFailures": "Échecs consécutifs",
   "agentStateErrorLoading": "Échec du chargement de l'état : {error}",

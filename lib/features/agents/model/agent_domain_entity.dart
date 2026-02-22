@@ -86,6 +86,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,
+    String? threadId,
   }) = AgentReportEntity;
 
   /// Latest report pointer per scope.

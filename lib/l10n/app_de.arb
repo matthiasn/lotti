@@ -96,6 +96,7 @@
   "agentReportHistoryBadge": "Bericht",
   "agentReportHistoryEmpty": "Noch keine Berichts-Snapshots.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentThreadReportLabel": "Bericht aus diesem Wake-Zyklus",
   "agentRunningIndicator": "Aktiv",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",

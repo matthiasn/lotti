@@ -208,6 +208,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentReportNone => 'Noch kein Bericht verfügbar.';
 
   @override
+  String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
+
+  @override
   String get agentRunningIndicator => 'Aktiv';
 
   @override

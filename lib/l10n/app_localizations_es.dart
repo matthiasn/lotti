@@ -208,6 +208,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentReportNone => 'Aún no hay informe disponible.';
 
   @override
+  String get agentThreadReportLabel => 'Informe producido durante este ciclo';
+
+  @override
   String get agentRunningIndicator => 'Ejecutando';
 
   @override

@@ -209,6 +209,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
 
   @override
+  String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
+
+  @override
   String get agentRunningIndicator => 'En cours';
 
   @override

@@ -28,7 +28,10 @@ class AgentDbConversions {
       unknown: (e) => e.deletedAt,
     );
 
-    final threadId = entity.mapOrNull(agentMessage: (m) => m.threadId);
+    final threadId = entity.mapOrNull(
+      agentMessage: (m) => m.threadId,
+      agentReport: (r) => r.threadId,
+    );
 
     return AgentEntitiesCompanion(
       id: Value(entity.id),

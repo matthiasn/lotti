@@ -95,6 +95,7 @@
   "agentReportHistoryBadge": "Report",
   "agentReportHistoryEmpty": "No report snapshots yet.",
   "agentReportNone": "No report available yet.",
+  "agentThreadReportLabel": "Report produced during this wake",
   "agentRunningIndicator": "Running",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",

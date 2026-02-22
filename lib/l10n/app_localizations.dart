@@ -473,6 +473,12 @@ abstract class AppLocalizations {
   /// **'No report available yet.'**
   String get agentReportNone;
 
+  /// No description provided for @agentThreadReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report produced during this wake'**
+  String get agentThreadReportLabel;
+
   /// No description provided for @agentRunningIndicator.
   ///
   /// In en, this message translates to:

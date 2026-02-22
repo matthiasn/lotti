@@ -207,6 +207,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentReportNone => 'Niciun raport disponibil încă.';
 
   @override
+  String get agentThreadReportLabel => 'Raport generat în acest ciclu';
+
+  @override
   String get agentRunningIndicator => 'În execuție';
 
   @override

@@ -305,6 +305,7 @@ class TaskAgentWorkflow {
               createdAt: now,
               vectorClock: null,
               content: reportContent,
+              threadId: threadId,
             ),
           );
 
