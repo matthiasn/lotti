@@ -310,6 +310,7 @@ Future<void> agentInitialization(Ref ref) async {
     // Invalidate UI providers so the detail page refreshes.
     ref
       ..invalidate(agentReportProvider(agentId))
+      ..invalidate(agentReportHistoryProvider(agentId))
       ..invalidate(agentStateProvider(agentId))
       ..invalidate(agentRecentMessagesProvider(agentId))
       ..invalidate(agentObservationMessagesProvider(agentId))

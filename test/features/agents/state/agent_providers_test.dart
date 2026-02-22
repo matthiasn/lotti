@@ -887,6 +887,13 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentReport',
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
 
         WakeExecutor? capturedExecutor;
         when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
@@ -905,6 +912,7 @@ void main() {
         // Prime all providers so we can detect invalidation.
         container
           ..listen(agentReportProvider(kTestAgentId), (_, __) {})
+          ..listen(agentReportHistoryProvider(kTestAgentId), (_, __) {})
           ..listen(agentStateProvider(kTestAgentId), (_, __) {})
           ..listen(
             agentRecentMessagesProvider(kTestAgentId),
@@ -919,6 +927,7 @@ void main() {
             (_, __) {},
           );
         await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentReportHistoryProvider(kTestAgentId).future);
         await container.read(agentStateProvider(kTestAgentId).future);
         await container.read(agentRecentMessagesProvider(kTestAgentId).future);
         await container
@@ -926,7 +935,7 @@ void main() {
         await container
             .read(agentMessagesByThreadProvider(kTestAgentId).future);
 
-        // Execute the wakeExecutor — this should invalidate all five
+        // Execute the wakeExecutor — this should invalidate all six
         // providers, causing them to re-fetch on next read.
         await capturedExecutor!(
           kTestAgentId,
@@ -937,6 +946,7 @@ void main() {
 
         // Force the invalidated providers to re-execute.
         await container.read(agentReportProvider(kTestAgentId).future);
+        await container.read(agentReportHistoryProvider(kTestAgentId).future);
         await container.read(agentStateProvider(kTestAgentId).future);
         await container.read(agentRecentMessagesProvider(kTestAgentId).future);
         await container
@@ -949,7 +959,9 @@ void main() {
         verify(() => mockService.getAgentReport(kTestAgentId)).called(2);
         verify(() => mockRepository.getAgentState(kTestAgentId)).called(2);
         // agentRecentMessages (limit=50) + agentObservationMessages (limit=200)
-        // + agentMessagesByThread (limit=200) = 3 reads per cycle, 2 cycles = 6.
+        // + agentMessagesByThread (limit=200) = 3 message reads per cycle,
+        // agentReportHistory (limit=50) = 1 report read per cycle,
+        // 2 cycles = 8 total.
         verify(
           () => mockRepository.getEntitiesByAgentId(
             kTestAgentId,
@@ -957,6 +969,13 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).called(6);
+        verify(
+          () => mockRepository.getEntitiesByAgentId(
+            kTestAgentId,
+            type: 'agentReport',
+            limit: any(named: 'limit'),
+          ),
+        ).called(2);
       },
     );
 

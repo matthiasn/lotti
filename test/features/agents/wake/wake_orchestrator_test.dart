@@ -1041,8 +1041,8 @@ void main() {
       });
 
       test(
-          'pre-registers suppression before executor runs, '
-          'preventing self-wake from mid-execution notifications', () {
+          'mid-execution signals are queued but suppressed during drain '
+          'when they match self-mutations', () {
         fakeAsync((async) {
           // Use a completer to pause the executor mid-flight so we can
           // inject a notification that would match the agent's subscription.
@@ -1070,22 +1070,71 @@ void main() {
           // for the same entity while the agent is executing.
           emitTokens(async, controller, {'entity-1'});
 
-          // The second notification should have been suppressed by the
-          // pre-registered suppression data, so no new job should be queued
-          // (the queue should be empty since the first job was dequeued and
-          // is currently executing).
-          expect(queue.isEmpty, isTrue);
+          // The second notification is NOT suppressed by _onBatch (so
+          // external signals during execution are preserved). Instead it
+          // is queued and will be suppressed during the drain re-check
+          // using the pre-registered suppression data.
+          expect(queue.isEmpty, isFalse);
 
-          // Complete the executor — returns the mutation set.
+          // Complete the executor — returns the mutation set confirming
+          // entity-1 was self-written.
           gate.complete({
             'entity-1': const VectorClock({'node-1': 1}),
           });
           async.flushMicrotasks();
 
+          // The queued job should have been suppressed during drain
+          // re-check (pre-registered suppression covers entity-1).
           // Only one wake run should have been persisted (the original).
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
+
+          controller.close();
+        });
+      });
+
+      test(
+          'external signal for different entity during execution '
+          'triggers a second wake', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1', 'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              return gate.future;
+            };
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // First signal starts execution for entity-1.
+          emitTokens(async, controller, {'entity-1'});
+
+          // While executing, an external change to entity-2 arrives.
+          emitTokens(async, controller, {'entity-2'});
+
+          // The signal should be queued (not suppressed by _onBatch).
+          expect(queue.isEmpty, isFalse);
+
+          // Complete first execution — only entity-1 was mutated.
+          gate.complete({
+            'entity-1': const VectorClock({'node-1': 1}),
+          });
+          async.flushMicrotasks();
+
+          // entity-2 was NOT in the mutation set, so it should NOT be
+          // suppressed during drain re-check. A second wake should run.
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(2);
 
           controller.close();
         });

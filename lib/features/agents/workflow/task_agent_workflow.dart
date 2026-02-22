@@ -506,7 +506,9 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
 - Use `record_observations` to record private notes worth remembering for
-  future wakes (patterns, insights, failure notes). Do NOT embed observations
+  future wakes. Keep observations short — only noteworthy highlights:
+  blockers, scope changes, missed estimates, key decisions. Skip routine
+  progress that the report already captures. Do NOT embed observations
   in the report text — always use the tool.
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
@@ -547,7 +549,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
 
     if (journalObservations.isNotEmpty) {
-      buffer.writeln('## Your Prior Observations');
+      buffer.writeln('## Agent Journal');
       // Cap to most recent 20 to prevent unbounded context growth.
       // journalObservations is ordered newest-first from the DB query;
       // reverse so the LLM sees them in chronological order.

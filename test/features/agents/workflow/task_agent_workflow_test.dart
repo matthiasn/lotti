@@ -965,7 +965,7 @@ void main() {
         final message = await executeAndCaptureMessage(observations: [obs]);
 
         expect(message, isNotNull);
-        expect(message, contains('## Your Prior Observations'));
+        expect(message, contains('## Agent Journal'));
         expect(message, contains('Task needs refactoring'));
       });
 
