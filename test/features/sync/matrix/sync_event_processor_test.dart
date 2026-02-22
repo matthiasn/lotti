@@ -1452,6 +1452,32 @@ void main() {
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
+      test('soft-deleted agent_task link does NOT restore subscription',
+          () async {
+        final link = AgentLink.agentTask(
+          id: 'link-deleted',
+          fromId: 'agent-1',
+          toId: 'task-42',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          deletedAt: DateTime(2024, 3, 16),
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        // Deleted link must not trigger agent lookup or subscription.
+        verifyNever(() => mockAgentRepo.getEntity(any()));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+
       test('non-agent_task link does NOT trigger subscription logic', () async {
         final link = AgentLink.basic(
           id: 'link-1',

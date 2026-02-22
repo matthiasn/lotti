@@ -1271,7 +1271,9 @@ class SyncEventProcessor {
           // links, which may be empty if the link hasn't been synced yet.
           // addSubscription is idempotent (replaces by ID), so both handlers
           // firing for the same agent is harmless.
-          if (wakeOrchestrator != null && agentLink is AgentTaskLink) {
+          if (wakeOrchestrator != null &&
+              agentLink is AgentTaskLink &&
+              agentLink.deletedAt == null) {
             final agent = await agentRepository!.getEntity(agentLink.fromId);
             if (agent is AgentIdentityEntity &&
                 agent.lifecycle == AgentLifecycle.active &&

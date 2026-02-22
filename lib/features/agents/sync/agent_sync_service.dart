@@ -118,8 +118,11 @@ class AgentSyncService {
   /// messages are enqueued for rolled-back writes.
   ///
   /// Nesting is supported: inner calls detect the existing zone context and
-  /// delegate to the repository (which uses savepoints). Only the outermost
-  /// call creates the zone and performs the flush/discard.
+  /// delegate to the repository (which uses savepoints). If an inner call
+  /// throws (savepoint rollback), the messages it buffered are removed from
+  /// the shared buffer — even if the caller catches the exception and
+  /// continues in the outer transaction. Only the outermost call creates the
+  /// zone and performs the final flush/discard.
   ///
   /// Concurrent chains are safe: each outermost call runs in its own [Zone]
   /// with an isolated buffer.
@@ -127,7 +130,20 @@ class AgentSyncService {
     final existingCtx = _currentTxContext;
     if (existingCtx != null) {
       // Nested: piggyback on the outermost chain's zone/buffer.
-      return _repository.runInTransaction(action);
+      // Snapshot the buffer length so that if the inner savepoint rolls back
+      // (throws) but the caller catches and continues, we discard only the
+      // messages added by this inner scope — preventing ghost outbox entries
+      // for writes that were rolled back by the savepoint.
+      final snapshot = existingCtx.pendingMessages.length;
+      try {
+        return await _repository.runInTransaction(action);
+      } catch (_) {
+        existingCtx.pendingMessages.removeRange(
+          snapshot,
+          existingCtx.pendingMessages.length,
+        );
+        rethrow;
+      }
     }
 
     // Outermost: create an isolated context in a new zone.

@@ -489,6 +489,40 @@ void main() {
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
 
+      test('inner TX rollback caught by outer — only outer messages flushed',
+          () async {
+        await syncService.runInTransaction(() async {
+          // Outer write — should be flushed.
+          await syncService.upsertEntity(testEntity);
+
+          // Inner TX rolls back, but outer catches and continues.
+          try {
+            await syncService.runInTransaction(() async {
+              await syncService.upsertLink(testBasicLink);
+              throw Exception('inner rollback');
+            });
+          } on Exception {
+            // Intentionally caught — outer TX continues.
+          }
+
+          // Another outer write after the caught inner failure.
+          await syncService.upsertEntity(testStateEntity);
+        });
+
+        // Only the two outer entity messages should be flushed.
+        // The inner link message must have been discarded on savepoint rollback.
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncAgentEntity>()),
+          ),
+        ).called(2);
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncAgentLink>()),
+          ),
+        );
+      });
+
       test(
           'concurrent chains are isolated — rollback in one does not '
           'affect the other', () async {
