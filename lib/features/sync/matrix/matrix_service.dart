@@ -450,6 +450,8 @@ class MatrixService {
       themingSelection: (_) => 'themingSelection',
       backfillRequest: (_) => 'backfillRequest',
       backfillResponse: (_) => 'backfillResponse',
+      agentEntity: (_) => 'agentEntity',
+      agentLink: (_) => 'agentLink',
     );
 
     return _messageSender.sendMatrixMessage(

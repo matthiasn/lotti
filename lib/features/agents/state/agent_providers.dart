@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -16,9 +17,11 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/providers/service_providers.dart'
+    show journalDbProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -37,6 +40,15 @@ AgentDatabase agentDatabase(Ref ref) {
 @Riverpod(keepAlive: true)
 AgentRepository agentRepository(Ref ref) {
   return AgentRepository(ref.watch(agentDatabaseProvider));
+}
+
+/// Sync-aware write wrapper for agent entities and links.
+@Riverpod(keepAlive: true)
+AgentSyncService agentSyncService(Ref ref) {
+  return AgentSyncService(
+    repository: ref.watch(agentRepositoryProvider),
+    outboxService: ref.watch(outboxServiceProvider),
+  );
 }
 
 /// The in-memory wake queue.
@@ -64,6 +76,20 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
   yield* runner.runningAgentIds.map((ids) => ids.contains(agentId)).distinct();
 }
 
+/// Stream that emits when a specific agent's data changes (from sync or local
+/// wake). Detail providers watch this to self-invalidate.
+///
+/// Returns the raw `Set<String>` from `UpdateNotifications` rather than `void`
+/// because Riverpod deduplicates `AsyncData` values using `==`. Since
+/// `null == null`, a `Stream<void>` would only notify watchers on the first
+/// emission. Each `Set` instance is identity-distinct, ensuring every
+/// notification triggers a provider rebuild.
+@riverpod
+Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
+  final notifications = getIt<UpdateNotifications>();
+  return notifications.updateStream.where((ids) => ids.contains(agentId));
+}
+
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
@@ -80,6 +106,7 @@ AgentService agentService(Ref ref) {
   return AgentService(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
   );
 }
 
@@ -91,6 +118,7 @@ Future<AgentDomainEntity?> agentReport(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentServiceProvider);
   return service.getAgentReport(agentId);
 }
@@ -103,6 +131,7 @@ Future<AgentDomainEntity?> agentState(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   return repository.getAgentState(agentId);
 }
@@ -115,6 +144,7 @@ Future<AgentDomainEntity?> agentIdentity(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentServiceProvider);
   return service.getAgent(agentId);
 }
@@ -129,6 +159,7 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
 
   // The DB query returns rows sorted by created_at DESC with the given limit,
@@ -170,6 +201,7 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -210,6 +242,7 @@ Future<List<AgentDomainEntity>> agentObservationMessages(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -231,6 +264,7 @@ Future<List<AgentDomainEntity>> agentReportHistory(
   Ref ref,
   String agentId,
 ) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
@@ -252,6 +286,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
   );
 }
 
@@ -316,20 +351,34 @@ Future<void> agentInitialization(Ref ref) async {
       threadId: threadId,
     );
 
-    // Invalidate UI providers so the detail page refreshes.
-    ref
-      ..invalidate(agentReportProvider(agentId))
-      ..invalidate(agentReportHistoryProvider(agentId))
-      ..invalidate(agentStateProvider(agentId))
-      ..invalidate(agentRecentMessagesProvider(agentId))
-      ..invalidate(agentObservationMessagesProvider(agentId))
-      ..invalidate(agentMessagesByThreadProvider(agentId));
+    // Notify the update stream so all detail providers self-invalidate.
+    getIt<UpdateNotifications>().notify({agentId, agentNotification});
 
     return result.mutatedEntries;
   };
 
   final updateNotifications = getIt<UpdateNotifications>();
-  await orchestrator.start(updateNotifications.updateStream);
+  // Use localUpdateStream so that sync-originated entity changes do not
+  // trigger agent wakes — the source device already ran the agent.
+  await orchestrator.start(updateNotifications.localUpdateStream);
+
+  // Wire the agent repository and wake orchestrator into the sync event
+  // processor so that incoming agent data is persisted and incoming lifecycle
+  // changes (pause/destroy from another device) restore/remove subscriptions.
+  if (getIt.isRegistered<SyncEventProcessor>()) {
+    final processor = getIt<SyncEventProcessor>();
+    final repository = ref.read(agentRepositoryProvider);
+    processor
+      ..agentRepository = repository
+      ..wakeOrchestrator = orchestrator;
+    ref.onDispose(() {
+      if (getIt.isRegistered<SyncEventProcessor>()) {
+        getIt<SyncEventProcessor>()
+          ..agentRepository = null
+          ..wakeOrchestrator = null;
+      }
+    });
+  }
 
   await taskAgentService.restoreSubscriptions();
 }

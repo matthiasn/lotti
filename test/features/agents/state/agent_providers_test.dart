@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -10,7 +12,12 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart'
+    show outboxServiceProvider;
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -44,6 +51,57 @@ void main() {
     addTearDown(container.dispose);
     return container;
   }
+
+  group('agentDatabaseProvider', () {
+    test('creates database and closes on dispose', () async {
+      final container = ProviderContainer();
+
+      final db = container.read(agentDatabaseProvider);
+      expect(db, isA<AgentDatabase>());
+
+      // Dispose should close the database without error.
+      container.dispose();
+    });
+  });
+
+  group('agentRepositoryProvider', () {
+    test('creates repository wrapping the database', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final repo = container.read(agentRepositoryProvider);
+      expect(repo, isA<AgentRepository>());
+    });
+  });
+
+  group('agentSyncServiceProvider', () {
+    test('injects repository and outbox service', () async {
+      final mockOutboxService = MockOutboxService();
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          outboxServiceProvider.overrideWithValue(mockOutboxService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final syncService = container.read(agentSyncServiceProvider);
+
+      // Verify the repository was injected.
+      expect(syncService.repository, same(mockRepository));
+
+      // Verify the outbox service was injected by exercising upsertEntity.
+      final entity = makeTestIdentity();
+      when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncService.upsertEntity(entity);
+
+      verify(() => mockRepository.upsertEntity(entity)).called(1);
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+  });
 
   group('agentReportProvider', () {
     test('returns report entity when service finds one', () async {
@@ -802,6 +860,101 @@ void main() {
     });
   });
 
+  group('agentUpdateStreamProvider', () {
+    Future<ProviderContainer> setUpStreamTest(
+      StreamController<Set<String>> controller,
+    ) async {
+      final mockNotifications = MockUpdateNotifications();
+      when(() => mockNotifications.updateStream)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockNotifications.localUpdateStream)
+          .thenAnswer((_) => const Stream.empty());
+
+      await getIt.reset();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+      addTearDown(getIt.reset);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('emits when UpdateNotifications fires with matching agent ID',
+        () async {
+      final controller = StreamController<Set<String>>.broadcast();
+      addTearDown(controller.close);
+
+      final container = await setUpStreamTest(controller);
+
+      final values = <AsyncValue<Set<String>>>[];
+      final sub = container.listen(
+        agentUpdateStreamProvider(kTestAgentId),
+        (_, next) => values.add(next),
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+
+      // Fire notification with matching agent ID.
+      controller.add({kTestAgentId, 'other-id'});
+      await pumpEventQueue();
+
+      expect(values, isNotEmpty);
+    });
+
+    test('does NOT emit for unrelated agent IDs', () async {
+      final controller = StreamController<Set<String>>.broadcast();
+      addTearDown(controller.close);
+
+      final container = await setUpStreamTest(controller);
+
+      final values = <AsyncValue<Set<String>>>[];
+      final sub = container.listen(
+        agentUpdateStreamProvider(kTestAgentId),
+        (_, next) => values.add(next),
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+      values.clear();
+
+      // Fire notification with a DIFFERENT agent ID.
+      controller.add({'different-agent-id'});
+      await pumpEventQueue();
+
+      expect(values, isEmpty);
+    });
+
+    test('multiple emissions each trigger a new notification', () async {
+      final controller = StreamController<Set<String>>.broadcast();
+      addTearDown(controller.close);
+
+      final container = await setUpStreamTest(controller);
+
+      final values = <AsyncValue<Set<String>>>[];
+      final sub = container.listen(
+        agentUpdateStreamProvider(kTestAgentId),
+        (_, next) => values.add(next),
+      );
+      addTearDown(sub.close);
+
+      await pumpEventQueue();
+      values.clear();
+
+      // Fire three successive notifications — each must produce a
+      // distinct AsyncData because we pass through Set<String> (identity
+      // distinct) rather than void (which Riverpod would deduplicate).
+      controller.add({kTestAgentId});
+      await pumpEventQueue();
+      controller.add({kTestAgentId});
+      await pumpEventQueue();
+      controller.add({kTestAgentId});
+      await pumpEventQueue();
+
+      expect(values, hasLength(3));
+    });
+  });
+
   group('agentInitializationProvider', () {
     late MockWakeOrchestrator mockOrchestrator;
     late MockTaskAgentWorkflow mockWorkflow;
@@ -979,7 +1132,7 @@ void main() {
     );
 
     test(
-      'wakeExecutor invalidates UI providers after successful execution',
+      'wakeExecutor fires update notification after successful execution',
       () async {
         final identity = makeTestIdentity();
         final mutated = <String, VectorClock>{
@@ -999,26 +1152,6 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
 
-        // Stub providers that will be read after invalidation.
-        when(() => mockService.getAgentReport(kTestAgentId))
-            .thenAnswer((_) async => null);
-        when(() => mockRepository.getAgentState(kTestAgentId))
-            .thenAnswer((_) async => null);
-        when(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentMessage',
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentReport',
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer((_) async => []);
-
         WakeExecutor? capturedExecutor;
         when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
           capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
@@ -1033,34 +1166,10 @@ void main() {
         addTearDown(sub.close);
         await container.read(agentInitializationProvider.future);
 
-        // Prime all providers so we can detect invalidation.
-        container
-          ..listen(agentReportProvider(kTestAgentId), (_, __) {})
-          ..listen(agentReportHistoryProvider(kTestAgentId), (_, __) {})
-          ..listen(agentStateProvider(kTestAgentId), (_, __) {})
-          ..listen(
-            agentRecentMessagesProvider(kTestAgentId),
-            (_, __) {},
-          )
-          ..listen(
-            agentObservationMessagesProvider(kTestAgentId),
-            (_, __) {},
-          )
-          ..listen(
-            agentMessagesByThreadProvider(kTestAgentId),
-            (_, __) {},
-          );
-        await container.read(agentReportProvider(kTestAgentId).future);
-        await container.read(agentReportHistoryProvider(kTestAgentId).future);
-        await container.read(agentStateProvider(kTestAgentId).future);
-        await container.read(agentRecentMessagesProvider(kTestAgentId).future);
-        await container
-            .read(agentObservationMessagesProvider(kTestAgentId).future);
-        await container
-            .read(agentMessagesByThreadProvider(kTestAgentId).future);
+        expect(capturedExecutor, isNotNull);
 
-        // Execute the wakeExecutor — this should invalidate all six
-        // providers, causing them to re-fetch on next read.
+        // Execute the wakeExecutor — this should fire a notification
+        // with the agent ID so detail providers self-invalidate.
         await capturedExecutor!(
           kTestAgentId,
           'run-key-2',
@@ -1068,40 +1177,54 @@ void main() {
           'thread-2',
         );
 
-        // Force the invalidated providers to re-execute.
-        await container.read(agentReportProvider(kTestAgentId).future);
-        await container.read(agentReportHistoryProvider(kTestAgentId).future);
-        await container.read(agentStateProvider(kTestAgentId).future);
-        await container.read(agentRecentMessagesProvider(kTestAgentId).future);
-        await container
-            .read(agentObservationMessagesProvider(kTestAgentId).future);
-        await container
-            .read(agentMessagesByThreadProvider(kTestAgentId).future);
-
-        // Each provider was read once to prime, then once after
-        // invalidation — two calls total.
-        verify(() => mockService.getAgentReport(kTestAgentId)).called(2);
-        verify(() => mockRepository.getAgentState(kTestAgentId)).called(2);
-        // agentRecentMessages (limit=50) + agentObservationMessages (limit=200)
-        // + agentMessagesByThread (limit=200) = 3 message reads per cycle,
-        // agentReportHistory (limit=50) = 1 report read per cycle,
-        // 2 cycles = 8 total.
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentMessage',
-            limit: any(named: 'limit'),
+          () => mockNotifications.notify(
+            {kTestAgentId, 'AGENT_CHANGED'},
           ),
-        ).called(6);
-        verify(
-          () => mockRepository.getEntitiesByAgentId(
-            kTestAgentId,
-            type: 'agentReport',
-            limit: any(named: 'limit'),
-          ),
-        ).called(2);
+        ).called(1);
       },
     );
+
+    test('wires repository and orchestrator into SyncEventProcessor', () async {
+      final mockProcessor = MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockProcessor.wakeOrchestrator = mockOrchestrator).called(1);
+      verify(() => mockProcessor.agentRepository = any(that: isNotNull))
+          .called(1);
+    });
+
+    test('clears SyncEventProcessor fields on dispose', () async {
+      final mockProcessor = MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+
+      await container.read(agentInitializationProvider.future);
+
+      sub.close();
+      container.dispose();
+
+      verify(() => mockProcessor.wakeOrchestrator = null).called(1);
+      verify(() => mockProcessor.agentRepository = null).called(1);
+    });
 
     test('stops orchestrator on dispose', () async {
       final container = createInitContainer(enableAgents: true);

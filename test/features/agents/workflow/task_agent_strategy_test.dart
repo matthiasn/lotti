@@ -11,7 +11,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
-  late MockAgentRepository mockRepository;
+  late MockAgentSyncService mockSyncService;
   late MockAgentToolExecutor mockExecutor;
   late MockConversationManager mockManager;
   late TaskAgentStrategy strategy;
@@ -22,7 +22,7 @@ void main() {
   const taskId = 'task-001';
 
   setUp(() {
-    mockRepository = MockAgentRepository();
+    mockSyncService = MockAgentSyncService();
     mockExecutor = MockAgentToolExecutor();
     mockManager = MockConversationManager();
 
@@ -34,11 +34,11 @@ void main() {
       ),
     );
 
-    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
     strategy = TaskAgentStrategy(
       executor: mockExecutor,
-      repository: mockRepository,
+      syncService: mockSyncService,
       agentId: agentId,
       threadId: threadId,
       runKey: runKey,
@@ -237,7 +237,7 @@ void main() {
         ).called(1);
 
         // Persists a tool result message for the error
-        verify(() => mockRepository.upsertEntity(any()))
+        verify(() => mockSyncService.upsertEntity(any()))
             .called(greaterThanOrEqualTo(2));
       });
 
@@ -275,7 +275,7 @@ void main() {
         );
 
         // At least one upsertEntity call for the assistant message
-        verify(() => mockRepository.upsertEntity(any()))
+        verify(() => mockSyncService.upsertEntity(any()))
             .called(greaterThanOrEqualTo(1));
       });
     });

@@ -17,6 +17,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -36,6 +37,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -272,6 +274,13 @@ class MockAgentRepository extends Mock implements AgentRepository {
 }
 
 class MockAgentService extends Mock implements AgentService {}
+
+class MockAgentSyncService extends Mock implements AgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
+
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 

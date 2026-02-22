@@ -12,6 +12,7 @@ TaskAgentService taskAgentService(Ref ref) {
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
   );
 }
 

@@ -51,6 +51,8 @@ void main() {
       SyncStep.dashboards: 8,
       SyncStep.habits: 9,
       SyncStep.aiSettings: 10,
+      SyncStep.agentEntities: 3,
+      SyncStep.agentLinks: 2,
     };
 
     Future<void> simulateStep(
@@ -124,6 +126,22 @@ void main() {
       ),
     ).thenAnswer(
       (invocation) => simulateStep(SyncStep.aiSettings, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncAgentEntities(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.agentEntities, invocation),
+    );
+    when(
+      () => mockSyncMaintenanceRepository.syncAgentLinks(
+        onProgress: any(named: 'onProgress'),
+        onDetailedProgress: any(named: 'onDetailedProgress'),
+      ),
+    ).thenAnswer(
+      (invocation) => simulateStep(SyncStep.agentLinks, invocation),
     );
 
     when(
@@ -230,6 +248,8 @@ void main() {
           SyncStep.dashboards,
           SyncStep.habits,
           SyncStep.aiSettings,
+          SyncStep.agentEntities,
+          SyncStep.agentLinks,
         },
       ),
     );

@@ -2,6 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -51,6 +56,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockLoggingService mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
+  late MockAgentRepository mockAgentRepository;
   late SyncMaintenanceRepository syncMaintenanceRepository;
 
   setUpAll(() {
@@ -64,6 +70,7 @@ void main() {
     mockOutboxService = MockOutboxService();
     mockLoggingService = MockLoggingService();
     mockAiConfigRepository = MockAiConfigRepository();
+    mockAgentRepository = MockAgentRepository();
 
     when(
       () => mockLoggingService.captureException(
@@ -79,6 +86,7 @@ void main() {
       outboxService: mockOutboxService,
       loggingService: mockLoggingService,
       aiConfigRepository: mockAiConfigRepository,
+      agentRepository: mockAgentRepository,
     );
   });
 
@@ -1068,6 +1076,93 @@ void main() {
     });
   });
 
+  group('syncAgentEntities', () {
+    test('enqueues all agent entities for sync', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      when(() => mockAgentRepository.getAllEntities())
+          .thenAnswer((_) async => [entity]);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncAgentEntities();
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final msg = captured.first as SyncMessage;
+      expect(
+        msg.mapOrNull(agentEntity: (m) => m.agentEntity.id),
+        'agent-1',
+      );
+    });
+
+    test('enqueues nothing when no agent entities exist', () async {
+      when(() => mockAgentRepository.getAllEntities())
+          .thenAnswer((_) async => []);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncAgentEntities();
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
+  group('syncAgentLinks', () {
+    test('enqueues all agent links for sync', () async {
+      final link = AgentLink.agentTask(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      when(() => mockAgentRepository.getAllLinks())
+          .thenAnswer((_) async => [link]);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncAgentLinks();
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+      expect(captured.length, 1);
+      final msg = captured.first as SyncMessage;
+      expect(
+        msg.mapOrNull(agentLink: (m) => m.agentLink.id),
+        'link-1',
+      );
+    });
+
+    test('enqueues nothing when no agent links exist', () async {
+      when(() => mockAgentRepository.getAllLinks()).thenAnswer((_) async => []);
+      when(() => mockOutboxService.enqueueMessage(any()))
+          .thenAnswer((_) async {});
+
+      await syncMaintenanceRepository.syncAgentLinks();
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
   group('syncMaintenanceRepositoryProvider', () {
     test('constructs repository from shared service providers', () {
       final container = ProviderContainer(
@@ -1078,6 +1173,7 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(
             mockAiConfigRepository,
           ),
+          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
         ],
       );
       addTearDown(container.dispose);

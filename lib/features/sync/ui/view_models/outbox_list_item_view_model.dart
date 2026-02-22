@@ -155,6 +155,8 @@ class OutboxListItemViewModel {
         themingSelection: (_) => messages.syncPayloadThemingSelection,
         backfillRequest: (_) => messages.syncPayloadBackfillRequest,
         backfillResponse: (_) => messages.syncPayloadBackfillResponse,
+        agentEntity: (_) => messages.syncPayloadAgentEntity,
+        agentLink: (_) => messages.syncPayloadAgentLink,
       );
     } catch (_) {
       return messages.syncListUnknownPayload;

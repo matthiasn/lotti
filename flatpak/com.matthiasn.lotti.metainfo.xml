@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.868" date="2026-02-22">
+      <description>
+          <p>Agent cross-device sync via Matrix. Agent entities and links synchronize across devices with wake subscription restoration. Sync maintenance UI supports agent re-sync steps. Zone-based transaction isolation buffers outbox messages until commit, with nested transaction and rollback support.</p>
+      </description>
+    </release>
     <release version="0.9.867" date="2026-02-22">
       <description>
           <p>Agent running-state feedback with reactive spinner indicators on task page and agent detail page. Tool call arguments and results now persisted and viewable in expandable activity log cards. Conversation view groups messages by wake cycle. Post-execution drain timer ensures signals during execution are not lost.</p>

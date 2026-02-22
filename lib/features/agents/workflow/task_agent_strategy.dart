@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -52,7 +52,7 @@ typedef ExecuteToolHandler = Future<ToolExecutionResult> Function(
 class TaskAgentStrategy extends ConversationStrategy {
   TaskAgentStrategy({
     required this.executor,
-    required this.repository,
+    required this.syncService,
     required this.agentId,
     required this.threadId,
     required this.runKey,
@@ -66,8 +66,9 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// audit logging.
   final AgentToolExecutor executor;
 
-  /// Agent-domain repository for persisting messages.
-  final AgentRepository repository;
+  /// Sync-aware write service for persisting messages. All writes go through
+  /// this so they are automatically enqueued for cross-device sync.
+  final AgentSyncService syncService;
 
   /// The agent's stable ID.
   final String agentId;
@@ -315,7 +316,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     final toolNames =
         toolCalls?.map((tc) => tc.function.name).toList() ?? <String>[];
 
-    await repository.upsertEntity(
+    await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),
         agentId: agentId,
@@ -337,7 +338,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     String? errorMessage,
   }) async {
     final now = clock.now();
-    await repository.upsertEntity(
+    await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(
         id: _uuid.v4(),
         agentId: agentId,

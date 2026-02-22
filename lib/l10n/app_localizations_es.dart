@@ -3604,6 +3604,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncNotLoggedInToast => 'La sincronización no está conectada';
 
   @override
+  String get syncPayloadAgentEntity => 'Entidad de agente';
+
+  @override
+  String get syncPayloadAgentLink => 'Enlace de agente';
+
+  @override
   String get syncPayloadAiConfig => 'Configuración AI';
 
   @override
@@ -3658,6 +3664,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncSkip => 'Omitir';
+
+  @override
+  String get syncStepAgentEntities => 'Entidades de agente';
+
+  @override
+  String get syncStepAgentLinks => 'Enlaces de agente';
 
   @override
   String get syncStepAiSettings => 'Configuración de IA';

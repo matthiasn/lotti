@@ -201,3 +201,32 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.journalEntity: 'journalEntity',
   SyncSequencePayloadType.entryLink: 'entryLink',
 };
+
+SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
+    SyncAgentEntity(
+      agentEntity: AgentDomainEntity.fromJson(
+          json['agentEntity'] as Map<String, dynamic>),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncAgentEntityToJson(SyncAgentEntity instance) =>
+    <String, dynamic>{
+      'agentEntity': instance.agentEntity,
+      'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'runtimeType': instance.$type,
+    };
+
+SyncAgentLink _$SyncAgentLinkFromJson(Map<String, dynamic> json) =>
+    SyncAgentLink(
+      agentLink: AgentLink.fromJson(json['agentLink'] as Map<String, dynamic>),
+      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
+    <String, dynamic>{
+      'agentLink': instance.agentLink,
+      'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'runtimeType': instance.$type,
+    };

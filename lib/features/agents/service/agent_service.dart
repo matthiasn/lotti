@@ -6,23 +6,30 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:uuid/uuid.dart';
 
 /// High-level agent lifecycle management.
 ///
 /// Provides operations for creating, listing, pausing, resuming, and destroying
-/// agents. Each mutation persists to [AgentRepository] and, where relevant,
+/// agents. Each mutation writes via [AgentSyncService] (which enqueues changes
+/// for cross-device sync) and reads via [AgentRepository]. Where relevant, it
 /// updates the [WakeOrchestrator]'s subscription state so that wake triggers
 /// are registered or withdrawn immediately.
 class AgentService {
   AgentService({
     required this.repository,
     required this.orchestrator,
+    required this.syncService,
   });
 
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+
+  /// Sync-aware write service. All entity/link writes go through this so
+  /// they are automatically enqueued for cross-device sync.
+  final AgentSyncService syncService;
 
   static const _uuid = Uuid();
 
@@ -78,10 +85,10 @@ class AgentService {
       vectorClock: null,
     );
 
-    await repository.runInTransaction(() async {
-      await repository.upsertEntity(identity);
-      await repository.upsertEntity(state);
-      await repository.upsertLink(link);
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(identity);
+      await syncService.upsertEntity(state);
+      await syncService.upsertLink(link);
     });
 
     developer.log(
@@ -162,6 +169,10 @@ class AgentService {
 
   /// Permanently delete all data for a **destroyed** agent.
   ///
+  /// Hard-delete is local-only and is NOT propagated via sync.
+  /// Cross-device deletion is achieved via the [destroyAgent] lifecycle
+  /// transition, which syncs the `destroyed` lifecycle to all devices.
+  ///
   /// Destroys the agent first if it is not already destroyed, then hard-deletes
   /// all entities, links, wake runs, and saga ops from the database.
   Future<void> deleteAgent(String agentId) async {
@@ -182,7 +193,7 @@ class AgentService {
     String agentId,
     AgentLifecycle lifecycle,
   ) {
-    return repository.runInTransaction(() async {
+    return syncService.runInTransaction(() async {
       final identity = await getAgent(agentId);
       if (identity == null) {
         developer.log(
@@ -198,7 +209,7 @@ class AgentService {
         updatedAt: now,
         destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
       );
-      await repository.upsertEntity(updated);
+      await syncService.upsertEntity(updated);
       return true;
     });
   }

@@ -3,7 +3,6 @@ import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,8 +12,6 @@ import '../../../../mocks/mocks.dart';
 class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 

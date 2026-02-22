@@ -2,6 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -133,6 +135,16 @@ sealed class SyncMessage with _$SyncMessage {
     /// the journal entry ID, for entry links it's the link ID.
     String? payloadId,
   }) = SyncBackfillResponse;
+
+  const factory SyncMessage.agentEntity({
+    required AgentDomainEntity agentEntity,
+    required SyncEntryStatus status,
+  }) = SyncAgentEntity;
+
+  const factory SyncMessage.agentLink({
+    required AgentLink agentLink,
+    required SyncEntryStatus status,
+  }) = SyncAgentLink;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);

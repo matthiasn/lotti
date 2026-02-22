@@ -46,37 +46,41 @@ class AgentActivityLog extends ConsumerWidget {
     }
 
     final messagesAsync = ref.watch(agentRecentMessagesProvider(agentId));
+    final messages = messagesAsync.value;
 
-    return messagesAsync.when(
-      loading: () => const Padding(
+    if (messagesAsync.isLoading && messages == null) {
+      return const Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Padding(
+      );
+    }
+
+    if (messagesAsync.hasError && messages == null) {
+      return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages.agentMessagesErrorLoading(error.toString()),
-          style: context.textTheme.bodySmall?.copyWith(
+          context.messages
+              .agentMessagesErrorLoading(messagesAsync.error.toString()),
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
-      ),
-      data: (messages) {
-        if (messages.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: Text(
-              context.messages.agentMessagesEmpty,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
+      );
+    }
 
-        return _buildMessageList(context, messages);
-      },
-    );
+    if (messages == null || messages.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          context.messages.agentMessagesEmpty,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return _buildMessageList(context, messages);
   }
 
   Widget _buildMessageList(
@@ -125,51 +129,56 @@ class AgentObservationLog extends ConsumerWidget {
     final observationsAsync =
         ref.watch(agentObservationMessagesProvider(agentId));
 
-    return observationsAsync.when(
-      loading: () => const Padding(
+    final observations = observationsAsync.value;
+
+    if (observationsAsync.isLoading && observations == null) {
+      return const Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Padding(
+      );
+    }
+
+    if (observationsAsync.hasError && observations == null) {
+      return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages.agentMessagesErrorLoading(error.toString()),
-          style: context.textTheme.bodySmall?.copyWith(
+          context.messages
+              .agentMessagesErrorLoading(observationsAsync.error.toString()),
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
-      ),
-      data: (messages) {
-        if (messages.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: Text(
-              context.messages.agentObservationsEmpty,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
+      );
+    }
 
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: messages.length,
-          separatorBuilder: (_, __) =>
-              const SizedBox(height: AppTheme.spacingXSmall),
-          itemBuilder: (context, index) {
-            final entity = messages[index];
-            return entity.mapOrNull(
-                  agentMessage: (msg) => _MessageCard(
-                    key: ValueKey(msg.id),
-                    message: msg,
-                    initiallyExpanded: true,
-                  ),
-                ) ??
-                const SizedBox.shrink();
-          },
-        );
+    if (observations == null || observations.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          context.messages.agentObservationsEmpty,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: observations.length,
+      separatorBuilder: (_, __) =>
+          const SizedBox(height: AppTheme.spacingXSmall),
+      itemBuilder: (context, index) {
+        final entity = observations[index];
+        return entity.mapOrNull(
+              agentMessage: (msg) => _MessageCard(
+                key: ValueKey(msg.id),
+                message: msg,
+                initiallyExpanded: true,
+              ),
+            ) ??
+            const SizedBox.shrink();
       },
     );
   }
@@ -191,48 +200,52 @@ class AgentReportHistoryLog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(agentReportHistoryProvider(agentId));
 
-    return historyAsync.when(
-      loading: () => const Padding(
+    final reports = historyAsync.value;
+
+    if (historyAsync.isLoading && reports == null) {
+      return const Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, _) => Padding(
+      );
+    }
+
+    if (historyAsync.hasError && reports == null) {
+      return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
           context.messages.agentReportHistoryError,
-          style: context.textTheme.bodySmall?.copyWith(
+          style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
-      ),
-      data: (reports) {
-        if (reports.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTheme.cardPadding),
-            child: Text(
-              context.messages.agentReportHistoryEmpty,
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          );
-        }
+      );
+    }
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: reports.length,
-          itemBuilder: (context, index) {
-            final entity = reports[index];
-            final report = entity.mapOrNull(agentReport: (r) => r);
-            if (report == null) return const SizedBox.shrink();
+    if (reports == null || reports.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppTheme.cardPadding),
+        child: Text(
+          context.messages.agentReportHistoryEmpty,
+          style: context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
 
-            return _ReportSnapshotCard(
-              key: ValueKey(report.id),
-              report: report,
-              initiallyExpanded: index == 0,
-            );
-          },
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: reports.length,
+      itemBuilder: (context, index) {
+        final entity = reports[index];
+        final report = entity.mapOrNull(agentReport: (r) => r);
+        if (report == null) return const SizedBox.shrink();
+
+        return _ReportSnapshotCard(
+          key: ValueKey(report.id),
+          report: report,
+          initiallyExpanded: index == 0,
         );
       },
     );

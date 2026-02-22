@@ -3549,6 +3549,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncNotLoggedInToast => 'Sincronizarea nu este conectată';
 
   @override
+  String get syncPayloadAgentEntity => 'Entitate agent';
+
+  @override
+  String get syncPayloadAgentLink => 'Legătură agent';
+
+  @override
   String get syncPayloadAiConfig => 'Configurare AI';
 
   @override
@@ -3603,6 +3609,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncSkip => 'Omite';
+
+  @override
+  String get syncStepAgentEntities => 'Entități agent';
+
+  @override
+  String get syncStepAgentLinks => 'Legături agent';
 
   @override
   String get syncStepAiSettings => 'Setări AI';

@@ -106,6 +106,7 @@ class _NullManagerConversationRepository extends MockConversationRepository {
 
 void main() {
   late MockAgentRepository mockAgentRepository;
+  late MockAgentSyncService mockSyncService;
   late MockConversationRepository mockConversationRepository;
   late MockAiInputRepository mockAiInputRepository;
   late MockAiConfigRepository mockAiConfigRepository;
@@ -170,6 +171,7 @@ void main() {
 
   setUp(() {
     mockAgentRepository = MockAgentRepository();
+    mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
     mockConversationRepository =
         MockConversationRepository(mockConversationManager);
@@ -182,8 +184,7 @@ void main() {
 
     registerAllFallbackValues();
 
-    when(() => mockAgentRepository.upsertEntity(any()))
-        .thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
     workflow = TaskAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -194,6 +195,7 @@ void main() {
       cloudInferenceRepository: mockCloudInferenceRepository,
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
+      syncService: mockSyncService,
     );
   });
 
@@ -337,7 +339,7 @@ void main() {
         expect(result.success, isTrue);
 
         // User message (payload + message) + state update = 3 upsert calls.
-        verify(() => mockAgentRepository.upsertEntity(any())).called(3);
+        verify(() => mockSyncService.upsertEntity(any())).called(3);
 
         // Verify conversation was cleaned up in finally.
         expect(
@@ -393,7 +395,7 @@ void main() {
         // Should persist: assistant message (from processToolCalls)
         // + 2 observation payloads + 2 observation messages
         // + state update = 6 total.
-        verify(() => mockAgentRepository.upsertEntity(any()))
+        verify(() => mockSyncService.upsertEntity(any()))
             .called(greaterThanOrEqualTo(6));
       });
 
@@ -461,8 +463,7 @@ void main() {
 
         // Verify state was updated with incremented failure count.
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         // Find the state entity that was persisted.
         final stateUpdates = captured
@@ -636,8 +637,7 @@ void main() {
 
         // Report + report head + state update + assistant message = 4+
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         final reports = captured
             .whereType<AgentDomainEntity>()
@@ -675,8 +675,7 @@ void main() {
         expect(result.success, isTrue);
 
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         // Find the thought payload entity (the one with the LLM response,
         // not the user message payload).
@@ -746,8 +745,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         final heads = captured
             .whereType<AgentDomainEntity>()
@@ -2086,8 +2084,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -2117,6 +2114,7 @@ void main() {
           cloudInferenceRepository: mockCloudInferenceRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
+          syncService: mockSyncService,
         );
 
         final result = await nullWorkflow.execute(
@@ -2130,8 +2128,7 @@ void main() {
 
         // Only user message payload (no thought payload since manager null).
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
         final payloads = captured
             .whereType<AgentDomainEntity>()
             .where(
@@ -2161,8 +2158,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -2193,8 +2189,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockAgentRepository.upsertEntity(captureAny()))
-                .captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -2250,7 +2245,7 @@ void main() {
         };
 
         // Make the state update also throw (the nested try/catch).
-        when(() => mockAgentRepository.upsertEntity(any()))
+        when(() => mockSyncService.upsertEntity(any()))
             .thenThrow(Exception('DB write failed'));
 
         final result = await workflow.execute(
@@ -2263,6 +2258,48 @@ void main() {
         // Should still return a failure result, not rethrow.
         expect(result.success, isFalse);
         expect(result.error, contains('Network failure'));
+      });
+    });
+
+    group('syncService pass-through', () {
+      test('routes writes through syncService', () async {
+        // Set up stubs for a successful execute path.
+        when(() => mockAgentRepository.getAgentState(agentId))
+            .thenAnswer((_) async => testAgentState);
+        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
+            .thenAnswer((_) async => '{"title":"Test Task"}');
+        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
+            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        // Writes go through syncService, not the repository directly.
+        verify(() => mockSyncService.upsertEntity(any()))
+            .called(greaterThanOrEqualTo(1));
       });
     });
 

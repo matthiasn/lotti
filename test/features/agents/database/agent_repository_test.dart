@@ -1445,4 +1445,56 @@ void main() {
       expect(remainingOps.first.operationId, 'op-other');
     });
   });
+
+  group('getAllEntities', () {
+    test('returns all entity types', () async {
+      await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));
+      await repo.upsertEntity(makeAgentState());
+      await repo.upsertEntity(makeMessage());
+
+      final entities = await repo.getAllEntities();
+
+      expect(entities.length, 3);
+      expect(
+        entities.map((e) => e.id),
+        containsAll(['agent-a', 'entity-state-001', 'entity-msg-001']),
+      );
+    });
+
+    test('returns empty list when no entities exist', () async {
+      final entities = await repo.getAllEntities();
+
+      expect(entities, isEmpty);
+    });
+  });
+
+  group('getAllLinks', () {
+    test('returns all link types', () async {
+      await repo.upsertLink(makeBasicLink());
+      await repo.upsertLink(
+        model.AgentLink.agentTask(
+          id: 'link-task-001',
+          fromId: testAgentId,
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      final links = await repo.getAllLinks();
+
+      expect(links.length, 2);
+      expect(
+        links.map((l) => l.id),
+        containsAll(['link-001', 'link-task-001']),
+      );
+    });
+
+    test('returns empty list when no links exist', () async {
+      final links = await repo.getAllLinks();
+
+      expect(links, isEmpty);
+    });
+  });
 }

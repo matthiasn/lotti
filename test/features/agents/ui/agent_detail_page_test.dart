@@ -9,7 +9,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
-import 'package:lotti/features/agents/ui/agent_report_section.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -30,7 +29,6 @@ void main() {
   Widget buildSubject({
     FutureOr<AgentDomainEntity?> Function(Ref, String)? identityOverride,
     FutureOr<AgentDomainEntity?> Function(Ref, String)? stateOverride,
-    FutureOr<AgentDomainEntity?> Function(Ref, String)? reportOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)? messagesOverride,
     FutureOr<Map<String, List<AgentDomainEntity>>> Function(Ref, String)?
         threadOverride,
@@ -51,7 +49,7 @@ void main() {
           stateOverride ?? (ref, agentId) async => null,
         ),
         agentReportProvider.overrideWith(
-          reportOverride ?? (ref, agentId) async => null,
+          (ref, agentId) async => null,
         ),
         agentRecentMessagesProvider.overrideWith(
           messagesOverride ?? (ref, agentId) async => <AgentDomainEntity>[],
@@ -81,13 +79,11 @@ void main() {
   Widget buildDataSubject({
     AgentDomainEntity? identity,
     AgentDomainEntity? state,
-    AgentDomainEntity? report,
     List<AgentDomainEntity> messages = const [],
   }) {
     return buildSubject(
       identityOverride: (ref, agentId) async => identity,
       stateOverride: (ref, agentId) async => state,
-      reportOverride: (ref, agentId) async => report,
       messagesOverride: (ref, agentId) async => messages,
     );
   }
@@ -99,8 +95,6 @@ void main() {
           identityOverride: (ref, agentId) =>
               Completer<AgentDomainEntity?>().future,
           stateOverride: (ref, agentId) =>
-              Completer<AgentDomainEntity?>().future,
-          reportOverride: (ref, agentId) =>
               Completer<AgentDomainEntity?>().future,
           messagesOverride: (ref, agentId) =>
               Completer<List<AgentDomainEntity>>().future,
@@ -186,28 +180,6 @@ void main() {
       );
     });
 
-    testWidgets('shows report section when report exists', (tester) async {
-      await tester.pumpWidget(
-        buildDataSubject(
-          identity: makeTestIdentity(),
-          report: makeTestReport(),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(AgentReportSection), findsOneWidget);
-    });
-
-    testWidgets('shows "No report available" when report is null',
-        (tester) async {
-      await tester.pumpWidget(
-        buildDataSubject(identity: makeTestIdentity()),
-      );
-      await tester.pump();
-
-      expect(find.text('No report available yet.'), findsOneWidget);
-    });
-
     testWidgets('shows Activity, Reports, Conversations, and Observations tabs',
         (tester) async {
       await tester.pumpWidget(
@@ -289,37 +261,11 @@ void main() {
       expect(find.text('Unexpected entity type.'), findsOneWidget);
     });
 
-    testWidgets('shows report error message when report fails', (tester) async {
-      final reportError = Exception('Report DB error');
-      await tester.pumpWidget(
-        buildSubject(
-          identityOverride: (ref, agentId) async => makeTestIdentity(),
-          stateOverride: (ref, agentId) async => makeTestState(),
-          extraOverrides: [
-            agentReportProvider(_testAgentId).overrideWithValue(
-              AsyncValue<AgentDomainEntity?>.error(
-                reportError,
-                StackTrace.current,
-              ),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(
-        find.textContaining('Failed to load report'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('shows state error message when state fails', (tester) async {
       final stateError = Exception('State DB error');
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),
-          reportOverride: (ref, agentId) async => null,
           extraOverrides: [
             agentStateProvider(_testAgentId).overrideWithValue(
               AsyncValue<AgentDomainEntity?>.error(
@@ -432,23 +378,6 @@ void main() {
     );
 
     testWidgets(
-      'non-agentReport entity as report shows empty',
-      (tester) async {
-        // Return an agentState entity as the report — mapOrNull returns null
-        await tester.pumpWidget(
-          buildDataSubject(
-            identity: makeTestIdentity(),
-            report: makeTestState(),
-          ),
-        );
-        await tester.pump();
-
-        // The report section falls through mapOrNull → SizedBox.shrink
-        expect(find.byType(AgentReportSection), findsNothing);
-      },
-    );
-
-    testWidgets(
       'non-agentState entity as state shows empty',
       (tester) async {
         // Return an agentReport entity as the state — mapOrNull returns null
@@ -462,25 +391,6 @@ void main() {
 
         // No state info section rendered
         expect(find.text('State Info'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'report content is passed to AgentReportSection',
-      (tester) async {
-        const reportContent = '# Custom Report\n\nDetailed findings here.';
-        await tester.pumpWidget(
-          buildDataSubject(
-            identity: makeTestIdentity(),
-            report: makeTestReport(content: reportContent),
-          ),
-        );
-        await tester.pump();
-
-        final section = tester.widget<AgentReportSection>(
-          find.byType(AgentReportSection),
-        );
-        expect(section.content, reportContent);
       },
     );
 

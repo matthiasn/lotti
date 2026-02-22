@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
-  late MockAgentRepository mockRepository;
+  late MockAgentSyncService mockSyncService;
   late AgentToolExecutor executor;
 
   const agentId = 'agent-001';
@@ -17,7 +17,7 @@ void main() {
   const targetEntityId = 'entity-001';
 
   setUp(() {
-    mockRepository = MockAgentRepository();
+    mockSyncService = MockAgentSyncService();
     registerFallbackValue(
       AgentDomainEntity.unknown(
         id: 'fallback',
@@ -26,10 +26,10 @@ void main() {
       ),
     );
 
-    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
     executor = AgentToolExecutor(
-      repository: mockRepository,
+      syncService: mockSyncService,
       allowedCategoryIds: {allowedCategoryId},
       runKey: runKey,
       agentId: agentId,
@@ -95,7 +95,7 @@ void main() {
 
         // Two upsertEntity calls: payload + action message.
         final captured =
-            verify(() => mockRepository.upsertEntity(captureAny())).captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
         expect(captured, hasLength(2));
 
         final payload = captured[0] as AgentMessagePayloadEntity;
@@ -166,7 +166,7 @@ void main() {
 
         // 4 calls: actionPayload + action + resultPayload + toolResult.
         final captured =
-            verify(() => mockRepository.upsertEntity(captureAny())).captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
         expect(captured, hasLength(4));
 
         final actionPayload = captured[0] as AgentMessagePayloadEntity;
@@ -205,7 +205,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockRepository.upsertEntity(captureAny())).captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
         // 4 calls: actionPayload + action + resultPayload + toolResult.
         expect(captured, hasLength(4));
 
@@ -391,7 +391,7 @@ void main() {
         );
 
         final captured =
-            verify(() => mockRepository.upsertEntity(captureAny())).captured;
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
         // actionPayload + action + errorPayload + toolResult (with error)
         expect(captured, hasLength(4));
 
@@ -414,7 +414,7 @@ void main() {
         // resultPayload(3), result(4).
         // Throw on the result payload write (3rd call).
         var callCount = 0;
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
           callCount++;
           if (callCount == 3) {
             throw Exception('DB write failed');
@@ -443,7 +443,7 @@ void main() {
       test('policy denial result is preserved when denial audit write fails',
           () async {
         // The upsertEntity call (denial audit message) throws.
-        when(() => mockRepository.upsertEntity(any()))
+        when(() => mockSyncService.upsertEntity(any()))
             .thenThrow(Exception('DB down'));
 
         final result = await executor.execute(
@@ -470,7 +470,7 @@ void main() {
         // errorPayload(3), errorResult(4).
         // Throw on the error payload write (3rd call).
         var callCount = 0;
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
           callCount++;
           if (callCount == 3) {
             throw Exception('Audit DB also down');
@@ -500,7 +500,7 @@ void main() {
           'operationId', () async {
         final operationIds = <String>[];
 
-        when(() => mockRepository.upsertEntity(any())).thenAnswer((inv) async {
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
           final entity = inv.positionalArguments.first as AgentDomainEntity;
           if (entity is AgentMessageEntity &&
               entity.metadata.operationId != null) {
