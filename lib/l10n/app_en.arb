@@ -52,6 +52,20 @@
       }
     }
   },
+  "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} tool calls · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Error loading agent: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -94,8 +108,8 @@
   },
   "agentReportHistoryBadge": "Report",
   "agentReportHistoryEmpty": "No report snapshots yet.",
+  "agentReportHistoryError": "An error occurred while loading the report history.",
   "agentReportNone": "No report available yet.",
-  "agentThreadReportLabel": "Report produced during this wake",
   "agentRunningIndicator": "Running",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
@@ -116,6 +130,7 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
+  "agentThreadReportLabel": "Report produced during this wake",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",

@@ -132,7 +132,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String agentConversationThreadHeader(String runKey) {
-    return 'Wake $runKey';
+    return 'Réveil $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount messages, $toolCallCount appels d\'outils · $shortId';
   }
 
   @override
@@ -206,10 +212,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentReportHistoryEmpty => 'Pas encore d\'instantanés de rapport.';
 
   @override
-  String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
+  String get agentReportHistoryError =>
+      'Une erreur est survenue lors du chargement de l\'historique des rapports.';
 
   @override
-  String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
+  String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
 
   @override
   String get agentRunningIndicator => 'En cours';
@@ -251,6 +258,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Rapports';
+
+  @override
+  String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Suggestions d\'actions';

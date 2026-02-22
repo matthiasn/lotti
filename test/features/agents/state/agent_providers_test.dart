@@ -580,7 +580,7 @@ void main() {
       addTearDown(sub.close);
 
       // Let the stream provider initialize.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final value = container.read(agentIsRunningProvider(kTestAgentId));
       expect(value.value, isFalse);
@@ -606,10 +606,10 @@ void main() {
       );
       addTearDown(sub.close);
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       await runner.tryAcquire(kTestAgentId);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final value = container.read(agentIsRunningProvider(kTestAgentId));
       expect(value.value, isTrue);
@@ -632,17 +632,17 @@ void main() {
       );
       addTearDown(sub.close);
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       await runner.tryAcquire(kTestAgentId);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(
         container.read(agentIsRunningProvider(kTestAgentId)).value,
         isTrue,
       );
 
       runner.release(kTestAgentId);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(
         container.read(agentIsRunningProvider(kTestAgentId)).value,
         isFalse,
@@ -669,7 +669,7 @@ void main() {
       );
       addTearDown(sub.close);
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final value = container.read(agentIsRunningProvider(kTestAgentId));
       expect(value.value, isTrue);

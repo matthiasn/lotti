@@ -113,7 +113,7 @@ class AgentDetailPage extends ConsumerWidget {
                   // Report section
                   _buildReportSection(context, reportAsync),
 
-                  // Messages (tabbed: Activity / Conversations)
+                  // Messages (tabbed: Activity, Reports, Conversations, Observations)
                   _AgentMessagesSection(agentId: agentId),
 
                   const Divider(indent: 16, endIndent: 16),
@@ -250,8 +250,9 @@ class AgentDetailPage extends ConsumerWidget {
   }
 }
 
-/// Tabbed section showing agent messages in three views:
+/// Tabbed section showing agent messages in four views:
 /// - Activity: flat chronological log
+/// - Reports: report history snapshots
 /// - Conversations: grouped by thread (wake cycle)
 /// - Observations: observation-only entries, expanded by default
 class _AgentMessagesSection extends StatefulWidget {

@@ -341,6 +341,13 @@ abstract class AppLocalizations {
   /// **'Wake {runKey}'**
   String agentConversationThreadHeader(String runKey);
 
+  /// No description provided for @agentConversationThreadSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{messageCount} messages, {toolCallCount} tool calls · {shortId}'**
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId);
+
   /// No description provided for @agentDetailErrorLoading.
   ///
   /// In en, this message translates to:
@@ -467,17 +474,17 @@ abstract class AppLocalizations {
   /// **'No report snapshots yet.'**
   String get agentReportHistoryEmpty;
 
+  /// No description provided for @agentReportHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred while loading the report history.'**
+  String get agentReportHistoryError;
+
   /// No description provided for @agentReportNone.
   ///
   /// In en, this message translates to:
   /// **'No report available yet.'**
   String get agentReportNone;
-
-  /// No description provided for @agentThreadReportLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Report produced during this wake'**
-  String get agentThreadReportLabel;
 
   /// No description provided for @agentRunningIndicator.
   ///
@@ -556,6 +563,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reports'**
   String get agentTabReports;
+
+  /// No description provided for @agentThreadReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Report produced during this wake'**
+  String get agentThreadReportLabel;
 
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///

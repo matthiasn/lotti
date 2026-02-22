@@ -129,8 +129,11 @@ class _ThreadTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        '${messages.length} messages, $toolCallCount tool calls '
-        '· $shortId',
+        context.messages.agentConversationThreadSummary(
+          messages.length,
+          toolCallCount,
+          shortId,
+        ),
         style: context.textTheme.labelSmall?.copyWith(
           color: context.colorScheme.outline,
         ),
@@ -166,47 +169,49 @@ class _ThreadReportCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
       ),
       color: context.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPaddingCompact,
+        ),
+        childrenPadding: const EdgeInsets.only(
+          left: AppTheme.cardPaddingCompact,
+          right: AppTheme.cardPaddingCompact,
+          bottom: AppTheme.cardPaddingCompact,
+        ),
+        title: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacingSmall,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.tertiary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
-                    border: Border.all(
-                      color:
-                          context.colorScheme.tertiary.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Text(
-                    context.messages.agentReportHistoryBadge,
-                    style: context.textTheme.labelSmall?.copyWith(
-                      color: context.colorScheme.tertiary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingSmall,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: context.colorScheme.tertiary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
+                border: Border.all(
+                  color: context.colorScheme.tertiary.withValues(alpha: 0.4),
                 ),
-                const SizedBox(width: AppTheme.spacingSmall),
-                Text(
-                  context.messages.agentThreadReportLabel,
-                  style: context.textTheme.labelSmall?.copyWith(
-                    color: context.colorScheme.outline,
-                  ),
+              ),
+              child: Text(
+                context.messages.agentReportHistoryBadge,
+                style: context.textTheme.labelSmall?.copyWith(
+                  color: context.colorScheme.tertiary,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: AppTheme.spacingSmall),
-            GptMarkdown(report.content),
+            const SizedBox(width: AppTheme.spacingSmall),
+            Text(
+              context.messages.agentThreadReportLabel,
+              style: context.textTheme.labelSmall?.copyWith(
+                color: context.colorScheme.outline,
+              ),
+            ),
           ],
         ),
+        children: [
+          GptMarkdown(report.content),
+        ],
       ),
     );
   }

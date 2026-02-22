@@ -858,7 +858,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('DB error'), findsOneWidget);
+      expect(
+        find.textContaining('error occurred'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows empty state when no reports', (tester) async {

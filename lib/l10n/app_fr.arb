@@ -45,10 +45,24 @@
   "agentControlsReanalyzeButton": "Réanalyser",
   "agentControlsResumeButton": "Reprendre",
   "agentConversationEmpty": "Pas encore de conversations.",
-  "agentConversationThreadHeader": "Wake {runKey}",
+  "agentConversationThreadHeader": "Réveil {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
       "runKey": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} appels d'outils · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
         "type": "String"
       }
     }
@@ -95,8 +109,8 @@
   },
   "agentReportHistoryBadge": "Rapport",
   "agentReportHistoryEmpty": "Pas encore d'instantanés de rapport.",
+  "agentReportHistoryError": "Une erreur est survenue lors du chargement de l'historique des rapports.",
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
-  "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "agentRunningIndicator": "En cours",
   "agentStateConsecutiveFailures": "Échecs consécutifs",
   "agentStateErrorLoading": "Échec du chargement de l'état : {error}",
@@ -117,6 +131,7 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Rapports",
+  "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "aiAssistantActionItemSuggestions": "Suggestions d'actions",
   "aiAssistantAnalyzeImage": "Analyser l'image",
   "aiAssistantSummarizeTask": "Résumer la tâche",

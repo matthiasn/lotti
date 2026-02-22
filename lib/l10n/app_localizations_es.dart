@@ -135,6 +135,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount mensajes, $toolCallCount llamadas a herramientas · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Error al cargar el agente: $error';
   }
@@ -205,10 +211,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentReportHistoryEmpty => 'Aún no hay instantáneas de informes.';
 
   @override
-  String get agentReportNone => 'Aún no hay informe disponible.';
+  String get agentReportHistoryError =>
+      'Se produjo un error al cargar el historial de informes.';
 
   @override
-  String get agentThreadReportLabel => 'Informe producido durante este ciclo';
+  String get agentReportNone => 'Aún no hay informe disponible.';
 
   @override
   String get agentRunningIndicator => 'Ejecutando';
@@ -250,6 +257,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Informes';
+
+  @override
+  String get agentThreadReportLabel => 'Informe producido durante este ciclo';
 
   @override
   String get aiAssistantActionItemSuggestions =>

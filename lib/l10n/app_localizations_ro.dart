@@ -129,7 +129,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String agentConversationThreadHeader(String runKey) {
-    return 'Wake $runKey';
+    return 'Trezire $runKey';
+  }
+
+  @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount mesaje, $toolCallCount apeluri de instrumente · $shortId';
   }
 
   @override
@@ -204,10 +210,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă instantanee ale raportului.';
 
   @override
-  String get agentReportNone => 'Niciun raport disponibil încă.';
+  String get agentReportHistoryError =>
+      'A apărut o eroare la încărcarea istoricului rapoartelor.';
 
   @override
-  String get agentThreadReportLabel => 'Raport generat în acest ciclu';
+  String get agentReportNone => 'Niciun raport disponibil încă.';
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -249,6 +256,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Rapoarte';
+
+  @override
+  String get agentThreadReportLabel => 'Raport generat în acest ciclu';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Sugestii de acțiuni';

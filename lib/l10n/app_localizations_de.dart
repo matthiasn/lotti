@@ -135,6 +135,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount Nachrichten, $toolCallCount Tool-Aufrufe · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Fehler beim Laden des Agenten: $error';
   }
@@ -205,13 +211,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentReportHistoryEmpty => 'Noch keine Berichts-Snapshots.';
 
   @override
+  String get agentReportHistoryError =>
+      'Fehler beim Laden der Berichtshistorie.';
+
+  @override
   String get agentReportNone => 'Noch kein Bericht verfügbar.';
 
   @override
-  String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
-
-  @override
-  String get agentRunningIndicator => 'Aktiv';
+  String get agentRunningIndicator => 'Läuft';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';
@@ -250,6 +257,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Berichte';
+
+  @override
+  String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Vorschläge für Aktionspunkte';

@@ -41,11 +41,14 @@ import 'package:uuid/uuid.dart';
 /// 3. Resolve a Gemini inference provider from the AI config database.
 /// 4. Assemble conversation context (system prompt + user message).
 /// 5. Create a [ConversationRepository] conversation with tool definitions.
-/// 6. Persist the final assistant response as a thought message.
-/// 7. Extract and persist the updated report (from `update_report` tool call).
-/// 8. Persist new observation notes (agentJournal entries).
-/// 9. Persist updated agent state (revision, wake counter, failure count).
-/// 10. Clean up the in-memory conversation in a `finally` block.
+/// 6. Persist the user message as an [AgentMessageKind.user] entity for
+///    inspectability (non-fatal if it fails).
+/// 7. Invoke the LLM and execute tool calls via [AgentToolExecutor].
+/// 8. Persist the final assistant response as a thought message.
+/// 9. Extract and persist the updated report (from `update_report` tool call).
+/// 10. Persist new observation notes (agentJournal entries).
+/// 11. Persist updated agent state (revision, wake counter, failure count).
+/// 12. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,

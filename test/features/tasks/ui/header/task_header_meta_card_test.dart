@@ -619,6 +619,18 @@ void main() {
           agentRecentMessagesProvider.overrideWith(
             (ref, agentId) async => <AgentDomainEntity>[],
           ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
+          agentReportHistoryProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentObservationMessagesProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentMessagesByThreadProvider.overrideWith(
+            (ref, agentId) async => <String, List<AgentDomainEntity>>{},
+          ),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
         ];

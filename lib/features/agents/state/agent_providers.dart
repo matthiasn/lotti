@@ -189,13 +189,22 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
       return aMsg.createdAt.compareTo(bMsg.createdAt);
     });
   }
-  return grouped;
+
+  // Sort threads most-recent-first by the latest message in each thread.
+  final sortedEntries = grouped.entries.toList()
+    ..sort((a, b) {
+      final aLatest = (a.value.last as AgentMessageEntity).createdAt;
+      final bLatest = (b.value.last as AgentMessageEntity).createdAt;
+      return bLatest.compareTo(aLatest);
+    });
+
+  return Map.fromEntries(sortedEntries);
 }
 
 /// Fetch recent observation messages for an agent by [agentId].
 ///
 /// Returns only messages with kind [AgentMessageKind.observation], ordered
-/// most-recent first (up to 50).
+/// most-recent first.
 @riverpod
 Future<List<AgentDomainEntity>> agentObservationMessages(
   Ref ref,

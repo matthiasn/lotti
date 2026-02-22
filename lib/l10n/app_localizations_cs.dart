@@ -133,6 +133,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentConversationThreadSummary(
+      int messageCount, int toolCallCount, String shortId) {
+    return '$messageCount messages, $toolCallCount tool calls · $shortId';
+  }
+
+  @override
   String agentDetailErrorLoading(String error) {
     return 'Chyba při načítání agenta: $error';
   }
@@ -202,10 +208,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentReportHistoryEmpty => 'No report snapshots yet.';
 
   @override
-  String get agentReportNone => 'Report zatím není k dispozici.';
+  String get agentReportHistoryError =>
+      'An error occurred while loading the report history.';
 
   @override
-  String get agentThreadReportLabel => 'Report produced during this wake';
+  String get agentReportNone => 'Report zatím není k dispozici.';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -247,6 +254,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Reports';
+
+  @override
+  String get agentThreadReportLabel => 'Report produced during this wake';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Návrhy akčních položek';

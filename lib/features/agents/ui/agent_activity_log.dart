@@ -199,7 +199,7 @@ class AgentReportHistoryLog extends ConsumerWidget {
       error: (error, _) => Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          error.toString(),
+          context.messages.agentReportHistoryError,
           style: context.textTheme.bodySmall?.copyWith(
             color: context.colorScheme.error,
           ),

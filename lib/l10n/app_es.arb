@@ -53,6 +53,20 @@
       }
     }
   },
+  "agentConversationThreadSummary": "{messageCount} mensajes, {toolCallCount} llamadas a herramientas · {shortId}",
+  "@agentConversationThreadSummary": {
+    "placeholders": {
+      "messageCount": {
+        "type": "int"
+      },
+      "toolCallCount": {
+        "type": "int"
+      },
+      "shortId": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Error al cargar el agente: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -95,8 +109,8 @@
   },
   "agentReportHistoryBadge": "Informe",
   "agentReportHistoryEmpty": "Aún no hay instantáneas de informes.",
+  "agentReportHistoryError": "Se produjo un error al cargar el historial de informes.",
   "agentReportNone": "Aún no hay informe disponible.",
-  "agentThreadReportLabel": "Informe producido durante este ciclo",
   "agentRunningIndicator": "Ejecutando",
   "agentStateConsecutiveFailures": "Fallos consecutivos",
   "agentStateErrorLoading": "Error al cargar el estado: {error}",
@@ -117,6 +131,7 @@
   "agentTabConversations": "Conversaciones",
   "agentTabObservations": "Observaciones",
   "agentTabReports": "Informes",
+  "agentThreadReportLabel": "Informe producido durante este ciclo",
   "aiAssistantActionItemSuggestions": "Sugerencias de elementos de acción",
   "aiAssistantAnalyzeImage": "Analizar imagen",
   "aiAssistantSummarizeTask": "Resumir tarea",
