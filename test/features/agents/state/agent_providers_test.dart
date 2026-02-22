@@ -24,8 +24,6 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
-class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
-
 void main() {
   setUpAll(() {
     registerAllFallbackValues();
@@ -1129,7 +1127,7 @@ void main() {
 
     test('wires orchestrator into SyncEventProcessor when registered',
         () async {
-      final mockProcessor = _MockSyncEventProcessor();
+      final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
       final container = createInitContainer(enableAgents: true);
@@ -1146,7 +1144,7 @@ void main() {
     });
 
     test('clears SyncEventProcessor orchestrator on dispose', () async {
-      final mockProcessor = _MockSyncEventProcessor();
+      final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
       final container = createInitContainer(enableAgents: true);

@@ -37,6 +37,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -278,6 +279,8 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }
+
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 
