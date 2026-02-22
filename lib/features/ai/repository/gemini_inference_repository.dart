@@ -125,6 +125,7 @@ class GeminiInferenceRepository {
       temperature: temperature,
       thinkingConfig: thinkingConfig,
       systemMessage: systemMessage,
+      modelId: model,
       maxTokens: maxCompletionTokens,
       tools: tools,
     );
@@ -586,6 +587,7 @@ class GeminiInferenceRepository {
       thinkingConfig: thinkingConfig,
       thoughtSignatures: thoughtSignatures,
       systemMessage: systemMessage,
+      modelId: model,
       maxTokens: maxCompletionTokens,
       tools: tools,
     );

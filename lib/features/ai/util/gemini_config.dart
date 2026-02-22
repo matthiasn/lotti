@@ -7,7 +7,8 @@ GeminiThinkingConfig getDefaultThinkingConfig(String modelId) {
     // Backwards-compat: configs created before the 3→3.1 rename.
     case 'models/gemini-3-pro-preview':
     case 'gemini-3-pro-preview':
-      return GeminiThinkingConfig.auto; // Advanced reasoning capabilities
+      // Maps to thinkingLevel: MEDIUM for Gemini 3.x via _budgetToLevel().
+      return const GeminiThinkingConfig(thinkingBudget: 4096);
     case 'models/gemini-2.5-flash':
     case 'gemini-2.5-flash':
       // Default: standard budget; thoughts off by default handled elsewhere.

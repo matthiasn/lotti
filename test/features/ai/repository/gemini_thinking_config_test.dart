@@ -140,6 +140,99 @@ void main() {
       });
     });
 
+    group('isGemini3', () {
+      test('matches Gemini 3.x model IDs with models/ prefix', () {
+        expect(GeminiThinkingConfig.isGemini3('models/gemini-3.1-pro-preview'),
+            isTrue);
+        expect(GeminiThinkingConfig.isGemini3('models/gemini-3-pro-preview'),
+            isTrue);
+      });
+
+      test('matches Gemini 3.x model IDs without prefix', () {
+        expect(
+            GeminiThinkingConfig.isGemini3('gemini-3.1-pro-preview'), isTrue);
+        expect(GeminiThinkingConfig.isGemini3('gemini-3-pro-preview'), isTrue);
+      });
+
+      test('does not match Gemini 2.x model IDs', () {
+        expect(
+            GeminiThinkingConfig.isGemini3('models/gemini-2.5-pro'), isFalse);
+        expect(GeminiThinkingConfig.isGemini3('gemini-2.5-flash'), isFalse);
+        expect(
+            GeminiThinkingConfig.isGemini3('models/gemini-2.0-flash'), isFalse);
+      });
+    });
+
+    group('toJson with Gemini 3.x modelId', () {
+      test('emits thinkingLevel for Gemini 3.x model', () {
+        final json = GeminiThinkingConfig.auto.toJson(
+          modelId: 'models/gemini-3.1-pro-preview',
+        );
+
+        expect(json.containsKey('thinkingLevel'), isTrue);
+        expect(json.containsKey('thinkingBudget'), isFalse);
+        expect(json['thinkingLevel'], 'HIGH');
+        expect(json['includeThoughts'], isFalse);
+      });
+
+      test('emits thinkingBudget for Gemini 2.5 model', () {
+        final json = GeminiThinkingConfig.auto.toJson(
+          modelId: 'models/gemini-2.5-pro',
+        );
+
+        expect(json.containsKey('thinkingBudget'), isTrue);
+        expect(json.containsKey('thinkingLevel'), isFalse);
+        expect(json['thinkingBudget'], -1);
+      });
+
+      test('emits thinkingBudget when modelId is null', () {
+        final json = GeminiThinkingConfig.auto.toJson();
+
+        expect(json.containsKey('thinkingBudget'), isTrue);
+        expect(json.containsKey('thinkingLevel'), isFalse);
+      });
+
+      test('maps auto preset to HIGH for Gemini 3', () {
+        final json = GeminiThinkingConfig.auto.toJson(
+          modelId: 'gemini-3.1-pro-preview',
+        );
+        expect(json['thinkingLevel'], 'HIGH');
+      });
+
+      test('maps disabled preset to LOW for Gemini 3', () {
+        final json = GeminiThinkingConfig.disabled.toJson(
+          modelId: 'gemini-3.1-pro-preview',
+        );
+        expect(json['thinkingLevel'], 'LOW');
+      });
+
+      test('maps standard preset (8192) to HIGH for Gemini 3', () {
+        final json = GeminiThinkingConfig.standard.toJson(
+          modelId: 'gemini-3.1-pro-preview',
+        );
+        expect(json['thinkingLevel'], 'HIGH');
+      });
+
+      test('maps budget 4096 to MEDIUM for Gemini 3', () {
+        const config = GeminiThinkingConfig(thinkingBudget: 4096);
+        final json = config.toJson(modelId: 'gemini-3-pro-preview');
+        expect(json['thinkingLevel'], 'MEDIUM');
+      });
+
+      test('maps budget 2048 to LOW for Gemini 3', () {
+        const config = GeminiThinkingConfig(thinkingBudget: 2048);
+        final json = config.toJson(modelId: 'gemini-3-pro-preview');
+        expect(json['thinkingLevel'], 'LOW');
+      });
+
+      test('maps intensive preset (16384) to HIGH for Gemini 3', () {
+        final json = GeminiThinkingConfig.intensive.toJson(
+          modelId: 'gemini-3.1-pro-preview',
+        );
+        expect(json['thinkingLevel'], 'HIGH');
+      });
+    });
+
     group('thinking capability check', () {
       test('budget != 0 indicates thinking is enabled', () {
         // This tests the pattern used in cloud_inference_repository.dart

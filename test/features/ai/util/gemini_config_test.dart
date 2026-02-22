@@ -5,15 +5,17 @@ import 'package:lotti/features/ai/util/gemini_config.dart';
 void main() {
   group('getDefaultThinkingConfig', () {
     group('Gemini 3 Pro Preview', () {
-      test('returns auto config for models/gemini-3.1-pro-preview', () {
+      test('returns medium-budget config for models/gemini-3.1-pro-preview',
+          () {
         final config =
             getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
-        expect(config, equals(GeminiThinkingConfig.auto));
+        // Budget 4096 maps to thinkingLevel: MEDIUM for Gemini 3.x.
+        expect(config.thinkingBudget, 4096);
       });
 
-      test('returns auto config for gemini-3.1-pro-preview', () {
+      test('returns medium-budget config for gemini-3.1-pro-preview', () {
         final config = getDefaultThinkingConfig('gemini-3.1-pro-preview');
-        expect(config, equals(GeminiThinkingConfig.auto));
+        expect(config.thinkingBudget, 4096);
       });
     });
 
@@ -66,14 +68,14 @@ void main() {
     });
 
     group('Gemini 3 Pro Preview (old model ID fallback)', () {
-      test('returns auto config for models/gemini-3-pro-preview', () {
+      test('returns medium-budget config for models/gemini-3-pro-preview', () {
         final config = getDefaultThinkingConfig('models/gemini-3-pro-preview');
-        expect(config, equals(GeminiThinkingConfig.auto));
+        expect(config.thinkingBudget, 4096);
       });
 
-      test('returns auto config for gemini-3-pro-preview', () {
+      test('returns medium-budget config for gemini-3-pro-preview', () {
         final config = getDefaultThinkingConfig('gemini-3-pro-preview');
-        expect(config, equals(GeminiThinkingConfig.auto));
+        expect(config.thinkingBudget, 4096);
       });
     });
 
@@ -95,10 +97,10 @@ void main() {
     });
 
     group('Configuration properties', () {
-      test('Gemini 3 Pro uses advanced reasoning capabilities', () {
+      test('Gemini 3 Pro uses medium reasoning level', () {
         final config = getDefaultThinkingConfig('gemini-3.1-pro-preview');
-        // Verify it uses auto config which enables thinking
-        expect(config, equals(GeminiThinkingConfig.auto));
+        // Budget 4096 → thinkingLevel: MEDIUM for Gemini 3.x
+        expect(config.thinkingBudget, 4096);
       });
 
       test('all known models return valid configs', () {
@@ -129,7 +131,7 @@ void main() {
             getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
         final withoutPrefix =
             getDefaultThinkingConfig('gemini-3.1-pro-preview');
-        expect(withPrefix, equals(withoutPrefix));
+        expect(withPrefix.thinkingBudget, withoutPrefix.thinkingBudget);
       });
 
       test('handles case sensitivity correctly', () {
@@ -137,8 +139,9 @@ void main() {
         final lowercase = getDefaultThinkingConfig('gemini-3.1-pro-preview');
         final uppercase = getDefaultThinkingConfig('GEMINI-3-PRO-PREVIEW');
 
+        // Lowercase matches Gemini 3.x → budget 4096
+        expect(lowercase.thinkingBudget, 4096);
         // Uppercase falls through to default (auto)
-        expect(lowercase, equals(GeminiThinkingConfig.auto));
         expect(uppercase, equals(GeminiThinkingConfig.auto));
       });
     });

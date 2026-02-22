@@ -419,6 +419,99 @@ void main() {
       expect((funcDeclarations.first as Map).containsKey('parameters'), isTrue);
     });
 
+    test('strips additionalProperties from tool parameter schemas', () {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Call a function'),
+        ),
+      ];
+
+      const tools = [
+        ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'my_tool',
+            description: 'Does something',
+            parameters: {
+              'type': 'object',
+              'properties': {
+                'title': {
+                  'type': 'string',
+                  'description': 'A title',
+                },
+                'items': {
+                  'type': 'array',
+                  'items': {
+                    'type': 'object',
+                    'properties': {
+                      'name': {'type': 'string'},
+                    },
+                    'required': ['name'],
+                    'additionalProperties': false,
+                  },
+                },
+              },
+              'required': ['title'],
+              'additionalProperties': false,
+            },
+          ),
+        ),
+      ];
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: messages,
+        temperature: 0.5,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 128),
+        tools: tools,
+      );
+
+      final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
+      final funcDecl = (toolsArr.first['functionDeclarations'] as List).first
+          as Map<String, dynamic>;
+      final params = funcDecl['parameters'] as Map<String, dynamic>;
+
+      // Top-level additionalProperties should be stripped
+      expect(params.containsKey('additionalProperties'), isFalse);
+      expect(params['type'], 'object');
+      expect(params['required'], ['title']);
+
+      // Nested additionalProperties inside items should also be stripped
+      final properties = params['properties'] as Map<String, dynamic>;
+      final itemsSchema = properties['items'] as Map<String, dynamic>;
+      final nestedItems = itemsSchema['items'] as Map<String, dynamic>;
+      expect(nestedItems.containsKey('additionalProperties'), isFalse);
+      expect(nestedItems['required'], ['name']);
+    });
+
+    test('strips additionalProperties from buildRequestBody tools too', () {
+      const tools = [
+        ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(
+            name: 'my_tool',
+            parameters: {
+              'type': 'object',
+              'properties': <String, dynamic>{},
+              'additionalProperties': false,
+            },
+          ),
+        ),
+      ];
+
+      final body = GeminiUtils.buildRequestBody(
+        prompt: 'Hello',
+        temperature: 1,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+        tools: tools,
+      );
+
+      final toolsArr = (body['tools'] as List).cast<Map<String, dynamic>>();
+      final funcDecl = (toolsArr.first['functionDeclarations'] as List).first
+          as Map<String, dynamic>;
+      final params = funcDecl['parameters'] as Map<String, dynamic>;
+      expect(params.containsKey('additionalProperties'), isFalse);
+    });
+
     test('skips assistant message with no content or tool calls', () {
       final messages = [
         const ChatCompletionMessage.assistant(),
