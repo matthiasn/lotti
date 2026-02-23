@@ -933,18 +933,28 @@ void main() {
       expect(metrics.firstWakeAt, DateTime(2024, 3, 10));
     });
 
-    test('activeInstanceCount reflects agent count', () async {
+    test('activeInstanceCount counts only active agents', () async {
       when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
           .thenAnswer((_) async => []);
       stubAgentsForTemplate([
         makeTestIdentity(id: 'a1', agentId: 'a1'),
-        makeTestIdentity(id: 'a2', agentId: 'a2'),
-        makeTestIdentity(id: 'a3', agentId: 'a3'),
+        makeTestIdentity(
+          id: 'a2',
+          agentId: 'a2',
+          lifecycle: AgentLifecycle.destroyed,
+        ),
+        makeTestIdentity(
+          id: 'a3',
+          agentId: 'a3',
+          lifecycle: AgentLifecycle.dormant,
+        ),
+        makeTestIdentity(id: 'a4', agentId: 'a4'),
       ]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
 
-      expect(metrics.activeInstanceCount, 3);
+      // Only a1 and a4 are active; a2 is destroyed, a3 is dormant.
+      expect(metrics.activeInstanceCount, 2);
     });
   });
 }

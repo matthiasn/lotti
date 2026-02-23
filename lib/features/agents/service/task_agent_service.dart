@@ -63,9 +63,19 @@ class TaskAgentService {
     }
 
     final identity = await syncService.runInTransaction(() async {
-      // Definitive duplicate check inside the transaction to prevent TOCTOU
-      // races: a concurrent createTaskAgent call could have committed between
-      // the fast-path check above and this point.
+      // All validation inside the transaction to prevent TOCTOU races.
+
+      // Validate that the resolved template actually exists.
+      final templateEntity = await repository.getEntity(resolvedTemplateId);
+      if (templateEntity is! AgentTemplateEntity ||
+          templateEntity.deletedAt != null) {
+        throw StateError(
+          'Template $resolvedTemplateId not found or is not a template entity.',
+        );
+      }
+
+      // Definitive duplicate check to prevent concurrent createTaskAgent
+      // calls from both committing.
       final linksForTask = await repository.getLinksTo(
         taskId,
         type: 'agent_task',

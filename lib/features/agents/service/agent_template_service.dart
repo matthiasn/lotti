@@ -386,7 +386,8 @@ class AgentTemplateService {
       averageDuration: averageDuration,
       firstWakeAt: firstWakeAt,
       lastWakeAt: lastWakeAt,
-      activeInstanceCount: agents.length,
+      activeInstanceCount:
+          agents.where((a) => a.lifecycle == AgentLifecycle.active).length,
     );
   }
 

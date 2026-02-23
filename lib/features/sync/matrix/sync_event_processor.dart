@@ -1293,7 +1293,7 @@ class SyncEventProcessor {
             }
           }
           _updateNotifications.notify(
-            {agentLink.fromId, agentNotification},
+            {agentLink.fromId, agentLink.toId, agentNotification},
             fromSync: true,
           );
           _loggingService.captureEvent(

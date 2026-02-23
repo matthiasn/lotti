@@ -59,6 +59,10 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
 
+    // Stub template existence for all tests that provide kTestTemplateId.
+    when(() => mockRepository.getEntity(kTestTemplateId))
+        .thenAnswer((_) async => makeTestTemplate());
+
     service = TaskAgentService(
       agentService: mockAgentService,
       repository: mockRepository,
@@ -629,6 +633,49 @@ void main() {
         final templateLink =
             linkCalls.whereType<TemplateAssignmentLink>().first;
         expect(templateLink.fromId, kTestTemplateId);
+      });
+
+      test('throws StateError when provided templateId does not exist',
+          () async {
+        when(() => mockRepository.getEntity('nonexistent-template'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          () => service.createTaskAgent(
+            taskId: 'task-bad-tpl',
+            templateId: 'nonexistent-template',
+            allowedCategoryIds: const {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('nonexistent-template'),
+            ),
+          ),
+        );
+      });
+
+      test('throws StateError when templateId points to non-template entity',
+          () async {
+        // Return a version entity instead of a template entity.
+        when(() => mockRepository.getEntity('version-entity')).thenAnswer(
+            (_) async => makeTestTemplateVersion(id: 'version-entity'));
+
+        expect(
+          () => service.createTaskAgent(
+            taskId: 'task-wrong-type',
+            templateId: 'version-entity',
+            allowedCategoryIds: const {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('version-entity'),
+            ),
+          ),
+        );
       });
 
       test('throws StateError when no templates available and none provided',
