@@ -58,6 +58,30 @@ enum AgentTemplateVersionStatus {
   archived,
 }
 
+/// Status of a wake run in the wake-run log.
+enum WakeRunStatus {
+  /// The wake is currently executing.
+  running,
+
+  /// The wake completed successfully.
+  completed,
+
+  /// The wake failed.
+  failed,
+}
+
+/// Reason a wake was triggered.
+enum WakeReason {
+  /// Triggered by a subscription match on the notification stream.
+  subscription,
+
+  /// Triggered by the initial creation of a task agent.
+  creation,
+
+  /// Triggered by a manual re-analysis request from the user.
+  reanalysis,
+}
+
 /// Kind of message in the agent's message log.
 enum AgentMessageKind {
   /// Agent's private working notes (agentJournal entries).

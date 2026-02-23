@@ -3,7 +3,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Default template ID used across tests.
@@ -260,6 +262,8 @@ WakeRunLogData makeTestWakeRun({
   DateTime? startedAt,
   DateTime? completedAt,
   String? errorMessage,
+  String? templateId,
+  String? templateVersionId,
 }) {
   return WakeRunLogData(
     runKey: runKey,
@@ -271,6 +275,8 @@ WakeRunLogData makeTestWakeRun({
     startedAt: startedAt,
     completedAt: completedAt,
     errorMessage: errorMessage,
+    templateId: templateId,
+    templateVersionId: templateVersionId,
   );
 }
 
@@ -296,6 +302,32 @@ SagaLogData makeTestSagaOp({
   );
 }
 
+// ── Metrics factory ──────────────────────────────────────────────────────────
+
+TemplatePerformanceMetrics makeTestMetrics({
+  String templateId = kTestTemplateId,
+  int totalWakes = 10,
+  int successCount = 8,
+  int failureCount = 2,
+  double successRate = 0.8,
+  Duration? averageDuration = const Duration(seconds: 5),
+  DateTime? firstWakeAt,
+  DateTime? lastWakeAt,
+  int activeInstanceCount = 2,
+}) {
+  return TemplatePerformanceMetrics(
+    templateId: templateId,
+    totalWakes: totalWakes,
+    successCount: successCount,
+    failureCount: failureCount,
+    successRate: successRate,
+    averageDuration: averageDuration,
+    firstWakeAt: firstWakeAt ?? kAgentTestDate,
+    lastWakeAt: lastWakeAt ?? kAgentTestDate.add(const Duration(days: 7)),
+    activeInstanceCount: activeInstanceCount,
+  );
+}
+
 WakeJob makeTestWakeJob({
   String runKey = 'run-key-001',
   String agentId = kTestAgentId,
@@ -312,4 +344,40 @@ WakeJob makeTestWakeJob({
     reasonId: reasonId,
     createdAt: createdAt ?? kAgentTestDate,
   );
+}
+
+// ── AI config factories (for inference provider resolution tests) ────────────
+
+/// Creates a test [AiConfigInferenceProvider] for use in provider resolution
+/// tests.
+AiConfigInferenceProvider testInferenceProvider({
+  String id = 'provider-1',
+  String apiKey = 'test-key',
+}) {
+  return AiConfig.inferenceProvider(
+    id: id,
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    name: 'Gemini',
+    inferenceProviderType: InferenceProviderType.gemini,
+    apiKey: apiKey,
+    createdAt: DateTime(2024),
+  ) as AiConfigInferenceProvider;
+}
+
+/// Creates a test [AiConfigModel] for use in provider resolution tests.
+AiConfigModel testAiModel({
+  String id = 'model-1',
+  String providerModelId = 'models/gemini-3.1-pro-preview',
+  String inferenceProviderId = 'provider-1',
+}) {
+  return AiConfig.model(
+    id: id,
+    name: 'Test Model',
+    providerModelId: providerModelId,
+    inferenceProviderId: inferenceProviderId,
+    createdAt: DateTime(2024),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: false,
+  ) as AiConfigModel;
 }

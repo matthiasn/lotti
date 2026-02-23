@@ -21,6 +21,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 /// Minimal mock of [ConversationRepository] that avoids Riverpod build().
 ///
@@ -93,6 +94,27 @@ class MockConversationRepository extends ConversationRepository {
   }
 }
 
+/// Like [MockConversationRepository] but captures the system message passed
+/// to createConversation.
+class _CapturingConversationRepository extends MockConversationRepository {
+  // ignore: use_super_parameters
+  _CapturingConversationRepository(
+    MockConversationManager mockManager, {
+    required this.onSystemMessage,
+  }) : super(mockManager);
+
+  final void Function(String?) onSystemMessage;
+
+  @override
+  String createConversation({
+    String? systemMessage,
+    int maxTurns = 20,
+  }) {
+    onSystemMessage(systemMessage);
+    return 'test-conv-id';
+  }
+}
+
 /// Like [MockConversationRepository] but returns null from getConversation,
 /// simulating a scenario where the conversation was already cleaned up.
 class _NullManagerConversationRepository extends MockConversationRepository {
@@ -115,6 +137,7 @@ void main() {
   late MockConversationManager mockConversationManager;
   late MockJournalRepository mockJournalRepository;
   late MockChecklistRepository mockChecklistRepository;
+  late MockAgentTemplateService mockTemplateService;
   late TaskAgentWorkflow workflow;
 
   const agentId = 'agent-001';
@@ -122,6 +145,11 @@ void main() {
   const runKey = 'run-key-001';
   const threadId = 'thread-001';
   final testDate = DateTime(2024, 6, 15, 10, 30);
+
+  final testTemplate = makeTestTemplate();
+  final testTemplateVersion = makeTestTemplateVersion(
+    directives: 'You are a diligent task agent named Laura.',
+  );
 
   final testAgentIdentity = AgentDomainEntity.agent(
     id: agentId,
@@ -181,10 +209,17 @@ void main() {
     mockCloudInferenceRepository = MockCloudInferenceRepository();
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
+    mockTemplateService = MockAgentTemplateService();
 
     registerAllFallbackValues();
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+
+    // Default template stubs — tests that need different behavior override.
+    when(() => mockTemplateService.getTemplateForAgent(agentId))
+        .thenAnswer((_) async => testTemplate);
+    when(() => mockTemplateService.getActiveVersion(testTemplate.id))
+        .thenAnswer((_) async => testTemplateVersion);
 
     workflow = TaskAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -196,11 +231,43 @@ void main() {
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
       syncService: mockSyncService,
+      templateService: mockTemplateService,
     );
   });
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {
+      test('when no template assigned', () async {
+        when(() => mockAgentRepository.getAgentState(agentId))
+            .thenAnswer((_) async => testAgentState);
+        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
+            .thenAnswer((_) async => '{"title":"Test Task"}');
+        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
+            .thenAnswer((_) async => '{}');
+
+        // Override default template stub to return null.
+        when(() => mockTemplateService.getTemplateForAgent(agentId))
+            .thenAnswer((_) async => null);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.error, 'No template assigned to agent');
+      });
+
       test('when no agent state found', () async {
         when(() => mockAgentRepository.getAgentState(agentId))
             .thenAnswer((_) async => null);
@@ -296,6 +363,37 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, 'No Gemini provider configured');
       });
+
+      test('when template exists but no active version', () async {
+        when(() => mockAgentRepository.getAgentState(agentId))
+            .thenAnswer((_) async => testAgentState);
+        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
+            .thenAnswer((_) async => '{"title":"Test Task"}');
+        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
+            .thenAnswer((_) async => '{}');
+
+        // Template exists but active version is null.
+        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
+            .thenAnswer((_) async => null);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.error, 'No template assigned to agent');
+      });
     });
 
     group('successful execute', () {
@@ -323,6 +421,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
 
         // Mock manager messages (empty list for final content extraction).
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -346,6 +451,83 @@ void main() {
           mockConversationRepository.deletedConversationIds,
           contains('test-conv-id'),
         );
+      });
+
+      test('system prompt contains scaffold and template directives', () async {
+        String? capturedSystemMessage;
+        // Override createConversation to capture the system message.
+        final capturingRepo = _CapturingConversationRepository(
+          mockConversationManager,
+          onSystemMessage: (msg) => capturedSystemMessage = msg,
+        );
+        final capturingWorkflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: capturingRepo,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+        );
+
+        await capturingWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedSystemMessage, isNotNull);
+        // Scaffold content.
+        expect(capturedSystemMessage, contains('You are a Task Agent'));
+        expect(capturedSystemMessage, contains('update_report'));
+        // Template directives appended.
+        expect(
+            capturedSystemMessage, contains('Your Personality & Directives'));
+        expect(
+          capturedSystemMessage,
+          contains('You are a diligent task agent named Laura.'),
+        );
+      });
+
+      test('records template provenance on wake run', () async {
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        verify(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            runKey,
+            testTemplate.id,
+            testTemplateVersion.id,
+          ),
+        ).called(1);
+      });
+
+      test('continues when template provenance recording fails', () async {
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenThrow(Exception('DB error'));
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Wake should still succeed despite provenance failure.
+        expect(result.success, isTrue);
       });
 
       test('persists observations from record_observations tool calls',
@@ -436,6 +618,13 @@ void main() {
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
 
         // Make sendMessage throw to trigger the catch branch.
         mockConversationRepository.sendMessageDelegate = ({
@@ -596,6 +785,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
       });
 
       test('persists report and report head when strategy produces report',
@@ -791,6 +987,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         // Stub the task entity lookup used by _executeToolHandler.
@@ -888,6 +1091,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         String? capturedMessage;
@@ -1175,6 +1385,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
       }
 
@@ -2064,6 +2281,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
       });
 
       test('picks last assistant message with content', () async {
@@ -2118,6 +2342,7 @@ void main() {
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
           syncService: mockSyncService,
+          templateService: mockTemplateService,
         );
 
         final result = await nullWorkflow.execute(
@@ -2232,6 +2457,13 @@ void main() {
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
 
         // Make sendMessage throw.
         mockConversationRepository.sendMessageDelegate = ({
@@ -2289,6 +2521,13 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         final result = await workflow.execute(

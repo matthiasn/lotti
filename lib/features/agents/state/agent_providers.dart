@@ -5,13 +5,16 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -108,6 +111,71 @@ AgentService agentService(Ref ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
   );
+}
+
+/// The agent template service.
+@Riverpod(keepAlive: true)
+AgentTemplateService agentTemplateService(Ref ref) {
+  return AgentTemplateService(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  );
+}
+
+/// List all non-deleted agent templates.
+@riverpod
+Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.listTemplates();
+}
+
+/// Fetch a single agent template by [templateId].
+///
+/// The returned entity is an [AgentTemplateEntity] (or `null`).
+@riverpod
+Future<AgentDomainEntity?> agentTemplate(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getTemplate(templateId);
+}
+
+/// Fetch the active version for a template by [templateId].
+///
+/// The returned entity is an [AgentTemplateVersionEntity] (or `null`).
+@riverpod
+Future<AgentDomainEntity?> activeTemplateVersion(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getActiveVersion(templateId);
+}
+
+/// Fetch the version history for a template by [templateId].
+///
+/// Each element is an [AgentTemplateVersionEntity].
+@riverpod
+Future<List<AgentDomainEntity>> templateVersionHistory(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getVersionHistory(templateId);
+}
+
+/// Resolve the template assigned to an agent by [agentId].
+///
+/// The returned entity is an [AgentTemplateEntity] (or `null`).
+@riverpod
+Future<AgentDomainEntity?> templateForAgent(
+  Ref ref,
+  String agentId,
+) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getTemplateForAgent(agentId);
 }
 
 /// Fetch the latest report for an agent by [agentId].
@@ -274,6 +342,26 @@ Future<List<AgentDomainEntity>> agentReportHistory(
   return entities.whereType<AgentReportEntity>().toList();
 }
 
+/// Computed performance metrics for a template by [templateId].
+@riverpod
+Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.computeMetrics(templateId);
+}
+
+/// The template evolution workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
+  return TemplateEvolutionWorkflow(
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+  );
+}
+
 /// The task agent workflow with all dependencies resolved.
 @Riverpod(keepAlive: true)
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
@@ -287,6 +375,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
   );
 }
 
@@ -326,6 +415,7 @@ Future<void> agentInitialization(Ref ref) async {
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
   final taskAgentService = ref.watch(taskAgentServiceProvider);
+  final templateService = ref.watch(agentTemplateServiceProvider);
 
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
@@ -337,8 +427,28 @@ Future<void> agentInitialization(Ref ref) async {
     orchestrator.stop();
   });
 
-  // Wire the workflow executor into the orchestrator so that processNext()
-  // delegates to TaskAgentWorkflow.execute().
+  // 1. Wire the workflow executor into the orchestrator.
+  _wireWakeExecutor(ref, orchestrator, workflow);
+
+  // 2. Start the orchestrator on the local update stream.
+  final updateNotifications = getIt<UpdateNotifications>();
+  await orchestrator.start(updateNotifications.localUpdateStream);
+
+  // 3. Wire the sync event processor for cross-device agent data.
+  _wireSyncEventProcessor(ref, orchestrator);
+
+  // 4. Seed default templates and restore subscriptions.
+  await templateService.seedDefaults();
+  await taskAgentService.restoreSubscriptions();
+}
+
+/// Wires [TaskAgentWorkflow.execute] into the orchestrator's [WakeExecutor]
+/// callback so that [WakeOrchestrator.processNext] delegates to the workflow.
+void _wireWakeExecutor(
+  Ref ref,
+  WakeOrchestrator orchestrator,
+  TaskAgentWorkflow workflow,
+) {
   orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
     final agentService = ref.read(agentServiceProvider);
     final identity = await agentService.getAgent(agentId);
@@ -356,29 +466,28 @@ Future<void> agentInitialization(Ref ref) async {
 
     return result.mutatedEntries;
   };
+}
 
-  final updateNotifications = getIt<UpdateNotifications>();
-  // Use localUpdateStream so that sync-originated entity changes do not
-  // trigger agent wakes — the source device already ran the agent.
-  await orchestrator.start(updateNotifications.localUpdateStream);
+/// Wires the agent repository and wake orchestrator into the
+/// [SyncEventProcessor] so that incoming agent data is persisted and incoming
+/// lifecycle changes (pause/destroy from another device) restore/remove
+/// subscriptions.
+void _wireSyncEventProcessor(
+  Ref ref,
+  WakeOrchestrator orchestrator,
+) {
+  if (!getIt.isRegistered<SyncEventProcessor>()) return;
 
-  // Wire the agent repository and wake orchestrator into the sync event
-  // processor so that incoming agent data is persisted and incoming lifecycle
-  // changes (pause/destroy from another device) restore/remove subscriptions.
-  if (getIt.isRegistered<SyncEventProcessor>()) {
-    final processor = getIt<SyncEventProcessor>();
-    final repository = ref.read(agentRepositoryProvider);
-    processor
-      ..agentRepository = repository
-      ..wakeOrchestrator = orchestrator;
-    ref.onDispose(() {
-      if (getIt.isRegistered<SyncEventProcessor>()) {
-        getIt<SyncEventProcessor>()
-          ..agentRepository = null
-          ..wakeOrchestrator = null;
-      }
-    });
-  }
-
-  await taskAgentService.restoreSubscriptions();
+  final processor = getIt<SyncEventProcessor>();
+  final repository = ref.read(agentRepositoryProvider);
+  processor
+    ..agentRepository = repository
+    ..wakeOrchestrator = orchestrator;
+  ref.onDispose(() {
+    if (getIt.isRegistered<SyncEventProcessor>()) {
+      getIt<SyncEventProcessor>()
+        ..agentRepository = null
+        ..wakeOrchestrator = null;
+    }
+  });
 }

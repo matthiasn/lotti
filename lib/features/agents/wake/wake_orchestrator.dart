@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -317,7 +318,7 @@ class WakeOrchestrator {
       final job = WakeJob(
         runKey: runKey,
         agentId: sub.agentId,
-        reason: 'subscription',
+        reason: WakeReason.subscription.name,
         triggerTokens: Set<String>.from(matched),
         reasonId: sub.id,
         createdAt: clock.now(),
@@ -428,7 +429,7 @@ class WakeOrchestrator {
         // execution — before recordMutatedEntities was called. Check both
         // confirmed mutations and pre-registered suppression (the latter
         // covers the window between DB writes and recordMutatedEntities).
-        if (job.reason == 'subscription' &&
+        if (job.reason == WakeReason.subscription.name &&
             (_isSuppressed(job.agentId, job.triggerTokens) ||
                 _isPreRegisteredSuppressed(
                   job.agentId,
@@ -467,7 +468,7 @@ class WakeOrchestrator {
         reason: job.reason,
         reasonId: job.reasonId,
         threadId: threadId,
-        status: 'running',
+        status: WakeRunStatus.running.name,
         createdAt: job.createdAt,
         startedAt: clock.now(),
       );
@@ -490,7 +491,7 @@ class WakeOrchestrator {
         );
         await _safeUpdateStatus(
           job.runKey,
-          'failed',
+          WakeRunStatus.failed.name,
           errorMessage: 'No wake executor registered',
         );
         return;
@@ -524,7 +525,7 @@ class WakeOrchestrator {
 
         await _safeUpdateStatus(
           job.runKey,
-          'completed',
+          WakeRunStatus.completed.name,
           completedAt: clock.now(),
         );
       } catch (e) {
@@ -535,7 +536,7 @@ class WakeOrchestrator {
         );
         await _safeUpdateStatus(
           job.runKey,
-          'failed',
+          WakeRunStatus.failed.name,
           errorMessage: e.toString(),
         );
       }

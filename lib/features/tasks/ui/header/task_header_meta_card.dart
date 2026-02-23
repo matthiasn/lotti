@@ -168,6 +168,7 @@ class _TaskAgentChip extends ConsumerWidget {
 
     try {
       final service = ref.read(taskAgentServiceProvider);
+      // TODO(agents): let the user pick a template before creating the agent.
       await service.createTaskAgent(
         taskId: taskId,
         allowedCategoryIds: allowedCategoryIds,

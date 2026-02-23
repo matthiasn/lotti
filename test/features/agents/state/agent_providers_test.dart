@@ -959,17 +959,20 @@ void main() {
     late MockWakeOrchestrator mockOrchestrator;
     late MockTaskAgentWorkflow mockWorkflow;
     late MockTaskAgentService mockTaskAgentService;
+    late MockAgentTemplateService mockTemplateService;
 
     setUp(() async {
       await setUpTestGetIt();
       mockOrchestrator = MockWakeOrchestrator();
       mockWorkflow = MockTaskAgentWorkflow();
       mockTaskAgentService = MockTaskAgentService();
+      mockTemplateService = MockAgentTemplateService();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
+      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -984,6 +987,7 @@ void main() {
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag && enableAgents,
@@ -1024,6 +1028,7 @@ void main() {
       await container.read(agentInitializationProvider.future);
 
       verify(() => mockOrchestrator.start(any())).called(1);
+      verify(() => mockTemplateService.seedDefaults()).called(1);
       verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
     });
 
@@ -1240,6 +1245,121 @@ void main() {
       container.dispose();
 
       verify(() => mockOrchestrator.stop()).called(1);
+    });
+  });
+
+  group('template providers', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createTemplateContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('agentTemplatesProvider delegates to listTemplates', () async {
+      final templates = [
+        makeTestTemplate(id: 'tpl-a', agentId: 'tpl-a'),
+      ];
+      when(() => mockTemplateService.listTemplates())
+          .thenAnswer((_) async => templates);
+
+      final container = createTemplateContainer();
+      final result = await container.read(agentTemplatesProvider.future);
+
+      expect(result, hasLength(1));
+      verify(() => mockTemplateService.listTemplates()).called(1);
+    });
+
+    test('agentTemplateProvider delegates to getTemplate', () async {
+      final template = makeTestTemplate();
+      when(() => mockTemplateService.getTemplate(kTestTemplateId))
+          .thenAnswer((_) async => template);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(agentTemplateProvider(kTestTemplateId).future);
+
+      expect(result, isNotNull);
+      expect((result! as AgentTemplateEntity).id, kTestTemplateId);
+    });
+
+    test('agentTemplateProvider returns null when not found', () async {
+      when(() => mockTemplateService.getTemplate('missing'))
+          .thenAnswer((_) async => null);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(agentTemplateProvider('missing').future);
+
+      expect(result, isNull);
+    });
+
+    test('activeTemplateVersionProvider delegates to getActiveVersion',
+        () async {
+      final version = makeTestTemplateVersion();
+      when(() => mockTemplateService.getActiveVersion(kTestTemplateId))
+          .thenAnswer((_) async => version);
+
+      final container = createTemplateContainer();
+      final result = await container
+          .read(activeTemplateVersionProvider(kTestTemplateId).future);
+
+      expect(result, isNotNull);
+      expect((result! as AgentTemplateVersionEntity).version, 1);
+    });
+
+    test('templateVersionHistoryProvider delegates to getVersionHistory',
+        () async {
+      final versions = [
+        makeTestTemplateVersion(id: 'v2', version: 2),
+        makeTestTemplateVersion(id: 'v1'),
+      ];
+      when(() => mockTemplateService.getVersionHistory(kTestTemplateId))
+          .thenAnswer((_) async => versions);
+
+      final container = createTemplateContainer();
+      final result = await container
+          .read(templateVersionHistoryProvider(kTestTemplateId).future);
+
+      expect(result, hasLength(2));
+    });
+
+    test('templateForAgentProvider delegates to getTemplateForAgent', () async {
+      final template = makeTestTemplate();
+      when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
+          .thenAnswer((_) async => template);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(templateForAgentProvider(kTestAgentId).future);
+
+      expect(result, isNotNull);
+      expect((result! as AgentTemplateEntity).id, kTestTemplateId);
+    });
+
+    test('templatePerformanceMetricsProvider delegates to computeMetrics',
+        () async {
+      final metrics = makeTestMetrics();
+      when(() => mockTemplateService.computeMetrics(kTestTemplateId))
+          .thenAnswer((_) async => metrics);
+
+      final container = createTemplateContainer();
+      final result = await container
+          .read(templatePerformanceMetricsProvider(kTestTemplateId).future);
+
+      expect(result.totalWakes, 10);
+      expect(result.successRate, 0.8);
     });
   });
 }

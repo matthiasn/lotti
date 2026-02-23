@@ -322,6 +322,15 @@ class AgentRepository {
     );
   }
 
+  /// Fetch wake-run entries for a specific template, ordered by
+  /// `created_at DESC`, capped at [limit] rows.
+  Future<List<WakeRunLogData>> getWakeRunsForTemplate(
+    String templateId, {
+    int limit = 500,
+  }) async {
+    return _db.getWakeRunsByTemplateId(templateId, limit).get();
+  }
+
   /// Fetch a single wake-run entry by [runKey], or `null` if not found.
   Future<WakeRunLogData?> getWakeRun(String runKey) async {
     final rows = await _db.getWakeRunByKey(runKey).get();

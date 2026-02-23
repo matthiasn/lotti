@@ -111,3 +111,5 @@ getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' 
 getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
+
+getWakeRunsByTemplateId: SELECT * FROM wake_run_log WHERE template_id = :templateId ORDER BY created_at DESC LIMIT :limit;
