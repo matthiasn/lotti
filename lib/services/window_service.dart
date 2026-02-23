@@ -122,14 +122,38 @@ class WindowService implements WindowListener {
   }
 
   /// Disposes long-running services in dependency-safe order.
+  ///
+  /// Each disposal is guarded independently so a failure in one does not
+  /// prevent the next service from being torn down.
   Future<void> _disposeServices() async {
     // Dispose OutboxService first (depends on MatrixService).
     if (getIt.isRegistered<OutboxService>()) {
-      await getIt<OutboxService>().dispose();
+      try {
+        await getIt<OutboxService>().dispose();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'OutboxService');
+      }
     }
     // Then MatrixService (owns sync engine, streams, connectivity sub).
     if (getIt.isRegistered<MatrixService>()) {
-      await getIt<MatrixService>().dispose();
+      try {
+        await getIt<MatrixService>().dispose();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'MatrixService');
+      }
+    }
+  }
+
+  void _logDisposalError(dynamic error, StackTrace stackTrace, String service) {
+    try {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'WINDOW_SERVICE',
+        subDomain: 'dispose_$service',
+        stackTrace: stackTrace,
+      );
+    } catch (_) {
+      // LoggingService itself may already be torn down.
     }
   }
 
