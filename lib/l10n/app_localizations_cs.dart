@@ -256,6 +256,103 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTabReports => 'Reports';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Active Instances';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Template';
+
+  @override
+  String get agentTemplateCreateTitle => 'Create Template';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Template created';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Delete this template? This cannot be undone.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Cannot delete: active agents are using this template.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Define the agent\'s personality, tone, goals, and style...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Directives';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Name';
+
+  @override
+  String get agentTemplateEditTitle => 'Edit Template';
+
+  @override
+  String get agentTemplateEmptyList => 'No templates yet. Tap + to create one.';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instances',
+      one: '1 instance',
+      zero: 'No instances',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Task Agent';
+
+  @override
+  String get agentTemplateModelLabel => 'Model ID';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'No templates available. Create one in Settings first.';
+
+  @override
+  String get agentTemplateNoneAssigned => 'No template assigned';
+
+  @override
+  String get agentTemplateRollbackAction => 'Rollback to This Version';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Roll back to version $version? The agent will use this version on its next wake.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion => 'Save as New Version';
+
+  @override
+  String get agentTemplateSelectTitle => 'Select Template';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Manage agent personalities and directives';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'To use a different template, destroy this agent and create a new one.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Version History';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'New version saved';
+
+  @override
+  String get agentTemplatesTitle => 'Agent Templates';
+
+  @override
   String get agentThreadReportLabel => 'Report produced during this wake';
 
   @override

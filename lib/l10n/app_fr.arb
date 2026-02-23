@@ -131,6 +131,53 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Rapports",
+  "agentTemplateActiveInstancesTitle": "Instances actives",
+  "agentTemplateAssignedLabel": "Modèle",
+  "agentTemplateCreatedSuccess": "Modèle créé",
+  "agentTemplateCreateTitle": "Créer un modèle",
+  "agentTemplateDeleteConfirm": "Supprimer ce modèle ? Cette action est irréversible.",
+  "agentTemplateDeleteHasInstances": "Impossible de supprimer : des agents actifs utilisent ce modèle.",
+  "agentTemplateDirectivesHint": "Définis la personnalité, le ton, les objectifs et le style de l'agent...",
+  "agentTemplateDirectivesLabel": "Directives",
+  "agentTemplateDisplayNameLabel": "Nom",
+  "agentTemplateEditTitle": "Modifier le modèle",
+  "agentTemplateEmptyList": "Pas encore de modèles. Appuie sur + pour en créer un.",
+  "agentTemplateInstanceCount": "{count, plural, =0{Aucune instance} =1{1 instance} other{{count} instances}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Agent de tâches",
+  "agentTemplateModelLabel": "ID du modèle",
+  "agentTemplateNoneAssigned": "Aucun modèle assigné",
+  "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
+  "agentTemplateRollbackAction": "Revenir à cette version",
+  "agentTemplateRollbackConfirm": "Revenir à la version {version} ? L'agent utilisera cette version lors de son prochain réveil.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Enregistrer comme nouvelle version",
+  "agentTemplateSelectTitle": "Sélectionner un modèle",
+  "agentTemplateSettingsSubtitle": "Gérer les personnalités et directives des agents",
+  "agentTemplatesTitle": "Modèles d'agents",
+  "agentTemplateSwitchHint": "Pour utiliser un autre modèle, détruis cet agent et crée-en un nouveau.",
+  "agentTemplateVersionHistoryTitle": "Historique des versions",
+  "agentTemplateVersionLabel": "Version {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Nouvelle version enregistrée",
   "agentThreadReportLabel": "Rapport produit pendant ce cycle",
   "aiAssistantActionItemSuggestions": "Suggestions d'actions",
   "aiAssistantAnalyzeImage": "Analyser l'image",

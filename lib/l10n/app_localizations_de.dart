@@ -259,6 +259,104 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTabReports => 'Berichte';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Vorlage';
+
+  @override
+  String get agentTemplateCreateTitle => 'Vorlage erstellen';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Vorlage erstellt';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Diese Vorlage löschen? Das kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Kann nicht gelöscht werden: Aktive Agenten verwenden diese Vorlage.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Definiere die Persönlichkeit, den Ton, die Ziele und den Stil des Agenten...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Anweisungen';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Name';
+
+  @override
+  String get agentTemplateEditTitle => 'Vorlage bearbeiten';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Instanzen',
+      one: '1 Instanz',
+      zero: 'Keine Instanzen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Aufgaben-Agent';
+
+  @override
+  String get agentTemplateModelLabel => 'Modell-ID';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Keine Vorlage zugewiesen';
+
+  @override
+  String get agentTemplateRollbackAction => 'Auf diese Version zurücksetzen';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Auf Version $version zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion => 'Als neue Version speichern';
+
+  @override
+  String get agentTemplateSelectTitle => 'Vorlage auswählen';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Agenten-Persönlichkeiten und Anweisungen verwalten';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Versionshistorie';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Neue Version gespeichert';
+
+  @override
+  String get agentTemplatesTitle => 'Agenten-Vorlagen';
+
+  @override
   String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
 
   @override

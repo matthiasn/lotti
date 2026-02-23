@@ -597,6 +597,403 @@ final class AgentTemplateServiceProvider extends $FunctionalProvider<
 String _$agentTemplateServiceHash() =>
     r'104340be1f31a3ca3b8a0e5b3726a0084969940b';
 
+/// List all non-deleted agent templates.
+
+@ProviderFor(agentTemplates)
+final agentTemplatesProvider = AgentTemplatesProvider._();
+
+/// List all non-deleted agent templates.
+
+final class AgentTemplatesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// List all non-deleted agent templates.
+  AgentTemplatesProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'agentTemplatesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentTemplatesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    return agentTemplates(ref);
+  }
+}
+
+String _$agentTemplatesHash() => r'11181589ced963f8f4bbf169e06f8d82e1667045';
+
+/// Fetch a single agent template by [templateId].
+
+@ProviderFor(agentTemplate)
+final agentTemplateProvider = AgentTemplateFamily._();
+
+/// Fetch a single agent template by [templateId].
+
+final class AgentTemplateProvider extends $FunctionalProvider<
+        AsyncValue<AgentDomainEntity?>,
+        AgentDomainEntity?,
+        FutureOr<AgentDomainEntity?>>
+    with
+        $FutureModifier<AgentDomainEntity?>,
+        $FutureProvider<AgentDomainEntity?> {
+  /// Fetch a single agent template by [templateId].
+  AgentTemplateProvider._(
+      {required AgentTemplateFamily super.from, required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentTemplateProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentTemplateHash();
+
+  @override
+  String toString() {
+    return r'agentTemplateProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentDomainEntity?> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentDomainEntity?> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentTemplate(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentTemplateProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentTemplateHash() => r'5ee0eea3d220f610c9d97e022a369d277801234c';
+
+/// Fetch a single agent template by [templateId].
+
+final class AgentTemplateFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
+  AgentTemplateFamily._()
+      : super(
+          retry: null,
+          name: r'agentTemplateProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch a single agent template by [templateId].
+
+  AgentTemplateProvider call(
+    String templateId,
+  ) =>
+      AgentTemplateProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'agentTemplateProvider';
+}
+
+/// Fetch the active version for a template by [templateId].
+
+@ProviderFor(activeTemplateVersion)
+final activeTemplateVersionProvider = ActiveTemplateVersionFamily._();
+
+/// Fetch the active version for a template by [templateId].
+
+final class ActiveTemplateVersionProvider extends $FunctionalProvider<
+        AsyncValue<AgentDomainEntity?>,
+        AgentDomainEntity?,
+        FutureOr<AgentDomainEntity?>>
+    with
+        $FutureModifier<AgentDomainEntity?>,
+        $FutureProvider<AgentDomainEntity?> {
+  /// Fetch the active version for a template by [templateId].
+  ActiveTemplateVersionProvider._(
+      {required ActiveTemplateVersionFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'activeTemplateVersionProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeTemplateVersionHash();
+
+  @override
+  String toString() {
+    return r'activeTemplateVersionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentDomainEntity?> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentDomainEntity?> create(Ref ref) {
+    final argument = this.argument as String;
+    return activeTemplateVersion(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ActiveTemplateVersionProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$activeTemplateVersionHash() =>
+    r'fdb4eb5d0f919e42b00dacb96bf96a8f12d0d23e';
+
+/// Fetch the active version for a template by [templateId].
+
+final class ActiveTemplateVersionFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
+  ActiveTemplateVersionFamily._()
+      : super(
+          retry: null,
+          name: r'activeTemplateVersionProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch the active version for a template by [templateId].
+
+  ActiveTemplateVersionProvider call(
+    String templateId,
+  ) =>
+      ActiveTemplateVersionProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'activeTemplateVersionProvider';
+}
+
+/// Fetch the version history for a template by [templateId].
+
+@ProviderFor(templateVersionHistory)
+final templateVersionHistoryProvider = TemplateVersionHistoryFamily._();
+
+/// Fetch the version history for a template by [templateId].
+
+final class TemplateVersionHistoryProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Fetch the version history for a template by [templateId].
+  TemplateVersionHistoryProvider._(
+      {required TemplateVersionHistoryFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateVersionHistoryProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateVersionHistoryHash();
+
+  @override
+  String toString() {
+    return r'templateVersionHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateVersionHistory(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateVersionHistoryProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateVersionHistoryHash() =>
+    r'5c79f0c0ec038e06bb2c5eab1b74d50d7bdd5f34';
+
+/// Fetch the version history for a template by [templateId].
+
+final class TemplateVersionHistoryFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  TemplateVersionHistoryFamily._()
+      : super(
+          retry: null,
+          name: r'templateVersionHistoryProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch the version history for a template by [templateId].
+
+  TemplateVersionHistoryProvider call(
+    String templateId,
+  ) =>
+      TemplateVersionHistoryProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateVersionHistoryProvider';
+}
+
+/// Resolve the template assigned to an agent by [agentId].
+
+@ProviderFor(templateForAgent)
+final templateForAgentProvider = TemplateForAgentFamily._();
+
+/// Resolve the template assigned to an agent by [agentId].
+
+final class TemplateForAgentProvider extends $FunctionalProvider<
+        AsyncValue<AgentDomainEntity?>,
+        AgentDomainEntity?,
+        FutureOr<AgentDomainEntity?>>
+    with
+        $FutureModifier<AgentDomainEntity?>,
+        $FutureProvider<AgentDomainEntity?> {
+  /// Resolve the template assigned to an agent by [agentId].
+  TemplateForAgentProvider._(
+      {required TemplateForAgentFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateForAgentProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateForAgentHash();
+
+  @override
+  String toString() {
+    return r'templateForAgentProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentDomainEntity?> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentDomainEntity?> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateForAgent(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateForAgentProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateForAgentHash() => r'fc6ba0981e92157bbf69bef00f3ff73a8f4cc4a6';
+
+/// Resolve the template assigned to an agent by [agentId].
+
+final class TemplateForAgentFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
+  TemplateForAgentFamily._()
+      : super(
+          retry: null,
+          name: r'templateForAgentProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Resolve the template assigned to an agent by [agentId].
+
+  TemplateForAgentProvider call(
+    String agentId,
+  ) =>
+      TemplateForAgentProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'templateForAgentProvider';
+}
+
 /// Fetch the latest report for an agent by [agentId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentReportEntity]) or `null`.

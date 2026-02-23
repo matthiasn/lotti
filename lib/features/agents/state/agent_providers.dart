@@ -120,6 +120,54 @@ AgentTemplateService agentTemplateService(Ref ref) {
   );
 }
 
+/// List all non-deleted agent templates.
+@riverpod
+Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.listTemplates();
+}
+
+/// Fetch a single agent template by [templateId].
+@riverpod
+Future<AgentDomainEntity?> agentTemplate(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getTemplate(templateId);
+}
+
+/// Fetch the active version for a template by [templateId].
+@riverpod
+Future<AgentDomainEntity?> activeTemplateVersion(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getActiveVersion(templateId);
+}
+
+/// Fetch the version history for a template by [templateId].
+@riverpod
+Future<List<AgentDomainEntity>> templateVersionHistory(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getVersionHistory(templateId);
+}
+
+/// Resolve the template assigned to an agent by [agentId].
+@riverpod
+Future<AgentDomainEntity?> templateForAgent(
+  Ref ref,
+  String agentId,
+) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getTemplateForAgent(agentId);
+}
+
 /// Fetch the latest report for an agent by [agentId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentReportEntity]) or `null`.

@@ -259,6 +259,104 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTabReports => 'Informes';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Instancias activas';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Plantilla';
+
+  @override
+  String get agentTemplateCreateTitle => 'Crear plantilla';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Plantilla creada';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      '¿Eliminar esta plantilla? Esto no se puede deshacer.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'No se puede eliminar: agentes activos están usando esta plantilla.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Define la personalidad, el tono, los objetivos y el estilo del agente...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Directivas';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Nombre';
+
+  @override
+  String get agentTemplateEditTitle => 'Editar plantilla';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Sin plantillas aún. Toca + para crear una.';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instancias',
+      one: '1 instancia',
+      zero: 'Sin instancias',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Agente de tareas';
+
+  @override
+  String get agentTemplateModelLabel => 'ID de modelo';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'No hay plantillas disponibles. Crea una en Configuración primero.';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Sin plantilla asignada';
+
+  @override
+  String get agentTemplateRollbackAction => 'Revertir a esta versión';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return '¿Revertir a la versión $version? El agente usará esta versión en su próximo despertar.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion => 'Guardar como nueva versión';
+
+  @override
+  String get agentTemplateSelectTitle => 'Seleccionar plantilla';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Gestionar personalidades y directivas de agentes';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Para usar una plantilla diferente, destruye este agente y crea uno nuevo.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Historial de versiones';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Versión $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Nueva versión guardada';
+
+  @override
+  String get agentTemplatesTitle => 'Plantillas de agentes';
+
+  @override
   String get agentThreadReportLabel => 'Informe producido durante este ciclo';
 
   @override

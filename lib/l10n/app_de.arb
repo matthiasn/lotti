@@ -131,6 +131,53 @@
   "agentTabConversations": "Konversationen",
   "agentTabObservations": "Beobachtungen",
   "agentTabReports": "Berichte",
+  "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
+  "agentTemplateAssignedLabel": "Vorlage",
+  "agentTemplateCreatedSuccess": "Vorlage erstellt",
+  "agentTemplateCreateTitle": "Vorlage erstellen",
+  "agentTemplateDeleteConfirm": "Diese Vorlage löschen? Das kann nicht rückgängig gemacht werden.",
+  "agentTemplateDeleteHasInstances": "Kann nicht gelöscht werden: Aktive Agenten verwenden diese Vorlage.",
+  "agentTemplateDirectivesHint": "Definiere die Persönlichkeit, den Ton, die Ziele und den Stil des Agenten...",
+  "agentTemplateDirectivesLabel": "Anweisungen",
+  "agentTemplateDisplayNameLabel": "Name",
+  "agentTemplateEditTitle": "Vorlage bearbeiten",
+  "agentTemplateEmptyList": "Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.",
+  "agentTemplateInstanceCount": "{count, plural, =0{Keine Instanzen} =1{1 Instanz} other{{count} Instanzen}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Aufgaben-Agent",
+  "agentTemplateModelLabel": "Modell-ID",
+  "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
+  "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
+  "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
+  "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Als neue Version speichern",
+  "agentTemplateSelectTitle": "Vorlage auswählen",
+  "agentTemplateSettingsSubtitle": "Agenten-Persönlichkeiten und Anweisungen verwalten",
+  "agentTemplatesTitle": "Agenten-Vorlagen",
+  "agentTemplateSwitchHint": "Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.",
+  "agentTemplateVersionHistoryTitle": "Versionshistorie",
+  "agentTemplateVersionLabel": "Version {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Neue Version gespeichert",
   "agentThreadReportLabel": "Bericht aus diesem Wake-Zyklus",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",

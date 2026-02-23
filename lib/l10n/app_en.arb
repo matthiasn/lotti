@@ -130,6 +130,53 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
+  "agentTemplateActiveInstancesTitle": "Active Instances",
+  "agentTemplateAssignedLabel": "Template",
+  "agentTemplateCreatedSuccess": "Template created",
+  "agentTemplateCreateTitle": "Create Template",
+  "agentTemplateDeleteConfirm": "Delete this template? This cannot be undone.",
+  "agentTemplateDeleteHasInstances": "Cannot delete: active agents are using this template.",
+  "agentTemplateDirectivesHint": "Define the agent's personality, tone, goals, and style...",
+  "agentTemplateDirectivesLabel": "Directives",
+  "agentTemplateDisplayNameLabel": "Name",
+  "agentTemplateEditTitle": "Edit Template",
+  "agentTemplateEmptyList": "No templates yet. Tap + to create one.",
+  "agentTemplateInstanceCount": "{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Task Agent",
+  "agentTemplateModelLabel": "Model ID",
+  "agentTemplateNoneAssigned": "No template assigned",
+  "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
+  "agentTemplateRollbackAction": "Rollback to This Version",
+  "agentTemplateRollbackConfirm": "Roll back to version {version}? The agent will use this version on its next wake.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Save as New Version",
+  "agentTemplateSelectTitle": "Select Template",
+  "agentTemplateSettingsSubtitle": "Manage agent personalities and directives",
+  "agentTemplatesTitle": "Agent Templates",
+  "agentTemplateSwitchHint": "To use a different template, destroy this agent and create a new one.",
+  "agentTemplateVersionHistoryTitle": "Version History",
+  "agentTemplateVersionLabel": "Version {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "New version saved",
   "agentThreadReportLabel": "Report produced during this wake",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",

@@ -146,9 +146,7 @@ void main() {
   const threadId = 'thread-001';
   final testDate = DateTime(2024, 6, 15, 10, 30);
 
-  final testTemplate = makeTestTemplate(
-    
-  );
+  final testTemplate = makeTestTemplate();
   final testTemplateVersion = makeTestTemplateVersion(
     directives: 'You are a diligent task agent named Laura.',
   );

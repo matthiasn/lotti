@@ -201,7 +201,7 @@ class AgentTemplateService {
   Future<void> deleteTemplate(String templateId) async {
     final agents = await getAgentsForTemplate(templateId);
     if (agents.isNotEmpty) {
-      throw StateError(
+      throw Exception(
         'Cannot delete template $templateId: '
         '${agents.length} active instance(s)',
       );
@@ -250,6 +250,20 @@ class AgentTemplateService {
       'Rolled back template $templateId to version $versionId',
       name: 'AgentTemplateService',
     );
+  }
+
+  /// Fetch all versions for a template, sorted newest-first.
+  Future<List<AgentTemplateVersionEntity>> getVersionHistory(
+    String templateId,
+  ) async {
+    final entities = await repository.getEntitiesByAgentId(
+      templateId,
+      type: 'agentTemplateVersion',
+      limit: 100,
+    );
+    final versions = entities.whereType<AgentTemplateVersionEntity>().toList()
+      ..sort((a, b) => b.version.compareTo(a.version));
+    return versions;
   }
 
   /// Idempotent seed of default templates (Laura and Tom).

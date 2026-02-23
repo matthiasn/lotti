@@ -131,6 +131,53 @@
   "agentTabConversations": "Conversaciones",
   "agentTabObservations": "Observaciones",
   "agentTabReports": "Informes",
+  "agentTemplateActiveInstancesTitle": "Instancias activas",
+  "agentTemplateAssignedLabel": "Plantilla",
+  "agentTemplateCreatedSuccess": "Plantilla creada",
+  "agentTemplateCreateTitle": "Crear plantilla",
+  "agentTemplateDeleteConfirm": "¿Eliminar esta plantilla? Esto no se puede deshacer.",
+  "agentTemplateDeleteHasInstances": "No se puede eliminar: agentes activos están usando esta plantilla.",
+  "agentTemplateDirectivesHint": "Define la personalidad, el tono, los objetivos y el estilo del agente...",
+  "agentTemplateDirectivesLabel": "Directivas",
+  "agentTemplateDisplayNameLabel": "Nombre",
+  "agentTemplateEditTitle": "Editar plantilla",
+  "agentTemplateEmptyList": "Sin plantillas aún. Toca + para crear una.",
+  "agentTemplateInstanceCount": "{count, plural, =0{Sin instancias} =1{1 instancia} other{{count} instancias}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Agente de tareas",
+  "agentTemplateModelLabel": "ID de modelo",
+  "agentTemplateNoneAssigned": "Sin plantilla asignada",
+  "agentTemplateNoTemplates": "No hay plantillas disponibles. Crea una en Configuración primero.",
+  "agentTemplateRollbackAction": "Revertir a esta versión",
+  "agentTemplateRollbackConfirm": "¿Revertir a la versión {version}? El agente usará esta versión en su próximo despertar.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Guardar como nueva versión",
+  "agentTemplateSelectTitle": "Seleccionar plantilla",
+  "agentTemplateSettingsSubtitle": "Gestionar personalidades y directivas de agentes",
+  "agentTemplatesTitle": "Plantillas de agentes",
+  "agentTemplateSwitchHint": "Para usar una plantilla diferente, destruye este agente y crea uno nuevo.",
+  "agentTemplateVersionHistoryTitle": "Historial de versiones",
+  "agentTemplateVersionLabel": "Versión {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Nueva versión guardada",
   "agentThreadReportLabel": "Informe producido durante este ciclo",
   "aiAssistantActionItemSuggestions": "Sugerencias de elementos de acción",
   "aiAssistantAnalyzeImage": "Analizar imagen",

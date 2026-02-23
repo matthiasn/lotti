@@ -260,6 +260,105 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTabReports => 'Rapports';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Instances actives';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Modèle';
+
+  @override
+  String get agentTemplateCreateTitle => 'Créer un modèle';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Modèle créé';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Supprimer ce modèle ? Cette action est irréversible.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Impossible de supprimer : des agents actifs utilisent ce modèle.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Définis la personnalité, le ton, les objectifs et le style de l\'agent...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Directives';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Nom';
+
+  @override
+  String get agentTemplateEditTitle => 'Modifier le modèle';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Pas encore de modèles. Appuie sur + pour en créer un.';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instances',
+      one: '1 instance',
+      zero: 'Aucune instance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Agent de tâches';
+
+  @override
+  String get agentTemplateModelLabel => 'ID du modèle';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'Aucun modèle disponible. Crée-en un dans les Paramètres d\'abord.';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Aucun modèle assigné';
+
+  @override
+  String get agentTemplateRollbackAction => 'Revenir à cette version';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Revenir à la version $version ? L\'agent utilisera cette version lors de son prochain réveil.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion =>
+      'Enregistrer comme nouvelle version';
+
+  @override
+  String get agentTemplateSelectTitle => 'Sélectionner un modèle';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Gérer les personnalités et directives des agents';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Pour utiliser un autre modèle, détruis cet agent et crée-en un nouveau.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Historique des versions';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Nouvelle version enregistrée';
+
+  @override
+  String get agentTemplatesTitle => 'Modèles d\'agents';
+
+  @override
   String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
 
   @override

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -37,6 +38,7 @@ void main() {
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
         reportHistoryOverride,
     Stream<bool> Function(Ref, String)? isRunningOverride,
+    FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
     List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
@@ -67,6 +69,9 @@ void main() {
         ),
         agentIsRunningProvider.overrideWith(
           isRunningOverride ?? (ref, agentId) => Stream.value(false),
+        ),
+        templateForAgentProvider.overrideWith(
+          templateOverride ?? (ref, agentId) async => null,
         ),
         agentServiceProvider.overrideWithValue(mockAgentService),
         taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
@@ -460,6 +465,61 @@ void main() {
         expect(find.text('Delete permanently'), findsOneWidget);
         expect(find.text('Pause'), findsNothing);
         expect(find.text('Resume'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows template section with template name when assigned',
+      (tester) async {
+        final template = makeTestTemplate(displayName: 'Laura');
+
+        await tester.pumpWidget(
+          buildSubject(
+            identityOverride: (ref, agentId) async => makeTestIdentity(),
+            templateOverride: (ref, agentId) async => template,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentDetailPage));
+        expect(
+          find.text(context.messages.agentTemplateAssignedLabel),
+          findsOneWidget,
+        );
+        expect(find.text('Laura'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows "No template assigned" when no template',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDataSubject(identity: makeTestIdentity()),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentDetailPage));
+        expect(
+          find.text(context.messages.agentTemplateNoneAssigned),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows template switch hint',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDataSubject(identity: makeTestIdentity()),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(AgentDetailPage));
+        expect(
+          find.text(context.messages.agentTemplateSwitchHint),
+          findsOneWidget,
+        );
       },
     );
   });

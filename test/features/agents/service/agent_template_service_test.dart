@@ -258,7 +258,7 @@ void main() {
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
-        throwsA(isA<StateError>()),
+        throwsA(isA<Exception>()),
       );
     });
 
