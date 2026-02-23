@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Desktop app no longer crashes on exit: `WindowService` now disposes
+  `OutboxService` and `MatrixService` before destroying the window.
+- Reference image selection: the "Continue" button is no longer hidden when
+  many images are available. The image grid now scrolls independently while
+  the button stays pinned at the bottom.
 
 ## [0.9.868] - 2026-02-22
 ### Added

@@ -1,13 +1,19 @@
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WindowService implements WindowListener {
   WindowService() {
     windowManager.addListener(this);
+    if (isDesktop) {
+      windowManager.setPreventClose(true);
+    }
   }
 
   final sizeKey = 'WINDOW_SIZE';
@@ -90,7 +96,40 @@ class WindowService implements WindowListener {
   void onWindowUnmaximize() {}
 
   @override
-  void onWindowClose() {}
+  void onWindowClose() {
+    _handleClose();
+  }
+
+  Future<void> _handleClose() async {
+    try {
+      await _disposeServices();
+    } catch (e) {
+      // Best-effort cleanup — log but don't block exit.
+      try {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'WINDOW_SERVICE',
+          subDomain: 'onWindowClose',
+        );
+      } catch (_) {
+        // LoggingService itself may already be torn down.
+      }
+    } finally {
+      await windowManager.destroy();
+    }
+  }
+
+  /// Disposes long-running services in dependency-safe order.
+  Future<void> _disposeServices() async {
+    // Dispose OutboxService first (depends on MatrixService).
+    if (getIt.isRegistered<OutboxService>()) {
+      await getIt<OutboxService>().dispose();
+    }
+    // Then MatrixService (owns sync engine, streams, connectivity sub).
+    if (getIt.isRegistered<MatrixService>()) {
+      await getIt<MatrixService>().dispose();
+    }
+  }
 
   @override
   void onWindowMoved() {

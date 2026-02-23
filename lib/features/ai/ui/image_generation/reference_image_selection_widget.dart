@@ -99,7 +99,6 @@ class _ReferenceImageSelectionWidgetState
     final colorScheme = context.colorScheme;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Header with count
@@ -146,12 +145,11 @@ class _ReferenceImageSelectionWidgetState
         ),
         const SizedBox(height: 16),
 
-        // Image grid
-        Flexible(
+        // Image grid — Expanded so it takes remaining space and scrolls
+        Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: GridView.builder(
-              shrinkWrap: true,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 8,
@@ -176,7 +174,7 @@ class _ReferenceImageSelectionWidgetState
         ),
         const SizedBox(height: 24),
 
-        // Action button
+        // Action button — always pinned at the bottom
         Padding(
           padding: const EdgeInsets.all(16),
           child: LottiPrimaryButton(
