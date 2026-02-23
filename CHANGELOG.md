@@ -6,20 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.868] - 2026-02-22
+## [0.9.869] - 2026-02-23
 ### Added
 - Provider filter for category prompt selection: when multiple AI providers
   exist, filter chips let users narrow the prompt list by provider.
 - Collapsible text entries in linked-entry context: text notes can now be
   collapsed/expanded like images and audio entries.
-
-### Fixed
-- Desktop app no longer crashes on exit: `WindowService` now disposes
-  `OutboxService` and `MatrixService` before destroying the window.
-- Reference image selection: the "Continue" button is no longer hidden when
-  many images are available. The image grid now scrolls independently while
-  the button stays pinned at the bottom.
-### Added
 - Agent cross-device sync: agent entities and links are now synchronized via
   Matrix using `SyncAgentEntity` and `SyncAgentLink` message variants. Incoming
   agents restore wake subscriptions so task agents resume monitoring on the
@@ -31,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   buffered during transactions and flushed only on successful commit. Nested
   transactions are supported via a depth counter; rollback discards all buffered
   messages.
+
+### Fixed
+- Desktop app no longer crashes on exit: `WindowService` now disposes
+  `OutboxService` and `MatrixService` before destroying the window.
+- Reference image selection: the "Continue" button is no longer hidden when
+  many images are available. The image grid now scrolls independently while
+  the button stays pinned at the bottom.
 
 ## [0.9.867] - 2026-02-22
 ### Added

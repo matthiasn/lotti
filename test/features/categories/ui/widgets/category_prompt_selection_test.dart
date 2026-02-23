@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
 import '../../../../test_helper.dart';
+import '../../../ai/test_utils.dart';
 
 void main() {
   group('CategoryPromptSelection', () {
@@ -388,105 +388,91 @@ void main() {
 
   group('CategoryPromptSelection provider filter', () {
     final testModels = <AiConfigModel>[
-      AiConfig.model(
+      AiTestDataFactory.createTestModel(
         id: 'model-anthropic',
         name: 'Claude Sonnet',
         providerModelId: 'claude-sonnet-4-6',
         inferenceProviderId: 'provider-anthropic',
-        createdAt: DateTime(2024),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      ) as AiConfigModel,
-      AiConfig.model(
+      ),
+      AiTestDataFactory.createTestModel(
         id: 'model-gemini',
         name: 'Gemini Pro',
         providerModelId: 'gemini-pro',
         inferenceProviderId: 'provider-gemini',
-        createdAt: DateTime(2024),
-        inputModalities: [Modality.text],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      ) as AiConfigModel,
+      ),
     ];
 
     final testProviders = <AiConfigInferenceProvider>[
-      AiConfig.inferenceProvider(
+      AiTestDataFactory.createTestProvider(
         id: 'provider-anthropic',
         name: 'Anthropic',
         baseUrl: 'https://api.anthropic.com',
         apiKey: 'key',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.anthropic,
-      ) as AiConfigInferenceProvider,
-      AiConfig.inferenceProvider(
+      ),
+      AiTestDataFactory.createTestProvider(
         id: 'provider-gemini',
         name: 'Gemini',
+        type: InferenceProviderType.gemini,
         baseUrl: 'https://api.gemini.com',
         apiKey: 'key',
-        createdAt: DateTime(2024),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ) as AiConfigInferenceProvider,
+      ),
     ];
 
-    final promptAnthropic = AiConfig.prompt(
+    final promptAnthropic = AiTestDataFactory.createTestPrompt(
       id: 'prompt-a1',
       name: 'Anthropic Prompt',
       description: 'Uses Anthropic',
-      systemMessage: 'sys',
-      userMessage: 'usr',
       defaultModelId: 'model-anthropic',
       modelIds: ['model-anthropic'],
-      createdAt: DateTime(2024),
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-    ) as AiConfigPrompt;
+    );
 
-    final promptGemini = AiConfig.prompt(
+    final promptGemini = AiTestDataFactory.createTestPrompt(
       id: 'prompt-g1',
       name: 'Gemini Prompt',
       description: 'Uses Gemini',
-      systemMessage: 'sys',
-      userMessage: 'usr',
       defaultModelId: 'model-gemini',
       modelIds: ['model-gemini'],
-      createdAt: DateTime(2024),
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-    ) as AiConfigPrompt;
+    );
 
-    final promptGemini2 = AiConfig.prompt(
+    final promptGemini2 = AiTestDataFactory.createTestPrompt(
       id: 'prompt-g2',
       name: 'Gemini Prompt 2',
       description: 'Also uses Gemini',
-      systemMessage: 'sys',
-      userMessage: 'usr',
       defaultModelId: 'model-gemini',
       modelIds: ['model-gemini'],
-      createdAt: DateTime(2024),
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-    ) as AiConfigPrompt;
+    );
 
     final allPrompts = [promptAnthropic, promptGemini, promptGemini2];
 
-    testWidgets('does not show filter when only one provider', (tester) async {
-      await tester.pumpWidget(
+    Future<void> pumpFilterWidget(
+      WidgetTester tester, {
+      List<AiConfigPrompt>? prompts,
+      List<AiConfigModel>? models,
+      List<AiConfigInferenceProvider>? providers,
+      List<String> allowedPromptIds = const [],
+      void Function(String, {required bool isAllowed})? onPromptToggled,
+    }) {
+      return tester.pumpWidget(
         WidgetTestBench(
           child: SingleChildScrollView(
             child: CategoryPromptSelection(
-              prompts: [promptAnthropic],
-              models: testModels,
-              providers: [testProviders.first],
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
+              prompts: prompts ?? allPrompts,
+              models: models ?? testModels,
+              providers: providers ?? testProviders,
+              allowedPromptIds: allowedPromptIds,
+              onPromptToggled: onPromptToggled ?? (_, {required isAllowed}) {},
               isLoading: false,
             ),
           ),
         ),
+      );
+    }
+
+    testWidgets('does not show filter when only one provider', (tester) async {
+      await pumpFilterWidget(
+        tester,
+        prompts: [promptAnthropic],
+        providers: [testProviders.first],
       );
 
       expect(find.byType(FilterChip), findsNothing);
@@ -494,20 +480,7 @@ void main() {
     });
 
     testWidgets('shows filter chips when multiple providers', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
-      );
+      await pumpFilterWidget(tester);
 
       // "All" + "Anthropic" + "Gemini" = 3 chips
       expect(find.byType(FilterChip), findsNWidgets(3));
@@ -520,20 +493,7 @@ void main() {
     });
 
     testWidgets('selecting provider chip filters prompts', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
-      );
+      await pumpFilterWidget(tester);
 
       // Tap "Anthropic" chip
       await tester.tap(find.text('Anthropic'));
@@ -547,20 +507,7 @@ void main() {
 
     testWidgets('selecting Gemini chip shows only Gemini prompts',
         (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
-      );
+      await pumpFilterWidget(tester);
 
       await tester.tap(find.text('Gemini'));
       await tester.pump();
@@ -572,20 +519,7 @@ void main() {
     });
 
     testWidgets('tapping All chip shows all prompts again', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
-      );
+      await pumpFilterWidget(tester);
 
       // Filter to Anthropic
       await tester.tap(find.text('Anthropic'));
@@ -599,20 +533,7 @@ void main() {
     });
 
     testWidgets('All chip is selected by default', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
-      );
+      await pumpFilterWidget(tester);
 
       final allChip = tester.widget<FilterChip>(
         find.widgetWithText(FilterChip, 'All'),
@@ -627,17 +548,10 @@ void main() {
 
     testWidgets('does not show filter when no models/providers provided',
         (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              allowedPromptIds: const [],
-              onPromptToggled: (_, {required isAllowed}) {},
-              isLoading: false,
-            ),
-          ),
-        ),
+      await pumpFilterWidget(
+        tester,
+        models: const [],
+        providers: const [],
       );
 
       expect(find.byType(FilterChip), findsNothing);
@@ -648,21 +562,11 @@ void main() {
         (tester) async {
       String? toggledId;
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: SingleChildScrollView(
-            child: CategoryPromptSelection(
-              prompts: allPrompts,
-              models: testModels,
-              providers: testProviders,
-              allowedPromptIds: const [],
-              onPromptToggled: (promptId, {required isAllowed}) {
-                toggledId = promptId;
-              },
-              isLoading: false,
-            ),
-          ),
-        ),
+      await pumpFilterWidget(
+        tester,
+        onPromptToggled: (promptId, {required isAllowed}) {
+          toggledId = promptId;
+        },
       );
 
       // Filter to Gemini

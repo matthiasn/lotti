@@ -54,6 +54,15 @@ class _CategoryPromptSelectionState extends State<CategoryPromptSelection> {
     if (oldWidget.models != widget.models) {
       _rebuildModelIndex();
     }
+    // Reset filter when the selected provider is no longer relevant.
+    if (_selectedProviderId != null) {
+      final relevantIds = _providerIdsWithPrompts();
+      final stillExists =
+          widget.providers.any((p) => p.id == _selectedProviderId);
+      if (!relevantIds.contains(_selectedProviderId) || !stillExists) {
+        setState(() => _selectedProviderId = null);
+      }
+    }
   }
 
   void _rebuildModelIndex() {

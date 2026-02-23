@@ -104,13 +104,14 @@ class WindowService implements WindowListener {
   Future<void> _handleClose() async {
     try {
       await _disposeServices();
-    } catch (e) {
+    } catch (e, s) {
       // Best-effort cleanup — log but don't block exit.
       try {
         getIt<LoggingService>().captureException(
           e,
           domain: 'WINDOW_SERVICE',
           subDomain: 'onWindowClose',
+          stackTrace: s,
         );
       } catch (_) {
         // LoggingService itself may already be torn down.
