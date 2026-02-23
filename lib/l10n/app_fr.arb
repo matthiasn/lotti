@@ -142,6 +142,23 @@
   "agentTemplateDisplayNameLabel": "Nom",
   "agentTemplateEditTitle": "Modifier le modèle",
   "agentTemplateEmptyList": "Pas encore de modèles. Appuie sur + pour en créer un.",
+  "agentTemplateEvolveAction": "Évoluer avec l'IA",
+  "agentTemplateEvolveApprove": "Approuver et enregistrer",
+  "agentTemplateEvolveButton": "Faire évoluer le modèle",
+  "agentTemplateEvolveCurrentLabel": "Directives actuelles",
+  "agentTemplateEvolveError": "Impossible de générer la proposition d'évolution",
+  "agentTemplateEvolvePreviewTitle": "Changements proposés",
+  "agentTemplateEvolveProposedLabel": "Directives proposées",
+  "agentTemplateEvolveReject": "Rejeter",
+  "agentTemplateEvolveSuccess": "Modèle évolué avec succès",
+  "agentTemplateEvolvingProgress": "Génération de directives améliorées...",
+  "agentTemplateFeedbackChangesHint": "Décris ce que tu aimerais changer...",
+  "agentTemplateFeedbackChangesLabel": "Changements spécifiques",
+  "agentTemplateFeedbackDidntWorkHint": "Décris les problèmes ou lacunes...",
+  "agentTemplateFeedbackDidntWorkLabel": "Ce qui n'a pas fonctionné",
+  "agentTemplateFeedbackEnjoyedHint": "Décris ce que l'agent fait bien...",
+  "agentTemplateFeedbackEnjoyedLabel": "Ce qui a bien fonctionné",
+  "agentTemplateFeedbackTitle": "Retour",
   "agentTemplateInstanceCount": "{count, plural, =0{Aucune instance} =1{1 instance} other{{count} instances}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -151,9 +168,26 @@
     }
   },
   "agentTemplateKindTaskAgent": "Agent de tâches",
+  "agentTemplateMetricsActiveInstances": "Instances actives",
+  "agentTemplateMetricsAvgDuration": "Durée moyenne",
+  "agentTemplateMetricsFailureCount": "Échecs",
+  "agentTemplateMetricsFirstWake": "Première activation",
+  "agentTemplateMetricsLastWake": "Dernière activation",
+  "agentTemplateMetricsSuccessRate": "Taux de réussite",
+  "agentTemplateMetricsTitle": "Métriques de performance",
+  "agentTemplateMetricsTotalWakes": "Activations totales",
   "agentTemplateModelLabel": "ID du modèle",
+  "agentTemplateNoMetrics": "Pas encore de données de performance",
   "agentTemplateNoneAssigned": "Aucun modèle assigné",
   "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
+  "agentTemplateOneOnOneTitle": "1-à-1 avec {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
   "agentTemplateRollbackAction": "Revenir à cette version",
   "agentTemplateRollbackConfirm": "Revenir à la version {version} ? L'agent utilisera cette version lors de son prochain réveil.",
   "@agentTemplateRollbackConfirm": {

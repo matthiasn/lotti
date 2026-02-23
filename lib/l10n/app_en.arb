@@ -141,6 +141,23 @@
   "agentTemplateDisplayNameLabel": "Name",
   "agentTemplateEditTitle": "Edit Template",
   "agentTemplateEmptyList": "No templates yet. Tap + to create one.",
+  "agentTemplateEvolveAction": "Evolve with AI",
+  "agentTemplateEvolveApprove": "Approve & Save",
+  "agentTemplateEvolveButton": "Evolve Template",
+  "agentTemplateEvolveCurrentLabel": "Current Directives",
+  "agentTemplateEvolveError": "Failed to generate evolution proposal",
+  "agentTemplateEvolvePreviewTitle": "Proposed Changes",
+  "agentTemplateEvolveProposedLabel": "Proposed Directives",
+  "agentTemplateEvolveReject": "Reject",
+  "agentTemplateEvolveSuccess": "Template evolved successfully",
+  "agentTemplateEvolvingProgress": "Generating improved directives...",
+  "agentTemplateFeedbackChangesHint": "Describe what you'd like changed...",
+  "agentTemplateFeedbackChangesLabel": "Specific changes",
+  "agentTemplateFeedbackDidntWorkHint": "Describe issues or shortcomings...",
+  "agentTemplateFeedbackDidntWorkLabel": "What didn't work",
+  "agentTemplateFeedbackEnjoyedHint": "Describe what the agent does well...",
+  "agentTemplateFeedbackEnjoyedLabel": "What worked well",
+  "agentTemplateFeedbackTitle": "Feedback",
   "agentTemplateInstanceCount": "{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -150,9 +167,26 @@
     }
   },
   "agentTemplateKindTaskAgent": "Task Agent",
+  "agentTemplateMetricsActiveInstances": "Active Instances",
+  "agentTemplateMetricsAvgDuration": "Avg Duration",
+  "agentTemplateMetricsFailureCount": "Failures",
+  "agentTemplateMetricsFirstWake": "First Wake",
+  "agentTemplateMetricsLastWake": "Last Wake",
+  "agentTemplateMetricsSuccessRate": "Success Rate",
+  "agentTemplateMetricsTitle": "Performance Metrics",
+  "agentTemplateMetricsTotalWakes": "Total Wakes",
   "agentTemplateModelLabel": "Model ID",
+  "agentTemplateNoMetrics": "No performance data yet",
   "agentTemplateNoneAssigned": "No template assigned",
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
+  "agentTemplateOneOnOneTitle": "1-on-1 with {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
   "agentTemplateRollbackAction": "Rollback to This Version",
   "agentTemplateRollbackConfirm": "Roll back to version {version}? The agent will use this version on its next wake.",
   "@agentTemplateRollbackConfirm": {

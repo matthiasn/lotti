@@ -264,10 +264,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Șablon';
 
   @override
-  String get agentTemplateCreateTitle => 'Creați un șablon';
+  String get agentTemplateCreatedSuccess => 'Șablon creat';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Șablon creat';
+  String get agentTemplateCreateTitle => 'Creați un șablon';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -295,6 +295,62 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun șablon încă. Apăsați + pentru a crea unul.';
 
   @override
+  String get agentTemplateEvolveAction => 'Evoluează cu IA';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Aprobă și salvează';
+
+  @override
+  String get agentTemplateEvolveButton => 'Evoluează șablonul';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Directivele actuale';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Nu s-a putut genera propunerea de evoluție';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Modificări propuse';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Directivele propuse';
+
+  @override
+  String get agentTemplateEvolveReject => 'Respinge';
+
+  @override
+  String get agentTemplateEvolveSuccess => 'Șablonul a fost evoluat cu succes';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Se generează directive îmbunătățite...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Descrieți ce ați dori să schimbați...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Modificări specifice';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Descrieți problemele sau deficiențele...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel => 'Ce nu a funcționat';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Descrieți ce face bine agentul...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Ce a funcționat bine';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Feedback';
+
+  @override
   String agentTemplateInstanceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -310,14 +366,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Agent de sarcini';
 
   @override
+  String get agentTemplateMetricsActiveInstances => 'Instanțe active';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durata medie';
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Eșecuri';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Prima activare';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Ultima activare';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Rata de succes';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Indicatori de performanță';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Total activări';
+
+  @override
   String get agentTemplateModelLabel => 'ID model';
+
+  @override
+  String get agentTemplateNoMetrics => 'Nu există încă date de performanță';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
 
   @override
   String get agentTemplateNoTemplates =>
       'Nu sunt șabloane disponibile. Creați unul în Setări mai întâi.';
 
   @override
-  String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-la-1 cu $templateName';
+  }
 
   @override
   String get agentTemplateRollbackAction => 'Reveniți la această versiune';
@@ -338,6 +426,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Gestionați personalitățile și directivele agenților';
 
   @override
+  String get agentTemplatesTitle => 'Șabloane agent';
+
+  @override
   String get agentTemplateSwitchHint =>
       'Pentru a utiliza un alt șablon, distrugeți acest agent și creați unul nou.';
 
@@ -351,9 +442,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Versiune nouă salvată';
-
-  @override
-  String get agentTemplatesTitle => 'Șabloane agent';
 
   @override
   String get agentThreadReportLabel => 'Raport generat în acest ciclu';

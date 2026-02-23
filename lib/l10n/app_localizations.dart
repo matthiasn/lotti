@@ -576,17 +576,17 @@ abstract class AppLocalizations {
   /// **'Template'**
   String get agentTemplateAssignedLabel;
 
-  /// No description provided for @agentTemplateCreateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Template'**
-  String get agentTemplateCreateTitle;
-
   /// No description provided for @agentTemplateCreatedSuccess.
   ///
   /// In en, this message translates to:
   /// **'Template created'**
   String get agentTemplateCreatedSuccess;
+
+  /// No description provided for @agentTemplateCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Template'**
+  String get agentTemplateCreateTitle;
 
   /// No description provided for @agentTemplateDeleteConfirm.
   ///
@@ -630,6 +630,108 @@ abstract class AppLocalizations {
   /// **'No templates yet. Tap + to create one.'**
   String get agentTemplateEmptyList;
 
+  /// No description provided for @agentTemplateEvolveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolve with AI'**
+  String get agentTemplateEvolveAction;
+
+  /// No description provided for @agentTemplateEvolveApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve & Save'**
+  String get agentTemplateEvolveApprove;
+
+  /// No description provided for @agentTemplateEvolveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolve Template'**
+  String get agentTemplateEvolveButton;
+
+  /// No description provided for @agentTemplateEvolveCurrentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Directives'**
+  String get agentTemplateEvolveCurrentLabel;
+
+  /// No description provided for @agentTemplateEvolveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate evolution proposal'**
+  String get agentTemplateEvolveError;
+
+  /// No description provided for @agentTemplateEvolvePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Changes'**
+  String get agentTemplateEvolvePreviewTitle;
+
+  /// No description provided for @agentTemplateEvolveProposedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Directives'**
+  String get agentTemplateEvolveProposedLabel;
+
+  /// No description provided for @agentTemplateEvolveReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get agentTemplateEvolveReject;
+
+  /// No description provided for @agentTemplateEvolveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Template evolved successfully'**
+  String get agentTemplateEvolveSuccess;
+
+  /// No description provided for @agentTemplateEvolvingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating improved directives...'**
+  String get agentTemplateEvolvingProgress;
+
+  /// No description provided for @agentTemplateFeedbackChangesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you\'d like changed...'**
+  String get agentTemplateFeedbackChangesHint;
+
+  /// No description provided for @agentTemplateFeedbackChangesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific changes'**
+  String get agentTemplateFeedbackChangesLabel;
+
+  /// No description provided for @agentTemplateFeedbackDidntWorkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe issues or shortcomings...'**
+  String get agentTemplateFeedbackDidntWorkHint;
+
+  /// No description provided for @agentTemplateFeedbackDidntWorkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What didn\'t work'**
+  String get agentTemplateFeedbackDidntWorkLabel;
+
+  /// No description provided for @agentTemplateFeedbackEnjoyedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what the agent does well...'**
+  String get agentTemplateFeedbackEnjoyedHint;
+
+  /// No description provided for @agentTemplateFeedbackEnjoyedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What worked well'**
+  String get agentTemplateFeedbackEnjoyedLabel;
+
+  /// No description provided for @agentTemplateFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get agentTemplateFeedbackTitle;
+
   /// No description provided for @agentTemplateInstanceCount.
   ///
   /// In en, this message translates to:
@@ -642,11 +744,71 @@ abstract class AppLocalizations {
   /// **'Task Agent'**
   String get agentTemplateKindTaskAgent;
 
+  /// No description provided for @agentTemplateMetricsActiveInstances.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Instances'**
+  String get agentTemplateMetricsActiveInstances;
+
+  /// No description provided for @agentTemplateMetricsAvgDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Duration'**
+  String get agentTemplateMetricsAvgDuration;
+
+  /// No description provided for @agentTemplateMetricsFailureCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Failures'**
+  String get agentTemplateMetricsFailureCount;
+
+  /// No description provided for @agentTemplateMetricsFirstWake.
+  ///
+  /// In en, this message translates to:
+  /// **'First Wake'**
+  String get agentTemplateMetricsFirstWake;
+
+  /// No description provided for @agentTemplateMetricsLastWake.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Wake'**
+  String get agentTemplateMetricsLastWake;
+
+  /// No description provided for @agentTemplateMetricsSuccessRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Success Rate'**
+  String get agentTemplateMetricsSuccessRate;
+
+  /// No description provided for @agentTemplateMetricsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Metrics'**
+  String get agentTemplateMetricsTitle;
+
+  /// No description provided for @agentTemplateMetricsTotalWakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Wakes'**
+  String get agentTemplateMetricsTotalWakes;
+
   /// No description provided for @agentTemplateModelLabel.
   ///
   /// In en, this message translates to:
   /// **'Model ID'**
   String get agentTemplateModelLabel;
+
+  /// No description provided for @agentTemplateNoMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'No performance data yet'**
+  String get agentTemplateNoMetrics;
+
+  /// No description provided for @agentTemplateNoneAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No template assigned'**
+  String get agentTemplateNoneAssigned;
 
   /// No description provided for @agentTemplateNoTemplates.
   ///
@@ -654,11 +816,11 @@ abstract class AppLocalizations {
   /// **'No templates available. Create one in Settings first.'**
   String get agentTemplateNoTemplates;
 
-  /// No description provided for @agentTemplateNoneAssigned.
+  /// No description provided for @agentTemplateOneOnOneTitle.
   ///
   /// In en, this message translates to:
-  /// **'No template assigned'**
-  String get agentTemplateNoneAssigned;
+  /// **'1-on-1 with {templateName}'**
+  String agentTemplateOneOnOneTitle(String templateName);
 
   /// No description provided for @agentTemplateRollbackAction.
   ///
@@ -690,6 +852,12 @@ abstract class AppLocalizations {
   /// **'Manage agent personalities and directives'**
   String get agentTemplateSettingsSubtitle;
 
+  /// No description provided for @agentTemplatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Templates'**
+  String get agentTemplatesTitle;
+
   /// No description provided for @agentTemplateSwitchHint.
   ///
   /// In en, this message translates to:
@@ -713,12 +881,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New version saved'**
   String get agentTemplateVersionSaved;
-
-  /// No description provided for @agentTemplatesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Templates'**
-  String get agentTemplatesTitle;
 
   /// No description provided for @agentThreadReportLabel.
   ///

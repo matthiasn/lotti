@@ -262,10 +262,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Template';
 
   @override
-  String get agentTemplateCreateTitle => 'Create Template';
+  String get agentTemplateCreatedSuccess => 'Template created';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Template created';
+  String get agentTemplateCreateTitle => 'Create Template';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -292,6 +292,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateEmptyList => 'No templates yet. Tap + to create one.';
 
   @override
+  String get agentTemplateEvolveAction => 'Evolve with AI';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Approve & Save';
+
+  @override
+  String get agentTemplateEvolveButton => 'Evolve Template';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Current Directives';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Failed to generate evolution proposal';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Proposed Changes';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Proposed Directives';
+
+  @override
+  String get agentTemplateEvolveReject => 'Reject';
+
+  @override
+  String get agentTemplateEvolveSuccess => 'Template evolved successfully';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Generating improved directives...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Describe what you\'d like changed...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Specific changes';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Describe issues or shortcomings...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel => 'What didn\'t work';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Describe what the agent does well...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'What worked well';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Feedback';
+
+  @override
   String agentTemplateInstanceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -307,14 +363,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Task Agent';
 
   @override
+  String get agentTemplateMetricsActiveInstances => 'Active Instances';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Avg Duration';
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Failures';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'First Wake';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Last Wake';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Success Rate';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Performance Metrics';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Total Wakes';
+
+  @override
   String get agentTemplateModelLabel => 'Model ID';
+
+  @override
+  String get agentTemplateNoMetrics => 'No performance data yet';
+
+  @override
+  String get agentTemplateNoneAssigned => 'No template assigned';
 
   @override
   String get agentTemplateNoTemplates =>
       'No templates available. Create one in Settings first.';
 
   @override
-  String get agentTemplateNoneAssigned => 'No template assigned';
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-on-1 with $templateName';
+  }
 
   @override
   String get agentTemplateRollbackAction => 'Rollback to This Version';
@@ -335,6 +423,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage agent personalities and directives';
 
   @override
+  String get agentTemplatesTitle => 'Agent Templates';
+
+  @override
   String get agentTemplateSwitchHint =>
       'To use a different template, destroy this agent and create a new one.';
 
@@ -348,9 +439,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'New version saved';
-
-  @override
-  String get agentTemplatesTitle => 'Agent Templates';
 
   @override
   String get agentThreadReportLabel => 'Report produced during this wake';

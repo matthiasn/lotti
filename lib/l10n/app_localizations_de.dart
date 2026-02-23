@@ -265,10 +265,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Vorlage';
 
   @override
-  String get agentTemplateCreateTitle => 'Vorlage erstellen';
+  String get agentTemplateCreatedSuccess => 'Vorlage erstellt';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Vorlage erstellt';
+  String get agentTemplateCreateTitle => 'Vorlage erstellen';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -296,6 +296,64 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.';
 
   @override
+  String get agentTemplateEvolveAction => 'Mit KI weiterentwickeln';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Genehmigen & Speichern';
+
+  @override
+  String get agentTemplateEvolveButton => 'Vorlage weiterentwickeln';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Aktuelle Anweisungen';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Vorschlag konnte nicht generiert werden';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Vorgeschlagene Änderungen';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Vorgeschlagene Anweisungen';
+
+  @override
+  String get agentTemplateEvolveReject => 'Ablehnen';
+
+  @override
+  String get agentTemplateEvolveSuccess =>
+      'Vorlage erfolgreich weiterentwickelt';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Verbesserte Anweisungen werden generiert...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Beschreibe, was du ändern möchtest...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Gewünschte Änderungen';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Beschreibe Probleme oder Schwächen...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel =>
+      'Was nicht funktioniert hat';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Beschreibe, was der Agent gut macht...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Was gut funktioniert hat';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Rückmeldung';
+
+  @override
   String agentTemplateInstanceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -311,14 +369,46 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Aufgaben-Agent';
 
   @override
+  String get agentTemplateMetricsActiveInstances => 'Aktive Instanzen';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durchschn. Dauer';
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Fehler';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Erste Aktivierung';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Letzte Aktivierung';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Erfolgsrate';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Leistungskennzahlen';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Aktivierungen gesamt';
+
+  @override
   String get agentTemplateModelLabel => 'Modell-ID';
+
+  @override
+  String get agentTemplateNoMetrics => 'Noch keine Leistungsdaten vorhanden';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Keine Vorlage zugewiesen';
 
   @override
   String get agentTemplateNoTemplates =>
       'Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.';
 
   @override
-  String get agentTemplateNoneAssigned => 'Keine Vorlage zugewiesen';
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-zu-1 mit $templateName';
+  }
 
   @override
   String get agentTemplateRollbackAction => 'Auf diese Version zurücksetzen';
@@ -339,6 +429,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Agenten-Persönlichkeiten und Anweisungen verwalten';
 
   @override
+  String get agentTemplatesTitle => 'Agenten-Vorlagen';
+
+  @override
   String get agentTemplateSwitchHint =>
       'Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.';
 
@@ -352,9 +445,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Neue Version gespeichert';
-
-  @override
-  String get agentTemplatesTitle => 'Agenten-Vorlagen';
 
   @override
   String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';

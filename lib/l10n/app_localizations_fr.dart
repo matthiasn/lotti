@@ -266,10 +266,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Modèle';
 
   @override
-  String get agentTemplateCreateTitle => 'Créer un modèle';
+  String get agentTemplateCreatedSuccess => 'Modèle créé';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Modèle créé';
+  String get agentTemplateCreateTitle => 'Créer un modèle';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -297,6 +297,63 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pas encore de modèles. Appuie sur + pour en créer un.';
 
   @override
+  String get agentTemplateEvolveAction => 'Évoluer avec l\'IA';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Approuver et enregistrer';
+
+  @override
+  String get agentTemplateEvolveButton => 'Faire évoluer le modèle';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Directives actuelles';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Impossible de générer la proposition d\'évolution';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Changements proposés';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Directives proposées';
+
+  @override
+  String get agentTemplateEvolveReject => 'Rejeter';
+
+  @override
+  String get agentTemplateEvolveSuccess => 'Modèle évolué avec succès';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Génération de directives améliorées...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Décris ce que tu aimerais changer...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Changements spécifiques';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Décris les problèmes ou lacunes...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel =>
+      'Ce qui n\'a pas fonctionné';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Décris ce que l\'agent fait bien...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Ce qui a bien fonctionné';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Retour';
+
+  @override
   String agentTemplateInstanceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -312,14 +369,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateKindTaskAgent => 'Agent de tâches';
 
   @override
+  String get agentTemplateMetricsActiveInstances => 'Instances actives';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durée moyenne';
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Échecs';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Première activation';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Dernière activation';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Taux de réussite';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Métriques de performance';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Activations totales';
+
+  @override
   String get agentTemplateModelLabel => 'ID du modèle';
+
+  @override
+  String get agentTemplateNoMetrics => 'Pas encore de données de performance';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Aucun modèle assigné';
 
   @override
   String get agentTemplateNoTemplates =>
       'Aucun modèle disponible. Crée-en un dans les Paramètres d\'abord.';
 
   @override
-  String get agentTemplateNoneAssigned => 'Aucun modèle assigné';
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-à-1 avec $templateName';
+  }
 
   @override
   String get agentTemplateRollbackAction => 'Revenir à cette version';
@@ -341,6 +430,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Gérer les personnalités et directives des agents';
 
   @override
+  String get agentTemplatesTitle => 'Modèles d\'agents';
+
+  @override
   String get agentTemplateSwitchHint =>
       'Pour utiliser un autre modèle, détruis cet agent et crée-en un nouveau.';
 
@@ -354,9 +446,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Nouvelle version enregistrée';
-
-  @override
-  String get agentTemplatesTitle => 'Modèles d\'agents';
 
   @override
   String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';

@@ -2420,6 +2420,19 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentLinks.mapFromRow);
   }
 
+  Selectable<WakeRunLogData> getWakeRunsByTemplateId(
+      String? templateId, int limit) {
+    return customSelect(
+        'SELECT * FROM wake_run_log WHERE template_id = ?1 ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(templateId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          wakeRunLog,
+        }).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

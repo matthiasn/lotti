@@ -142,6 +142,23 @@
   "agentTemplateDisplayNameLabel": "Name",
   "agentTemplateEditTitle": "Vorlage bearbeiten",
   "agentTemplateEmptyList": "Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.",
+  "agentTemplateEvolveAction": "Mit KI weiterentwickeln",
+  "agentTemplateEvolveApprove": "Genehmigen & Speichern",
+  "agentTemplateEvolveButton": "Vorlage weiterentwickeln",
+  "agentTemplateEvolveCurrentLabel": "Aktuelle Anweisungen",
+  "agentTemplateEvolveError": "Vorschlag konnte nicht generiert werden",
+  "agentTemplateEvolvePreviewTitle": "Vorgeschlagene Änderungen",
+  "agentTemplateEvolveProposedLabel": "Vorgeschlagene Anweisungen",
+  "agentTemplateEvolveReject": "Ablehnen",
+  "agentTemplateEvolveSuccess": "Vorlage erfolgreich weiterentwickelt",
+  "agentTemplateEvolvingProgress": "Verbesserte Anweisungen werden generiert...",
+  "agentTemplateFeedbackChangesHint": "Beschreibe, was du ändern möchtest...",
+  "agentTemplateFeedbackChangesLabel": "Gewünschte Änderungen",
+  "agentTemplateFeedbackDidntWorkHint": "Beschreibe Probleme oder Schwächen...",
+  "agentTemplateFeedbackDidntWorkLabel": "Was nicht funktioniert hat",
+  "agentTemplateFeedbackEnjoyedHint": "Beschreibe, was der Agent gut macht...",
+  "agentTemplateFeedbackEnjoyedLabel": "Was gut funktioniert hat",
+  "agentTemplateFeedbackTitle": "Rückmeldung",
   "agentTemplateInstanceCount": "{count, plural, =0{Keine Instanzen} =1{1 Instanz} other{{count} Instanzen}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -151,9 +168,26 @@
     }
   },
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",
+  "agentTemplateMetricsActiveInstances": "Aktive Instanzen",
+  "agentTemplateMetricsAvgDuration": "Durchschn. Dauer",
+  "agentTemplateMetricsFailureCount": "Fehler",
+  "agentTemplateMetricsFirstWake": "Erste Aktivierung",
+  "agentTemplateMetricsLastWake": "Letzte Aktivierung",
+  "agentTemplateMetricsSuccessRate": "Erfolgsrate",
+  "agentTemplateMetricsTitle": "Leistungskennzahlen",
+  "agentTemplateMetricsTotalWakes": "Aktivierungen gesamt",
   "agentTemplateModelLabel": "Modell-ID",
+  "agentTemplateNoMetrics": "Noch keine Leistungsdaten vorhanden",
   "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
+  "agentTemplateOneOnOneTitle": "1-zu-1 mit {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
   "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
   "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",
   "@agentTemplateRollbackConfirm": {

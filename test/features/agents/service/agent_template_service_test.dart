@@ -315,6 +315,105 @@ void main() {
     });
   });
 
+  group('computeMetrics', () {
+    test('aggregates wake run data correctly', () async {
+      final now = DateTime(2024, 6, 15, 12);
+      final runs = [
+        makeTestWakeRun(
+          runKey: 'run-1',
+          status: 'completed',
+          createdAt: now,
+          startedAt: now,
+          completedAt: now.add(const Duration(seconds: 4)),
+          templateId: kTestTemplateId,
+          templateVersionId: 'v1',
+        ),
+        makeTestWakeRun(
+          runKey: 'run-2',
+          status: 'completed',
+          createdAt: now.subtract(const Duration(hours: 1)),
+          startedAt: now.subtract(const Duration(hours: 1)),
+          completedAt: now.subtract(
+            const Duration(minutes: 59, seconds: 54),
+          ),
+          templateId: kTestTemplateId,
+          templateVersionId: 'v1',
+        ),
+        makeTestWakeRun(
+          runKey: 'run-3',
+          status: 'failed',
+          createdAt: now.subtract(const Duration(hours: 2)),
+          templateId: kTestTemplateId,
+          templateVersionId: 'v1',
+          errorMessage: 'timeout',
+        ),
+      ];
+
+      when(
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => runs);
+
+      when(
+        () => mockRepo.getLinksFrom(
+          kTestTemplateId,
+          type: 'template_assignment',
+        ),
+      ).thenAnswer(
+        (_) async => [
+          makeTestTemplateAssignmentLink(toId: 'agent-a'),
+          makeTestTemplateAssignmentLink(
+            id: 'link-ta-002',
+            toId: 'agent-b',
+          ),
+        ],
+      );
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      expect(metrics.totalWakes, 3);
+      expect(metrics.successCount, 2);
+      expect(metrics.failureCount, 1);
+      expect(metrics.successRate, closeTo(0.667, 0.001));
+      expect(metrics.averageDuration, const Duration(seconds: 5));
+      expect(metrics.activeInstanceCount, 2);
+      expect(metrics.lastWakeAt, now); // first in DESC = newest
+      expect(
+        metrics.firstWakeAt,
+        now.subtract(const Duration(hours: 2)),
+      ); // last in DESC = oldest
+    });
+
+    test('returns zero metrics when no wake runs exist', () async {
+      when(
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      when(
+        () => mockRepo.getLinksFrom(
+          kTestTemplateId,
+          type: 'template_assignment',
+        ),
+      ).thenAnswer((_) async => []);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      expect(metrics.totalWakes, 0);
+      expect(metrics.successCount, 0);
+      expect(metrics.failureCount, 0);
+      expect(metrics.successRate, 0.0);
+      expect(metrics.averageDuration, isNull);
+      expect(metrics.firstWakeAt, isNull);
+      expect(metrics.lastWakeAt, isNull);
+      expect(metrics.activeInstanceCount, 0);
+    });
+  });
+
   group('seedDefaults', () {
     test('creates Laura and Tom when not seeded', () async {
       when(() => mockRepo.getEntity(lauraTemplateId))

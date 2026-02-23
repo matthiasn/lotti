@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_one_on_one_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -137,6 +138,18 @@ class _AgentTemplateDetailPageState
                   _VersionHistorySection(templateId: widget.templateId!),
                   const SizedBox(height: 24),
                   _ActiveInstancesSection(templateId: widget.templateId!),
+                  const SizedBox(height: 24),
+                  LottiSecondaryButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AgentOneOnOnePage(
+                          templateId: widget.templateId!,
+                        ),
+                      ),
+                    ),
+                    label: context.messages.agentTemplateEvolveAction,
+                    icon: Icons.auto_awesome,
+                  ),
                 ],
                 const SizedBox(height: 80),
               ]),

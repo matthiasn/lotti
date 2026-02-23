@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -330,6 +332,26 @@ Future<List<AgentDomainEntity>> agentReportHistory(
     limit: 50,
   );
   return entities.whereType<AgentReportEntity>().toList();
+}
+
+/// Computed performance metrics for a template by [templateId].
+@riverpod
+Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
+  Ref ref,
+  String templateId,
+) async {
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.computeMetrics(templateId);
+}
+
+/// The template evolution workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
+  return TemplateEvolutionWorkflow(
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+  );
 }
 
 /// The task agent workflow with all dependencies resolved.

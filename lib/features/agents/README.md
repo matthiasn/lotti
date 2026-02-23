@@ -34,6 +34,7 @@ Freezed sealed unions following the `JournalEntity` / `EntryLink` patterns:
 - **`agent_link.dart`** — `AgentLink` with 6 variants: `basic` (fallback), `agentState`, `messagePrev`, `messagePayload`, `toolEffect`, `agentTask`. Uses `@Freezed(fallbackUnion: 'basic')`.
 - **`agent_config.dart`** — `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as Freezed data classes.
 - **`agent_enums.dart`** — `AgentLifecycle`, `AgentInteractionMode`, `AgentRunStatus`, `AgentMessageKind`.
+- **`template_performance_metrics.dart`** — `TemplatePerformanceMetrics` Freezed data class aggregating wake-run log data for a template (total wakes, success/failure counts, avg duration, active instances).
 
 ### Wake Infrastructure (`wake/`)
 
@@ -58,6 +59,7 @@ The full wake cycle implementation:
 
 - **`task_agent_strategy.dart`** — `ConversationStrategy` implementation that dispatches LLM tool calls to `AgentToolExecutor`. The `record_observations` tool is intercepted locally (no executor needed since it doesn't modify journal entities) — observations accumulate in memory and are retrieved via `extractObservations()`. The final text response becomes the report via `extractReportContent()`. Each message turn is persisted to `agent.sqlite` for durability.
 - **`task_agent_workflow.dart`** — Assembles context (agent state, current report, agentJournal observations, task details from `AiInputRepository`, trigger delta), resolves a Gemini inference provider, runs the conversation via `ConversationRepository`, persists the updated report and observations, and updates agent state. Persists the user message as an `agentMessage` (kind=user) for inspectability. Includes `conversationRepository.deleteConversation(conversationId)` cleanup in a `finally` block.
+- **`template_evolution_workflow.dart`** — LLM-assisted template evolution. Creates a single-turn conversation with a meta-prompt instructing the LLM to rewrite directives based on performance metrics and user feedback. Returns an `EvolutionProposal` with proposed vs original directives for user approval. Strips markdown fences from LLM output.
 
 ### Service Layer (`service/`)
 
@@ -65,6 +67,7 @@ High-level agent lifecycle management:
 
 - **`agent_service.dart`** — `AgentService` provides `createAgent`, `getAgent`, `listAgents`, `getAgentReport`, `pauseAgent`, `resumeAgent`, `destroyAgent`. Each mutation writes via `AgentSyncService` (which enqueues changes for cross-device sync) and reads via `AgentRepository`. Lifecycle transitions update the identity entity and manage wake subscriptions.
 - **`task_agent_service.dart`** — `TaskAgentService` provides task-specific operations: `createTaskAgent` (creates agent + state + link + subscription), `getTaskAgentForTask` (lookup via `agent_task` link), `triggerReanalysis` (manual re-wake), `restoreSubscriptions` (queries active agents, filters for task_agent kind, registers subscriptions on app startup), `restoreSubscriptionsForAgent` (re-registers subscriptions for a single agent after resume).
+- **`agent_template_service.dart`** — `AgentTemplateService` provides template CRUD, versioning, category filtering, rollback, and `computeMetrics` (aggregates wake-run log data into `TemplatePerformanceMetrics`).
 
 ### Sync (`sync/`)
 
@@ -89,6 +92,7 @@ Agent inspection interface:
 - **`agent_conversation_log.dart`** — Thread-grouped conversation view: messages grouped by `threadId` (wake cycle), sorted most-recent-first, each rendered as an `ExpansionTile` with timestamp, message count, and tool call count.
 - **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
 - **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
+- **`agent_one_on_one_page.dart`** — 1-on-1 template evolution page: performance metrics dashboard, structured feedback form (what worked well, what didn't, specific changes), evolve button that invokes `TemplateEvolutionWorkflow`, and a diff-style preview of current vs proposed directives with approve/reject controls.
 
 ## Memory Model
 
@@ -128,7 +132,8 @@ lib/features/agents/
 │   ├── agent_domain_entity.dart     # Freezed sealed union (7 variants)
 │   ├── agent_link.dart              # Freezed sealed union (6 variants)
 │   ├── agent_config.dart            # AgentConfig, AgentSlots, AgentMessageMetadata
-│   └── agent_enums.dart             # All agent-domain enums
+│   ├── agent_enums.dart             # All agent-domain enums
+│   └── template_performance_metrics.dart # Freezed metrics aggregation
 ├── database/
 │   ├── agent_database.dart          # Drift database class
 │   ├── agent_database.drift         # SQL schema
@@ -145,10 +150,12 @@ lib/features/agents/
 │   └── task_title_handler.dart      # New set_task_title handler
 ├── workflow/
 │   ├── task_agent_strategy.dart     # ConversationStrategy for task agent
-│   └── task_agent_workflow.dart     # Full wake cycle orchestration
+│   ├── task_agent_workflow.dart     # Full wake cycle orchestration
+│   └── template_evolution_workflow.dart # LLM-assisted directive evolution
 ├── service/
 │   ├── agent_service.dart           # Lifecycle management
-│   └── task_agent_service.dart      # Task-agent-specific operations
+│   ├── task_agent_service.dart      # Task-agent-specific operations
+│   └── agent_template_service.dart  # Template CRUD, versioning, metrics
 ├── sync/
 │   └── agent_sync_service.dart      # Sync-aware writes + transaction isolation
 ├── state/
@@ -160,7 +167,8 @@ lib/features/agents/
     ├── agent_activity_log.dart      # Message log with expandable payloads
     ├── agent_conversation_log.dart  # Thread-grouped conversation view
     ├── agent_controls.dart          # Action buttons
-    └── agent_date_format.dart       # Shared date formatting utilities
+    ├── agent_date_format.dart       # Shared date formatting utilities
+    └── agent_one_on_one_page.dart   # 1-on-1 template evolution page
 ```
 
 ## Testing
@@ -172,10 +180,10 @@ Tests mirror the source structure under `test/features/agents/`:
 - **Wake tests** — Run key determinism (incl. canonical key ordering), queue dedup, single-flight, orchestrator matching + dispatch (76 tests)
 - **Tool tests** — Category enforcement, audit logging, vector clock capture, handler dispatch, registry validation incl. `record_observations` (54 tests)
 - **Sync tests** — Transaction isolation (buffer, flush, nested commit/rollback, zone isolation), entity/link upsert with outbox enqueue
-- **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`
-- **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture
+- **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`, `computeMetrics` aggregation
+- **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture, template evolution proposal generation
 - **State tests** — Riverpod provider unit tests for agent report, state, identity, messages, payload text, initialization, and task agent lookup
-- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting
+- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting, 1-on-1 evolution page
 
 Run `make test` to verify current test count and status.
 

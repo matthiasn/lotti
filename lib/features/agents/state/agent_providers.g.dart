@@ -1814,6 +1814,147 @@ final class AgentReportHistoryFamily extends $Family
   String toString() => r'agentReportHistoryProvider';
 }
 
+/// Computed performance metrics for a template by [templateId].
+
+@ProviderFor(templatePerformanceMetrics)
+final templatePerformanceMetricsProvider = TemplatePerformanceMetricsFamily._();
+
+/// Computed performance metrics for a template by [templateId].
+
+final class TemplatePerformanceMetricsProvider extends $FunctionalProvider<
+        AsyncValue<TemplatePerformanceMetrics>,
+        TemplatePerformanceMetrics,
+        FutureOr<TemplatePerformanceMetrics>>
+    with
+        $FutureModifier<TemplatePerformanceMetrics>,
+        $FutureProvider<TemplatePerformanceMetrics> {
+  /// Computed performance metrics for a template by [templateId].
+  TemplatePerformanceMetricsProvider._(
+      {required TemplatePerformanceMetricsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templatePerformanceMetricsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templatePerformanceMetricsHash();
+
+  @override
+  String toString() {
+    return r'templatePerformanceMetricsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<TemplatePerformanceMetrics> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<TemplatePerformanceMetrics> create(Ref ref) {
+    final argument = this.argument as String;
+    return templatePerformanceMetrics(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplatePerformanceMetricsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templatePerformanceMetricsHash() =>
+    r'982bec390cb2296af911ca1cdc540f140afe5e36';
+
+/// Computed performance metrics for a template by [templateId].
+
+final class TemplatePerformanceMetricsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<FutureOr<TemplatePerformanceMetrics>,
+            String> {
+  TemplatePerformanceMetricsFamily._()
+      : super(
+          retry: null,
+          name: r'templatePerformanceMetricsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Computed performance metrics for a template by [templateId].
+
+  TemplatePerformanceMetricsProvider call(
+    String templateId,
+  ) =>
+      TemplatePerformanceMetricsProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'templatePerformanceMetricsProvider';
+}
+
+/// The template evolution workflow with all dependencies resolved.
+
+@ProviderFor(templateEvolutionWorkflow)
+final templateEvolutionWorkflowProvider = TemplateEvolutionWorkflowProvider._();
+
+/// The template evolution workflow with all dependencies resolved.
+
+final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
+    TemplateEvolutionWorkflow,
+    TemplateEvolutionWorkflow,
+    TemplateEvolutionWorkflow> with $Provider<TemplateEvolutionWorkflow> {
+  /// The template evolution workflow with all dependencies resolved.
+  TemplateEvolutionWorkflowProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'templateEvolutionWorkflowProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateEvolutionWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<TemplateEvolutionWorkflow> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  TemplateEvolutionWorkflow create(Ref ref) {
+    return templateEvolutionWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TemplateEvolutionWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TemplateEvolutionWorkflow>(value),
+    );
+  }
+}
+
+String _$templateEvolutionWorkflowHash() =>
+    r'f204e4ec087fdfb0a3fafac06a1f38d648eb94a6';
+
 /// The task agent workflow with all dependencies resolved.
 
 @ProviderFor(taskAgentWorkflow)

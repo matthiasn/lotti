@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -264,6 +265,52 @@ class AgentTemplateService {
     final versions = entities.whereType<AgentTemplateVersionEntity>().toList()
       ..sort((a, b) => b.version.compareTo(a.version));
     return versions;
+  }
+
+  /// Compute aggregated performance metrics for a template.
+  ///
+  /// Fetches wake-run log entries tagged with this template and agent
+  /// instances using it, then aggregates into [TemplatePerformanceMetrics].
+  Future<TemplatePerformanceMetrics> computeMetrics(
+    String templateId,
+  ) async {
+    final runs = await repository.getWakeRunsForTemplate(templateId);
+    final agents = await getAgentsForTemplate(templateId);
+
+    final totalWakes = runs.length;
+    final successCount = runs.where((r) => r.status == 'completed').length;
+    final failureCount = runs.where((r) => r.status == 'failed').length;
+    final successRate = totalWakes > 0 ? successCount / totalWakes : 0.0;
+
+    Duration? averageDuration;
+    final completedRuns = runs.where(
+      (r) => r.startedAt != null && r.completedAt != null,
+    );
+    if (completedRuns.isNotEmpty) {
+      final totalMs = completedRuns.fold<int>(
+        0,
+        (sum, r) =>
+            sum + r.completedAt!.difference(r.startedAt!).inMilliseconds,
+      );
+      averageDuration = Duration(milliseconds: totalMs ~/ completedRuns.length);
+    }
+
+    final firstWakeAt =
+        runs.isNotEmpty ? runs.last.createdAt : null; // oldest = last (DESC)
+    final lastWakeAt =
+        runs.isNotEmpty ? runs.first.createdAt : null; // newest = first (DESC)
+
+    return TemplatePerformanceMetrics(
+      templateId: templateId,
+      totalWakes: totalWakes,
+      successCount: successCount,
+      failureCount: failureCount,
+      successRate: successRate,
+      averageDuration: averageDuration,
+      firstWakeAt: firstWakeAt,
+      lastWakeAt: lastWakeAt,
+      activeInstanceCount: agents.length,
+    );
   }
 
   /// Idempotent seed of default templates (Laura and Tom).

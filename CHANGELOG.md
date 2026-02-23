@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.868] - 2026-02-22
 ### Added
+- LLM-assisted template evolution: 1-on-1 page where users review performance
+  metrics, provide structured feedback, and have the LLM rewrite template
+  directives for approval.
 - Agent cross-device sync: agent entities and links are now synchronized via
   Matrix using `SyncAgentEntity` and `SyncAgentLink` message variants. Incoming
   agents restore wake subscriptions so task agents resume monitoring on the

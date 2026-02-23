@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -260,6 +261,8 @@ WakeRunLogData makeTestWakeRun({
   DateTime? startedAt,
   DateTime? completedAt,
   String? errorMessage,
+  String? templateId,
+  String? templateVersionId,
 }) {
   return WakeRunLogData(
     runKey: runKey,
@@ -271,6 +274,8 @@ WakeRunLogData makeTestWakeRun({
     startedAt: startedAt,
     completedAt: completedAt,
     errorMessage: errorMessage,
+    templateId: templateId,
+    templateVersionId: templateVersionId,
   );
 }
 
@@ -293,6 +298,32 @@ SagaLogData makeTestSagaOp({
     toolName: toolName,
     createdAt: createdAt ?? kAgentTestDate,
     updatedAt: updatedAt ?? kAgentTestDate,
+  );
+}
+
+// ── Metrics factory ──────────────────────────────────────────────────────────
+
+TemplatePerformanceMetrics makeTestMetrics({
+  String templateId = kTestTemplateId,
+  int totalWakes = 10,
+  int successCount = 8,
+  int failureCount = 2,
+  double successRate = 0.8,
+  Duration? averageDuration = const Duration(seconds: 5),
+  DateTime? firstWakeAt,
+  DateTime? lastWakeAt,
+  int activeInstanceCount = 2,
+}) {
+  return TemplatePerformanceMetrics(
+    templateId: templateId,
+    totalWakes: totalWakes,
+    successCount: successCount,
+    failureCount: failureCount,
+    successRate: successRate,
+    averageDuration: averageDuration,
+    firstWakeAt: firstWakeAt ?? kAgentTestDate,
+    lastWakeAt: lastWakeAt ?? kAgentTestDate.add(const Duration(days: 7)),
+    activeInstanceCount: activeInstanceCount,
   );
 }
 
