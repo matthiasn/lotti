@@ -353,24 +353,25 @@ class AgentTemplateService {
     final agents = await getAgentsForTemplate(templateId);
 
     final totalWakes = runs.length;
-    final successCount =
-        runs.where((r) => r.status == WakeRunStatus.completed.name).length;
-    final failureCount =
-        runs.where((r) => r.status == WakeRunStatus.failed.name).length;
-    final successRate = totalWakes > 0 ? successCount / totalWakes : 0.0;
+    var successCount = 0;
+    var failureCount = 0;
+    var durationSumMs = 0;
+    var durationCount = 0;
 
-    Duration? averageDuration;
-    final completedRuns = runs.where(
-      (r) => r.startedAt != null && r.completedAt != null,
-    );
-    if (completedRuns.isNotEmpty) {
-      final totalMs = completedRuns.fold<int>(
-        0,
-        (sum, r) =>
-            sum + r.completedAt!.difference(r.startedAt!).inMilliseconds,
-      );
-      averageDuration = Duration(milliseconds: totalMs ~/ completedRuns.length);
+    for (final r in runs) {
+      if (r.status == WakeRunStatus.completed.name) successCount++;
+      if (r.status == WakeRunStatus.failed.name) failureCount++;
+      if (r.startedAt != null && r.completedAt != null) {
+        durationSumMs +=
+            r.completedAt!.difference(r.startedAt!).inMilliseconds;
+        durationCount++;
+      }
     }
+
+    final successRate = totalWakes > 0 ? successCount / totalWakes : 0.0;
+    final averageDuration = durationCount > 0
+        ? Duration(milliseconds: durationSumMs ~/ durationCount)
+        : null;
 
     final firstWakeAt =
         runs.isNotEmpty ? runs.last.createdAt : null; // oldest = last (DESC)
