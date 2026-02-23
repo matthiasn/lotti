@@ -183,6 +183,54 @@ void main() {
       });
     });
 
+    group('collapsible header - collapsed text entry', () {
+      testWidgets('shows text icon, collapse arrow, and date but hides menu',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testTextEntry.meta.id,
+              inLinkedEntries: true,
+              isCollapsible: true,
+              isCollapsed: true,
+              onToggleCollapse: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.description_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byType(EntryDatetimeWidget), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsNothing);
+      });
+
+      testWidgets('does NOT show text icon when text entry is expanded',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(
+              entryId: testTextEntry.meta.id,
+              inLinkedEntries: true,
+              isCollapsible: true,
+              onToggleCollapse: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.description_outlined), findsNothing);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+      });
+    });
+
     group('collapse toggle callback', () {
       testWidgets('calls onToggleCollapse when collapse arrow is tapped',
           (tester) async {

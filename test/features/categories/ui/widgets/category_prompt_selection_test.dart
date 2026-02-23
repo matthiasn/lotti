@@ -385,4 +385,295 @@ void main() {
       expect(callCount, 0);
     });
   });
+
+  group('CategoryPromptSelection provider filter', () {
+    final testModels = <AiConfigModel>[
+      AiConfig.model(
+        id: 'model-anthropic',
+        name: 'Claude Sonnet',
+        providerModelId: 'claude-sonnet-4-6',
+        inferenceProviderId: 'provider-anthropic',
+        createdAt: DateTime(2024),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      ) as AiConfigModel,
+      AiConfig.model(
+        id: 'model-gemini',
+        name: 'Gemini Pro',
+        providerModelId: 'gemini-pro',
+        inferenceProviderId: 'provider-gemini',
+        createdAt: DateTime(2024),
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: false,
+      ) as AiConfigModel,
+    ];
+
+    final testProviders = <AiConfigInferenceProvider>[
+      AiConfig.inferenceProvider(
+        id: 'provider-anthropic',
+        name: 'Anthropic',
+        baseUrl: 'https://api.anthropic.com',
+        apiKey: 'key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.anthropic,
+      ) as AiConfigInferenceProvider,
+      AiConfig.inferenceProvider(
+        id: 'provider-gemini',
+        name: 'Gemini',
+        baseUrl: 'https://api.gemini.com',
+        apiKey: 'key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      ) as AiConfigInferenceProvider,
+    ];
+
+    final promptAnthropic = AiConfig.prompt(
+      id: 'prompt-a1',
+      name: 'Anthropic Prompt',
+      description: 'Uses Anthropic',
+      systemMessage: 'sys',
+      userMessage: 'usr',
+      defaultModelId: 'model-anthropic',
+      modelIds: ['model-anthropic'],
+      createdAt: DateTime(2024),
+      useReasoning: false,
+      requiredInputData: [InputDataType.task],
+      aiResponseType: AiResponseType.taskSummary,
+    ) as AiConfigPrompt;
+
+    final promptGemini = AiConfig.prompt(
+      id: 'prompt-g1',
+      name: 'Gemini Prompt',
+      description: 'Uses Gemini',
+      systemMessage: 'sys',
+      userMessage: 'usr',
+      defaultModelId: 'model-gemini',
+      modelIds: ['model-gemini'],
+      createdAt: DateTime(2024),
+      useReasoning: false,
+      requiredInputData: [InputDataType.task],
+      aiResponseType: AiResponseType.taskSummary,
+    ) as AiConfigPrompt;
+
+    final promptGemini2 = AiConfig.prompt(
+      id: 'prompt-g2',
+      name: 'Gemini Prompt 2',
+      description: 'Also uses Gemini',
+      systemMessage: 'sys',
+      userMessage: 'usr',
+      defaultModelId: 'model-gemini',
+      modelIds: ['model-gemini'],
+      createdAt: DateTime(2024),
+      useReasoning: false,
+      requiredInputData: [InputDataType.task],
+      aiResponseType: AiResponseType.taskSummary,
+    ) as AiConfigPrompt;
+
+    final allPrompts = [promptAnthropic, promptGemini, promptGemini2];
+
+    testWidgets('does not show filter when only one provider', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: [promptAnthropic],
+              models: testModels,
+              providers: [testProviders.first],
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+    });
+
+    testWidgets('shows filter chips when multiple providers', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      // "All" + "Anthropic" + "Gemini" = 3 chips
+      expect(find.byType(FilterChip), findsNWidgets(3));
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Anthropic'), findsOneWidget);
+      expect(find.text('Gemini'), findsOneWidget);
+
+      // All prompts visible by default
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('selecting provider chip filters prompts', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      // Tap "Anthropic" chip
+      await tester.tap(find.text('Anthropic'));
+      await tester.pump();
+
+      // Only Anthropic prompt visible
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+      expect(find.text('Anthropic Prompt'), findsOneWidget);
+      expect(find.text('Gemini Prompt'), findsNothing);
+    });
+
+    testWidgets('selecting Gemini chip shows only Gemini prompts',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Gemini'));
+      await tester.pump();
+
+      expect(find.byType(CheckboxListTile), findsNWidgets(2));
+      expect(find.text('Gemini Prompt'), findsOneWidget);
+      expect(find.text('Gemini Prompt 2'), findsOneWidget);
+      expect(find.text('Anthropic Prompt'), findsNothing);
+    });
+
+    testWidgets('tapping All chip shows all prompts again', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      // Filter to Anthropic
+      await tester.tap(find.text('Anthropic'));
+      await tester.pump();
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+
+      // Reset to All
+      await tester.tap(find.text('All'));
+      await tester.pump();
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('All chip is selected by default', (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      final allChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'All'),
+      );
+      expect(allChip.selected, isTrue);
+
+      final anthropicChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'Anthropic'),
+      );
+      expect(anthropicChip.selected, isFalse);
+    });
+
+    testWidgets('does not show filter when no models/providers provided',
+        (tester) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              allowedPromptIds: const [],
+              onPromptToggled: (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('toggling prompt while filtered calls onPromptToggled',
+        (tester) async {
+      String? toggledId;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: allPrompts,
+              models: testModels,
+              providers: testProviders,
+              allowedPromptIds: const [],
+              onPromptToggled: (promptId, {required isAllowed}) {
+                toggledId = promptId;
+              },
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+
+      // Filter to Gemini
+      await tester.tap(find.text('Gemini'));
+      await tester.pump();
+
+      // Tap the first Gemini prompt checkbox
+      await tester.tap(find.byType(CheckboxListTile).first);
+      await tester.pump();
+
+      expect(toggledId, 'prompt-g1');
+    });
+  });
 }

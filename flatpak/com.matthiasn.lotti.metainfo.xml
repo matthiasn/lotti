@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.868" date="2026-02-22">
       <description>
-          <p>Agent cross-device sync via Matrix. Agent entities and links synchronize across devices with wake subscription restoration. Sync maintenance UI supports agent re-sync steps. Zone-based transaction isolation buffers outbox messages until commit, with nested transaction and rollback support.</p>
+          <p>Provider filter for category prompt selection. Collapsible text entries in linked-entry context. Desktop crash-on-exit fix via graceful service disposal. Reference image grid overflow fix. Agent cross-device sync via Matrix with zone-based transaction isolation.</p>
       </description>
     </release>
     <release version="0.9.867" date="2026-02-22">

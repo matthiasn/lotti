@@ -19,6 +19,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/misc/collapsible_section.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -428,6 +429,14 @@ void main() {
           .thenReturn(MockSelectable<String>(toIds));
     }
 
+    /// Finds the section-level chevron inside [CollapsibleSection], excluding
+    /// any entry-level collapse chevrons from child [EntryDetailsWidget]s.
+    Finder sectionChevron() => find.descendant(
+          of: find.byType(CollapsibleSection),
+          matching: find.byType(AnimatedRotation),
+          matchRoot: true,
+        );
+
     testWidgets('shows chevron and label when entries exist', (tester) async {
       mockLinkedEntries([testLink]);
 
@@ -441,7 +450,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      // Section chevron + entry-level chevron (text entries are collapsible)
+      expect(find.byIcon(Icons.expand_more), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.filter_list), findsOneWidget);
     });
 
@@ -474,8 +484,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
       expect(rotation.turns, equals(0.0));
     });
 
@@ -492,11 +501,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.expand_more));
+      // Tap the section-level chevron (the first expand_more icon)
+      await tester.tap(find.byIcon(Icons.expand_more).first);
       await tester.pumpAndSettle();
 
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
       expect(rotation.turns, equals(-0.25));
     });
 
@@ -514,15 +523,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(Icons.expand_more).first);
       await tester.pumpAndSettle();
 
       // Re-expand
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(Icons.expand_more).first);
       await tester.pumpAndSettle();
 
-      final rotation =
-          tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+      final rotation = tester.widget<AnimatedRotation>(sectionChevron().first);
       expect(rotation.turns, equals(0.0));
     });
 
@@ -541,7 +549,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Collapse
-      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.tap(find.byIcon(Icons.expand_more).first);
       await tester.pump();
 
       // AnimatedSize wraps the content; after collapse the child is SizedBox.shrink
@@ -623,7 +631,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Non-task entry exists, so section is shown
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsAtLeastNWidgets(1));
     });
   });
 }

@@ -1010,6 +1010,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Skrýt tuto kategorii, když je zapnutý soukromý režim';
 
   @override
+  String get categoryPromptFilterAll => 'Vše';
+
+  @override
   String get categorySearchPlaceholder => 'Vyhledávat kategorie...';
 
   @override

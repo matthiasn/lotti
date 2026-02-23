@@ -464,6 +464,7 @@
   "categoryNameRequired": "Numele categoriei este obligatoriu",
   "categoryNotFound": "Categorie negăsită",
   "categoryPrivateDescription": "Ascundeți această categorie când modul privat este activat",
+  "categoryPromptFilterAll": "Toate",
   "categorySearchPlaceholder": "Caută categorii...",
   "celebrationTapToContinue": "Atingeți pentru a continua",
   "chatInputCancelRealtime": "Anulează (Esc)",

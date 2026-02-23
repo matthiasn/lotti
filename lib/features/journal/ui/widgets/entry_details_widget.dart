@@ -396,8 +396,8 @@ class EntryDetailsContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final isCollapsible =
-        linkedFrom != null && (item is JournalImage || item is JournalAudio);
+    final isCollapsible = linkedFrom != null &&
+        (item is JournalImage || item is JournalAudio || item is JournalEntry);
     final isCollapsed = isCollapsible && (link?.collapsed ?? false);
 
     final shouldHideEditor = switch (item) {

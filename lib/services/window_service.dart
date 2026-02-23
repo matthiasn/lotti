@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
@@ -97,7 +98,7 @@ class WindowService implements WindowListener {
 
   @override
   void onWindowClose() {
-    _handleClose();
+    unawaited(_handleClose());
   }
 
   Future<void> _handleClose() async {

@@ -1042,6 +1042,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Masquer cette catégorie lorsque le mode privé est activé';
 
   @override
+  String get categoryPromptFilterAll => 'Tous';
+
+  @override
   String get categorySearchPlaceholder => 'Rechercher des catégories...';
 
   @override

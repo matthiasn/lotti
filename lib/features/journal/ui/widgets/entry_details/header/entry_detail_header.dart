@@ -130,6 +130,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           // Collapsed preview: thumbnail/icon + date + duration
           if (entry is JournalImage) _buildImageThumbnail(entry),
           if (entry is JournalAudio) _buildAudioIcon(context),
+          if (entry is JournalEntry) _buildTextIcon(context),
           const SizedBox(width: AppTheme.spacingSmall),
           EntryDatetimeWidget(entryId: widget.entryId),
           if (entry is JournalAudio) _buildDurationLabel(context, entry),
@@ -219,6 +220,14 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
   Widget _buildAudioIcon(BuildContext context) {
     return Icon(
       Icons.mic_rounded,
+      size: AppTheme.previewIconSize,
+      color: context.colorScheme.onSurfaceVariant,
+    );
+  }
+
+  Widget _buildTextIcon(BuildContext context) {
+    return Icon(
+      Icons.description_outlined,
       size: AppTheme.previewIconSize,
       color: context.colorScheme.onSurfaceVariant,
     );

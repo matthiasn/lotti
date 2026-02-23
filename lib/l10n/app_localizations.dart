@@ -1872,6 +1872,12 @@ abstract class AppLocalizations {
   /// **'Hide this category when private mode is enabled'**
   String get categoryPrivateDescription;
 
+  /// No description provided for @categoryPromptFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get categoryPromptFilterAll;
+
   /// No description provided for @categorySearchPlaceholder.
   ///
   /// In en, this message translates to:

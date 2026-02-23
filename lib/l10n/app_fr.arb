@@ -464,6 +464,7 @@
   "categoryNameRequired": "Le nom de la catégorie est obligatoire",
   "categoryNotFound": "Catégorie introuvable",
   "categoryPrivateDescription": "Masquer cette catégorie lorsque le mode privé est activé",
+  "categoryPromptFilterAll": "Tous",
   "categorySearchPlaceholder": "Rechercher des catégories...",
   "celebrationTapToContinue": "Appuyez pour continuer",
   "chatInputCancelRealtime": "Annuler (Échap)",
