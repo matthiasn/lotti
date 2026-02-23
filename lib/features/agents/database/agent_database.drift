@@ -47,7 +47,9 @@ CREATE TABLE wake_run_log (
   created_at DATETIME NOT NULL,
   started_at DATETIME,
   completed_at DATETIME,
-  error_message TEXT
+  error_message TEXT,
+  template_id TEXT,
+  template_version_id TEXT
 );
 
 CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
@@ -103,6 +105,8 @@ deleteAgentLinks: DELETE FROM agent_links WHERE from_id = :agentId OR to_id = :a
 deleteAgentWakeRuns: DELETE FROM wake_run_log WHERE agent_id = :agentId;
 
 deleteAgentSagaOps: DELETE FROM saga_log WHERE agent_id = :agentId;
+
+getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' AND deleted_at IS NULL ORDER BY created_at DESC;
 
 getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
 

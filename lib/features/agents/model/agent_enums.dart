@@ -43,6 +43,21 @@ enum AgentRunStatus {
   failed,
 }
 
+/// Kind of agent template.
+enum AgentTemplateKind {
+  /// A task-focused agent template.
+  taskAgent,
+}
+
+/// Lifecycle status of an agent template version.
+enum AgentTemplateVersionStatus {
+  /// This version is the current active version.
+  active,
+
+  /// This version has been superseded.
+  archived,
+}
+
 /// Kind of message in the agent's message log.
 enum AgentMessageKind {
   /// Agent's private working notes (agentJournal entries).

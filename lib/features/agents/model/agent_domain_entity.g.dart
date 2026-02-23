@@ -270,6 +270,114 @@ Map<String, dynamic> _$AgentReportHeadEntityToJson(
       'runtimeType': instance.$type,
     };
 
+AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
+    AgentTemplateEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      displayName: json['displayName'] as String,
+      kind: $enumDecode(_$AgentTemplateKindEnumMap, json['kind']),
+      modelId: json['modelId'] as String,
+      categoryIds: (json['categoryIds'] as List<dynamic>)
+          .map((e) => e as String)
+          .toSet(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AgentTemplateEntityToJson(
+        AgentTemplateEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'displayName': instance.displayName,
+      'kind': _$AgentTemplateKindEnumMap[instance.kind]!,
+      'modelId': instance.modelId,
+      'categoryIds': instance.categoryIds.toList(),
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$AgentTemplateKindEnumMap = {
+  AgentTemplateKind.taskAgent: 'taskAgent',
+};
+
+AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(
+        Map<String, dynamic> json) =>
+    AgentTemplateVersionEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      version: (json['version'] as num).toInt(),
+      status: $enumDecode(_$AgentTemplateVersionStatusEnumMap, json['status']),
+      directives: json['directives'] as String,
+      authoredBy: json['authoredBy'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AgentTemplateVersionEntityToJson(
+        AgentTemplateVersionEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'version': instance.version,
+      'status': _$AgentTemplateVersionStatusEnumMap[instance.status]!,
+      'directives': instance.directives,
+      'authoredBy': instance.authoredBy,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$AgentTemplateVersionStatusEnumMap = {
+  AgentTemplateVersionStatus.active: 'active',
+  AgentTemplateVersionStatus.archived: 'archived',
+};
+
+AgentTemplateHeadEntity _$AgentTemplateHeadEntityFromJson(
+        Map<String, dynamic> json) =>
+    AgentTemplateHeadEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      versionId: json['versionId'] as String,
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AgentTemplateHeadEntityToJson(
+        AgentTemplateHeadEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'versionId': instance.versionId,
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,
