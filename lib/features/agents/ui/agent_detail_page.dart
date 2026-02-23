@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -121,6 +122,11 @@ class AgentDetailPage extends ConsumerWidget {
             children: [
               // Messages (tabbed: Activity, Reports, Conversations, Observations)
               _AgentMessagesSection(agentId: agentId),
+
+              const Divider(indent: 16, endIndent: 16),
+
+              // Template assignment
+              _TemplateSection(agentId: agentId),
 
               const Divider(indent: 16, endIndent: 16),
 
@@ -279,6 +285,71 @@ class _AgentMessagesSectionState extends State<_AgentMessagesSection>
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Shows the template assigned to this agent, if any.
+class _TemplateSection extends ConsumerWidget {
+  const _TemplateSection({required this.agentId});
+
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final templateAsync = ref.watch(templateForAgentProvider(agentId));
+    final template = templateAsync.value?.mapOrNull(agentTemplate: (e) => e);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: AppTheme.spacingSmall,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.agentTemplateAssignedLabel,
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingSmall),
+          if (template != null)
+            ActionChip(
+              avatar: Icon(
+                Icons.smart_toy_outlined,
+                size: 16,
+                color: context.colorScheme.primary,
+              ),
+              label: Text(template.displayName),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AgentTemplateDetailPage(
+                      templateId: template.id,
+                    ),
+                  ),
+                );
+              },
+            )
+          else
+            Text(
+              context.messages.agentTemplateNoneAssigned,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: AppTheme.spacingXSmall),
+          Text(
+            context.messages.agentTemplateSwitchHint,
+            style: context.textTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

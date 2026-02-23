@@ -130,6 +130,90 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
+  "agentTemplateActiveInstancesTitle": "Active Instances",
+  "agentTemplateAllProviders": "All Providers",
+  "agentTemplateAssignedLabel": "Template",
+  "agentTemplateCreatedSuccess": "Template created",
+  "agentTemplateCreateTitle": "Create Template",
+  "agentTemplateDeleteConfirm": "Delete this template? This cannot be undone.",
+  "agentTemplateDeleteHasInstances": "Cannot delete: active agents are using this template.",
+  "agentTemplateDirectivesHint": "Define the agent's personality, tone, goals, and style...",
+  "agentTemplateDirectivesLabel": "Directives",
+  "agentTemplateDisplayNameLabel": "Name",
+  "agentTemplateEditTitle": "Edit Template",
+  "agentTemplateEmptyList": "No templates yet. Tap + to create one.",
+  "agentTemplateEvolveAction": "Evolve with AI",
+  "agentTemplateEvolveApprove": "Approve & Save",
+  "agentTemplateEvolveButton": "Evolve Template",
+  "agentTemplateEvolveCurrentLabel": "Current Directives",
+  "agentTemplateEvolveError": "Failed to generate evolution proposal",
+  "agentTemplateEvolvePreviewTitle": "Proposed Changes",
+  "agentTemplateEvolveProposedLabel": "Proposed Directives",
+  "agentTemplateEvolveReject": "Reject",
+  "agentTemplateEvolveSuccess": "Template evolved successfully",
+  "agentTemplateEvolvingProgress": "Generating improved directives...",
+  "agentTemplateFeedbackChangesHint": "Describe what you'd like changed...",
+  "agentTemplateFeedbackChangesLabel": "Specific changes",
+  "agentTemplateFeedbackDidntWorkHint": "Describe issues or shortcomings...",
+  "agentTemplateFeedbackDidntWorkLabel": "What didn't work",
+  "agentTemplateFeedbackEnjoyedHint": "Describe what the agent does well...",
+  "agentTemplateFeedbackEnjoyedLabel": "What worked well",
+  "agentTemplateFeedbackTitle": "Feedback",
+  "agentTemplateInstanceCount": "{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Task Agent",
+  "agentTemplateMetricsActiveInstances": "Active Instances",
+  "agentTemplateMetricsAvgDuration": "Avg Duration",
+  "agentTemplateMetricsFailureCount": "Failures",
+  "agentTemplateMetricsFirstWake": "First Wake",
+  "agentTemplateMetricsLastWake": "Last Wake",
+  "agentTemplateMetricsSuccessRate": "Success Rate",
+  "agentTemplateMetricsTitle": "Performance Metrics",
+  "agentTemplateMetricsTotalWakes": "Total Wakes",
+  "agentTemplateModelLabel": "Model ID",
+  "agentTemplateModelRequirements": "Only reasoning models with function calling are shown",
+  "agentTemplateNoMetrics": "No performance data yet",
+  "agentTemplateNoneAssigned": "No template assigned",
+  "agentTemplateNoSuitableModels": "No suitable models found",
+  "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
+  "agentTemplateOneOnOneTitle": "1-on-1 with {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTemplateRollbackAction": "Rollback to This Version",
+  "agentTemplateRollbackConfirm": "Roll back to version {version}? The agent will use this version on its next wake.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Save as New Version",
+  "agentTemplateSelectTitle": "Select Template",
+  "agentTemplateSettingsSubtitle": "Manage agent personalities and directives",
+  "agentTemplatesTitle": "Agent Templates",
+  "agentTemplateSwitchHint": "To use a different template, destroy this agent and create a new one.",
+  "agentTemplateVersionHistoryTitle": "Version History",
+  "agentTemplateVersionLabel": "Version {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "New version saved",
   "agentThreadReportLabel": "Report produced during this wake",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",

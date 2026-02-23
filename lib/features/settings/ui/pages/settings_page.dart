@@ -22,6 +22,8 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
     final enableDashboards =
         ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+    final enableAgents =
+        ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
     final themingState = ref.watch(themingControllerProvider);
     final brightness = Theme.of(context).brightness;
     final useGamey = themingState.isGameyThemeForBrightness(brightness);
@@ -73,6 +75,13 @@ class SettingsPage extends ConsumerWidget {
             icon: Icons.psychology_rounded,
             onTap: () => context.beamToNamed('/settings/ai'),
           ),
+          if (enableAgents)
+            settingsCard(
+              title: context.messages.agentTemplatesTitle,
+              subtitle: context.messages.agentTemplateSettingsSubtitle,
+              icon: Icons.smart_toy_outlined,
+              onTap: () => context.beamToNamed('/settings/templates'),
+            ),
           if (enableHabits)
             settingsCard(
               title: context.messages.settingsHabitsTitle,

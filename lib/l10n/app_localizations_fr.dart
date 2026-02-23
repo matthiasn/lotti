@@ -260,6 +260,204 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTabReports => 'Rapports';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Instances actives';
+
+  @override
+  String get agentTemplateAllProviders => 'Tous les fournisseurs';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Modèle';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Modèle créé';
+
+  @override
+  String get agentTemplateCreateTitle => 'Créer un modèle';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Supprimer ce modèle ? Cette action est irréversible.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Impossible de supprimer : des agents actifs utilisent ce modèle.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Définis la personnalité, le ton, les objectifs et le style de l\'agent...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Directives';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Nom';
+
+  @override
+  String get agentTemplateEditTitle => 'Modifier le modèle';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Pas encore de modèles. Appuie sur + pour en créer un.';
+
+  @override
+  String get agentTemplateEvolveAction => 'Évoluer avec l\'IA';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Approuver et enregistrer';
+
+  @override
+  String get agentTemplateEvolveButton => 'Faire évoluer le modèle';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Directives actuelles';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Impossible de générer la proposition d\'évolution';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Changements proposés';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Directives proposées';
+
+  @override
+  String get agentTemplateEvolveReject => 'Rejeter';
+
+  @override
+  String get agentTemplateEvolveSuccess => 'Modèle évolué avec succès';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Génération de directives améliorées...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Décris ce que tu aimerais changer...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Changements spécifiques';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Décris les problèmes ou lacunes...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel =>
+      'Ce qui n\'a pas fonctionné';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Décris ce que l\'agent fait bien...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Ce qui a bien fonctionné';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Retour';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instances',
+      one: '1 instance',
+      zero: 'Aucune instance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Agent de tâches';
+
+  @override
+  String get agentTemplateMetricsActiveInstances => 'Instances actives';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durée moyenne';
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Échecs';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Première activation';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Dernière activation';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Taux de réussite';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Métriques de performance';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Activations totales';
+
+  @override
+  String get agentTemplateModelLabel => 'ID du modèle';
+
+  @override
+  String get agentTemplateModelRequirements =>
+      'Seuls les modèles de raisonnement avec appel de fonctions sont affichés';
+
+  @override
+  String get agentTemplateNoMetrics => 'Pas encore de données de performance';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Aucun modèle assigné';
+
+  @override
+  String get agentTemplateNoSuitableModels => 'Aucun modèle approprié trouvé';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'Aucun modèle disponible. Crée-en un dans les Paramètres d\'abord.';
+
+  @override
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-à-1 avec $templateName';
+  }
+
+  @override
+  String get agentTemplateRollbackAction => 'Revenir à cette version';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Revenir à la version $version ? L\'agent utilisera cette version lors de son prochain réveil.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion =>
+      'Enregistrer comme nouvelle version';
+
+  @override
+  String get agentTemplateSelectTitle => 'Sélectionner un modèle';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Gérer les personnalités et directives des agents';
+
+  @override
+  String get agentTemplatesTitle => 'Modèles d\'agents';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Pour utiliser un autre modèle, détruis cet agent et crée-en un nouveau.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Historique des versions';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Nouvelle version enregistrée';
+
+  @override
   String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
 
   @override
