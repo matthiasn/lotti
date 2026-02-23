@@ -1014,6 +1014,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ascundeți această categorie când modul privat este activat';
 
   @override
+  String get categoryPromptFilterAll => 'Toate';
+
+  @override
   String get categorySearchPlaceholder => 'Caută categorii...';
 
   @override

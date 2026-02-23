@@ -464,6 +464,7 @@
   "categoryNameRequired": "El nombre de la categoría es obligatorio",
   "categoryNotFound": "Categoría no encontrada",
   "categoryPrivateDescription": "Ocultar esta categoría cuando el modo privado esté activado",
+  "categoryPromptFilterAll": "Todos",
   "categorySearchPlaceholder": "Buscar categorías...",
   "celebrationTapToContinue": "Toca para continuar",
   "chatInputCancelRealtime": "Cancelar (Esc)",

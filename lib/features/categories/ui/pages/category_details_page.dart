@@ -515,6 +515,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final promptsAsync = ref.watch(
       aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
     );
+    final modelsAsync = ref.watch(
+      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+    );
+    final providersAsync = ref.watch(
+      aiConfigByTypeControllerProvider(
+        configType: AiConfigType.inferenceProvider,
+      ),
+    );
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
@@ -527,8 +535,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
 
+        final modelConfigs =
+            modelsAsync.asData?.value.whereType<AiConfigModel>().toList() ?? [];
+        final providerConfigs = providersAsync.asData?.value
+                .whereType<AiConfigInferenceProvider>()
+                .toList() ??
+            [];
+
         return CategoryPromptSelection(
           prompts: promptConfigs,
+          models: modelConfigs,
+          providers: providerConfigs,
           allowedPromptIds: category.allowedPromptIds ?? [],
           onPromptToggled: (promptId, {required isAllowed}) {
             final currentAllowedIds = category.allowedPromptIds ?? [];

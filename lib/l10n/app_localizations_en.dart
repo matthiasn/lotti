@@ -1000,6 +1000,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Hide this category when private mode is enabled';
 
   @override
+  String get categoryPromptFilterAll => 'All';
+
+  @override
   String get categorySearchPlaceholder => 'Search categories...';
 
   @override

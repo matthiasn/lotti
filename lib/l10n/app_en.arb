@@ -463,6 +463,7 @@
   "categoryNameRequired": "Category name is required",
   "categoryNotFound": "Category not found",
   "categoryPrivateDescription": "Hide this category when private mode is enabled",
+  "categoryPromptFilterAll": "All",
   "categorySearchPlaceholder": "Search categories...",
   "celebrationTapToContinue": "Tap to continue",
   "chatInputCancelRealtime": "Cancel (Esc)",

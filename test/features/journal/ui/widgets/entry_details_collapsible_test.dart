@@ -360,7 +360,7 @@ void main() {
       });
     });
 
-    group('text entry in linked context', () {
+    group('collapsible text entry', () {
       final textLink = EntryLink.basic(
         id: 'link-text',
         fromId: testTask.meta.id,
@@ -370,7 +370,7 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('text entry in linked context is NOT collapsible',
+      testWidgets('text entry in linked context IS collapsible',
           (tester) async {
         when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
             .thenAnswer((_) async => testTextEntry);
@@ -389,8 +389,121 @@ void main() {
         );
         await tester.pump();
 
-        // Text entries should NOT be collapsible, even in linked context
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      });
+
+      testWidgets('shows SizeTransition for collapsible text entry',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: textLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(SizeTransition), findsOneWidget);
+      });
+
+      testWidgets('SizeTransition is fully expanded when not collapsed',
+          (tester) async {
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: textLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 1.0);
+      });
+
+      testWidgets('SizeTransition is fully collapsed when collapsed',
+          (tester) async {
+        final collapsedLink = textLink.copyWith(collapsed: true);
+
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: collapsedLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final sizeTransition = tester.widget<SizeTransition>(
+          find.byType(SizeTransition),
+        );
+        expect(sizeTransition.sizeFactor.value, 0.0);
+      });
+
+      testWidgets('tapping chevron calls updateLink with collapsed true',
+          (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(() => mockJournalRepository.updateLink(any()))
+            .thenAnswer((_) async => true);
+
+        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
+            .thenAnswer((_) async => testTextEntry);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                journalRepositoryProvider
+                    .overrideWithValue(mockJournalRepository),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                linkedFrom: testTask,
+                link: textLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final updatedLink = captured.first as EntryLink;
+        expect(updatedLink.collapsed, isTrue);
+
+        await tester.pumpAndSettle();
       });
     });
 
@@ -816,7 +929,7 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      testWidgets('non-collapsible text entry does NOT pass onToggleCollapse',
+      testWidgets('collapsible text entry passes onToggleCollapse to header',
           (tester) async {
         final textLink = EntryLink.basic(
           id: 'link-text-toggle',
@@ -847,8 +960,8 @@ void main() {
         final header = tester.widget<EntryDetailHeader>(
           find.byType(EntryDetailHeader),
         );
-        expect(header.isCollapsible, isFalse);
-        expect(header.onToggleCollapse, isNull);
+        expect(header.isCollapsible, isTrue);
+        expect(header.onToggleCollapse, isNotNull);
       });
     });
 

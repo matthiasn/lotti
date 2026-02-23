@@ -1,13 +1,20 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
 class WindowService implements WindowListener {
   WindowService() {
     windowManager.addListener(this);
+    if (isDesktop) {
+      windowManager.setPreventClose(true);
+    }
   }
 
   final sizeKey = 'WINDOW_SIZE';
@@ -90,7 +97,65 @@ class WindowService implements WindowListener {
   void onWindowUnmaximize() {}
 
   @override
-  void onWindowClose() {}
+  void onWindowClose() {
+    unawaited(_handleClose());
+  }
+
+  Future<void> _handleClose() async {
+    try {
+      await _disposeServices();
+    } catch (e, s) {
+      // Best-effort cleanup — log but don't block exit.
+      try {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'WINDOW_SERVICE',
+          subDomain: 'onWindowClose',
+          stackTrace: s,
+        );
+      } catch (_) {
+        // LoggingService itself may already be torn down.
+      }
+    } finally {
+      await windowManager.destroy();
+    }
+  }
+
+  /// Disposes long-running services in dependency-safe order.
+  ///
+  /// Each disposal is guarded independently so a failure in one does not
+  /// prevent the next service from being torn down.
+  Future<void> _disposeServices() async {
+    // Dispose OutboxService first (depends on MatrixService).
+    if (getIt.isRegistered<OutboxService>()) {
+      try {
+        await getIt<OutboxService>().dispose();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'OutboxService');
+      }
+    }
+    // Then MatrixService (owns sync engine, streams, connectivity sub).
+    if (getIt.isRegistered<MatrixService>()) {
+      try {
+        await getIt<MatrixService>().dispose();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'MatrixService');
+      }
+    }
+  }
+
+  void _logDisposalError(dynamic error, StackTrace stackTrace, String service) {
+    try {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'WINDOW_SERVICE',
+        subDomain: 'dispose_$service',
+        stackTrace: stackTrace,
+      );
+    } catch (_) {
+      // LoggingService itself may already be torn down.
+    }
+  }
 
   @override
   void onWindowMoved() {

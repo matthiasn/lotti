@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
 import '../../../../test_helper.dart';
+import '../../../ai/test_utils.dart';
 
 void main() {
   group('CategoryPromptSelection', () {
@@ -383,6 +383,201 @@ void main() {
 
       // Should not have called our callback
       expect(callCount, 0);
+    });
+  });
+
+  group('CategoryPromptSelection provider filter', () {
+    final testModels = <AiConfigModel>[
+      AiTestDataFactory.createTestModel(
+        id: 'model-anthropic',
+        name: 'Claude Sonnet',
+        providerModelId: 'claude-sonnet-4-6',
+        inferenceProviderId: 'provider-anthropic',
+      ),
+      AiTestDataFactory.createTestModel(
+        id: 'model-gemini',
+        name: 'Gemini Pro',
+        providerModelId: 'gemini-pro',
+        inferenceProviderId: 'provider-gemini',
+      ),
+    ];
+
+    final testProviders = <AiConfigInferenceProvider>[
+      AiTestDataFactory.createTestProvider(
+        id: 'provider-anthropic',
+        name: 'Anthropic',
+        baseUrl: 'https://api.anthropic.com',
+        apiKey: 'key',
+      ),
+      AiTestDataFactory.createTestProvider(
+        id: 'provider-gemini',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+        baseUrl: 'https://api.gemini.com',
+        apiKey: 'key',
+      ),
+    ];
+
+    final promptAnthropic = AiTestDataFactory.createTestPrompt(
+      id: 'prompt-a1',
+      name: 'Anthropic Prompt',
+      description: 'Uses Anthropic',
+      defaultModelId: 'model-anthropic',
+      modelIds: ['model-anthropic'],
+    );
+
+    final promptGemini = AiTestDataFactory.createTestPrompt(
+      id: 'prompt-g1',
+      name: 'Gemini Prompt',
+      description: 'Uses Gemini',
+      defaultModelId: 'model-gemini',
+      modelIds: ['model-gemini'],
+    );
+
+    final promptGemini2 = AiTestDataFactory.createTestPrompt(
+      id: 'prompt-g2',
+      name: 'Gemini Prompt 2',
+      description: 'Also uses Gemini',
+      defaultModelId: 'model-gemini',
+      modelIds: ['model-gemini'],
+    );
+
+    final allPrompts = [promptAnthropic, promptGemini, promptGemini2];
+
+    Future<void> pumpFilterWidget(
+      WidgetTester tester, {
+      List<AiConfigPrompt>? prompts,
+      List<AiConfigModel>? models,
+      List<AiConfigInferenceProvider>? providers,
+      List<String> allowedPromptIds = const [],
+      void Function(String, {required bool isAllowed})? onPromptToggled,
+    }) {
+      return tester.pumpWidget(
+        WidgetTestBench(
+          child: SingleChildScrollView(
+            child: CategoryPromptSelection(
+              prompts: prompts ?? allPrompts,
+              models: models ?? testModels,
+              providers: providers ?? testProviders,
+              allowedPromptIds: allowedPromptIds,
+              onPromptToggled: onPromptToggled ?? (_, {required isAllowed}) {},
+              isLoading: false,
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('does not show filter when only one provider', (tester) async {
+      await pumpFilterWidget(
+        tester,
+        prompts: [promptAnthropic],
+        providers: [testProviders.first],
+      );
+
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+    });
+
+    testWidgets('shows filter chips when multiple providers', (tester) async {
+      await pumpFilterWidget(tester);
+
+      // "All" + "Anthropic" + "Gemini" = 3 chips
+      expect(find.byType(FilterChip), findsNWidgets(3));
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Anthropic'), findsOneWidget);
+      expect(find.text('Gemini'), findsOneWidget);
+
+      // All prompts visible by default
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('selecting provider chip filters prompts', (tester) async {
+      await pumpFilterWidget(tester);
+
+      // Tap "Anthropic" chip
+      await tester.tap(find.text('Anthropic'));
+      await tester.pump();
+
+      // Only Anthropic prompt visible
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+      expect(find.text('Anthropic Prompt'), findsOneWidget);
+      expect(find.text('Gemini Prompt'), findsNothing);
+    });
+
+    testWidgets('selecting Gemini chip shows only Gemini prompts',
+        (tester) async {
+      await pumpFilterWidget(tester);
+
+      await tester.tap(find.text('Gemini'));
+      await tester.pump();
+
+      expect(find.byType(CheckboxListTile), findsNWidgets(2));
+      expect(find.text('Gemini Prompt'), findsOneWidget);
+      expect(find.text('Gemini Prompt 2'), findsOneWidget);
+      expect(find.text('Anthropic Prompt'), findsNothing);
+    });
+
+    testWidgets('tapping All chip shows all prompts again', (tester) async {
+      await pumpFilterWidget(tester);
+
+      // Filter to Anthropic
+      await tester.tap(find.text('Anthropic'));
+      await tester.pump();
+      expect(find.byType(CheckboxListTile), findsOneWidget);
+
+      // Reset to All
+      await tester.tap(find.text('All'));
+      await tester.pump();
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('All chip is selected by default', (tester) async {
+      await pumpFilterWidget(tester);
+
+      final allChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'All'),
+      );
+      expect(allChip.selected, isTrue);
+
+      final anthropicChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'Anthropic'),
+      );
+      expect(anthropicChip.selected, isFalse);
+    });
+
+    testWidgets('does not show filter when no models/providers provided',
+        (tester) async {
+      await pumpFilterWidget(
+        tester,
+        models: const [],
+        providers: const [],
+      );
+
+      expect(find.byType(FilterChip), findsNothing);
+      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+    });
+
+    testWidgets('toggling prompt while filtered calls onPromptToggled',
+        (tester) async {
+      String? toggledId;
+
+      await pumpFilterWidget(
+        tester,
+        onPromptToggled: (promptId, {required isAllowed}) {
+          toggledId = promptId;
+        },
+      );
+
+      // Filter to Gemini
+      await tester.tap(find.text('Gemini'));
+      await tester.pump();
+
+      // Tap the first Gemini prompt checkbox
+      await tester.tap(find.byType(CheckboxListTile).first);
+      await tester.pump();
+
+      expect(toggledId, 'prompt-g1');
     });
   });
 }
