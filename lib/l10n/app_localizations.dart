@@ -570,6 +570,12 @@ abstract class AppLocalizations {
   /// **'Active Instances'**
   String get agentTemplateActiveInstancesTitle;
 
+  /// No description provided for @agentTemplateAllProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'All Providers'**
+  String get agentTemplateAllProviders;
+
   /// No description provided for @agentTemplateAssignedLabel.
   ///
   /// In en, this message translates to:
@@ -798,6 +804,12 @@ abstract class AppLocalizations {
   /// **'Model ID'**
   String get agentTemplateModelLabel;
 
+  /// No description provided for @agentTemplateModelRequirements.
+  ///
+  /// In en, this message translates to:
+  /// **'Only reasoning models with function calling are shown'**
+  String get agentTemplateModelRequirements;
+
   /// No description provided for @agentTemplateNoMetrics.
   ///
   /// In en, this message translates to:
@@ -809,6 +821,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No template assigned'**
   String get agentTemplateNoneAssigned;
+
+  /// No description provided for @agentTemplateNoSuitableModels.
+  ///
+  /// In en, this message translates to:
+  /// **'No suitable models found'**
+  String get agentTemplateNoSuitableModels;
 
   /// No description provided for @agentTemplateNoTemplates.
   ///

@@ -132,6 +132,7 @@
   "agentTabObservations": "Observations",
   "agentTabReports": "Rapports",
   "agentTemplateActiveInstancesTitle": "Instances actives",
+  "agentTemplateAllProviders": "Tous les fournisseurs",
   "agentTemplateAssignedLabel": "Modèle",
   "agentTemplateCreatedSuccess": "Modèle créé",
   "agentTemplateCreateTitle": "Créer un modèle",
@@ -177,8 +178,10 @@
   "agentTemplateMetricsTitle": "Métriques de performance",
   "agentTemplateMetricsTotalWakes": "Activations totales",
   "agentTemplateModelLabel": "ID du modèle",
+  "agentTemplateModelRequirements": "Seuls les modèles de raisonnement avec appel de fonctions sont affichés",
   "agentTemplateNoMetrics": "Pas encore de données de performance",
   "agentTemplateNoneAssigned": "Aucun modèle assigné",
+  "agentTemplateNoSuitableModels": "Aucun modèle approprié trouvé",
   "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
   "agentTemplateOneOnOneTitle": "1-à-1 avec {templateName}",
   "@agentTemplateOneOnOneTitle": {

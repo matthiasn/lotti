@@ -132,6 +132,7 @@
   "agentTabObservations": "Observații",
   "agentTabReports": "Rapoarte",
   "agentTemplateActiveInstancesTitle": "Instanțe active",
+  "agentTemplateAllProviders": "Toți furnizorii",
   "agentTemplateAssignedLabel": "Șablon",
   "agentTemplateCreatedSuccess": "Șablon creat",
   "agentTemplateCreateTitle": "Creați un șablon",
@@ -177,8 +178,10 @@
   "agentTemplateMetricsTitle": "Indicatori de performanță",
   "agentTemplateMetricsTotalWakes": "Total activări",
   "agentTemplateModelLabel": "ID model",
+  "agentTemplateModelRequirements": "Sunt afișate doar modelele de raționament cu apeluri de funcții",
   "agentTemplateNoMetrics": "Nu există încă date de performanță",
   "agentTemplateNoneAssigned": "Niciun șablon atribuit",
+  "agentTemplateNoSuitableModels": "Nu s-au găsit modele potrivite",
   "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creați unul în Setări mai întâi.",
   "agentTemplateOneOnOneTitle": "1-la-1 cu {templateName}",
   "@agentTemplateOneOnOneTitle": {

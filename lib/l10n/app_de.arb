@@ -132,6 +132,7 @@
   "agentTabObservations": "Beobachtungen",
   "agentTabReports": "Berichte",
   "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
+  "agentTemplateAllProviders": "Alle Anbieter",
   "agentTemplateAssignedLabel": "Vorlage",
   "agentTemplateCreatedSuccess": "Vorlage erstellt",
   "agentTemplateCreateTitle": "Vorlage erstellen",
@@ -177,8 +178,10 @@
   "agentTemplateMetricsTitle": "Leistungskennzahlen",
   "agentTemplateMetricsTotalWakes": "Aktivierungen gesamt",
   "agentTemplateModelLabel": "Modell-ID",
+  "agentTemplateModelRequirements": "Nur Reasoning-Modelle mit Funktionsaufrufen werden angezeigt",
   "agentTemplateNoMetrics": "Noch keine Leistungsdaten vorhanden",
   "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
+  "agentTemplateNoSuitableModels": "Keine passenden Modelle gefunden",
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
   "agentTemplateOneOnOneTitle": "1-zu-1 mit {templateName}",
   "@agentTemplateOneOnOneTitle": {

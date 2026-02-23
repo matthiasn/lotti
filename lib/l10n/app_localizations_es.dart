@@ -262,6 +262,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateActiveInstancesTitle => 'Instancias activas';
 
   @override
+  String get agentTemplateAllProviders => 'Todos los proveedores';
+
+  @override
   String get agentTemplateAssignedLabel => 'Plantilla';
 
   @override
@@ -394,10 +397,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateModelLabel => 'ID de modelo';
 
   @override
+  String get agentTemplateModelRequirements =>
+      'Solo se muestran modelos de razonamiento con llamada a funciones';
+
+  @override
   String get agentTemplateNoMetrics => 'Aún no hay datos de rendimiento';
 
   @override
   String get agentTemplateNoneAssigned => 'Sin plantilla asignada';
+
+  @override
+  String get agentTemplateNoSuitableModels =>
+      'No se encontraron modelos adecuados';
 
   @override
   String get agentTemplateNoTemplates =>

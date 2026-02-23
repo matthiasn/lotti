@@ -131,6 +131,7 @@
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
   "agentTemplateActiveInstancesTitle": "Active Instances",
+  "agentTemplateAllProviders": "All Providers",
   "agentTemplateAssignedLabel": "Template",
   "agentTemplateCreatedSuccess": "Template created",
   "agentTemplateCreateTitle": "Create Template",
@@ -176,8 +177,10 @@
   "agentTemplateMetricsTitle": "Performance Metrics",
   "agentTemplateMetricsTotalWakes": "Total Wakes",
   "agentTemplateModelLabel": "Model ID",
+  "agentTemplateModelRequirements": "Only reasoning models with function calling are shown",
   "agentTemplateNoMetrics": "No performance data yet",
   "agentTemplateNoneAssigned": "No template assigned",
+  "agentTemplateNoSuitableModels": "No suitable models found",
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
   "agentTemplateOneOnOneTitle": "1-on-1 with {templateName}",
   "@agentTemplateOneOnOneTitle": {

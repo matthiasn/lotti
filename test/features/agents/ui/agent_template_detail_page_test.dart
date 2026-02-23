@@ -5,12 +5,55 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+final _testDate = DateTime(2024, 3, 15);
+
+final _testProvider = AiConfig.inferenceProvider(
+  id: 'prov-1',
+  baseUrl: 'https://example.com',
+  apiKey: 'key',
+  name: 'Test Provider',
+  createdAt: _testDate,
+  inferenceProviderType: InferenceProviderType.gemini,
+);
+
+final _testModel = AiConfig.model(
+  id: 'model-1',
+  name: 'Test Model',
+  providerModelId: 'models/test-model',
+  inferenceProviderId: 'prov-1',
+  createdAt: _testDate,
+  inputModalities: [Modality.text],
+  outputModalities: [Modality.text],
+  isReasoningModel: true,
+  supportsFunctionCalling: true,
+);
+
+/// Shared overrides for the AI config providers used by AgentModelSelector.
+List<Override> _aiConfigOverrides({
+  List<AiConfig> providers = const [],
+  List<AiConfig> models = const [],
+}) =>
+    [
+      aiConfigByTypeControllerProvider(
+        configType: AiConfigType.inferenceProvider,
+      ).overrideWithBuild(
+        (ref, notifier) => Stream.value(providers),
+      ),
+      aiConfigByTypeControllerProvider(
+        configType: AiConfigType.model,
+      ).overrideWithBuild(
+        (ref, notifier) => Stream.value(models),
+      ),
+    ];
 
 void main() {
   late MockAgentTemplateService mockTemplateService;
@@ -27,6 +70,8 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   Widget buildCreateSubject({
+    List<AiConfig> providers = const [],
+    List<AiConfig> models = const [],
     List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
@@ -36,6 +81,7 @@ void main() {
         agentTemplatesProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
+        ..._aiConfigOverrides(providers: providers, models: models),
         ...extraOverrides,
       ],
     );
@@ -70,6 +116,7 @@ void main() {
         agentTemplatesProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
+        ..._aiConfigOverrides(),
         ...extraOverrides,
       ],
     );
@@ -93,6 +140,30 @@ void main() {
       );
     });
 
+    testWidgets('save is disabled without a model selected', (tester) async {
+      await tester.pumpWidget(buildCreateSubject());
+      await tester.pumpAndSettle();
+
+      // Enter a name but no model selected
+      final nameField = find.byType(TextField).first;
+      await tester.enterText(nameField, 'My Template');
+      await tester.pump();
+
+      // Create button should be disabled (not tappable)
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      final createButton = find.text(context.messages.createButton);
+      expect(createButton, findsOneWidget);
+
+      // The button's ancestor FilledButton should have null onPressed
+      final button = tester.widget<FilledButton>(
+        find.ancestor(
+          of: createButton,
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+    });
+
     testWidgets('save calls createTemplate and pops', (tester) async {
       when(
         () => mockTemplateService.createTemplate(
@@ -104,13 +175,25 @@ void main() {
         ),
       ).thenAnswer((_) async => makeTestTemplate());
 
-      await tester.pumpWidget(buildCreateSubject());
+      await tester.pumpWidget(
+        buildCreateSubject(
+          providers: [_testProvider],
+          models: [_testModel],
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Enter a name to enable save
+      // Enter a name
       final nameField = find.byType(TextField).first;
       await tester.enterText(nameField, 'My Template');
       await tester.pump();
+
+      // Select a model via the model picker
+      final modelDropdowns = find.byIcon(Icons.arrow_drop_down);
+      await tester.tap(modelDropdowns.at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Test Model'));
+      await tester.pumpAndSettle();
 
       // Tap create button
       final context = tester.element(find.byType(AgentTemplateDetailPage));
@@ -121,7 +204,7 @@ void main() {
         () => mockTemplateService.createTemplate(
           displayName: 'My Template',
           kind: AgentTemplateKind.taskAgent,
-          modelId: any(named: 'modelId'),
+          modelId: 'models/test-model',
           directives: any(named: 'directives'),
           authoredBy: 'user',
         ),
@@ -155,7 +238,8 @@ void main() {
 
       // Name field populated
       expect(find.text('Laura'), findsOneWidget);
-      // Model field populated
+      // Model selector shows providerModelId as subtitle
+      // (model name won't resolve without matching AI config)
       expect(find.text('models/custom-model'), findsOneWidget);
       // Directives populated
       expect(find.text('Be helpful and kind.'), findsOneWidget);
@@ -233,6 +317,14 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to make version history visible
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateVersionHistoryTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
 
       // Section title visible
       expect(

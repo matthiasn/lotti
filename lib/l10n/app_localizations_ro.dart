@@ -261,6 +261,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateActiveInstancesTitle => 'Instanțe active';
 
   @override
+  String get agentTemplateAllProviders => 'Toți furnizorii';
+
+  @override
   String get agentTemplateAssignedLabel => 'Șablon';
 
   @override
@@ -393,10 +396,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateModelLabel => 'ID model';
 
   @override
+  String get agentTemplateModelRequirements =>
+      'Sunt afișate doar modelele de raționament cu apeluri de funcții';
+
+  @override
   String get agentTemplateNoMetrics => 'Nu există încă date de performanță';
 
   @override
   String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
+
+  @override
+  String get agentTemplateNoSuitableModels => 'Nu s-au găsit modele potrivite';
 
   @override
   String get agentTemplateNoTemplates =>

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/agent_one_on_one_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -38,8 +39,8 @@ class AgentTemplateDetailPage extends ConsumerStatefulWidget {
 class _AgentTemplateDetailPageState
     extends ConsumerState<AgentTemplateDetailPage> {
   late TextEditingController _nameController;
-  late TextEditingController _modelController;
   late TextEditingController _directivesController;
+  String? _selectedModelId;
   bool _didSeedControllers = false;
   bool _isSaving = false;
 
@@ -47,15 +48,12 @@ class _AgentTemplateDetailPageState
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _modelController =
-        TextEditingController(text: 'models/gemini-3.1-pro-preview');
     _directivesController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _modelController.dispose();
     _directivesController.dispose();
     super.dispose();
   }
@@ -90,7 +88,7 @@ class _AgentTemplateDetailPageState
     // Seed controllers once from loaded data.
     if (!_didSeedControllers) {
       _nameController.text = template.displayName;
-      _modelController.text = template.modelId;
+      _selectedModelId = template.modelId;
       if (activeVersion != null) {
         _directivesController.text = activeVersion.directives;
       }
@@ -113,7 +111,9 @@ class _AgentTemplateDetailPageState
         ? context.messages.agentTemplateCreateTitle
         : context.messages.agentTemplateEditTitle;
 
-    final saveEnabled = !_isSaving && _nameController.text.trim().isNotEmpty;
+    final saveEnabled = !_isSaving &&
+        _nameController.text.trim().isNotEmpty &&
+        (_selectedModelId?.isNotEmpty ?? false);
 
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
@@ -194,9 +194,9 @@ class _AgentTemplateDetailPageState
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 16),
-        LottiTextField(
-          controller: _modelController,
-          labelText: context.messages.agentTemplateModelLabel,
+        AgentModelSelector(
+          currentModelId: _selectedModelId,
+          onModelSelected: (id) => setState(() => _selectedModelId = id),
         ),
         const SizedBox(height: 16),
         LottiTextArea(
@@ -216,7 +216,7 @@ class _AgentTemplateDetailPageState
     try {
       final templateService = ref.read(agentTemplateServiceProvider);
       final name = _nameController.text.trim();
-      final modelId = _modelController.text.trim();
+      final modelId = _selectedModelId ?? '';
       final directives = _directivesController.text.trim();
 
       if (widget.isCreateMode) {

@@ -262,6 +262,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';
 
   @override
+  String get agentTemplateAllProviders => 'Alle Anbieter';
+
+  @override
   String get agentTemplateAssignedLabel => 'Vorlage';
 
   @override
@@ -396,10 +399,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateModelLabel => 'Modell-ID';
 
   @override
+  String get agentTemplateModelRequirements =>
+      'Nur Reasoning-Modelle mit Funktionsaufrufen werden angezeigt';
+
+  @override
   String get agentTemplateNoMetrics => 'Noch keine Leistungsdaten vorhanden';
 
   @override
   String get agentTemplateNoneAssigned => 'Keine Vorlage zugewiesen';
+
+  @override
+  String get agentTemplateNoSuitableModels =>
+      'Keine passenden Modelle gefunden';
 
   @override
   String get agentTemplateNoTemplates =>
