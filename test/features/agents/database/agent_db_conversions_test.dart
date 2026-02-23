@@ -240,6 +240,217 @@ void main() {
     });
   });
 
+  group('AgentDbConversions — agentTemplate entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.agentTemplate(
+        id: 'tpl-001',
+        agentId: 'tpl-001',
+        displayName: 'Laura',
+        kind: AgentTemplateKind.taskAgent,
+        modelId: 'models/gemini-3.1-pro-preview',
+        categoryIds: const {'cat-1'},
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('tpl-001'));
+      expect(companion.type, const Value('agentTemplate'));
+      expect(companion.subtype, const Value('taskAgent'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
+    test('fromEntityRow roundtrips agentTemplate variant', () {
+      final entity = AgentDomainEntity.agentTemplate(
+        id: 'tpl-002',
+        agentId: 'tpl-002',
+        displayName: 'Tom',
+        kind: AgentTemplateKind.taskAgent,
+        modelId: 'models/test',
+        categoryIds: const {'cat-a', 'cat-b'},
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'tpl-002',
+        agentId: 'tpl-002',
+        type: 'agentTemplate',
+        subtype: 'taskAgent',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<AgentTemplateEntity>());
+      final tpl = result as AgentTemplateEntity;
+      expect(tpl.displayName, 'Tom');
+      expect(tpl.kind, AgentTemplateKind.taskAgent);
+      expect(tpl.categoryIds, containsAll(['cat-a', 'cat-b']));
+    });
+  });
+
+  group('AgentDbConversions — agentTemplateVersion entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.agentTemplateVersion(
+        id: 'ver-001',
+        agentId: 'tpl-001',
+        version: 1,
+        status: AgentTemplateVersionStatus.active,
+        directives: 'Be helpful.',
+        authoredBy: 'user',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('ver-001'));
+      expect(companion.type, const Value('agentTemplateVersion'));
+      expect(companion.subtype, const Value('active'));
+      expect(companion.createdAt, Value(createdAt));
+      // Immutable — updatedAt = createdAt.
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('fromEntityRow roundtrips agentTemplateVersion variant', () {
+      final entity = AgentDomainEntity.agentTemplateVersion(
+        id: 'ver-002',
+        agentId: 'tpl-001',
+        version: 2,
+        status: AgentTemplateVersionStatus.archived,
+        directives: 'Updated directives.',
+        authoredBy: 'admin',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'ver-002',
+        agentId: 'tpl-001',
+        type: 'agentTemplateVersion',
+        subtype: 'archived',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<AgentTemplateVersionEntity>());
+      final ver = result as AgentTemplateVersionEntity;
+      expect(ver.version, 2);
+      expect(ver.status, AgentTemplateVersionStatus.archived);
+      expect(ver.directives, 'Updated directives.');
+      expect(ver.authoredBy, 'admin');
+    });
+  });
+
+  group('AgentDbConversions — agentTemplateHead entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.agentTemplateHead(
+        id: 'head-001',
+        agentId: 'tpl-001',
+        versionId: 'ver-001',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('head-001'));
+      expect(companion.type, const Value('agentTemplateHead'));
+      // No subtype for head.
+      expect(companion.subtype, const Value<String?>.absent());
+      // Head has no createdAt — falls back to updatedAt.
+      expect(companion.createdAt, Value(updatedAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
+    test('fromEntityRow roundtrips agentTemplateHead variant', () {
+      final entity = AgentDomainEntity.agentTemplateHead(
+        id: 'head-002',
+        agentId: 'tpl-001',
+        versionId: 'ver-003',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'head-002',
+        agentId: 'tpl-001',
+        type: 'agentTemplateHead',
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<AgentTemplateHeadEntity>());
+      final head = result as AgentTemplateHeadEntity;
+      expect(head.versionId, 'ver-003');
+      expect(head.agentId, 'tpl-001');
+    });
+  });
+
+  group('AgentDbConversions — templateAssignment link', () {
+    test('toLinkCompanion handles templateAssignment link correctly', () {
+      final link = model.AgentLink.templateAssignment(
+        id: 'link-ta-001',
+        fromId: 'tpl-001',
+        toId: 'agent-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      expect(companion.id, const Value('link-ta-001'));
+      expect(companion.fromId, const Value('tpl-001'));
+      expect(companion.toId, const Value('agent-001'));
+      expect(companion.type, const Value('template_assignment'));
+    });
+
+    test('fromLinkRow roundtrips templateAssignment link', () {
+      final link = model.AgentLink.templateAssignment(
+        id: 'link-ta-002',
+        fromId: 'tpl-001',
+        toId: 'agent-002',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-ta-002',
+        fromId: 'tpl-001',
+        toId: 'agent-002',
+        type: 'template_assignment',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+      expect(result, isA<model.TemplateAssignmentLink>());
+      expect(result.fromId, 'tpl-001');
+      expect(result.toId, 'agent-002');
+    });
+  });
+
   group('AgentDbConversions.toEntityCompanion — thread_id population', () {
     test('populates threadId for agentMessage entities', () {
       final message = AgentDomainEntity.agentMessage(

@@ -1446,6 +1446,224 @@ void main() {
     });
   });
 
+  // ── Template CRUD ──────────────────────────────────────────────────────────
+
+  group('Template entity CRUD', () {
+    AgentTemplateEntity makeTemplate({
+      String id = 'tpl-001',
+      String agentId = 'tpl-001',
+    }) {
+      return AgentDomainEntity.agentTemplate(
+        id: id,
+        agentId: agentId,
+        displayName: 'Test Template',
+        kind: AgentTemplateKind.taskAgent,
+        modelId: 'models/gemini-3.1-pro-preview',
+        categoryIds: const {'cat-1'},
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: const VectorClock({'node-1': 1}),
+      ) as AgentTemplateEntity;
+    }
+
+    AgentTemplateVersionEntity makeTemplateVersion({
+      String id = 'ver-001',
+      String agentId = 'tpl-001',
+      int version = 1,
+      AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
+    }) {
+      return AgentDomainEntity.agentTemplateVersion(
+        id: id,
+        agentId: agentId,
+        version: version,
+        status: status,
+        directives: 'Be helpful.',
+        authoredBy: 'user',
+        createdAt: testDate,
+        vectorClock: const VectorClock({'node-1': 1}),
+      ) as AgentTemplateVersionEntity;
+    }
+
+    AgentTemplateHeadEntity makeTemplateHead({
+      String id = 'head-tpl-001',
+      String agentId = 'tpl-001',
+      String versionId = 'ver-001',
+    }) {
+      return AgentDomainEntity.agentTemplateHead(
+        id: id,
+        agentId: agentId,
+        versionId: versionId,
+        updatedAt: testDate,
+        vectorClock: const VectorClock({'node-1': 1}),
+      ) as AgentTemplateHeadEntity;
+    }
+
+    group('upsertEntity + getEntity roundtrip', () {
+      test('agentTemplate variant persists and restores correctly', () async {
+        final entity = makeTemplate();
+        await repo.upsertEntity(entity);
+
+        final result = await repo.getEntity(entity.id);
+
+        expect(result, isNotNull);
+        final tpl = result! as AgentTemplateEntity;
+        expect(tpl.id, entity.id);
+        expect(tpl.displayName, 'Test Template');
+        expect(tpl.kind, AgentTemplateKind.taskAgent);
+        expect(tpl.categoryIds, contains('cat-1'));
+      });
+
+      test('agentTemplateVersion variant persists and restores correctly',
+          () async {
+        final entity = makeTemplateVersion();
+        await repo.upsertEntity(entity);
+
+        final result = await repo.getEntity(entity.id);
+
+        expect(result, isNotNull);
+        final ver = result! as AgentTemplateVersionEntity;
+        expect(ver.version, 1);
+        expect(ver.status, AgentTemplateVersionStatus.active);
+        expect(ver.directives, 'Be helpful.');
+        expect(ver.authoredBy, 'user');
+      });
+
+      test('agentTemplateHead variant persists and restores correctly',
+          () async {
+        final entity = makeTemplateHead();
+        await repo.upsertEntity(entity);
+
+        final result = await repo.getEntity(entity.id);
+
+        expect(result, isNotNull);
+        final head = result! as AgentTemplateHeadEntity;
+        expect(head.versionId, 'ver-001');
+        expect(head.agentId, 'tpl-001');
+      });
+    });
+
+    group('getAllTemplates', () {
+      test('returns only template entities', () async {
+        await repo.upsertEntity(makeTemplate(id: 'tpl-a', agentId: 'tpl-a'));
+        await repo.upsertEntity(makeTemplate(id: 'tpl-b', agentId: 'tpl-b'));
+        // Non-template entities should not be included.
+        await repo.upsertEntity(makeAgent());
+        await repo.upsertEntity(makeAgentState());
+
+        final templates = await repo.getAllTemplates();
+
+        expect(templates.length, 2);
+        expect(
+          templates.map((t) => t.id),
+          containsAll(['tpl-a', 'tpl-b']),
+        );
+      });
+
+      test('returns empty list when no templates exist', () async {
+        await repo.upsertEntity(makeAgent());
+
+        final templates = await repo.getAllTemplates();
+
+        expect(templates, isEmpty);
+      });
+    });
+
+    group('getTemplateHead', () {
+      test('returns head for template', () async {
+        await repo.upsertEntity(makeTemplateHead());
+
+        final head = await repo.getTemplateHead('tpl-001');
+
+        expect(head, isNotNull);
+        expect(head!.versionId, 'ver-001');
+      });
+
+      test('returns null when no head exists', () async {
+        final head = await repo.getTemplateHead('tpl-nonexistent');
+        expect(head, isNull);
+      });
+    });
+
+    group('getActiveTemplateVersion', () {
+      test('resolves head to version entity', () async {
+        await repo.upsertEntity(makeTemplateVersion());
+        await repo.upsertEntity(makeTemplateHead());
+
+        final version = await repo.getActiveTemplateVersion('tpl-001');
+
+        expect(version, isNotNull);
+        expect(version!.id, 'ver-001');
+        expect(version.version, 1);
+      });
+
+      test('returns null when no head exists', () async {
+        final version = await repo.getActiveTemplateVersion('tpl-nonexistent');
+        expect(version, isNull);
+      });
+
+      test('returns null when head points to missing version', () async {
+        await repo.upsertEntity(
+          makeTemplateHead(versionId: 'ver-missing'),
+        );
+
+        final version = await repo.getActiveTemplateVersion('tpl-001');
+        expect(version, isNull);
+      });
+    });
+
+    group('getNextTemplateVersionNumber', () {
+      test('returns 1 for new template', () async {
+        final next = await repo.getNextTemplateVersionNumber('tpl-new');
+        expect(next, 1);
+      });
+
+      test('returns max + 1 for existing versions', () async {
+        await repo.upsertEntity(makeTemplateVersion(id: 'v1'));
+        await repo.upsertEntity(makeTemplateVersion(id: 'v2', version: 2));
+        await repo.upsertEntity(makeTemplateVersion(id: 'v3', version: 3));
+
+        final next = await repo.getNextTemplateVersionNumber('tpl-001');
+        expect(next, 4);
+      });
+    });
+
+    group('updateWakeRunTemplate', () {
+      test('sets template columns on wake run', () async {
+        await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-tpl'));
+
+        await repo.updateWakeRunTemplate('run-tpl', 'tpl-001', 'ver-001');
+
+        final run = await repo.getWakeRun('run-tpl');
+        expect(run, isNotNull);
+        expect(run!.templateId, 'tpl-001');
+        expect(run.templateVersionId, 'ver-001');
+      });
+    });
+
+    group('templateAssignment link CRUD', () {
+      test('templateAssignment link persists and restores correctly', () async {
+        final link = model.AgentLink.templateAssignment(
+          id: 'link-ta-001',
+          fromId: 'tpl-001',
+          toId: testAgentId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: const VectorClock({'node-1': 1}),
+        );
+        await repo.upsertLink(link);
+
+        final results = await repo.getLinksFrom(
+          'tpl-001',
+          type: 'template_assignment',
+        );
+
+        expect(results.length, 1);
+        expect(results.first, isA<model.TemplateAssignmentLink>());
+        expect(results.first.toId, testAgentId);
+      });
+    });
+  });
+
   group('getAllEntities', () {
     test('returns all entity types', () async {
       await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));

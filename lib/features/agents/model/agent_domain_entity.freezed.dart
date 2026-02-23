@@ -25,6 +25,12 @@ AgentDomainEntity _$AgentDomainEntityFromJson(Map<String, dynamic> json) {
       return AgentReportEntity.fromJson(json);
     case 'agentReportHead':
       return AgentReportHeadEntity.fromJson(json);
+    case 'agentTemplate':
+      return AgentTemplateEntity.fromJson(json);
+    case 'agentTemplateVersion':
+      return AgentTemplateVersionEntity.fromJson(json);
+    case 'agentTemplateHead':
+      return AgentTemplateHeadEntity.fromJson(json);
 
     default:
       return AgentUnknownEntity.fromJson(json);
@@ -147,6 +153,9 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(AgentMessagePayloadEntity value)? agentMessagePayload,
     TResult Function(AgentReportEntity value)? agentReport,
     TResult Function(AgentReportHeadEntity value)? agentReportHead,
+    TResult Function(AgentTemplateEntity value)? agentTemplate,
+    TResult Function(AgentTemplateVersionEntity value)? agentTemplateVersion,
+    TResult Function(AgentTemplateHeadEntity value)? agentTemplateHead,
     TResult Function(AgentUnknownEntity value)? unknown,
     required TResult orElse(),
   }) {
@@ -164,6 +173,12 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentReport(_that);
       case AgentReportHeadEntity() when agentReportHead != null:
         return agentReportHead(_that);
+      case AgentTemplateEntity() when agentTemplate != null:
+        return agentTemplate(_that);
+      case AgentTemplateVersionEntity() when agentTemplateVersion != null:
+        return agentTemplateVersion(_that);
+      case AgentTemplateHeadEntity() when agentTemplateHead != null:
+        return agentTemplateHead(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -193,6 +208,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         agentMessagePayload,
     required TResult Function(AgentReportEntity value) agentReport,
     required TResult Function(AgentReportHeadEntity value) agentReportHead,
+    required TResult Function(AgentTemplateEntity value) agentTemplate,
+    required TResult Function(AgentTemplateVersionEntity value)
+        agentTemplateVersion,
+    required TResult Function(AgentTemplateHeadEntity value) agentTemplateHead,
     required TResult Function(AgentUnknownEntity value) unknown,
   }) {
     final _that = this;
@@ -209,6 +228,12 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentReport(_that);
       case AgentReportHeadEntity():
         return agentReportHead(_that);
+      case AgentTemplateEntity():
+        return agentTemplate(_that);
+      case AgentTemplateVersionEntity():
+        return agentTemplateVersion(_that);
+      case AgentTemplateHeadEntity():
+        return agentTemplateHead(_that);
       case AgentUnknownEntity():
         return unknown(_that);
       case _:
@@ -236,6 +261,9 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(AgentMessagePayloadEntity value)? agentMessagePayload,
     TResult? Function(AgentReportEntity value)? agentReport,
     TResult? Function(AgentReportHeadEntity value)? agentReportHead,
+    TResult? Function(AgentTemplateEntity value)? agentTemplate,
+    TResult? Function(AgentTemplateVersionEntity value)? agentTemplateVersion,
+    TResult? Function(AgentTemplateHeadEntity value)? agentTemplateHead,
     TResult? Function(AgentUnknownEntity value)? unknown,
   }) {
     final _that = this;
@@ -252,6 +280,12 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentReport(_that);
       case AgentReportHeadEntity() when agentReportHead != null:
         return agentReportHead(_that);
+      case AgentTemplateEntity() when agentTemplate != null:
+        return agentTemplate(_that);
+      case AgentTemplateVersionEntity() when agentTemplateVersion != null:
+        return agentTemplateVersion(_that);
+      case AgentTemplateHeadEntity() when agentTemplateHead != null:
+        return agentTemplateHead(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -347,6 +381,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(String id, String agentId, String scope, String reportId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentReportHead,
+    TResult Function(
+            String id,
+            String agentId,
+            String displayName,
+            AgentTemplateKind kind,
+            String modelId,
+            Set<String> categoryIds,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)?
+        agentTemplate,
+    TResult Function(
+            String id,
+            String agentId,
+            int version,
+            AgentTemplateVersionStatus status,
+            String directives,
+            String authoredBy,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)?
+        agentTemplateVersion,
+    TResult Function(String id, String agentId, String versionId,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        agentTemplateHead,
     TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -434,6 +494,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.updatedAt,
             _that.vectorClock,
             _that.deletedAt);
+      case AgentTemplateEntity() when agentTemplate != null:
+        return agentTemplate(
+            _that.id,
+            _that.agentId,
+            _that.displayName,
+            _that.kind,
+            _that.modelId,
+            _that.categoryIds,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateVersionEntity() when agentTemplateVersion != null:
+        return agentTemplateVersion(
+            _that.id,
+            _that.agentId,
+            _that.version,
+            _that.status,
+            _that.directives,
+            _that.authoredBy,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateHeadEntity() when agentTemplateHead != null:
+        return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
+            _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -537,6 +623,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             VectorClock? vectorClock,
             DateTime? deletedAt)
         agentReportHead,
+    required TResult Function(
+            String id,
+            String agentId,
+            String displayName,
+            AgentTemplateKind kind,
+            String modelId,
+            Set<String> categoryIds,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)
+        agentTemplate,
+    required TResult Function(
+            String id,
+            String agentId,
+            int version,
+            AgentTemplateVersionStatus status,
+            String directives,
+            String authoredBy,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)
+        agentTemplateVersion,
+    required TResult Function(String id, String agentId, String versionId,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)
+        agentTemplateHead,
     required TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)
         unknown,
@@ -623,6 +735,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.updatedAt,
             _that.vectorClock,
             _that.deletedAt);
+      case AgentTemplateEntity():
+        return agentTemplate(
+            _that.id,
+            _that.agentId,
+            _that.displayName,
+            _that.kind,
+            _that.modelId,
+            _that.categoryIds,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateVersionEntity():
+        return agentTemplateVersion(
+            _that.id,
+            _that.agentId,
+            _that.version,
+            _that.status,
+            _that.directives,
+            _that.authoredBy,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateHeadEntity():
+        return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
+            _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case AgentUnknownEntity():
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -719,6 +857,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(String id, String agentId, String scope, String reportId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentReportHead,
+    TResult? Function(
+            String id,
+            String agentId,
+            String displayName,
+            AgentTemplateKind kind,
+            String modelId,
+            Set<String> categoryIds,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)?
+        agentTemplate,
+    TResult? Function(
+            String id,
+            String agentId,
+            int version,
+            AgentTemplateVersionStatus status,
+            String directives,
+            String authoredBy,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)?
+        agentTemplateVersion,
+    TResult? Function(String id, String agentId, String versionId,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        agentTemplateHead,
     TResult? Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -805,6 +969,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.updatedAt,
             _that.vectorClock,
             _that.deletedAt);
+      case AgentTemplateEntity() when agentTemplate != null:
+        return agentTemplate(
+            _that.id,
+            _that.agentId,
+            _that.displayName,
+            _that.kind,
+            _that.modelId,
+            _that.categoryIds,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateVersionEntity() when agentTemplateVersion != null:
+        return agentTemplateVersion(
+            _that.id,
+            _that.agentId,
+            _that.version,
+            _that.status,
+            _that.directives,
+            _that.authoredBy,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case AgentTemplateHeadEntity() when agentTemplateHead != null:
+        return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
+            _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -2074,6 +2264,506 @@ class _$AgentReportHeadEntityCopyWithImpl<$Res>
       reportId: null == reportId
           ? _self.reportId
           : reportId // ignore: cast_nullable_to_non_nullable
+              as String,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class AgentTemplateEntity implements AgentDomainEntity {
+  const AgentTemplateEntity(
+      {required this.id,
+      required this.agentId,
+      required this.displayName,
+      required this.kind,
+      required this.modelId,
+      required final Set<String> categoryIds,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.deletedAt,
+      final String? $type})
+      : _categoryIds = categoryIds,
+        $type = $type ?? 'agentTemplate';
+  factory AgentTemplateEntity.fromJson(Map<String, dynamic> json) =>
+      _$AgentTemplateEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String displayName;
+  final AgentTemplateKind kind;
+  final String modelId;
+  final Set<String> _categoryIds;
+  Set<String> get categoryIds {
+    if (_categoryIds is EqualUnmodifiableSetView) return _categoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_categoryIds);
+  }
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AgentTemplateEntityCopyWith<AgentTemplateEntity> get copyWith =>
+      _$AgentTemplateEntityCopyWithImpl<AgentTemplateEntity>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AgentTemplateEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AgentTemplateEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.displayName, displayName) ||
+                other.displayName == displayName) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            const DeepCollectionEquality()
+                .equals(other._categoryIds, _categoryIds) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      displayName,
+      kind,
+      modelId,
+      const DeepCollectionEquality().hash(_categoryIds),
+      createdAt,
+      updatedAt,
+      vectorClock,
+      deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.agentTemplate(id: $id, agentId: $agentId, displayName: $displayName, kind: $kind, modelId: $modelId, categoryIds: $categoryIds, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AgentTemplateEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $AgentTemplateEntityCopyWith(
+          AgentTemplateEntity value, $Res Function(AgentTemplateEntity) _then) =
+      _$AgentTemplateEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String displayName,
+      AgentTemplateKind kind,
+      String modelId,
+      Set<String> categoryIds,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$AgentTemplateEntityCopyWithImpl<$Res>
+    implements $AgentTemplateEntityCopyWith<$Res> {
+  _$AgentTemplateEntityCopyWithImpl(this._self, this._then);
+
+  final AgentTemplateEntity _self;
+  final $Res Function(AgentTemplateEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? displayName = null,
+    Object? kind = null,
+    Object? modelId = null,
+    Object? categoryIds = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(AgentTemplateEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      displayName: null == displayName
+          ? _self.displayName
+          : displayName // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _self.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as AgentTemplateKind,
+      modelId: null == modelId
+          ? _self.modelId
+          : modelId // ignore: cast_nullable_to_non_nullable
+              as String,
+      categoryIds: null == categoryIds
+          ? _self._categoryIds
+          : categoryIds // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class AgentTemplateVersionEntity implements AgentDomainEntity {
+  const AgentTemplateVersionEntity(
+      {required this.id,
+      required this.agentId,
+      required this.version,
+      required this.status,
+      required this.directives,
+      required this.authoredBy,
+      required this.createdAt,
+      required this.vectorClock,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'agentTemplateVersion';
+  factory AgentTemplateVersionEntity.fromJson(Map<String, dynamic> json) =>
+      _$AgentTemplateVersionEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final int version;
+  final AgentTemplateVersionStatus status;
+  final String directives;
+  final String authoredBy;
+  final DateTime createdAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AgentTemplateVersionEntityCopyWith<AgentTemplateVersionEntity>
+      get copyWith =>
+          _$AgentTemplateVersionEntityCopyWithImpl<AgentTemplateVersionEntity>(
+              this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AgentTemplateVersionEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AgentTemplateVersionEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.version, version) || other.version == version) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.directives, directives) ||
+                other.directives == directives) &&
+            (identical(other.authoredBy, authoredBy) ||
+                other.authoredBy == authoredBy) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, agentId, version, status,
+      directives, authoredBy, createdAt, vectorClock, deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AgentTemplateVersionEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $AgentTemplateVersionEntityCopyWith(AgentTemplateVersionEntity value,
+          $Res Function(AgentTemplateVersionEntity) _then) =
+      _$AgentTemplateVersionEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      int version,
+      AgentTemplateVersionStatus status,
+      String directives,
+      String authoredBy,
+      DateTime createdAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
+    implements $AgentTemplateVersionEntityCopyWith<$Res> {
+  _$AgentTemplateVersionEntityCopyWithImpl(this._self, this._then);
+
+  final AgentTemplateVersionEntity _self;
+  final $Res Function(AgentTemplateVersionEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? version = null,
+    Object? status = null,
+    Object? directives = null,
+    Object? authoredBy = null,
+    Object? createdAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(AgentTemplateVersionEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      version: null == version
+          ? _self.version
+          : version // ignore: cast_nullable_to_non_nullable
+              as int,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as AgentTemplateVersionStatus,
+      directives: null == directives
+          ? _self.directives
+          : directives // ignore: cast_nullable_to_non_nullable
+              as String,
+      authoredBy: null == authoredBy
+          ? _self.authoredBy
+          : authoredBy // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class AgentTemplateHeadEntity implements AgentDomainEntity {
+  const AgentTemplateHeadEntity(
+      {required this.id,
+      required this.agentId,
+      required this.versionId,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'agentTemplateHead';
+  factory AgentTemplateHeadEntity.fromJson(Map<String, dynamic> json) =>
+      _$AgentTemplateHeadEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String versionId;
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AgentTemplateHeadEntityCopyWith<AgentTemplateHeadEntity> get copyWith =>
+      _$AgentTemplateHeadEntityCopyWithImpl<AgentTemplateHeadEntity>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AgentTemplateHeadEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AgentTemplateHeadEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.versionId, versionId) ||
+                other.versionId == versionId) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, id, agentId, versionId, updatedAt, vectorClock, deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.agentTemplateHead(id: $id, agentId: $agentId, versionId: $versionId, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $AgentTemplateHeadEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $AgentTemplateHeadEntityCopyWith(AgentTemplateHeadEntity value,
+          $Res Function(AgentTemplateHeadEntity) _then) =
+      _$AgentTemplateHeadEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String versionId,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$AgentTemplateHeadEntityCopyWithImpl<$Res>
+    implements $AgentTemplateHeadEntityCopyWith<$Res> {
+  _$AgentTemplateHeadEntityCopyWithImpl(this._self, this._then);
+
+  final AgentTemplateHeadEntity _self;
+  final $Res Function(AgentTemplateHeadEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? versionId = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(AgentTemplateHeadEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      versionId: null == versionId
+          ? _self.versionId
+          : versionId // ignore: cast_nullable_to_non_nullable
               as String,
       updatedAt: null == updatedAt
           ? _self.updatedAt

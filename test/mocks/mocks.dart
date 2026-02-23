@@ -16,6 +16,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -322,6 +323,8 @@ class MockCloudInferenceRepository extends Mock
 class MockConversationManager extends Mock implements ConversationManager {}
 
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
+
+class MockAgentTemplateService extends Mock implements AgentTemplateService {}
 
 // --- Additional Fake classes ---
 

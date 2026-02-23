@@ -100,6 +100,43 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentReportHeadEntity;
 
+  /// Agent template — reusable blueprint for agent instances.
+  const factory AgentDomainEntity.agentTemplate({
+    required String id,
+    required String agentId,
+    required String displayName,
+    required AgentTemplateKind kind,
+    required String modelId,
+    required Set<String> categoryIds,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentTemplateEntity;
+
+  /// Immutable version of an agent template's directives.
+  const factory AgentDomainEntity.agentTemplateVersion({
+    required String id,
+    required String agentId,
+    required int version,
+    required AgentTemplateVersionStatus status,
+    required String directives,
+    required String authoredBy,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentTemplateVersionEntity;
+
+  /// Mutable head pointer for the active template version.
+  const factory AgentDomainEntity.agentTemplateHead({
+    required String id,
+    required String agentId,
+    required String versionId,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentTemplateHeadEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,

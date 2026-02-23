@@ -476,6 +476,9 @@ void main() {
                 agentMessagePayload: (_) => false,
                 agentReport: (_) => false,
                 agentReportHead: (_) => false,
+                agentTemplate: (_) => false,
+                agentTemplateVersion: (_) => false,
+                agentTemplateHead: (_) => false,
                 unknown: (_) => false,
               ),
             )

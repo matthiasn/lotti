@@ -148,6 +148,73 @@ class AgentRepository {
     return entity.mapOrNull(agentReportHead: (e) => e);
   }
 
+  // ── Template queries ─────────────────────────────────────────────────────
+
+  /// Fetch all non-deleted [AgentTemplateEntity] rows, newest first.
+  Future<List<AgentTemplateEntity>> getAllTemplates() async {
+    final rows = await _db.getAllAgentTemplates().get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentTemplateEntity>()
+        .toList();
+  }
+
+  /// Fetch the [AgentTemplateHeadEntity] for [templateId], or `null` if none
+  /// exists.
+  Future<AgentTemplateHeadEntity?> getTemplateHead(String templateId) async {
+    final rows = await _db
+        .getAgentEntitiesByType(templateId, 'agentTemplateHead', 1)
+        .get();
+    if (rows.isEmpty) return null;
+    final entity = AgentDbConversions.fromEntityRow(rows.first);
+    return entity.mapOrNull(agentTemplateHead: (e) => e);
+  }
+
+  /// Resolve the active [AgentTemplateVersionEntity] for [templateId] by
+  /// following the head pointer.
+  ///
+  /// Returns `null` if no head or no version entity is found.
+  Future<AgentTemplateVersionEntity?> getActiveTemplateVersion(
+    String templateId,
+  ) async {
+    final head = await getTemplateHead(templateId);
+    if (head == null) return null;
+
+    final entity = await getEntity(head.versionId);
+    return entity?.mapOrNull(agentTemplateVersion: (e) => e);
+  }
+
+  /// Determine the next version number for a template.
+  ///
+  /// Returns 1 if no versions exist yet.
+  Future<int> getNextTemplateVersionNumber(String templateId) async {
+    final rows = await _db
+        .getAgentEntitiesByType(templateId, 'agentTemplateVersion', -1)
+        .get();
+    if (rows.isEmpty) return 1;
+
+    final versions = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentTemplateVersionEntity>()
+        .map((v) => v.version);
+    return versions.isEmpty ? 1 : versions.reduce((a, b) => a > b ? a : b) + 1;
+  }
+
+  /// Update the template-related columns on a wake-run log entry.
+  Future<void> updateWakeRunTemplate(
+    String runKey,
+    String templateId,
+    String templateVersionId,
+  ) async {
+    await (_db.update(_db.wakeRunLog)..where((t) => t.runKey.equals(runKey)))
+        .write(
+      WakeRunLogCompanion(
+        templateId: Value(templateId),
+        templateVersionId: Value(templateVersionId),
+      ),
+    );
+  }
+
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.
