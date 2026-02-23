@@ -23,6 +23,8 @@ AgentLink _$AgentLinkFromJson(Map<String, dynamic> json) {
       return ToolEffectLink.fromJson(json);
     case 'agentTask':
       return AgentTaskLink.fromJson(json);
+    case 'templateAssignment':
+      return TemplateAssignmentLink.fromJson(json);
 
     default:
       return BasicAgentLink.fromJson(json);
@@ -168,6 +170,7 @@ extension AgentLinkPatterns on AgentLink {
     TResult Function(MessagePayloadLink value)? messagePayload,
     TResult Function(ToolEffectLink value)? toolEffect,
     TResult Function(AgentTaskLink value)? agentTask,
+    TResult Function(TemplateAssignmentLink value)? templateAssignment,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -184,6 +187,8 @@ extension AgentLinkPatterns on AgentLink {
         return toolEffect(_that);
       case AgentTaskLink() when agentTask != null:
         return agentTask(_that);
+      case TemplateAssignmentLink() when templateAssignment != null:
+        return templateAssignment(_that);
       case _:
         return orElse();
     }
@@ -210,6 +215,7 @@ extension AgentLinkPatterns on AgentLink {
     required TResult Function(MessagePayloadLink value) messagePayload,
     required TResult Function(ToolEffectLink value) toolEffect,
     required TResult Function(AgentTaskLink value) agentTask,
+    required TResult Function(TemplateAssignmentLink value) templateAssignment,
   }) {
     final _that = this;
     switch (_that) {
@@ -225,6 +231,8 @@ extension AgentLinkPatterns on AgentLink {
         return toolEffect(_that);
       case AgentTaskLink():
         return agentTask(_that);
+      case TemplateAssignmentLink():
+        return templateAssignment(_that);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -250,6 +258,7 @@ extension AgentLinkPatterns on AgentLink {
     TResult? Function(MessagePayloadLink value)? messagePayload,
     TResult? Function(ToolEffectLink value)? toolEffect,
     TResult? Function(AgentTaskLink value)? agentTask,
+    TResult? Function(TemplateAssignmentLink value)? templateAssignment,
   }) {
     final _that = this;
     switch (_that) {
@@ -265,6 +274,8 @@ extension AgentLinkPatterns on AgentLink {
         return toolEffect(_that);
       case AgentTaskLink() when agentTask != null:
         return agentTask(_that);
+      case TemplateAssignmentLink() when templateAssignment != null:
+        return templateAssignment(_that);
       case _:
         return null;
     }
@@ -302,6 +313,9 @@ extension AgentLinkPatterns on AgentLink {
     TResult Function(String id, String fromId, String toId, DateTime createdAt,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentTask,
+    TResult Function(String id, String fromId, String toId, DateTime createdAt,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        templateAssignment,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -330,6 +344,15 @@ extension AgentLinkPatterns on AgentLink {
       case AgentTaskLink() when agentTask != null:
         return agentTask(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case TemplateAssignmentLink() when templateAssignment != null:
+        return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
       case _:
         return orElse();
     }
@@ -404,6 +427,15 @@ extension AgentLinkPatterns on AgentLink {
             VectorClock? vectorClock,
             DateTime? deletedAt)
         agentTask,
+    required TResult Function(
+            String id,
+            String fromId,
+            String toId,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)
+        templateAssignment,
   }) {
     final _that = this;
     switch (_that) {
@@ -431,6 +463,15 @@ extension AgentLinkPatterns on AgentLink {
       case AgentTaskLink():
         return agentTask(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case TemplateAssignmentLink():
+        return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -468,6 +509,9 @@ extension AgentLinkPatterns on AgentLink {
     TResult? Function(String id, String fromId, String toId, DateTime createdAt,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentTask,
+    TResult? Function(String id, String fromId, String toId, DateTime createdAt,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        templateAssignment,
   }) {
     final _that = this;
     switch (_that) {
@@ -495,6 +539,15 @@ extension AgentLinkPatterns on AgentLink {
       case AgentTaskLink() when agentTask != null:
         return agentTask(_that.id, _that.fromId, _that.toId, _that.createdAt,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case TemplateAssignmentLink() when templateAssignment != null:
+        return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
       case _:
         return null;
     }
@@ -1369,6 +1422,157 @@ class _$AgentTaskLinkCopyWithImpl<$Res>
     Object? deletedAt = freezed,
   }) {
     return _then(AgentTaskLink(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      fromId: null == fromId
+          ? _self.fromId
+          : fromId // ignore: cast_nullable_to_non_nullable
+              as String,
+      toId: null == toId
+          ? _self.toId
+          : toId // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class TemplateAssignmentLink implements AgentLink {
+  const TemplateAssignmentLink(
+      {required this.id,
+      required this.fromId,
+      required this.toId,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'templateAssignment';
+  factory TemplateAssignmentLink.fromJson(Map<String, dynamic> json) =>
+      _$TemplateAssignmentLinkFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String fromId;
+  @override
+  final String toId;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $TemplateAssignmentLinkCopyWith<TemplateAssignmentLink> get copyWith =>
+      _$TemplateAssignmentLinkCopyWithImpl<TemplateAssignmentLink>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$TemplateAssignmentLinkToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TemplateAssignmentLink &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.fromId, fromId) || other.fromId == fromId) &&
+            (identical(other.toId, toId) || other.toId == toId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
+      updatedAt, vectorClock, deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentLink.templateAssignment(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $TemplateAssignmentLinkCopyWith<$Res>
+    implements $AgentLinkCopyWith<$Res> {
+  factory $TemplateAssignmentLinkCopyWith(TemplateAssignmentLink value,
+          $Res Function(TemplateAssignmentLink) _then) =
+      _$TemplateAssignmentLinkCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String fromId,
+      String toId,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$TemplateAssignmentLinkCopyWithImpl<$Res>
+    implements $TemplateAssignmentLinkCopyWith<$Res> {
+  _$TemplateAssignmentLinkCopyWithImpl(this._self, this._then);
+
+  final TemplateAssignmentLink _self;
+  final $Res Function(TemplateAssignmentLink) _then;
+
+  /// Create a copy of AgentLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? fromId = null,
+    Object? toId = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(TemplateAssignmentLink(
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable

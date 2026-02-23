@@ -1093,6 +1093,20 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       $customConstraints: '');
+  static const VerificationMeta _templateIdMeta =
+      const VerificationMeta('templateId');
+  late final GeneratedColumn<String> templateId = GeneratedColumn<String>(
+      'template_id', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      $customConstraints: '');
+  static const VerificationMeta _templateVersionIdMeta =
+      const VerificationMeta('templateVersionId');
+  late final GeneratedColumn<String> templateVersionId =
+      GeneratedColumn<String>('template_version_id', aliasedName, true,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          $customConstraints: '');
   @override
   List<GeneratedColumn> get $columns => [
         runKey,
@@ -1105,7 +1119,9 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         createdAt,
         startedAt,
         completedAt,
-        errorMessage
+        errorMessage,
+        templateId,
+        templateVersionId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1179,6 +1195,18 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
           errorMessage.isAcceptableOrUnknown(
               data['error_message']!, _errorMessageMeta));
     }
+    if (data.containsKey('template_id')) {
+      context.handle(
+          _templateIdMeta,
+          templateId.isAcceptableOrUnknown(
+              data['template_id']!, _templateIdMeta));
+    }
+    if (data.containsKey('template_version_id')) {
+      context.handle(
+          _templateVersionIdMeta,
+          templateVersionId.isAcceptableOrUnknown(
+              data['template_version_id']!, _templateVersionIdMeta));
+    }
     return context;
   }
 
@@ -1210,6 +1238,10 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
       errorMessage: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}error_message']),
+      templateId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}template_id']),
+      templateVersionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}template_version_id']),
     );
   }
 
@@ -1234,6 +1266,8 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
   final DateTime? startedAt;
   final DateTime? completedAt;
   final String? errorMessage;
+  final String? templateId;
+  final String? templateVersionId;
   const WakeRunLogData(
       {required this.runKey,
       required this.agentId,
@@ -1245,7 +1279,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       required this.createdAt,
       this.startedAt,
       this.completedAt,
-      this.errorMessage});
+      this.errorMessage,
+      this.templateId,
+      this.templateVersionId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1269,6 +1305,12 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     }
     if (!nullToAbsent || errorMessage != null) {
       map['error_message'] = Variable<String>(errorMessage);
+    }
+    if (!nullToAbsent || templateId != null) {
+      map['template_id'] = Variable<String>(templateId);
+    }
+    if (!nullToAbsent || templateVersionId != null) {
+      map['template_version_id'] = Variable<String>(templateVersionId);
     }
     return map;
   }
@@ -1296,6 +1338,12 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       errorMessage: errorMessage == null && nullToAbsent
           ? const Value.absent()
           : Value(errorMessage),
+      templateId: templateId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateId),
+      templateVersionId: templateVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateVersionId),
     );
   }
 
@@ -1315,6 +1363,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       startedAt: serializer.fromJson<DateTime?>(json['started_at']),
       completedAt: serializer.fromJson<DateTime?>(json['completed_at']),
       errorMessage: serializer.fromJson<String?>(json['error_message']),
+      templateId: serializer.fromJson<String?>(json['template_id']),
+      templateVersionId:
+          serializer.fromJson<String?>(json['template_version_id']),
     );
   }
   @override
@@ -1332,6 +1383,8 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       'started_at': serializer.toJson<DateTime?>(startedAt),
       'completed_at': serializer.toJson<DateTime?>(completedAt),
       'error_message': serializer.toJson<String?>(errorMessage),
+      'template_id': serializer.toJson<String?>(templateId),
+      'template_version_id': serializer.toJson<String?>(templateVersionId),
     };
   }
 
@@ -1346,7 +1399,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           DateTime? createdAt,
           Value<DateTime?> startedAt = const Value.absent(),
           Value<DateTime?> completedAt = const Value.absent(),
-          Value<String?> errorMessage = const Value.absent()}) =>
+          Value<String?> errorMessage = const Value.absent(),
+          Value<String?> templateId = const Value.absent(),
+          Value<String?> templateVersionId = const Value.absent()}) =>
       WakeRunLogData(
         runKey: runKey ?? this.runKey,
         agentId: agentId ?? this.agentId,
@@ -1362,6 +1417,10 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
         completedAt: completedAt.present ? completedAt.value : this.completedAt,
         errorMessage:
             errorMessage.present ? errorMessage.value : this.errorMessage,
+        templateId: templateId.present ? templateId.value : this.templateId,
+        templateVersionId: templateVersionId.present
+            ? templateVersionId.value
+            : this.templateVersionId,
       );
   WakeRunLogData copyWithCompanion(WakeRunLogCompanion data) {
     return WakeRunLogData(
@@ -1381,6 +1440,11 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       errorMessage: data.errorMessage.present
           ? data.errorMessage.value
           : this.errorMessage,
+      templateId:
+          data.templateId.present ? data.templateId.value : this.templateId,
+      templateVersionId: data.templateVersionId.present
+          ? data.templateVersionId.value
+          : this.templateVersionId,
     );
   }
 
@@ -1397,7 +1461,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           ..write('createdAt: $createdAt, ')
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
-          ..write('errorMessage: $errorMessage')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('templateId: $templateId, ')
+          ..write('templateVersionId: $templateVersionId')
           ..write(')'))
         .toString();
   }
@@ -1414,7 +1480,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       createdAt,
       startedAt,
       completedAt,
-      errorMessage);
+      errorMessage,
+      templateId,
+      templateVersionId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1429,7 +1497,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           other.createdAt == this.createdAt &&
           other.startedAt == this.startedAt &&
           other.completedAt == this.completedAt &&
-          other.errorMessage == this.errorMessage);
+          other.errorMessage == this.errorMessage &&
+          other.templateId == this.templateId &&
+          other.templateVersionId == this.templateVersionId);
 }
 
 class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
@@ -1444,6 +1514,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
   final Value<DateTime?> startedAt;
   final Value<DateTime?> completedAt;
   final Value<String?> errorMessage;
+  final Value<String?> templateId;
+  final Value<String?> templateVersionId;
   final Value<int> rowid;
   const WakeRunLogCompanion({
     this.runKey = const Value.absent(),
@@ -1457,6 +1529,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.errorMessage = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.templateVersionId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WakeRunLogCompanion.insert({
@@ -1471,6 +1545,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.errorMessage = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.templateVersionId = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : runKey = Value(runKey),
         agentId = Value(agentId),
@@ -1490,6 +1566,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     Expression<DateTime>? startedAt,
     Expression<DateTime>? completedAt,
     Expression<String>? errorMessage,
+    Expression<String>? templateId,
+    Expression<String>? templateVersionId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1504,6 +1582,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       if (startedAt != null) 'started_at': startedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (errorMessage != null) 'error_message': errorMessage,
+      if (templateId != null) 'template_id': templateId,
+      if (templateVersionId != null) 'template_version_id': templateVersionId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1520,6 +1600,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       Value<DateTime?>? startedAt,
       Value<DateTime?>? completedAt,
       Value<String?>? errorMessage,
+      Value<String?>? templateId,
+      Value<String?>? templateVersionId,
       Value<int>? rowid}) {
     return WakeRunLogCompanion(
       runKey: runKey ?? this.runKey,
@@ -1533,6 +1615,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       errorMessage: errorMessage ?? this.errorMessage,
+      templateId: templateId ?? this.templateId,
+      templateVersionId: templateVersionId ?? this.templateVersionId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1573,6 +1657,12 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     if (errorMessage.present) {
       map['error_message'] = Variable<String>(errorMessage.value);
     }
+    if (templateId.present) {
+      map['template_id'] = Variable<String>(templateId.value);
+    }
+    if (templateVersionId.present) {
+      map['template_version_id'] = Variable<String>(templateVersionId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1593,6 +1683,8 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('errorMessage: $errorMessage, ')
+          ..write('templateId: $templateId, ')
+          ..write('templateVersionId: $templateVersionId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2301,6 +2393,15 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     );
   }
 
+  Selectable<AgentEntity> getAllAgentTemplates() {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE type = \'agentTemplate\' AND deleted_at IS NULL ORDER BY created_at DESC',
+        variables: [],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getAllAgentEntities() {
     return customSelect(
         'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
@@ -2820,6 +2921,8 @@ typedef $WakeRunLogCreateCompanionBuilder = WakeRunLogCompanion Function({
   Value<DateTime?> startedAt,
   Value<DateTime?> completedAt,
   Value<String?> errorMessage,
+  Value<String?> templateId,
+  Value<String?> templateVersionId,
   Value<int> rowid,
 });
 typedef $WakeRunLogUpdateCompanionBuilder = WakeRunLogCompanion Function({
@@ -2834,6 +2937,8 @@ typedef $WakeRunLogUpdateCompanionBuilder = WakeRunLogCompanion Function({
   Value<DateTime?> startedAt,
   Value<DateTime?> completedAt,
   Value<String?> errorMessage,
+  Value<String?> templateId,
+  Value<String?> templateVersionId,
   Value<int> rowid,
 });
 
@@ -2878,6 +2983,13 @@ class $WakeRunLogFilterComposer extends Composer<_$AgentDatabase, WakeRunLog> {
 
   ColumnFilters<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get templateId => $composableBuilder(
+      column: $table.templateId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get templateVersionId => $composableBuilder(
+      column: $table.templateVersionId,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $WakeRunLogOrderingComposer
@@ -2923,6 +3035,13 @@ class $WakeRunLogOrderingComposer
   ColumnOrderings<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get templateId => $composableBuilder(
+      column: $table.templateId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get templateVersionId => $composableBuilder(
+      column: $table.templateVersionId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $WakeRunLogAnnotationComposer
@@ -2966,6 +3085,12 @@ class $WakeRunLogAnnotationComposer
 
   GeneratedColumn<String> get errorMessage => $composableBuilder(
       column: $table.errorMessage, builder: (column) => column);
+
+  GeneratedColumn<String> get templateId => $composableBuilder(
+      column: $table.templateId, builder: (column) => column);
+
+  GeneratedColumn<String> get templateVersionId => $composableBuilder(
+      column: $table.templateVersionId, builder: (column) => column);
 }
 
 class $WakeRunLogTableManager extends RootTableManager<
@@ -3005,6 +3130,8 @@ class $WakeRunLogTableManager extends RootTableManager<
             Value<DateTime?> startedAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<String?> errorMessage = const Value.absent(),
+            Value<String?> templateId = const Value.absent(),
+            Value<String?> templateVersionId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               WakeRunLogCompanion(
@@ -3019,6 +3146,8 @@ class $WakeRunLogTableManager extends RootTableManager<
             startedAt: startedAt,
             completedAt: completedAt,
             errorMessage: errorMessage,
+            templateId: templateId,
+            templateVersionId: templateVersionId,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -3033,6 +3162,8 @@ class $WakeRunLogTableManager extends RootTableManager<
             Value<DateTime?> startedAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
             Value<String?> errorMessage = const Value.absent(),
+            Value<String?> templateId = const Value.absent(),
+            Value<String?> templateVersionId = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               WakeRunLogCompanion.insert(
@@ -3047,6 +3178,8 @@ class $WakeRunLogTableManager extends RootTableManager<
             startedAt: startedAt,
             completedAt: completedAt,
             errorMessage: errorMessage,
+            templateId: templateId,
+            templateVersionId: templateVersionId,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

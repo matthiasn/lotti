@@ -25,6 +25,9 @@ class AgentDbConversions {
       agentMessagePayload: (e) => e.deletedAt,
       agentReport: (e) => e.deletedAt,
       agentReportHead: (e) => e.deletedAt,
+      agentTemplate: (e) => e.deletedAt,
+      agentTemplateVersion: (e) => e.deletedAt,
+      agentTemplateHead: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -81,6 +84,7 @@ class AgentDbConversions {
       messagePayload: (l) => l.deletedAt,
       toolEffect: (l) => l.deletedAt,
       agentTask: (l) => l.deletedAt,
+      templateAssignment: (l) => l.deletedAt,
     );
 
     return AgentLinksCompanion(
@@ -113,6 +117,9 @@ class AgentDbConversions {
       agentMessagePayload: (_) => 'agentMessagePayload',
       agentReport: (_) => 'agentReport',
       agentReportHead: (_) => 'agentReportHead',
+      agentTemplate: (_) => 'agentTemplate',
+      agentTemplateVersion: (_) => 'agentTemplateVersion',
+      agentTemplateHead: (_) => 'agentTemplateHead',
       unknown: (_) => 'unknown',
     );
   }
@@ -127,6 +134,8 @@ class AgentDbConversions {
       agentMessage: (msg) => msg.kind.name,
       agentReport: (report) => report.scope,
       agentReportHead: (head) => head.scope,
+      agentTemplate: (t) => t.kind.name,
+      agentTemplateVersion: (v) => v.status.name,
     );
   }
 
@@ -143,6 +152,9 @@ class AgentDbConversions {
       agentMessagePayload: (e) => e.createdAt,
       agentReport: (e) => e.createdAt,
       agentReportHead: (e) => e.updatedAt,
+      agentTemplate: (e) => e.createdAt,
+      agentTemplateVersion: (e) => e.createdAt,
+      agentTemplateHead: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -150,8 +162,8 @@ class AgentDbConversions {
   /// Determine the `updated_at` value to write for an entity row.
   ///
   /// Immutable variants (agentMessage, agentMessagePayload, agentReport,
-  /// unknown) have no `updatedAt` field, so `createdAt` is used instead to
-  /// satisfy the NOT NULL constraint.
+  /// agentTemplateVersion, unknown) have no `updatedAt` field, so `createdAt`
+  /// is used instead to satisfy the NOT NULL constraint.
   static DateTime entityUpdatedAt(AgentDomainEntity entity) {
     return entity.map(
       agent: (e) => e.updatedAt,
@@ -160,6 +172,9 @@ class AgentDbConversions {
       agentMessagePayload: (e) => e.createdAt,
       agentReport: (e) => e.createdAt,
       agentReportHead: (e) => e.updatedAt,
+      agentTemplate: (e) => e.updatedAt,
+      agentTemplateVersion: (e) => e.createdAt,
+      agentTemplateHead: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -173,6 +188,7 @@ class AgentDbConversions {
       messagePayload: (_) => 'message_payload',
       toolEffect: (_) => 'tool_effect',
       agentTask: (_) => 'agent_task',
+      templateAssignment: (_) => 'template_assignment',
     );
   }
 }

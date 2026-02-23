@@ -6,6 +6,9 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
+/// Default template ID used across tests.
+const kTestTemplateId = 'template-001';
+
 /// Shared test date for agent tests. Do NOT use DateTime.now().
 final kAgentTestDate = DateTime(2024, 3, 15, 10, 30);
 
@@ -139,6 +142,90 @@ AgentReportHeadEntity makeTestReportHead({
     updatedAt: updatedAt ?? kAgentTestDate,
     vectorClock: vectorClock,
   ) as AgentReportHeadEntity;
+}
+
+// ── Template entity factories ────────────────────────────────────────────────
+
+AgentTemplateEntity makeTestTemplate({
+  String id = kTestTemplateId,
+  String agentId = kTestTemplateId,
+  String displayName = 'Test Template',
+  AgentTemplateKind kind = AgentTemplateKind.taskAgent,
+  String modelId = 'models/gemini-3.1-pro-preview',
+  Set<String> categoryIds = const {},
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+}) {
+  return AgentDomainEntity.agentTemplate(
+    id: id,
+    agentId: agentId,
+    displayName: displayName,
+    kind: kind,
+    modelId: modelId,
+    categoryIds: categoryIds,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+  ) as AgentTemplateEntity;
+}
+
+AgentTemplateVersionEntity makeTestTemplateVersion({
+  String id = 'version-001',
+  String agentId = kTestTemplateId,
+  int version = 1,
+  AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
+  String directives = 'You are a helpful agent.',
+  String authoredBy = 'user',
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+}) {
+  return AgentDomainEntity.agentTemplateVersion(
+    id: id,
+    agentId: agentId,
+    version: version,
+    status: status,
+    directives: directives,
+    authoredBy: authoredBy,
+    createdAt: createdAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+  ) as AgentTemplateVersionEntity;
+}
+
+AgentTemplateHeadEntity makeTestTemplateHead({
+  String id = 'template-head-001',
+  String agentId = kTestTemplateId,
+  String versionId = 'version-001',
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+}) {
+  return AgentDomainEntity.agentTemplateHead(
+    id: id,
+    agentId: agentId,
+    versionId: versionId,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+  ) as AgentTemplateHeadEntity;
+}
+
+// ── Template link factory ────────────────────────────────────────────────────
+
+model.AgentLink makeTestTemplateAssignmentLink({
+  String id = 'link-ta-001',
+  String fromId = kTestTemplateId,
+  String toId = kTestAgentId,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+}) {
+  return model.AgentLink.templateAssignment(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+  );
 }
 
 // ── Link factory ──────────────────────────────────────────────────────────────
