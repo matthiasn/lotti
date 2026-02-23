@@ -235,11 +235,32 @@ class AgentTemplateService {
       final template = await getTemplate(templateId);
       if (template == null) return;
 
-      final deleted = template.copyWith(
-        deletedAt: now,
-        updatedAt: now,
+      // Soft-delete the template itself.
+      await syncService.upsertEntity(
+        template.copyWith(deletedAt: now, updatedAt: now),
       );
-      await syncService.upsertEntity(deleted);
+
+      // Soft-delete the head pointer so it no longer appears in queries.
+      final head = await repository.getTemplateHead(templateId);
+      if (head != null) {
+        await syncService.upsertEntity(
+          head.copyWith(deletedAt: now, updatedAt: now),
+        );
+      }
+
+      // Soft-delete all versions for this template.
+      final versions = await repository.getEntitiesByAgentId(
+        templateId,
+        type: 'agentTemplateVersion',
+      );
+      for (final entity in versions) {
+        final version = entity.mapOrNull(agentTemplateVersion: (v) => v);
+        if (version != null) {
+          await syncService.upsertEntity(
+            version.copyWith(deletedAt: now),
+          );
+        }
+      }
     });
 
     developer.log(

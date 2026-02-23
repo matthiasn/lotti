@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
@@ -27,25 +27,15 @@ void main() {
     );
   });
 
-  setUpAll(() {
-    registerFallbackValue(
-      AgentDomainEntity.unknown(
-        id: '',
-        agentId: '',
-        createdAt: DateTime(2024),
-      ),
-    );
-    registerFallbackValue(
-      model.AgentLink.basic(
-        id: '',
-        fromId: '',
-        toId: '',
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-      ),
-    );
-  });
+  setUpAll(registerAllFallbackValues);
+
+  /// Stub [mockRepo.getEntity] to return a default template for
+  /// [kTestTemplateId]. Call this in tests that need the template to exist.
+  void stubTemplateExists() {
+    final template = makeTestTemplate();
+    when(() => mockRepo.getEntity(kTestTemplateId))
+        .thenAnswer((_) async => template);
+  }
 
   group('createTemplate', () {
     test('creates template, version, and head entities', () async {
@@ -134,14 +124,12 @@ void main() {
 
   group('createVersion', () {
     test('archives current version and creates new one', () async {
-      final template = makeTestTemplate();
+      stubTemplateExists();
       final currentVersion = makeTestTemplateVersion(
         id: 'ver-old',
       );
       final currentHead = makeTestTemplateHead(versionId: 'ver-old');
 
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
       when(() => mockRepo.getTemplateHead(kTestTemplateId))
           .thenAnswer((_) async => currentHead);
       when(() => mockRepo.getEntity('ver-old'))
@@ -164,9 +152,7 @@ void main() {
     });
 
     test('creates first version when no head exists', () async {
-      final template = makeTestTemplate();
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
+      stubTemplateExists();
       when(() => mockRepo.getTemplateHead(kTestTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
@@ -185,11 +171,9 @@ void main() {
     });
 
     test('skips archiving when current version entity is not found', () async {
-      final template = makeTestTemplate();
+      stubTemplateExists();
       final currentHead = makeTestTemplateHead(versionId: 'ver-gone');
 
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
       when(() => mockRepo.getTemplateHead(kTestTemplateId))
           .thenAnswer((_) async => currentHead);
       when(() => mockRepo.getEntity('ver-gone')).thenAnswer((_) async => null);
@@ -233,9 +217,7 @@ void main() {
 
   group('getTemplate', () {
     test('returns template when found', () async {
-      final template = makeTestTemplate();
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
+      stubTemplateExists();
 
       final result = await service.getTemplate(kTestTemplateId);
 
@@ -300,13 +282,11 @@ void main() {
 
   group('getTemplateForAgent', () {
     test('resolves template via link', () async {
+      stubTemplateExists();
       final link = makeTestTemplateAssignmentLink();
-      final template = makeTestTemplate();
 
       when(() => mockRepo.getLinksTo(kTestAgentId, type: 'template_assignment'))
           .thenAnswer((_) async => [link]);
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
 
       final result = await service.getTemplateForAgent(kTestAgentId);
 
@@ -456,6 +436,7 @@ void main() {
     });
 
     test('succeeds when all instances are destroyed', () async {
+      stubTemplateExists();
       final destroyedAgent = makeTestIdentity(
         id: 'agent-a',
         agentId: 'agent-a',
@@ -464,7 +445,6 @@ void main() {
       final links = [
         makeTestTemplateAssignmentLink(toId: 'agent-a'),
       ];
-      final template = makeTestTemplate();
       when(
         () => mockRepo.getLinksFrom(
           kTestTemplateId,
@@ -473,36 +453,60 @@ void main() {
       ).thenAnswer((_) async => links);
       when(() => mockRepo.getEntity('agent-a'))
           .thenAnswer((_) async => destroyedAgent);
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
+      when(() => mockRepo.getTemplateHead(kTestTemplateId))
+          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: 'agentTemplateVersion',
+        ),
+      ).thenAnswer((_) async => []);
 
       await service.deleteTemplate(kTestTemplateId);
 
       final captured = verify(() => mockSync.upsertEntity(captureAny()))
           .captured
-          .last as AgentDomainEntity;
-      final deleted = captured as AgentTemplateEntity;
+          .cast<AgentDomainEntity>();
+      final deleted = captured.first as AgentTemplateEntity;
       expect(deleted.deletedAt, isNotNull);
     });
 
-    test('succeeds when no instances at all', () async {
-      final template = makeTestTemplate();
+    test('soft-deletes template, head, and versions', () async {
+      stubTemplateExists();
+      final head = makeTestTemplateHead();
+      final version = makeTestTemplateVersion();
       when(
         () => mockRepo.getLinksFrom(
           kTestTemplateId,
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => []);
-      when(() => mockRepo.getEntity(kTestTemplateId))
-          .thenAnswer((_) async => template);
+      when(() => mockRepo.getTemplateHead(kTestTemplateId))
+          .thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: 'agentTemplateVersion',
+        ),
+      ).thenAnswer((_) async => [version]);
 
       await service.deleteTemplate(kTestTemplateId);
 
       final captured = verify(() => mockSync.upsertEntity(captureAny()))
           .captured
-          .last as AgentDomainEntity;
-      final deleted = captured as AgentTemplateEntity;
-      expect(deleted.deletedAt, isNotNull);
+          .cast<AgentDomainEntity>();
+
+      // 3 upserts: template, head, version — all soft-deleted.
+      expect(captured.length, 3);
+
+      final deletedTemplate = captured[0] as AgentTemplateEntity;
+      expect(deletedTemplate.deletedAt, isNotNull);
+
+      final deletedHead = captured[1] as AgentTemplateHeadEntity;
+      expect(deletedHead.deletedAt, isNotNull);
+
+      final deletedVersion = captured[2] as AgentTemplateVersionEntity;
+      expect(deletedVersion.deletedAt, isNotNull);
     });
 
     test('no-op when template does not exist', () async {
