@@ -48,6 +48,7 @@ class TaskAgentService {
   /// Throws [StateError] if a Task Agent already exists for [taskId].
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
+    required String templateId,
     required Set<String> allowedCategoryIds,
     String? displayName,
   }) async {
@@ -97,12 +98,25 @@ class TaskAgentService {
       await syncService.upsertEntity(updatedState);
 
       // Create agent_task link: agent → task.
-      final linkId = _uuid.v4();
+      final taskLinkId = _uuid.v4();
       await syncService.upsertLink(
         AgentLink.agentTask(
-          id: linkId,
+          id: taskLinkId,
           fromId: identity.agentId,
           toId: taskId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+
+      // Create template_assignment link: template → agent.
+      final templateLinkId = _uuid.v4();
+      await syncService.upsertLink(
+        AgentLink.templateAssignment(
+          id: templateLinkId,
+          fromId: templateId,
+          toId: identity.agentId,
           createdAt: now,
           updatedAt: now,
           vectorClock: null,

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -106,6 +107,15 @@ AgentService agentService(Ref ref) {
   return AgentService(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  );
+}
+
+/// The agent template service.
+@Riverpod(keepAlive: true)
+AgentTemplateService agentTemplateService(Ref ref) {
+  return AgentTemplateService(
+    repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
   );
 }
@@ -287,6 +297,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
   );
 }
 
@@ -326,6 +337,7 @@ Future<void> agentInitialization(Ref ref) async {
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   final workflow = ref.watch(taskAgentWorkflowProvider);
   final taskAgentService = ref.watch(taskAgentServiceProvider);
+  final templateService = ref.watch(agentTemplateServiceProvider);
 
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
@@ -380,5 +392,6 @@ Future<void> agentInitialization(Ref ref) async {
     });
   }
 
+  await templateService.seedDefaults();
   await taskAgentService.restoreSubscriptions();
 }

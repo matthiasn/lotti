@@ -426,11 +426,15 @@ void main() {
       (tester) async {
         final task = testTask;
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
         final identity = makeTestIdentity();
 
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
         when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
@@ -448,6 +452,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -467,6 +472,7 @@ void main() {
         verify(
           () => mockService.createTaskAgent(
             taskId: task.meta.id,
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: <String>{},
           ),
         ).called(1);
@@ -478,10 +484,14 @@ void main() {
       (tester) async {
         final task = testTask;
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
 
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
         when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenThrow(Exception('creation failed'));
@@ -499,6 +509,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -558,6 +569,7 @@ void main() {
         verifyNever(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         );
@@ -592,11 +604,15 @@ void main() {
         );
 
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
         final identity = makeTestIdentity();
 
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
         when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
@@ -614,6 +630,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -633,6 +650,7 @@ void main() {
         verify(
           () => mockService.createTaskAgent(
             taskId: testTask.meta.id,
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: {categoryId},
           ),
         ).called(1);

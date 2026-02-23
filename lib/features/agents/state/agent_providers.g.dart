@@ -548,6 +548,55 @@ final class AgentServiceProvider
 
 String _$agentServiceHash() => r'6009a2c80577a05731e21a2cf7a569111cb42603';
 
+/// The agent template service.
+
+@ProviderFor(agentTemplateService)
+final agentTemplateServiceProvider = AgentTemplateServiceProvider._();
+
+/// The agent template service.
+
+final class AgentTemplateServiceProvider extends $FunctionalProvider<
+    AgentTemplateService,
+    AgentTemplateService,
+    AgentTemplateService> with $Provider<AgentTemplateService> {
+  /// The agent template service.
+  AgentTemplateServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'agentTemplateServiceProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentTemplateServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AgentTemplateService> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AgentTemplateService create(Ref ref) {
+    return agentTemplateService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AgentTemplateService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AgentTemplateService>(value),
+    );
+  }
+}
+
+String _$agentTemplateServiceHash() =>
+    r'104340be1f31a3ca3b8a0e5b3726a0084969940b';
+
 /// Fetch the latest report for an agent by [agentId].
 ///
 /// Returns [AgentDomainEntity] (variant: [AgentReportEntity]) or `null`.
@@ -1414,7 +1463,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'3f3acc3ecfaa422c740d143473d620d0aa48b8d5';
+String _$taskAgentWorkflowHash() => r'4e523ddb904093dc073b153f27b361d0e992d05b';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
@@ -1483,4 +1532,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'd3848498343cb1b1d4917aae7cc490df960e0a0d';
+    r'83ad04ab96075854e5ae9fdb815798212884b7eb';

@@ -168,8 +168,14 @@ class _TaskAgentChip extends ConsumerWidget {
 
     try {
       final service = ref.read(taskAgentServiceProvider);
+      final templateService = ref.read(agentTemplateServiceProvider);
+      final templates = await templateService.listTemplates();
+      if (templates.isEmpty) {
+        throw StateError('No templates available');
+      }
       await service.createTaskAgent(
         taskId: taskId,
+        templateId: templates.first.id,
         allowedCategoryIds: allowedCategoryIds,
       );
       // Invalidate the provider so the UI rebuilds with the new agent.

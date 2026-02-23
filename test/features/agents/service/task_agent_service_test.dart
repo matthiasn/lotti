@@ -105,6 +105,7 @@ void main() {
 
         final result = await service.createTaskAgent(
           taskId: 'task-1',
+          templateId: kTestTemplateId,
           allowedCategoryIds: {'cat-1'},
           displayName: 'My Task Agent',
         );
@@ -119,13 +120,17 @@ void main() {
         final updatedState = stateCalls.first as AgentStateEntity;
         expect(updatedState.slots.activeTaskId, 'task-1');
 
-        // Verify agent_task link was created
+        // Verify agent_task and template_assignment links were created
         final linkCalls = verify(
           () => mockSyncService.upsertLink(captureAny()),
         ).captured;
-        final link = linkCalls.first as AgentTaskLink;
-        expect(link.fromId, 'agent-1');
-        expect(link.toId, 'task-1');
+        expect(linkCalls, hasLength(2));
+        final taskLink = linkCalls.first as AgentTaskLink;
+        expect(taskLink.fromId, 'agent-1');
+        expect(taskLink.toId, 'task-1');
+        final templateLink = linkCalls[1] as TemplateAssignmentLink;
+        expect(templateLink.fromId, kTestTemplateId);
+        expect(templateLink.toId, 'agent-1');
 
         // Verify subscription was registered
         final subCalls = verify(
@@ -173,6 +178,7 @@ void main() {
 
         await service.createTaskAgent(
           taskId: 'task-2',
+          templateId: kTestTemplateId,
           allowedCategoryIds: const {},
         );
 
@@ -204,6 +210,7 @@ void main() {
         expect(
           () => service.createTaskAgent(
             taskId: 'task-1',
+            templateId: kTestTemplateId,
             allowedCategoryIds: const {},
           ),
           throwsA(
@@ -241,6 +248,7 @@ void main() {
         expect(
           () => service.createTaskAgent(
             taskId: 'task-race',
+            templateId: kTestTemplateId,
             allowedCategoryIds: const {},
           ),
           throwsA(
@@ -272,6 +280,7 @@ void main() {
         expect(
           () => service.createTaskAgent(
             taskId: 'task-3',
+            templateId: kTestTemplateId,
             allowedCategoryIds: const {},
           ),
           throwsStateError,
@@ -572,12 +581,14 @@ void main() {
 
         await service.createTaskAgent(
           taskId: 'task-sync',
+          templateId: kTestTemplateId,
           allowedCategoryIds: {'cat-1'},
         );
 
         // Entity and link writes go through syncService, not repository.
+        // 1 entity (state update) + 2 links (agent_task + template_assignment).
         verify(() => mockSyncService.upsertEntity(any())).called(1);
-        verify(() => mockSyncService.upsertLink(any())).called(1);
+        verify(() => mockSyncService.upsertLink(any())).called(2);
         verifyNever(() => mockRepository.upsertEntity(any()));
         verifyNever(() => mockRepository.upsertLink(any()));
       });

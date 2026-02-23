@@ -959,17 +959,20 @@ void main() {
     late MockWakeOrchestrator mockOrchestrator;
     late MockTaskAgentWorkflow mockWorkflow;
     late MockTaskAgentService mockTaskAgentService;
+    late MockAgentTemplateService mockTemplateService;
 
     setUp(() async {
       await setUpTestGetIt();
       mockOrchestrator = MockWakeOrchestrator();
       mockWorkflow = MockTaskAgentWorkflow();
       mockTaskAgentService = MockTaskAgentService();
+      mockTemplateService = MockAgentTemplateService();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
+      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -984,6 +987,7 @@ void main() {
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag && enableAgents,
@@ -1024,6 +1028,7 @@ void main() {
       await container.read(agentInitializationProvider.future);
 
       verify(() => mockOrchestrator.start(any())).called(1);
+      verify(() => mockTemplateService.seedDefaults()).called(1);
       verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
     });
 

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -61,6 +62,7 @@ class TaskAgentWorkflow {
     required this.journalRepository,
     required this.checklistRepository,
     required this.syncService,
+    required this.templateService,
   });
 
   final AgentRepository agentRepository;
@@ -75,11 +77,9 @@ class TaskAgentWorkflow {
   final CloudInferenceRepository cloudInferenceRepository;
   final JournalRepository journalRepository;
   final ChecklistRepository checklistRepository;
+  final AgentTemplateService templateService;
 
   static const _uuid = Uuid();
-
-  /// The hardcoded model ID for MVP.
-  static const _modelId = 'models/gemini-3.1-pro-preview';
 
   /// Execute a full wake cycle for the given agent.
   ///
@@ -144,11 +144,25 @@ class TaskAgentWorkflow {
       return const WakeResult(success: false, error: 'Task not found');
     }
 
-    // 3. Resolve a Gemini inference provider.
-    final provider = await _resolveGeminiProvider();
+    // 3. Resolve the agent's template and active version.
+    final templateCtx = await _resolveTemplate(agentId);
+    if (templateCtx == null) {
+      developer.log(
+        'No template assigned to agent $agentId — aborting wake',
+        name: 'TaskAgentWorkflow',
+      );
+      return const WakeResult(
+        success: false,
+        error: 'No template assigned to agent',
+      );
+    }
+
+    // 4. Resolve a Gemini inference provider using the template's model ID.
+    final modelId = templateCtx.template.modelId;
+    final provider = await _resolveGeminiProvider(modelId);
     if (provider == null) {
       developer.log(
-        'No Gemini provider configured — aborting wake',
+        'No Gemini provider configured for model $modelId — aborting wake',
         name: 'TaskAgentWorkflow',
       );
       return const WakeResult(
@@ -157,8 +171,8 @@ class TaskAgentWorkflow {
       );
     }
 
-    // 4. Assemble conversation context.
-    const systemPrompt = taskAgentSystemPrompt;
+    // 5. Assemble conversation context.
+    final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
       lastReport: lastReport,
       journalObservations: journalObservations,
@@ -243,10 +257,25 @@ class TaskAgentWorkflow {
         cloudRepository: cloudInferenceRepository,
       );
 
+      // Record template provenance on the wake run log entry.
+      try {
+        await agentRepository.updateWakeRunTemplate(
+          runKey,
+          templateCtx.template.id,
+          templateCtx.version.id,
+        );
+      } catch (e) {
+        developer.log(
+          'Failed to record template provenance for run $runKey: $e',
+          name: 'TaskAgentWorkflow',
+        );
+        // Non-fatal: the wake can proceed without provenance tracking.
+      }
+
       await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
-        model: _modelId,
+        model: modelId,
         provider: provider,
         inferenceRepo: inferenceRepo,
         tools: tools,
@@ -419,27 +448,29 @@ class TaskAgentWorkflow {
 
   // ── Private helpers ──────────────────────────────────────────────────────
 
-  /// Resolves the Gemini inference provider for the agent's model.
+  /// Resolves the Gemini inference provider for the given [modelId].
   ///
   /// Looks up the configured [AiConfigModel] whose `providerModelId` matches
-  /// [_modelId], then resolves the associated inference provider. This ensures
+  /// [modelId], then resolves the associated inference provider. This ensures
   /// the agent uses the correct provider even when multiple Gemini providers
   /// are configured.
   ///
   /// Returns `null` if the model is not configured, the provider is missing,
   /// or the provider has no API key set.
-  Future<AiConfigInferenceProvider?> _resolveGeminiProvider() async {
+  Future<AiConfigInferenceProvider?> _resolveGeminiProvider(
+    String modelId,
+  ) async {
     final models =
         await aiConfigRepository.getConfigsByType(AiConfigType.model);
 
-    // Find the configured model matching our hardcoded model ID.
+    // Find the configured model matching the template's model ID.
     final matchingModel = models.whereType<AiConfigModel>().where(
-          (m) => m.providerModelId == _modelId,
+          (m) => m.providerModelId == modelId,
         );
 
     if (matchingModel.isEmpty) {
       developer.log(
-        'Model $_modelId not found in configured models',
+        'Model $modelId not found in configured models',
         name: 'TaskAgentWorkflow',
       );
       return null;
@@ -451,7 +482,7 @@ class TaskAgentWorkflow {
 
     if (provider is! AiConfigInferenceProvider) {
       developer.log(
-        'Provider $providerId for model $_modelId is not an inference provider',
+        'Provider $providerId for model $modelId is not an inference provider',
         name: 'TaskAgentWorkflow',
       );
       return null;
@@ -468,9 +499,46 @@ class TaskAgentWorkflow {
     return provider;
   }
 
-  /// System prompt for the Task Agent, extracted as a constant for easier
-  /// iteration and testing.
-  static const taskAgentSystemPrompt = '''
+  /// Resolves the template and its active version for the given [agentId].
+  ///
+  /// Returns `null` if no template is assigned or if the active version
+  /// cannot be resolved.
+  Future<_TemplateContext?> _resolveTemplate(String agentId) async {
+    final template = await templateService.getTemplateForAgent(agentId);
+    if (template == null) {
+      developer.log(
+        'No template assigned to agent $agentId',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
+    }
+
+    final version = await templateService.getActiveVersion(template.id);
+    if (version == null) {
+      developer.log(
+        'No active version for template ${template.id}',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
+    }
+
+    return _TemplateContext(template: template, version: version);
+  }
+
+  /// Builds the full system prompt by appending the template's directives
+  /// to the rigid scaffold.
+  String _buildSystemPrompt(_TemplateContext ctx) {
+    return '$taskAgentScaffold\n\n'
+        '## Your Personality & Directives\n\n'
+        '${ctx.version.directives}';
+  }
+
+  /// The rigid scaffold of the Task Agent system prompt.
+  ///
+  /// Contains role description, report format, tool usage guidelines, and
+  /// important constraints. Template-specific directives are appended after
+  /// this scaffold.
+  static const taskAgentScaffold = '''
 You are a Task Agent — a persistent assistant that maintains a summary report
 for a single task. Your job is to:
 
@@ -957,6 +1025,14 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     }
     return null;
   }
+}
+
+/// Resolved template and version pair for prompt composition.
+class _TemplateContext {
+  _TemplateContext({required this.template, required this.version});
+
+  final AgentTemplateEntity template;
+  final AgentTemplateVersionEntity version;
 }
 
 /// Result of a wake cycle execution.
