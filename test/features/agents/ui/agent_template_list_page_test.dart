@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -134,6 +136,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('shows loading indicator while templates are loading',
+        (tester) async {
+      final completer = Completer<List<AgentDomainEntity>>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateListPage(),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) => completer.future,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, templateId) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Complete the future and settle to avoid pending timer assertions.
+      completer.complete([]);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('shows error text with error color on provider failure',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateListPage(),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) => Future<List<AgentDomainEntity>>.error(
+                Exception('db failure'),
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, templateId) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateListPage));
+      final errorText = find.text(context.messages.commonError);
+      expect(errorText, findsOneWidget);
+
+      // Verify the error text uses the error color from the theme.
+      final textWidget = tester.widget<Text>(errorText);
+      final theme = Theme.of(context);
+      expect(
+        textWidget.style?.color,
+        theme.colorScheme.error,
+      );
     });
   });
 }

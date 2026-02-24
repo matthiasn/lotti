@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -459,6 +461,372 @@ void main() {
         find.text(context.messages.agentTemplateDeleteHasInstances),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows loading indicator when template is loading',
+        (tester) async {
+      final completer = Completer<AgentDomainEntity?>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-loading'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) => completer.future,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('shows template not found when template is null',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-missing'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      expect(
+        find.text(context.messages.agentTemplateNotFound),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows commonError snackbar when save fails', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenThrow(Exception('save failed'));
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      await tester.tap(
+        find.text(context.messages.agentTemplateSaveNewVersion),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows commonError snackbar on generic delete error',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockTemplateService.deleteTemplate(any()))
+          .thenThrow(Exception('unexpected delete error'));
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Tap delete button
+      await tester.tap(find.text(context.messages.deleteButton).first);
+      await tester.pumpAndSettle();
+
+      // Confirm in dialog
+      await tester.tap(find.text(context.messages.deleteButton).last);
+      await tester.pumpAndSettle();
+
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows commonError snackbar on rollback error', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.rollbackToVersion(
+          templateId: any(named: 'templateId'),
+          versionId: any(named: 'versionId'),
+        ),
+      ).thenThrow(Exception('rollback failed'));
+
+      final v1 = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: templateId,
+        status: AgentTemplateVersionStatus.archived,
+      );
+      final v2 = makeTestTemplateVersion(
+        id: 'v2',
+        agentId: templateId,
+        version: 2,
+      );
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          templateId: templateId,
+          activeVersion: v2,
+          versionHistory: [v2, v1],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Scroll to restore icon and tap
+      await tester.scrollUntilVisible(
+        find.byIcon(Icons.restore),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.restore));
+      await tester.pumpAndSettle();
+
+      // Confirm in dialog
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      await tester.tap(
+        find.text(context.messages.agentTemplateRollbackAction).last,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows no versions text when version list is empty',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final tpl = makeTestTemplate(id: templateId, agentId: templateId);
+      final ver = makeTestTemplateVersion(agentId: templateId);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => tpl,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => ver,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to version history section
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateVersionHistoryTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentTemplateNoVersions),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows loading indicator in version history section',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final tpl = makeTestTemplate(id: templateId, agentId: templateId);
+      final ver = makeTestTemplateVersion(agentId: templateId);
+      final completer = Completer<List<AgentDomainEntity>>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => tpl,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => ver,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) => completer.future,
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      // Use pump with duration instead of pumpAndSettle because the
+      // Completer never completes, so animations never settle.
+      await tester.pump(const Duration(seconds: 1));
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to version history section
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateVersionHistoryTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      // The version history section should show a loading indicator
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+    });
+
+    testWidgets('shows error text in version history section', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final tpl = makeTestTemplate(id: templateId, agentId: templateId);
+      final ver = makeTestTemplateVersion(agentId: templateId);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => tpl,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => ver,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) => Future<List<AgentDomainEntity>>.error(
+                Exception('version load failed'),
+              ),
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to version history section
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateVersionHistoryTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // The error state shows commonError text
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows active instances section when agents exist',
+        (tester) async {
+      final testAgent = makeTestIdentity(
+        id: 'agent-for-tpl',
+        agentId: 'agent-for-tpl',
+        displayName: 'Agent From Template',
+      );
+
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => [testAgent]);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to active instances section
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateActiveInstancesTitle),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentTemplateActiveInstancesTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentTemplateInstanceCount(1)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows evolve action button in edit mode', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Scroll to evolve button
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentTemplateEvolveAction),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentTemplateEvolveAction),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
     });
   });
 }

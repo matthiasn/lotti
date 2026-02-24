@@ -5,7 +5,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:mocktail/mocktail.dart';
@@ -129,6 +131,49 @@ void registerAllFallbackValues() {
 
   // Enum fallbacks
   registerFallbackValue(AiConfigType.inferenceProvider);
+
+  // Template evolution workflow fallbacks
+  registerFallbackValue(
+    const EvolutionFeedback(),
+  );
+  registerFallbackValue(
+    const TemplatePerformanceMetrics(
+      templateId: 'fallback-template',
+      totalWakes: 0,
+      successCount: 0,
+      failureCount: 0,
+      successRate: 0,
+      averageDuration: null,
+      firstWakeAt: null,
+      lastWakeAt: null,
+      activeInstanceCount: 0,
+    ),
+  );
+  registerFallbackValue(
+    AgentDomainEntity.agentTemplate(
+      id: 'fallback-tpl',
+      agentId: 'fallback-tpl',
+      displayName: 'Fallback',
+      kind: AgentTemplateKind.taskAgent,
+      modelId: 'models/fallback',
+      categoryIds: const {},
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      vectorClock: null,
+    ) as AgentTemplateEntity,
+  );
+  registerFallbackValue(
+    AgentDomainEntity.agentTemplateVersion(
+      id: 'fallback-ver',
+      agentId: 'fallback-tpl',
+      version: 1,
+      status: AgentTemplateVersionStatus.active,
+      directives: 'fallback',
+      authoredBy: 'system',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      vectorClock: null,
+    ) as AgentTemplateVersionEntity,
+  );
 
   // Common builtin fallbacks
   registerFallbackValue(StackTrace.empty);

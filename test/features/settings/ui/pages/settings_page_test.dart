@@ -157,6 +157,58 @@ void main() {
       expect(find.text('Measurable Types'), findsOneWidget);
     });
 
+    testWidgets('shows Agent Templates card when enableAgentsFlag is ON',
+        (tester) async {
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableAgentsFlag,
+              description: 'Enable Agents?',
+              status: true,
+            ),
+          }
+        ]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SettingsPage(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agent Templates'), findsOneWidget);
+    });
+
+    testWidgets('hides Agent Templates when enableAgentsFlag is OFF',
+        (tester) async {
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SettingsPage(),
+          overrides: [
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            whatsNewControllerProvider
+                .overrideWith(_TestWhatsNewController.new),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agent Templates'), findsNothing);
+    });
+
     testWidgets(
         'hides Dashboards and Measurable Types when enableDashboardsPageFlag is OFF',
         (tester) async {

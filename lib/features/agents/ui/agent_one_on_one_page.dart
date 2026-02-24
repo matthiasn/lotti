@@ -236,19 +236,18 @@ class _AgentOneOnOnePageState extends ConsumerState<AgentOneOnOnePage> {
     setState(() => _isEvolving = true);
 
     try {
-      final templateAsync = ref.read(agentTemplateProvider(widget.templateId));
-      final template = templateAsync.value?.mapOrNull(agentTemplate: (e) => e);
+      final templateData =
+          await ref.read(agentTemplateProvider(widget.templateId).future);
+      final template = templateData?.mapOrNull(agentTemplate: (e) => e);
 
-      final versionAsync =
-          ref.read(activeTemplateVersionProvider(widget.templateId));
-      final version =
-          versionAsync.value?.mapOrNull(agentTemplateVersion: (v) => v);
+      final versionData = await ref
+          .read(activeTemplateVersionProvider(widget.templateId).future);
+      final version = versionData?.mapOrNull(agentTemplateVersion: (v) => v);
 
-      final metricsAsync =
-          ref.read(templatePerformanceMetricsProvider(widget.templateId));
-      final metrics = metricsAsync.value;
+      final metrics = await ref
+          .read(templatePerformanceMetricsProvider(widget.templateId).future);
 
-      if (template == null || version == null || metrics == null) {
+      if (template == null || version == null) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

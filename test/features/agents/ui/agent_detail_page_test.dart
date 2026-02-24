@@ -523,5 +523,43 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'shows loading indicator while template loads',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            identityOverride: (ref, agentId) async => makeTestIdentity(),
+            templateOverride: (ref, agentId) =>
+                Completer<AgentDomainEntity?>().future,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Loading spinner inside the template section
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows error text when template loading fails',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            identityOverride: (ref, agentId) async => makeTestIdentity(),
+            templateOverride: (ref, agentId) =>
+                Future<AgentDomainEntity?>.error(Exception('template error')),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentDetailPage));
+        expect(
+          find.text(context.messages.commonError),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

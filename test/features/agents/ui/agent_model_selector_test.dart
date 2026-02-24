@@ -307,5 +307,72 @@ void main() {
       // No modal should have opened
       expect(find.text('Fast Model'), findsNothing);
     });
+
+    testWidgets(
+        'provider picker shows description subtitle and All Providers '
+        'is selected by default', (tester) async {
+      final providerWithDesc = _makeProvider(
+        id: 'prov-desc',
+        name: 'Provider With Desc',
+        description: 'A great provider',
+      );
+
+      await tester.pumpWidget(
+        _buildSubject(
+          providers: [providerWithDesc],
+          models: [
+            _makeModel(
+              id: 'model-desc',
+              name: 'Desc Model',
+              providerModelId: 'desc-model',
+              inferenceProviderId: 'prov-desc',
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the provider picker
+      await _tapProviderField(tester);
+
+      // "All Providers" appears twice: once in the selector field (placeholder)
+      // and once in the modal. The modal instance should show a check icon
+      // indicating it is selected.
+      final context = tester.element(find.byType(AgentModelSelector));
+      expect(
+        find.text(context.messages.agentTemplateAllProviders),
+        findsNWidgets(2),
+      );
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+      // Provider description should be shown as subtitle
+      expect(find.text('A great provider'), findsOneWidget);
+    });
+
+    testWidgets(
+        'model picker shows provider name when no provider filter is set',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          providers: [_providerA, _providerB],
+          models: [_suitableModel, _suitableModelB],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the model picker without selecting a provider first
+      await _tapModelField(tester);
+
+      // Both models should show provider name in the subtitle
+      // Model subtitle format: "Provider Name — providerModelId"
+      expect(
+        find.text('Provider Alpha \u2014 models/gemini-pro'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Provider Beta \u2014 claude-opus'),
+        findsOneWidget,
+      );
+    });
   });
 }
