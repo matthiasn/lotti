@@ -13,6 +13,8 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embeddings_init.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -151,6 +153,12 @@ void safeLogForTesting(String message, {required bool isError}) =>
 Future<void> registerSingletons() async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
+    ..registerSingleton<EmbeddingsDb>(
+      initProductionEmbeddingsDb(
+        documentsPath: getIt<Directory>().path,
+      ),
+      dispose: (db) => db.close(),
+    )
     ..registerSingleton<UserActivityService>(UserActivityService())
     ..registerSingleton<UserActivityGate>(
       UserActivityGate(
