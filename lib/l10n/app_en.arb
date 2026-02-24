@@ -182,6 +182,8 @@
   "agentTemplateNoneAssigned": "No template assigned",
   "agentTemplateNoSuitableModels": "No suitable models found",
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
+  "agentTemplateNotFound": "Template not found",
+  "agentTemplateNoVersions": "No versions",
   "agentTemplateOneOnOneTitle": "1-on-1 with {templateName}",
   "@agentTemplateOneOnOneTitle": {
     "placeholders": {
@@ -190,7 +192,7 @@
       }
     }
   },
-  "agentTemplateRollbackAction": "Rollback to This Version",
+  "agentTemplateRollbackAction": "Roll Back to This Version",
   "agentTemplateRollbackConfirm": "Roll back to version {version}? The agent will use this version on its next wake.",
   "@agentTemplateRollbackConfirm": {
     "placeholders": {
@@ -202,6 +204,8 @@
   "agentTemplateSaveNewVersion": "Save as New Version",
   "agentTemplateSelectTitle": "Select Template",
   "agentTemplateSettingsSubtitle": "Manage agent personalities and directives",
+  "agentTemplateStatusActive": "Active",
+  "agentTemplateStatusArchived": "Archived",
   "agentTemplatesTitle": "Agent Templates",
   "agentTemplateSwitchHint": "To use a different template, destroy this agent and create a new one.",
   "agentTemplateVersionHistoryTitle": "Version History",

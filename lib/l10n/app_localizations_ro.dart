@@ -270,11 +270,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateCreatedSuccess => 'Șablon creat';
 
   @override
-  String get agentTemplateCreateTitle => 'Creați un șablon';
+  String get agentTemplateCreateTitle => 'Creează un șablon';
 
   @override
   String get agentTemplateDeleteConfirm =>
-      'Ștergeți acest șablon? Această acțiune nu poate fi anulată.';
+      'Ștergi acest șablon? Această acțiune nu poate fi anulată.';
 
   @override
   String get agentTemplateDeleteHasInstances =>
@@ -282,7 +282,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateDirectivesHint =>
-      'Definiți personalitatea, tonul, obiectivele și stilul agentului...';
+      'Definește personalitatea, tonul, obiectivele și stilul agentului...';
 
   @override
   String get agentTemplateDirectivesLabel => 'Directive';
@@ -291,11 +291,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateDisplayNameLabel => 'Nume';
 
   @override
-  String get agentTemplateEditTitle => 'Editați șablonul';
+  String get agentTemplateEditTitle => 'Editează șablonul';
 
   @override
   String get agentTemplateEmptyList =>
-      'Niciun șablon încă. Apăsați + pentru a crea unul.';
+      'Niciun șablon încă. Apasă + pentru a crea unul.';
 
   @override
   String get agentTemplateEvolveAction => 'Evoluează cu IA';
@@ -331,21 +331,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateFeedbackChangesHint =>
-      'Descrieți ce ați dori să schimbați...';
+      'Descrie ce ai dori să schimbi...';
 
   @override
   String get agentTemplateFeedbackChangesLabel => 'Modificări specifice';
 
   @override
   String get agentTemplateFeedbackDidntWorkHint =>
-      'Descrieți problemele sau deficiențele...';
+      'Descrie problemele sau deficiențele...';
 
   @override
   String get agentTemplateFeedbackDidntWorkLabel => 'Ce nu a funcționat';
 
   @override
   String get agentTemplateFeedbackEnjoyedHint =>
-      'Descrieți ce face bine agentul...';
+      'Descrie ce face bine agentul...';
 
   @override
   String get agentTemplateFeedbackEnjoyedLabel => 'Ce a funcționat bine';
@@ -358,7 +358,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count instanțe',
+      other: '$count de instanțe',
+      few: '$count instanțe',
       one: '1 instanță',
       zero: 'Nicio instanță',
     );
@@ -410,7 +411,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateNoTemplates =>
-      'Nu sunt șabloane disponibile. Creați unul în Setări mai întâi.';
+      'Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.';
+
+  @override
+  String get agentTemplateNotFound => 'Șablon negăsit';
+
+  @override
+  String get agentTemplateNoVersions => 'Nicio versiune';
 
   @override
   String agentTemplateOneOnOneTitle(String templateName) {
@@ -418,29 +425,35 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateRollbackAction => 'Reveniți la această versiune';
+  String get agentTemplateRollbackAction => 'Revino la această versiune';
 
   @override
   String agentTemplateRollbackConfirm(int version) {
-    return 'Reveniți la versiunea $version? Agentul va folosi această versiune la următoarea trezire.';
+    return 'Revino la versiunea $version? Agentul va folosi această versiune la următoarea trezire.';
   }
 
   @override
-  String get agentTemplateSaveNewVersion => 'Salvați ca versiune nouă';
+  String get agentTemplateSaveNewVersion => 'Salvează ca versiune nouă';
 
   @override
-  String get agentTemplateSelectTitle => 'Selectați un șablon';
+  String get agentTemplateSelectTitle => 'Selectează un șablon';
 
   @override
   String get agentTemplateSettingsSubtitle =>
-      'Gestionați personalitățile și directivele agenților';
+      'Gestionează personalitățile și directivele agenților';
+
+  @override
+  String get agentTemplateStatusActive => 'Activ';
+
+  @override
+  String get agentTemplateStatusArchived => 'Arhivat';
 
   @override
   String get agentTemplatesTitle => 'Șabloane agent';
 
   @override
   String get agentTemplateSwitchHint =>
-      'Pentru a utiliza un alt șablon, distrugeți acest agent și creați unul nou.';
+      'Pentru a utiliza un alt șablon, distruge acest agent și creează unul nou.';
 
   @override
   String get agentTemplateVersionHistoryTitle => 'Istoric versiuni';

@@ -183,6 +183,8 @@
   "agentTemplateNoneAssigned": "Sin plantilla asignada",
   "agentTemplateNoSuitableModels": "No se encontraron modelos adecuados",
   "agentTemplateNoTemplates": "No hay plantillas disponibles. Crea una en Configuración primero.",
+  "agentTemplateNotFound": "Plantilla no encontrada",
+  "agentTemplateNoVersions": "Sin versiones",
   "agentTemplateOneOnOneTitle": "1 a 1 con {templateName}",
   "@agentTemplateOneOnOneTitle": {
     "placeholders": {
@@ -203,6 +205,8 @@
   "agentTemplateSaveNewVersion": "Guardar como nueva versión",
   "agentTemplateSelectTitle": "Seleccionar plantilla",
   "agentTemplateSettingsSubtitle": "Gestionar personalidades y directivas de agentes",
+  "agentTemplateStatusActive": "Activo",
+  "agentTemplateStatusArchived": "Archivado",
   "agentTemplatesTitle": "Plantillas de agentes",
   "agentTemplateSwitchHint": "Para usar una plantilla diferente, destruye este agente y crea uno nuevo.",
   "agentTemplateVersionHistoryTitle": "Historial de versiones",

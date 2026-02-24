@@ -338,7 +338,9 @@ class _AgentOneOnOnePageState extends ConsumerState<AgentOneOnOnePage> {
       );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text(context.messages.agentTemplateEvolveError),
+        ),
       );
     }
   }
@@ -368,7 +370,7 @@ class _MetricsDashboard extends ConsumerWidget {
         metricsAsync.when(
           data: (metrics) => _buildMetricsContent(context, metrics),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text(e.toString()),
+          error: (_, __) => Text(context.messages.commonError),
         ),
       ],
     );

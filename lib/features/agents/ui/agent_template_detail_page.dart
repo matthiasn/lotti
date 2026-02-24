@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
@@ -81,7 +82,9 @@ class _AgentTemplateDetailPageState
     if (template == null) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Template not found')),
+        body: Center(
+          child: Text(context.messages.agentTemplateNotFound),
+        ),
       );
     }
 
@@ -261,7 +264,7 @@ class _AgentTemplateDetailPageState
       );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text(context.messages.commonError)),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -289,7 +292,7 @@ class _AgentTemplateDetailPageState
                 if (!mounted || !pageContext.mounted) return;
                 ref.invalidate(agentTemplatesProvider);
                 Navigator.of(pageContext).pop();
-              } on Exception catch (e) {
+              } on TemplateInUseException {
                 if (!mounted || !pageContext.mounted) return;
                 ScaffoldMessenger.of(pageContext).showSnackBar(
                   SnackBar(
@@ -298,10 +301,18 @@ class _AgentTemplateDetailPageState
                     ),
                   ),
                 );
+              } catch (e, s) {
                 developer.log(
                   'Delete failed',
                   name: 'AgentTemplateDetailPage',
                   error: e,
+                  stackTrace: s,
+                );
+                if (!mounted || !pageContext.mounted) return;
+                ScaffoldMessenger.of(pageContext).showSnackBar(
+                  SnackBar(
+                    content: Text(pageContext.messages.commonError),
+                  ),
                 );
               }
             },
@@ -339,7 +350,7 @@ class _VersionHistorySection extends ConsumerWidget {
             final typed =
                 versions.whereType<AgentTemplateVersionEntity>().toList();
             if (typed.isEmpty) {
-              return const Text('No versions');
+              return Text(context.messages.agentTemplateNoVersions);
             }
             return Column(
               children: typed.map((version) {
@@ -351,7 +362,7 @@ class _VersionHistorySection extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text(e.toString()),
+          error: (_, __) => Text(context.messages.commonError),
         ),
       ],
     );
@@ -393,7 +404,9 @@ class _VersionTile extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
               ),
               child: Text(
-                isActive ? 'Active' : 'Archived',
+                isActive
+                    ? context.messages.agentTemplateStatusActive
+                    : context.messages.agentTemplateStatusArchived,
                 style: context.textTheme.labelSmall,
               ),
             ),
@@ -427,18 +440,33 @@ class _VersionTile extends ConsumerWidget {
           LottiPrimaryButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final templateService = ref.read(agentTemplateServiceProvider);
-              await templateService.rollbackToVersion(
-                templateId: templateId,
-                versionId: version.id,
-              );
-              ref
-                ..invalidate(
-                  activeTemplateVersionProvider(templateId),
-                )
-                ..invalidate(
-                  templateVersionHistoryProvider(templateId),
+              try {
+                final templateService = ref.read(agentTemplateServiceProvider);
+                await templateService.rollbackToVersion(
+                  templateId: templateId,
+                  versionId: version.id,
                 );
+                ref
+                  ..invalidate(
+                    activeTemplateVersionProvider(templateId),
+                  )
+                  ..invalidate(
+                    templateVersionHistoryProvider(templateId),
+                  );
+              } catch (e, s) {
+                developer.log(
+                  'Rollback failed',
+                  name: 'AgentTemplateDetailPage',
+                  error: e,
+                  stackTrace: s,
+                );
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.messages.commonError),
+                  ),
+                );
+              }
             },
             label: dialogContext.messages.agentTemplateRollbackAction,
           ),

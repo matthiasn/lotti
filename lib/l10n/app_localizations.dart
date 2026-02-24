@@ -834,6 +834,18 @@ abstract class AppLocalizations {
   /// **'No templates available. Create one in Settings first.'**
   String get agentTemplateNoTemplates;
 
+  /// No description provided for @agentTemplateNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Template not found'**
+  String get agentTemplateNotFound;
+
+  /// No description provided for @agentTemplateNoVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'No versions'**
+  String get agentTemplateNoVersions;
+
   /// No description provided for @agentTemplateOneOnOneTitle.
   ///
   /// In en, this message translates to:
@@ -843,7 +855,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentTemplateRollbackAction.
   ///
   /// In en, this message translates to:
-  /// **'Rollback to This Version'**
+  /// **'Roll Back to This Version'**
   String get agentTemplateRollbackAction;
 
   /// No description provided for @agentTemplateRollbackConfirm.
@@ -869,6 +881,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage agent personalities and directives'**
   String get agentTemplateSettingsSubtitle;
+
+  /// No description provided for @agentTemplateStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentTemplateStatusActive;
+
+  /// No description provided for @agentTemplateStatusArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get agentTemplateStatusArchived;
 
   /// No description provided for @agentTemplatesTitle.
   ///

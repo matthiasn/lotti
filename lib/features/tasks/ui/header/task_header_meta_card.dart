@@ -236,30 +236,43 @@ class _TaskAgentChip extends ConsumerWidget {
       context: context,
       builder: (sheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  sheetContext.messages.agentTemplateSelectTitle,
-                  style: Theme.of(sheetContext).textTheme.titleMedium,
-                ),
-              ),
-              const Divider(height: 1),
-              ...templates.map(
-                (template) => ListTile(
-                  leading: Icon(
-                    Icons.smart_toy_outlined,
-                    color: Theme.of(sheetContext).colorScheme.primary,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    sheetContext.messages.agentTemplateSelectTitle,
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
                   ),
-                  title: Text(template.displayName),
-                  subtitle: Text(template.modelId),
-                  onTap: () => Navigator.of(sheetContext).pop(template),
                 ),
-              ),
-            ],
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: templates
+                        .map(
+                          (template) => ListTile(
+                            leading: Icon(
+                              Icons.smart_toy_outlined,
+                              color: Theme.of(sheetContext).colorScheme.primary,
+                            ),
+                            title: Text(template.displayName),
+                            subtitle: Text(template.modelId),
+                            onTap: () =>
+                                Navigator.of(sheetContext).pop(template),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

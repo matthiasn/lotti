@@ -410,12 +410,18 @@ class AppLocalizationsCs extends AppLocalizations {
       'No templates available. Create one in Settings first.';
 
   @override
+  String get agentTemplateNotFound => 'Template not found';
+
+  @override
+  String get agentTemplateNoVersions => 'No versions';
+
+  @override
   String agentTemplateOneOnOneTitle(String templateName) {
     return '1-on-1 with $templateName';
   }
 
   @override
-  String get agentTemplateRollbackAction => 'Rollback to This Version';
+  String get agentTemplateRollbackAction => 'Roll Back to This Version';
 
   @override
   String agentTemplateRollbackConfirm(int version) {
@@ -431,6 +437,12 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Manage agent personalities and directives';
+
+  @override
+  String get agentTemplateStatusActive => 'Active';
+
+  @override
+  String get agentTemplateStatusArchived => 'Archived';
 
   @override
   String get agentTemplatesTitle => 'Agent Templates';

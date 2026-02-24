@@ -266,7 +266,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateAllProviders => 'Tous les fournisseurs';
 
   @override
-  String get agentTemplateAssignedLabel => 'Modèle';
+  String get agentTemplateAssignedLabel => 'Modèle d\'agent';
 
   @override
   String get agentTemplateCreatedSuccess => 'Modèle créé';
@@ -416,6 +416,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun modèle disponible. Crée-en un dans les Paramètres d\'abord.';
 
   @override
+  String get agentTemplateNotFound => 'Modèle introuvable';
+
+  @override
+  String get agentTemplateNoVersions => 'Aucune version';
+
+  @override
   String agentTemplateOneOnOneTitle(String templateName) {
     return '1-à-1 avec $templateName';
   }
@@ -438,6 +444,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Gérer les personnalités et directives des agents';
+
+  @override
+  String get agentTemplateStatusActive => 'Actif';
+
+  @override
+  String get agentTemplateStatusArchived => 'Archivé';
 
   @override
   String get agentTemplatesTitle => 'Modèles d\'agents';

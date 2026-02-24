@@ -431,7 +431,7 @@ void main() {
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
-        throwsA(isA<StateError>()),
+        throwsA(isA<TemplateInUseException>()),
       );
     });
 
@@ -548,10 +548,10 @@ void main() {
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
         throwsA(
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            contains('1 active instance(s)'),
+          isA<TemplateInUseException>().having(
+            (e) => e.activeCount,
+            'activeCount',
+            equals(1),
           ),
         ),
       );

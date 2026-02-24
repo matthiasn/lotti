@@ -154,7 +154,7 @@
   "agentTemplateEvolveSuccess": "Vorlage erfolgreich weiterentwickelt",
   "agentTemplateEvolvingProgress": "Verbesserte Anweisungen werden generiert...",
   "agentTemplateFeedbackChangesHint": "Beschreibe, was du ändern möchtest...",
-  "agentTemplateFeedbackChangesLabel": "Gewünschte Änderungen",
+  "agentTemplateFeedbackChangesLabel": "Konkrete Änderungen",
   "agentTemplateFeedbackDidntWorkHint": "Beschreibe Probleme oder Schwächen...",
   "agentTemplateFeedbackDidntWorkLabel": "Was nicht funktioniert hat",
   "agentTemplateFeedbackEnjoyedHint": "Beschreibe, was der Agent gut macht...",
@@ -183,6 +183,8 @@
   "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
   "agentTemplateNoSuitableModels": "Keine passenden Modelle gefunden",
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
+  "agentTemplateNotFound": "Vorlage nicht gefunden",
+  "agentTemplateNoVersions": "Keine Versionen",
   "agentTemplateOneOnOneTitle": "1-zu-1 mit {templateName}",
   "@agentTemplateOneOnOneTitle": {
     "placeholders": {
@@ -203,6 +205,8 @@
   "agentTemplateSaveNewVersion": "Als neue Version speichern",
   "agentTemplateSelectTitle": "Vorlage auswählen",
   "agentTemplateSettingsSubtitle": "Agenten-Persönlichkeiten und Anweisungen verwalten",
+  "agentTemplateStatusActive": "Aktiv",
+  "agentTemplateStatusArchived": "Archiviert",
   "agentTemplatesTitle": "Agenten-Vorlagen",
   "agentTemplateSwitchHint": "Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.",
   "agentTemplateVersionHistoryTitle": "Versionshistorie",

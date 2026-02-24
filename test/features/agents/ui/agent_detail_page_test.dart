@@ -498,6 +498,7 @@ void main() {
           buildDataSubject(identity: makeTestIdentity()),
         );
         await tester.pump();
+        await tester.pump();
 
         final context = tester.element(find.byType(AgentDetailPage));
         expect(

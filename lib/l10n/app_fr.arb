@@ -133,7 +133,7 @@
   "agentTabReports": "Rapports",
   "agentTemplateActiveInstancesTitle": "Instances actives",
   "agentTemplateAllProviders": "Tous les fournisseurs",
-  "agentTemplateAssignedLabel": "Modèle",
+  "agentTemplateAssignedLabel": "Modèle d'agent",
   "agentTemplateCreatedSuccess": "Modèle créé",
   "agentTemplateCreateTitle": "Créer un modèle",
   "agentTemplateDeleteConfirm": "Supprimer ce modèle ? Cette action est irréversible.",
@@ -183,6 +183,8 @@
   "agentTemplateNoneAssigned": "Aucun modèle assigné",
   "agentTemplateNoSuitableModels": "Aucun modèle approprié trouvé",
   "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
+  "agentTemplateNotFound": "Modèle introuvable",
+  "agentTemplateNoVersions": "Aucune version",
   "agentTemplateOneOnOneTitle": "1-à-1 avec {templateName}",
   "@agentTemplateOneOnOneTitle": {
     "placeholders": {
@@ -203,6 +205,8 @@
   "agentTemplateSaveNewVersion": "Enregistrer comme nouvelle version",
   "agentTemplateSelectTitle": "Sélectionner un modèle",
   "agentTemplateSettingsSubtitle": "Gérer les personnalités et directives des agents",
+  "agentTemplateStatusActive": "Actif",
+  "agentTemplateStatusArchived": "Archivé",
   "agentTemplatesTitle": "Modèles d'agents",
   "agentTemplateSwitchHint": "Pour utiliser un autre modèle, détruis cet agent et crée-en un nouveau.",
   "agentTemplateVersionHistoryTitle": "Historique des versions",

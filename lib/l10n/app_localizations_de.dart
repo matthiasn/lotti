@@ -336,7 +336,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Beschreibe, was du ändern möchtest...';
 
   @override
-  String get agentTemplateFeedbackChangesLabel => 'Gewünschte Änderungen';
+  String get agentTemplateFeedbackChangesLabel => 'Konkrete Änderungen';
 
   @override
   String get agentTemplateFeedbackDidntWorkHint =>
@@ -417,6 +417,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.';
 
   @override
+  String get agentTemplateNotFound => 'Vorlage nicht gefunden';
+
+  @override
+  String get agentTemplateNoVersions => 'Keine Versionen';
+
+  @override
   String agentTemplateOneOnOneTitle(String templateName) {
     return '1-zu-1 mit $templateName';
   }
@@ -438,6 +444,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Agenten-Persönlichkeiten und Anweisungen verwalten';
+
+  @override
+  String get agentTemplateStatusActive => 'Aktiv';
+
+  @override
+  String get agentTemplateStatusArchived => 'Archiviert';
 
   @override
   String get agentTemplatesTitle => 'Agenten-Vorlagen';

@@ -41,7 +41,7 @@ class AgentTemplateListPage extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
-                      error.toString(),
+                      context.messages.commonError,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                           ),
@@ -145,23 +145,23 @@ class _TemplateListTile extends ConsumerWidget {
           template.displayName,
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        subtitle: Row(
+        subtitle: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppTheme.spacingSmall,
+          runSpacing: AppTheme.spacingXSmall,
           children: [
             _KindBadge(kind: template.kind),
-            const SizedBox(width: AppTheme.spacingSmall),
             Text(
               template.modelId,
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            if (versionNumber != null) ...[
-              const SizedBox(width: AppTheme.spacingSmall),
+            if (versionNumber != null)
               Text(
                 context.messages.agentTemplateVersionLabel(versionNumber),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
               ),
-            ],
           ],
         ),
         trailing: Icon(

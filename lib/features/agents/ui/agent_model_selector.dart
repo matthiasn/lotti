@@ -233,7 +233,7 @@ class _ProviderPickerContent extends StatelessWidget {
         children: [
           // "All providers" option
           _PickerTile(
-            title: context.messages.agentTemplateModelRequirements,
+            title: context.messages.agentTemplateAllProviders,
             isSelected: selectedProviderId == null,
             onTap: () {
               onSelected(null);

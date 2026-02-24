@@ -8,6 +8,22 @@ import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:uuid/uuid.dart';
 
+/// Thrown when a template cannot be deleted because active agents reference it.
+class TemplateInUseException implements Exception {
+  const TemplateInUseException({
+    required this.templateId,
+    required this.activeCount,
+  });
+
+  final String templateId;
+  final int activeCount;
+
+  @override
+  String toString() =>
+      'TemplateInUseException: cannot delete template $templateId — '
+      '$activeCount active instance(s)';
+}
+
 /// Well-known template IDs for seeded defaults.
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
@@ -224,9 +240,9 @@ class AgentTemplateService {
         agents.where((a) => a.lifecycle != AgentLifecycle.destroyed).toList();
 
     if (activeAgents.isNotEmpty) {
-      throw StateError(
-        'Cannot delete template $templateId: '
-        '${activeAgents.length} active instance(s)',
+      throw TemplateInUseException(
+        templateId: templateId,
+        activeCount: activeAgents.length,
       );
     }
 
@@ -375,8 +391,7 @@ class AgentTemplateService {
       if (r.status == WakeRunStatus.completed.name) successCount++;
       if (r.status == WakeRunStatus.failed.name) failureCount++;
       if (r.startedAt != null && r.completedAt != null) {
-        final diffMs =
-            r.completedAt!.difference(r.startedAt!).inMilliseconds;
+        final diffMs = r.completedAt!.difference(r.startedAt!).inMilliseconds;
         if (diffMs > 0) {
           durationSumMs += diffMs;
           durationCount++;
@@ -385,8 +400,7 @@ class AgentTemplateService {
     }
 
     final terminalCount = successCount + failureCount;
-    final successRate =
-        terminalCount > 0 ? successCount / terminalCount : 0.0;
+    final successRate = terminalCount > 0 ? successCount / terminalCount : 0.0;
     final averageDuration = durationCount > 0
         ? Duration(milliseconds: durationSumMs ~/ durationCount)
         : null;

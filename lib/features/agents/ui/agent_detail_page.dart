@@ -315,7 +315,20 @@ class _TemplateSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppTheme.spacingSmall),
-          if (template != null)
+          if (templateAsync.isLoading && template == null)
+            const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else if (templateAsync.hasError && template == null)
+            Text(
+              context.messages.commonError,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.error,
+              ),
+            )
+          else if (template != null)
             ActionChip(
               avatar: Icon(
                 Icons.smart_toy_outlined,

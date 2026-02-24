@@ -415,6 +415,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay plantillas disponibles. Crea una en Configuración primero.';
 
   @override
+  String get agentTemplateNotFound => 'Plantilla no encontrada';
+
+  @override
+  String get agentTemplateNoVersions => 'Sin versiones';
+
+  @override
   String agentTemplateOneOnOneTitle(String templateName) {
     return '1 a 1 con $templateName';
   }
@@ -436,6 +442,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Gestionar personalidades y directivas de agentes';
+
+  @override
+  String get agentTemplateStatusActive => 'Activo';
+
+  @override
+  String get agentTemplateStatusArchived => 'Archivado';
 
   @override
   String get agentTemplatesTitle => 'Plantillas de agentes';

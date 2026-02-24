@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -432,8 +433,12 @@ void main() {
         (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
-      when(() => mockTemplateService.deleteTemplate(any()))
-          .thenThrow(Exception('has instances'));
+      when(() => mockTemplateService.deleteTemplate(any())).thenThrow(
+        const TemplateInUseException(
+          templateId: 'test',
+          activeCount: 1,
+        ),
+      );
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
