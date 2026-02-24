@@ -135,7 +135,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final fabFinder = find.byType(FloatingActionButton);
+      expect(fabFinder, findsOneWidget);
+
+      // Verify the FAB is actionable (has an onPressed callback).
+      final fab = tester.widget<FloatingActionButton>(fabFinder);
+      expect(fab.onPressed, isNotNull);
     });
 
     testWidgets('shows loading indicator while templates are loading',

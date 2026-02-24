@@ -354,7 +354,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateFeedbackEnjoyedLabel => 'Ce qui a bien fonctionné';
 
   @override
-  String get agentTemplateFeedbackTitle => 'Retour';
+  String get agentTemplateFeedbackTitle => 'Retour d\'expérience';
 
   @override
   String agentTemplateInstanceCount(int count) {

@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   many images are available. The image grid now scrolls independently while
   the button stays pinned at the bottom.
 
+## [0.9.868] - 2026-02-22
+### Added
+- Agent cross-device sync via Matrix: agent entities and links synchronize
+  across devices with wake subscription restoration.
+- Sync maintenance UI supports agent re-sync steps.
+- Zone-based transaction isolation: outbox messages are buffered until commit,
+  with nested transaction and rollback support.
+- LLM-assisted template evolution: 1-on-1 page for reviewing performance
+  metrics, providing structured feedback, and having the LLM rewrite template
+  directives for approval.
+
 ## [0.9.867] - 2026-02-22
 ### Added
 - Agent running-state feedback: reactive spinner indicators on the task page

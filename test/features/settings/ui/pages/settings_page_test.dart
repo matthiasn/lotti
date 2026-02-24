@@ -185,6 +185,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Agent Templates'), findsOneWidget);
+      // Subtitle verifies the full card structure rendered, not just the title.
+      expect(
+        find.text('Manage agent personalities and directives'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides Agent Templates when enableAgentsFlag is OFF',
@@ -207,6 +212,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Agent Templates'), findsNothing);
+      // Subtitle also absent when the flag is off.
+      expect(
+        find.text('Manage agent personalities and directives'),
+        findsNothing,
+      );
     });
 
     testWidgets(

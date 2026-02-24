@@ -159,7 +159,7 @@
   "agentTemplateFeedbackDidntWorkLabel": "Ce qui n'a pas fonctionné",
   "agentTemplateFeedbackEnjoyedHint": "Décris ce que l'agent fait bien...",
   "agentTemplateFeedbackEnjoyedLabel": "Ce qui a bien fonctionné",
-  "agentTemplateFeedbackTitle": "Retour",
+  "agentTemplateFeedbackTitle": "Retour d'expérience",
   "agentTemplateInstanceCount": "{count, plural, =0{Aucune instance} =1{1 instance} other{{count} instances}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
