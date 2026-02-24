@@ -345,14 +345,20 @@ class AgentTemplateService {
     return versions;
   }
 
-  /// Compute aggregated performance metrics for a template.
+  /// Compute recent performance metrics for a template.
   ///
-  /// Fetches wake-run log entries tagged with this template and agent
-  /// instances using it, then aggregates into [TemplatePerformanceMetrics].
+  /// Fetches up to [limit] most recent wake-run log entries tagged with this
+  /// template and agent instances using it, then aggregates into
+  /// [TemplatePerformanceMetrics]. Metrics reflect the recent window, not
+  /// necessarily the template's entire history.
   Future<TemplatePerformanceMetrics> computeMetrics(
-    String templateId,
-  ) async {
-    final runs = await repository.getWakeRunsForTemplate(templateId);
+    String templateId, {
+    int limit = 500,
+  }) async {
+    final runs = await repository.getWakeRunsForTemplate(
+      templateId,
+      limit: limit,
+    );
     final agents = await getAgentsForTemplate(templateId);
 
     final totalWakes = runs.length;
@@ -383,7 +389,9 @@ class AgentTemplateService {
       }
     }
 
-    final successRate = totalWakes > 0 ? successCount / totalWakes : 0.0;
+    final terminalCount = successCount + failureCount;
+    final successRate =
+        terminalCount > 0 ? successCount / terminalCount : 0.0;
     final averageDuration = durationCount > 0
         ? Duration(milliseconds: durationSumMs ~/ durationCount)
         : null;

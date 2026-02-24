@@ -872,7 +872,8 @@ void main() {
       expect(metrics.totalWakes, 4);
       expect(metrics.successCount, 2);
       expect(metrics.failureCount, 1);
-      expect(metrics.successRate, 0.5);
+      // 2 successes / 3 terminal (2 completed + 1 failed) — running excluded.
+      expect(metrics.successRate, closeTo(2 / 3, 0.001));
     });
 
     test('computes average duration from completed runs with timestamps',
