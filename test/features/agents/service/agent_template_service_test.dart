@@ -929,7 +929,8 @@ void main() {
 
       final metrics = await service.computeMetrics(kTestTemplateId);
 
-      // Runs are DESC: first = newest, last = oldest.
+      // Runs are DESC (runs[0] is newest); metrics.firstWakeAt == oldest
+      // wake, metrics.lastWakeAt == newest wake.
       expect(metrics.lastWakeAt, DateTime(2024, 3, 20));
       expect(metrics.firstWakeAt, DateTime(2024, 3, 10));
     });

@@ -85,12 +85,13 @@ class TemplateEvolutionWorkflow {
       feedback: feedback,
     );
 
-    final conversationId = conversationRepository.createConversation(
-      systemMessage: systemPrompt,
-      maxTurns: 1,
-    );
-
+    String? conversationId;
     try {
+      conversationId = conversationRepository.createConversation(
+        systemMessage: systemPrompt,
+        maxTurns: 1,
+      );
+
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
       );
@@ -139,7 +140,9 @@ class TemplateEvolutionWorkflow {
       );
       return null;
     } finally {
-      conversationRepository.deleteConversation(conversationId);
+      if (conversationId != null) {
+        conversationRepository.deleteConversation(conversationId);
+      }
     }
   }
 
