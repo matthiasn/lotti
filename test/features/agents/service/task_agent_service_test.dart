@@ -632,7 +632,7 @@ void main() {
           () => mockSyncService.upsertLink(captureAny()),
         ).captured;
         final templateLink =
-            linkCalls.whereType<TemplateAssignmentLink>().first;
+            linkCalls.whereType<TemplateAssignmentLink>().single;
         expect(templateLink.fromId, kTestTemplateId);
       });
 

@@ -123,7 +123,8 @@ class TemplateEvolutionWorkflow {
       }
 
       // Strip markdown fences if the LLM wrapped the output.
-      proposedDirectives = stripMarkdownFences(proposedDirectives);
+      proposedDirectives = stripMarkdownFences(proposedDirectives).trim();
+      if (proposedDirectives.isEmpty) return null;
 
       return EvolutionProposal(
         proposedDirectives: proposedDirectives,
