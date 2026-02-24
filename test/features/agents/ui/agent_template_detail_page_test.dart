@@ -248,7 +248,7 @@ void main() {
       expect(find.text('Be helpful and kind.'), findsOneWidget);
     });
 
-    testWidgets('shows edit title', (tester) async {
+    testWidgets('shows edit title and populated form fields', (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
 
@@ -260,6 +260,16 @@ void main() {
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       expect(
         find.text(context.messages.agentTemplateEditTitle),
+        findsOneWidget,
+      );
+
+      // Name field populated with template display name
+      expect(find.text('Test Template'), findsOneWidget);
+      // Directives field populated with version directives
+      expect(find.text('You are a helpful agent.'), findsOneWidget);
+      // Save-as-new-version button present
+      expect(
+        find.text(context.messages.agentTemplateSaveNewVersion),
         findsOneWidget,
       );
     });
@@ -492,6 +502,42 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('shows error state when provider errors', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-error'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) => throw Exception('provider failed'),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      expect(
+        find.text(context.messages.commonError),
+        findsOneWidget,
+      );
+      // Should NOT show "not found"
+      expect(
+        find.text(context.messages.agentTemplateNotFound),
+        findsNothing,
+      );
     });
 
     testWidgets('shows template not found when template is null',

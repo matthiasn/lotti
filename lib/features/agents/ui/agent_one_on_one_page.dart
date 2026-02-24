@@ -407,7 +407,9 @@ class _MetricsDashboard extends ConsumerWidget {
         if (metrics.averageDuration != null)
           _MetricCard(
             label: context.messages.agentTemplateMetricsAvgDuration,
-            value: '${metrics.averageDuration!.inSeconds}s',
+            value: context.messages.agentTemplateMetricsDurationSeconds(
+              metrics.averageDuration!.inSeconds,
+            ),
           ),
         _MetricCard(
           label: context.messages.agentTemplateMetricsActiveInstances,

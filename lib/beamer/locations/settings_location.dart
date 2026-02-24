@@ -302,23 +302,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       // Agent Templates
-      if (pathContains('templates') &&
-          !pathContains('create') &&
-          !pathContainsKey('templateId'))
-        const BeamPage(
-          key: ValueKey('settings-templates'),
-          child: AgentTemplateListPage(),
-        ),
-
       if (pathContains('templates/create'))
         const BeamPage(
           key: ValueKey('settings-templates-create'),
           child: AgentTemplateDetailPage(),
-        ),
-
-      if (pathContains('templates') &&
-          !pathContains('create') &&
-          pathContainsKey('templateId'))
+        )
+      else if (pathContains('templates') && pathContainsKey('templateId'))
         BeamPage(
           key: ValueKey(
             'settings-templates-${state.pathParameters['templateId']}',
@@ -326,6 +315,11 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AgentTemplateDetailPage(
             templateId: state.pathParameters['templateId'],
           ),
+        )
+      else if (pathContains('templates'))
+        const BeamPage(
+          key: ValueKey('settings-templates'),
+          child: AgentTemplateListPage(),
         ),
 
       // Flags

@@ -171,6 +171,15 @@
   "agentTemplateKindTaskAgent": "Agent de sarcini",
   "agentTemplateMetricsActiveInstances": "Instanțe active",
   "agentTemplateMetricsAvgDuration": "Durata medie",
+  "agentTemplateMetricsDurationSeconds": "{count} s",
+  "@agentTemplateMetricsDurationSeconds": {
+    "description": "Formatted duration in seconds shown in template performance metrics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplateMetricsFailureCount": "Eșecuri",
   "agentTemplateMetricsFirstWake": "Prima activare",
   "agentTemplateMetricsLastWake": "Ultima activare",

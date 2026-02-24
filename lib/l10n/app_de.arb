@@ -171,6 +171,15 @@
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",
   "agentTemplateMetricsActiveInstances": "Aktive Instanzen",
   "agentTemplateMetricsAvgDuration": "Durchschn. Dauer",
+  "agentTemplateMetricsDurationSeconds": "{count} s",
+  "@agentTemplateMetricsDurationSeconds": {
+    "description": "Formatted duration in seconds shown in template performance metrics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentTemplateMetricsFailureCount": "Fehler",
   "agentTemplateMetricsFirstWake": "Erste Aktivierung",
   "agentTemplateMetricsLastWake": "Letzte Aktivierung",

@@ -79,6 +79,20 @@ class _AgentTemplateDetailPageState
       );
     }
 
+    if (templateAsync.hasError && template == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Text(
+            context.messages.commonError,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: context.colorScheme.error,
+            ),
+          ),
+        ),
+      );
+    }
+
     if (template == null) {
       return Scaffold(
         appBar: AppBar(),

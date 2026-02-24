@@ -376,6 +376,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateMetricsAvgDuration => 'Duración promedio';
 
   @override
+  String agentTemplateMetricsDurationSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
   String get agentTemplateMetricsFailureCount => 'Fallos';
 
   @override
