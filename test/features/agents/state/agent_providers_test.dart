@@ -1412,29 +1412,71 @@ void main() {
   });
 
   group('wakeQueueProvider', () {
-    test('creates a WakeQueue instance', () {
+    test('supports enqueue and dequeue', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final queue = container.read(wakeQueueProvider);
-      expect(queue, isA<WakeQueue>());
+
+      // Queue starts empty.
+      expect(queue.dequeue(), isNull);
+
+      // Enqueue a job and dequeue it.
+      final job = WakeJob(
+        agentId: kTestAgentId,
+        runKey: 'run-1',
+        reason: 'subscription',
+        triggerTokens: {'tok-a'},
+        createdAt: DateTime(2024, 3, 15),
+      );
+      final added = queue.enqueue(job);
+      expect(added, isTrue);
+
+      final dequeued = queue.dequeue();
+      expect(dequeued, isNotNull);
+      expect(dequeued!.agentId, kTestAgentId);
+      expect(dequeued.runKey, 'run-1');
+    });
+
+    test('deduplicates by run key', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final queue = container.read(wakeQueueProvider);
+
+      final job = WakeJob(
+        agentId: kTestAgentId,
+        runKey: 'dup-key',
+        reason: 'subscription',
+        triggerTokens: {'tok'},
+        createdAt: DateTime(2024, 3, 15),
+      );
+      expect(queue.enqueue(job), isTrue);
+      expect(queue.enqueue(job), isFalse);
     });
   });
 
   group('wakeRunnerProvider', () {
-    test('creates a WakeRunner instance', () {
+    test('supports lock acquisition and release', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final runner = container.read(wakeRunnerProvider);
-      expect(runner, isA<WakeRunner>());
+
+      // Acquire lock.
+      final acquired = await runner.tryAcquire(kTestAgentId);
+      expect(acquired, isTrue);
+      expect(runner.isRunning(kTestAgentId), isTrue);
+
+      // Release lock.
+      runner.release(kTestAgentId);
+      expect(runner.isRunning(kTestAgentId), isFalse);
     });
 
     test('disposes runner when container is disposed', () async {
       final container = ProviderContainer();
 
       final runner = container.read(wakeRunnerProvider);
-      // Acquire a lock to verify the runner is functional.
       final acquired = await runner.tryAcquire(kTestAgentId);
       expect(acquired, isTrue);
 

@@ -43,7 +43,7 @@
     </release>
     <release version="0.9.868" date="2026-02-22">
       <description>
-          <p>Agent cross-device sync via Matrix. Agent entities and links synchronize across devices with wake subscription restoration. Sync maintenance UI supports agent re-sync steps. Zone-based transaction isolation buffers outbox messages until commit, with nested transaction and rollback support. LLM-assisted template evolution: 1-on-1 page for reviewing performance metrics, providing structured feedback, and having the LLM rewrite template directives for approval.</p>
+          <p>Agent cross-device sync via Matrix. Agent entities and links synchronize across devices with wake subscription restoration. Sync maintenance UI supports agent re-sync steps. Zone-based transaction isolation buffers outbox messages until commit, with nested transaction and rollback support.</p>
       </description>
     </release>
     <release version="0.9.867" date="2026-02-22">

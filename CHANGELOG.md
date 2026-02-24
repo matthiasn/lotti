@@ -51,9 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync maintenance UI supports agent re-sync steps.
 - Zone-based transaction isolation: outbox messages are buffered until commit,
   with nested transaction and rollback support.
-- LLM-assisted template evolution: 1-on-1 page for reviewing performance
-  metrics, providing structured feedback, and having the LLM rewrite template
-  directives for approval.
 
 ## [0.9.867] - 2026-02-22
 ### Added
