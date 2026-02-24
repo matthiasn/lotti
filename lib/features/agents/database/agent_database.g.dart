@@ -2197,6 +2197,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
   late final Index idxWakeRunLogAgent = Index('idx_wake_run_log_agent',
       'CREATE INDEX idx_wake_run_log_agent ON wake_run_log (agent_id, created_at DESC)');
+  late final Index idxWakeRunLogTemplate = Index('idx_wake_run_log_template',
+      'CREATE INDEX idx_wake_run_log_template ON wake_run_log (template_id, created_at DESC)');
   late final Index idxWakeRunLogStatus = Index('idx_wake_run_log_status',
       'CREATE INDEX idx_wake_run_log_status ON wake_run_log (status)');
   late final SagaLog sagaLog = SagaLog(this);
@@ -2420,6 +2422,19 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentLinks.mapFromRow);
   }
 
+  Selectable<WakeRunLogData> getWakeRunsByTemplateId(
+      String? templateId, int limit) {
+    return customSelect(
+        'SELECT * FROM wake_run_log WHERE template_id = ?1 ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(templateId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          wakeRunLog,
+        }).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2436,6 +2451,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         idxAgentLinksType,
         wakeRunLog,
         idxWakeRunLogAgent,
+        idxWakeRunLogTemplate,
         idxWakeRunLogStatus,
         sagaLog,
         idxSagaLogAgent,

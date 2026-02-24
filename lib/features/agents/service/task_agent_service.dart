@@ -4,7 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart'
+    show AgentLifecycle, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -49,20 +50,32 @@ class TaskAgentService {
   Future<AgentIdentityEntity> createTaskAgent({
     required String taskId,
     required Set<String> allowedCategoryIds,
+    String? templateId,
     String? displayName,
   }) async {
-    // Optimistic fast-path check (avoids unnecessary work in the common case).
-    final existing = await getTaskAgentForTask(taskId);
-    if (existing != null) {
+    // Resolve template: use the provided ID or fall back to the first
+    // available template from the repository.
+    final resolvedTemplateId = templateId ?? await _resolveDefaultTemplateId();
+    if (resolvedTemplateId == null) {
       throw StateError(
-        'A task agent already exists for task $taskId: ${existing.id}',
+        'No template available. Seed defaults or provide a templateId.',
       );
     }
 
     final identity = await syncService.runInTransaction(() async {
-      // Definitive duplicate check inside the transaction to prevent TOCTOU
-      // races: a concurrent createTaskAgent call could have committed between
-      // the fast-path check above and this point.
+      // All validation inside the transaction to prevent TOCTOU races.
+
+      // Validate that the resolved template actually exists.
+      final templateEntity = await repository.getEntity(resolvedTemplateId);
+      if (templateEntity is! AgentTemplateEntity ||
+          templateEntity.deletedAt != null) {
+        throw StateError(
+          'Template $resolvedTemplateId not found or is not a template entity.',
+        );
+      }
+
+      // Definitive duplicate check to prevent concurrent createTaskAgent
+      // calls from both committing.
       final linksForTask = await repository.getLinksTo(
         taskId,
         type: 'agent_task',
@@ -97,12 +110,25 @@ class TaskAgentService {
       await syncService.upsertEntity(updatedState);
 
       // Create agent_task link: agent → task.
-      final linkId = _uuid.v4();
+      final taskLinkId = _uuid.v4();
       await syncService.upsertLink(
         AgentLink.agentTask(
-          id: linkId,
+          id: taskLinkId,
           fromId: identity.agentId,
           toId: taskId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+
+      // Create template_assignment link: template → agent.
+      final templateLinkId = _uuid.v4();
+      await syncService.upsertLink(
+        AgentLink.templateAssignment(
+          id: templateLinkId,
+          fromId: resolvedTemplateId,
+          toId: identity.agentId,
           createdAt: now,
           updatedAt: now,
           vectorClock: null,
@@ -118,7 +144,7 @@ class TaskAgentService {
     // Enqueue the initial wake so the agent runs immediately after creation.
     orchestrator.enqueueManualWake(
       agentId: identity.agentId,
-      reason: 'creation',
+      reason: WakeReason.creation.name,
       triggerTokens: {taskId},
     );
 
@@ -153,7 +179,7 @@ class TaskAgentService {
     );
     orchestrator.enqueueManualWake(
       agentId: agentId,
-      reason: 'reanalysis',
+      reason: WakeReason.reanalysis.name,
     );
   }
 
@@ -187,6 +213,13 @@ class TaskAgentService {
       'Restored ${links.length} subscriptions for agent $agentId',
       name: 'TaskAgentService',
     );
+  }
+
+  /// Returns the ID of the first available template, or `null` if none exist.
+  Future<String?> _resolveDefaultTemplateId() async {
+    final templates = await repository.getAllTemplates();
+    if (templates.isEmpty) return null;
+    return templates.first.id;
   }
 
   /// Re-register subscriptions for all active task agents.

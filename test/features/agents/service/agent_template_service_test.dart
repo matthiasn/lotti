@@ -746,4 +746,217 @@ void main() {
       verify(() => mockSync.upsertEntity(any())).called(3);
     });
   });
+
+  group('getVersionHistory', () {
+    test('returns versions sorted by version number descending', () async {
+      final v1 = makeTestTemplateVersion(id: 'v1');
+      final v3 = makeTestTemplateVersion(id: 'v3', version: 3);
+      final v2 = makeTestTemplateVersion(id: 'v2', version: 2);
+
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: 'agentTemplateVersion',
+          limit: 100,
+        ),
+      ).thenAnswer((_) async => [v1, v3, v2]);
+
+      final result = await service.getVersionHistory(kTestTemplateId);
+
+      expect(result, hasLength(3));
+      expect(result[0].version, 3);
+      expect(result[1].version, 2);
+      expect(result[2].version, 1);
+    });
+
+    test('returns empty list when no versions exist', () async {
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: 'agentTemplateVersion',
+          limit: 100,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await service.getVersionHistory(kTestTemplateId);
+
+      expect(result, isEmpty);
+    });
+
+    test('filters out non-version entity types', () async {
+      final v1 = makeTestTemplateVersion(id: 'v1');
+      final report = makeTestReport(id: 'r1');
+
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: 'agentTemplateVersion',
+          limit: 100,
+        ),
+      ).thenAnswer((_) async => [v1, report]);
+
+      final result = await service.getVersionHistory(kTestTemplateId);
+
+      expect(result, hasLength(1));
+      expect(result[0].id, 'v1');
+    });
+  });
+
+  group('computeMetrics', () {
+    void stubAgentsForTemplate(List<AgentIdentityEntity> agents) {
+      final links = agents
+          .map(
+            (a) => makeTestTemplateAssignmentLink(
+              id: 'link-${a.id}',
+              toId: a.id,
+            ),
+          )
+          .toList();
+      when(
+        () => mockRepo.getLinksFrom(
+          kTestTemplateId,
+          type: 'template_assignment',
+        ),
+      ).thenAnswer((_) async => links);
+      for (final agent in agents) {
+        when(() => mockRepo.getEntity(agent.id)).thenAnswer((_) async => agent);
+      }
+    }
+
+    test('returns zeroed metrics when no runs exist', () async {
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => []);
+      stubAgentsForTemplate([]);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      expect(metrics.templateId, kTestTemplateId);
+      expect(metrics.totalWakes, 0);
+      expect(metrics.successCount, 0);
+      expect(metrics.failureCount, 0);
+      expect(metrics.successRate, 0.0);
+      expect(metrics.averageDuration, isNull);
+      expect(metrics.firstWakeAt, isNull);
+      expect(metrics.lastWakeAt, isNull);
+      expect(metrics.activeInstanceCount, 0);
+    });
+
+    test('computes counts and success rate from mixed statuses', () async {
+      final runs = [
+        makeTestWakeRun(
+          runKey: 'r1',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 15, 12),
+        ),
+        makeTestWakeRun(
+          runKey: 'r2',
+          status: 'failed',
+          createdAt: DateTime(2024, 3, 15, 11),
+        ),
+        makeTestWakeRun(
+          runKey: 'r3',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 15, 10),
+        ),
+        makeTestWakeRun(
+          runKey: 'r4',
+          createdAt: DateTime(2024, 3, 15, 9),
+        ),
+      ];
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => runs);
+      stubAgentsForTemplate([]);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      expect(metrics.totalWakes, 4);
+      expect(metrics.successCount, 2);
+      expect(metrics.failureCount, 1);
+      // 2 successes / 3 terminal (2 completed + 1 failed) — running excluded.
+      expect(metrics.successRate, closeTo(2 / 3, 0.001));
+    });
+
+    test('computes average duration from completed runs with timestamps',
+        () async {
+      final runs = [
+        makeTestWakeRun(
+          runKey: 'r1',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 15, 12),
+          startedAt: DateTime(2024, 3, 15, 12),
+          completedAt: DateTime(2024, 3, 15, 12, 0, 10), // 10s
+        ),
+        makeTestWakeRun(
+          runKey: 'r2',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 15, 11),
+          startedAt: DateTime(2024, 3, 15, 11),
+          completedAt: DateTime(2024, 3, 15, 11, 0, 20), // 20s
+        ),
+        // This run has no timestamps — should be skipped for avg.
+        makeTestWakeRun(
+          runKey: 'r3',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 15, 10),
+        ),
+      ];
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => runs);
+      stubAgentsForTemplate([]);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      // Average of 10s and 20s = 15s.
+      expect(metrics.averageDuration, const Duration(seconds: 15));
+    });
+
+    test('firstWakeAt is oldest, lastWakeAt is newest (DESC order)', () async {
+      final runs = [
+        makeTestWakeRun(
+          runKey: 'newest',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 20),
+        ),
+        makeTestWakeRun(
+          runKey: 'oldest',
+          status: 'completed',
+          createdAt: DateTime(2024, 3, 10),
+        ),
+      ];
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => runs);
+      stubAgentsForTemplate([]);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      // Runs are DESC (runs[0] is newest); metrics.firstWakeAt == oldest
+      // wake, metrics.lastWakeAt == newest wake.
+      expect(metrics.lastWakeAt, DateTime(2024, 3, 20));
+      expect(metrics.firstWakeAt, DateTime(2024, 3, 10));
+    });
+
+    test('activeInstanceCount counts only active agents', () async {
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => []);
+      stubAgentsForTemplate([
+        makeTestIdentity(id: 'a1', agentId: 'a1'),
+        makeTestIdentity(
+          id: 'a2',
+          agentId: 'a2',
+          lifecycle: AgentLifecycle.destroyed,
+        ),
+        makeTestIdentity(
+          id: 'a3',
+          agentId: 'a3',
+          lifecycle: AgentLifecycle.dormant,
+        ),
+        makeTestIdentity(id: 'a4', agentId: 'a4'),
+      ]);
+
+      final metrics = await service.computeMetrics(kTestTemplateId);
+
+      // Only a1 and a4 are active; a2 is destroyed, a3 is dormant.
+      expect(metrics.activeInstanceCount, 2);
+    });
+  });
 }

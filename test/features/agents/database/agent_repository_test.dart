@@ -1640,6 +1640,82 @@ void main() {
       });
     });
 
+    group('getWakeRunsForTemplate', () {
+      test('returns runs matching templateId ordered DESC', () async {
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-old',
+            agentId: testAgentId,
+            reason: 'subscription',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 2, 18),
+            templateId: 'tpl-001',
+            templateVersionId: 'ver-001',
+          ),
+        );
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-new',
+            agentId: testAgentId,
+            reason: 'subscription',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 2, 20),
+            templateId: 'tpl-001',
+            templateVersionId: 'ver-001',
+          ),
+        );
+        // Different template — should not appear.
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-other',
+            agentId: testAgentId,
+            reason: 'subscription',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 2, 19),
+            templateId: 'tpl-other',
+            templateVersionId: 'ver-other',
+          ),
+        );
+
+        final runs = await repo.getWakeRunsForTemplate('tpl-001');
+
+        expect(runs, hasLength(2));
+        // DESC order: newest first.
+        expect(runs[0].runKey, 'run-new');
+        expect(runs[1].runKey, 'run-old');
+      });
+
+      test('respects limit parameter', () async {
+        for (var i = 0; i < 5; i++) {
+          await repo.insertWakeRun(
+            entry: WakeRunLogData(
+              runKey: 'run-$i',
+              agentId: testAgentId,
+              reason: 'subscription',
+              threadId: 'thread-001',
+              status: 'completed',
+              createdAt: DateTime(2026, 2, 20, i),
+              templateId: 'tpl-001',
+              templateVersionId: 'ver-001',
+            ),
+          );
+        }
+
+        final runs = await repo.getWakeRunsForTemplate('tpl-001', limit: 3);
+
+        expect(runs, hasLength(3));
+      });
+
+      test('returns empty list when no runs exist for template', () async {
+        final runs = await repo.getWakeRunsForTemplate('tpl-nonexistent');
+
+        expect(runs, isEmpty);
+      });
+    });
+
     group('templateAssignment link CRUD', () {
       test('templateAssignment link persists and restores correctly', () async {
         final link = model.AgentLink.templateAssignment(

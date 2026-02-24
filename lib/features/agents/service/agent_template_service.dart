@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -324,6 +325,83 @@ class AgentTemplateService {
     developer.log(
       'Rolled back template $templateId to version $versionId',
       name: 'AgentTemplateService',
+    );
+  }
+
+  /// Fetch versions for a template, sorted newest-first.
+  ///
+  /// Returns up to [limit] versions (default 100).
+  Future<List<AgentTemplateVersionEntity>> getVersionHistory(
+    String templateId, {
+    int limit = 100,
+  }) async {
+    final entities = await repository.getEntitiesByAgentId(
+      templateId,
+      type: 'agentTemplateVersion',
+      limit: limit,
+    );
+    final versions = entities.whereType<AgentTemplateVersionEntity>().toList()
+      ..sort((a, b) => b.version.compareTo(a.version));
+    return versions;
+  }
+
+  /// Compute recent performance metrics for a template.
+  ///
+  /// Fetches up to [limit] most recent wake-run log entries tagged with this
+  /// template and agent instances using it, then aggregates into
+  /// [TemplatePerformanceMetrics]. Metrics reflect the recent window, not
+  /// necessarily the template's entire history.
+  Future<TemplatePerformanceMetrics> computeMetrics(
+    String templateId, {
+    int limit = 500,
+  }) async {
+    final runs = await repository.getWakeRunsForTemplate(
+      templateId,
+      limit: limit,
+    );
+    final agents = await getAgentsForTemplate(templateId);
+
+    final totalWakes = runs.length;
+    var successCount = 0;
+    var failureCount = 0;
+    var durationSumMs = 0;
+    var durationCount = 0;
+    // Query returns rows ordered by created_at DESC, so first = latest,
+    // last = earliest.
+    final lastWakeAt = runs.isNotEmpty ? runs.first.createdAt : null;
+    final firstWakeAt = runs.isNotEmpty ? runs.last.createdAt : null;
+
+    for (final r in runs) {
+      if (r.status == WakeRunStatus.completed.name) successCount++;
+      if (r.status == WakeRunStatus.failed.name) failureCount++;
+      if (r.startedAt != null && r.completedAt != null) {
+        final diffMs =
+            r.completedAt!.difference(r.startedAt!).inMilliseconds;
+        if (diffMs > 0) {
+          durationSumMs += diffMs;
+          durationCount++;
+        }
+      }
+    }
+
+    final terminalCount = successCount + failureCount;
+    final successRate =
+        terminalCount > 0 ? successCount / terminalCount : 0.0;
+    final averageDuration = durationCount > 0
+        ? Duration(milliseconds: durationSumMs ~/ durationCount)
+        : null;
+
+    return TemplatePerformanceMetrics(
+      templateId: templateId,
+      totalWakes: totalWakes,
+      successCount: successCount,
+      failureCount: failureCount,
+      successRate: successRate,
+      averageDuration: averageDuration,
+      firstWakeAt: firstWakeAt,
+      lastWakeAt: lastWakeAt,
+      activeInstanceCount:
+          agents.where((a) => a.lifecycle == AgentLifecycle.active).length,
     );
   }
 

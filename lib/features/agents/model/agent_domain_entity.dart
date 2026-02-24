@@ -101,6 +101,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   }) = AgentReportHeadEntity;
 
   /// Agent template — reusable blueprint for agent instances.
+  ///
+  /// The [agentId] field stores the template's own ID (same as [id]), serving
+  /// as a grouping key that links this template to its versions and head
+  /// pointer. It does **not** reference an agent instance. This naming is
+  /// inherited from the base entity schema to keep the DB schema uniform.
   const factory AgentDomainEntity.agentTemplate({
     required String id,
     required String agentId,
@@ -115,6 +120,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   }) = AgentTemplateEntity;
 
   /// Immutable version of an agent template's directives.
+  ///
+  /// The [agentId] field stores the owning template's ID, grouping all
+  /// versions under the same template. It does **not** reference an agent
+  /// instance.
   const factory AgentDomainEntity.agentTemplateVersion({
     required String id,
     required String agentId,
@@ -128,6 +137,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   }) = AgentTemplateVersionEntity;
 
   /// Mutable head pointer for the active template version.
+  ///
+  /// The [agentId] field stores the owning template's ID. It does **not**
+  /// reference an agent instance.
   const factory AgentDomainEntity.agentTemplateHead({
     required String id,
     required String agentId,
