@@ -53,6 +53,7 @@ CREATE TABLE wake_run_log (
 );
 
 CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
+CREATE INDEX idx_wake_run_log_template ON wake_run_log(template_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
 
 CREATE TABLE saga_log (

@@ -129,10 +129,11 @@ void main() {
           () => mockSyncService.upsertLink(captureAny()),
         ).captured;
         expect(linkCalls, hasLength(2));
-        final taskLink = linkCalls.first as AgentTaskLink;
+        final taskLink = linkCalls.whereType<AgentTaskLink>().single;
         expect(taskLink.fromId, 'agent-1');
         expect(taskLink.toId, 'task-1');
-        final templateLink = linkCalls[1] as TemplateAssignmentLink;
+        final templateLink =
+            linkCalls.whereType<TemplateAssignmentLink>().single;
         expect(templateLink.fromId, kTestTemplateId);
         expect(templateLink.toId, 'agent-1');
 

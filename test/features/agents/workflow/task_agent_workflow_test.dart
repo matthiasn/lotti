@@ -214,6 +214,9 @@ void main() {
     registerAllFallbackValues();
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+    when(
+      () => mockAgentRepository.updateWakeRunTemplate(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     // Default template stubs — tests that need different behavior override.
     when(() => mockTemplateService.getTemplateForAgent(agentId))
@@ -421,13 +424,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
 
         // Mock manager messages (empty list for final content extraction).
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -618,14 +614,6 @@ void main() {
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
-
         // Make sendMessage throw to trigger the catch branch.
         mockConversationRepository.sendMessageDelegate = ({
           required conversationId,
@@ -785,13 +773,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
       });
 
       test('persists report and report head when strategy produces report',
@@ -987,13 +968,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         // Stub the task entity lookup used by _executeToolHandler.
@@ -1091,13 +1065,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         String? capturedMessage;
@@ -1385,13 +1352,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
       }
 
@@ -2281,13 +2241,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
       });
 
       test('picks last assistant message with content', () async {
@@ -2457,13 +2410,6 @@ void main() {
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
 
         // Make sendMessage throw.
         mockConversationRepository.sendMessageDelegate = ({
@@ -2521,13 +2467,6 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
         when(() => mockAgentRepository.getReportHead(agentId, 'current'))
             .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.updateWakeRunTemplate(
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenAnswer((_) async {});
         when(() => mockConversationManager.messages).thenReturn([]);
 
         final result = await workflow.execute(

@@ -328,14 +328,17 @@ class AgentTemplateService {
     );
   }
 
-  /// Fetch all versions for a template, sorted newest-first.
+  /// Fetch versions for a template, sorted newest-first.
+  ///
+  /// Returns up to [limit] versions (default 100).
   Future<List<AgentTemplateVersionEntity>> getVersionHistory(
-    String templateId,
-  ) async {
+    String templateId, {
+    int limit = 100,
+  }) async {
     final entities = await repository.getEntitiesByAgentId(
       templateId,
       type: 'agentTemplateVersion',
-      limit: 100,
+      limit: limit,
     );
     final versions = entities.whereType<AgentTemplateVersionEntity>().toList()
       ..sort((a, b) => b.version.compareTo(a.version));
@@ -357,14 +360,26 @@ class AgentTemplateService {
     var failureCount = 0;
     var durationSumMs = 0;
     var durationCount = 0;
+    DateTime? firstWakeAt;
+    DateTime? lastWakeAt;
 
     for (final r in runs) {
       if (r.status == WakeRunStatus.completed.name) successCount++;
       if (r.status == WakeRunStatus.failed.name) failureCount++;
       if (r.startedAt != null && r.completedAt != null) {
-        durationSumMs +=
+        final diffMs =
             r.completedAt!.difference(r.startedAt!).inMilliseconds;
-        durationCount++;
+        if (diffMs > 0) {
+          durationSumMs += diffMs;
+          durationCount++;
+        }
+      }
+      final created = r.createdAt;
+      if (firstWakeAt == null || created.isBefore(firstWakeAt)) {
+        firstWakeAt = created;
+      }
+      if (lastWakeAt == null || created.isAfter(lastWakeAt)) {
+        lastWakeAt = created;
       }
     }
 
@@ -372,11 +387,6 @@ class AgentTemplateService {
     final averageDuration = durationCount > 0
         ? Duration(milliseconds: durationSumMs ~/ durationCount)
         : null;
-
-    final firstWakeAt =
-        runs.isNotEmpty ? runs.last.createdAt : null; // oldest = last (DESC)
-    final lastWakeAt =
-        runs.isNotEmpty ? runs.first.createdAt : null; // newest = first (DESC)
 
     return TemplatePerformanceMetrics(
       templateId: templateId,

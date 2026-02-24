@@ -175,7 +175,8 @@ RULES:
       )
       ..writeln('- Failures: ${metrics.failureCount}')
       ..writeln(
-        '- Average duration: ${metrics.averageDuration?.inSeconds ?? "N/A"}s',
+        '- Average duration: '
+        '${metrics.averageDuration == null ? "N/A" : "${metrics.averageDuration!.inSeconds}s"}',
       )
       ..writeln('- Active instances: ${metrics.activeInstanceCount}')
       ..writeln()
