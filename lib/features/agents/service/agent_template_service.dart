@@ -366,8 +366,10 @@ class AgentTemplateService {
     var failureCount = 0;
     var durationSumMs = 0;
     var durationCount = 0;
-    DateTime? firstWakeAt;
-    DateTime? lastWakeAt;
+    // Query returns rows ordered by created_at DESC, so first = latest,
+    // last = earliest.
+    final lastWakeAt = runs.isNotEmpty ? runs.first.createdAt : null;
+    final firstWakeAt = runs.isNotEmpty ? runs.last.createdAt : null;
 
     for (final r in runs) {
       if (r.status == WakeRunStatus.completed.name) successCount++;
@@ -379,13 +381,6 @@ class AgentTemplateService {
           durationSumMs += diffMs;
           durationCount++;
         }
-      }
-      final created = r.createdAt;
-      if (firstWakeAt == null || created.isBefore(firstWakeAt)) {
-        firstWakeAt = created;
-      }
-      if (lastWakeAt == null || created.isAfter(lastWakeAt)) {
-        lastWakeAt = created;
       }
     }
 
