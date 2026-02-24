@@ -131,6 +131,103 @@
   "agentTabConversations": "Konversationen",
   "agentTabObservations": "Beobachtungen",
   "agentTabReports": "Berichte",
+  "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
+  "agentTemplateAllProviders": "Alle Anbieter",
+  "agentTemplateAssignedLabel": "Vorlage",
+  "agentTemplateCreatedSuccess": "Vorlage erstellt",
+  "agentTemplateCreateTitle": "Vorlage erstellen",
+  "agentTemplateDeleteConfirm": "Diese Vorlage löschen? Das kann nicht rückgängig gemacht werden.",
+  "agentTemplateDeleteHasInstances": "Kann nicht gelöscht werden: Aktive Agenten verwenden diese Vorlage.",
+  "agentTemplateDirectivesHint": "Definiere die Persönlichkeit, den Ton, die Ziele und den Stil des Agenten...",
+  "agentTemplateDirectivesLabel": "Anweisungen",
+  "agentTemplateDisplayNameLabel": "Name",
+  "agentTemplateEditTitle": "Vorlage bearbeiten",
+  "agentTemplateEmptyList": "Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.",
+  "agentTemplateEvolveAction": "Mit KI weiterentwickeln",
+  "agentTemplateEvolveApprove": "Genehmigen & Speichern",
+  "agentTemplateEvolveButton": "Vorlage weiterentwickeln",
+  "agentTemplateEvolveCurrentLabel": "Aktuelle Anweisungen",
+  "agentTemplateEvolveError": "Vorschlag konnte nicht generiert werden",
+  "agentTemplateEvolvePreviewTitle": "Vorgeschlagene Änderungen",
+  "agentTemplateEvolveProposedLabel": "Vorgeschlagene Anweisungen",
+  "agentTemplateEvolveReject": "Ablehnen",
+  "agentTemplateEvolveSuccess": "Vorlage erfolgreich weiterentwickelt",
+  "agentTemplateEvolvingProgress": "Verbesserte Anweisungen werden generiert...",
+  "agentTemplateFeedbackChangesHint": "Beschreibe, was du ändern möchtest...",
+  "agentTemplateFeedbackChangesLabel": "Konkrete Änderungen",
+  "agentTemplateFeedbackDidntWorkHint": "Beschreibe Probleme oder Schwächen...",
+  "agentTemplateFeedbackDidntWorkLabel": "Was nicht funktioniert hat",
+  "agentTemplateFeedbackEnjoyedHint": "Beschreibe, was der Agent gut macht...",
+  "agentTemplateFeedbackEnjoyedLabel": "Was gut funktioniert hat",
+  "agentTemplateFeedbackTitle": "Rückmeldung",
+  "agentTemplateInstanceCount": "{count, plural, =0{Keine Instanzen} =1{1 Instanz} other{{count} Instanzen}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Aufgaben-Agent",
+  "agentTemplateMetricsActiveInstances": "Aktive Instanzen",
+  "agentTemplateMetricsAvgDuration": "Durchschn. Dauer",
+  "agentTemplateMetricsDurationSeconds": "{count} s",
+  "@agentTemplateMetricsDurationSeconds": {
+    "description": "Formatted duration in seconds shown in template performance metrics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateMetricsFailureCount": "Fehler",
+  "agentTemplateMetricsFirstWake": "Erste Aktivierung",
+  "agentTemplateMetricsLastWake": "Letzte Aktivierung",
+  "agentTemplateMetricsSuccessRate": "Erfolgsrate",
+  "agentTemplateMetricsTitle": "Leistungskennzahlen",
+  "agentTemplateMetricsTotalWakes": "Aktivierungen gesamt",
+  "agentTemplateModelLabel": "Modell-ID",
+  "agentTemplateModelRequirements": "Nur Reasoning-Modelle mit Funktionsaufrufen werden angezeigt",
+  "agentTemplateNoMetrics": "Noch keine Leistungsdaten vorhanden",
+  "agentTemplateNoneAssigned": "Keine Vorlage zugewiesen",
+  "agentTemplateNoSuitableModels": "Keine passenden Modelle gefunden",
+  "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
+  "agentTemplateNotFound": "Vorlage nicht gefunden",
+  "agentTemplateNoVersions": "Keine Versionen",
+  "agentTemplateOneOnOneTitle": "1-zu-1 mit {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
+  "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Als neue Version speichern",
+  "agentTemplateSelectTitle": "Vorlage auswählen",
+  "agentTemplateSettingsSubtitle": "Agenten-Persönlichkeiten und Anweisungen verwalten",
+  "agentTemplateStatusActive": "Aktiv",
+  "agentTemplateStatusArchived": "Archiviert",
+  "agentTemplatesTitle": "Agenten-Vorlagen",
+  "agentTemplateSwitchHint": "Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.",
+  "agentTemplateVersionHistoryTitle": "Versionshistorie",
+  "agentTemplateVersionLabel": "Version {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Neue Version gespeichert",
   "agentThreadReportLabel": "Bericht aus diesem Wake-Zyklus",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",

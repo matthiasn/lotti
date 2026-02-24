@@ -1,5 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_template_list_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
     as new_categories;
@@ -66,6 +68,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/habits/by_id/:habitId',
         '/settings/habits/create',
         '/settings/habits/search/:searchTerm',
+        '/settings/templates',
+        '/settings/templates/create',
+        '/settings/templates/:templateId',
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
@@ -294,6 +299,27 @@ class SettingsLocation extends BeamLocation<BeamState> {
         BeamPage(
           key: const ValueKey('settings-habits-create'),
           child: CreateHabitPage(),
+        ),
+
+      // Agent Templates
+      if (pathContains('templates/create'))
+        const BeamPage(
+          key: ValueKey('settings-templates-create'),
+          child: AgentTemplateDetailPage(),
+        )
+      else if (pathContains('templates') && pathContainsKey('templateId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-templates-${state.pathParameters['templateId']}',
+          ),
+          child: AgentTemplateDetailPage(
+            templateId: state.pathParameters['templateId'],
+          ),
+        )
+      else if (pathContains('templates'))
+        const BeamPage(
+          key: ValueKey('settings-templates'),
+          child: AgentTemplateListPage(),
         ),
 
       // Flags

@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -325,6 +326,9 @@ class MockConversationManager extends Mock implements ConversationManager {}
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 
 class MockAgentTemplateService extends Mock implements AgentTemplateService {}
+
+class MockTemplateEvolutionWorkflow extends Mock
+    implements TemplateEvolutionWorkflow {}
 
 // --- Additional Fake classes ---
 

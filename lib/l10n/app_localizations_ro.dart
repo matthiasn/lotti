@@ -258,6 +258,220 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTabReports => 'Rapoarte';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Instanțe active';
+
+  @override
+  String get agentTemplateAllProviders => 'Toți furnizorii';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Șablon';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Șablon creat';
+
+  @override
+  String get agentTemplateCreateTitle => 'Creează un șablon';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Ștergi acest șablon? Această acțiune nu poate fi anulată.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Nu se poate șterge: agenți activi utilizează acest șablon.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Definește personalitatea, tonul, obiectivele și stilul agentului...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Directive';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Nume';
+
+  @override
+  String get agentTemplateEditTitle => 'Editează șablonul';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Niciun șablon încă. Apasă + pentru a crea unul.';
+
+  @override
+  String get agentTemplateEvolveAction => 'Evoluează cu IA';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Aprobă și salvează';
+
+  @override
+  String get agentTemplateEvolveButton => 'Evoluează șablonul';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Directivele actuale';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Nu s-a putut genera propunerea de evoluție';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Modificări propuse';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Directivele propuse';
+
+  @override
+  String get agentTemplateEvolveReject => 'Respinge';
+
+  @override
+  String get agentTemplateEvolveSuccess => 'Șablonul a fost evoluat cu succes';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Se generează directive îmbunătățite...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Descrie ce ai dori să schimbi...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Modificări specifice';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Descrie problemele sau deficiențele...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel => 'Ce nu a funcționat';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Descrie ce face bine agentul...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Ce a funcționat bine';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Feedback';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de instanțe',
+      few: '$count instanțe',
+      one: '1 instanță',
+      zero: 'Nicio instanță',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Agent de sarcini';
+
+  @override
+  String get agentTemplateMetricsActiveInstances => 'Instanțe active';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durata medie';
+
+  @override
+  String agentTemplateMetricsDurationSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Eșecuri';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Prima activare';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Ultima activare';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Rata de succes';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Indicatori de performanță';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Total activări';
+
+  @override
+  String get agentTemplateModelLabel => 'ID model';
+
+  @override
+  String get agentTemplateModelRequirements =>
+      'Sunt afișate doar modelele de raționament cu apeluri de funcții';
+
+  @override
+  String get agentTemplateNoMetrics => 'Nu există încă date de performanță';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
+
+  @override
+  String get agentTemplateNoSuitableModels => 'Nu s-au găsit modele potrivite';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.';
+
+  @override
+  String get agentTemplateNotFound => 'Șablon negăsit';
+
+  @override
+  String get agentTemplateNoVersions => 'Nicio versiune';
+
+  @override
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-la-1 cu $templateName';
+  }
+
+  @override
+  String get agentTemplateRollbackAction => 'Revino la această versiune';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Revino la versiunea $version? Agentul va folosi această versiune la următoarea trezire.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion => 'Salvează ca versiune nouă';
+
+  @override
+  String get agentTemplateSelectTitle => 'Selectează un șablon';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Gestionează personalitățile și directivele agenților';
+
+  @override
+  String get agentTemplateStatusActive => 'Activ';
+
+  @override
+  String get agentTemplateStatusArchived => 'Arhivat';
+
+  @override
+  String get agentTemplatesTitle => 'Șabloane agent';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Pentru a utiliza un alt șablon, distruge acest agent și creează unul nou.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Istoric versiuni';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Versiunea $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Versiune nouă salvată';
+
+  @override
   String get agentThreadReportLabel => 'Raport generat în acest ciclu';
 
   @override

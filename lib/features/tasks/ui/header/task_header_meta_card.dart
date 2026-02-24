@@ -168,9 +168,41 @@ class _TaskAgentChip extends ConsumerWidget {
 
     try {
       final service = ref.read(taskAgentServiceProvider);
-      // TODO(agents): let the user pick a template before creating the agent.
+      final templateService = ref.read(agentTemplateServiceProvider);
+
+      // Try category-specific templates first, then all templates.
+      var templates = categoryId != null
+          ? await templateService.listTemplatesForCategory(categoryId)
+          : <AgentTemplateEntity>[];
+      if (templates.isEmpty) {
+        templates = await templateService.listTemplates();
+      }
+
+      if (templates.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.messages.agentTemplateNoTemplates),
+          ),
+        );
+        return;
+      }
+
+      // Single template → auto-assign. Multiple → show selection sheet.
+      AgentTemplateEntity? selectedTemplate;
+      if (templates.length == 1) {
+        selectedTemplate = templates.first;
+      } else {
+        if (!context.mounted) return;
+        selectedTemplate =
+            await _showTemplateSelectionSheet(context, templates);
+      }
+
+      if (selectedTemplate == null) return;
+
       await service.createTaskAgent(
         taskId: taskId,
+        templateId: selectedTemplate.id,
         allowedCategoryIds: allowedCategoryIds,
       );
       // Invalidate the provider so the UI rebuilds with the new agent.
@@ -194,5 +226,56 @@ class _TaskAgentChip extends ConsumerWidget {
         );
       }
     }
+  }
+
+  Future<AgentTemplateEntity?> _showTemplateSelectionSheet(
+    BuildContext context,
+    List<AgentTemplateEntity> templates,
+  ) async {
+    return showModalBottomSheet<AgentTemplateEntity>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetContext).size.height * 0.6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    sheetContext.messages.agentTemplateSelectTitle,
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: templates
+                        .map(
+                          (template) => ListTile(
+                            leading: Icon(
+                              Icons.smart_toy_outlined,
+                              color: Theme.of(sheetContext).colorScheme.primary,
+                            ),
+                            title: Text(template.displayName),
+                            subtitle: Text(template.modelId),
+                            onTap: () =>
+                                Navigator.of(sheetContext).pop(template),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

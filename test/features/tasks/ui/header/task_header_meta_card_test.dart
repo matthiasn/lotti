@@ -426,11 +426,15 @@ void main() {
       (tester) async {
         final task = testTask;
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
         final identity = makeTestIdentity();
 
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
         when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
@@ -448,6 +452,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -467,6 +472,7 @@ void main() {
         verify(
           () => mockService.createTaskAgent(
             taskId: task.meta.id,
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: <String>{},
           ),
         ).called(1);
@@ -478,10 +484,14 @@ void main() {
       (tester) async {
         final task = testTask;
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
 
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
         when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenThrow(Exception('creation failed'));
@@ -499,6 +509,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -558,6 +569,7 @@ void main() {
         verifyNever(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         );
@@ -592,11 +604,18 @@ void main() {
         );
 
         final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
         final identity = makeTestIdentity();
 
         when(
+          () => mockTemplateService.listTemplatesForCategory(categoryId),
+        ).thenAnswer((_) async => [makeTestTemplate()]);
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [makeTestTemplate()]);
+        when(
           () => mockService.createTaskAgent(
             taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
@@ -614,6 +633,7 @@ void main() {
             (ref, taskId) async => null,
           ),
           taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         ];
 
         await tester.pumpWidget(
@@ -633,6 +653,7 @@ void main() {
         verify(
           () => mockService.createTaskAgent(
             taskId: testTask.meta.id,
+            templateId: any(named: 'templateId'),
             allowedCategoryIds: {categoryId},
           ),
         ).called(1);
@@ -682,6 +703,9 @@ void main() {
           agentMessagesByThreadProvider.overrideWith(
             (ref, agentId) async => <String, List<AgentDomainEntity>>{},
           ),
+          templateForAgentProvider.overrideWith(
+            (ref, agentId) async => null,
+          ),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
         ];
@@ -700,6 +724,142 @@ void main() {
 
         // After navigation, the AgentDetailPage should be on screen
         expect(find.byType(AgentDetailPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows snackbar when no templates available',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
+
+        when(mockTemplateService.listTemplates).thenAnswer((_) async => []);
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(context.messages.agentTemplateNoTemplates),
+          findsOneWidget,
+        );
+
+        // createTaskAgent should NOT have been called
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows template selection bottom sheet when multiple templates',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
+        final identity = makeTestIdentity();
+
+        final laura = makeTestTemplate(
+          id: 'tpl-laura',
+          agentId: 'tpl-laura',
+          displayName: 'Laura',
+        );
+        final tom = makeTestTemplate(
+          id: 'tpl-tom',
+          agentId: 'tpl-tom',
+          displayName: 'Tom',
+        );
+
+        when(mockTemplateService.listTemplates)
+            .thenAnswer((_) async => [laura, tom]);
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        // Bottom sheet should show both template names
+        expect(find.text('Laura'), findsOneWidget);
+        expect(find.text('Tom'), findsOneWidget);
+        expect(
+          find.text(context.messages.agentTemplateSelectTitle),
+          findsOneWidget,
+        );
+
+        // Select Laura
+        await tester.tap(find.text('Laura'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: task.meta.id,
+            templateId: 'tpl-laura',
+            allowedCategoryIds: <String>{},
+          ),
+        ).called(1);
       },
     );
   });

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.870" date="2026-02-24">
+      <description>
+          <p>Agent templates: full-stack feature for reusable agent templates with database, service, state, and UI layers. Template evolution workflow with LLM-assisted 1-on-1 review of performance metrics and directive rewriting. Inference provider resolver and settings navigation for templates.</p>
+      </description>
+    </release>
     <release version="0.9.869" date="2026-02-23">
       <description>
           <p>Provider filter for category prompt selection. Collapsible text entries in linked-entry context. Agent cross-device sync via Matrix with zone-based transaction isolation. Desktop crash-on-exit fix via graceful service disposal. Reference image grid overflow fix.</p>

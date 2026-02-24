@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.870] - 2026-02-24
+### Added
+- Agent templates: full-stack feature for creating, editing, and managing
+  reusable agent templates. Includes database schema, repository, service layer,
+  Riverpod providers, and UI (list page, detail page with model selector).
+- Template evolution workflow: LLM-assisted 1-on-1 page for reviewing agent
+  performance metrics, providing structured feedback, and having the LLM rewrite
+  template directives for approval.
+- Template performance metrics: track token usage, execution counts, and success
+  rates per template.
+- Inference provider resolver for selecting AI models per template.
+- Settings navigation for agent templates (list, create, edit).
+
 ## [0.9.869] - 2026-02-23
 ### Added
 - Provider filter for category prompt selection: when multiple AI providers
@@ -30,6 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reference image selection: the "Continue" button is no longer hidden when
   many images are available. The image grid now scrolls independently while
   the button stays pinned at the bottom.
+
+## [0.9.868] - 2026-02-22
+### Added
+- Agent cross-device sync via Matrix: agent entities and links synchronize
+  across devices with wake subscription restoration.
+- Sync maintenance UI supports agent re-sync steps.
+- Zone-based transaction isolation: outbox messages are buffered until commit,
+  with nested transaction and rollback support.
 
 ## [0.9.867] - 2026-02-22
 ### Added

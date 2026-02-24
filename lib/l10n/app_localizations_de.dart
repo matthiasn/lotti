@@ -259,6 +259,222 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTabReports => 'Berichte';
 
   @override
+  String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';
+
+  @override
+  String get agentTemplateAllProviders => 'Alle Anbieter';
+
+  @override
+  String get agentTemplateAssignedLabel => 'Vorlage';
+
+  @override
+  String get agentTemplateCreatedSuccess => 'Vorlage erstellt';
+
+  @override
+  String get agentTemplateCreateTitle => 'Vorlage erstellen';
+
+  @override
+  String get agentTemplateDeleteConfirm =>
+      'Diese Vorlage löschen? Das kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get agentTemplateDeleteHasInstances =>
+      'Kann nicht gelöscht werden: Aktive Agenten verwenden diese Vorlage.';
+
+  @override
+  String get agentTemplateDirectivesHint =>
+      'Definiere die Persönlichkeit, den Ton, die Ziele und den Stil des Agenten...';
+
+  @override
+  String get agentTemplateDirectivesLabel => 'Anweisungen';
+
+  @override
+  String get agentTemplateDisplayNameLabel => 'Name';
+
+  @override
+  String get agentTemplateEditTitle => 'Vorlage bearbeiten';
+
+  @override
+  String get agentTemplateEmptyList =>
+      'Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.';
+
+  @override
+  String get agentTemplateEvolveAction => 'Mit KI weiterentwickeln';
+
+  @override
+  String get agentTemplateEvolveApprove => 'Genehmigen & Speichern';
+
+  @override
+  String get agentTemplateEvolveButton => 'Vorlage weiterentwickeln';
+
+  @override
+  String get agentTemplateEvolveCurrentLabel => 'Aktuelle Anweisungen';
+
+  @override
+  String get agentTemplateEvolveError =>
+      'Vorschlag konnte nicht generiert werden';
+
+  @override
+  String get agentTemplateEvolvePreviewTitle => 'Vorgeschlagene Änderungen';
+
+  @override
+  String get agentTemplateEvolveProposedLabel => 'Vorgeschlagene Anweisungen';
+
+  @override
+  String get agentTemplateEvolveReject => 'Ablehnen';
+
+  @override
+  String get agentTemplateEvolveSuccess =>
+      'Vorlage erfolgreich weiterentwickelt';
+
+  @override
+  String get agentTemplateEvolvingProgress =>
+      'Verbesserte Anweisungen werden generiert...';
+
+  @override
+  String get agentTemplateFeedbackChangesHint =>
+      'Beschreibe, was du ändern möchtest...';
+
+  @override
+  String get agentTemplateFeedbackChangesLabel => 'Konkrete Änderungen';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkHint =>
+      'Beschreibe Probleme oder Schwächen...';
+
+  @override
+  String get agentTemplateFeedbackDidntWorkLabel =>
+      'Was nicht funktioniert hat';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedHint =>
+      'Beschreibe, was der Agent gut macht...';
+
+  @override
+  String get agentTemplateFeedbackEnjoyedLabel => 'Was gut funktioniert hat';
+
+  @override
+  String get agentTemplateFeedbackTitle => 'Rückmeldung';
+
+  @override
+  String agentTemplateInstanceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Instanzen',
+      one: '1 Instanz',
+      zero: 'Keine Instanzen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentTemplateKindTaskAgent => 'Aufgaben-Agent';
+
+  @override
+  String get agentTemplateMetricsActiveInstances => 'Aktive Instanzen';
+
+  @override
+  String get agentTemplateMetricsAvgDuration => 'Durchschn. Dauer';
+
+  @override
+  String agentTemplateMetricsDurationSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String get agentTemplateMetricsFailureCount => 'Fehler';
+
+  @override
+  String get agentTemplateMetricsFirstWake => 'Erste Aktivierung';
+
+  @override
+  String get agentTemplateMetricsLastWake => 'Letzte Aktivierung';
+
+  @override
+  String get agentTemplateMetricsSuccessRate => 'Erfolgsrate';
+
+  @override
+  String get agentTemplateMetricsTitle => 'Leistungskennzahlen';
+
+  @override
+  String get agentTemplateMetricsTotalWakes => 'Aktivierungen gesamt';
+
+  @override
+  String get agentTemplateModelLabel => 'Modell-ID';
+
+  @override
+  String get agentTemplateModelRequirements =>
+      'Nur Reasoning-Modelle mit Funktionsaufrufen werden angezeigt';
+
+  @override
+  String get agentTemplateNoMetrics => 'Noch keine Leistungsdaten vorhanden';
+
+  @override
+  String get agentTemplateNoneAssigned => 'Keine Vorlage zugewiesen';
+
+  @override
+  String get agentTemplateNoSuitableModels =>
+      'Keine passenden Modelle gefunden';
+
+  @override
+  String get agentTemplateNoTemplates =>
+      'Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.';
+
+  @override
+  String get agentTemplateNotFound => 'Vorlage nicht gefunden';
+
+  @override
+  String get agentTemplateNoVersions => 'Keine Versionen';
+
+  @override
+  String agentTemplateOneOnOneTitle(String templateName) {
+    return '1-zu-1 mit $templateName';
+  }
+
+  @override
+  String get agentTemplateRollbackAction => 'Auf diese Version zurücksetzen';
+
+  @override
+  String agentTemplateRollbackConfirm(int version) {
+    return 'Auf Version $version zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.';
+  }
+
+  @override
+  String get agentTemplateSaveNewVersion => 'Als neue Version speichern';
+
+  @override
+  String get agentTemplateSelectTitle => 'Vorlage auswählen';
+
+  @override
+  String get agentTemplateSettingsSubtitle =>
+      'Agenten-Persönlichkeiten und Anweisungen verwalten';
+
+  @override
+  String get agentTemplateStatusActive => 'Aktiv';
+
+  @override
+  String get agentTemplateStatusArchived => 'Archiviert';
+
+  @override
+  String get agentTemplatesTitle => 'Agenten-Vorlagen';
+
+  @override
+  String get agentTemplateSwitchHint =>
+      'Um eine andere Vorlage zu verwenden, lösche diesen Agenten und erstelle einen neuen.';
+
+  @override
+  String get agentTemplateVersionHistoryTitle => 'Versionshistorie';
+
+  @override
+  String agentTemplateVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentTemplateVersionSaved => 'Neue Version gespeichert';
+
+  @override
   String get agentThreadReportLabel => 'Bericht aus diesem Wake-Zyklus';
 
   @override

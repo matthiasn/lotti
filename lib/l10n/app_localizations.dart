@@ -564,6 +564,372 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get agentTabReports;
 
+  /// Section title for the list of active agent instances using this template.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Instances'**
+  String get agentTemplateActiveInstancesTitle;
+
+  /// Filter option to show models from all AI providers.
+  ///
+  /// In en, this message translates to:
+  /// **'All Providers'**
+  String get agentTemplateAllProviders;
+
+  /// Label shown next to the template assigned to an agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Template'**
+  String get agentTemplateAssignedLabel;
+
+  /// Snackbar message after successfully creating a new template.
+  ///
+  /// In en, this message translates to:
+  /// **'Template created'**
+  String get agentTemplateCreatedSuccess;
+
+  /// Page title for the create-template form.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Template'**
+  String get agentTemplateCreateTitle;
+
+  /// Confirmation dialog message when deleting a template.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this template? This cannot be undone.'**
+  String get agentTemplateDeleteConfirm;
+
+  /// Error message when trying to delete a template that has active instances.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot delete: active agents are using this template.'**
+  String get agentTemplateDeleteHasInstances;
+
+  /// Placeholder hint text for the directives text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Define the agent\'s personality, tone, goals, and style...'**
+  String get agentTemplateDirectivesHint;
+
+  /// Label for the text field where the user writes agent directives.
+  ///
+  /// In en, this message translates to:
+  /// **'Directives'**
+  String get agentTemplateDirectivesLabel;
+
+  /// Label for the template display name input field.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get agentTemplateDisplayNameLabel;
+
+  /// Page title for the edit-template form.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Template'**
+  String get agentTemplateEditTitle;
+
+  /// Placeholder shown when the template list is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates yet. Tap + to create one.'**
+  String get agentTemplateEmptyList;
+
+  /// Button label to start AI-assisted template evolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolve with AI'**
+  String get agentTemplateEvolveAction;
+
+  /// Button to accept and save proposed directive changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve & Save'**
+  String get agentTemplateEvolveApprove;
+
+  /// Button label to trigger template evolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolve Template'**
+  String get agentTemplateEvolveButton;
+
+  /// Label for the current directives shown during evolution preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Directives'**
+  String get agentTemplateEvolveCurrentLabel;
+
+  /// Error message when AI evolution proposal generation fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate evolution proposal'**
+  String get agentTemplateEvolveError;
+
+  /// Title for the preview dialog showing proposed directive changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Changes'**
+  String get agentTemplateEvolvePreviewTitle;
+
+  /// Label for the AI-proposed directives shown during evolution preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Directives'**
+  String get agentTemplateEvolveProposedLabel;
+
+  /// Button to reject the proposed directive changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get agentTemplateEvolveReject;
+
+  /// Snackbar message after successfully evolving a template.
+  ///
+  /// In en, this message translates to:
+  /// **'Template evolved successfully'**
+  String get agentTemplateEvolveSuccess;
+
+  /// Progress message shown while AI generates improved directives.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating improved directives...'**
+  String get agentTemplateEvolvingProgress;
+
+  /// Placeholder hint for the specific-changes feedback text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you\'d like changed...'**
+  String get agentTemplateFeedbackChangesHint;
+
+  /// Label for the feedback field where users describe desired changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Specific changes'**
+  String get agentTemplateFeedbackChangesLabel;
+
+  /// Placeholder hint for the what-didn't-work feedback text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe issues or shortcomings...'**
+  String get agentTemplateFeedbackDidntWorkHint;
+
+  /// Label for the feedback field where users describe issues.
+  ///
+  /// In en, this message translates to:
+  /// **'What didn\'t work'**
+  String get agentTemplateFeedbackDidntWorkLabel;
+
+  /// Placeholder hint for the what-worked-well feedback text field.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what the agent does well...'**
+  String get agentTemplateFeedbackEnjoyedHint;
+
+  /// Label for the feedback field where users describe positives.
+  ///
+  /// In en, this message translates to:
+  /// **'What worked well'**
+  String get agentTemplateFeedbackEnjoyedLabel;
+
+  /// Title for the template feedback section used during evolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get agentTemplateFeedbackTitle;
+
+  /// No description provided for @agentTemplateInstanceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}'**
+  String agentTemplateInstanceCount(int count);
+
+  /// Display name for the task-agent template kind.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Agent'**
+  String get agentTemplateKindTaskAgent;
+
+  /// Metric label for the number of active agent instances.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Instances'**
+  String get agentTemplateMetricsActiveInstances;
+
+  /// Metric label for the average wake duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Duration'**
+  String get agentTemplateMetricsAvgDuration;
+
+  /// Formatted duration in seconds shown in template performance metrics.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}s'**
+  String agentTemplateMetricsDurationSeconds(int count);
+
+  /// Metric label for the total number of agent wake failures.
+  ///
+  /// In en, this message translates to:
+  /// **'Failures'**
+  String get agentTemplateMetricsFailureCount;
+
+  /// Metric label for the timestamp of the first agent wake.
+  ///
+  /// In en, this message translates to:
+  /// **'First Wake'**
+  String get agentTemplateMetricsFirstWake;
+
+  /// Metric label for the timestamp of the most recent agent wake.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Wake'**
+  String get agentTemplateMetricsLastWake;
+
+  /// Metric label for the percentage of successful agent wakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Success Rate'**
+  String get agentTemplateMetricsSuccessRate;
+
+  /// Section title for the template performance metrics panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Metrics'**
+  String get agentTemplateMetricsTitle;
+
+  /// Metric label for the total number of agent wakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Wakes'**
+  String get agentTemplateMetricsTotalWakes;
+
+  /// Label for the AI model selection field in the template form.
+  ///
+  /// In en, this message translates to:
+  /// **'Model ID'**
+  String get agentTemplateModelLabel;
+
+  /// Helper text explaining which AI models are eligible for agent templates.
+  ///
+  /// In en, this message translates to:
+  /// **'Only reasoning models with function calling are shown'**
+  String get agentTemplateModelRequirements;
+
+  /// Placeholder shown when no performance metrics are available.
+  ///
+  /// In en, this message translates to:
+  /// **'No performance data yet'**
+  String get agentTemplateNoMetrics;
+
+  /// Text shown when an agent has no template assigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No template assigned'**
+  String get agentTemplateNoneAssigned;
+
+  /// Message shown when no AI models meet the template requirements.
+  ///
+  /// In en, this message translates to:
+  /// **'No suitable models found'**
+  String get agentTemplateNoSuitableModels;
+
+  /// Message shown when no templates exist for agent creation.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates available. Create one in Settings first.'**
+  String get agentTemplateNoTemplates;
+
+  /// Error message when a referenced template cannot be found.
+  ///
+  /// In en, this message translates to:
+  /// **'Template not found'**
+  String get agentTemplateNotFound;
+
+  /// Placeholder shown when a template has no version history.
+  ///
+  /// In en, this message translates to:
+  /// **'No versions'**
+  String get agentTemplateNoVersions;
+
+  /// No description provided for @agentTemplateOneOnOneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'1-on-1 with {templateName}'**
+  String agentTemplateOneOnOneTitle(String templateName);
+
+  /// Button label to roll back a template to a previous version.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll Back to This Version'**
+  String get agentTemplateRollbackAction;
+
+  /// No description provided for @agentTemplateRollbackConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll back to version {version}? The agent will use this version on its next wake.'**
+  String agentTemplateRollbackConfirm(int version);
+
+  /// Button label to save current edits as a new template version.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as New Version'**
+  String get agentTemplateSaveNewVersion;
+
+  /// Title for the template selection dialog when creating an agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Template'**
+  String get agentTemplateSelectTitle;
+
+  /// Subtitle shown under the agent templates settings entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage agent personalities and directives'**
+  String get agentTemplateSettingsSubtitle;
+
+  /// Label for the active template status.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentTemplateStatusActive;
+
+  /// Label for the archived template status.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get agentTemplateStatusArchived;
+
+  /// Page title for the agent templates list.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Templates'**
+  String get agentTemplatesTitle;
+
+  /// Hint explaining that changing an agent's template requires recreating it.
+  ///
+  /// In en, this message translates to:
+  /// **'To use a different template, destroy this agent and create a new one.'**
+  String get agentTemplateSwitchHint;
+
+  /// Section title for the list of template version history entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Version History'**
+  String get agentTemplateVersionHistoryTitle;
+
+  /// No description provided for @agentTemplateVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String agentTemplateVersionLabel(int version);
+
+  /// Snackbar message after successfully saving a new template version.
+  ///
+  /// In en, this message translates to:
+  /// **'New version saved'**
+  String get agentTemplateVersionSaved;
+
   /// No description provided for @agentThreadReportLabel.
   ///
   /// In en, this message translates to:

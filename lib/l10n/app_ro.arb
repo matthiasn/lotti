@@ -131,6 +131,103 @@
   "agentTabConversations": "Conversații",
   "agentTabObservations": "Observații",
   "agentTabReports": "Rapoarte",
+  "agentTemplateActiveInstancesTitle": "Instanțe active",
+  "agentTemplateAllProviders": "Toți furnizorii",
+  "agentTemplateAssignedLabel": "Șablon",
+  "agentTemplateCreatedSuccess": "Șablon creat",
+  "agentTemplateCreateTitle": "Creează un șablon",
+  "agentTemplateDeleteConfirm": "Ștergi acest șablon? Această acțiune nu poate fi anulată.",
+  "agentTemplateDeleteHasInstances": "Nu se poate șterge: agenți activi utilizează acest șablon.",
+  "agentTemplateDirectivesHint": "Definește personalitatea, tonul, obiectivele și stilul agentului...",
+  "agentTemplateDirectivesLabel": "Directive",
+  "agentTemplateDisplayNameLabel": "Nume",
+  "agentTemplateEditTitle": "Editează șablonul",
+  "agentTemplateEmptyList": "Niciun șablon încă. Apasă + pentru a crea unul.",
+  "agentTemplateEvolveAction": "Evoluează cu IA",
+  "agentTemplateEvolveApprove": "Aprobă și salvează",
+  "agentTemplateEvolveButton": "Evoluează șablonul",
+  "agentTemplateEvolveCurrentLabel": "Directivele actuale",
+  "agentTemplateEvolveError": "Nu s-a putut genera propunerea de evoluție",
+  "agentTemplateEvolvePreviewTitle": "Modificări propuse",
+  "agentTemplateEvolveProposedLabel": "Directivele propuse",
+  "agentTemplateEvolveReject": "Respinge",
+  "agentTemplateEvolveSuccess": "Șablonul a fost evoluat cu succes",
+  "agentTemplateEvolvingProgress": "Se generează directive îmbunătățite...",
+  "agentTemplateFeedbackChangesHint": "Descrie ce ai dori să schimbi...",
+  "agentTemplateFeedbackChangesLabel": "Modificări specifice",
+  "agentTemplateFeedbackDidntWorkHint": "Descrie problemele sau deficiențele...",
+  "agentTemplateFeedbackDidntWorkLabel": "Ce nu a funcționat",
+  "agentTemplateFeedbackEnjoyedHint": "Descrie ce face bine agentul...",
+  "agentTemplateFeedbackEnjoyedLabel": "Ce a funcționat bine",
+  "agentTemplateFeedbackTitle": "Feedback",
+  "agentTemplateInstanceCount": "{count, plural, =0{Nicio instanță} =1{1 instanță} few{{count} instanțe} other{{count} de instanțe}}",
+  "@agentTemplateInstanceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateKindTaskAgent": "Agent de sarcini",
+  "agentTemplateMetricsActiveInstances": "Instanțe active",
+  "agentTemplateMetricsAvgDuration": "Durata medie",
+  "agentTemplateMetricsDurationSeconds": "{count} s",
+  "@agentTemplateMetricsDurationSeconds": {
+    "description": "Formatted duration in seconds shown in template performance metrics.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateMetricsFailureCount": "Eșecuri",
+  "agentTemplateMetricsFirstWake": "Prima activare",
+  "agentTemplateMetricsLastWake": "Ultima activare",
+  "agentTemplateMetricsSuccessRate": "Rata de succes",
+  "agentTemplateMetricsTitle": "Indicatori de performanță",
+  "agentTemplateMetricsTotalWakes": "Total activări",
+  "agentTemplateModelLabel": "ID model",
+  "agentTemplateModelRequirements": "Sunt afișate doar modelele de raționament cu apeluri de funcții",
+  "agentTemplateNoMetrics": "Nu există încă date de performanță",
+  "agentTemplateNoneAssigned": "Niciun șablon atribuit",
+  "agentTemplateNoSuitableModels": "Nu s-au găsit modele potrivite",
+  "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.",
+  "agentTemplateNotFound": "Șablon negăsit",
+  "agentTemplateNoVersions": "Nicio versiune",
+  "agentTemplateOneOnOneTitle": "1-la-1 cu {templateName}",
+  "@agentTemplateOneOnOneTitle": {
+    "placeholders": {
+      "templateName": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTemplateRollbackAction": "Revino la această versiune",
+  "agentTemplateRollbackConfirm": "Revino la versiunea {version}? Agentul va folosi această versiune la următoarea trezire.",
+  "@agentTemplateRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateSaveNewVersion": "Salvează ca versiune nouă",
+  "agentTemplateSelectTitle": "Selectează un șablon",
+  "agentTemplateSettingsSubtitle": "Gestionează personalitățile și directivele agenților",
+  "agentTemplateStatusActive": "Activ",
+  "agentTemplateStatusArchived": "Arhivat",
+  "agentTemplatesTitle": "Șabloane agent",
+  "agentTemplateSwitchHint": "Pentru a utiliza un alt șablon, distruge acest agent și creează unul nou.",
+  "agentTemplateVersionHistoryTitle": "Istoric versiuni",
+  "agentTemplateVersionLabel": "Versiunea {version}",
+  "@agentTemplateVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentTemplateVersionSaved": "Versiune nouă salvată",
   "agentThreadReportLabel": "Raport generat în acest ciclu",
   "aiAssistantActionItemSuggestions": "Sugestii de acțiuni",
   "aiAssistantAnalyzeImage": "Analizează imaginea",

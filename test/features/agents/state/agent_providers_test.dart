@@ -7,11 +7,15 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -1361,6 +1365,266 @@ void main() {
       expect(result.totalWakes, 10);
       expect(result.successRate, 0.8);
     });
+
+    test('activeTemplateVersionProvider returns null when not found', () async {
+      when(() => mockTemplateService.getActiveVersion('missing'))
+          .thenAnswer((_) async => null);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(activeTemplateVersionProvider('missing').future);
+
+      expect(result, isNull);
+    });
+
+    test('templateForAgentProvider returns null when agent has no template',
+        () async {
+      when(() => mockTemplateService.getTemplateForAgent('no-template'))
+          .thenAnswer((_) async => null);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(templateForAgentProvider('no-template').future);
+
+      expect(result, isNull);
+    });
+
+    test('templateVersionHistoryProvider returns empty list', () async {
+      when(() => mockTemplateService.getVersionHistory('empty'))
+          .thenAnswer((_) async => []);
+
+      final container = createTemplateContainer();
+      final result =
+          await container.read(templateVersionHistoryProvider('empty').future);
+
+      expect(result, isEmpty);
+    });
+
+    test('agentTemplatesProvider returns empty list', () async {
+      when(() => mockTemplateService.listTemplates())
+          .thenAnswer((_) async => []);
+
+      final container = createTemplateContainer();
+      final result = await container.read(agentTemplatesProvider.future);
+
+      expect(result, isEmpty);
+    });
   });
 
+  group('wakeQueueProvider', () {
+    test('supports enqueue and dequeue', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final queue = container.read(wakeQueueProvider);
+
+      // Queue starts empty.
+      expect(queue.dequeue(), isNull);
+
+      // Enqueue a job and dequeue it.
+      final job = WakeJob(
+        agentId: kTestAgentId,
+        runKey: 'run-1',
+        reason: 'subscription',
+        triggerTokens: {'tok-a'},
+        createdAt: DateTime(2024, 3, 15),
+      );
+      final added = queue.enqueue(job);
+      expect(added, isTrue);
+
+      final dequeued = queue.dequeue();
+      expect(dequeued, isNotNull);
+      expect(dequeued!.agentId, kTestAgentId);
+      expect(dequeued.runKey, 'run-1');
+    });
+
+    test('deduplicates by run key', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final queue = container.read(wakeQueueProvider);
+
+      final job = WakeJob(
+        agentId: kTestAgentId,
+        runKey: 'dup-key',
+        reason: 'subscription',
+        triggerTokens: {'tok'},
+        createdAt: DateTime(2024, 3, 15),
+      );
+      expect(queue.enqueue(job), isTrue);
+      expect(queue.enqueue(job), isFalse);
+    });
+  });
+
+  group('wakeRunnerProvider', () {
+    test('supports lock acquisition and release', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final runner = container.read(wakeRunnerProvider);
+
+      // Acquire lock.
+      final acquired = await runner.tryAcquire(kTestAgentId);
+      expect(acquired, isTrue);
+      expect(runner.isRunning(kTestAgentId), isTrue);
+
+      // Release lock.
+      runner.release(kTestAgentId);
+      expect(runner.isRunning(kTestAgentId), isFalse);
+    });
+
+    test('disposes runner when container is disposed', () async {
+      final container = ProviderContainer();
+
+      final runner = container.read(wakeRunnerProvider);
+      final acquired = await runner.tryAcquire(kTestAgentId);
+      expect(acquired, isTrue);
+
+      // Dispose should call runner.dispose() without error.
+      container.dispose();
+    });
+  });
+
+  group('wakeOrchestratorProvider', () {
+    test('creates orchestrator with injected dependencies', () {
+      final mockRepo = MockAgentRepository();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+      expect(orchestrator, isA<WakeOrchestrator>());
+      expect(orchestrator.repository, same(mockRepo));
+      expect(orchestrator.queue, same(queue));
+      expect(orchestrator.runner, same(runner));
+    });
+  });
+
+  group('agentServiceProvider', () {
+    test('creates service with injected dependencies', () {
+      final mockRepo = MockAgentRepository();
+      final mockOrchestrator = MockWakeOrchestrator();
+      final mockSyncService = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(agentServiceProvider);
+      expect(service, isA<AgentService>());
+      expect(service.repository, same(mockRepo));
+      expect(service.orchestrator, same(mockOrchestrator));
+    });
+  });
+
+  group('agentTemplateServiceProvider', () {
+    test('creates service with injected dependencies', () {
+      final mockRepo = MockAgentRepository();
+      final mockSyncService = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(agentTemplateServiceProvider);
+      expect(service, isA<AgentTemplateService>());
+      expect(service.repository, same(mockRepo));
+    });
+  });
+
+  group('templateEvolutionWorkflowProvider', () {
+    test('creates workflow instance', () {
+      final mockTemplateWorkflow = MockTemplateEvolutionWorkflow();
+
+      final container = ProviderContainer(
+        overrides: [
+          templateEvolutionWorkflowProvider
+              .overrideWithValue(mockTemplateWorkflow),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final workflow = container.read(templateEvolutionWorkflowProvider);
+      expect(workflow, isA<TemplateEvolutionWorkflow>());
+      expect(workflow, same(mockTemplateWorkflow));
+    });
+  });
+
+  group('agentInitializationProvider - SyncEventProcessor not registered', () {
+    late MockWakeOrchestrator mockOrchestrator;
+    late MockTaskAgentWorkflow mockWorkflow;
+    late MockTaskAgentService mockTaskAgentService;
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() async {
+      await setUpTestGetIt();
+      mockOrchestrator = MockWakeOrchestrator();
+      mockWorkflow = MockTaskAgentWorkflow();
+      mockTaskAgentService = MockTaskAgentService();
+      mockTemplateService = MockAgentTemplateService();
+
+      when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
+      when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
+      when(() => mockTaskAgentService.restoreSubscriptions())
+          .thenAnswer((_) async {});
+      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    test('skips SyncEventProcessor when not registered in GetIt', () async {
+      // Ensure SyncEventProcessor is NOT registered.
+      expect(getIt.isRegistered<SyncEventProcessor>(), isFalse);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
+          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      // Should complete without error even without SyncEventProcessor.
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockOrchestrator.start(any())).called(1);
+      verify(() => mockTemplateService.seedDefaults()).called(1);
+      verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
+    });
+  });
 }

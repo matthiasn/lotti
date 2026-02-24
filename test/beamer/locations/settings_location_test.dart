@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_template_list_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
@@ -91,6 +93,9 @@ void main() {
         '/settings/habits/by_id/:habitId',
         '/settings/habits/create',
         '/settings/habits/search/:searchTerm',
+        '/settings/templates',
+        '/settings/templates/create',
+        '/settings/templates/:templateId',
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
@@ -467,6 +472,53 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<HabitsPage>());
       expect(pages[2].child, isA<CreateHabitPage>());
+    });
+
+    test('buildPages builds AgentTemplateListPage', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/templates'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentTemplateListPage>());
+    });
+
+    test('buildPages builds AgentTemplateDetailPage for create', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/templates/create'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentTemplateDetailPage>());
+    });
+
+    test('buildPages builds AgentTemplateDetailPage with templateId', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/templates/tmpl-123'));
+      final location = SettingsLocation(routeInformation);
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'templateId': 'tmpl-123'},
+      );
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentTemplateDetailPage>());
+      final detailPage = pages[1].child as AgentTemplateDetailPage;
+      expect(detailPage.templateId, 'tmpl-123');
     });
 
     test('buildPages builds FlagsPage', () {
