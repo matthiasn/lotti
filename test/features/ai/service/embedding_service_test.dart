@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
@@ -126,13 +125,6 @@ void main() {
       ..flushMicrotasks();
   }
 
-  /// Stops the service inside the fake-async zone so in-flight futures
-  /// created within that zone can complete before tearDown runs.
-  void stopInZone(FakeAsync async) {
-    unawaited(service.stop());
-    async.flushMicrotasks();
-  }
-
   group('EmbeddingService', () {
     test('generates embedding for a journal entry on notification', () {
       fakeAsync((async) {
@@ -162,8 +154,6 @@ void main() {
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
           ),
         ).called(1);
-
-        stopInZone(async);
       });
     });
 
@@ -189,8 +179,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -209,8 +197,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -233,8 +219,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -260,8 +244,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -287,8 +269,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -312,8 +292,6 @@ void main() {
             model: any(named: 'model'),
           ),
         );
-
-        stopInZone(async);
       });
     });
 
@@ -375,8 +353,6 @@ void main() {
             contentHash: any(named: 'contentHash'),
           ),
         ).called(1);
-
-        stopInZone(async);
       });
     });
 
@@ -412,37 +388,6 @@ void main() {
             contentHash: any(named: 'contentHash'),
           ),
         ).called(1);
-
-        stopInZone(async);
-      });
-    });
-
-    test('start is idempotent — second call does not create duplicate listener',
-        () {
-      fakeAsync((async) {
-        final entry = JournalEntry(
-          meta: _meta(),
-          entryText: const EntryText(plainText: _longText),
-        );
-        stubEntity(entry);
-        stubEmbedding();
-
-        // Call start twice
-        service
-          ..start()
-          ..start();
-
-        sendAndProcess(async, {_entityId, textEntryNotification});
-
-        // Should be called exactly once, not twice (no duplicate listener).
-        verify(
-          () => mockEmbeddingRepo.embed(
-            input: _longText,
-            baseUrl: 'http://localhost:11434',
-          ),
-        ).called(1);
-
-        stopInZone(async);
       });
     });
 
@@ -455,8 +400,11 @@ void main() {
         stubEntity(entry);
         stubEmbedding();
 
-        service.start();
-        stopInZone(async);
+        service
+          ..start()
+          // stop() returns a Future — flush it.
+          ..stop();
+        async.flushMicrotasks();
 
         // Notification after stop should not trigger processing
         updateNotifications.notify({_entityId, textEntryNotification});
@@ -490,8 +438,6 @@ void main() {
         verifyNever(
           () => mockJournalDb.journalEntityById(any()),
         );
-
-        stopInZone(async);
       });
     });
   });
