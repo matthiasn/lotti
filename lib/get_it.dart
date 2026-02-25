@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
@@ -387,6 +389,24 @@ Future<void> registerSingletons() async {
     LabelAssignmentEventService.new,
     'LabelAssignmentEventService',
   );
+
+  // Embedding generation pipeline (Ollama-based, local)
+  getIt
+    ..registerSingleton<OllamaEmbeddingRepository>(
+      OllamaEmbeddingRepository(),
+      dispose: (repo) => repo.close(),
+    )
+    ..registerSingleton<EmbeddingService>(
+      EmbeddingService(
+        embeddingsDb: getIt<EmbeddingsDb>(),
+        embeddingRepository: getIt<OllamaEmbeddingRepository>(),
+        journalDb: getIt<JournalDb>(),
+        updateNotifications: getIt<UpdateNotifications>(),
+        aiConfigRepository: getIt<AiConfigRepository>(),
+      ),
+      dispose: (svc) async => svc.stop(),
+    );
+  getIt<EmbeddingService>().start();
 
   // Automatically populate sequence log if empty (one-time migration)
   unawaited(_checkAndPopulateSequenceLog());

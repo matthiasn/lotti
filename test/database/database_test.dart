@@ -121,6 +121,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable Agents?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableEmbeddingsFlag,
+    description: 'Generate embeddings for entries?',
+    status: false,
+  ),
 };
 
 void main() {

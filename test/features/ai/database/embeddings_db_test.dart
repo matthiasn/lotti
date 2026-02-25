@@ -71,7 +71,7 @@ void main() {
 
   group('upsertEmbedding', () {
     test('inserts a new embedding', () {
-      final vec = _makeVector(2048, value: 1);
+      final vec = _makeVector(kEmbeddingDimensions, value: 1);
 
       db.upsertEmbedding(
         entityId: 'entity-1',
@@ -87,8 +87,8 @@ void main() {
     });
 
     test('updates an existing embedding', () {
-      final vec1 = _makeVector(2048, value: 1);
-      final vec2 = _makeVector(2048, value: 2);
+      final vec1 = _makeVector(kEmbeddingDimensions, value: 1);
+      final vec2 = _makeVector(kEmbeddingDimensions, value: 2);
 
       db
         ..upsertEmbedding(
@@ -116,7 +116,7 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: i.toDouble()),
+          embedding: _makeVector(kEmbeddingDimensions, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
       }
@@ -132,7 +132,7 @@ void main() {
           entityId: 'entity-clock',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: 1),
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
           contentHash: 'hash-clock',
         );
       });
@@ -171,7 +171,7 @@ void main() {
         entityId: 'entity-1',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        embedding: _makeVector(2048),
+        embedding: _makeVector(kEmbeddingDimensions),
         contentHash: 'hash-1',
       );
 
@@ -197,7 +197,7 @@ void main() {
         entityId: 'entity-1',
         entityType: 'task',
         modelId: 'test-model',
-        embedding: _makeVector(2048),
+        embedding: _makeVector(kEmbeddingDimensions),
         contentHash: 'hash-1',
       );
       expect(db.hasEmbedding('entity-1'), isTrue);
@@ -214,7 +214,7 @@ void main() {
         entityId: 'entity-1',
         entityType: 'task',
         modelId: 'test-model',
-        embedding: _makeVector(2048),
+        embedding: _makeVector(kEmbeddingDimensions),
         contentHash: 'abc123',
       );
       expect(db.getContentHash('entity-1'), 'abc123');
@@ -228,7 +228,7 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: i.toDouble()),
+          embedding: _makeVector(kEmbeddingDimensions, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
       }
@@ -247,7 +247,7 @@ void main() {
           entityId: 'close',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: 1),
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
           contentHash: 'hash-close',
         )
         // Vector far from query: all 100.0
@@ -255,12 +255,12 @@ void main() {
           entityId: 'far',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: 100),
+          embedding: _makeVector(kEmbeddingDimensions, value: 100),
           contentHash: 'hash-far',
         );
 
       // Query vector: all 0.0
-      final query = _makeVector(2048);
+      final query = _makeVector(kEmbeddingDimensions);
 
       final results = db.search(queryVector: query, k: 2);
 
@@ -276,12 +276,13 @@ void main() {
           entityId: 'entity-$i',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: i.toDouble()),
+          embedding: _makeVector(kEmbeddingDimensions, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
       }
 
-      final results = db.search(queryVector: _makeVector(2048), k: 3);
+      final results =
+          db.search(queryVector: _makeVector(kEmbeddingDimensions), k: 3);
       expect(results, hasLength(3));
     });
 
@@ -291,18 +292,18 @@ void main() {
           entityId: 'journal-1',
           entityType: 'journal_entry',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: 1),
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
           contentHash: 'hash-j1',
         )
         ..upsertEmbedding(
           entityId: 'task-1',
           entityType: 'task',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: 1),
+          embedding: _makeVector(kEmbeddingDimensions, value: 1),
           contentHash: 'hash-t1',
         );
 
-      final query = _makeVector(2048);
+      final query = _makeVector(kEmbeddingDimensions);
 
       final journalResults = db.search(
         queryVector: query,
@@ -324,7 +325,7 @@ void main() {
     });
 
     test('returns empty list when no embeddings exist', () {
-      final results = db.search(queryVector: _makeVector(2048));
+      final results = db.search(queryVector: _makeVector(kEmbeddingDimensions));
       expect(results, isEmpty);
     });
 
@@ -346,12 +347,12 @@ void main() {
         entityId: 'entity-1',
         entityType: 'journal_entry',
         modelId: 'test-model',
-        embedding: _makeVector(2048, value: 1),
+        embedding: _makeVector(kEmbeddingDimensions, value: 1),
         contentHash: 'hash-1',
       );
 
       final results = db.search(
-        queryVector: _makeVector(2048, value: 1),
+        queryVector: _makeVector(kEmbeddingDimensions, value: 1),
         k: 1,
       );
 
@@ -362,7 +363,7 @@ void main() {
 
   group('search with sequential vectors', () {
     test('correctly ranks vectors by similarity', () {
-      final baseVector = _makeSequentialVector(2048);
+      final baseVector = _makeSequentialVector(kEmbeddingDimensions);
 
       // Insert a vector identical to base
       db.upsertEmbedding(
@@ -387,7 +388,7 @@ void main() {
       );
 
       // Insert a very different vector
-      final different = _makeVector(2048, value: 999);
+      final different = _makeVector(kEmbeddingDimensions, value: 999);
       db.upsertEmbedding(
         entityId: 'different',
         entityType: 'journal_entry',
@@ -418,7 +419,7 @@ void main() {
           entityId: 'entity-$i',
           entityType: i.isEven ? 'journal_entry' : 'task',
           modelId: 'test-model',
-          embedding: _makeVector(2048, value: i.toDouble()),
+          embedding: _makeVector(kEmbeddingDimensions, value: i.toDouble()),
           contentHash: 'hash-$i',
         );
       }
@@ -429,7 +430,7 @@ void main() {
 
       // Query with a vector of all 50.0 — entity-50 should be the
       // exact match, with entity-49 and entity-51 as nearest neighbors.
-      final query = _makeVector(2048, value: 50);
+      final query = _makeVector(kEmbeddingDimensions, value: 50);
       final results = db.search(queryVector: query, k: 5);
 
       expect(results, hasLength(5));
@@ -457,7 +458,7 @@ void main() {
     });
 
     test('entity type filter works at scale', () {
-      final query = _makeVector(2048, value: 50);
+      final query = _makeVector(kEmbeddingDimensions, value: 50);
 
       // Note: sqlite-vec applies KNN first, then the JOIN filter.
       // Requesting k=20 returns the 20 nearest vectors, then filters

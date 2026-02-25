@@ -6,6 +6,8 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -73,7 +75,11 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingDb>(mockLoggingDb)
-    ..registerSingleton<LoggingService>(loggingService);
+    ..registerSingleton<LoggingService>(loggingService)
+    ..registerSingleton<EmbeddingsDb>(MockEmbeddingsDb())
+    ..registerSingleton<OllamaEmbeddingRepository>(
+      MockOllamaEmbeddingRepository(),
+    );
 
   additionalSetup?.call();
 

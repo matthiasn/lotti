@@ -1641,6 +1641,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la page Tableaux de bord dans la navigation principale. Affiche tes données et tes informations dans des tableaux de bord personnalisables.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Générer des embeddings';
+
+  @override
   String get configFlagEnableEvents => 'Activer les événements';
 
   @override
