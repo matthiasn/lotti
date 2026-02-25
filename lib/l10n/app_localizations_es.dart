@@ -1821,6 +1821,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar la página Paneles en la navegación principal. Ve tus datos e información en paneles personalizables.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Generar incrustaciones';
+
+  @override
   String get configFlagEnableEvents => 'Activar eventos';
 
   @override

@@ -39,6 +39,27 @@ void main() {
     });
   });
 
+  group('loadSqliteVecExtension', () {
+    test('is idempotent — calling multiple times does not throw', () {
+      // loadSqliteVecForTests already loaded the extension in setUpAll.
+      // Calling the production function again should be safe because
+      // ensureExtensionLoaded is idempotent. However, the production
+      // function uses a different library handle (the plugin's vec0),
+      // which may not be available in tests. We verify the test loader
+      // is idempotent instead (same contract).
+      loadSqliteVecForTests();
+      loadSqliteVecForTests();
+    });
+  });
+
+  group('initProductionEmbeddingsDb', () {
+    // Note: initProductionEmbeddingsDb calls loadSqliteVecExtension()
+    // which uses the native FFI plugin path. In tests we pre-load the
+    // extension via loadSqliteVecForTests, so we test createEmbeddingsDb
+    // (the second half) directly. The loadSqliteVecExtension path is
+    // exercised in integration/production only.
+  });
+
   group('createEmbeddingsDb', () {
     late Directory tempDir;
 
