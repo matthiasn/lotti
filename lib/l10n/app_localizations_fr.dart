@@ -260,6 +260,62 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTabReports => 'Rapports';
 
   @override
+  String get agentEvolutionChatPlaceholder =>
+      'Partage tes retours ou demande des infos sur les performances...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Directives actuelles';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Performance';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Temps moyen de résolution';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justification';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Proposition rejetée — continue la conversation';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Modifications proposées';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Directives proposées';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Adéquat';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Excellent';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'À améliorer';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'Comment ce template fonctionne-t-il ?';
+
+  @override
+  String get agentEvolutionSessionAbandoned =>
+      'Session terminée sans modifications';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Session terminée — version $version créée';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'Impossible de démarrer la session d\'évolution';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Démarrage de la session d\'évolution...';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Instances actives';
 
   @override

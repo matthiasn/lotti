@@ -8,7 +8,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
-import 'package:lotti/features/agents/ui/agent_one_on_one_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -159,7 +159,7 @@ class _AgentTemplateDetailPageState
                   LottiSecondaryButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => AgentOneOnOnePage(
+                        builder: (_) => EvolutionChatPage(
                           templateId: widget.templateId!,
                         ),
                       ),

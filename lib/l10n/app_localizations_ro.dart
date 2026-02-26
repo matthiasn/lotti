@@ -258,6 +258,62 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTabReports => 'Rapoarte';
 
   @override
+  String get agentEvolutionChatPlaceholder =>
+      'Împărtășiți feedback sau întrebați despre performanță...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Directive curente';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Performanță';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Timp mediu de rezolvare';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justificare';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Propunere respinsă — continuați conversația';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Modificări propuse';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Directive propuse';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Adecvat';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Excelent';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Necesită îmbunătățiri';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'Cât de bine funcționează acest șablon?';
+
+  @override
+  String get agentEvolutionSessionAbandoned =>
+      'Sesiune încheiată fără modificări';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Sesiune finalizată — versiunea $version creată';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'Sesiunea de evoluție nu a putut fi pornită';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Se pornește sesiunea de evoluție...';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Instanțe active';
 
   @override

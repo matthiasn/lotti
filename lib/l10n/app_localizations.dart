@@ -564,6 +564,102 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get agentTabReports;
 
+  /// No description provided for @agentEvolutionChatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Share feedback or ask about performance...'**
+  String get agentEvolutionChatPlaceholder;
+
+  /// No description provided for @agentEvolutionCurrentDirectives.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Directives'**
+  String get agentEvolutionCurrentDirectives;
+
+  /// No description provided for @agentEvolutionDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get agentEvolutionDashboardTitle;
+
+  /// No description provided for @agentEvolutionMttrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mean Time to Resolution'**
+  String get agentEvolutionMttrLabel;
+
+  /// No description provided for @agentEvolutionProposalRationale.
+  ///
+  /// In en, this message translates to:
+  /// **'Rationale'**
+  String get agentEvolutionProposalRationale;
+
+  /// No description provided for @agentEvolutionProposalRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal rejected — continue the conversation'**
+  String get agentEvolutionProposalRejected;
+
+  /// No description provided for @agentEvolutionProposalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Changes'**
+  String get agentEvolutionProposalTitle;
+
+  /// No description provided for @agentEvolutionProposedDirectives.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Directives'**
+  String get agentEvolutionProposedDirectives;
+
+  /// No description provided for @agentEvolutionRatingAdequate.
+  ///
+  /// In en, this message translates to:
+  /// **'Adequate'**
+  String get agentEvolutionRatingAdequate;
+
+  /// No description provided for @agentEvolutionRatingExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get agentEvolutionRatingExcellent;
+
+  /// No description provided for @agentEvolutionRatingNeedsWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs work'**
+  String get agentEvolutionRatingNeedsWork;
+
+  /// No description provided for @agentEvolutionRatingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'How well is this template performing?'**
+  String get agentEvolutionRatingPrompt;
+
+  /// No description provided for @agentEvolutionSessionAbandoned.
+  ///
+  /// In en, this message translates to:
+  /// **'Session ended without changes'**
+  String get agentEvolutionSessionAbandoned;
+
+  /// No description provided for @agentEvolutionSessionCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Session completed — version {version} created'**
+  String agentEvolutionSessionCompleted(int version);
+
+  /// No description provided for @agentEvolutionSessionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start evolution session'**
+  String get agentEvolutionSessionError;
+
+  /// No description provided for @agentEvolutionSessionStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting evolution session...'**
+  String get agentEvolutionSessionStarting;
+
   /// Section title for the list of active agent instances using this template.
   ///
   /// In en, this message translates to:

@@ -259,6 +259,61 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTabReports => 'Informes';
 
   @override
+  String get agentEvolutionChatPlaceholder =>
+      'Comparte comentarios o pregunta sobre el rendimiento...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Directivas actuales';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Rendimiento';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Tiempo medio de resolución';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justificación';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Propuesta rechazada — continúa la conversación';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Cambios propuestos';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Directivas propuestas';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Adecuado';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Excelente';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Necesita mejoras';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      '¿Qué tan bien funciona esta plantilla?';
+
+  @override
+  String get agentEvolutionSessionAbandoned => 'Sesión finalizada sin cambios';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Sesión completada — versión $version creada';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'No se pudo iniciar la sesión de evolución';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Iniciando sesión de evolución...';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Instancias activas';
 
   @override

@@ -76,6 +76,29 @@
   },
   "agentDetailNotFound": "Agent not found.",
   "agentDetailUnexpectedType": "Unexpected entity type.",
+  "agentEvolutionChatPlaceholder": "Share feedback or ask about performance...",
+  "agentEvolutionCurrentDirectives": "Current Directives",
+  "agentEvolutionDashboardTitle": "Performance",
+  "agentEvolutionMttrLabel": "Mean Time to Resolution",
+  "agentEvolutionProposalRationale": "Rationale",
+  "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
+  "agentEvolutionProposalTitle": "Proposed Changes",
+  "agentEvolutionProposedDirectives": "Proposed Directives",
+  "agentEvolutionRatingAdequate": "Adequate",
+  "agentEvolutionRatingExcellent": "Excellent",
+  "agentEvolutionRatingNeedsWork": "Needs work",
+  "agentEvolutionRatingPrompt": "How well is this template performing?",
+  "agentEvolutionSessionAbandoned": "Session ended without changes",
+  "agentEvolutionSessionCompleted": "Session completed — version {version} created",
+  "@agentEvolutionSessionCompleted": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionSessionError": "Failed to start evolution session",
+  "agentEvolutionSessionStarting": "Starting evolution session...",
   "agentLifecycleActive": "Active",
   "agentLifecycleCreated": "Created",
   "agentLifecycleDestroyed": "Destroyed",

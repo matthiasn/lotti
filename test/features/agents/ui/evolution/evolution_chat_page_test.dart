@@ -1,0 +1,213 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_proposal_card.dart';
+import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+import '../../../../helpers/fallbacks.dart';
+import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
+
+/// Fake [EvolutionChatState] that returns a pre-configured [EvolutionChatData].
+class _FakeEvolutionChatState extends EvolutionChatState {
+  _FakeEvolutionChatState(this._buildFn);
+
+  final Future<EvolutionChatData> Function(String) _buildFn;
+
+  @override
+  Future<EvolutionChatData> build(String templateId) => _buildFn(templateId);
+}
+
+void main() {
+  setUpAll(registerAllFallbackValues);
+
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
+
+  Widget buildSubject({
+    String templateId = kTestTemplateId,
+    Future<EvolutionChatData> Function(String)? chatStateBuilder,
+    FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
+    List<Override> extraOverrides = const [],
+  }) {
+    final tpl = makeTestTemplate(id: templateId, agentId: templateId);
+
+    final defaultChatData = EvolutionChatData(
+      sessionId: 'session-1',
+      messages: [
+        EvolutionChatMessage.system(
+          text: 'starting_session',
+          timestamp: DateTime(2024, 3, 15),
+        ),
+        EvolutionChatMessage.assistant(
+          text: 'Welcome! How can I help improve this template?',
+          timestamp: DateTime(2024, 3, 15),
+        ),
+      ],
+    );
+
+    return makeTestableWidgetNoScroll(
+      EvolutionChatPage(templateId: templateId),
+      overrides: [
+        agentTemplateProvider.overrideWith(
+          templateOverride ?? (ref, id) async => tpl,
+        ),
+        templatePerformanceMetricsProvider.overrideWith(
+          (ref, id) async => makeTestMetrics(templateId: templateId),
+        ),
+        evolutionChatStateProvider.overrideWith(
+          () => _FakeEvolutionChatState(
+            chatStateBuilder ?? (_) async => defaultChatData,
+          ),
+        ),
+        ...extraOverrides,
+      ],
+    );
+  }
+
+  group('EvolutionChatPage', () {
+    testWidgets('shows template name in app bar', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Template'), findsOneWidget);
+    });
+
+    testWidgets('shows dashboard header', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionDashboardHeader), findsOneWidget);
+    });
+
+    testWidgets('shows message input', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionMessageInput), findsOneWidget);
+    });
+
+    testWidgets('renders chat bubbles for messages', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionChatBubble), findsNWidgets(2));
+    });
+
+    testWidgets('shows loading indicator when chat state is loading',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) => Completer<EvolutionChatData>().future,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows error message when session fails', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) =>
+              Future<EvolutionChatData>.error(Exception('fail')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionError),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('resolves system message tokens to localized text',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'starting_session',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionStarting),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows proposal card when proposal message exists',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.proposal(
+                proposal: const PendingProposal(
+                  directives: 'New directives',
+                  rationale: 'Better performance',
+                ),
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+            proposal: const PendingProposal(
+              directives: 'New directives',
+              rationale: 'Better performance',
+            ),
+            currentDirectives: 'Old directives',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionProposalCard), findsOneWidget);
+      expect(find.text('New directives'), findsOneWidget);
+    });
+
+    testWidgets('disables message input when sessionId is null',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'session_error',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final input = tester.widget<EvolutionMessageInput>(
+        find.byType(EvolutionMessageInput),
+      );
+      expect(input.enabled, isFalse);
+    });
+  });
+}
