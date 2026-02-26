@@ -52,7 +52,10 @@ class EmbeddingService {
   };
 
   /// Starts listening to local update notifications.
+  ///
+  /// Idempotent — calling while already started is a no-op.
   void start() {
+    if (_subscription != null) return;
     _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
   }

@@ -361,6 +361,4 @@ class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 class MockDashScopeInferenceRepository extends Mock
     implements DashScopeInferenceRepository {}
 
-class MockHttpClient extends Mock implements http.Client {}
-
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
