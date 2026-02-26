@@ -324,6 +324,7 @@ class _HeaderTextState extends State<_HeaderText> {
                 .aiTaskSummaryScheduled(_formatCountdown(remaining)),
             style: context.textTheme.titleSmall?.copyWith(
               color: context.colorScheme.outline,
+              fontFeatures: [const FontFeature.tabularFigures()],
             ),
           );
         },
