@@ -662,6 +662,45 @@ void main() {
       expect(trackingController.toggledImageIds, equals(['img-1']));
     });
 
+    testWidgets(
+        'renders without error in unbounded height context (modal regression)',
+        (tester) async {
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('img-1'),
+          buildTestImage('img-2'),
+          buildTestImage('img-3'),
+        ],
+        selectedImageIds: const {'img-1'},
+      );
+
+      // Wrap in SingleChildScrollView to simulate the unbounded vertical
+      // constraints that WoltModalSheetPage provides.
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(taskId: testTaskId)
+                .overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithImages),
+            ),
+          ],
+          child: SingleChildScrollView(
+            child: ReferenceImageSelectionWidget(
+              taskId: testTaskId,
+              onContinue: (_) {},
+              onSkip: () {},
+            ),
+          ),
+        ),
+      );
+
+      // Widget should render without layout errors
+      expect(find.byType(GridView), findsOneWidget);
+      expect(find.text('Select Reference Images'), findsOneWidget);
+      expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
+      expect(find.byType(LottiPrimaryButton), findsOneWidget);
+    });
+
     testWidgets('error state skip button calls onSkip', (tester) async {
       var skipCalled = false;
       const errorState = ReferenceImageSelectionState(

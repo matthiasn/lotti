@@ -98,58 +98,62 @@ class _ReferenceImageSelectionWidgetState
 
     final colorScheme = context.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header with count
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  context.messages.referenceImageSelectionTitle,
-                  style: context.textTheme.titleMedium,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${state.selectionCount}/$kMaxReferenceImages',
-                  style: context.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header with count
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.messages.referenceImageSelectionTitle,
+                    style: context.textTheme.titleMedium,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // Subtitle
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.messages.referenceImageSelectionSubtitle,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${state.selectionCount}/$kMaxReferenceImages',
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 16),
 
-        // Image grid — Expanded so it takes remaining space and scrolls
-        Expanded(
-          child: Padding(
+          // Subtitle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              context.messages.referenceImageSelectionSubtitle,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Image grid — shrinkWrap so it works in unbounded height contexts
+          // (e.g., inside modal sheets with scrollable content)
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 8,
@@ -171,27 +175,27 @@ class _ReferenceImageSelectionWidgetState
               },
             ),
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-        // Action button — always pinned at the bottom
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: LottiPrimaryButton(
-            label: state.selectionCount > 0
-                ? context.messages
-                    .referenceImageContinueWithCount(state.selectionCount)
-                : context.messages.referenceImageContinue,
-            icon: Icons.arrow_forward_rounded,
-            onPressed: state.isProcessing
-                ? null
-                : () async {
-                    final images = await controller.processSelectedImages();
-                    widget.onContinue(images);
-                  },
+          // Action button — always pinned at the bottom
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: LottiPrimaryButton(
+              label: state.selectionCount > 0
+                  ? context.messages
+                      .referenceImageContinueWithCount(state.selectionCount)
+                  : context.messages.referenceImageContinue,
+              icon: Icons.arrow_forward_rounded,
+              onPressed: state.isProcessing
+                  ? null
+                  : () async {
+                      final images = await controller.processSelectedImages();
+                      widget.onContinue(images);
+                    },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
