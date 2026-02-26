@@ -32,9 +32,15 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -516,8 +522,8 @@ structure with emojis for visual consistency:
 ### Required Sections
 
 1. **Title line** — Task title as an H1 heading.
-2. **Status bar** — A bold one-liner with status, priority, estimate, and due
-   date (when set).
+2. **Status bar** — A bold one-liner with status, priority, labels, estimate,
+   and due date (when set). Include assigned label names when the task has any.
 3. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
 4. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
    nothing has been achieved yet.
@@ -535,7 +541,7 @@ applicable.
 ```
 # 🔐 Implement authentication module
 
-**Status:** 🚧 in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
+**Status:** 🚧 in_progress | **Priority:** P1 | **Labels:** auth, backend | **Estimate:** 4h | **Due:** 2026-02-25
 
 ## 📋 TLDR
 OAuth2 integration is 60% complete. Login UI is done, logout flow and
@@ -962,7 +968,17 @@ and never shown to the user. They persist as your memory across wakes.
       );
     }
 
-    final processor = LabelAssignmentProcessor(db: journalDb);
+    final labelsRepo = LabelsRepository(
+      getIt<PersistenceLogic>(),
+      journalDb,
+      getIt<EntitiesCacheService>(),
+      getIt<LoggingService>(),
+      getIt<UpdateNotifications>(),
+    );
+    final processor = LabelAssignmentProcessor(
+      db: journalDb,
+      repository: labelsRepo,
+    );
     final handler = TaskLabelHandler(
       task: task,
       processor: processor,
