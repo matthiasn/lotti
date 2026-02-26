@@ -334,6 +334,19 @@ RULES:
     final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
     final sessions = await svc.getEvolutionSessions(templateId);
 
+    // Pre-fetch payload content for observations so the builder can include
+    // the actual observation text (AgentMessageEntity only stores a reference).
+    final observationPayloads = <String, AgentMessagePayloadEntity>{};
+    for (final obs in observations) {
+      final payloadId = obs.contentEntryId;
+      if (payloadId != null) {
+        final entity = await svc.repository.getEntity(payloadId);
+        if (entity is AgentMessagePayloadEntity) {
+          observationPayloads[payloadId] = entity;
+        }
+      }
+    }
+
     // Determine delta since last session.
     final lastSessionDate =
         sessions.isNotEmpty ? sessions.first.createdAt : null;
@@ -350,6 +363,7 @@ RULES:
       pastNotes: notes,
       metrics: metrics,
       changesSinceLastSession: changesSince,
+      observationPayloads: observationPayloads,
     );
 
     // Determine session number.

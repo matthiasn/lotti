@@ -18,24 +18,24 @@ void main() {
     int versionCount = 1,
     int changesSinceLastSession = 0,
   }) {
+    final versions = List.generate(
+      versionCount,
+      (i) => makeTestTemplateVersion(
+        id: 'ver-${i + 1}',
+        version: i + 1,
+        status: i == versionCount - 1
+            ? AgentTemplateVersionStatus.active
+            : AgentTemplateVersionStatus.archived,
+        directives: i == versionCount - 1
+            ? 'Be helpful and concise.'
+            : 'Directives v${i + 1}',
+        authoredBy: i == 0 ? 'system' : 'agent',
+      ),
+    );
     return builder.build(
       template: makeTestTemplate(displayName: 'Laura'),
-      currentVersion: makeTestTemplateVersion(
-        version: versionCount,
-        directives: 'Be helpful and concise.',
-      ),
-      recentVersions: List.generate(
-        versionCount,
-        (i) => makeTestTemplateVersion(
-          id: 'ver-${i + 1}',
-          version: i + 1,
-          status: i == versionCount - 1
-              ? AgentTemplateVersionStatus.active
-              : AgentTemplateVersionStatus.archived,
-          directives: 'Directives v${i + 1}',
-          authoredBy: i == 0 ? 'system' : 'agent',
-        ),
-      ),
+      currentVersion: versions.last,
+      recentVersions: versions,
       instanceReports: List.generate(
         reportCount,
         (i) => makeTestReport(
@@ -174,6 +174,129 @@ void main() {
 
       expect(ctx.initialUserMessage, contains('review this data'));
       expect(ctx.initialUserMessage, contains('patterns'));
+    });
+  });
+
+  group('hard caps', () {
+    test('caps reports at maxInstanceReports', () {
+      final ctx = buildWithDefaults(
+        reportCount: EvolutionContextBuilder.maxInstanceReports + 5,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains(
+          'Recent Instance Reports '
+          '(${EvolutionContextBuilder.maxInstanceReports})',
+        ),
+      );
+      // Content from the first report should be present.
+      expect(ctx.initialUserMessage, contains('Report content 0'));
+      // Content beyond the cap should not appear.
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains(
+          'Report content ${EvolutionContextBuilder.maxInstanceReports + 1}',
+        )),
+      );
+    });
+
+    test('caps observations at maxInstanceObservations', () {
+      final ctx = buildWithDefaults(
+        observationCount: EvolutionContextBuilder.maxInstanceObservations + 5,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains(
+          'Recent Instance Observations '
+          '(${EvolutionContextBuilder.maxInstanceObservations})',
+        ),
+      );
+    });
+
+    test('caps notes at maxPastNotes', () {
+      final ctx = buildWithDefaults(
+        noteCount: EvolutionContextBuilder.maxPastNotes + 5,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains(
+          'Your Notes From Past Sessions '
+          '(${EvolutionContextBuilder.maxPastNotes})',
+        ),
+      );
+    });
+
+    test('caps version history at maxVersionHistory', () {
+      // +1 for the current version which gets filtered out.
+      final ctx = buildWithDefaults(
+        versionCount: EvolutionContextBuilder.maxVersionHistory + 3,
+      );
+
+      // Count version lines (v1, v2, etc. excluding the current).
+      final versionLines = RegExp(r'- v\d+').allMatches(
+        ctx.initialUserMessage,
+      );
+      expect(
+        versionLines.length,
+        lessThanOrEqualTo(EvolutionContextBuilder.maxVersionHistory),
+      );
+    });
+  });
+
+  group('observation payloads', () {
+    test('includes payload text when provided', () {
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+        contentEntryId: 'payload-1',
+      );
+      final payload = makeTestMessagePayload(
+        id: 'payload-1',
+        content: {'text': 'The agent performed well today.'},
+      );
+
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: [obs],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        observationPayloads: {'payload-1': payload},
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('The agent performed well today.'),
+      );
+    });
+
+    test('shows observation without content when payload is missing', () {
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+        contentEntryId: 'missing-payload',
+      );
+
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: [obs],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      // Should still include the observation header.
+      expect(ctx.initialUserMessage, contains('Recent Instance Observations'));
+      expect(ctx.initialUserMessage, contains('observation'));
     });
   });
 

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 
@@ -24,10 +26,16 @@ class EvolutionContext {
 /// - Version history summaries (5): ~300 tokens
 /// - Instance reports (10): ~3000 tokens
 /// - Instance observations (10): ~1000 tokens
-/// - Evolution notes (last 5 sessions): ~1000 tokens
+/// - Evolution notes (30): ~1000 tokens
 /// - Performance metrics: ~200 tokens
 /// - Delta summary: ~100 tokens
 class EvolutionContextBuilder {
+  /// Hard caps to prevent oversized prompts even if callers pass more.
+  static const maxVersionHistory = 5;
+  static const maxInstanceReports = 10;
+  static const maxInstanceObservations = 10;
+  static const maxPastNotes = 30;
+
   /// Build the evolution context from all available data sources.
   EvolutionContext build({
     required AgentTemplateEntity template,
@@ -38,6 +46,7 @@ class EvolutionContextBuilder {
     required List<EvolutionNoteEntity> pastNotes,
     required TemplatePerformanceMetrics metrics,
     required int changesSinceLastSession,
+    Map<String, AgentMessagePayloadEntity> observationPayloads = const {},
   }) {
     return EvolutionContext(
       systemPrompt: _buildSystemPrompt(),
@@ -50,27 +59,28 @@ class EvolutionContextBuilder {
         pastNotes: pastNotes,
         metrics: metrics,
         changesSinceLastSession: changesSinceLastSession,
+        observationPayloads: observationPayloads,
       ),
     );
   }
 
   String _buildSystemPrompt() {
     return '''
-You are an evolution agent — a prompt engineering specialist responsible for 
+You are an evolution agent — a prompt engineering specialist responsible for
 continuously improving an agent template's directives over time.
 
 ## Your Role
-You maintain a long-running relationship with this template. Each session is a 
+You maintain a long-running relationship with this template. Each session is a
 1-on-1 conversation with the user where you:
 1. Review how the template's agent instances have been performing
 2. Discuss observations and patterns with the user
 3. Propose improved directives when appropriate
 
 ## Available Tools
-- **propose_directives**: Formally propose new directives. Include the complete 
+- **propose_directives**: Formally propose new directives. Include the complete
   rewritten text and a rationale for the changes.
-- **record_evolution_note**: Record a private note for your own future 
-  reference. Use this to capture patterns, hypotheses, and decisions that will 
+- **record_evolution_note**: Record a private note for your own future
+  reference. Use this to capture patterns, hypotheses, and decisions that will
   help in future sessions.
 
 ## Rules
@@ -92,6 +102,7 @@ You maintain a long-running relationship with this template. Each session is a
     required List<EvolutionNoteEntity> pastNotes,
     required TemplatePerformanceMetrics metrics,
     required int changesSinceLastSession,
+    required Map<String, AgentMessagePayloadEntity> observationPayloads,
   }) {
     final buf = StringBuffer()
       ..writeln('# Evolution Session: ${template.displayName}')
@@ -112,9 +123,11 @@ You maintain a long-running relationship with this template. Each session is a
         ..writeln();
     }
 
-    // Version history
-    if (recentVersions.length > 1) {
-      _writeVersionHistory(buf, recentVersions, currentVersion);
+    // Version history (skip current, cap at maxVersionHistory)
+    final otherVersions =
+        recentVersions.where((v) => v.id != currentVersion.id).toList();
+    if (otherVersions.isNotEmpty) {
+      _writeVersionHistory(buf, otherVersions);
     }
 
     // Instance reports
@@ -124,7 +137,11 @@ You maintain a long-running relationship with this template. Each session is a
 
     // Instance observations
     if (instanceObservations.isNotEmpty) {
-      _writeInstanceObservations(buf, instanceObservations);
+      _writeInstanceObservations(
+        buf,
+        instanceObservations,
+        observationPayloads,
+      );
     }
 
     // Past evolution notes
@@ -162,11 +179,10 @@ You maintain a long-running relationship with this template. Each session is a
   void _writeVersionHistory(
     StringBuffer buf,
     List<AgentTemplateVersionEntity> versions,
-    AgentTemplateVersionEntity current,
   ) {
+    final capped = versions.take(maxVersionHistory);
     buf.writeln('## Version History');
-    for (final v in versions) {
-      if (v.id == current.id) continue;
+    for (final v in capped) {
       buf.writeln(
         '- v${v.version} (${v.status.name}, by ${v.authoredBy}): '
         '${_truncate(v.directives, 120)}',
@@ -179,8 +195,9 @@ You maintain a long-running relationship with this template. Each session is a
     StringBuffer buf,
     List<AgentReportEntity> reports,
   ) {
-    buf.writeln('## Recent Instance Reports (${reports.length})');
-    for (final report in reports) {
+    final capped = reports.take(maxInstanceReports).toList();
+    buf.writeln('## Recent Instance Reports (${capped.length})');
+    for (final report in capped) {
       buf
         ..writeln('### Agent ${_shortId(report.agentId)}')
         ..writeln(_truncate(report.content, 500))
@@ -191,33 +208,51 @@ You maintain a long-running relationship with this template. Each session is a
   void _writeInstanceObservations(
     StringBuffer buf,
     List<AgentMessageEntity> observations,
+    Map<String, AgentMessagePayloadEntity> payloads,
   ) {
-    buf.writeln('## Recent Instance Observations (${observations.length})');
-    for (final obs in observations) {
-      final payloadNote = obs.contentEntryId != null ? ' [has payload]' : '';
-      buf.writeln(
-        '- Agent ${_shortId(obs.agentId)}$payloadNote',
-      );
+    final capped = observations.take(maxInstanceObservations).toList();
+    buf.writeln('## Recent Instance Observations (${capped.length})');
+    for (final obs in capped) {
+      buf.writeln('### Agent ${_shortId(obs.agentId)} (${obs.kind.name})');
+
+      // Include payload content when available.
+      final payloadId = obs.contentEntryId;
+      final payload = payloadId != null ? payloads[payloadId] : null;
+      if (payload != null) {
+        final text = _extractPayloadText(payload);
+        if (text != null) {
+          buf.writeln(_truncate(text, 400));
+        }
+      }
+
+      buf.writeln();
     }
-    buf.writeln();
   }
 
   void _writeEvolutionNotes(
     StringBuffer buf,
     List<EvolutionNoteEntity> notes,
   ) {
-    buf.writeln('## Your Notes From Past Sessions (${notes.length})');
-    for (final note in notes) {
+    final capped = notes.take(maxPastNotes).toList();
+    buf.writeln('## Your Notes From Past Sessions (${capped.length})');
+    for (final note in capped) {
       buf.writeln('- **${note.kind.name}**: ${_truncate(note.content, 200)}');
     }
     buf.writeln();
+  }
+
+  /// Extract displayable text from an observation payload's content map.
+  static String? _extractPayloadText(AgentMessagePayloadEntity payload) {
+    final text = payload.content['text'];
+    if (text is String && text.trim().isNotEmpty) return text;
+    return null;
   }
 
   /// Truncate [text] to [maxLength] characters, appending "…" if truncated.
   static String _truncate(String text, int maxLength) {
     final singleLine = text.replaceAll('\n', ' ').trim();
     if (singleLine.length <= maxLength) return singleLine;
-    return '${singleLine.substring(0, maxLength)}…';
+    return '${singleLine.substring(0, min(maxLength, singleLine.length))}…';
   }
 
   /// Return the first 8 chars of an ID for display.

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -100,8 +101,8 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final directives = args['directives'] as String? ?? '';
-    final rationale = args['rationale'] as String? ?? '';
+    final directives = _readStringArg(args, 'directives');
+    final rationale = _readStringArg(args, 'rationale');
 
     if (directives.trim().isEmpty) {
       manager.addToolResponse(
@@ -127,11 +128,12 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final kindStr = args['kind'] as String? ?? '';
-    final content = args['content'] as String? ?? '';
+    final kindStr = _readStringArg(args, 'kind');
+    final content = _readStringArg(args, 'content');
 
-    final kind = EvolutionNoteKind.values.where((k) => k.name == kindStr);
-    if (kind.isEmpty) {
+    final kind =
+        EvolutionNoteKind.values.firstWhereOrNull((k) => k.name == kindStr);
+    if (kind == null) {
       manager.addToolResponse(
         toolCallId: callId,
         response: 'Error: invalid kind "$kindStr". '
@@ -148,12 +150,19 @@ class EvolutionStrategy extends ConversationStrategy {
       return;
     }
 
-    _pendingNotes.add(PendingNote(kind: kind.first, content: content));
+    _pendingNotes.add(PendingNote(kind: kind, content: content));
 
     manager.addToolResponse(
       toolCallId: callId,
-      response: 'Note recorded (${kind.first.name}).',
+      response: 'Note recorded (${kind.name}).',
     );
+  }
+
+  /// Safely read a string argument, tolerating non-string JSON values.
+  static String _readStringArg(Map<String, dynamic> args, String key) {
+    final value = args[key];
+    if (value is String) return value;
+    return '';
   }
 
   Map<String, dynamic> _parseArgs(String arguments) {

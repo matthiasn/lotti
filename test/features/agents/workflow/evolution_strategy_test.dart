@@ -323,5 +323,41 @@ void main() {
       expect(action, ConversationAction.wait);
       expect(strategy.latestProposal, isNull);
     });
+
+    test('handles non-string argument values gracefully', () async {
+      // Simulate the LLM emitting an integer instead of a string for
+      // "directives". The defensive _readStringArg helper should treat
+      // non-string values as empty rather than throwing a TypeError.
+      final toolCall = makeToolCall(
+        name: 'propose_directives',
+        args: {'directives': 42, 'rationale': true},
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      // Empty directives should be rejected, not crash.
+      expect(strategy.latestProposal, isNull);
+    });
+
+    test('handles non-string kind in record_evolution_note', () async {
+      final toolCall = makeToolCall(
+        name: 'record_evolution_note',
+        args: {'kind': 123, 'content': 'Some content'},
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      // Invalid kind (non-string) should be rejected.
+      expect(strategy.pendingNotes, isEmpty);
+    });
   });
 }
