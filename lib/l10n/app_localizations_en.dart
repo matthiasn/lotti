@@ -150,6 +150,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Unexpected entity type.';
 
   @override
+  String get agentEvolutionChartMttrTrend => 'MTTR Trend';
+
+  @override
+  String get agentEvolutionChartSuccessRateTrend => 'Success Trend';
+
+  @override
+  String get agentEvolutionChartVersionPerformance => 'By Version';
+
+  @override
+  String get agentEvolutionChartWakeHistory => 'Wake History';
+
+  @override
+  String get agentEvolutionChatPlaceholder =>
+      'Share feedback or ask about performance...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Current Directives';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Performance';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Rationale';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Proposal rejected — continue the conversation';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Proposed Changes';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Proposed Directives';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Adequate';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Excellent';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Needs work';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'How well is this template performing?';
+
+  @override
+  String get agentEvolutionSessionAbandoned => 'Session ended without changes';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Session completed — version $version created';
+  }
+
+  @override
+  String get agentEvolutionSessionError => 'Failed to start evolution session';
+
+  @override
+  String get agentEvolutionSessionStarting => 'Starting evolution session...';
+
+  @override
   String get agentLifecycleActive => 'Active';
 
   @override
@@ -254,59 +319,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Reports';
-
-  @override
-  String get agentEvolutionChatPlaceholder =>
-      'Share feedback or ask about performance...';
-
-  @override
-  String get agentEvolutionCurrentDirectives => 'Current Directives';
-
-  @override
-  String get agentEvolutionDashboardTitle => 'Performance';
-
-  @override
-  String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
-
-  @override
-  String get agentEvolutionProposalRationale => 'Rationale';
-
-  @override
-  String get agentEvolutionProposalRejected =>
-      'Proposal rejected — continue the conversation';
-
-  @override
-  String get agentEvolutionProposalTitle => 'Proposed Changes';
-
-  @override
-  String get agentEvolutionProposedDirectives => 'Proposed Directives';
-
-  @override
-  String get agentEvolutionRatingAdequate => 'Adequate';
-
-  @override
-  String get agentEvolutionRatingExcellent => 'Excellent';
-
-  @override
-  String get agentEvolutionRatingNeedsWork => 'Needs work';
-
-  @override
-  String get agentEvolutionRatingPrompt =>
-      'How well is this template performing?';
-
-  @override
-  String get agentEvolutionSessionAbandoned => 'Session ended without changes';
-
-  @override
-  String agentEvolutionSessionCompleted(int version) {
-    return 'Session completed — version $version created';
-  }
-
-  @override
-  String get agentEvolutionSessionError => 'Failed to start evolution session';
-
-  @override
-  String get agentEvolutionSessionStarting => 'Starting evolution session...';
 
   @override
   String get agentTemplateActiveInstancesTitle => 'Active Instances';

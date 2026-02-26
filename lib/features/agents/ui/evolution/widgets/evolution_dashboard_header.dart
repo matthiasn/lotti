@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_charts_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_metric_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/animations.dart';
@@ -76,7 +77,15 @@ class _EvolutionDashboardHeaderState
           curve: GameyAnimations.smooth,
           child: _isExpanded
               ? metricsAsync.when(
-                  data: (metrics) => _buildGrid(context, metrics),
+                  data: (metrics) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildGrid(context, metrics),
+                      EvolutionChartsSection(
+                        templateId: widget.templateId,
+                      ),
+                    ],
+                  ),
                   loading: () => const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(

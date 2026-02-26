@@ -152,6 +152,74 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Unerwarteter Entitätstyp.';
 
   @override
+  String get agentEvolutionChartMttrTrend => 'MTTR-Trend';
+
+  @override
+  String get agentEvolutionChartSuccessRateTrend => 'Erfolgstrend';
+
+  @override
+  String get agentEvolutionChartVersionPerformance => 'Nach Version';
+
+  @override
+  String get agentEvolutionChartWakeHistory => 'Wake-Verlauf';
+
+  @override
+  String get agentEvolutionChatPlaceholder =>
+      'Feedback teilen oder nach Leistung fragen...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Aktuelle Anweisungen';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Leistung';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Begründung';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Vorschlag abgelehnt — Gespräch fortsetzen';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Vorgeschlagene Änderungen';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Vorgeschlagene Anweisungen';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Ausreichend';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Ausgezeichnet';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Verbesserungsbedarf';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'Wie gut funktioniert dieses Template?';
+
+  @override
+  String get agentEvolutionSessionAbandoned =>
+      'Sitzung ohne Änderungen beendet';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Sitzung abgeschlossen — Version $version erstellt';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'Evolution-Sitzung konnte nicht gestartet werden';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Evolution-Sitzung wird gestartet...';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -257,62 +325,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Berichte';
-
-  @override
-  String get agentEvolutionChatPlaceholder =>
-      'Feedback teilen oder nach Leistung fragen...';
-
-  @override
-  String get agentEvolutionCurrentDirectives => 'Aktuelle Anweisungen';
-
-  @override
-  String get agentEvolutionDashboardTitle => 'Leistung';
-
-  @override
-  String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
-
-  @override
-  String get agentEvolutionProposalRationale => 'Begründung';
-
-  @override
-  String get agentEvolutionProposalRejected =>
-      'Vorschlag abgelehnt — Gespräch fortsetzen';
-
-  @override
-  String get agentEvolutionProposalTitle => 'Vorgeschlagene Änderungen';
-
-  @override
-  String get agentEvolutionProposedDirectives => 'Vorgeschlagene Anweisungen';
-
-  @override
-  String get agentEvolutionRatingAdequate => 'Ausreichend';
-
-  @override
-  String get agentEvolutionRatingExcellent => 'Ausgezeichnet';
-
-  @override
-  String get agentEvolutionRatingNeedsWork => 'Verbesserungsbedarf';
-
-  @override
-  String get agentEvolutionRatingPrompt =>
-      'Wie gut funktioniert dieses Template?';
-
-  @override
-  String get agentEvolutionSessionAbandoned =>
-      'Sitzung ohne Änderungen beendet';
-
-  @override
-  String agentEvolutionSessionCompleted(int version) {
-    return 'Sitzung abgeschlossen — Version $version erstellt';
-  }
-
-  @override
-  String get agentEvolutionSessionError =>
-      'Evolution-Sitzung konnte nicht gestartet werden';
-
-  @override
-  String get agentEvolutionSessionStarting =>
-      'Evolution-Sitzung wird gestartet...';
 
   @override
   String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';

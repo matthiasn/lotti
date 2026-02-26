@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_charts_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -18,6 +21,7 @@ void main() {
   Widget buildSubject({
     String templateId = kTestTemplateId,
     FutureOr<TemplatePerformanceMetrics> Function(Ref, String)? metricsOverride,
+    FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
   }) {
     final testMetrics = makeTestMetrics(templateId: templateId);
     return makeTestableWidgetWithScaffold(
@@ -25,6 +29,13 @@ void main() {
       overrides: [
         templatePerformanceMetricsProvider.overrideWith(
           metricsOverride ?? (ref, id) async => testMetrics,
+        ),
+        templateWakeRunTimeSeriesProvider.overrideWith(
+          timeSeriesOverride ??
+              (ref, id) async => WakeRunTimeSeries(
+                    dailyBuckets: _makeDaily(5),
+                    versionBuckets: _makeVersions(3),
+                  ),
         ),
       ],
     );
@@ -151,5 +162,53 @@ void main() {
 
       expect(find.text('N/A'), findsOneWidget);
     });
+
+    testWidgets('shows charts section when expanded with data', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionChartsSection), findsOneWidget);
+    });
+
+    testWidgets('hides charts section when collapsed', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionDashboardHeader));
+
+      // Tap to collapse
+      await tester.tap(
+        find.text(context.messages.agentEvolutionDashboardTitle),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionChartsSection), findsNothing);
+    });
   });
+}
+
+List<DailyWakeBucket> _makeDaily(int count) {
+  return List.generate(
+    count,
+    (i) => DailyWakeBucket(
+      date: DateTime(2024, 3, 15 + i),
+      successCount: 8,
+      failureCount: 2,
+      successRate: 0.8,
+      averageDuration: Duration(seconds: 10 + i),
+    ),
+  );
+}
+
+List<VersionPerformanceBucket> _makeVersions(int count) {
+  return List.generate(
+    count,
+    (i) => VersionPerformanceBucket(
+      versionId: 'v${i + 1}',
+      versionNumber: i + 1,
+      totalRuns: 10,
+      successRate: 0.7 + i * 0.1,
+      averageDuration: const Duration(seconds: 10),
+    ),
+  );
 }
