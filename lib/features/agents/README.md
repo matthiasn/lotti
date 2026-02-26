@@ -59,7 +59,7 @@ The full wake cycle implementation:
 
 - **`task_agent_strategy.dart`** — `ConversationStrategy` implementation that dispatches LLM tool calls to `AgentToolExecutor`. The `record_observations` tool is intercepted locally (no executor needed since it doesn't modify journal entities) — observations accumulate in memory and are retrieved via `extractObservations()`. The final text response becomes the report via `extractReportContent()`. Each message turn is persisted to `agent.sqlite` for durability.
 - **`task_agent_workflow.dart`** — Assembles context (agent state, current report, agentJournal observations, task details from `AiInputRepository`, trigger delta), resolves a Gemini inference provider, runs the conversation via `ConversationRepository`, persists the updated report and observations, and updates agent state. Persists the user message as an `agentMessage` (kind=user) for inspectability. Includes `conversationRepository.deleteConversation(conversationId)` cleanup in a `finally` block.
-- **`template_evolution_workflow.dart`** — LLM-assisted template evolution. Creates a single-turn conversation with a meta-prompt instructing the LLM to rewrite directives based on performance metrics and user feedback. Returns an `EvolutionProposal` with proposed vs original directives for user approval. Strips markdown fences from LLM output.
+- **`template_evolution_workflow.dart`** — LLM-assisted template evolution via multi-turn sessions. Manages 1-on-1 dialogues with the evolution agent using tool-based proposals and notes. Supports proposal approval/rejection, session abandonment, and idempotent retry.
 
 ### Service Layer (`service/`)
 
@@ -92,7 +92,6 @@ Agent inspection interface:
 - **`agent_conversation_log.dart`** — Thread-grouped conversation view: messages grouped by `threadId` (wake cycle), sorted most-recent-first, each rendered as an `ExpansionTile` with timestamp, message count, and tool call count.
 - **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
 - **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
-- **`agent_one_on_one_page.dart`** — 1-on-1 template evolution page: performance metrics dashboard, structured feedback form (what worked well, what didn't, specific changes), evolve button that invokes `TemplateEvolutionWorkflow`, and a diff-style preview of current vs proposed directives with approve/reject controls.
 
 ## Memory Model
 
@@ -167,8 +166,7 @@ lib/features/agents/
     ├── agent_activity_log.dart      # Message log with expandable payloads
     ├── agent_conversation_log.dart  # Thread-grouped conversation view
     ├── agent_controls.dart          # Action buttons
-    ├── agent_date_format.dart       # Shared date formatting utilities
-    └── agent_one_on_one_page.dart   # 1-on-1 template evolution page
+    └── agent_date_format.dart       # Shared date formatting utilities
 ```
 
 ## Testing
@@ -183,7 +181,7 @@ Tests mirror the source structure under `test/features/agents/`:
 - **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`, `computeMetrics` aggregation
 - **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture, template evolution proposal generation
 - **State tests** — Riverpod provider unit tests for agent report, state, identity, messages, payload text, initialization, and task agent lookup
-- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting, 1-on-1 evolution page
+- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting
 
 Run `make test` to verify current test count and status.
 

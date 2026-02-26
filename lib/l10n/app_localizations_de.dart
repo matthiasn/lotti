@@ -174,25 +174,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Leistung';
 
   @override
-  String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
-
-  @override
   String get agentEvolutionMetricActive => 'Aktiv';
 
   @override
   String get agentEvolutionMetricAvgDuration => 'Durchschn. Dauer';
 
   @override
-  String get agentEvolutionMetricNotAvailable => 'k. A.';
+  String get agentEvolutionMetricFailures => 'Fehler';
 
   @override
-  String get agentEvolutionMetricFailures => 'Fehler';
+  String get agentEvolutionMetricNotAvailable => 'k. A.';
 
   @override
   String get agentEvolutionMetricSuccess => 'Erfolg';
 
   @override
   String get agentEvolutionMetricWakes => 'Aufrufe';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
 
   @override
   String get agentEvolutionNoteRecorded => 'Notiz aufgezeichnet';
@@ -394,56 +394,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateEvolveApprove => 'Genehmigen & Speichern';
 
   @override
-  String get agentTemplateEvolveButton => 'Vorlage weiterentwickeln';
-
-  @override
-  String get agentTemplateEvolveCurrentLabel => 'Aktuelle Anweisungen';
-
-  @override
-  String get agentTemplateEvolveError =>
-      'Vorschlag konnte nicht generiert werden';
-
-  @override
-  String get agentTemplateEvolvePreviewTitle => 'Vorgeschlagene Änderungen';
-
-  @override
-  String get agentTemplateEvolveProposedLabel => 'Vorgeschlagene Anweisungen';
-
-  @override
   String get agentTemplateEvolveReject => 'Ablehnen';
-
-  @override
-  String get agentTemplateEvolveSuccess =>
-      'Vorlage erfolgreich weiterentwickelt';
-
-  @override
-  String get agentTemplateEvolvingProgress =>
-      'Verbesserte Anweisungen werden generiert...';
-
-  @override
-  String get agentTemplateFeedbackChangesHint =>
-      'Beschreibe, was du ändern möchtest...';
-
-  @override
-  String get agentTemplateFeedbackChangesLabel => 'Konkrete Änderungen';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkHint =>
-      'Beschreibe Probleme oder Schwächen...';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkLabel =>
-      'Was nicht funktioniert hat';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedHint =>
-      'Beschreibe, was der Agent gut macht...';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedLabel => 'Was gut funktioniert hat';
-
-  @override
-  String get agentTemplateFeedbackTitle => 'Rückmeldung';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -464,27 +415,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateMetricsActiveInstances => 'Aktive Instanzen';
 
   @override
-  String get agentTemplateMetricsAvgDuration => 'Durchschn. Dauer';
-
-  @override
-  String agentTemplateMetricsDurationSeconds(int count) {
-    return '$count s';
-  }
-
-  @override
-  String get agentTemplateMetricsFailureCount => 'Fehler';
-
-  @override
-  String get agentTemplateMetricsFirstWake => 'Erste Aktivierung';
-
-  @override
-  String get agentTemplateMetricsLastWake => 'Letzte Aktivierung';
-
-  @override
   String get agentTemplateMetricsSuccessRate => 'Erfolgsrate';
-
-  @override
-  String get agentTemplateMetricsTitle => 'Leistungskennzahlen';
 
   @override
   String get agentTemplateMetricsTotalWakes => 'Aktivierungen gesamt';
@@ -515,11 +446,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Keine Versionen';
-
-  @override
-  String agentTemplateOneOnOneTitle(String templateName) {
-    return '1-zu-1 mit $templateName';
-  }
 
   @override
   String get agentTemplateRollbackAction => 'Auf diese Version zurücksetzen';

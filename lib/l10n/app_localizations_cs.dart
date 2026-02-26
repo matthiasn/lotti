@@ -172,25 +172,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Performance';
 
   @override
-  String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
-
-  @override
   String get agentEvolutionMetricActive => 'Active';
 
   @override
   String get agentEvolutionMetricAvgDuration => 'Avg Duration';
 
   @override
-  String get agentEvolutionMetricNotAvailable => 'N/A';
+  String get agentEvolutionMetricFailures => 'Failures';
 
   @override
-  String get agentEvolutionMetricFailures => 'Failures';
+  String get agentEvolutionMetricNotAvailable => 'N/A';
 
   @override
   String get agentEvolutionMetricSuccess => 'Success';
 
   @override
   String get agentEvolutionMetricWakes => 'Wakes';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
 
   @override
   String get agentEvolutionNoteRecorded => 'Note Recorded';
@@ -387,54 +387,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateEvolveApprove => 'Approve & Save';
 
   @override
-  String get agentTemplateEvolveButton => 'Evolve Template';
-
-  @override
-  String get agentTemplateEvolveCurrentLabel => 'Current Directives';
-
-  @override
-  String get agentTemplateEvolveError =>
-      'Failed to generate evolution proposal';
-
-  @override
-  String get agentTemplateEvolvePreviewTitle => 'Proposed Changes';
-
-  @override
-  String get agentTemplateEvolveProposedLabel => 'Proposed Directives';
-
-  @override
   String get agentTemplateEvolveReject => 'Reject';
-
-  @override
-  String get agentTemplateEvolveSuccess => 'Template evolved successfully';
-
-  @override
-  String get agentTemplateEvolvingProgress =>
-      'Generating improved directives...';
-
-  @override
-  String get agentTemplateFeedbackChangesHint =>
-      'Describe what you\'d like changed...';
-
-  @override
-  String get agentTemplateFeedbackChangesLabel => 'Specific changes';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkHint =>
-      'Describe issues or shortcomings...';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkLabel => 'What didn\'t work';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedHint =>
-      'Describe what the agent does well...';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedLabel => 'What worked well';
-
-  @override
-  String get agentTemplateFeedbackTitle => 'Feedback';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -455,27 +408,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateMetricsActiveInstances => 'Active Instances';
 
   @override
-  String get agentTemplateMetricsAvgDuration => 'Avg Duration';
-
-  @override
-  String agentTemplateMetricsDurationSeconds(int count) {
-    return '${count}s';
-  }
-
-  @override
-  String get agentTemplateMetricsFailureCount => 'Failures';
-
-  @override
-  String get agentTemplateMetricsFirstWake => 'First Wake';
-
-  @override
-  String get agentTemplateMetricsLastWake => 'Last Wake';
-
-  @override
   String get agentTemplateMetricsSuccessRate => 'Success Rate';
-
-  @override
-  String get agentTemplateMetricsTitle => 'Performance Metrics';
 
   @override
   String get agentTemplateMetricsTotalWakes => 'Total Wakes';
@@ -505,11 +438,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'No versions';
-
-  @override
-  String agentTemplateOneOnOneTitle(String templateName) {
-    return '1-on-1 with $templateName';
-  }
 
   @override
   String get agentTemplateRollbackAction => 'Roll Back to This Version';

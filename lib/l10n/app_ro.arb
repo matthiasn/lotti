@@ -84,13 +84,13 @@
   "agentEvolutionChatPlaceholder": "Împărtășiți feedback sau întrebați despre performanță...",
   "agentEvolutionCurrentDirectives": "Directive curente",
   "agentEvolutionDashboardTitle": "Performanță",
-  "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Durată medie",
-  "agentEvolutionMetricNotAvailable": "N/D",
   "agentEvolutionMetricFailures": "Eșecuri",
+  "agentEvolutionMetricNotAvailable": "N/D",
   "agentEvolutionMetricSuccess": "Succes",
   "agentEvolutionMetricWakes": "Activări",
+  "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
   "agentEvolutionNoteRecorded": "Notă înregistrată",
   "agentEvolutionProposalRationale": "Justificare",
   "agentEvolutionProposalRejected": "Propunere respinsă — continuați conversația",
@@ -172,21 +172,7 @@
   "agentTemplateEmptyList": "Niciun șablon încă. Apasă + pentru a crea unul.",
   "agentTemplateEvolveAction": "Evoluează cu IA",
   "agentTemplateEvolveApprove": "Aprobă și salvează",
-  "agentTemplateEvolveButton": "Evoluează șablonul",
-  "agentTemplateEvolveCurrentLabel": "Directivele actuale",
-  "agentTemplateEvolveError": "Nu s-a putut genera propunerea de evoluție",
-  "agentTemplateEvolvePreviewTitle": "Modificări propuse",
-  "agentTemplateEvolveProposedLabel": "Directivele propuse",
   "agentTemplateEvolveReject": "Respinge",
-  "agentTemplateEvolveSuccess": "Șablonul a fost evoluat cu succes",
-  "agentTemplateEvolvingProgress": "Se generează directive îmbunătățite...",
-  "agentTemplateFeedbackChangesHint": "Descrie ce ai dori să schimbi...",
-  "agentTemplateFeedbackChangesLabel": "Modificări specifice",
-  "agentTemplateFeedbackDidntWorkHint": "Descrie problemele sau deficiențele...",
-  "agentTemplateFeedbackDidntWorkLabel": "Ce nu a funcționat",
-  "agentTemplateFeedbackEnjoyedHint": "Descrie ce face bine agentul...",
-  "agentTemplateFeedbackEnjoyedLabel": "Ce a funcționat bine",
-  "agentTemplateFeedbackTitle": "Feedback",
   "agentTemplateInstanceCount": "{count, plural, =0{Nicio instanță} =1{1 instanță} few{{count} instanțe} other{{count} de instanțe}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -197,21 +183,7 @@
   },
   "agentTemplateKindTaskAgent": "Agent de sarcini",
   "agentTemplateMetricsActiveInstances": "Instanțe active",
-  "agentTemplateMetricsAvgDuration": "Durata medie",
-  "agentTemplateMetricsDurationSeconds": "{count} s",
-  "@agentTemplateMetricsDurationSeconds": {
-    "description": "Formatted duration in seconds shown in template performance metrics.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentTemplateMetricsFailureCount": "Eșecuri",
-  "agentTemplateMetricsFirstWake": "Prima activare",
-  "agentTemplateMetricsLastWake": "Ultima activare",
   "agentTemplateMetricsSuccessRate": "Rata de succes",
-  "agentTemplateMetricsTitle": "Indicatori de performanță",
   "agentTemplateMetricsTotalWakes": "Total activări",
   "agentTemplateModelLabel": "ID model",
   "agentTemplateModelRequirements": "Sunt afișate doar modelele de raționament cu apeluri de funcții",
@@ -221,14 +193,6 @@
   "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.",
   "agentTemplateNotFound": "Șablon negăsit",
   "agentTemplateNoVersions": "Nicio versiune",
-  "agentTemplateOneOnOneTitle": "1-la-1 cu {templateName}",
-  "@agentTemplateOneOnOneTitle": {
-    "placeholders": {
-      "templateName": {
-        "type": "String"
-      }
-    }
-  },
   "agentTemplateRollbackAction": "Revino la această versiune",
   "agentTemplateRollbackConfirm": "Revino la versiunea {version}? Agentul va folosi această versiune la următoarea trezire.",
   "@agentTemplateRollbackConfirm": {
