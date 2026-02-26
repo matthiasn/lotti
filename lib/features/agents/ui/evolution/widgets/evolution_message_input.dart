@@ -47,6 +47,9 @@ class _EvolutionMessageInputState extends State<EvolutionMessageInput>
         curve: GameyAnimations.symmetrical,
       ),
     );
+    if (widget.isWaiting) {
+      _pulseController.repeat(reverse: true);
+    }
   }
 
   @override

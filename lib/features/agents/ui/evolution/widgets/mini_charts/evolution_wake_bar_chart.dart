@@ -6,7 +6,7 @@ import 'package:lotti/themes/gamey/colors.dart';
 /// Mini stacked bar chart showing daily success/failure counts.
 ///
 /// Green bars for successes, red bars for failures, stacked vertically.
-/// Returns [SizedBox.shrink] when fewer than 2 data points.
+/// Returns [SizedBox.shrink] when there are no data points.
 class EvolutionWakeBarChart extends StatelessWidget {
   const EvolutionWakeBarChart({
     required this.buckets,

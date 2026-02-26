@@ -75,8 +75,15 @@ class GenUiBridge {
   /// Constructs the genui [Component], sends [SurfaceUpdate] and
   /// [BeginRendering] to the processor, and returns the surface ID.
   String handleToolCall(Map<String, dynamic> args) {
-    final surfaceId = args['surfaceId'] as String? ?? 'surface-unknown';
-    final rootType = args['rootType'] as String? ?? 'EvolutionProposal';
+    final surfaceIdValue = args['surfaceId'];
+    final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
+        ? surfaceIdValue
+        : 'surface-unknown';
+
+    final rootTypeValue = args['rootType'];
+    final rootType = rootTypeValue is String && rootTypeValue.isNotEmpty
+        ? rootTypeValue
+        : 'EvolutionProposal';
     final rawData = args['data'];
     final data =
         rawData is Map<String, dynamic> ? rawData : <String, dynamic>{};

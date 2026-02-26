@@ -89,9 +89,10 @@ void main() {
         ),
       );
 
-      // Should not find current directives section label
       expect(find.text('New directives'), findsOneWidget);
       expect(find.text('Rationale text'), findsOneWidget);
+      // Current directives section label should be absent.
+      expect(find.text('Current Directives'), findsNothing);
     });
 
     testWidgets('dispatches proposal_approved on approve tap', (tester) async {
@@ -290,6 +291,9 @@ void main() {
       expect(find.text('5'), findsOneWidget);
       expect(find.text('60%'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
+      // Optional metric labels should be absent.
+      expect(find.text('Avg Duration'), findsNothing);
+      expect(find.text('Active'), findsNothing);
     });
   });
 
@@ -340,7 +344,13 @@ void main() {
       );
 
       expect(find.text('v1 → v2'), findsOneWidget);
-      // Only version info and directives, no summary
+      // No FontStyle.italic text (changesSummary) should be present.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && w.style?.fontStyle == FontStyle.italic,
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('renders compare_arrows icon', (tester) async {

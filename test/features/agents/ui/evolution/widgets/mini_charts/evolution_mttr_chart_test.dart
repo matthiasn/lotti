@@ -17,6 +17,11 @@ void main() {
       await tester.pump();
 
       expect(find.byType(LineChart), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData.first.spots, hasLength(3));
+      // Multi-point: dots hidden, area shown.
+      expect(chart.data.lineBarsData.first.dotData.show, isFalse);
+      expect(chart.data.lineBarsData.first.belowBarData.show, isTrue);
     });
 
     testWidgets('renders dot for single non-zero data point', (tester) async {

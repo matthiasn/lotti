@@ -144,14 +144,18 @@ class EvolutionStrategy extends ConversationStrategy {
     // approve/reject buttons, even if the model doesn't call render_surface.
     final bridge = genUiBridge;
     if (bridge != null) {
-      bridge.handleToolCall({
-        'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
-        'rootType': 'EvolutionProposal',
-        'data': {
-          'directives': directives,
-          'rationale': rationale,
-        },
-      });
+      try {
+        bridge.handleToolCall({
+          'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
+          'rootType': 'EvolutionProposal',
+          'data': {
+            'directives': directives,
+            'rationale': rationale,
+          },
+        });
+      } catch (_) {
+        // Best-effort rendering: proposal is recorded regardless.
+      }
     }
 
     manager.addToolResponse(

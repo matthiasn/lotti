@@ -30,14 +30,14 @@ class EvolutionChatData {
   final A2uiMessageProcessor? processor;
 
   EvolutionChatData copyWith({
-    String? sessionId,
+    String? Function()? sessionId,
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
     String? Function()? currentDirectives,
     A2uiMessageProcessor? Function()? processor,
   }) {
     return EvolutionChatData(
-      sessionId: sessionId ?? this.sessionId,
+      sessionId: sessionId != null ? sessionId() : this.sessionId,
       messages: messages ?? this.messages,
       isWaiting: isWaiting ?? this.isWaiting,
       currentDirectives: currentDirectives != null
@@ -249,6 +249,8 @@ class EvolutionChatState extends _$EvolutionChatState {
 
       state = AsyncData(
         current.copyWith(
+          sessionId: () => null,
+          processor: () => null,
           messages: [
             ...current.messages,
             EvolutionChatMessage.system(
@@ -317,6 +319,8 @@ class EvolutionChatState extends _$EvolutionChatState {
     if (current != null) {
       state = AsyncData(
         current.copyWith(
+          sessionId: () => null,
+          processor: () => null,
           messages: [
             ...current.messages,
             EvolutionChatMessage.system(
@@ -324,6 +328,7 @@ class EvolutionChatState extends _$EvolutionChatState {
               timestamp: clock.now(),
             ),
           ],
+          isWaiting: false,
         ),
       );
     }

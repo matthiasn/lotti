@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:genui/genui.dart';
 
@@ -20,9 +21,10 @@ class GenUiEventHandler {
 
   StreamSubscription<UserUiInteractionMessage>? _subscription;
 
-  /// Start listening for surface events. Call once after the processor is
-  /// created.
+  /// Start listening for surface events. Idempotent: cancels any existing
+  /// subscription before creating a new one.
   void listen() {
+    _subscription?.cancel();
     _subscription = processor.onSubmit.listen(_handleEvent);
   }
 
@@ -40,8 +42,13 @@ class GenUiEventHandler {
       if (name == 'proposal_approved' || name == 'proposal_rejected') {
         onProposalAction?.call(action.surfaceId, name);
       }
-    } catch (_) {
-      // Ignore malformed messages.
+    } catch (e, s) {
+      developer.log(
+        'Failed to handle GenUI event: ${message.text}',
+        name: 'GenUiEventHandler',
+        error: e,
+        stackTrace: s,
+      );
     }
   }
 

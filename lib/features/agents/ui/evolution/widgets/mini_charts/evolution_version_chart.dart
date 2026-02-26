@@ -5,7 +5,7 @@ import 'package:lotti/themes/gamey/colors.dart';
 
 /// Mini line chart showing per-version success rate with dot markers.
 ///
-/// Returns [SizedBox.shrink] when fewer than 2 data points.
+/// Returns [SizedBox.shrink] when there are no data points.
 class EvolutionVersionChart extends StatelessWidget {
   const EvolutionVersionChart({
     required this.buckets,

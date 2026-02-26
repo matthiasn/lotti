@@ -5,7 +5,8 @@ import 'package:lotti/themes/gamey/colors.dart';
 
 /// Mini line chart showing daily average duration (MTTR) trend.
 ///
-/// Y-axis in seconds. Returns [SizedBox.shrink] when fewer than 2 data points.
+/// Y-axis in seconds. Returns [SizedBox.shrink] when there are no non-zero
+/// duration data points.
 class EvolutionMttrChart extends StatelessWidget {
   const EvolutionMttrChart({
     required this.buckets,

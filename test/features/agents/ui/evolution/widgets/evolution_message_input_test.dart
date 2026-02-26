@@ -75,10 +75,13 @@ void main() {
 
     testWidgets('send button is disabled when isWaiting', (tester) async {
       await tester.pumpWidget(buildSubject(isWaiting: true));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Shows hourglass icon when waiting
       expect(find.byIcon(Icons.hourglass_top_rounded), findsOneWidget);
+      // Send button should be disabled (onPressed null)
+      final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+      expect(iconButton.onPressed, isNull);
     });
 
     testWidgets('text field is disabled when not enabled', (tester) async {

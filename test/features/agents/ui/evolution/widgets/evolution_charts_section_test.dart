@@ -84,6 +84,8 @@ void main() {
 
       expect(find.byType(EvolutionSparklineChart), findsNothing);
       expect(find.byType(EvolutionWakeBarChart), findsNothing);
+      expect(find.byType(EvolutionMttrChart), findsNothing);
+      expect(find.byType(EvolutionVersionChart), findsNothing);
     });
 
     testWidgets('renders SizedBox.shrink while loading', (tester) async {
