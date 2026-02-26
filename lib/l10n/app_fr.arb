@@ -1564,6 +1564,14 @@
   "syncStepMeasurables": "Mesurables",
   "syncStepTags": "Tags",
   "taskAgentChipLabel": "Agent",
+  "taskAgentCountdownTooltip": "Prochaine exécution auto dans {countdown}",
+  "@taskAgentCountdownTooltip": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentCreateChipLabel": "Créer un agent",
   "taskAgentCreateError": "Échec de la création de l'agent : {error}",
   "@taskAgentCreateError": {
@@ -1573,6 +1581,7 @@
       }
     }
   },
+  "taskAgentRunNowTooltip": "Exécuter maintenant",
   "taskCategoryAllLabel": "tout",
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",

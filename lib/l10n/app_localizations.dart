@@ -6955,6 +6955,12 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get taskAgentChipLabel;
 
+  /// No description provided for @taskAgentCountdownTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next auto-run in {countdown}'**
+  String taskAgentCountdownTooltip(String countdown);
+
   /// No description provided for @taskAgentCreateChipLabel.
   ///
   /// In en, this message translates to:
@@ -6966,6 +6972,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to create agent: {error}'**
   String taskAgentCreateError(String error);
+
+  /// No description provided for @taskAgentRunNowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Run now'**
+  String get taskAgentRunNowTooltip;
 
   /// No description provided for @taskCategoryAllLabel.
   ///

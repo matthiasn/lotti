@@ -209,10 +209,25 @@ class TaskAgentService {
     for (final link in links) {
       _registerTaskSubscription(agentId, link.toId);
     }
+    await _hydrateThrottleDeadline(agentId);
     developer.log(
       'Restored ${links.length} subscriptions for agent $agentId',
       name: 'TaskAgentService',
     );
+  }
+
+  /// Read the persisted `nextWakeAt` from the agent's state entity and
+  /// restore it into the orchestrator's in-memory throttle cache.
+  Future<void> _hydrateThrottleDeadline(String agentId) async {
+    final state = await repository.getAgentState(agentId);
+    final deadline = state?.nextWakeAt;
+    if (deadline != null) {
+      orchestrator.setThrottleDeadline(agentId, deadline);
+    } else {
+      // Clear any stale in-memory deadline that may have survived
+      // from a previous session or partial restore.
+      orchestrator.clearThrottle(agentId);
+    }
   }
 
   /// Returns the ID of the first available template, or `null` if none exist.
@@ -251,6 +266,10 @@ class TaskAgentService {
           _registerTaskSubscription(agent.agentId, link.toId);
           count++;
         }
+
+        // Hydrate the throttle deadline from persisted state so the
+        // cooldown window survives app restarts and backgrounding.
+        await _hydrateThrottleDeadline(agent.agentId);
       } catch (e, s) {
         developer.log(
           'Failed to restore subscriptions for agent ${agent.agentId}',

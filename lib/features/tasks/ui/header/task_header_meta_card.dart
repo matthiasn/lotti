@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_category_wrapper.dart';
 import 'package:lotti/features/tasks/ui/header/task_creation_date_widget.dart';
@@ -87,64 +90,75 @@ class _TaskMetadataRow extends StatelessWidget {
 /// Chip that either creates a task agent or navigates to the existing agent's
 /// detail page, depending on whether an agent already exists for this task.
 ///
+/// Shows a countdown timer when the agent is in its throttle cooldown window
+/// and a "Run Now" button to bypass the throttle.
+///
 /// Only visible when the `enableAgents` config flag is on.
-class _TaskAgentChip extends ConsumerWidget {
+class _TaskAgentChip extends ConsumerStatefulWidget {
   const _TaskAgentChip({required this.taskId});
 
   final String taskId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TaskAgentChip> createState() => _TaskAgentChipState();
+}
+
+class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
+  Timer? _countdownTimer;
+  int _countdownSeconds = 0;
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown(int seconds) {
+    _countdownTimer?.cancel();
+    _countdownSeconds = seconds;
+    if (seconds <= 0) return;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _countdownSeconds--;
+        if (_countdownSeconds <= 0) {
+          _countdownTimer?.cancel();
+          _countdownTimer = null;
+        }
+      });
+    });
+  }
+
+  void _stopCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    _countdownSeconds = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final enableAgents =
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
 
     if (!enableAgents) {
+      _stopCountdown();
       return const SizedBox.shrink();
     }
 
-    final taskAgentAsync = ref.watch(taskAgentProvider(taskId));
+    final taskAgentAsync = ref.watch(taskAgentProvider(widget.taskId));
 
     return taskAgentAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (agentEntity) {
         if (agentEntity != null) {
-          // Agent exists — show navigation chip.
           final identity = agentEntity.mapOrNull(agent: (e) => e);
           if (identity == null) return const SizedBox.shrink();
-
-          final isRunning =
-              ref.watch(agentIsRunningProvider(identity.agentId)).value ??
-                  false;
-
-          return ActionChip(
-            avatar: isRunning
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: context.colorScheme.primary,
-                    ),
-                  )
-                : Icon(
-                    Icons.smart_toy_outlined,
-                    size: 16,
-                    color: context.colorScheme.primary,
-                  ),
-            label: Text(context.messages.taskAgentChipLabel),
-            tooltip: isRunning ? context.messages.agentRunningIndicator : null,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => AgentDetailPage(agentId: identity.agentId),
-                ),
-              );
-            },
-          );
+          return _buildAgentChip(context, identity);
         }
 
-        // No agent yet — show create button.
+        // No agent yet — stop any stale countdown and show create button.
+        _stopCountdown();
         return ActionChip(
           avatar: Icon(
             Icons.add,
@@ -158,9 +172,117 @@ class _TaskAgentChip extends ConsumerWidget {
     );
   }
 
+  Widget _buildAgentChip(BuildContext context, AgentIdentityEntity identity) {
+    final agentId = identity.agentId;
+    final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    final agentStateAsync = ref.watch(agentStateProvider(agentId));
+    final nextWakeAt = agentStateAsync.value?.mapOrNull(
+      agentState: (s) => s.nextWakeAt,
+    );
+
+    // Compute countdown from persisted nextWakeAt (the actual throttle
+    // deadline). This is the single source of truth — it is only set for
+    // subscription-triggered wakes and cleared on manual "Run Now".
+    final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
+
+    // Restart countdown timer when nextWakeAt changes.
+    ref.listen(agentStateProvider(agentId), (prev, next) {
+      final newNextWake = next.value?.mapOrNull(
+        agentState: (s) => s.nextWakeAt,
+      );
+      final newRemaining = _computeRemainingSeconds(newNextWake);
+      if (newRemaining > 0) {
+        _startCountdown(newRemaining);
+      } else {
+        _stopCountdown();
+      }
+    });
+
+    // Seed the timer on first build if a countdown is active.
+    if (isRunning) {
+      _stopCountdown();
+    } else if (_countdownTimer == null && remainingSeconds > 0) {
+      // Use addPostFrameCallback to avoid calling setState during build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _startCountdown(remainingSeconds);
+      });
+    }
+
+    final showCountdown = !isRunning && _countdownSeconds > 0;
+    final countdownText =
+        showCountdown ? _formatCountdown(_countdownSeconds) : null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!isRunning)
+          IconButton(
+            icon: Icon(
+              Icons.play_arrow_rounded,
+              size: 20,
+              color: context.colorScheme.primary,
+            ),
+            tooltip: context.messages.taskAgentRunNowTooltip,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            onPressed: () {
+              ref.read(taskAgentServiceProvider).triggerReanalysis(agentId);
+            },
+          ),
+        ActionChip(
+          avatar: isRunning
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.colorScheme.primary,
+                  ),
+                )
+              : Icon(
+                  Icons.smart_toy_outlined,
+                  size: 16,
+                  color: context.colorScheme.primary,
+                ),
+          label: Text(
+            countdownText != null
+                ? '${context.messages.taskAgentChipLabel} $countdownText'
+                : context.messages.taskAgentChipLabel,
+            style: countdownText != null
+                ? const TextStyle(
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  )
+                : null,
+          ),
+          tooltip: isRunning
+              ? context.messages.agentRunningIndicator
+              : showCountdown
+                  ? context.messages
+                      .taskAgentCountdownTooltip(countdownText ?? '')
+                  : null,
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => AgentDetailPage(agentId: agentId),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  int _computeRemainingSeconds(DateTime? nextWakeAt) {
+    if (nextWakeAt == null) return 0;
+    final remaining = nextWakeAt.difference(clock.now());
+    return remaining.inSeconds
+        .clamp(0, WakeOrchestrator.throttleWindow.inSeconds);
+  }
+
   Future<void> _createTaskAgent(BuildContext context, WidgetRef ref) async {
     final entryState =
-        ref.read(entryControllerProvider(id: taskId)).value?.entry;
+        ref.read(entryControllerProvider(id: widget.taskId)).value?.entry;
     if (entryState == null || entryState is! Task) return;
 
     final categoryId = entryState.meta.categoryId;
@@ -201,13 +323,13 @@ class _TaskAgentChip extends ConsumerWidget {
       if (selectedTemplate == null) return;
 
       await service.createTaskAgent(
-        taskId: taskId,
+        taskId: widget.taskId,
         templateId: selectedTemplate.id,
         allowedCategoryIds: allowedCategoryIds,
       );
       // Invalidate the provider so the UI rebuilds with the new agent.
       if (context.mounted) {
-        ref.invalidate(taskAgentProvider(taskId));
+        ref.invalidate(taskAgentProvider(widget.taskId));
       }
     } catch (e, s) {
       developer.log(
@@ -278,4 +400,11 @@ class _TaskAgentChip extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Formats a countdown as `m:ss` for display.
+String _formatCountdown(int totalSeconds) {
+  final m = totalSeconds ~/ 60;
+  final s = totalSeconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
 }

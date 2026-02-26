@@ -3832,12 +3832,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentChipLabel => 'Agent';
 
   @override
+  String taskAgentCountdownTooltip(String countdown) {
+    return 'Příští automatické spuštění za $countdown';
+  }
+
+  @override
   String get taskAgentCreateChipLabel => 'Vytvořit agenta';
 
   @override
   String taskAgentCreateError(String error) {
     return 'Nepodařilo se vytvořit agenta: $error';
   }
+
+  @override
+  String get taskAgentRunNowTooltip => 'Spustit nyní';
 
   @override
   String get taskCategoryAllLabel => 'vše';

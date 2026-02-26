@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.872] - 2026-02-26
+### Added
+- Agent throttle gate: 5-minute cooldown between automatic subscription-triggered
+  agent wakes to reduce token consumption during rapid task mutations.
+- "Run Now" button on task agent chip to bypass throttle and trigger immediate
+  agent execution.
+- Countdown timer on task agent chip showing remaining throttle cooldown time.
+- Throttle deadline persistence via `nextWakeAt` field, surviving app restarts
+  and backgrounding.
+
 ## [0.9.871] - 2026-02-26
 ### Fixed
 - Reference image selection not rendering in cover art generation modal due to

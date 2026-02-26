@@ -356,9 +356,8 @@ RULES:
       // Pre-fetch payload content for observations so the builder can include
       // the actual observation text (AgentMessageEntity only stores a ref).
       // Parallelise lookups to avoid sequential DB round-trips.
-      final payloadIds = observations
-          .map((obs) => obs.contentEntryId)
-          .whereType<String>();
+      final payloadIds =
+          observations.map((obs) => obs.contentEntryId).whereType<String>();
       final payloadEntities =
           await Future.wait(payloadIds.map(svc.repository.getEntity));
       final observationPayloads = <String, AgentMessagePayloadEntity>{
