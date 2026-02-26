@@ -108,6 +108,22 @@ AgentMessageEntity makeTestMessage({
   ) as AgentMessageEntity;
 }
 
+AgentMessagePayloadEntity makeTestMessagePayload({
+  String id = 'payload-001',
+  String agentId = kTestAgentId,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  Map<String, Object?> content = const {'text': 'Payload content'},
+}) {
+  return AgentDomainEntity.agentMessagePayload(
+    id: id,
+    agentId: agentId,
+    createdAt: createdAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    content: content,
+  ) as AgentMessagePayloadEntity;
+}
+
 AgentReportEntity makeTestReport({
   String id = 'report-001',
   String agentId = kTestAgentId,

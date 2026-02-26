@@ -353,13 +353,46 @@ Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
 }
 
 /// The template evolution workflow with all dependencies resolved.
+///
+/// Includes the multi-turn session dependencies ([AgentTemplateService],
+/// [AgentSyncService]) alongside the legacy single-turn dependencies.
 @Riverpod(keepAlive: true)
 TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
   return TemplateEvolutionWorkflow(
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    updateNotifications: getIt<UpdateNotifications>(),
   );
+}
+
+/// Fetch evolution sessions for a template, newest-first.
+///
+/// Each element is an [EvolutionSessionEntity].
+@riverpod
+Future<List<AgentDomainEntity>> evolutionSessions(
+  Ref ref,
+  String templateId,
+) async {
+  // Reactively rebuild when the template's data changes.
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getEvolutionSessions(templateId);
+}
+
+/// Fetch evolution notes for a template, newest-first.
+///
+/// Each element is an [EvolutionNoteEntity].
+@riverpod
+Future<List<AgentDomainEntity>> evolutionNotes(
+  Ref ref,
+  String templateId,
+) async {
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final service = ref.watch(agentTemplateServiceProvider);
+  return service.getRecentEvolutionNotes(templateId);
 }
 
 /// The task agent workflow with all dependencies resolved.

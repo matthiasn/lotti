@@ -419,6 +419,46 @@ class AgentTemplateService {
     );
   }
 
+  // ── Evolution data fetching ─────────────────────────────────────────────
+
+  /// Fetch the N most recent reports from all instances of this template.
+  Future<List<AgentReportEntity>> getRecentInstanceReports(
+    String templateId, {
+    int limit = 10,
+  }) {
+    return repository.getRecentReportsByTemplate(templateId, limit: limit);
+  }
+
+  /// Fetch the N most recent observation messages from all instances of this
+  /// template.
+  Future<List<AgentMessageEntity>> getRecentInstanceObservations(
+    String templateId, {
+    int limit = 10,
+  }) {
+    return repository.getRecentObservationsByTemplate(templateId, limit: limit);
+  }
+
+  /// Fetch evolution notes for a template, newest-first.
+  Future<List<EvolutionNoteEntity>> getRecentEvolutionNotes(
+    String templateId, {
+    int limit = 50,
+  }) {
+    return repository.getEvolutionNotes(templateId, limit: limit);
+  }
+
+  /// Fetch evolution sessions for a template, newest-first.
+  Future<List<EvolutionSessionEntity>> getEvolutionSessions(
+    String templateId, {
+    int limit = 10,
+  }) {
+    return repository.getEvolutionSessions(templateId, limit: limit);
+  }
+
+  /// Count entities changed since [since] for all instances of [templateId].
+  Future<int> countChangesSince(String templateId, DateTime? since) {
+    return repository.countChangedSinceForTemplate(templateId, since);
+  }
+
   /// Idempotent seed of default templates (Laura and Tom).
   ///
   /// Checks each default template independently, seeding only those that are

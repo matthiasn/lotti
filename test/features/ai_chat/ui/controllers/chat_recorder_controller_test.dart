@@ -387,7 +387,13 @@ void main() {
     // Dispose the controller (simulates provider disposal)
     sub.close();
     container.dispose();
-    await pumpEventQueue();
+
+    // The ref.onDispose cleanup is unawaited and chains multiple async
+    // operations. Pump the event queue repeatedly until cleanup completes.
+    for (var i = 0; i < 10; i++) {
+      await pumpEventQueue();
+      if (!await tempSubdir.exists()) break;
+    }
 
     // Directory is cleaned up after dispose
     expect(await tempSubdir.exists(), isFalse);

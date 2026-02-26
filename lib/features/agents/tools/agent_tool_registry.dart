@@ -201,4 +201,57 @@ class AgentToolRegistry {
       },
     ),
   ];
+
+  /// Tools available to the evolution agent during 1-on-1 sessions.
+  static const evolutionAgentTools = <AgentToolDefinition>[
+    AgentToolDefinition(
+      name: 'propose_directives',
+      description: 'Formally propose a new version of the template directives. '
+          'Include the COMPLETE rewritten directives text (not a diff) and a '
+          'brief rationale explaining what changed and why.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'directives': {
+            'type': 'string',
+            'description':
+                'The complete proposed directives text for the new version.',
+          },
+          'rationale': {
+            'type': 'string',
+            'description':
+                'Brief explanation of what changed and why (1-3 sentences).',
+          },
+        },
+        'required': ['directives', 'rationale'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: 'record_evolution_note',
+      description:
+          'Record a private evolution note for your own future reference. '
+          'Use this to capture patterns, hypotheses, decisions, or recurring '
+          'themes that will help in future sessions.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'kind': {
+            'type': 'string',
+            'enum': ['reflection', 'hypothesis', 'decision', 'pattern'],
+            'description':
+                'The kind of note: reflection (observation about performance), '
+                    'hypothesis (what might improve the template), decision (a '
+                    'choice made during the session), pattern (a recurring theme).',
+          },
+          'content': {
+            'type': 'string',
+            'description': 'The note content (markdown text).',
+          },
+        },
+        'required': ['kind', 'content'],
+        'additionalProperties': false,
+      },
+    ),
+  ];
 }
