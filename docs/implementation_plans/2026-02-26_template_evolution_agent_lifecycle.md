@@ -222,6 +222,7 @@ erDiagram
 
     EvolutionNoteEntity {
         string id PK
+        string agentId FK "template ID"
         string sessionId FK
         string kind "reflection|hypothesis|decision|pattern"
         string content
@@ -503,7 +504,7 @@ sequenceDiagram
 
     alt User approves
         U->>UI: Approve + rate (0.7)
-        UI->>EW: approveProposal(sessionId, rating: 0.7)
+        UI->>EW: approveProposal(sessionId, userRating: 0.7)
         EW->>TS: createVersion(templateId, directives, authoredBy: 'agent')
         EW->>DB: Persist evolution notes
         EW->>DB: Update session(status: completed)
@@ -702,8 +703,8 @@ Future<Duration?> computeMTTR(String templateId);
 
 1. Get all agent IDs linked to template via `template_assignment`
 2. Get task IDs linked to those agents via `agent_task`
-3. Query journal DB for those tasks where `status = done`
-4. Calculate `average(updatedAt - createdAt)` for resolved tasks
+3. Query journal DB for those tasks where `status = done` and `completedAt` is not null
+4. Calculate `average(completedAt - createdAt)` for resolved tasks
 
 **Widget enhancement:**
 
