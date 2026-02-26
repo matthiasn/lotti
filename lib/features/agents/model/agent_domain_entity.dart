@@ -149,6 +149,45 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentTemplateHeadEntity;
 
+  /// Lightweight metadata record for a 1-on-1 evolution session.
+  ///
+  /// The [agentId] field stores the **evolution agent's ID**. The actual
+  /// conversation messages are stored as [AgentMessageEntity] records with
+  /// [AgentMessageEntity.threadId] set to this session's [id].
+  ///
+  /// Delta tracking (`lastAcknowledgedAt`) lives on the evolution agent's
+  /// [AgentStateEntity], not here — see Phase 2.
+  const factory AgentDomainEntity.evolutionSession({
+    required String id,
+    required String agentId,
+    required String templateId,
+    required int sessionNumber,
+    required EvolutionSessionStatus status,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    String? proposedVersionId,
+    String? feedbackSummary,
+    double? userRating,
+    DateTime? completedAt,
+    DateTime? deletedAt,
+  }) = EvolutionSessionEntity;
+
+  /// The evolution agent's private reasoning note.
+  ///
+  /// The [agentId] field stores the owning template's ID. It does **not**
+  /// reference an agent instance.
+  const factory AgentDomainEntity.evolutionNote({
+    required String id,
+    required String agentId,
+    required String sessionId,
+    required EvolutionNoteKind kind,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    required String content,
+    DateTime? deletedAt,
+  }) = EvolutionNoteEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,

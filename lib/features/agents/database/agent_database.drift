@@ -49,7 +49,9 @@ CREATE TABLE wake_run_log (
   completed_at DATETIME,
   error_message TEXT,
   template_id TEXT,
-  template_version_id TEXT
+  template_version_id TEXT,
+  user_rating REAL,
+  rated_at DATETIME
 );
 
 CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
@@ -114,3 +116,13 @@ getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER
 getAllAgentLinks: SELECT * FROM agent_links WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getWakeRunsByTemplateId: SELECT * FROM wake_run_log WHERE template_id = :templateId ORDER BY created_at DESC LIMIT :limit;
+
+getRecentReportsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentReport' AND ae.subtype = 'current' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+
+getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentMessage' AND ae.subtype = 'observation' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+
+getEvolutionSessionsByTemplate: SELECT * FROM agent_entities WHERE agent_id = :templateId AND type = 'evolutionSession' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+getEvolutionNotesByTemplate: SELECT * FROM agent_entities WHERE agent_id = :templateId AND type = 'evolutionNote' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+countEntitiesChangedSinceForTemplate: SELECT COUNT(*) AS cnt FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.updated_at > :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;

@@ -47,15 +47,41 @@
 
 **PR scope:** New/modified freezed models, drift schema additions, repository methods. No UI or workflow changes.
 
+### 1.0 Architecture: Long-Running Evolution Agent
+
+Each template has a **single long-running evolution agent** (an `AgentIdentityEntity` with `kind = 'evolution_agent'`). This agent:
+
+- Lives as long as the template exists — it is **not** short-lived per session.
+- Carries `lastAcknowledgedAt: DateTime?` on its **`AgentStateEntity`** (Phase 2), tracking the delta cutoff for "what changed since last check."
+- Owns all conversation messages (`AgentMessageEntity`) for the 1-on-1 chat, threaded by session ID.
+- Persists `EvolutionNoteEntity` records as its long-term reasoning journal.
+
+**`EvolutionSessionEntity`** is a **lightweight metadata record** — it tracks each 1-on-1 conversation's status, user rating, and proposed version, but it is not an agent itself.
+
+#### Cross-Device Sync & Continuation
+
+The 1-on-1 conversation is fully syncable across devices:
+
+1. **Messages** are `AgentMessageEntity` records (in `agent_entities`, synced via vector clocks). The `threadId` field links them to a session.
+2. **Session metadata** (`EvolutionSessionEntity`) syncs the same way — another device sees `status: active` and knows there's an open session.
+3. **LLM context reconstruction**: When continuing on another device, the workflow loads stored messages from the DB and replays them into a fresh LLM context. This works because evolution conversations are short (a few turns) and the context builder assembles the system prompt from DB queries.
+
+**Tradeoff:** The LLM doesn't "remember" — it reconstructs from stored messages. This is the standard pattern for stateless LLM APIs and is fine for evolution conversations that are typically 3–10 turns.
+
 ### 1.1 Evolution Session Entity
 
-A new `AgentDomainEntity` variant to track each one-on-one session between user and evolution agent.
+A lightweight metadata record for each one-on-one session between user and evolution agent. The `agentId` field stores the **evolution agent's ID** (not the template ID directly). The conversation messages live as `AgentMessageEntity` records threaded by session ID.
 
 ```dart
-/// A tracked evolution session for a template.
+/// A tracked evolution session — lightweight metadata for a 1-on-1
+/// conversation between the user and the evolution agent.
+///
+/// The [agentId] field stores the evolution agent's ID. The actual
+/// conversation messages are stored as [AgentMessageEntity] records
+/// with [threadId] set to this session's [id].
 const factory AgentDomainEntity.evolutionSession({
   required String id,
-  required String agentId,       // template ID (grouping key)
+  required String agentId,       // evolution agent ID
   required String templateId,
   required int sessionNumber,    // monotonic per template
   required EvolutionSessionStatus status, // active, completed, abandoned
@@ -104,59 +130,24 @@ enum EvolutionNoteKind { reflection, hypothesis, decision, pattern }
 
 **Storage:** `type = 'evolutionNote'`, `subtype` = kind name.
 
-### 1.3 Monotonic Change Counter
+### 1.3 Timestamp-Based Delta Tracking
 
-Add a `change_counter` column to `agent_entities` for delta tracking. This is a DB-level auto-incrementing value that allows any consumer to say "give me everything newer than counter X."
+The `change_counter` approach was rejected (device-local, not sync-safe). Vector clocks were considered but can't be used for SQL-level lookup and sorting (partial order, stored as JSON).
 
-**Schema change (requires version bump):**
+Instead, the **evolution agent's `AgentStateEntity`** (Phase 2) will carry a `lastAcknowledgedAt: DateTime?` field. The evolution agent queries for entities updated after this timestamp using the existing `updated_at` column (already indexed). This is sync-safe because timestamps are set by the originating device and synced along with the entity.
 
-```sql
--- New column on agent_entities
-ALTER TABLE agent_entities ADD COLUMN change_counter INTEGER;
+**No schema change needed** — the `updated_at` column already exists and is indexed.
 
--- Index for efficient delta queries
-CREATE INDEX idx_agent_entities_change_counter
-  ON agent_entities(change_counter);
-```
+**Tradeoff:** Minor clock skew between devices could cause an entity to be re-processed or missed. This is acceptable because:
+- Evolution sessions run infrequently (user-initiated)
+- Sync typically completes before the user opens a 1-on-1 session
+- Re-processing an entity is idempotent
 
-**Migration strategy:** In `schemaVersion` bump handler:
-1. Add column as nullable.
-2. Backfill with `rowid` ordering.
-3. Create a trigger (or handle in `AgentRepository.upsertEntity`) that assigns `MAX(change_counter) + 1` on every insert/update.
+### 1.4 Acknowledgement Tracking on Evolution Agent State
 
-**Repository method:**
+The `lastAcknowledgedAt` timestamp lives on the evolution agent's **`AgentStateEntity`** (not on the session entity). This allows the long-running agent to track its delta cursor across sessions.
 
-```dart
-/// Get entities changed since a given counter value.
-Future<List<AgentDomainEntity>> getEntitiesSince({
-  required int sinceCounter,
-  String? agentId,
-  String? type,
-  int limit = 100,
-});
-```
-
-**Named query:**
-
-```sql
-getEntitiesSinceCounter: SELECT * FROM agent_entities
-  WHERE change_counter > :sinceCounter
-  AND (:agentId IS NULL OR agent_id = :agentId)
-  AND (:type IS NULL OR type = :type)
-  AND deleted_at IS NULL
-  ORDER BY change_counter ASC
-  LIMIT :limit;
-```
-
-### 1.4 Acknowledgement Tracking on Evolution Sessions
-
-Each `EvolutionSessionEntity` stores the `lastAcknowledgedCounter` — the highest `change_counter` the evolution agent processed during that session. This enables the "delta since last ack" pattern.
-
-Add to `EvolutionSessionEntity`:
-
-```dart
-@Default(0) int lastAcknowledgedCounter,
-```
+This field will be added in Phase 2 when the evolution agent identity and state are created. Phase 1 only provides the session and note entities — the evolution agent itself is a Phase 2 concern.
 
 ### 1.5 Instance Report Snapshot Entity
 
@@ -193,16 +184,21 @@ This allows per-wake rating that feeds into MTTR and satisfaction calculations.
 erDiagram
     AgentTemplateEntity ||--o{ AgentTemplateVersionEntity : "has versions"
     AgentTemplateEntity ||--|| AgentTemplateHeadEntity : "active version pointer"
-    AgentTemplateEntity ||--o{ EvolutionSessionEntity : "evolution sessions"
-    AgentTemplateEntity ||--o{ EvolutionNoteEntity : "internal notes"
-    AgentTemplateEntity ||--o{ AgentIdentityEntity : "template_assignment link"
+    AgentTemplateEntity ||--|| EvolutionAgentIdentity : "one evolution agent"
+    AgentTemplateEntity ||--o{ TaskAgentIdentity : "template_assignment link"
+
+    EvolutionAgentIdentity ||--|| AgentStateEntity : "durable state (lastAcknowledgedAt)"
+    EvolutionAgentIdentity ||--o{ EvolutionSessionEntity : "sessions"
+    EvolutionAgentIdentity ||--o{ AgentMessageEntity : "conversation messages"
+    EvolutionAgentIdentity ||--o{ EvolutionNoteEntity : "reasoning journal"
 
     EvolutionSessionEntity ||--o{ EvolutionNoteEntity : "session notes"
+    EvolutionSessionEntity ||--o{ AgentMessageEntity : "threaded by session ID"
     EvolutionSessionEntity ||--o| AgentTemplateVersionEntity : "proposed version"
 
-    AgentIdentityEntity ||--|| AgentStateEntity : "durable state"
-    AgentIdentityEntity ||--o{ AgentReportEntity : "wake reports"
-    AgentIdentityEntity ||--o{ AgentMessageEntity : "observations"
+    TaskAgentIdentity ||--|| AgentStateEntity : "durable state"
+    TaskAgentIdentity ||--o{ AgentReportEntity : "wake reports"
+    TaskAgentIdentity ||--o{ AgentMessageEntity : "observations"
 
     AgentTemplateVersionEntity {
         string id PK
@@ -215,10 +211,10 @@ erDiagram
 
     EvolutionSessionEntity {
         string id PK
+        string agentId FK "evolution agent ID"
         string templateId FK
         int sessionNumber
         string status "active|completed|abandoned"
-        int lastAcknowledgedCounter
         double userRating "0.0-1.0"
         string feedbackSummary
     }
@@ -246,7 +242,6 @@ erDiagram
 | `EvolutionNoteEntity` variant | Freezed model + serialization | No (stored in existing table) |
 | `EvolutionSessionStatus` enum | New enum | No |
 | `EvolutionNoteKind` enum | New enum | No |
-| `change_counter` column on `agent_entities` | Schema migration | **Yes** |
 | `user_rating` + `rated_at` on `wake_run_log` | Schema migration | **Yes** |
 | New named queries | `.drift` file | No |
 | `AgentDbConversions` updates | Deserialization cases | No |
@@ -300,7 +295,7 @@ flowchart TD
         E[Evolution Notes<br/>last 5 sessions' notes]
         F[Performance Metrics<br/>aggregated from wake_run_log]
         G[User Feedback<br/>current session input]
-        H[Delta<br/>changes since lastAcknowledgedCounter]
+        H[Delta<br/>changes since lastAcknowledgedAt timestamp]
     end
 
     subgraph "Assembly"
@@ -353,7 +348,7 @@ class EvolutionContextBuilder {
     required List<EvolutionNoteEntity> pastNotes,
     required TemplatePerformanceMetrics metrics,
     required EvolutionFeedback feedback,
-    required int changesSinceLastAck,
+    required int changesSinceLastSession,
   });
 }
 ```
@@ -384,8 +379,8 @@ Future<List<EvolutionNoteEntity>> getRecentEvolutionNotes(
   int sessionLimit = 5,
 });
 
-/// Get the count of changes since a given counter for a template's instances.
-Future<int> countChangesSince(String templateId, int sinceCounter);
+/// Get the count of changes since a given timestamp for a template's instances.
+Future<int> countChangesSince(String templateId, DateTime? since);
 ```
 
 ### 2.5 Multi-Turn Evolution Workflow
@@ -510,7 +505,8 @@ sequenceDiagram
         UI->>EW: approveProposal(sessionId, rating: 0.7)
         EW->>TS: createVersion(templateId, directives, authoredBy: 'agent')
         EW->>DB: Persist evolution notes
-        EW->>DB: Update session(status: completed, lastAcknowledgedCounter)
+        EW->>DB: Update session(status: completed)
+        EW->>DB: Update evolution agent state(lastAcknowledgedAt)
         EW-->>UI: New version created
     else User wants changes
         U->>UI: "Make it less formal"
@@ -570,7 +566,7 @@ The context window budget is managed by the `EvolutionContextBuilder` with hard 
 
 For templates with hundreds of instances, the `getRecentInstanceReports` query already orders by `created_at DESC LIMIT 10`, so the DB does the heavy lifting. The evolution agent sees a representative window, not the full history.
 
-The `change_counter` + `lastAcknowledgedCounter` pattern means the agent can say "I last looked at counter 4523, show me what's new" — and the query returns only the delta, regardless of total instance count.
+The `lastAcknowledgedAt` timestamp on the evolution agent's state means the agent can say "I last looked at time T, show me what's new" — and the query filters by `updated_at > T`, regardless of total instance count.
 
 ---
 
@@ -760,8 +756,8 @@ flowchart TD
 |-----------|----------------|
 | `test/features/agents/model/evolution_session_entity_test.dart` | Serialization roundtrip, status transitions |
 | `test/features/agents/model/evolution_note_entity_test.dart` | Serialization roundtrip, kind enum |
-| `test/features/agents/database/change_counter_test.dart` | Counter monotonicity, delta queries, backfill migration |
-| `test/features/agents/database/agent_repository_evolution_test.dart` | CRUD for sessions and notes, `getEntitiesSince`, `getRecentReportsByTemplate` |
+| `test/features/agents/database/agent_repository_evolution_test.dart` | CRUD, soft-delete exclusion, cross-instance queries, wake run rating |
+| *(merged into file above)* | |
 
 ### 4.2 Unit Tests: Service Layer
 
@@ -859,7 +855,6 @@ EvolutionSessionEntity makeTestEvolutionSession({
   String? templateId,
   int sessionNumber = 1,
   EvolutionSessionStatus status = EvolutionSessionStatus.active,
-  int lastAcknowledgedCounter = 0,
   double? userRating,
 });
 
@@ -882,7 +877,7 @@ gantt
 
     section Phase 1: Data Model
     Freezed models + enums              :p1a, 2026-02-27, 2d
-    Schema migration (change_counter)   :p1b, after p1a, 2d
+    Schema migration (wake run rating)  :p1b, after p1a, 1d
     Repository methods + queries        :p1c, after p1b, 2d
     Data layer tests                    :p1d, after p1c, 2d
 
@@ -908,7 +903,7 @@ gantt
 
 | PR | Title | Dependencies |
 |----|-------|-------------|
-| **PR 1** | `feat: evolution session & note entities + change counter` | None |
+| **PR 1** | `feat: evolution session & note entities + wake run rating` | None |
 | **PR 2** | `feat: evolution context builder & data fetching` | PR 1 |
 | **PR 3** | `feat: multi-turn evolution workflow & tools` | PR 2 |
 | **PR 4** | `feat: chat-based 1-on-1 interface` | PR 3 |

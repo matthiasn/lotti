@@ -264,6 +264,8 @@ WakeRunLogData makeTestWakeRun({
   String? errorMessage,
   String? templateId,
   String? templateVersionId,
+  double? userRating,
+  DateTime? ratedAt,
 }) {
   return WakeRunLogData(
     runKey: runKey,
@@ -277,6 +279,8 @@ WakeRunLogData makeTestWakeRun({
     errorMessage: errorMessage,
     templateId: templateId,
     templateVersionId: templateVersionId,
+    userRating: userRating,
+    ratedAt: ratedAt,
   );
 }
 
@@ -344,6 +348,58 @@ WakeJob makeTestWakeJob({
     reasonId: reasonId,
     createdAt: createdAt ?? kAgentTestDate,
   );
+}
+
+// ── Evolution entity factories ────────────────────────────────────────────────
+
+EvolutionSessionEntity makeTestEvolutionSession({
+  String id = 'evo-session-001',
+  String agentId = kTestTemplateId,
+  String templateId = kTestTemplateId,
+  int sessionNumber = 1,
+  EvolutionSessionStatus status = EvolutionSessionStatus.active,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  String? proposedVersionId,
+  String? feedbackSummary,
+  double? userRating,
+  DateTime? completedAt,
+}) {
+  return AgentDomainEntity.evolutionSession(
+    id: id,
+    agentId: agentId,
+    templateId: templateId,
+    sessionNumber: sessionNumber,
+    status: status,
+    createdAt: createdAt ?? kAgentTestDate,
+    updatedAt: updatedAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    proposedVersionId: proposedVersionId,
+    feedbackSummary: feedbackSummary,
+    userRating: userRating,
+    completedAt: completedAt,
+  ) as EvolutionSessionEntity;
+}
+
+EvolutionNoteEntity makeTestEvolutionNote({
+  String id = 'evo-note-001',
+  String agentId = kTestTemplateId,
+  String sessionId = 'evo-session-001',
+  EvolutionNoteKind kind = EvolutionNoteKind.reflection,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  String content = 'Test evolution note.',
+}) {
+  return AgentDomainEntity.evolutionNote(
+    id: id,
+    agentId: agentId,
+    sessionId: sessionId,
+    kind: kind,
+    createdAt: createdAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    content: content,
+  ) as EvolutionNoteEntity;
 }
 
 // ── AI config factories (for inference provider resolution tests) ────────────
