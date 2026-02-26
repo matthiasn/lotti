@@ -77,7 +77,9 @@ class GenUiBridge {
   String handleToolCall(Map<String, dynamic> args) {
     final surfaceId = args['surfaceId'] as String? ?? 'surface-unknown';
     final rootType = args['rootType'] as String? ?? 'EvolutionProposal';
-    final data = args['data'] as Map<String, dynamic>? ?? {};
+    final rawData = args['data'];
+    final data =
+        rawData is Map<String, dynamic> ? rawData : <String, dynamic>{};
 
     const rootId = 'root';
 

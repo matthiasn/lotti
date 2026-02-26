@@ -219,8 +219,8 @@ class EvolutionChatState extends _$EvolutionChatState {
     }
   }
 
-  /// Approve the current proposal, optionally with a rating.
-  Future<bool> approveProposal({double? rating}) async {
+  /// Approve the current proposal.
+  Future<bool> approveProposal() async {
     final data = state.value;
     if (data == null || data.sessionId == null) return false;
 
@@ -237,7 +237,6 @@ class EvolutionChatState extends _$EvolutionChatState {
     try {
       final newVersion = await workflow.approveProposal(
         sessionId: sessionId,
-        userRating: rating,
       );
 
       if (newVersion == null) {

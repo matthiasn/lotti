@@ -75,13 +75,19 @@ class EvolutionStrategy extends ConversationStrategy {
       final args = _parseArgs(call.function.arguments);
 
       // Delegate GenUI tool calls to the bridge if available.
-      final bridge = genUiBridge;
-      if (bridge != null && bridge.isGenUiTool(name)) {
-        final surfaceId = bridge.handleToolCall(args);
-        manager.addToolResponse(
-          toolCallId: call.id,
-          response: 'Surface "$surfaceId" rendered successfully.',
-        );
+      if (genUiBridge != null && genUiBridge!.isGenUiTool(name)) {
+        try {
+          final surfaceId = genUiBridge!.handleToolCall(args);
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Surface "$surfaceId" rendered successfully.',
+          );
+        } catch (e) {
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error rendering surface: $e',
+          );
+        }
         continue;
       }
 
@@ -133,6 +139,20 @@ class EvolutionStrategy extends ConversationStrategy {
       directives: directives,
       rationale: rationale,
     );
+
+    // Automatically render a GenUI proposal surface so the user always has
+    // approve/reject buttons, even if the model doesn't call render_surface.
+    final bridge = genUiBridge;
+    if (bridge != null) {
+      bridge.handleToolCall({
+        'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
+        'rootType': 'EvolutionProposal',
+        'data': {
+          'directives': directives,
+          'rationale': rationale,
+        },
+      });
+    }
 
     manager.addToolResponse(
       toolCallId: callId,

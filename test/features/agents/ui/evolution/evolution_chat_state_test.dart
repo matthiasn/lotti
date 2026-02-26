@@ -524,7 +524,6 @@ void main() {
         when(
           () => mockWorkflow.approveProposal(
             sessionId: 'session-1',
-            userRating: any(named: 'userRating'),
           ),
         ).thenAnswer((_) async => approvedVersion);
         when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))

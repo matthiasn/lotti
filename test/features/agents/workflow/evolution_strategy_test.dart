@@ -305,6 +305,59 @@ void main() {
     });
   });
 
+  group('auto-surface on propose_directives', () {
+    late GenUiBridge bridge;
+    late EvolutionStrategy strategyWithBridge;
+    late ConversationManager bridgeManager;
+
+    setUp(() {
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      bridge = GenUiBridge(processor: processor);
+      strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
+      bridgeManager = ConversationManager(conversationId: 'test-auto')
+        ..initialize(systemMessage: 'You are an evolution agent.');
+    });
+
+    test('propose_directives automatically creates a GenUI surface', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'directives': 'Be concise and helpful.',
+          'rationale': 'User feedback suggested brevity.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestProposal, isNotNull);
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(1));
+      expect(surfaceIds.first, startsWith('proposal-'));
+    });
+
+    test('propose_directives with empty directives does not create surface',
+        () async {
+      final toolCall = makeToolCall(
+        name: 'propose_directives',
+        args: {'directives': '  ', 'rationale': 'Whatever'},
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestProposal, isNull);
+      expect(bridge.drainPendingSurfaceIds(), isEmpty);
+    });
+  });
+
   group('GenUI bridge delegation', () {
     late GenUiBridge bridge;
     late EvolutionStrategy strategyWithBridge;
@@ -372,7 +425,12 @@ void main() {
         manager: bridgeManager,
       );
 
-      expect(bridge.drainPendingSurfaceIds(), ['surf-2']);
+      // 2 surfaces: one explicit render_surface + one auto from
+      // propose_directives.
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(2));
+      expect(surfaceIds.first, 'surf-2');
+      expect(surfaceIds.last, startsWith('proposal-'));
       expect(strategyWithBridge.latestProposal, isNotNull);
       expect(
         strategyWithBridge.latestProposal!.directives,

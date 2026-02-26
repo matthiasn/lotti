@@ -95,6 +95,16 @@ void main() {
       final id = bridge.handleToolCall(<String, dynamic>{});
       expect(id, 'surface-unknown');
     });
+
+    test('handles non-map data gracefully', () {
+      // Simulate malformed LLM output where data is a string instead of map.
+      final id = bridge.handleToolCall({
+        'surfaceId': 'surf-bad',
+        'rootType': 'MetricsSummary',
+        'data': 'not a map',
+      });
+      expect(id, 'surf-bad');
+    });
   });
 
   group('drainPendingSurfaceIds', () {
