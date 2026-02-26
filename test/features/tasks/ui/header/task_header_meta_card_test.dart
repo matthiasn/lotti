@@ -926,9 +926,11 @@ void main() {
           // Let the post-frame callback run and start the countdown.
           await tester.pump(const Duration(milliseconds: 100));
 
-          // With 240s remaining the countdown shows "Agent 4:00".
+          // With 240s remaining the countdown shows "<label> 4:00".
+          final context = tester.element(find.byType(TaskHeaderMetaCard));
+          final label = context.messages.taskAgentChipLabel;
           expect(
-            find.textContaining('Agent 4:00'),
+            find.textContaining('$label 4:00'),
             findsOneWidget,
           );
         });

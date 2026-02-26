@@ -223,6 +223,10 @@ class TaskAgentService {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.setThrottleDeadline(agentId, deadline);
+    } else {
+      // Clear any stale in-memory deadline that may have survived
+      // from a previous session or partial restore.
+      orchestrator.clearThrottle(agentId);
     }
   }
 

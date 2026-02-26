@@ -287,7 +287,7 @@ class WakeOrchestrator {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
     _deferredDrainTimers.remove(agentId);
-    _clearPersistedThrottle(agentId);
+    unawaited(_clearPersistedThrottle(agentId));
   }
 
   /// Persist `nextWakeAt = null` so that a cleared throttle is not
@@ -303,6 +303,11 @@ class WakeOrchestrator {
       if (_throttleDeadlines.containsKey(agentId)) return;
 
       final state = await repository.getAgentState(agentId);
+
+      // Re-check after the await: a new throttle may have been set while
+      // we were reading the state from the database.
+      if (_throttleDeadlines.containsKey(agentId)) return;
+
       if (state != null && state.nextWakeAt != null) {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: null, updatedAt: clock.now()),

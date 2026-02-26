@@ -138,8 +138,8 @@ sequenceDiagram
     TAC->>RP: watch(taskAgentProvider(taskId))
     TAC->>RP: watch(agentIsRunningProvider(agentId))
     TAC->>RP: watch(agentStateProvider(agentId))
-    Note over TAC: Extract lastWakeAt from AgentStateEntity
-    Note over TAC: Compute countdown = (lastWakeAt + 300s) - now
+    Note over TAC: Extract nextWakeAt from AgentStateEntity
+    Note over TAC: Compute countdown = max(0, nextWakeAt - now)
 
     alt isRunning
         TAC->>TAC: Show spinner chip
@@ -227,7 +227,6 @@ static const throttleWindow = Duration(seconds: 300);
    ```dart
    if (job.reason == WakeReason.subscription.name) {
      await _setThrottleDeadline(job.agentId);
-     _scheduleDeferredDrain(job.agentId);
    }
    ```
 
@@ -250,7 +249,7 @@ static const throttleWindow = Duration(seconds: 300);
    ```
 
 **New method `_scheduleDeferredDrain`:**
-Schedules a `Timer` at the throttle deadline to call `processNext()`, ensuring notifications that arrived during the cooldown are eventually processed.
+Schedules a `Timer` at the throttle deadline to call `processNext()`, ensuring the orchestrator resumes queue processing at cooldown expiry. Notifications dropped during cooldown are not replayed; only new notifications arriving after expiry are processed.
 
 ### Step 2: Hydrate Throttle State on Startup
 
@@ -282,10 +281,10 @@ Convert `_TaskAgentChip` from `ConsumerWidget` to `ConsumerStatefulWidget` to ho
 | Idle (no countdown) | Robot icon | "Agent" | Navigate + "Run Now" |
 
 **Changes:**
-- Add `ref.watch(agentStateProvider(agentId))` to extract `lastWakeAt`
-- Compute countdown: `(lastWakeAt + throttleWindow) - now`
+- Add `ref.watch(agentStateProvider(agentId))` to extract `nextWakeAt`
+- Compute countdown: `max(Duration.zero, nextWakeAt - now)`
 - `Timer.periodic(1s)` drives countdown text (`setState`)
-- `ref.listen(agentStateProvider)` restarts timer when `lastWakeAt` changes
+- `ref.listen(agentStateProvider)` restarts timer when `nextWakeAt` changes
 - Cancel timer when running or on dispose
 - Add `IconButton(Icons.play_arrow_rounded)` for "Run Now" → calls `triggerReanalysis`
 - Format countdown as `"m:ss"` using tabular figures for stable width
@@ -313,7 +312,7 @@ Run `make l10n` and `make sort_arb_files`.
 
 **File:** `test/features/agents/wake/wake_orchestrator_test.dart`
 
-Add test group for throttle scenarios using `fakeAsync` and `clock`:
+Add test group for throttle scenarios using `fakeAsync` and `clock` (scoped to timer/clock assertions; stream-subscription startup paths use real microtask flushing):
 - Subscription wake sets throttle deadline 300s in future
 - Second subscription notification within 300s is dropped (not enqueued)
 - Manual wake clears throttle and executes immediately
@@ -325,8 +324,8 @@ Add test group for throttle scenarios using `fakeAsync` and `clock`:
 **File:** `test/features/tasks/ui/header/task_header_meta_card_test.dart`
 
 Add/update tests:
-- Countdown displays when `lastWakeAt` is recent (within 300s)
-- Countdown ticks down (use `fakeAsync`)
+- Countdown displays when `nextWakeAt` is in the future
+- Countdown ticks down (use `withClock` for deterministic time)
 - "Run Now" button calls `triggerReanalysis`
 - "Run Now" hidden when agent is running
 - Countdown hidden when agent is running
@@ -357,7 +356,7 @@ Add/update tests:
 
 5. **Drop-not-defer for notifications** — during throttle window, new subscription notifications are dropped in `_onBatch()`, not queued. A deferred timer at the deadline fires `processNext()` to pick up any subsequent changes naturally.
 
-6. **Countdown from `lastWakeAt` in UI** — the widget computes countdown client-side from `lastWakeAt + 300s`, avoiding a separate countdown provider. The existing `agentStateProvider` already auto-refreshes via `agentUpdateStream`.
+6. **Countdown from `nextWakeAt` in UI** — the widget computes countdown client-side from the persisted throttle deadline (`nextWakeAt - now`), keeping UI aligned with orchestrator throttle state across bypasses, app restarts, and hydration. The existing `agentStateProvider` already auto-refreshes via `agentUpdateStream`.
 
 ## Verification
 

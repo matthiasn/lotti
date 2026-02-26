@@ -141,6 +141,7 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
 
     if (!enableAgents) {
+      _stopCountdown();
       return const SizedBox.shrink();
     }
 
@@ -156,7 +157,8 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
           return _buildAgentChip(context, identity);
         }
 
-        // No agent yet — show create button.
+        // No agent yet — stop any stale countdown and show create button.
+        _stopCountdown();
         return ActionChip(
           avatar: Icon(
             Icons.add,

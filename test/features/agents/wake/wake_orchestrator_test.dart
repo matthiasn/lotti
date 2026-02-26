@@ -2414,6 +2414,65 @@ void main() {
         });
       });
 
+      test(
+          'clearThrottle skips upsert when new throttle set during getAgentState',
+          () {
+        fakeAsync((async) {
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor =
+                (agentId, runKey, triggers, threadId) async => null;
+
+          final existingState = makeTestState(
+            id: 'state-agent-1',
+            agentId: 'agent-1',
+          );
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => existingState);
+          when(() => mockRepository.upsertEntity(any()))
+              .thenAnswer((_) async {});
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Subscription wake sets throttle + persists deadline.
+          emitTokens(async, controller, {'entity-1'});
+
+          // Clear interactions so we can track only the clear path.
+          clearInteractions(mockRepository);
+
+          // Simulate: getAgentState completes, but during the await a new
+          // throttle deadline is set (e.g. by another subscription wake).
+          when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
+            (_) async {
+              // While the DB read is in flight, set a new throttle.
+              orchestrator.setThrottleDeadline(
+                'agent-1',
+                clock.now().add(WakeOrchestrator.throttleWindow),
+              );
+              return existingState.copyWith(
+                nextWakeAt: clock.now().add(WakeOrchestrator.throttleWindow),
+              );
+            },
+          );
+
+          orchestrator.clearThrottle('agent-1');
+          async.flushMicrotasks();
+
+          // The post-await guard should detect the new deadline and skip
+          // the upsert — no upsertEntity call for null nextWakeAt.
+          verifyNever(() => mockRepository.upsertEntity(any()));
+
+          controller.close();
+        });
+      });
+
       test('clearThrottle still clears in-memory state on DB write failure',
           () {
         fakeAsync((async) {
