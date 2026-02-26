@@ -264,7 +264,8 @@ Add to the "Tool Usage Guidelines" section:
   - Set "IN PROGRESS" when time is being logged on the task (especially
     combined with checklist items being checked off).
   - Set "BLOCKED" when the user mentions a blocker (always provide a reason).
-  - Set "DONE" only when all checklist items are complete AND the user confirms.
+  - Do NOT set "DONE" or "REJECTED" — these are user-only. If the task
+    appears complete, note it in the report and let the user confirm.
   - Do NOT set status speculatively or based on assumptions.
 - **Language**: If the task has no language set (languageCode is null), detect
   the language from the task content and set it. Always do this on the first wake.
