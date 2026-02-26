@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 
 part 'evolution_chat_message.freezed.dart';
 
@@ -26,12 +25,6 @@ sealed class EvolutionChatMessage with _$EvolutionChatMessage {
     required String text,
     required DateTime timestamp,
   }) = EvolutionSystemMessage;
-
-  /// An inline proposal card for directive changes.
-  const factory EvolutionChatMessage.proposal({
-    required PendingProposal proposal,
-    required DateTime timestamp,
-  }) = EvolutionProposalMessage;
 
   /// A GenUI surface rendered inline in the chat.
   const factory EvolutionChatMessage.surface({

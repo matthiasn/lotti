@@ -95,7 +95,6 @@ void main() {
           'Welcome to the evolution session!',
         );
         expect(data.isWaiting, isFalse);
-        expect(data.proposal, isNull);
         expect(data.currentDirectives, 'You are a helpful agent.');
       });
 
@@ -159,12 +158,8 @@ void main() {
             .called(1);
       });
 
-      test('includes proposal if opening response contains one', () async {
-        const testProposal = PendingProposal(
-          directives: 'new directives',
-          rationale: 'better performance',
-        );
-
+      test('does not add proposal message (proposals handled via GenUI)',
+          () async {
         when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
             .thenAnswer((_) async => 'Here is my proposal.');
 
@@ -180,7 +175,7 @@ void main() {
         );
 
         when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(testProposal);
+            .thenReturn(null);
 
         when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
             .thenAnswer((_) async {});
@@ -192,9 +187,10 @@ void main() {
               .read(evolutionChatStateProvider(kTestTemplateId).future),
         );
 
-        expect(data.proposal, testProposal);
-        expect(data.messages.length, 3);
-        expect(data.messages[2], isA<EvolutionProposalMessage>());
+        // Only system + assistant messages, no proposal message variant.
+        expect(data.messages.length, 2);
+        expect(data.messages[0], isA<EvolutionSystemMessage>());
+        expect(data.messages[1], isA<EvolutionAssistantMessage>());
       });
     });
 
@@ -263,13 +259,7 @@ void main() {
     });
 
     group('rejectProposal', () {
-      test('removes proposal messages and adds rejection system message',
-          () async {
-        const testProposal = PendingProposal(
-          directives: 'new',
-          rationale: 'better',
-        );
-
+      test('adds rejection system message', () async {
         when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
             .thenAnswer((_) async => 'Here is a proposal.');
 
@@ -285,7 +275,7 @@ void main() {
         );
 
         when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
-            .thenReturn(testProposal);
+            .thenReturn(null);
 
         when(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
             .thenReturn(null);
@@ -309,12 +299,6 @@ void main() {
         final data =
             container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
 
-        expect(data.proposal, isNull);
-        // No proposal messages should remain
-        expect(
-          data.messages.whereType<EvolutionProposalMessage>().toList(),
-          isEmpty,
-        );
         // Should have a rejection system message
         final systemMessages =
             data.messages.whereType<EvolutionSystemMessage>().toList();
@@ -496,7 +480,6 @@ void main() {
 
         final data =
             container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
-        expect(data.proposal, isNull);
         expect(
           data.messages
               .whereType<EvolutionSystemMessage>()
@@ -559,7 +542,6 @@ void main() {
 
         final data =
             container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
-        expect(data.proposal, isNull);
         expect(
           data.messages
               .whereType<EvolutionSystemMessage>()
@@ -591,18 +573,14 @@ void main() {
       expect(updated.currentDirectives, 'original');
     });
 
-    test('copyWith sets proposal to null via function', () {
-      const proposal = PendingProposal(
-        directives: 'd',
-        rationale: 'r',
-      );
+    test('copyWith sets currentDirectives to null via function', () {
       const data = EvolutionChatData(
         messages: [],
-        proposal: proposal,
+        currentDirectives: 'some directives',
       );
 
-      final updated = data.copyWith(proposal: () => null);
-      expect(updated.proposal, isNull);
+      final updated = data.copyWith(currentDirectives: () => null);
+      expect(updated.currentDirectives, isNull);
     });
   });
 }

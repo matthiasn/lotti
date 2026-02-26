@@ -94,7 +94,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult Function(EvolutionUserMessage value)? user,
     TResult Function(EvolutionAssistantMessage value)? assistant,
     TResult Function(EvolutionSystemMessage value)? system,
-    TResult Function(EvolutionProposalMessage value)? proposal,
     TResult Function(EvolutionSurfaceMessage value)? surface,
     required TResult orElse(),
   }) {
@@ -106,8 +105,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that);
       case EvolutionSystemMessage() when system != null:
         return system(_that);
-      case EvolutionProposalMessage() when proposal != null:
-        return proposal(_that);
       case EvolutionSurfaceMessage() when surface != null:
         return surface(_that);
       case _:
@@ -133,7 +130,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     required TResult Function(EvolutionUserMessage value) user,
     required TResult Function(EvolutionAssistantMessage value) assistant,
     required TResult Function(EvolutionSystemMessage value) system,
-    required TResult Function(EvolutionProposalMessage value) proposal,
     required TResult Function(EvolutionSurfaceMessage value) surface,
   }) {
     final _that = this;
@@ -144,8 +140,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that);
       case EvolutionSystemMessage():
         return system(_that);
-      case EvolutionProposalMessage():
-        return proposal(_that);
       case EvolutionSurfaceMessage():
         return surface(_that);
     }
@@ -168,7 +162,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult? Function(EvolutionUserMessage value)? user,
     TResult? Function(EvolutionAssistantMessage value)? assistant,
     TResult? Function(EvolutionSystemMessage value)? system,
-    TResult? Function(EvolutionProposalMessage value)? proposal,
     TResult? Function(EvolutionSurfaceMessage value)? surface,
   }) {
     final _that = this;
@@ -179,8 +172,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that);
       case EvolutionSystemMessage() when system != null:
         return system(_that);
-      case EvolutionProposalMessage() when proposal != null:
-        return proposal(_that);
       case EvolutionSurfaceMessage() when surface != null:
         return surface(_that);
       case _:
@@ -205,7 +196,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult Function(String text, DateTime timestamp)? user,
     TResult Function(String text, DateTime timestamp)? assistant,
     TResult Function(String text, DateTime timestamp)? system,
-    TResult Function(PendingProposal proposal, DateTime timestamp)? proposal,
     TResult Function(String surfaceId, DateTime timestamp)? surface,
     required TResult orElse(),
   }) {
@@ -217,8 +207,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that.text, _that.timestamp);
       case EvolutionSystemMessage() when system != null:
         return system(_that.text, _that.timestamp);
-      case EvolutionProposalMessage() when proposal != null:
-        return proposal(_that.proposal, _that.timestamp);
       case EvolutionSurfaceMessage() when surface != null:
         return surface(_that.surfaceId, _that.timestamp);
       case _:
@@ -244,8 +232,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     required TResult Function(String text, DateTime timestamp) user,
     required TResult Function(String text, DateTime timestamp) assistant,
     required TResult Function(String text, DateTime timestamp) system,
-    required TResult Function(PendingProposal proposal, DateTime timestamp)
-        proposal,
     required TResult Function(String surfaceId, DateTime timestamp) surface,
   }) {
     final _that = this;
@@ -256,8 +242,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that.text, _that.timestamp);
       case EvolutionSystemMessage():
         return system(_that.text, _that.timestamp);
-      case EvolutionProposalMessage():
-        return proposal(_that.proposal, _that.timestamp);
       case EvolutionSurfaceMessage():
         return surface(_that.surfaceId, _that.timestamp);
     }
@@ -280,7 +264,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult? Function(String text, DateTime timestamp)? user,
     TResult? Function(String text, DateTime timestamp)? assistant,
     TResult? Function(String text, DateTime timestamp)? system,
-    TResult? Function(PendingProposal proposal, DateTime timestamp)? proposal,
     TResult? Function(String surfaceId, DateTime timestamp)? surface,
   }) {
     final _that = this;
@@ -291,8 +274,6 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return assistant(_that.text, _that.timestamp);
       case EvolutionSystemMessage() when system != null:
         return system(_that.text, _that.timestamp);
-      case EvolutionProposalMessage() when proposal != null:
-        return proposal(_that.proposal, _that.timestamp);
       case EvolutionSurfaceMessage() when surface != null:
         return surface(_that.surfaceId, _that.timestamp);
       case _:
@@ -525,85 +506,6 @@ class _$EvolutionSystemMessageCopyWithImpl<$Res>
           ? _self.text
           : text // ignore: cast_nullable_to_non_nullable
               as String,
-      timestamp: null == timestamp
-          ? _self.timestamp
-          : timestamp // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-    ));
-  }
-}
-
-/// @nodoc
-
-class EvolutionProposalMessage implements EvolutionChatMessage {
-  const EvolutionProposalMessage(
-      {required this.proposal, required this.timestamp});
-
-  final PendingProposal proposal;
-  @override
-  final DateTime timestamp;
-
-  /// Create a copy of EvolutionChatMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $EvolutionProposalMessageCopyWith<EvolutionProposalMessage> get copyWith =>
-      _$EvolutionProposalMessageCopyWithImpl<EvolutionProposalMessage>(
-          this, _$identity);
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is EvolutionProposalMessage &&
-            (identical(other.proposal, proposal) ||
-                other.proposal == proposal) &&
-            (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
-  }
-
-  @override
-  int get hashCode => Object.hash(runtimeType, proposal, timestamp);
-
-  @override
-  String toString() {
-    return 'EvolutionChatMessage.proposal(proposal: $proposal, timestamp: $timestamp)';
-  }
-}
-
-/// @nodoc
-abstract mixin class $EvolutionProposalMessageCopyWith<$Res>
-    implements $EvolutionChatMessageCopyWith<$Res> {
-  factory $EvolutionProposalMessageCopyWith(EvolutionProposalMessage value,
-          $Res Function(EvolutionProposalMessage) _then) =
-      _$EvolutionProposalMessageCopyWithImpl;
-  @override
-  @useResult
-  $Res call({PendingProposal proposal, DateTime timestamp});
-}
-
-/// @nodoc
-class _$EvolutionProposalMessageCopyWithImpl<$Res>
-    implements $EvolutionProposalMessageCopyWith<$Res> {
-  _$EvolutionProposalMessageCopyWithImpl(this._self, this._then);
-
-  final EvolutionProposalMessage _self;
-  final $Res Function(EvolutionProposalMessage) _then;
-
-  /// Create a copy of EvolutionChatMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? proposal = null,
-    Object? timestamp = null,
-  }) {
-    return _then(EvolutionProposalMessage(
-      proposal: null == proposal
-          ? _self.proposal
-          : proposal // ignore: cast_nullable_to_non_nullable
-              as PendingProposal,
       timestamp: null == timestamp
           ? _self.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable

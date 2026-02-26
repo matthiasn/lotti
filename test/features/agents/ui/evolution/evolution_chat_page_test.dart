@@ -12,8 +12,6 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_proposal_card.dart';
-import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -157,35 +155,6 @@ void main() {
         find.text(context.messages.agentEvolutionSessionStarting),
         findsOneWidget,
       );
-    });
-
-    testWidgets('shows proposal card when proposal message exists',
-        (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          chatStateBuilder: (_) async => EvolutionChatData(
-            sessionId: 'session-1',
-            messages: [
-              EvolutionChatMessage.proposal(
-                proposal: const PendingProposal(
-                  directives: 'New directives',
-                  rationale: 'Better performance',
-                ),
-                timestamp: DateTime(2024, 3, 15),
-              ),
-            ],
-            proposal: const PendingProposal(
-              directives: 'New directives',
-              rationale: 'Better performance',
-            ),
-            currentDirectives: 'Old directives',
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(EvolutionProposalCard), findsOneWidget);
-      expect(find.text('New directives'), findsOneWidget);
     });
 
     testWidgets('disables message input when sessionId is null',

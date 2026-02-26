@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
-import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -36,34 +35,12 @@ void main() {
       expect(msg.timestamp, testDate);
     });
 
-    test('proposal variant holds PendingProposal and timestamp', () {
-      const proposal = PendingProposal(
-        directives: 'New directives',
-        rationale: 'Improved performance',
-      );
-      final msg = EvolutionChatMessage.proposal(
-        proposal: proposal,
-        timestamp: testDate,
-      );
-      expect(msg, isA<EvolutionProposalMessage>());
-      final proposalMsg = msg as EvolutionProposalMessage;
-      expect(proposalMsg.proposal.directives, 'New directives');
-      expect(proposalMsg.proposal.rationale, 'Improved performance');
-      expect(proposalMsg.timestamp, testDate);
-    });
-
     test('variants are distinguished by switch expression', () {
       final messages = <EvolutionChatMessage>[
         EvolutionChatMessage.user(text: 'u', timestamp: testDate),
         EvolutionChatMessage.assistant(text: 'a', timestamp: testDate),
         EvolutionChatMessage.system(text: 's', timestamp: testDate),
-        EvolutionChatMessage.proposal(
-          proposal: const PendingProposal(
-            directives: 'd',
-            rationale: 'r',
-          ),
-          timestamp: testDate,
-        ),
+        EvolutionChatMessage.surface(surfaceId: 'sf', timestamp: testDate),
       ];
 
       final labels = messages.map((m) {
@@ -71,12 +48,11 @@ void main() {
           EvolutionUserMessage() => 'user',
           EvolutionAssistantMessage() => 'assistant',
           EvolutionSystemMessage() => 'system',
-          EvolutionProposalMessage() => 'proposal',
           EvolutionSurfaceMessage() => 'surface',
         };
       }).toList();
 
-      expect(labels, ['user', 'assistant', 'system', 'proposal']);
+      expect(labels, ['user', 'assistant', 'system', 'surface']);
     });
 
     test('surface variant holds surfaceId and timestamp', () {

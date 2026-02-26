@@ -5,7 +5,6 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
-import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -17,7 +16,6 @@ class EvolutionChatData {
     required this.messages,
     this.sessionId,
     this.isWaiting = false,
-    this.proposal,
     this.currentDirectives,
     this.processor,
   });
@@ -25,7 +23,6 @@ class EvolutionChatData {
   final String? sessionId;
   final List<EvolutionChatMessage> messages;
   final bool isWaiting;
-  final PendingProposal? proposal;
   final String? currentDirectives;
 
   /// The GenUI message processor, available after session start.
@@ -36,7 +33,6 @@ class EvolutionChatData {
     String? sessionId,
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
-    PendingProposal? Function()? proposal,
     String? Function()? currentDirectives,
     A2uiMessageProcessor? Function()? processor,
   }) {
@@ -44,7 +40,6 @@ class EvolutionChatData {
       sessionId: sessionId ?? this.sessionId,
       messages: messages ?? this.messages,
       isWaiting: isWaiting ?? this.isWaiting,
-      proposal: proposal != null ? proposal() : this.proposal,
       currentDirectives: currentDirectives != null
           ? currentDirectives()
           : this.currentDirectives,
@@ -109,17 +104,6 @@ class EvolutionChatState extends _$EvolutionChatState {
       ),
     );
 
-    // Check if the opening response included a proposal.
-    final proposal = workflow.getCurrentProposal(sessionId: session.sessionId);
-    if (proposal != null) {
-      messages.add(
-        EvolutionChatMessage.proposal(
-          proposal: proposal,
-          timestamp: clock.now(),
-        ),
-      );
-    }
-
     // Drain any GenUI surfaces created during the opening turn.
     final bridge = session.strategy.genUiBridge;
     if (bridge != null) {
@@ -156,7 +140,6 @@ class EvolutionChatState extends _$EvolutionChatState {
     return EvolutionChatData(
       sessionId: session.sessionId,
       messages: messages,
-      proposal: proposal,
       currentDirectives: currentDirectives,
       processor: processor,
     );
@@ -202,17 +185,6 @@ class EvolutionChatState extends _$EvolutionChatState {
         );
       }
 
-      // Check for a proposal after the response.
-      final proposal = workflow.getCurrentProposal(sessionId: sessionId);
-      if (proposal != null) {
-        updatedMessages.add(
-          EvolutionChatMessage.proposal(
-            proposal: proposal,
-            timestamp: clock.now(),
-          ),
-        );
-      }
-
       // Drain any GenUI surfaces created during this turn.
       final session = workflow.getSession(sessionId);
       final bridge = session?.strategy.genUiBridge;
@@ -231,7 +203,6 @@ class EvolutionChatState extends _$EvolutionChatState {
         current.copyWith(
           messages: updatedMessages,
           isWaiting: false,
-          proposal: () => proposal,
         ),
       );
     } catch (e, s) {
@@ -251,12 +222,15 @@ class EvolutionChatState extends _$EvolutionChatState {
   /// Approve the current proposal, optionally with a rating.
   Future<bool> approveProposal({double? rating}) async {
     final data = state.value;
-    if (data == null || data.sessionId == null || data.proposal == null) {
-      return false;
-    }
+    if (data == null || data.sessionId == null) return false;
 
     final workflow = ref.read(templateEvolutionWorkflowProvider);
     final sessionId = data.sessionId!;
+
+    // Check the workflow for a pending proposal (managed by EvolutionStrategy).
+    final hasProposal =
+        workflow.getCurrentProposal(sessionId: sessionId) != null;
+    if (!hasProposal) return false;
 
     state = AsyncData(data.copyWith(isWaiting: true));
 
@@ -284,7 +258,6 @@ class EvolutionChatState extends _$EvolutionChatState {
             ),
           ],
           isWaiting: false,
-          proposal: () => null,
         ),
       );
 
@@ -320,20 +293,15 @@ class EvolutionChatState extends _$EvolutionChatState {
         .read(templateEvolutionWorkflowProvider)
         .rejectProposal(sessionId: data.sessionId!);
 
-    // Remove proposal messages and add rejection system message.
-    final updatedMessages =
-        data.messages.where((m) => m is! EvolutionProposalMessage).toList()
-          ..add(
-            EvolutionChatMessage.system(
-              text: 'proposal_rejected',
-              timestamp: clock.now(),
-            ),
-          );
-
     state = AsyncData(
       data.copyWith(
-        messages: updatedMessages,
-        proposal: () => null,
+        messages: [
+          ...data.messages,
+          EvolutionChatMessage.system(
+            text: 'proposal_rejected',
+            timestamp: clock.now(),
+          ),
+        ],
       ),
     );
   }
@@ -357,7 +325,6 @@ class EvolutionChatState extends _$EvolutionChatState {
               timestamp: clock.now(),
             ),
           ],
-          proposal: () => null,
         ),
       );
     }

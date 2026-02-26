@@ -8,8 +8,6 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_proposal_card.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_rating_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -31,9 +29,6 @@ class EvolutionChatPage extends ConsumerStatefulWidget {
 }
 
 class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
-  double _rating = 0.5;
-  bool _showRating = false;
-
   @override
   Widget build(BuildContext context) {
     final chatAsync = ref.watch(evolutionChatStateProvider(widget.templateId));
@@ -96,13 +91,7 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
         Expanded(
           child: _MessageList(
             messages: data.messages,
-            currentDirectives: data.currentDirectives,
             isWaiting: data.isWaiting,
-            showRating: _showRating,
-            rating: _rating,
-            onApprove: () => _handleApprove(data),
-            onReject: _handleReject,
-            onRatingChanged: (v) => setState(() => _rating = v),
             processor: data.processor,
           ),
         ),
@@ -115,59 +104,17 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
         .read(evolutionChatStateProvider(widget.templateId).notifier)
         .sendMessage(text);
   }
-
-  void _handleApprove(EvolutionChatData data) {
-    if (!_showRating) {
-      // First tap: show rating slider
-      setState(() => _showRating = true);
-      return;
-    }
-
-    // Second tap: actually approve with rating
-    ref
-        .read(evolutionChatStateProvider(widget.templateId).notifier)
-        .approveProposal(rating: _rating)
-        .then((success) {
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentTemplateEvolveSuccess),
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    });
-  }
-
-  void _handleReject() {
-    setState(() => _showRating = false);
-    ref
-        .read(evolutionChatStateProvider(widget.templateId).notifier)
-        .rejectProposal();
-  }
 }
 
 class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.messages,
     required this.isWaiting,
-    required this.showRating,
-    required this.rating,
-    required this.onApprove,
-    required this.onReject,
-    required this.onRatingChanged,
-    this.currentDirectives,
     this.processor,
   });
 
   final List<EvolutionChatMessage> messages;
-  final String? currentDirectives;
   final bool isWaiting;
-  final bool showRating;
-  final double rating;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
-  final ValueChanged<double> onRatingChanged;
   final A2uiMessageProcessor? processor;
 
   @override
@@ -204,25 +151,6 @@ class _MessageList extends StatelessWidget {
       EvolutionSystemMessage(:final text) => EvolutionChatBubble(
           text: _resolveSystemText(context, text),
           role: 'system',
-        ),
-      EvolutionProposalMessage(:final proposal) => Column(
-          children: [
-            if (showRating)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: EvolutionRatingWidget(
-                  onRatingChanged: onRatingChanged,
-                  initialRating: rating,
-                ),
-              ),
-            EvolutionProposalCard(
-              proposal: proposal,
-              currentDirectives: currentDirectives,
-              onApprove: onApprove,
-              onReject: onReject,
-              isWaiting: isWaiting,
-            ),
-          ],
         ),
       EvolutionSurfaceMessage(:final surfaceId) => processor != null
           ? GenUiSurface(
