@@ -75,6 +75,7 @@ class _EvolutionMessageInputState extends State<EvolutionMessageInput>
     final text = _controller.text.trim();
     if (text.isEmpty || widget.isWaiting || !widget.enabled) return;
     widget.onSend(text);
+    if (!mounted) return;
     _controller.clear();
     setState(() {});
   }

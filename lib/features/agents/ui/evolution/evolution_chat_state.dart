@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -133,7 +134,19 @@ class EvolutionChatState extends _$EvolutionChatState {
       session.eventHandler?.onProposalAction = null;
       // Abandon session on dispose if still active.
       if (workflow.getActiveSessionForTemplate(templateId) != null) {
-        workflow.abandonSession(sessionId: session.sessionId);
+        unawaited(
+          workflow.abandonSession(sessionId: session.sessionId).catchError((
+            Object e,
+            StackTrace s,
+          ) {
+            developer.log(
+              'abandonSession on dispose failed',
+              name: _logTag,
+              error: e,
+              stackTrace: s,
+            );
+          }),
+        );
       }
     });
 

@@ -30,21 +30,20 @@ class GenUiEventHandler {
 
   void _handleEvent(UserUiInteractionMessage message) {
     try {
-      final json = jsonDecode(message.text) as Map<String, dynamic>;
-      final userAction = json['userAction'] as Map<String, dynamic>?;
-      if (userAction == null) return;
+      final decoded = jsonDecode(message.text);
+      if (decoded is! Map<String, dynamic>) return;
+      final userActionRaw = decoded['userAction'];
+      if (userActionRaw is! Map<String, dynamic>) return;
+      if (userActionRaw['isAction'] != true) return;
 
-      final action = UserActionEvent.fromMap(userAction);
-      final isAction = userAction['isAction'] as bool? ?? false;
-      if (!isAction) return;
-
+      final action = UserActionEvent.fromMap(userActionRaw);
       final name = action.name;
       if (name == 'proposal_approved' || name == 'proposal_rejected') {
         onProposalAction?.call(action.surfaceId, name);
       }
     } catch (e, s) {
       developer.log(
-        'Failed to handle GenUI event: ${message.text}',
+        'Failed to handle GenUI event',
         name: 'GenUiEventHandler',
         error: e,
         stackTrace: s,

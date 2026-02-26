@@ -80,10 +80,17 @@ class GenUiBridge {
         ? surfaceIdValue
         : 'surface-unknown';
 
+    const supportedRootTypes = {
+      'EvolutionProposal',
+      'EvolutionNoteConfirmation',
+      'MetricsSummary',
+      'VersionComparison',
+    };
     final rootTypeValue = args['rootType'];
-    final rootType = rootTypeValue is String && rootTypeValue.isNotEmpty
-        ? rootTypeValue
-        : 'EvolutionProposal';
+    final rootType =
+        rootTypeValue is String && supportedRootTypes.contains(rootTypeValue)
+            ? rootTypeValue
+            : 'EvolutionProposal';
     final rawData = args['data'];
     final data =
         rawData is Map<String, dynamic> ? rawData : <String, dynamic>{};
