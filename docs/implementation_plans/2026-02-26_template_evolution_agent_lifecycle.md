@@ -576,6 +576,16 @@ The `lastAcknowledgedAt` timestamp on the evolution agent's state means the agen
 
 **PR scope:** Chat-based 1-on-1 interface, dashboard widgets. No model or service changes.
 
+### 3.0 Cleanup: Remove Legacy Single-Turn Code
+
+Once the new chat-based UI replaces `AgentOneOnOnePage`, remove the following dead code from `TemplateEvolutionWorkflow`:
+- `proposeEvolution` method and its helpers (`_buildMetaPrompt`, `_buildUserMessage`)
+- `EvolutionFeedback` and `EvolutionProposal` classes
+- `stripMarkdownFences` (only used by `proposeEvolution`)
+- Corresponding tests in `template_evolution_workflow_test.dart`
+- Mock stubs in `agent_one_on_one_page_test.dart`
+- Fallback value for `EvolutionFeedback` in `test/helpers/fallbacks.dart`
+
 ### 3.1 Chat-Based One-on-One Interface
 
 Replace the current form-based `AgentOneOnOnePage` with a chat interface that supports dynamic components.

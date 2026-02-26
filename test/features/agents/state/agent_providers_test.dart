@@ -1572,6 +1572,121 @@ void main() {
     });
   });
 
+  group('evolutionSessionsProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createEvolutionContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('delegates to getEvolutionSessions', () async {
+      final sessions = [
+        makeTestEvolutionSession(id: 's1'),
+        makeTestEvolutionSession(
+          id: 's2',
+          status: EvolutionSessionStatus.completed,
+        ),
+      ];
+      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
+          .thenAnswer((_) async => sessions);
+
+      final container = createEvolutionContainer();
+      final result = await container
+          .read(evolutionSessionsProvider(kTestTemplateId).future);
+
+      expect(result, hasLength(2));
+      final first = result[0] as EvolutionSessionEntity;
+      expect(first.id, 's1');
+      expect(first.status, EvolutionSessionStatus.active);
+      final second = result[1] as EvolutionSessionEntity;
+      expect(second.id, 's2');
+      expect(second.status, EvolutionSessionStatus.completed);
+    });
+
+    test('returns empty list when no sessions exist', () async {
+      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
+          .thenAnswer((_) async => []);
+
+      final container = createEvolutionContainer();
+      final result = await container
+          .read(evolutionSessionsProvider(kTestTemplateId).future);
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('evolutionNotesProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createEvolutionContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('delegates to getRecentEvolutionNotes', () async {
+      final notes = [
+        makeTestEvolutionNote(id: 'n1'),
+        makeTestEvolutionNote(
+          id: 'n2',
+          kind: EvolutionNoteKind.decision,
+        ),
+        makeTestEvolutionNote(
+          id: 'n3',
+          kind: EvolutionNoteKind.pattern,
+        ),
+      ];
+      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
+          .thenAnswer((_) async => notes);
+
+      final container = createEvolutionContainer();
+      final result =
+          await container.read(evolutionNotesProvider(kTestTemplateId).future);
+
+      expect(result, hasLength(3));
+      final first = result[0] as EvolutionNoteEntity;
+      expect(first.id, 'n1');
+      expect(first.kind, EvolutionNoteKind.reflection);
+      final second = result[1] as EvolutionNoteEntity;
+      expect(second.kind, EvolutionNoteKind.decision);
+      final third = result[2] as EvolutionNoteEntity;
+      expect(third.kind, EvolutionNoteKind.pattern);
+    });
+
+    test('returns empty list when no notes exist', () async {
+      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
+          .thenAnswer((_) async => []);
+
+      final container = createEvolutionContainer();
+      final result =
+          await container.read(evolutionNotesProvider(kTestTemplateId).future);
+
+      expect(result, isEmpty);
+    });
+  });
+
   group('agentInitializationProvider - SyncEventProcessor not registered', () {
     late MockWakeOrchestrator mockOrchestrator;
     late MockTaskAgentWorkflow mockWorkflow;

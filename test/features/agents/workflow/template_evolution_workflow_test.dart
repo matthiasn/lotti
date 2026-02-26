@@ -397,8 +397,12 @@ void main() {
           .thenAnswer((_) async => []);
       when(() => mockTemplateService.getRecentInstanceObservations(any()))
           .thenAnswer((_) async => []);
-      when(() => mockTemplateService.getRecentEvolutionNotes(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockTemplateService.getEvolutionSessions(any()))
           .thenAnswer((_) async => []);
       when(() => mockTemplateService.countChangesSince(any(), any()))
@@ -1219,6 +1223,321 @@ void main() {
         workflow.getActiveSessionForTemplate('template-other'),
         isNull,
       );
+    });
+  });
+
+  // ── Robustness / regression tests ─────────────────────────────────────────
+
+  group('startSession failure cleanup', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    void stubFullContext() {
+      stubProviderResolution();
+      when(() => mockTemplateService.getTemplate(any()))
+          .thenAnswer((_) async => makeTestTemplate());
+      when(() => mockTemplateService.getActiveVersion(any()))
+          .thenAnswer((_) async => makeTestTemplateVersion());
+      when(() => mockTemplateService.computeMetrics(any()))
+          .thenAnswer((_) async => makeTestMetrics());
+      when(() => mockTemplateService.getVersionHistory(any(),
+              limit: any(named: 'limit')))
+          .thenAnswer((_) async => [makeTestTemplateVersion()]);
+      when(() => mockTemplateService.getRecentInstanceReports(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockTemplateService.getRecentInstanceObservations(any()))
+          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => mockTemplateService.getEvolutionSessions(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockTemplateService.countChangesSince(any(), any()))
+          .thenAnswer((_) async => 0);
+    }
+
+    test(
+      'marks persisted session as abandoned when error occurs before '
+      'activeSessions is populated',
+      () async {
+        stubFullContext();
+
+        // First upsertEntity call (session creation) succeeds.
+        // Subsequent calls also succeed (for abandon cleanup).
+        when(() => mockSyncService.upsertEntity(any()))
+            .thenAnswer((_) async {});
+
+        // Make the conversation repo throw during sendMessage, which happens
+        // AFTER the session entity is persisted but the error path should
+        // still clean up via abandonSession.
+        final convRepo = _TestConversationRepository(
+          assistantResponse: 'response',
+        )..sendMessageDelegate = () async {
+            throw Exception('LLM call failed');
+          };
+
+        // Return the active session entity when looked up for abandon.
+        when(() => mockRepository.getEntity(any())).thenAnswer(
+          (_) async => makeTestEvolutionSession(),
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: convRepo,
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+
+        final response = await workflow.startSession(
+          templateId: kTestTemplateId,
+        );
+
+        expect(response, isNull);
+        expect(workflow.activeSessions, isEmpty);
+
+        // Verify the session entity was marked as abandoned.
+        final allUpserts =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final sessionUpserts =
+            allUpserts.whereType<EvolutionSessionEntity>().toList();
+
+        // Should have 2 session upserts: initial creation + abandon.
+        expect(sessionUpserts, hasLength(2));
+        expect(sessionUpserts[0].status, EvolutionSessionStatus.active);
+        expect(sessionUpserts[1].status, EvolutionSessionStatus.abandoned);
+      },
+    );
+
+    test(
+      'abandonSession marks DB session abandoned even without in-memory state',
+      () async {
+        when(() => mockSyncService.upsertEntity(any()))
+            .thenAnswer((_) async {});
+        when(() => mockRepository.getEntity('orphan-session')).thenAnswer(
+          (_) async => makeTestEvolutionSession(
+            id: 'orphan-session',
+          ),
+        );
+
+        final convRepo = _TestConversationRepository();
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: convRepo,
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+
+        // No entry in activeSessions — simulates orphaned DB record.
+        expect(workflow.activeSessions, isEmpty);
+
+        await workflow.abandonSession(sessionId: 'orphan-session');
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final sessionEntity = captured.first as EvolutionSessionEntity;
+        expect(sessionEntity.status, EvolutionSessionStatus.abandoned);
+        expect(sessionEntity.completedAt, isNotNull);
+      },
+    );
+  });
+
+  group('approveProposal idempotency', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('retry does not create duplicate version or notes', () async {
+      final newVersion = makeTestTemplateVersion(
+        id: 'v2',
+        version: 2,
+        directives: 'Better directives',
+        authoredBy: 'evolution_agent',
+      );
+
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      // First attempt: upsert fails on session completion (after version
+      // creation and note persistence succeed).
+      var callCount = 0;
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+        callCount++;
+        // Fail on the second upsert (session completion), succeed on notes.
+        if (callCount == 2) {
+          throw StateError('Transient DB error');
+        }
+      });
+
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+
+      // Add proposal.
+      const proposalCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments:
+              '{"directives":"Better directives","rationale":"Evidence"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [proposalCall]);
+      await strategy.processToolCalls(
+        toolCalls: [proposalCall],
+        manager: manager,
+      );
+
+      // Add a note.
+      const noteCall = ChatCompletionMessageToolCall(
+        id: 'call-2',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'record_evolution_note',
+          arguments: '{"kind":"reflection","content":"Tone works well"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [noteCall]);
+      await strategy.processToolCalls(
+        toolCalls: [noteCall],
+        manager: manager,
+      );
+
+      final convRepo = _TestConversationRepository();
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      // First attempt fails.
+      final firstResult = await workflow.approveProposal(
+        sessionId: 'session-1',
+      );
+      expect(firstResult, isNull);
+      // Session should still be in activeSessions for retry.
+      expect(workflow.activeSessions, hasLength(1));
+
+      // Reset mock so all upserts succeed on retry.
+      reset(mockSyncService);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+
+      // Second attempt should succeed without creating another version.
+      final secondResult = await workflow.approveProposal(
+        sessionId: 'session-1',
+      );
+      expect(secondResult, isNotNull);
+      expect(secondResult!.id, 'v2');
+
+      // createVersion should only have been called once (during first attempt).
+      verify(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('startSession note limit contract', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('passes bounded limit to getRecentEvolutionNotes', () async {
+      stubProviderResolution();
+      when(() => mockTemplateService.getTemplate(any()))
+          .thenAnswer((_) async => makeTestTemplate());
+      when(() => mockTemplateService.getActiveVersion(any()))
+          .thenAnswer((_) async => makeTestTemplateVersion());
+      when(() => mockTemplateService.computeMetrics(any()))
+          .thenAnswer((_) async => makeTestMetrics());
+      when(() => mockTemplateService.getVersionHistory(any(),
+          limit: any(named: 'limit'))).thenAnswer((_) async => []);
+      when(() => mockTemplateService.getRecentInstanceReports(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockTemplateService.getRecentInstanceObservations(any()))
+          .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(() => mockTemplateService.getEvolutionSessions(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockTemplateService.countChangesSince(any(), any()))
+          .thenAnswer((_) async => 0);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      // Verify a bounded limit was passed (not the default 50).
+      final captured = verify(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: captureAny(named: 'limit'),
+        ),
+      ).captured;
+      final limit = captured.first as int;
+      expect(limit, lessThanOrEqualTo(30));
+      expect(limit, greaterThan(0));
     });
   });
 }

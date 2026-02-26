@@ -62,6 +62,13 @@ class ActiveEvolutionSession {
   final String conversationId;
   final EvolutionStrategy strategy;
   final String modelId;
+
+  /// Set after approval creates a version, so retries reuse it instead of
+  /// creating duplicates.
+  AgentTemplateVersionEntity? approvedVersion;
+
+  /// Whether pending notes have already been persisted for this approval.
+  bool notesPersisted = false;
 }
 
 /// Workflow that uses an LLM to propose improved template directives based on
@@ -307,7 +314,7 @@ RULES:
     final recentVersions = await svc.getVersionHistory(templateId, limit: 5);
     final reports = await svc.getRecentInstanceReports(templateId);
     final observations = await svc.getRecentInstanceObservations(templateId);
-    final notes = await svc.getRecentEvolutionNotes(templateId);
+    final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
     final sessions = await svc.getEvolutionSessions(templateId);
 
     // Determine delta since last session.
@@ -462,20 +469,26 @@ RULES:
     }
 
     try {
-      // Create the new template version.
-      final newVersion = await svc.createVersion(
-        templateId: active.templateId,
-        directives: proposal.directives,
-        authoredBy: 'evolution_agent',
-      );
+      // Create the new template version (idempotent: reuse if already created
+      // during a previous attempt that failed in a later step).
+      final newVersion = active.approvedVersion ??
+          await svc.createVersion(
+            templateId: active.templateId,
+            directives: proposal.directives,
+            authoredBy: 'evolution_agent',
+          );
+      active.approvedVersion = newVersion;
 
-      // Persist pending notes.
-      await _persistNotes(
-        strategy: active.strategy,
-        templateId: active.templateId,
-        sessionId: sessionId,
-        sync: sync,
-      );
+      // Persist pending notes (idempotent: skip if already persisted).
+      if (!active.notesPersisted) {
+        await _persistNotes(
+          strategy: active.strategy,
+          templateId: active.templateId,
+          sessionId: sessionId,
+          sync: sync,
+        );
+        active.notesPersisted = true;
+      }
 
       // Complete the session entity.
       final now = clock.now();
@@ -532,23 +545,30 @@ RULES:
 
   /// Abandon an active session, persisting any pending notes and marking the
   /// session as abandoned.
+  ///
+  /// Works even when the session is not in [activeSessions] (e.g., when
+  /// [startSession] fails after the entity is persisted but before the
+  /// in-memory map is populated).
   Future<void> abandonSession({required String sessionId}) async {
     final active = activeSessions[sessionId];
     final sync = syncService;
 
-    if (active != null && sync != null) {
-      // Persist any notes accumulated during the session.
-      await _persistNotes(
-        strategy: active.strategy,
-        templateId: active.templateId,
-        sessionId: sessionId,
-        sync: sync,
-      );
+    if (sync != null) {
+      // Persist any notes accumulated during the in-memory session.
+      if (active != null) {
+        await _persistNotes(
+          strategy: active.strategy,
+          templateId: active.templateId,
+          sessionId: sessionId,
+          sync: sync,
+        );
+      }
 
-      // Mark session as abandoned.
-      final now = clock.now();
+      // Mark session as abandoned in the database.
       final sessionEntity = await _getSessionEntity(sessionId);
-      if (sessionEntity != null) {
+      if (sessionEntity != null &&
+          sessionEntity.status == EvolutionSessionStatus.active) {
+        final now = clock.now();
         await sync.upsertEntity(
           sessionEntity.copyWith(
             status: EvolutionSessionStatus.abandoned,

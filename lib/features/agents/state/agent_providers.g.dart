@@ -1947,17 +1947,26 @@ final class TemplatePerformanceMetricsFamily extends $Family
 }
 
 /// The template evolution workflow with all dependencies resolved.
+///
+/// Includes the multi-turn session dependencies ([AgentTemplateService],
+/// [AgentSyncService]) alongside the legacy single-turn dependencies.
 
 @ProviderFor(templateEvolutionWorkflow)
 final templateEvolutionWorkflowProvider = TemplateEvolutionWorkflowProvider._();
 
 /// The template evolution workflow with all dependencies resolved.
+///
+/// Includes the multi-turn session dependencies ([AgentTemplateService],
+/// [AgentSyncService]) alongside the legacy single-turn dependencies.
 
 final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
     TemplateEvolutionWorkflow,
     TemplateEvolutionWorkflow,
     TemplateEvolutionWorkflow> with $Provider<TemplateEvolutionWorkflow> {
   /// The template evolution workflow with all dependencies resolved.
+  ///
+  /// Includes the multi-turn session dependencies ([AgentTemplateService],
+  /// [AgentSyncService]) alongside the legacy single-turn dependencies.
   TemplateEvolutionWorkflowProvider._()
       : super(
           from: null,
@@ -1993,7 +2002,203 @@ final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
 }
 
 String _$templateEvolutionWorkflowHash() =>
-    r'f204e4ec087fdfb0a3fafac06a1f38d648eb94a6';
+    r'ee1a1bfe1e4c4912930257c3b163899b64e29a49';
+
+/// Fetch evolution sessions for a template, newest-first.
+///
+/// Each element is an [EvolutionSessionEntity].
+
+@ProviderFor(evolutionSessions)
+final evolutionSessionsProvider = EvolutionSessionsFamily._();
+
+/// Fetch evolution sessions for a template, newest-first.
+///
+/// Each element is an [EvolutionSessionEntity].
+
+final class EvolutionSessionsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Fetch evolution sessions for a template, newest-first.
+  ///
+  /// Each element is an [EvolutionSessionEntity].
+  EvolutionSessionsProvider._(
+      {required EvolutionSessionsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'evolutionSessionsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$evolutionSessionsHash();
+
+  @override
+  String toString() {
+    return r'evolutionSessionsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return evolutionSessions(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EvolutionSessionsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$evolutionSessionsHash() => r'ef8a181ac6caa5ef8b25bfc0da4b6906abd78704';
+
+/// Fetch evolution sessions for a template, newest-first.
+///
+/// Each element is an [EvolutionSessionEntity].
+
+final class EvolutionSessionsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  EvolutionSessionsFamily._()
+      : super(
+          retry: null,
+          name: r'evolutionSessionsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch evolution sessions for a template, newest-first.
+  ///
+  /// Each element is an [EvolutionSessionEntity].
+
+  EvolutionSessionsProvider call(
+    String templateId,
+  ) =>
+      EvolutionSessionsProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'evolutionSessionsProvider';
+}
+
+/// Fetch evolution notes for a template, newest-first.
+///
+/// Each element is an [EvolutionNoteEntity].
+
+@ProviderFor(evolutionNotes)
+final evolutionNotesProvider = EvolutionNotesFamily._();
+
+/// Fetch evolution notes for a template, newest-first.
+///
+/// Each element is an [EvolutionNoteEntity].
+
+final class EvolutionNotesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Fetch evolution notes for a template, newest-first.
+  ///
+  /// Each element is an [EvolutionNoteEntity].
+  EvolutionNotesProvider._(
+      {required EvolutionNotesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'evolutionNotesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$evolutionNotesHash();
+
+  @override
+  String toString() {
+    return r'evolutionNotesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return evolutionNotes(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EvolutionNotesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$evolutionNotesHash() => r'642ee87e1dffe4d6a44e65b21a651c902eeb99ae';
+
+/// Fetch evolution notes for a template, newest-first.
+///
+/// Each element is an [EvolutionNoteEntity].
+
+final class EvolutionNotesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  EvolutionNotesFamily._()
+      : super(
+          retry: null,
+          name: r'evolutionNotesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Fetch evolution notes for a template, newest-first.
+  ///
+  /// Each element is an [EvolutionNoteEntity].
+
+  EvolutionNotesProvider call(
+    String templateId,
+  ) =>
+      EvolutionNotesProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'evolutionNotesProvider';
+}
 
 /// The task agent workflow with all dependencies resolved.
 
