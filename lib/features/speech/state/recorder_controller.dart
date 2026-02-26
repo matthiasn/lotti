@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
@@ -674,7 +675,21 @@ class AudioRecorderController extends _$AudioRecorderController {
         markdown: transcript,
       ),
     );
-    await persistenceLogic.updateDbEntity(updated);
+    // Look up parent link so the parent task (if any) is notified.
+    // This ensures agents subscribed to the task ID wake when ASR
+    // adds or updates the transcript on a child audio entry.
+    String? parentId;
+    try {
+      final db = getIt<JournalDb>();
+      final links = await db.linksForEntryIds({journalAudio.meta.id});
+      if (links.isNotEmpty) {
+        parentId = links.first.fromId;
+      }
+    } catch (_) {
+      // Non-fatal: notification will still include the audio entry's own ID.
+    }
+
+    await persistenceLogic.updateDbEntity(updated, linkedId: parentId);
   }
 
   /// Cleans up realtime recording resources.

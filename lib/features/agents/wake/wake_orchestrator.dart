@@ -99,21 +99,16 @@ class WakeOrchestrator {
 
   /// The minimum interval between subscription-triggered wakes for the
   /// same agent. Manual wakes bypass this gate.
-  static const throttleWindow = Duration(seconds: 300);
-
-  /// Pending post-execution drain timer.
   ///
-  /// Scheduled after a job completes to pick up signals that arrived while
-  /// the agent was running and were deferred. Only one timer exists at a time;
-  /// if a timer is already pending it is left alone (not reset) to prevent
-  /// starvation when agents complete in quick succession.
-  Timer? _pendingDrainTimer;
+  /// Also used as the initial deferral window: the first subscription
+  /// notification does not dispatch immediately but schedules a deferred
+  /// drain after this duration, allowing bursty edits to coalesce.
+  static const throttleWindow = Duration(seconds: 120);
 
-  /// Delay before the post-execution drain fires.
-  ///
-  /// Gives rapid-fire signals time to coalesce before the next wake, while
-  /// ensuring timely response to deferred work.
-  static const postExecutionDrainDelay = Duration(seconds: 30);
+  // Post-execution drain is handled by the throttle's deferred drain timer
+  // (`_scheduleDeferredDrain`). After a subscription wake completes,
+  // `_setThrottleDeadline` schedules a drain at `now + throttleWindow`,
+  // which picks up any signals that arrived during execution.
 
   /// Monotonic wake counter per agent.
   ///
@@ -357,8 +352,6 @@ class WakeOrchestrator {
 
   /// Stop listening, cancel the subscription, and clean up timers.
   Future<void> stop() async {
-    _pendingDrainTimer?.cancel();
-    _pendingDrainTimer = null;
     for (final timer in _deferredDrainTimers.values) {
       timer.cancel();
     }
@@ -430,8 +423,34 @@ class WakeOrchestrator {
       final suppressed = _isSuppressed(sub.agentId, matched);
       if (suppressed) continue;
 
-      // 3. Throttle gate: skip if the agent is in its cooldown window.
-      if (_isThrottled(sub.agentId)) continue;
+      // 3. Throttle gate: when the agent is already throttled, attempt to
+      //    merge the new tokens into the queued job so they are processed
+      //    when the deferred drain fires. If no job exists yet (e.g. the
+      //    previous one was already dequeued), enqueue a fresh one.
+      if (_isThrottled(sub.agentId)) {
+        if (!queue.mergeTokens(sub.agentId, matched)) {
+          final counter = _wakeCounters[sub.agentId] ?? 0;
+          _wakeCounters[sub.agentId] = counter + 1;
+          final now = clock.now();
+          queue.enqueue(
+            WakeJob(
+              runKey: RunKeyFactory.forSubscription(
+                agentId: sub.agentId,
+                subscriptionId: sub.id,
+                batchTokens: matched,
+                wakeCounter: counter,
+                timestamp: now,
+              ),
+              agentId: sub.agentId,
+              reason: WakeReason.subscription.name,
+              triggerTokens: Set<String>.from(matched),
+              reasonId: sub.id,
+              createdAt: now,
+            ),
+          );
+        }
+        continue;
+      }
 
       // 4. Apply optional fine-grained predicate.
       final predicate = sub.predicate;
@@ -464,10 +483,18 @@ class WakeOrchestrator {
       if (!queue.mergeTokens(sub.agentId, matched)) {
         queue.enqueue(job);
       }
+
+      // Defer-first: instead of dispatching immediately, set a throttle
+      // deadline and schedule a deferred drain. This allows bursty edits
+      // to coalesce into a single wake cycle.
+      final deadline = now.add(throttleWindow);
+      _throttleDeadlines[sub.agentId] = deadline;
+      _scheduleDeferredDrain(sub.agentId, deadline);
     }
 
-    // Dispatch queued jobs after processing the batch.
-    unawaited(processNext());
+    // Note: we do NOT call processNext() here. Subscription-driven wakes
+    // are always deferred via the throttle timer. Manual wakes call
+    // processNext() directly from enqueueManualWake().
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's
@@ -562,17 +589,25 @@ class WakeOrchestrator {
 
         // Re-check suppression and throttle for subscription jobs that were
         // enqueued during an agent's execution — before the throttle deadline
-        // or recordMutatedEntities was set. This prevents a notification that
-        // arrived during execution from immediately running back-to-back.
-        if (job.reason == WakeReason.subscription.name &&
-            (_isThrottled(job.agentId) ||
-                _isSuppressed(job.agentId, job.triggerTokens) ||
-                _isPreRegisteredSuppressed(
-                  job.agentId,
-                  job.triggerTokens,
-                ))) {
-          runner.release(job.agentId);
-          continue;
+        // or recordMutatedEntities was set.
+        if (job.reason == WakeReason.subscription.name) {
+          // Self-notification: drop the job entirely.
+          if (_isSuppressed(job.agentId, job.triggerTokens) ||
+              _isPreRegisteredSuppressed(
+                job.agentId,
+                job.triggerTokens,
+              )) {
+            runner.release(job.agentId);
+            continue;
+          }
+
+          // Throttled: defer the job so the deferred drain timer can pick
+          // it up after the throttle window expires.
+          if (_isThrottled(job.agentId)) {
+            runner.release(job.agentId);
+            deferred.add(job);
+            continue;
+          }
         }
 
         await _executeJob(job);
@@ -684,24 +719,7 @@ class WakeOrchestrator {
       }
     } finally {
       runner.release(job.agentId);
-      _schedulePostExecutionDrain();
     }
-  }
-
-  /// Schedule a delayed drain to process signals that arrived during execution.
-  ///
-  /// If a timer is already pending, this is a no-op — the existing timer is
-  /// left alone rather than reset. This prevents starvation where rapid agent
-  /// completions keep pushing the drain further out.
-  void _schedulePostExecutionDrain() {
-    if (_pendingDrainTimer != null) return;
-    _pendingDrainTimer = Timer(
-      postExecutionDrainDelay,
-      () {
-        _pendingDrainTimer = null;
-        unawaited(processNext());
-      },
-    );
   }
 
   /// Update wake run status, swallowing any DB errors so they don't escape

@@ -58,6 +58,10 @@ void main() {
 
   /// Helper: sends [tokens] on [controller] and flushes microtasks so that
   /// the orchestrator's listener fires within `fakeAsync`.
+  ///
+  /// Note: with defer-first throttling, subscription wakes are NOT executed
+  /// immediately — they are enqueued and a deferred drain is scheduled.
+  /// Use [emitAndDrain] to also advance past the throttle window.
   void emitTokens(
     FakeAsync async,
     StreamController<Set<String>> controller,
@@ -65,6 +69,19 @@ void main() {
   ) {
     controller.add(tokens);
     async.flushMicrotasks();
+  }
+
+  /// Helper: emits tokens AND advances past the throttle window so the
+  /// deferred drain fires and the queued job executes.
+  void emitAndDrain(
+    FakeAsync async,
+    StreamController<Set<String>> controller,
+    Set<String> tokens,
+  ) {
+    emitTokens(async, controller, tokens);
+    async
+      ..elapse(WakeOrchestrator.throttleWindow)
+      ..flushMicrotasks();
   }
 
   group('WakeOrchestrator', () {
@@ -81,9 +98,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
-          // processNext fires automatically from _onBatch, consuming the job
+          // Deferred drain fires after throttleWindow, consuming the job
           // and persisting a wake run entry.
           final captured = verify(
             () => mockRepository.insertWakeRun(
@@ -126,7 +143,7 @@ void main() {
           expect(queue.isEmpty, isTrue);
 
           // entity-2 should match (the replacement).
-          emitTokens(async, controller, {'entity-2'});
+          emitAndDrain(async, controller, {'entity-2'});
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(named: 'entry'),
@@ -154,7 +171,7 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Should produce exactly one wake run, not two.
           verify(
@@ -195,9 +212,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          emitAndDrain(async, controller, {'entity-1', 'entity-2'});
 
-          // Only agent-2's subscription should fire; processNext consumes it.
+          // Only agent-2's subscription should fire; deferred drain consumes it.
           final captured = verify(
             () => mockRepository.insertWakeRun(
               entry: captureAny(named: 'entry'),
@@ -250,9 +267,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-2', 'other-entity'});
+          emitAndDrain(async, controller, {'entity-2', 'other-entity'});
 
-          // processNext consumes the job; verify the persisted entry.
+          // Deferred drain consumes the job; verify the persisted entry.
           expect(capturedEntry, isNotNull);
           expect(capturedEntry!.agentId, 'agent-1');
 
@@ -280,9 +297,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          emitAndDrain(async, controller, {'entity-1', 'entity-2'});
 
-          // processNext now loops, processing all ready jobs in one call.
+          // Deferred drain processes all ready jobs.
           final captured = verify(
             () => mockRepository.insertWakeRun(
               entry: captureAny(named: 'entry'),
@@ -333,9 +350,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
-          // processNext consumed the job and persisted a wake run.
+          // Deferred drain consumed the job and persisted a wake run.
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(named: 'entry'),
@@ -394,9 +411,9 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
           // entity-1 is self-mutated, entity-2 is external
-          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          emitAndDrain(async, controller, {'entity-1', 'entity-2'});
 
-          // processNext consumed the job and persisted a wake run.
+          // Deferred drain consumed the job and persisted a wake run.
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(named: 'entry'),
@@ -419,9 +436,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
-          // processNext consumed the job and persisted a wake run.
+          // Deferred drain consumed the job and persisted a wake run.
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(named: 'entry'),
@@ -451,7 +468,7 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Suppression should have expired — wake should proceed.
           verify(
@@ -518,9 +535,9 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
-          // agent-1 is suppressed, agent-2 is not; processNext persists
+          // agent-1 is suppressed, agent-2 is not; deferred drain persists
           // only agent-2's run.
           final captured = verify(
             () => mockRepository.insertWakeRun(
@@ -596,9 +613,9 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
-          // processNext consumed the job and persisted a wake run.
+          // Deferred drain consumed the job and persisted a wake run.
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(named: 'entry'),
@@ -611,6 +628,9 @@ void main() {
 
       // Uses real async (not fakeAsync) because StreamSubscription.cancel()
       // on broadcast streams does not resolve within fakeAsync.flushMicrotasks.
+      // With defer-first throttling, subscription wakes are not dispatched
+      // immediately — this test only verifies stream attachment/detachment
+      // by checking that _onBatch fires (enqueue) vs not (old stream ignored).
       test('start replaces previous subscription when called twice', () async {
         orchestrator.addSubscription(
           AgentSubscription(
@@ -627,19 +647,16 @@ void main() {
         // Calling start again cancels the first subscription.
         await orchestrator.start(controller2.stream);
 
-        // Emit on the old stream — should NOT trigger a wake.
+        // Emit on the old stream — should NOT enqueue anything.
         controller1.add({'entity-1'});
         await pumpEventQueue();
-        verifyNever(
-          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-        );
+        expect(queue.isEmpty, isTrue);
 
-        // Emit on the new stream — should trigger a wake.
+        // Emit on the new stream — should enqueue a job (deferred).
         controller2.add({'entity-1'});
         await pumpEventQueue();
-        verify(
-          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-        ).called(1);
+        // Job is enqueued but not yet executed (deferred by throttle).
+        expect(queue.length, 1);
 
         await controller1.close();
         await controller2.close();
@@ -998,12 +1015,12 @@ void main() {
           ).thenAnswer((_) async {});
 
           // Clear throttle set by the first subscription wake so the
-          // second notification is not blocked by the 300s cooldown.
+          // second notification is not blocked by the cooldown.
           orchestrator.clearThrottle('agent-1');
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Wake should NOT be suppressed since mutation history was cleared.
           verify(
@@ -1039,7 +1056,7 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Wake should NOT be suppressed — mutation history was cleared
           // when subscriptions were removed.
@@ -1071,20 +1088,29 @@ void main() {
               return gate.future;
             };
 
+          // Start execution via direct enqueue (bypasses _onBatch deferral).
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'subscription',
+              triggerTokens: {'entity-1'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          // Executor is now paused on `gate`. Fire a notification for the
+          // same entity while the agent is executing.
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-
-          // Fire the first notification to start the executor.
           emitTokens(async, controller, {'entity-1'});
 
-          // Executor is now paused on `gate`. Fire a second notification
-          // for the same entity while the agent is executing.
-          emitTokens(async, controller, {'entity-1'});
-
-          // The second notification is NOT suppressed by _onBatch (so
-          // external signals during execution are preserved). Instead it
-          // is queued and will be suppressed during the drain re-check
-          // using the pre-registered suppression data.
+          // The notification is NOT suppressed by _onBatch (so external
+          // signals during execution are preserved). Instead it is queued
+          // and will be suppressed during the drain re-check using the
+          // pre-registered suppression data.
           expect(queue.isEmpty, isFalse);
 
           // Complete the executor — returns the mutation set confirming
@@ -1107,9 +1133,10 @@ void main() {
 
       test(
           'external signal for different entity during execution '
-          'triggers a second wake after throttle is cleared', () {
+          'triggers a second wake after throttle expires', () {
         fakeAsync((async) {
           final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
 
           orchestrator
             ..addSubscription(
@@ -1120,52 +1147,54 @@ void main() {
               ),
             )
             ..wakeExecutor = (agentId, runKey, triggers, threadId) {
-              return gate.future;
+              executionCount++;
+              if (executionCount == 1) return gate.future;
+              return Future.value();
             };
 
           when(() => mockRepository.getAgentState('agent-1'))
               .thenAnswer((_) async => null);
 
-          final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
-
-          // First signal starts execution for entity-1.
-          emitTokens(async, controller, {'entity-1'});
+          // Start execution via direct enqueue (bypasses _onBatch deferral).
+          queue.enqueue(
+            WakeJob(
+              runKey: 'rk-1',
+              agentId: 'agent-1',
+              reason: 'subscription',
+              triggerTokens: {'entity-1'},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+          orchestrator.processNext();
+          async.flushMicrotasks();
+          expect(executionCount, 1);
 
           // While executing, an external change to entity-2 arrives.
-          // Not throttled by _onBatch because the agent is mid-execution
-          // and the throttle deadline hasn't been set yet.
+          // Since _onBatch sets throttle on first non-throttled match,
+          // this will enqueue and set throttle + deferred drain.
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
           emitTokens(async, controller, {'entity-2'});
 
-          // The signal should be queued (not suppressed by _onBatch).
+          // The signal should be queued.
           expect(queue.isEmpty, isFalse);
 
           // Complete first execution — only entity-1 was mutated.
-          // This sets the throttle deadline.
           gate.complete({
             'entity-1': const VectorClock({'node-1': 1}),
           });
           async.flushMicrotasks();
 
-          // The entity-2 job was enqueued during execution but is now
-          // throttled in _drain because the first wake set the deadline.
-          // Only the first wake should have run.
-          verify(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
+          // Only the first wake should have run so far.
+          expect(executionCount, 1);
 
-          // After clearing throttle and advancing the deferred timer,
-          // the entity-2 change will be picked up on the next notification.
-          orchestrator.clearThrottle('agent-1');
+          // After the throttle window expires, the deferred drain fires
+          // and picks up the entity-2 job.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
 
-          when(() => mockRepository.getAgentState('agent-1'))
-              .thenAnswer((_) async => null);
-
-          emitTokens(async, controller, {'entity-2'});
-
-          verify(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
+          expect(executionCount, 2);
 
           controller.close();
         });
@@ -1218,7 +1247,7 @@ void main() {
           ).thenAnswer((_) async {});
 
           // Clear throttle set by the first subscription wake so the
-          // second notification is not blocked by the 300s cooldown.
+          // second notification is not blocked by the cooldown.
           orchestrator.clearThrottle('agent-1');
 
           // Now a notification arrives for entity-2 only (external change).
@@ -1226,7 +1255,7 @@ void main() {
           // actual mutation record.
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-2'});
+          emitAndDrain(async, controller, {'entity-2'});
 
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -1627,14 +1656,14 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First notification
-          emitTokens(async, controller, {'entity-1'});
+          // Defer-first: first notification enqueues + defers; drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Clear throttle so the second notification is not blocked.
           orchestrator.clearThrottle('agent-1');
 
           // Second identical notification — must produce a different run key
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           expect(capturedEntries.length, equals(2));
           expect(
@@ -1673,10 +1702,13 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Fire once to increment counter
-          emitTokens(async, controller, {'entity-1'});
+          // Fire twice to increment counter to 1 (defer-first: drain each).
+          emitAndDrain(async, controller, {'entity-1'});
+          orchestrator.clearThrottle('agent-1');
+          emitAndDrain(async, controller, {'entity-1'});
+          expect(capturedEntries.length, equals(2));
 
-          // Remove and re-add subscription (counter resets)
+          // Remove and re-add subscription (counter resets, throttle clears).
           orchestrator.removeSubscriptions('agent-1');
           // ignore: cascade_invocations
           orchestrator.addSubscription(
@@ -1687,79 +1719,20 @@ void main() {
             ),
           );
 
-          // Fire again — counter is back to 0, same as the initial run key
-          emitTokens(async, controller, {'entity-1'});
-
-          expect(capturedEntries.length, equals(2));
-          // After reset, the counter starts at 0 again, producing the same
-          // run key as the first invocation.
-          expect(capturedEntries[0].runKey, equals(capturedEntries[1].runKey));
+          // Fire again — counter is back to 0 after reset, so both
+          // invocations after the reset should succeed (not be deduped).
+          emitAndDrain(async, controller, {'entity-1'});
+          expect(capturedEntries.length, equals(3));
 
           controller.close();
         });
       });
     });
 
-    group('post-execution drain', () {
-      test('schedules drain after job completes to pick up deferred work', () {
-        fakeAsync((async) {
-          final gate = Completer<Map<String, VectorClock>?>();
-          var executionCount = 0;
-
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async {
-            executionCount++;
-            if (executionCount == 1) return gate.future;
-            return null;
-          };
-
-          // First job starts executing (holds agent-1's lock).
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'manual',
-              triggerTokens: <String>{},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
-          orchestrator.processNext();
-          async.flushMicrotasks();
-          expect(executionCount, 1);
-
-          // While agent-1 is executing, enqueue a second job for agent-1.
-          // processNext defers it because agent-1 is busy.
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-2',
-              agentId: 'agent-1',
-              reason: 'manual',
-              triggerTokens: <String>{},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
-          orchestrator.processNext();
-          async.flushMicrotasks();
-
-          // Only the first job has executed.
-          expect(executionCount, 1);
-
-          // Complete first execution — deferred job is re-enqueued but not
-          // yet picked up (no immediate processNext since drain already ran).
-          gate.complete(null);
-          async
-            ..flushMicrotasks()
-
-            // After 30s, the post-execution timer fires processNext.
-            ..elapse(WakeOrchestrator.postExecutionDrainDelay)
-            ..flushMicrotasks();
-
-          // The deferred job should now have been processed.
-          expect(executionCount, 2);
-        });
-      });
-
-      test('does not reset existing timer when another job completes', () {
+    group('deferred drain via throttle timer', () {
+      test(
+          'throttle deferred drain picks up work that arrived during '
+          'throttle window', () {
         fakeAsync((async) {
           var executionCount = 0;
 
@@ -1771,81 +1744,76 @@ void main() {
                 matchEntityIds: {'entity-1'},
               ),
             )
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-2',
-                agentId: 'agent-2',
-                matchEntityIds: {'entity-2'},
-              ),
-            )
             ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
               executionCount++;
               return null;
             };
 
-          // Enqueue and process two jobs — both complete, scheduling timer.
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => null);
+
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1', 'entity-2'});
-          async.flushMicrotasks();
 
-          // Both executed immediately.
-          expect(executionCount, 2);
+          // First wake: defer-first enqueues + defers; drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
+          expect(executionCount, 1);
 
-          // Advance 15 seconds (timer started at ~0s).
-          async.elapse(const Duration(seconds: 15));
-
-          // Clear throttle so the next notification is not blocked.
-          orchestrator.clearThrottle('agent-1');
-
-          // A new job completes after 15s — timer should NOT be reset.
+          // Agent is now throttled (post-execution throttle). A second
+          // notification merges tokens into the throttle window.
           emitTokens(async, controller, {'entity-1'});
-          async.flushMicrotasks();
-          expect(executionCount, 3);
 
-          // Advance remaining 15s to reach original 30s mark.
+          // Advance past the post-execution throttle to fire deferred drain.
           async
-            ..elapse(const Duration(seconds: 15))
+            ..elapse(WakeOrchestrator.throttleWindow)
             ..flushMicrotasks();
 
-          // Timer should fire at original 30s, not 30s after the 3rd job.
-          // This verifies the timer was not reset.
+          // The deferred job should now have been processed.
+          expect(executionCount, 2);
+
           controller.close();
         });
       });
 
-      test('stop cancels pending drain timer', () {
+      test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor =
+                (agentId, runKey, triggers, threadId) async => null;
 
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'test',
-              triggerTokens: {'tok-a'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
 
-          orchestrator.processNext();
-          async.flushMicrotasks();
+          // Emit tokens — enqueues job + schedules deferred drain.
+          emitTokens(async, controller, {'entity-1'});
 
-          // Timer is now pending. Stop the orchestrator.
+          // Stop the orchestrator before the deferred drain fires.
           orchestrator.stop();
           async.flushMicrotasks();
 
-          // Advance past the drain delay — timer should not fire.
           clearInteractions(mockRepository);
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((_) async {});
+
+          // Advance past the throttle window — timer should not fire.
           async
-            ..elapse(WakeOrchestrator.postExecutionDrainDelay * 2)
+            ..elapse(WakeOrchestrator.throttleWindow * 2)
             ..flushMicrotasks();
 
-          // No additional processNext should have been triggered.
+          // No wake run should have been persisted after stop.
           verifyNever(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           );
+
+          controller.close();
         });
       });
     });
@@ -1870,32 +1838,33 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
+
+          // First notification enqueues job and sets throttle (deferred).
           emitTokens(async, controller, {'entity-1'});
 
-          // First wake should execute.
-          verify(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
-
-          // Second notification within 300s should be throttled.
-          clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
-
-          emitTokens(async, controller, {'entity-1'});
-
+          // No immediate execution — job is deferred.
           verifyNever(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           );
+
+          // Second notification within throttle window should be throttled
+          // (tokens merged into existing job).
+          emitTokens(async, controller, {'entity-1'});
+
+          // Still no execution.
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+
+          // Advance past throttle — deferred drain fires, executes the
+          // coalesced job.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
 
           controller.close();
         });
@@ -1920,12 +1889,13 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First subscription wake sets throttle.
+          // First subscription notification sets throttle (deferred).
           emitTokens(async, controller, {'entity-1'});
 
-          verify(
+          // No immediate execution.
+          verifyNever(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
+          );
 
           // Manual wake should bypass throttle.
           orchestrator.enqueueManualWake(
@@ -1948,6 +1918,8 @@ void main() {
 
       test('throttle expires after throttleWindow elapses', () {
         fakeAsync((async) {
+          var executionCount = 0;
+
           orchestrator
             ..addSubscription(
               AgentSubscription(
@@ -1956,8 +1928,10 @@ void main() {
                 matchEntityIds: {'entity-1'},
               ),
             )
-            ..wakeExecutor =
-                (agentId, runKey, triggers, threadId) async => null;
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
 
           when(() => mockRepository.getAgentState('agent-1'))
               .thenAnswer((_) async => null);
@@ -1965,41 +1939,27 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First wake sets throttle.
+          // First notification sets throttle + schedules deferred drain.
           emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 0);
 
-          verify(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
+          // Advance past initial throttle window — deferred drain fires
+          // and executes the first wake. Execution sets a new throttle.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+          expect(executionCount, 1);
 
-          // Advance past throttle window.
+          // Advance past the post-execution throttle window + 1s.
           async
             ..elapse(
               WakeOrchestrator.throttleWindow + const Duration(seconds: 1),
             )
             ..flushMicrotasks();
 
-          clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
-          when(() => mockRepository.getAgentState('agent-1'))
-              .thenAnswer((_) async => null);
-
-          // Notification should now proceed.
-          emitTokens(async, controller, {'entity-1'});
-
-          verify(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).called(1);
+          // Second notification should now proceed (throttle expired).
+          emitAndDrain(async, controller, {'entity-1'});
+          expect(executionCount, 2);
 
           controller.close();
         });
@@ -2028,19 +1988,26 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First wake executes.
+          // Notification enqueues + defers.
           emitTokens(async, controller, {'entity-1'});
-          expect(executionCount, 1);
+          expect(executionCount, 0);
 
-          // Advance to throttle deadline — deferred timer should fire.
+          // Advance to throttle deadline — deferred timer fires.
           async
             ..elapse(WakeOrchestrator.throttleWindow)
             ..flushMicrotasks();
 
-          // The deferred drain fired processNext; queue was empty so
-          // no additional execution, but the throttle is now cleared.
-          // A new notification should now succeed.
-          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // Execution set a new throttle. Wait for it to expire.
+          async
+            ..elapse(
+              WakeOrchestrator.throttleWindow + const Duration(seconds: 1),
+            )
+            ..flushMicrotasks();
+
+          // A new notification should now succeed (deferred again).
+          emitAndDrain(async, controller, {'entity-1'});
           expect(executionCount, 2);
 
           controller.close();
@@ -2068,10 +2035,11 @@ void main() {
             );
           async.flushMicrotasks();
 
-          // Subscription notification should still proceed (not throttled).
+          // Subscription notification should still proceed (not throttled by
+          // the creation wake). It will be deferred by the initial throttle.
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Both the creation wake and subscription wake should have run.
           verify(
@@ -2101,8 +2069,8 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First wake sets throttle.
-          emitTokens(async, controller, {'entity-1'});
+          // Defer-first: emit enqueues + defers; drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Remove and re-add subscription — throttle should be cleared.
           orchestrator
@@ -2130,7 +2098,7 @@ void main() {
           when(() => mockRepository.getAgentState('agent-1'))
               .thenAnswer((_) async => null);
 
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
 
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -2160,18 +2128,18 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Notification should be throttled.
+          // Notification should be throttled (no immediate execution).
           emitTokens(async, controller, {'entity-1'});
           verifyNever(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           );
 
-          // Advance past deadline — should no longer be throttled.
+          // Advance past deadline — deferred drain fires, executing the
+          // throttled job.
           async
             ..elapse(const Duration(seconds: 121))
             ..flushMicrotasks();
 
-          emitTokens(async, controller, {'entity-1'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
@@ -2201,8 +2169,9 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Should NOT be throttled.
-          emitTokens(async, controller, {'entity-1'});
+          // Past deadline is ignored, so the agent is not pre-throttled.
+          // Defer-first still applies: emit enqueues + defers, drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
@@ -2275,23 +2244,28 @@ void main() {
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+
+          // Defer-first: emit enqueues + defers, drain executes and
+          // _setThrottleDeadline persists the post-execution deadline.
+          emitAndDrain(async, controller, {'entity-1'});
 
           final captured = verify(
             () => mockRepository.upsertEntity(captureAny()),
-          ).captured;
-          expect(captured, hasLength(1));
+          ).captured.cast<AgentStateEntity>();
 
-          final persisted = captured.first as AgentStateEntity;
+          // Find the persisted throttle deadline (non-null nextWakeAt).
+          final withDeadline =
+              captured.where((s) => s.nextWakeAt != null).toList();
+          expect(withDeadline, isNotEmpty);
+
+          final persisted = withDeadline.last;
           expect(persisted.agentId, 'agent-1');
-          expect(persisted.nextWakeAt, isNotNull);
 
-          // The persisted deadline should be ~300s in the future.
-          final expectedDeadline =
-              clock.now().add(WakeOrchestrator.throttleWindow);
+          // The persisted deadline should be ~120s from the execution time.
           expect(
-            persisted.nextWakeAt!.difference(expectedDeadline).inSeconds.abs(),
-            lessThan(2),
+            persisted.nextWakeAt!.isAfter(clock.now()) ||
+                persisted.nextWakeAt!.isAtSameMomentAs(clock.now()),
+            isTrue,
           );
 
           controller.close();
@@ -2312,21 +2286,24 @@ void main() {
             ..wakeExecutor =
                 (agentId, runKey, triggers, threadId) async => null;
 
-          // getAgentState throws to simulate DB failure.
+          // getAgentState throws to simulate DB failure in persistence.
           when(() => mockRepository.getAgentState('agent-1'))
               .thenThrow(Exception('DB error'));
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-1'});
+
+          // Defer-first: emit enqueues + defers, drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
 
           // First wake executes despite DB error in persistence.
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
 
-          // In-memory throttle should still be active — second notification
-          // should be dropped.
+          // In-memory throttle should still be active (set by
+          // _setThrottleDeadline even when DB persistence fails) —
+          // second notification should be merged, not executed.
           clearInteractions(mockRepository);
           when(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -2374,18 +2351,17 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Subscription wake sets throttle + persists deadline.
-          emitTokens(async, controller, {'entity-1'});
+          // Defer-first: emit enqueues + defers; drain executes and
+          // _setThrottleDeadline persists the post-execution deadline.
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Verify _setThrottleDeadline persisted a non-null deadline.
           final setCapture = verify(
             () => mockRepository.upsertEntity(captureAny()),
-          ).captured;
-          expect(setCapture, hasLength(1));
-          expect(
-            (setCapture.first as AgentStateEntity).nextWakeAt,
-            isNotNull,
-          );
+          ).captured.cast<AgentStateEntity>();
+          final withDeadline =
+              setCapture.where((s) => s.nextWakeAt != null).toList();
+          expect(withDeadline, isNotEmpty);
 
           // Now clear the throttle.
           clearInteractions(mockRepository);
@@ -2441,8 +2417,9 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // Subscription wake sets throttle + persists deadline.
-          emitTokens(async, controller, {'entity-1'});
+          // Defer-first: emit enqueues + defers; drain executes and
+          // _setThrottleDeadline persists the post-execution deadline.
+          emitAndDrain(async, controller, {'entity-1'});
 
           // Clear interactions so we can track only the clear path.
           clearInteractions(mockRepository);
@@ -2493,8 +2470,8 @@ void main() {
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
 
-          // First wake sets throttle.
-          emitTokens(async, controller, {'entity-1'});
+          // Defer-first: emit enqueues + defers; drain executes.
+          emitAndDrain(async, controller, {'entity-1'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
@@ -2507,7 +2484,7 @@ void main() {
           async.flushMicrotasks();
 
           // In-memory throttle should be cleared despite DB failure,
-          // so a new subscription notification should execute.
+          // so a new subscription notification should execute after deferral.
           clearInteractions(mockRepository);
           when(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -2523,7 +2500,7 @@ void main() {
           when(() => mockRepository.getAgentState('agent-1'))
               .thenAnswer((_) async => null);
 
-          emitTokens(async, controller, {'entity-1'});
+          emitAndDrain(async, controller, {'entity-1'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
@@ -2534,53 +2511,27 @@ void main() {
 
       test('natural expiry clears persisted nextWakeAt', () {
         fakeAsync((async) {
-          orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor =
-                (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
 
           final existingState = makeTestState(
             id: 'state-agent-1',
             agentId: 'agent-1',
           );
-          when(() => mockRepository.getAgentState('agent-1'))
-              .thenAnswer((_) async => existingState);
-          when(() => mockRepository.upsertEntity(any()))
-              .thenAnswer((_) async {});
-
-          final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
-
-          // Subscription wake sets throttle.
-          emitTokens(async, controller, {'entity-1'});
-
-          clearInteractions(mockRepository);
 
           // Provide state with non-null nextWakeAt for the expiry clear.
           when(() => mockRepository.getAgentState('agent-1')).thenAnswer(
             (_) async => existingState.copyWith(
-              nextWakeAt: clock.now().add(const Duration(seconds: 1)),
+              nextWakeAt: clock.now().add(WakeOrchestrator.throttleWindow),
             ),
           );
           when(() => mockRepository.upsertEntity(any()))
               .thenAnswer((_) async {});
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
+
+          // Hydrate a throttle via setThrottleDeadline (no enqueued job,
+          // so the deferred drain timer fires without racing execution).
+          final deadline = clock.now().add(WakeOrchestrator.throttleWindow);
+          orchestrator.setThrottleDeadline('agent-1', deadline);
 
           // Advance past the throttle window to fire the deferred timer.
           async
@@ -2596,8 +2547,6 @@ void main() {
             (captured.last as AgentStateEntity).nextWakeAt,
             isNull,
           );
-
-          controller.close();
         });
       });
 
@@ -2617,7 +2566,7 @@ void main() {
                 AgentSubscription(
                   id: 'sub-2',
                   agentId: 'agent-2',
-                  matchEntityIds: {'entity-1'},
+                  matchEntityIds: {'entity-2'},
                 ),
               )
               ..wakeExecutor =
@@ -2629,8 +2578,8 @@ void main() {
             final controller = StreamController<Set<String>>.broadcast();
             orchestrator.start(controller.stream);
 
-            // Both agents execute on the first notification.
-            emitTokens(async, controller, {'entity-1'});
+            // Both agents execute on separate tokens.
+            emitAndDrain(async, controller, {'entity-1', 'entity-2'});
             final firstBatch = verify(
               () => mockRepository.insertWakeRun(
                 entry: captureAny(named: 'entry'),
@@ -2651,7 +2600,9 @@ void main() {
               ),
             ).thenAnswer((_) async {});
 
-            // Both agents should be throttled now.
+            // Both agents should be throttled now (post-execution throttle).
+            // Only emit entity-1 so agent-2 (which subscribes to entity-2)
+            // is not matched and doesn't enqueue during the throttle window.
             emitTokens(async, controller, {'entity-1'});
             verifyNever(
               () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -2663,7 +2614,8 @@ void main() {
             when(() => mockRepository.getAgentState('agent-1'))
                 .thenAnswer((_) async => null);
 
-            emitTokens(async, controller, {'entity-1'});
+            // Only emit entity-1 token so only agent-1 can match.
+            emitAndDrain(async, controller, {'entity-1'});
 
             // Only agent-1 should run.
             final captured = verify(

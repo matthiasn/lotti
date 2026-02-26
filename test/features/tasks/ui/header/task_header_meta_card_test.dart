@@ -888,8 +888,8 @@ void main() {
           final task = testTask;
           final agentEntity = makeTestIdentity();
 
-          // nextWakeAt 240 seconds in the future → countdown "4:00".
-          final nextWakeAt = now.add(const Duration(seconds: 240));
+          // nextWakeAt 90 seconds in the future → countdown "1:30".
+          final nextWakeAt = now.add(const Duration(seconds: 90));
           final stateEntity = makeTestState(
             agentId: agentEntity.agentId,
             nextWakeAt: nextWakeAt,
@@ -926,11 +926,11 @@ void main() {
           // Let the post-frame callback run and start the countdown.
           await tester.pump(const Duration(milliseconds: 100));
 
-          // With 240s remaining the countdown shows "<label> 4:00".
+          // With 90s remaining the countdown shows "<label> 1:30".
           final context = tester.element(find.byType(TaskHeaderMetaCard));
           final label = context.messages.taskAgentChipLabel;
           expect(
-            find.textContaining('$label 4:00'),
+            find.textContaining('$label 1:30'),
             findsOneWidget,
           );
         });

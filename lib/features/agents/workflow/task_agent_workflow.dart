@@ -12,6 +12,10 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
+import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/tools/task_language_handler.dart';
+import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
@@ -28,6 +32,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -183,6 +188,7 @@ class TaskAgentWorkflow {
       taskDetailsJson: taskDetailsJson,
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
+      taskId: taskId,
     );
 
     // 5. Create conversation and run with strategy.
@@ -504,30 +510,72 @@ for a single task. Your job is to:
 ## Report
 
 You MUST call `update_report` exactly once at the end of every wake with the
-full updated report as markdown. The format is free-form — use whatever
-headings, lists, and structure best describe the task's current state. A
-typical report might include sections like TLDR, Goal, Status, Achieved,
-Remaining, and Learnings, but you are free to add, remove, or rename
-sections as needed. The report format can evolve naturally over time.
+full updated report as markdown. The report must follow this standardized
+structure with emojis for visual consistency:
 
-Example report markdown:
+### Required Sections
+
+1. **Title line** — Task title as an H1 heading.
+2. **Status bar** — A bold one-liner with status, priority, estimate, and due
+   date (when set).
+3. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
+4. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
+   nothing has been achieved yet.
+5. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
+   the task is complete.
+6. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
+   the user. Omit if there are no noteworthy learnings.
+
+You MAY add additional sections if they add value (e.g., ⚠️ Blockers,
+📊 Metrics), but the core sections above should always be present when
+applicable.
+
+### Example report:
 
 ```
-# Implement authentication module
+# 🔐 Implement authentication module
 
-**Status:** in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
+**Status:** 🚧 in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
 
-OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
+## 📋 TLDR
+OAuth2 integration is 60% complete. Login UI is done, logout flow and
+integration tests remain.
 
-## Achieved
+## ✅ Achieved
 - Set up OAuth provider configuration
 - Implemented token refresh logic
 - Built login UI with error handling
 
-## Remaining
+## 📌 What is left to do
 - Add logout flow with token revocation
 - Write integration tests for auth endpoints
+
+## 💡 Learnings
+- Token refresh needs a 30s buffer before expiry to avoid race conditions
+- Error handling for expired sessions requires a dedicated middleware
 ```
+
+### Writing style
+- Write in the task's detected language (match the language of the task
+  content). If the task content is in German, write the report in German.
+- Keep it factual and user-facing. No agent self-commentary.
+- Use present tense for current state, past tense for completed work.
+
+## Report vs Observations — Separation of Concerns
+
+The report (`update_report`) is the PUBLIC, user-facing summary. It should contain:
+- Task status, progress, and key metrics
+- What was achieved and what remains
+- Any deadlines or priorities
+
+The report MUST NOT contain:
+- Internal reasoning or decision logs
+- "I noticed..." or "I decided to..." commentary
+- Debugging notes, failure analysis, or retry logs
+- Agent self-reflection or meta-commentary
+
+Use `record_observations` for ALL internal notes. Observations are private
+and never shown to the user. They persist as your memory across wakes.
 
 ## Tool Usage Guidelines
 
@@ -535,17 +583,37 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
-- Use `record_observations` to record private notes worth remembering for
-  future wakes. Keep observations short — only noteworthy highlights:
-  blockers, scope changes, missed estimates, key decisions. Skip routine
-  progress that the report already captures. Do NOT embed observations
-  in the report text — always use the tool.
+- **Observations**: Record private notes worth remembering for future wakes.
+  Good observations include:
+  - Why you transitioned a status (e.g., "Set BLOCKED because user mentioned
+    waiting for API credentials in note from 2026-02-25")
+  - Rationale behind metadata changes (priority shifts, estimate adjustments,
+    due date changes)
+  - Time-vs-progress analysis (e.g., "12h logged over 3 days but only 2 of 8
+    checklist items completed; may need scope review")
+  - Decisions between alternatives you considered
+  - Blockers or scope changes not obvious from individual tool calls
+  Skip routine progress that the report already captures.
+  Do NOT embed observations in the report text — always use the tool.
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
 - **Estimates**: Only set or update an estimate when the user explicitly
   requests it, or when no estimate exists and you have high confidence.
   Do not retroactively adjust estimates based on time already spent
   unless specifically asked to do so.
+- **Status**: Only transition status when there is clear evidence:
+  - Set "IN PROGRESS" when time is being logged on the task (especially
+    combined with checklist items being checked off).
+  - Set "BLOCKED" when the user mentions a blocker (always provide a reason).
+  - Set "ON HOLD" when work is intentionally paused (always provide a reason).
+  - DONE and REJECTED are user-only — never set these.
+  - Do NOT set status speculatively or based on assumptions.
+- **Language**: If the task has no language set (languageCode is null), detect
+  the language from the task content and set it. Always do this on the first
+  wake.
+- **Labels**: If the task has fewer than 3 labels, assign relevant labels from
+  the available list. Order by confidence (highest first), omit low confidence,
+  cap at 3 per call. Never propose suppressed labels.
 
 ## Important
 
@@ -561,6 +629,7 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
     required String taskDetailsJson,
     required String linkedTasksJson,
     required Set<String> triggerTokens,
+    required String taskId,
   }) async {
     final buffer = StringBuffer();
 
@@ -608,6 +677,36 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
         ..writeln(linkedTasksJson)
         ..writeln('```')
         ..writeln();
+    }
+
+    // Inject label context and correction examples.
+    try {
+      final taskEntity = await journalDb.journalEntityById(taskId);
+      if (taskEntity is Task) {
+        // Label context for the assign_task_labels tool.
+        final labelContext = await TaskLabelHandler.buildLabelContext(
+          task: taskEntity,
+          journalDb: journalDb,
+        );
+        if (labelContext.isNotEmpty) {
+          buffer.write(labelContext);
+        }
+
+        // Correction examples for checklist item title accuracy.
+        final correctionContext = await CorrectionExamplesBuilder.buildContext(
+          task: taskEntity,
+          journalDb: journalDb,
+        );
+        if (correctionContext.isNotEmpty) {
+          buffer.write(correctionContext);
+        }
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to build label/correction context: $e',
+        name: 'TaskAgentWorkflow',
+      );
+      // Non-fatal: continue without context.
     }
 
     if (triggerTokens.isNotEmpty) {
@@ -707,6 +806,15 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
 
       case 'update_checklist_items':
         return _handleChecklistUpdate(taskEntity, toolName, args, taskId);
+
+      case 'assign_task_labels':
+        return _handleAssignLabels(taskEntity, args, taskId);
+
+      case 'set_task_language':
+        return _handleSetLanguage(taskEntity, args, taskId);
+
+      case 'set_task_status':
+        return _handleSetStatus(taskEntity, args, taskId);
 
       default:
         return ToolExecutionResult(
@@ -837,6 +945,89 @@ OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
           'Unexpected tool $toolName routed to _handleProcessToolCall',
         );
     }
+  }
+
+  Future<ToolExecutionResult> _handleAssignLabels(
+    Task task,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final labels = args['labels'];
+    if (labels is! List) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "labels" must be an array, '
+            'got ${labels.runtimeType}',
+        errorMessage: 'Type validation failed for labels',
+      );
+    }
+
+    final processor = LabelAssignmentProcessor(db: journalDb);
+    final handler = TaskLabelHandler(
+      task: task,
+      processor: processor,
+    );
+    final result = await handler.handle(args);
+    return TaskLabelHandler.toToolExecutionResult(
+      result,
+      entityId: taskId,
+    );
+  }
+
+  Future<ToolExecutionResult> _handleSetLanguage(
+    Task task,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final languageCode = args['languageCode'];
+    if (languageCode is! String) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "languageCode" must be a string, '
+            'got ${languageCode.runtimeType}',
+        errorMessage: 'Type validation failed for languageCode',
+      );
+    }
+
+    final handler = TaskLanguageHandler(
+      task: task,
+      journalRepository: journalRepository,
+    );
+    final result = await handler.handle(languageCode);
+    return TaskLanguageHandler.toToolExecutionResult(
+      result,
+      entityId: taskId,
+    );
+  }
+
+  Future<ToolExecutionResult> _handleSetStatus(
+    Task task,
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final status = args['status'];
+    if (status is! String) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: "status" must be a string, '
+            'got ${status.runtimeType}',
+        errorMessage: 'Type validation failed for status',
+      );
+    }
+
+    final reason = args['reason'];
+    final handler = TaskStatusHandler(
+      task: task,
+      journalRepository: journalRepository,
+    );
+    final result = await handler.handle(
+      status,
+      reason: reason is String ? reason : null,
+    );
+    return TaskStatusHandler.toToolExecutionResult(
+      result,
+      entityId: taskId,
+    );
   }
 
   Future<ToolExecutionResult> _handleBatchChecklist(

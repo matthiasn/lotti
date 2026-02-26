@@ -200,6 +200,89 @@ class AgentToolRegistry {
         'additionalProperties': false,
       },
     ),
+    AgentToolDefinition(
+      name: 'assign_task_labels',
+      description: 'Add one or more labels to the task. Only use labels from '
+          'the available labels list provided in the context. Do not propose '
+          'labels listed as suppressed. Cap to 3 labels per call. If the task '
+          'already has 3 or more labels, do not call this tool.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'labels': {
+            'type': 'array',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'id': {
+                  'type': 'string',
+                  'description': 'The label ID (from available labels list).',
+                },
+                'confidence': {
+                  'type': 'string',
+                  'enum': ['very_high', 'high', 'medium', 'low'],
+                  'description':
+                      'Confidence level. Omit low confidence labels.',
+                },
+              },
+              'required': ['id', 'confidence'],
+              'additionalProperties': false,
+            },
+            'maxItems': 3,
+            'description': 'Labels to assign, highest confidence first.',
+          },
+        },
+        'required': ['labels'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: 'set_task_language',
+      description: 'Set the detected language for the task. '
+          'Only set when the task has no language yet (languageCode is null). '
+          'Detect based on the task content (title, transcripts, notes).',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'languageCode': {
+            'type': 'string',
+            'description': 'ISO 639-1 language code (e.g., "en", "de", "fr").',
+          },
+          'confidence': {
+            'type': 'string',
+            'enum': ['high', 'medium', 'low'],
+            'description': 'Confidence level of language detection.',
+          },
+        },
+        'required': ['languageCode', 'confidence'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: 'set_task_status',
+      description: 'Transition the task to a new status. '
+          'Valid statuses: OPEN, IN PROGRESS, GROOMED, BLOCKED, ON HOLD. '
+          'BLOCKED and ON HOLD require a reason. '
+          'DONE and REJECTED are user-only and cannot be set by the agent. '
+          'Only change status when there is clear evidence in the task context.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'status': {
+            'type': 'string',
+            'enum': ['OPEN', 'IN PROGRESS', 'GROOMED', 'BLOCKED', 'ON HOLD'],
+            'description': 'The target task status.',
+          },
+          'reason': {
+            'type': 'string',
+            'description': 'Required for BLOCKED and ON HOLD. '
+                'Explanation of why the task is blocked or on hold.',
+          },
+        },
+        'required': ['status'],
+        'additionalProperties': false,
+      },
+    ),
   ];
 
   /// Tools available to the evolution agent during 1-on-1 sessions.
