@@ -417,6 +417,35 @@ void main() {
       });
     });
 
+    test('start is idempotent — second call does not create duplicate listener',
+        () {
+      fakeAsync((async) {
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        stubEntity(entry);
+        stubEmbedding();
+
+        // Call start twice
+        service
+          ..start()
+          ..start();
+
+        sendAndProcess(async, {_entityId, textEntryNotification});
+
+        // Should be called exactly once, not twice (no duplicate listener).
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: _longText,
+            baseUrl: 'http://localhost:11434',
+          ),
+        ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
     test('stop cancels subscription and clears pending', () {
       fakeAsync((async) {
         final entry = JournalEntry(
