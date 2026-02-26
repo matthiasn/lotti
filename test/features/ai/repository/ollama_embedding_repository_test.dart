@@ -9,7 +9,7 @@ import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late OllamaEmbeddingRepository repository;
