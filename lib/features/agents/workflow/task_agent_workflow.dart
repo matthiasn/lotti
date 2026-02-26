@@ -510,30 +510,56 @@ for a single task. Your job is to:
 ## Report
 
 You MUST call `update_report` exactly once at the end of every wake with the
-full updated report as markdown. The format is free-form — use whatever
-headings, lists, and structure best describe the task's current state. A
-typical report might include sections like TLDR, Goal, Status, Achieved,
-Remaining, and Learnings, but you are free to add, remove, or rename
-sections as needed. The report format can evolve naturally over time.
+full updated report as markdown. The report must follow this standardized
+structure with emojis for visual consistency:
 
-Example report markdown:
+### Required Sections
+
+1. **Title line** — Task title as an H1 heading.
+2. **Status bar** — A bold one-liner with status, priority, estimate, and due
+   date (when set).
+3. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
+4. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
+   nothing has been achieved yet.
+5. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
+   the task is complete.
+6. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
+   the user. Omit if there are no noteworthy learnings.
+
+You MAY add additional sections if they add value (e.g., ⚠️ Blockers,
+📊 Metrics), but the core sections above should always be present when
+applicable.
+
+### Example report:
 
 ```
-# Implement authentication module
+# 🔐 Implement authentication module
 
-**Status:** in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
+**Status:** 🚧 in_progress | **Priority:** P1 | **Estimate:** 4h | **Due:** 2026-02-25
 
-OAuth2 integration 60% complete. Login UI done, logout and tests remaining.
+## 📋 TLDR
+OAuth2 integration is 60% complete. Login UI is done, logout flow and
+integration tests remain.
 
-## Achieved
+## ✅ Achieved
 - Set up OAuth provider configuration
 - Implemented token refresh logic
 - Built login UI with error handling
 
-## Remaining
+## 📌 What is left to do
 - Add logout flow with token revocation
 - Write integration tests for auth endpoints
+
+## 💡 Learnings
+- Token refresh needs a 30s buffer before expiry to avoid race conditions
+- Error handling for expired sessions requires a dedicated middleware
 ```
+
+### Writing style
+- Write in the task's detected language (match the language of the task
+  content). If the task content is in German, write the report in German.
+- Keep it factual and user-facing. No agent self-commentary.
+- Use present tense for current state, past tense for completed work.
 
 ## Report vs Observations — Separation of Concerns
 
