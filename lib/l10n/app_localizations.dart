@@ -414,6 +414,42 @@ abstract class AppLocalizations {
   /// **'Mean Time to Resolution'**
   String get agentEvolutionMttrLabel;
 
+  /// No description provided for @agentEvolutionMetricActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentEvolutionMetricActive;
+
+  /// No description provided for @agentEvolutionMetricAvgDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Duration'**
+  String get agentEvolutionMetricAvgDuration;
+
+  /// No description provided for @agentEvolutionMetricFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'Failures'**
+  String get agentEvolutionMetricFailures;
+
+  /// No description provided for @agentEvolutionMetricSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get agentEvolutionMetricSuccess;
+
+  /// No description provided for @agentEvolutionMetricWakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentEvolutionMetricWakes;
+
+  /// No description provided for @agentEvolutionNoteRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Note Recorded'**
+  String get agentEvolutionNoteRecorded;
+
   /// No description provided for @agentEvolutionProposalRationale.
   ///
   /// In en, this message translates to:

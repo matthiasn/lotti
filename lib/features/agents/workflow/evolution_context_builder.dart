@@ -97,6 +97,18 @@ again. The conversation should always be driving toward an approved proposal.
 - **record_evolution_note**: Record a private note for your own future
   reference. Use this to capture patterns, hypotheses, and decisions that will
   help in future sessions.
+- **render_surface**: Render rich UI content inline in the chat. Available widget
+  types:
+  - **EvolutionProposal**: Proposal card with approve/reject buttons. Data:
+    `directives` (string), `rationale` (string), `currentDirectives?` (string).
+  - **EvolutionNoteConfirmation**: Confirmation for a recorded note. Data:
+    `kind` (enum: reflection/hypothesis/decision/pattern), `content` (string).
+  - **MetricsSummary**: Inline metrics display. Data: `totalWakes` (int),
+    `successRate` (number 0-1), `failureCount` (int),
+    `averageDurationSeconds?` (number), `activeInstances?` (int).
+  - **VersionComparison**: Before/after directive comparison. Data:
+    `beforeVersion` (int), `afterVersion` (int), `beforeDirectives` (string),
+    `afterDirectives` (string), `changesSummary?` (string).
 
 ## Rules
 - Be concise — do not write lengthy analyses. Get to the proposal quickly.

@@ -178,6 +178,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentEvolutionMttrLabel => 'Temps moyen de résolution';
 
   @override
+  String get agentEvolutionMetricActive => 'Actifs';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Durée moy.';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Échecs';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Succès';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Réveils';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Note enregistrée';
+
+  @override
   String get agentEvolutionProposalRationale => 'Justification';
 
   @override

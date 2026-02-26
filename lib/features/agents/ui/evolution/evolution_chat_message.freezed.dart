@@ -95,6 +95,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult Function(EvolutionAssistantMessage value)? assistant,
     TResult Function(EvolutionSystemMessage value)? system,
     TResult Function(EvolutionProposalMessage value)? proposal,
+    TResult Function(EvolutionSurfaceMessage value)? surface,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -107,6 +108,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that);
       case EvolutionProposalMessage() when proposal != null:
         return proposal(_that);
+      case EvolutionSurfaceMessage() when surface != null:
+        return surface(_that);
       case _:
         return orElse();
     }
@@ -131,6 +134,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     required TResult Function(EvolutionAssistantMessage value) assistant,
     required TResult Function(EvolutionSystemMessage value) system,
     required TResult Function(EvolutionProposalMessage value) proposal,
+    required TResult Function(EvolutionSurfaceMessage value) surface,
   }) {
     final _that = this;
     switch (_that) {
@@ -142,6 +146,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that);
       case EvolutionProposalMessage():
         return proposal(_that);
+      case EvolutionSurfaceMessage():
+        return surface(_that);
     }
   }
 
@@ -163,6 +169,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult? Function(EvolutionAssistantMessage value)? assistant,
     TResult? Function(EvolutionSystemMessage value)? system,
     TResult? Function(EvolutionProposalMessage value)? proposal,
+    TResult? Function(EvolutionSurfaceMessage value)? surface,
   }) {
     final _that = this;
     switch (_that) {
@@ -174,6 +181,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that);
       case EvolutionProposalMessage() when proposal != null:
         return proposal(_that);
+      case EvolutionSurfaceMessage() when surface != null:
+        return surface(_that);
       case _:
         return null;
     }
@@ -197,6 +206,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult Function(String text, DateTime timestamp)? assistant,
     TResult Function(String text, DateTime timestamp)? system,
     TResult Function(PendingProposal proposal, DateTime timestamp)? proposal,
+    TResult Function(String surfaceId, DateTime timestamp)? surface,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -209,6 +219,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that.text, _that.timestamp);
       case EvolutionProposalMessage() when proposal != null:
         return proposal(_that.proposal, _that.timestamp);
+      case EvolutionSurfaceMessage() when surface != null:
+        return surface(_that.surfaceId, _that.timestamp);
       case _:
         return orElse();
     }
@@ -234,6 +246,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     required TResult Function(String text, DateTime timestamp) system,
     required TResult Function(PendingProposal proposal, DateTime timestamp)
         proposal,
+    required TResult Function(String surfaceId, DateTime timestamp) surface,
   }) {
     final _that = this;
     switch (_that) {
@@ -245,6 +258,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that.text, _that.timestamp);
       case EvolutionProposalMessage():
         return proposal(_that.proposal, _that.timestamp);
+      case EvolutionSurfaceMessage():
+        return surface(_that.surfaceId, _that.timestamp);
     }
   }
 
@@ -266,6 +281,7 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
     TResult? Function(String text, DateTime timestamp)? assistant,
     TResult? Function(String text, DateTime timestamp)? system,
     TResult? Function(PendingProposal proposal, DateTime timestamp)? proposal,
+    TResult? Function(String surfaceId, DateTime timestamp)? surface,
   }) {
     final _that = this;
     switch (_that) {
@@ -277,6 +293,8 @@ extension EvolutionChatMessagePatterns on EvolutionChatMessage {
         return system(_that.text, _that.timestamp);
       case EvolutionProposalMessage() when proposal != null:
         return proposal(_that.proposal, _that.timestamp);
+      case EvolutionSurfaceMessage() when surface != null:
+        return surface(_that.surfaceId, _that.timestamp);
       case _:
         return null;
     }
@@ -586,6 +604,85 @@ class _$EvolutionProposalMessageCopyWithImpl<$Res>
           ? _self.proposal
           : proposal // ignore: cast_nullable_to_non_nullable
               as PendingProposal,
+      timestamp: null == timestamp
+          ? _self.timestamp
+          : timestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ));
+  }
+}
+
+/// @nodoc
+
+class EvolutionSurfaceMessage implements EvolutionChatMessage {
+  const EvolutionSurfaceMessage(
+      {required this.surfaceId, required this.timestamp});
+
+  final String surfaceId;
+  @override
+  final DateTime timestamp;
+
+  /// Create a copy of EvolutionChatMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $EvolutionSurfaceMessageCopyWith<EvolutionSurfaceMessage> get copyWith =>
+      _$EvolutionSurfaceMessageCopyWithImpl<EvolutionSurfaceMessage>(
+          this, _$identity);
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is EvolutionSurfaceMessage &&
+            (identical(other.surfaceId, surfaceId) ||
+                other.surfaceId == surfaceId) &&
+            (identical(other.timestamp, timestamp) ||
+                other.timestamp == timestamp));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, surfaceId, timestamp);
+
+  @override
+  String toString() {
+    return 'EvolutionChatMessage.surface(surfaceId: $surfaceId, timestamp: $timestamp)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $EvolutionSurfaceMessageCopyWith<$Res>
+    implements $EvolutionChatMessageCopyWith<$Res> {
+  factory $EvolutionSurfaceMessageCopyWith(EvolutionSurfaceMessage value,
+          $Res Function(EvolutionSurfaceMessage) _then) =
+      _$EvolutionSurfaceMessageCopyWithImpl;
+  @override
+  @useResult
+  $Res call({String surfaceId, DateTime timestamp});
+}
+
+/// @nodoc
+class _$EvolutionSurfaceMessageCopyWithImpl<$Res>
+    implements $EvolutionSurfaceMessageCopyWith<$Res> {
+  _$EvolutionSurfaceMessageCopyWithImpl(this._self, this._then);
+
+  final EvolutionSurfaceMessage _self;
+  final $Res Function(EvolutionSurfaceMessage) _then;
+
+  /// Create a copy of EvolutionChatMessage
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? surfaceId = null,
+    Object? timestamp = null,
+  }) {
+    return _then(EvolutionSurfaceMessage(
+      surfaceId: null == surfaceId
+          ? _self.surfaceId
+          : surfaceId // ignore: cast_nullable_to_non_nullable
+              as String,
       timestamp: null == timestamp
           ? _self.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable

@@ -32,4 +32,10 @@ sealed class EvolutionChatMessage with _$EvolutionChatMessage {
     required PendingProposal proposal,
     required DateTime timestamp,
   }) = EvolutionProposalMessage;
+
+  /// A GenUI surface rendered inline in the chat.
+  const factory EvolutionChatMessage.surface({
+    required String surfaceId,
+    required DateTime timestamp,
+  }) = EvolutionSurfaceMessage;
 }

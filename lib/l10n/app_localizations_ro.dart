@@ -175,6 +175,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentEvolutionMttrLabel => 'Timp mediu de rezolvare';
 
   @override
+  String get agentEvolutionMetricActive => 'Active';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Durată medie';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Eșecuri';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Succes';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Activări';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Notă înregistrată';
+
+  @override
   String get agentEvolutionProposalRationale => 'Justificare';
 
   @override

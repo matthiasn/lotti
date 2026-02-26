@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -18,6 +19,7 @@ class EvolutionChatData {
     this.isWaiting = false,
     this.proposal,
     this.currentDirectives,
+    this.processor,
   });
 
   final String? sessionId;
@@ -26,12 +28,17 @@ class EvolutionChatData {
   final PendingProposal? proposal;
   final String? currentDirectives;
 
+  /// The GenUI message processor, available after session start.
+  /// Used by [GenUiSurface] widgets to render dynamic content.
+  final A2uiMessageProcessor? processor;
+
   EvolutionChatData copyWith({
     String? sessionId,
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
     PendingProposal? Function()? proposal,
     String? Function()? currentDirectives,
+    A2uiMessageProcessor? Function()? processor,
   }) {
     return EvolutionChatData(
       sessionId: sessionId ?? this.sessionId,
@@ -41,6 +48,7 @@ class EvolutionChatData {
       currentDirectives: currentDirectives != null
           ? currentDirectives()
           : this.currentDirectives,
+      processor: processor != null ? processor() : this.processor,
     );
   }
 }
@@ -108,7 +116,33 @@ class EvolutionChatState extends _$EvolutionChatState {
       );
     }
 
+    // Drain any GenUI surfaces created during the opening turn.
+    final bridge = session.strategy.genUiBridge;
+    if (bridge != null) {
+      for (final surfaceId in bridge.drainPendingSurfaceIds()) {
+        messages.add(
+          EvolutionChatMessage.surface(
+            surfaceId: surfaceId,
+            timestamp: clock.now(),
+          ),
+        );
+      }
+    }
+
+    final processor = session.processor;
+
+    // Wire up GenUI event handler to route proposal actions to chat state.
+    session.eventHandler?.onProposalAction = (surfaceId, action) {
+      if (action == 'proposal_approved') {
+        approveProposal();
+      } else if (action == 'proposal_rejected') {
+        rejectProposal();
+      }
+    };
+
     ref.onDispose(() {
+      // Remove GenUI event handler callback to avoid calling disposed notifier.
+      session.eventHandler?.onProposalAction = null;
       // Abandon session on dispose if still active.
       if (workflow.getActiveSessionForTemplate(templateId) != null) {
         workflow.abandonSession(sessionId: session.sessionId);
@@ -120,6 +154,7 @@ class EvolutionChatState extends _$EvolutionChatState {
       messages: messages,
       proposal: proposal,
       currentDirectives: currentDirectives,
+      processor: processor,
     );
   }
 
@@ -172,6 +207,20 @@ class EvolutionChatState extends _$EvolutionChatState {
             timestamp: clock.now(),
           ),
         );
+      }
+
+      // Drain any GenUI surfaces created during this turn.
+      final session = workflow.getSession(sessionId);
+      final bridge = session?.strategy.genUiBridge;
+      if (bridge != null) {
+        for (final surfaceId in bridge.drainPendingSurfaceIds()) {
+          updatedMessages.add(
+            EvolutionChatMessage.surface(
+              surfaceId: surfaceId,
+              timestamp: clock.now(),
+            ),
+          );
+        }
       }
 
       state = AsyncData(

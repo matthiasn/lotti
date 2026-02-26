@@ -1,6 +1,10 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/genui_bridge.dart';
+import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
@@ -56,6 +60,9 @@ class ActiveEvolutionSession {
     required this.conversationId,
     required this.strategy,
     required this.modelId,
+    this.processor,
+    this.genUiBridge,
+    this.eventHandler,
   });
 
   final String sessionId;
@@ -63,6 +70,15 @@ class ActiveEvolutionSession {
   final String conversationId;
   final EvolutionStrategy strategy;
   final String modelId;
+
+  /// GenUI message processor for rendering dynamic surfaces.
+  final A2uiMessageProcessor? processor;
+
+  /// Bridge between OpenAI tool calls and GenUI surface creation.
+  final GenUiBridge? genUiBridge;
+
+  /// Routes GenUI surface events to evolution chat logic.
+  final GenUiEventHandler? eventHandler;
 
   /// Cached version from a previous approval attempt, keyed by the directives
   /// text. Reused on retry only if the proposal hasn't changed.
@@ -407,7 +423,13 @@ RULES:
       ) as EvolutionSessionEntity;
       await sync.upsertEntity(session);
 
-      final strategy = EvolutionStrategy();
+      // Set up GenUI infrastructure.
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final bridge = GenUiBridge(processor: processor);
+      final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+      final strategy = EvolutionStrategy(genUiBridge: bridge);
       final conversationId = conversationRepository.createConversation(
         systemMessage: ctx.systemPrompt,
       );
@@ -418,6 +440,9 @@ RULES:
         conversationId: conversationId,
         strategy: strategy,
         modelId: template.modelId,
+        processor: processor,
+        genUiBridge: bridge,
+        eventHandler: eventHandler,
       );
 
       await conversationRepository.sendMessage(
@@ -428,7 +453,7 @@ RULES:
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
         ),
-        tools: _buildToolDefinitions(),
+        tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
       );
 
@@ -477,7 +502,7 @@ RULES:
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
         ),
-        tools: _buildToolDefinitions(),
+        tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,
       );
 
@@ -651,6 +676,10 @@ RULES:
     }
   }
 
+  /// Get the active session by session ID.
+  ActiveEvolutionSession? getSession(String sessionId) =>
+      activeSessions[sessionId];
+
   /// Get the active session for a template, if any.
   ActiveEvolutionSession? getActiveSessionForTemplate(String templateId) {
     for (final session in activeSessions.values) {
@@ -745,6 +774,8 @@ RULES:
   void _cleanupSession(String sessionId) {
     final active = activeSessions.remove(sessionId);
     if (active != null) {
+      active.eventHandler?.dispose();
+      active.processor?.dispose();
       conversationRepository.deleteConversation(active.conversationId);
     }
   }
@@ -756,9 +787,9 @@ RULES:
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return AgentToolRegistry.evolutionAgentTools.map((def) {
+  /// [ChatCompletionTool] objects, including the GenUI render_surface tool.
+  List<ChatCompletionTool> _buildToolDefinitions({GenUiBridge? bridge}) {
+    final tools = AgentToolRegistry.evolutionAgentTools.map((def) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
@@ -768,6 +799,12 @@ RULES:
         ),
       );
     }).toList();
+
+    if (bridge != null) {
+      tools.add(bridge.toolDefinition);
+    }
+
+    return tools;
   }
 
   // ── Legacy single-turn helpers ──────────────────────────────────────────────

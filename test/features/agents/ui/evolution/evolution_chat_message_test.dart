@@ -72,10 +72,21 @@ void main() {
           EvolutionAssistantMessage() => 'assistant',
           EvolutionSystemMessage() => 'system',
           EvolutionProposalMessage() => 'proposal',
+          EvolutionSurfaceMessage() => 'surface',
         };
       }).toList();
 
       expect(labels, ['user', 'assistant', 'system', 'proposal']);
+    });
+
+    test('surface variant holds surfaceId and timestamp', () {
+      final msg = EvolutionChatMessage.surface(
+        surfaceId: 'surface-42',
+        timestamp: testDate,
+      );
+      expect(msg, isA<EvolutionSurfaceMessage>());
+      expect((msg as EvolutionSurfaceMessage).surfaceId, 'surface-42');
+      expect(msg.timestamp, testDate);
     });
 
     test('equality works for identical variants', () {

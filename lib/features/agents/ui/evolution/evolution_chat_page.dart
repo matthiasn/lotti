@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -102,6 +103,7 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
             onApprove: () => _handleApprove(data),
             onReject: _handleReject,
             onRatingChanged: (v) => setState(() => _rating = v),
+            processor: data.processor,
           ),
         ),
       ],
@@ -155,6 +157,7 @@ class _MessageList extends StatelessWidget {
     required this.onReject,
     required this.onRatingChanged,
     this.currentDirectives,
+    this.processor,
   });
 
   final List<EvolutionChatMessage> messages;
@@ -165,6 +168,7 @@ class _MessageList extends StatelessWidget {
   final VoidCallback onApprove;
   final VoidCallback onReject;
   final ValueChanged<double> onRatingChanged;
+  final A2uiMessageProcessor? processor;
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +224,12 @@ class _MessageList extends StatelessWidget {
             ),
           ],
         ),
+      EvolutionSurfaceMessage(:final surfaceId) => processor != null
+          ? GenUiSurface(
+              host: processor!,
+              surfaceId: surfaceId,
+            )
+          : const SizedBox.shrink(),
     };
   }
 

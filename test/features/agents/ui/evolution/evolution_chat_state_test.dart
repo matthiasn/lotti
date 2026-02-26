@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/genui_bridge.dart';
+import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -178,6 +182,8 @@ void main() {
 
         when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
             .thenAnswer((_) async {});
+
+        when(() => mockWorkflow.getSession(any())).thenReturn(null);
 
         when(
           () => mockWorkflow.sendMessage(

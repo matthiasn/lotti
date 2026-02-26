@@ -177,6 +177,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
 
   @override
+  String get agentEvolutionMetricActive => 'Aktiv';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Durchschn. Dauer';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Fehler';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Erfolg';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Aufrufe';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Notiz aufgezeichnet';
+
+  @override
   String get agentEvolutionProposalRationale => 'Begründung';
 
   @override

@@ -513,6 +513,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.4.2"
+  decimal:
+    dependency: transitive
+    description:
+      name: decimal
+      sha256: fc706a5618b81e5b367b01dd62621def37abc096f2b46a9bd9068b64c1fa36d0
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.4"
   delta_markdown:
     dependency: "direct main"
     description:
@@ -586,6 +594,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.3"
+  email_validator:
+    dependency: transitive
+    description:
+      name: email_validator
+      sha256: b19aa5d92fdd76fbc65112060c94d45ba855105a28bb6e462de7ff03b12fa1fb
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   enum_to_string:
     dependency: "direct main"
     description:
@@ -930,6 +946,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.2.2"
+  flutter_markdown_plus:
+    dependency: transitive
+    description:
+      name: flutter_markdown_plus
+      sha256: "039177906850278e8fb1cd364115ee0a46281135932fa8ecea8455522166d2de"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.7"
   flutter_math_fork:
     dependency: transitive
     description:
@@ -1153,6 +1177,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
+  genai_primitives:
+    dependency: transitive
+    description:
+      name: genai_primitives
+      sha256: "2468ecd2984f32232ab199315e384821c61a198e356828e34b9a5bcf0fda863e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.3"
+  genui:
+    dependency: "direct main"
+    description:
+      name: genui
+      sha256: c9d18f79ce39e4a906b31e469461c6ee5f46c5fb270dbc8cb8716e0e48791b37
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   geoclue:
     dependency: "direct main"
     description:
@@ -1526,6 +1566,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.9.0"
+  json_schema_builder:
+    dependency: "direct main"
+    description:
+      name: json_schema_builder
+      sha256: "65035d48d028401ad0ffc8c2f173209c7b1441e465a942a0f909070fae33170c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.3"
   json_serializable:
     dependency: "direct dev"
     description:
@@ -2246,6 +2294,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
+  rational:
+    dependency: transitive
+    description:
+      name: rational
+      sha256: cb808fb6f1a839e6fc5f7d8cb3b0a10e1db48b3be102de73938c627f0b636336
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.3"
   recase:
     dependency: transitive
     description:

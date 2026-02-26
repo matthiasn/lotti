@@ -175,6 +175,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
 
   @override
+  String get agentEvolutionMetricActive => 'Active';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Avg Duration';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Failures';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Success';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Wakes';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Note Recorded';
+
+  @override
   String get agentEvolutionProposalRationale => 'Rationale';
 
   @override
