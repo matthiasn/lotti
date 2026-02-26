@@ -282,8 +282,7 @@ class AgentRepository {
     String templateId, {
     int limit = 50,
   }) async {
-    final rows =
-        await _db.getEvolutionNotesByTemplate(templateId, limit).get();
+    final rows = await _db.getEvolutionNotesByTemplate(templateId, limit).get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<EvolutionNoteEntity>()
@@ -304,18 +303,25 @@ class AgentRepository {
   }
 
   /// Update the user rating on a wake-run log entry.
+  ///
+  /// Throws [StateError] if [runKey] does not match any existing row.
   Future<void> updateWakeRunRating(
     String runKey, {
     required double rating,
     required DateTime ratedAt,
   }) async {
-    await (_db.update(_db.wakeRunLog)..where((t) => t.runKey.equals(runKey)))
+    final updatedRows = await (_db.update(_db.wakeRunLog)
+          ..where((t) => t.runKey.equals(runKey)))
         .write(
       WakeRunLogCompanion(
         userRating: Value(rating),
         ratedAt: Value(ratedAt),
       ),
     );
+
+    if (updatedRows == 0) {
+      throw StateError('No wake_run_log row found for runKey: $runKey');
+    }
   }
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────

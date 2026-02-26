@@ -13,7 +13,7 @@
 3. [Phase 2: Architecture & Logic Layer](#phase-2-architecture--logic-layer)
 4. [Phase 3: Generative UI & Dashboard Widgets](#phase-3-generative-ui--dashboard-widgets)
 5. [Phase 4: Testing Strategy](#phase-4-testing-strategy)
-6. [Appendix: Entity Relationship Diagram](#appendix-entity-relationship-diagram)
+6. [Appendix: Implementation Sequence](#appendix-implementation-sequence)
 
 ---
 
@@ -70,18 +70,18 @@ The 1-on-1 conversation is fully syncable across devices:
 
 ### 1.1 Evolution Session Entity
 
-A lightweight metadata record for each one-on-one session between user and evolution agent. The `agentId` field stores the **evolution agent's ID** (not the template ID directly). The conversation messages live as `AgentMessageEntity` records threaded by session ID.
+A lightweight metadata record for each one-on-one session between user and evolution agent. The `agentId` field stores the owning **template's ID**, enabling direct SQL lookups via `getEvolutionSessionsByTemplate`. The conversation messages live as `AgentMessageEntity` records threaded by session ID.
 
 ```dart
 /// A tracked evolution session — lightweight metadata for a 1-on-1
 /// conversation between the user and the evolution agent.
 ///
-/// The [agentId] field stores the evolution agent's ID. The actual
+/// The [agentId] field stores the owning template's ID. The actual
 /// conversation messages are stored as [AgentMessageEntity] records
 /// with [threadId] set to this session's [id].
 const factory AgentDomainEntity.evolutionSession({
   required String id,
-  required String agentId,       // evolution agent ID
+  required String agentId,       // template ID
   required String templateId,
   required int sessionNumber,    // monotonic per template
   required EvolutionSessionStatus status, // active, completed, abandoned
@@ -163,6 +163,7 @@ getRecentReportsByTemplate:
   AND ae.type = 'agentReport'
   AND ae.subtype = 'current'
   AND ae.deleted_at IS NULL
+  AND al.deleted_at IS NULL
   ORDER BY ae.created_at DESC
   LIMIT :limit;
 ```
@@ -211,7 +212,7 @@ erDiagram
 
     EvolutionSessionEntity {
         string id PK
-        string agentId FK "evolution agent ID"
+        string agentId FK "template ID"
         string templateId FK
         int sessionNumber
         string status "active|completed|abandoned"

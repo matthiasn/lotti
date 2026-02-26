@@ -496,6 +496,119 @@ void main() {
         expect(sessions.first.id, 'session-1');
       });
     });
+
+    group('getEvolutionNotes', () {
+      test('returns notes for a template newest-first', () async {
+        await repo.upsertEntity(makeTestEvolutionNote(
+          id: 'note-1',
+          kind: EvolutionNoteKind.pattern,
+          createdAt: DateTime(2026, 2, 18),
+        ));
+        await repo.upsertEntity(makeTestEvolutionNote(
+          id: 'note-2',
+          kind: EvolutionNoteKind.hypothesis,
+          createdAt: DateTime(2026, 2, 20),
+        ));
+
+        final notes = await repo.getEvolutionNotes(kTestTemplateId);
+
+        expect(notes.length, 2);
+        expect(notes[0].id, 'note-2');
+        expect(notes[1].id, 'note-1');
+      });
+
+      test('respects limit parameter', () async {
+        for (var i = 0; i < 5; i++) {
+          await repo.upsertEntity(makeTestEvolutionNote(
+            id: 'note-$i',
+            createdAt: DateTime(2026, 2, 15 + i),
+          ));
+        }
+
+        final notes = await repo.getEvolutionNotes(
+          kTestTemplateId,
+          limit: 3,
+        );
+        expect(notes.length, 3);
+      });
+
+      test('returns empty when no notes exist', () async {
+        final notes = await repo.getEvolutionNotes('nonexistent-template');
+        expect(notes, isEmpty);
+      });
+
+      test('excludes soft-deleted notes', () async {
+        await repo.upsertEntity(makeTestEvolutionNote(id: 'note-alive'));
+        await repo.upsertEntity(makeTestEvolutionNote(
+          id: 'note-deleted',
+          kind: EvolutionNoteKind.decision,
+        ));
+
+        await (db.update(db.agentEntities)
+              ..where((t) => t.id.equals('note-deleted')))
+            .write(
+          AgentEntitiesCompanion(
+            deletedAt: Value(DateTime(2026, 2, 21)),
+          ),
+        );
+
+        final notes = await repo.getEvolutionNotes(kTestTemplateId);
+
+        expect(notes.length, 1);
+        expect(notes.first.id, 'note-alive');
+      });
+    });
+
+    group('countChangedSinceForTemplate', () {
+      test('returns 0 when since is null', () async {
+        await seedTemplateWithInstances();
+
+        await repo.upsertEntity(makeTestReport(
+          id: 'report-recent',
+          agentId: agentIdA,
+        ));
+
+        final count = await repo.countChangedSinceForTemplate(templateId, null);
+        expect(count, 0);
+      });
+
+      test('counts entities updated after since timestamp', () async {
+        await seedTemplateWithInstances();
+
+        await repo.upsertEntity(makeTestReport(
+          id: 'report-old',
+          agentId: agentIdA,
+          createdAt: DateTime(2026, 2, 10),
+        ));
+        await repo.upsertEntity(makeTestReport(
+          id: 'report-new',
+          agentId: agentIdA,
+          createdAt: DateTime(2026, 2, 20),
+        ));
+
+        final count = await repo.countChangedSinceForTemplate(
+          templateId,
+          DateTime(2026, 2, 15),
+        );
+        expect(count, 1);
+      });
+
+      test('returns 0 when no entities changed after since', () async {
+        await seedTemplateWithInstances();
+
+        await repo.upsertEntity(makeTestReport(
+          id: 'report-old',
+          agentId: agentIdA,
+          createdAt: DateTime(2026, 2, 10),
+        ));
+
+        final count = await repo.countChangedSinceForTemplate(
+          templateId,
+          DateTime(2026, 2, 15),
+        );
+        expect(count, 0);
+      });
+    });
   });
 
   // ── Wake run rating ────────────────────────────────────────────────────────
@@ -517,6 +630,17 @@ void main() {
       expect(run, isNotNull);
       expect(run!.userRating, 0.85);
       expect(run.ratedAt, ratedAt);
+    });
+
+    test('updateWakeRunRating throws StateError for unknown runKey', () async {
+      expect(
+        () => repo.updateWakeRunRating(
+          'nonexistent-run',
+          rating: 0.5,
+          ratedAt: DateTime(2026, 2, 20),
+        ),
+        throwsStateError,
+      );
     });
 
     test('wake run without rating has null fields', () async {

@@ -151,7 +151,8 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Lightweight metadata record for a 1-on-1 evolution session.
   ///
-  /// The [agentId] field stores the **evolution agent's ID**. The actual
+  /// The [agentId] field stores the owning **template's ID**, enabling
+  /// direct SQL lookups via `getEvolutionSessionsByTemplate`. The actual
   /// conversation messages are stored as [AgentMessageEntity] records with
   /// [AgentMessageEntity.threadId] set to this session's [id].
   ///
