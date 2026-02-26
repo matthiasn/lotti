@@ -24,8 +24,7 @@ void main() {
     test('v1 to v2 adds user_rating and rated_at columns to wake_run_log',
         () async {
       // Create a v1 database with the original schema (no rating columns)
-      final dbFile =
-          path.join(testDirectory.path, agentDbFileName);
+      final dbFile = path.join(testDirectory.path, agentDbFileName);
       final rawDb = sqlite3.open(dbFile);
 
       // Create v1 schema tables (minimal — only wake_run_log needed)
@@ -109,8 +108,7 @@ void main() {
       );
 
       // Verify schema version is now 2
-      final versionResult =
-          await db.customSelect('PRAGMA user_version').get();
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
         2,
@@ -141,6 +139,7 @@ void main() {
           )
           .get();
       expect(updated.first.read<double>('user_rating'), 0.85);
+      expect(updated.first.readNullable<String>('rated_at'), isNotNull);
 
       await db.close();
     });

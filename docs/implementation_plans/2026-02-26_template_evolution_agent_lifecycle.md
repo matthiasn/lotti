@@ -49,7 +49,7 @@
 
 ### 1.0 Architecture: Long-Running Evolution Agent
 
-Each template has a **single long-running evolution agent** (an `AgentIdentityEntity` with `kind = 'evolution_agent'`). This agent:
+Each template has a **single long-running evolution agent** identity (Phase 2). In Phase 1, evolution sessions and notes are **template-owned** — their `agentId` field stores the template's ID directly, enabling simple `WHERE agent_id = :templateId` queries without `agent_links` joins. This agent:
 
 - Lives as long as the template exists — it is **not** short-lived per session.
 - Carries `lastAcknowledgedAt: DateTime?` on its **`AgentStateEntity`** (Phase 2), tracking the delta cutoff for "what changed since last check."
@@ -185,13 +185,13 @@ This allows per-wake rating that feeds into MTTR and satisfaction calculations.
 erDiagram
     AgentTemplateEntity ||--o{ AgentTemplateVersionEntity : "has versions"
     AgentTemplateEntity ||--|| AgentTemplateHeadEntity : "active version pointer"
-    AgentTemplateEntity ||--|| EvolutionAgentIdentity : "one evolution agent"
+    AgentTemplateEntity ||--o{ EvolutionSessionEntity : "sessions (agentId = template ID)"
+    AgentTemplateEntity ||--o{ EvolutionNoteEntity : "notes (agentId = template ID)"
     AgentTemplateEntity ||--o{ TaskAgentIdentity : "template_assignment link"
 
-    EvolutionAgentIdentity ||--|| AgentStateEntity : "durable state (lastAcknowledgedAt)"
-    EvolutionAgentIdentity ||--o{ EvolutionSessionEntity : "sessions"
+    AgentTemplateEntity ..o| EvolutionAgentIdentity : "Phase 2: evolution agent"
+    EvolutionAgentIdentity ||--|| AgentStateEntity : "Phase 2: durable state (lastAcknowledgedAt)"
     EvolutionAgentIdentity ||--o{ AgentMessageEntity : "conversation messages"
-    EvolutionAgentIdentity ||--o{ EvolutionNoteEntity : "reasoning journal"
 
     EvolutionSessionEntity ||--o{ EvolutionNoteEntity : "session notes"
     EvolutionSessionEntity ||--o{ AgentMessageEntity : "threaded by session ID"
@@ -758,7 +758,7 @@ flowchart TD
 | `test/features/agents/model/evolution_session_entity_test.dart` | Serialization roundtrip, status transitions |
 | `test/features/agents/model/evolution_note_entity_test.dart` | Serialization roundtrip, kind enum |
 | `test/features/agents/database/agent_repository_evolution_test.dart` | CRUD, soft-delete exclusion, cross-instance queries, wake run rating |
-| *(merged into file above)* | |
+| `test/features/agents/database/agent_database_test.dart` | Schema migration v1→v2 (user_rating, rated_at columns) |
 
 ### 4.2 Unit Tests: Service Layer
 
