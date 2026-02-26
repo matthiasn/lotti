@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.871] - 2026-02-26
+### Fixed
+- Reference image selection not rendering in cover art generation modal due to
+  unbounded height constraints from the modal's scrollable content area.
+
 ## [0.9.870] - 2026-02-24
 ### Added
 - Agent templates: full-stack feature for creating, editing, and managing
