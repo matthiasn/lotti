@@ -40,6 +40,8 @@ class EmbeddingService {
   StreamSubscription<Set<String>>? _subscription;
   final _pendingEntityIds = <String>{};
   bool _isProcessing = false;
+  bool _stopped = false;
+  Future<void>? _inFlightProcessing;
 
   /// The notification tokens that indicate an embeddable entity was changed.
   static const Set<String> _relevantTokens = {
@@ -51,14 +53,25 @@ class EmbeddingService {
 
   /// Starts listening to local update notifications.
   void start() {
+    _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
   }
 
-  /// Stops listening and clears pending work.
+  /// Stops listening, clears pending work, and awaits any in-flight processing.
+  ///
+  /// Sets the [_stopped] flag so the processing loop exits after the current
+  /// entity completes. In-flight work is awaited to ensure clean shutdown.
   Future<void> stop() async {
+    _stopped = true;
     await _subscription?.cancel();
     _subscription = null;
     _pendingEntityIds.clear();
+    final inFlight = _inFlightProcessing;
+    _inFlightProcessing = null;
+    if (inFlight != null) {
+      // Ignore errors — _processEntity already handles them internally.
+      await inFlight.catchError((_) {});
+    }
   }
 
   void _onBatch(Set<String> tokens) {
@@ -71,7 +84,8 @@ class EmbeddingService {
     if (entityIds.isEmpty) return;
 
     _pendingEntityIds.addAll(entityIds);
-    unawaited(_processNext());
+    _inFlightProcessing = _processNext();
+    unawaited(_inFlightProcessing);
   }
 
   Future<void> _processNext() async {
@@ -79,7 +93,7 @@ class EmbeddingService {
     _isProcessing = true;
 
     try {
-      while (_pendingEntityIds.isNotEmpty) {
+      while (_pendingEntityIds.isNotEmpty && !_stopped) {
         final entityId = _pendingEntityIds.first;
         _pendingEntityIds.remove(entityId);
 
