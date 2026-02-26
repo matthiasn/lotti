@@ -1625,6 +1625,54 @@ void main() {
 
       expect(result, isEmpty);
     });
+
+    test('refetches when agentUpdateStream emits for template', () async {
+      final controller = StreamController<Set<String>>.broadcast();
+      addTearDown(controller.close);
+
+      final mockNotifications = MockUpdateNotifications();
+      when(() => mockNotifications.updateStream)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockNotifications.localUpdateStream)
+          .thenAnswer((_) => const Stream.empty());
+
+      await getIt.reset();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+      addTearDown(getIt.reset);
+
+      var fetchCount = 0;
+      when(() => mockTemplateService.getEvolutionSessions(kTestTemplateId))
+          .thenAnswer((_) async {
+        fetchCount++;
+        return [];
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Initial fetch.
+      final sub = container.listen(
+        evolutionSessionsProvider(kTestTemplateId),
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+      await container.read(evolutionSessionsProvider(kTestTemplateId).future);
+      expect(fetchCount, 1);
+
+      // Fire update notification for the template.
+      controller.add({kTestTemplateId});
+      await pumpEventQueue();
+
+      // Provider should have refetched.
+      await container.read(evolutionSessionsProvider(kTestTemplateId).future);
+      expect(fetchCount, 2);
+    });
   });
 
   group('evolutionNotesProvider', () {
@@ -1684,6 +1732,54 @@ void main() {
           await container.read(evolutionNotesProvider(kTestTemplateId).future);
 
       expect(result, isEmpty);
+    });
+
+    test('refetches when agentUpdateStream emits for template', () async {
+      final controller = StreamController<Set<String>>.broadcast();
+      addTearDown(controller.close);
+
+      final mockNotifications = MockUpdateNotifications();
+      when(() => mockNotifications.updateStream)
+          .thenAnswer((_) => controller.stream);
+      when(() => mockNotifications.localUpdateStream)
+          .thenAnswer((_) => const Stream.empty());
+
+      await getIt.reset();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+      addTearDown(getIt.reset);
+
+      var fetchCount = 0;
+      when(() => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId))
+          .thenAnswer((_) async {
+        fetchCount++;
+        return [];
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Initial fetch.
+      final sub = container.listen(
+        evolutionNotesProvider(kTestTemplateId),
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+      await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      expect(fetchCount, 1);
+
+      // Fire update notification for the template.
+      controller.add({kTestTemplateId});
+      await pumpEventQueue();
+
+      // Provider should have refetched.
+      await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      expect(fetchCount, 2);
     });
   });
 

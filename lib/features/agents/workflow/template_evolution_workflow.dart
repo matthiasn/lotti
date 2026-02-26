@@ -63,12 +63,29 @@ class ActiveEvolutionSession {
   final EvolutionStrategy strategy;
   final String modelId;
 
-  /// Set after approval creates a version, so retries reuse it instead of
-  /// creating duplicates.
-  AgentTemplateVersionEntity? approvedVersion;
+  /// Cached version from a previous approval attempt, keyed by the directives
+  /// text. Reused on retry only if the proposal hasn't changed.
+  String? _approvedDirectives;
+  AgentTemplateVersionEntity? _approvedVersion;
 
-  /// Whether pending notes have already been persisted for this approval.
-  bool notesPersisted = false;
+  /// Returns the cached version if [directives] matches, otherwise `null`.
+  AgentTemplateVersionEntity? getCachedVersion(String directives) =>
+      directives == _approvedDirectives ? _approvedVersion : null;
+
+  /// Caches a successfully created version for idempotent retry.
+  void cacheVersion(
+    AgentTemplateVersionEntity version,
+    String directives,
+  ) {
+    _approvedDirectives = directives;
+    _approvedVersion = version;
+  }
+
+  /// Clears any cached approval state (e.g., after rejection).
+  void clearApprovalCache() {
+    _approvedDirectives = null;
+    _approvedVersion = null;
+  }
 }
 
 /// Workflow that uses an LLM to propose improved template directives based on
@@ -469,26 +486,25 @@ RULES:
     }
 
     try {
-      // Create the new template version (idempotent: reuse if already created
-      // during a previous attempt that failed in a later step).
-      final newVersion = active.approvedVersion ??
-          await svc.createVersion(
+      // Create the new template version (idempotent: reuse cached version if
+      // the proposal directives haven't changed since the last attempt).
+      final newVersion = active.getCachedVersion(proposal.directives) ??
+          await _createVersionIdempotent(
+            svc: svc,
             templateId: active.templateId,
             directives: proposal.directives,
-            authoredBy: 'evolution_agent',
           );
-      active.approvedVersion = newVersion;
+      active.cacheVersion(newVersion, proposal.directives);
 
-      // Persist pending notes (idempotent: skip if already persisted).
-      if (!active.notesPersisted) {
-        await _persistNotes(
-          strategy: active.strategy,
-          templateId: active.templateId,
-          sessionId: sessionId,
-          sync: sync,
-        );
-        active.notesPersisted = true;
-      }
+      // Persist any pending notes. _persistNotes drains the list as it goes,
+      // so retries only persist notes that weren't written yet, and new notes
+      // added after a failed attempt are included.
+      await _persistNotes(
+        strategy: active.strategy,
+        templateId: active.templateId,
+        sessionId: sessionId,
+        sync: sync,
+      );
 
       // Complete the session entity.
       final now = clock.now();
@@ -534,6 +550,7 @@ RULES:
 
     final hadProposal = active.strategy.latestProposal != null;
     active.strategy.clearProposal();
+    active.clearApprovalCache();
 
     if (hadProposal) {
       developer.log(
@@ -592,6 +609,11 @@ RULES:
 
   // ── Multi-turn helpers ──────────────────────────────────────────────────────
 
+  /// Persists pending notes one by one, draining each from the strategy
+  /// *before* writing to guard against post-commit sync failures that would
+  /// otherwise cause duplicate notes on retry. Notes are advisory, so losing
+  /// one on a true pre-commit DB failure is acceptable; duplicating notes is
+  /// not.
   Future<void> _persistNotes({
     required EvolutionStrategy strategy,
     required String templateId,
@@ -599,7 +621,9 @@ RULES:
     required AgentSyncService sync,
   }) async {
     final now = clock.now();
-    for (final note in strategy.pendingNotes) {
+    for (var note = strategy.removeFirstNote();
+        note != null;
+        note = strategy.removeFirstNote()) {
       final entity = AgentDomainEntity.evolutionNote(
         id: _uuid.v4(),
         agentId: templateId,
@@ -610,6 +634,39 @@ RULES:
         vectorClock: null,
       );
       await sync.upsertEntity(entity);
+    }
+  }
+
+  /// Creates a template version, handling post-commit sync failures
+  /// idempotently. If `createVersion` throws after the DB transaction has
+  /// committed (e.g., outbox enqueue failure), the version exists in the DB
+  /// but the caller never received it. This method detects that case by
+  /// querying for the active version and checking its directives.
+  Future<AgentTemplateVersionEntity> _createVersionIdempotent({
+    required AgentTemplateService svc,
+    required String templateId,
+    required String directives,
+  }) async {
+    try {
+      return await svc.createVersion(
+        templateId: templateId,
+        directives: directives,
+        authoredBy: 'evolution_agent',
+      );
+    } catch (e) {
+      // Check if the version was actually created despite the error
+      // (post-commit sync failure).
+      final activeVersion = await svc.getActiveVersion(templateId);
+      if (activeVersion != null &&
+          activeVersion.directives == directives &&
+          activeVersion.authoredBy == 'evolution_agent') {
+        developer.log(
+          'createVersion threw but version was persisted, recovering',
+          name: _logTag,
+        );
+        return activeVersion;
+      }
+      rethrow;
     }
   }
 

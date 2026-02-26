@@ -49,6 +49,15 @@ class EvolutionStrategy extends ConversationStrategy {
     _latestProposal = null;
   }
 
+  /// Removes and returns the first pending note.
+  ///
+  /// Used to drain notes one at a time during persistence, ensuring that
+  /// already-persisted notes are removed even if a later write fails.
+  PendingNote? removeFirstNote() {
+    if (_pendingNotes.isEmpty) return null;
+    return _pendingNotes.removeAt(0);
+  }
+
   @override
   Future<ConversationAction> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,

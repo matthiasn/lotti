@@ -194,8 +194,7 @@ You maintain a long-running relationship with this template. Each session is a
   ) {
     buf.writeln('## Recent Instance Observations (${observations.length})');
     for (final obs in observations) {
-      final payloadNote =
-          obs.contentEntryId != null ? ' [has payload]' : '';
+      final payloadNote = obs.contentEntryId != null ? ' [has payload]' : '';
       buf.writeln(
         '- Agent ${_shortId(obs.agentId)}$payloadNote',
       );

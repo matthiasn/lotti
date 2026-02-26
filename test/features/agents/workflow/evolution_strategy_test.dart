@@ -197,6 +197,41 @@ void main() {
     });
   });
 
+  group('removeFirstNote', () {
+    test('returns and removes the first note', () async {
+      final toolCall = makeToolCall(
+        name: 'record_evolution_note',
+        args: {'kind': 'reflection', 'content': 'First note'},
+      );
+      final toolCall2 = makeToolCall(
+        id: 'call-2',
+        name: 'record_evolution_note',
+        args: {'kind': 'decision', 'content': 'Second note'},
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall, toolCall2]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall, toolCall2],
+        manager: manager,
+      );
+
+      expect(strategy.pendingNotes, hasLength(2));
+
+      final first = strategy.removeFirstNote();
+      expect(first, isNotNull);
+      expect(first!.content, 'First note');
+      expect(strategy.pendingNotes, hasLength(1));
+
+      final second = strategy.removeFirstNote();
+      expect(second, isNotNull);
+      expect(second!.content, 'Second note');
+      expect(strategy.pendingNotes, isEmpty);
+    });
+
+    test('returns null when no notes pending', () {
+      expect(strategy.removeFirstNote(), isNull);
+    });
+  });
+
   group('unknown tool', () {
     test('returns wait and does not crash', () async {
       final toolCall = makeToolCall(
