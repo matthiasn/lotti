@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_charts_section.dart';
@@ -21,6 +22,8 @@ void main() {
 
   Widget buildSubject({
     FutureOr<WakeRunTimeSeries> Function(Ref, String)? timeSeriesOverride,
+    FutureOr<TaskResolutionTimeSeries> Function(Ref, String)?
+        resolutionOverride,
   }) {
     return makeTestableWidgetWithScaffold(
       const EvolutionChartsSection(templateId: kTestTemplateId),
@@ -30,6 +33,12 @@ void main() {
               (ref, id) async => WakeRunTimeSeries(
                     dailyBuckets: _makeDaily(5),
                     versionBuckets: _makeVersions(3),
+                  ),
+        ),
+        templateTaskResolutionTimeSeriesProvider.overrideWith(
+          resolutionOverride ??
+              (ref, id) async => TaskResolutionTimeSeries(
+                    dailyBuckets: _makeResolutionBuckets(5),
                   ),
         ),
       ],
@@ -78,6 +87,8 @@ void main() {
             dailyBuckets: [],
             versionBuckets: [],
           ),
+          resolutionOverride: (ref, id) async =>
+              const TaskResolutionTimeSeries(dailyBuckets: []),
         ),
       );
       await tester.pumpAndSettle();
@@ -113,6 +124,34 @@ void main() {
 
       expect(find.byType(EvolutionSparklineChart), findsNothing);
     });
+
+    testWidgets(
+        'shows MTTR chart even when resolution data loads after '
+        'wake data', (tester) async {
+      final resolutionCompleter = Completer<TaskResolutionTimeSeries>();
+
+      await tester.pumpWidget(
+        buildSubject(
+          resolutionOverride: (ref, id) => resolutionCompleter.future,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Charts section renders with wake data, MTTR chart shows empty
+      expect(find.byType(EvolutionSparklineChart), findsOneWidget);
+      expect(find.byType(EvolutionMttrChart), findsOneWidget);
+
+      // Now complete the resolution data
+      resolutionCompleter.complete(
+        TaskResolutionTimeSeries(
+          dailyBuckets: _makeResolutionBuckets(3),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // MTTR chart should now have data
+      expect(find.byType(EvolutionMttrChart), findsOneWidget);
+    });
   });
 }
 
@@ -138,6 +177,17 @@ List<VersionPerformanceBucket> _makeVersions(int count) {
       totalRuns: 10,
       successRate: 0.7 + i * 0.1,
       averageDuration: const Duration(seconds: 10),
+    ),
+  );
+}
+
+List<DailyResolutionBucket> _makeResolutionBuckets(int count) {
+  return List.generate(
+    count,
+    (i) => DailyResolutionBucket(
+      date: DateTime(2024, 3, 15 + i),
+      resolvedCount: 2 + i,
+      averageMttr: Duration(hours: 3 + i),
     ),
   );
 }

@@ -112,3 +112,129 @@ final class TemplateWakeRunTimeSeriesFamily extends $Family
   @override
   String toString() => r'templateWakeRunTimeSeriesProvider';
 }
+
+/// Computes task resolution time-series (true MTTR) for a template.
+///
+/// Bridges the agent database and journal database:
+/// 1. Fetches all agents assigned to the template.
+/// 2. For each agent, fetches `agent_task` links to find linked tasks.
+/// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
+/// 4. Extracts the first DONE/REJECTED status from the task's status history.
+/// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
+
+@ProviderFor(templateTaskResolutionTimeSeries)
+final templateTaskResolutionTimeSeriesProvider =
+    TemplateTaskResolutionTimeSeriesFamily._();
+
+/// Computes task resolution time-series (true MTTR) for a template.
+///
+/// Bridges the agent database and journal database:
+/// 1. Fetches all agents assigned to the template.
+/// 2. For each agent, fetches `agent_task` links to find linked tasks.
+/// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
+/// 4. Extracts the first DONE/REJECTED status from the task's status history.
+/// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
+
+final class TemplateTaskResolutionTimeSeriesProvider
+    extends $FunctionalProvider<AsyncValue<TaskResolutionTimeSeries>,
+        TaskResolutionTimeSeries, FutureOr<TaskResolutionTimeSeries>>
+    with
+        $FutureModifier<TaskResolutionTimeSeries>,
+        $FutureProvider<TaskResolutionTimeSeries> {
+  /// Computes task resolution time-series (true MTTR) for a template.
+  ///
+  /// Bridges the agent database and journal database:
+  /// 1. Fetches all agents assigned to the template.
+  /// 2. For each agent, fetches `agent_task` links to find linked tasks.
+  /// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
+  /// 4. Extracts the first DONE/REJECTED status from the task's status history.
+  /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
+  TemplateTaskResolutionTimeSeriesProvider._(
+      {required TemplateTaskResolutionTimeSeriesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateTaskResolutionTimeSeriesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateTaskResolutionTimeSeriesHash();
+
+  @override
+  String toString() {
+    return r'templateTaskResolutionTimeSeriesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<TaskResolutionTimeSeries> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<TaskResolutionTimeSeries> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateTaskResolutionTimeSeries(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateTaskResolutionTimeSeriesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateTaskResolutionTimeSeriesHash() =>
+    r'f5c58f12d507947c4cb5941470da6875d44d0414';
+
+/// Computes task resolution time-series (true MTTR) for a template.
+///
+/// Bridges the agent database and journal database:
+/// 1. Fetches all agents assigned to the template.
+/// 2. For each agent, fetches `agent_task` links to find linked tasks.
+/// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
+/// 4. Extracts the first DONE/REJECTED status from the task's status history.
+/// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
+
+final class TemplateTaskResolutionTimeSeriesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<TaskResolutionTimeSeries>, String> {
+  TemplateTaskResolutionTimeSeriesFamily._()
+      : super(
+          retry: null,
+          name: r'templateTaskResolutionTimeSeriesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Computes task resolution time-series (true MTTR) for a template.
+  ///
+  /// Bridges the agent database and journal database:
+  /// 1. Fetches all agents assigned to the template.
+  /// 2. For each agent, fetches `agent_task` links to find linked tasks.
+  /// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
+  /// 4. Extracts the first DONE/REJECTED status from the task's status history.
+  /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
+
+  TemplateTaskResolutionTimeSeriesProvider call(
+    String templateId,
+  ) =>
+      TemplateTaskResolutionTimeSeriesProvider._(
+          argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateTaskResolutionTimeSeriesProvider';
+}
