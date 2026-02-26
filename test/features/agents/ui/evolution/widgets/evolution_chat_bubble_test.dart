@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -74,6 +75,50 @@ void main() {
           ),
           findsOneWidget,
         );
+      });
+    });
+
+    group('thinking blocks', () {
+      testWidgets('separates thinking into ThinkingDisclosure', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            text: '<think>Some reasoning</think>Visible answer',
+            role: 'assistant',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // ThinkingDisclosure should be rendered (collapsed by default).
+        expect(find.byType(ThinkingDisclosure), findsOneWidget);
+        // Visible answer should be shown via GptMarkdown.
+        expect(find.byType(GptMarkdown), findsOneWidget);
+        // Raw think tags should not be visible.
+        expect(find.text('<think>Some reasoning</think>'), findsNothing);
+      });
+
+      testWidgets('ThinkingDisclosure is collapsed by default', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            text: '<think>Hidden reasoning</think>Answer here',
+            role: 'assistant',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The "Show reasoning" toggle should be present.
+        expect(find.text('Show reasoning'), findsOneWidget);
+        expect(find.text('Hide reasoning'), findsNothing);
+      });
+
+      testWidgets('renders plain message without ThinkingDisclosure',
+          (tester) async {
+        await tester.pumpWidget(
+          buildSubject(text: 'Plain message', role: 'assistant'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ThinkingDisclosure), findsNothing);
+        expect(find.byType(GptMarkdown), findsOneWidget);
       });
     });
 

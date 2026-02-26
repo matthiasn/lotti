@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 import 'package:lotti/themes/gamey/animations.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/gamey/gradients.dart';
@@ -86,6 +88,8 @@ class _AssistantBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final segments = splitThinkingSegments(text);
+
     final bubble = Align(
       alignment: Alignment.centerLeft,
       child: ConstrainedBox(
@@ -111,13 +115,22 @@ class _AssistantBubble extends StatelessWidget {
               ),
             ],
           ),
-          child: GptMarkdown(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              height: 1.5,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final seg in segments)
+                if (seg.isThinking)
+                  ThinkingDisclosure(thinking: seg.text)
+                else
+                  GptMarkdown(
+                    seg.text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      height: 1.5,
+                    ),
+                  ),
+            ],
           ),
         ),
       ),

@@ -43,6 +43,7 @@ class _AgentTemplateDetailPageState
   late TextEditingController _directivesController;
   String? _selectedModelId;
   bool _didSeedControllers = false;
+  String? _seededVersionId;
   bool _isSaving = false;
 
   @override
@@ -102,14 +103,19 @@ class _AgentTemplateDetailPageState
       );
     }
 
-    // Seed controllers once from loaded data.
+    // Seed controllers from loaded data. Re-seed when the active version
+    // changes (e.g. after an evolution proposal is approved).
     if (!_didSeedControllers) {
       _nameController.text = template.displayName;
       _selectedModelId = template.modelId;
       if (activeVersion != null) {
         _directivesController.text = activeVersion.directives;
+        _seededVersionId = activeVersion.id;
       }
       _didSeedControllers = true;
+    } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
+      _directivesController.text = activeVersion.directives;
+      _seededVersionId = activeVersion.id;
     }
 
     return _buildScaffold(
