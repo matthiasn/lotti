@@ -355,16 +355,17 @@ RULES:
 
       // Pre-fetch payload content for observations so the builder can include
       // the actual observation text (AgentMessageEntity only stores a ref).
-      final observationPayloads = <String, AgentMessagePayloadEntity>{};
-      for (final obs in observations) {
-        final payloadId = obs.contentEntryId;
-        if (payloadId != null) {
-          final entity = await svc.repository.getEntity(payloadId);
-          if (entity is AgentMessagePayloadEntity) {
-            observationPayloads[payloadId] = entity;
-          }
-        }
-      }
+      // Parallelise lookups to avoid sequential DB round-trips.
+      final payloadIds = observations
+          .map((obs) => obs.contentEntryId)
+          .whereType<String>();
+      final payloadEntities =
+          await Future.wait(payloadIds.map(svc.repository.getEntity));
+      final observationPayloads = <String, AgentMessagePayloadEntity>{
+        for (final entity
+            in payloadEntities.whereType<AgentMessagePayloadEntity>())
+          entity.id: entity,
+      };
 
       // Determine delta since last session.
       final lastSessionDate =
