@@ -1205,6 +1205,65 @@ void main() {
       expect(workflow.activeSessions, isEmpty);
       expect(convRepo.deletedIds, contains('test-conv-id'));
     });
+
+    test('cleans up even when _persistNotes throws', () async {
+      // Make upsertEntity throw on the first call (the note persist).
+      var callCount = 0;
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) {
+          throw StateError('Note persistence failed');
+        }
+      });
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'record_evolution_note',
+          arguments: '{"kind":"decision","content":"A note"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+
+      final convRepo = _TestConversationRepository();
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      // Should not throw — note failure is caught, cleanup still runs.
+      await workflow.abandonSession(sessionId: 'session-1');
+
+      // Session was cleaned up despite note failure.
+      expect(workflow.activeSessions, isEmpty);
+      expect(convRepo.deletedIds, contains('test-conv-id'));
+
+      // Session entity was still marked as abandoned (second upsert call).
+      final captured =
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final sessionEntities =
+          captured.whereType<EvolutionSessionEntity>().toList();
+      expect(sessionEntities, hasLength(1));
+      expect(sessionEntities.first.status, EvolutionSessionStatus.abandoned);
+    });
   });
 
   group('getActiveSessionForTemplate', () {
@@ -1881,6 +1940,287 @@ void main() {
       ).captured;
       final limit = captured.first as int;
       expect(limit, 30);
+    });
+  });
+
+  group('startSession data-fetch error handling', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('returns null when computeMetrics throws', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+      // Stub getEntity for abandonSession cleanup path.
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      // Override one data-fetch to throw.
+      when(() => mockTemplateService.computeMetrics(any()))
+          .thenThrow(StateError('DB error'));
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Should return null, not throw.
+      final result = await workflow.startSession(templateId: kTestTemplateId);
+      expect(result, isNull);
+    });
+
+    test('returns null when getRecentInstanceReports throws', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+      when(() => mockTemplateService.getRecentInstanceReports(any()))
+          .thenThrow(StateError('DB error'));
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final result = await workflow.startSession(templateId: kTestTemplateId);
+      expect(result, isNull);
+    });
+  });
+
+  group('startSession duplicate guard', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('returns null when a session is already active for the template',
+        () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Pre-populate an active session for the same template.
+      workflow.activeSessions['existing'] = ActiveEvolutionSession(
+        sessionId: 'existing',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-existing',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      // Second startSession should be rejected.
+      final result = await workflow.startSession(templateId: kTestTemplateId);
+      expect(result, isNull);
+
+      // No additional session entity should have been created.
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test('allows session for a different template', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Active session for a DIFFERENT template.
+      workflow.activeSessions['other'] = ActiveEvolutionSession(
+        sessionId: 'other',
+        templateId: 'other-template',
+        conversationId: 'conv-other',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      // Should succeed for a different template.
+      final result = await workflow.startSession(templateId: kTestTemplateId);
+      expect(result, isNotNull);
+    });
+  });
+
+  group('update notifications', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+    late MockUpdateNotifications mockNotifications;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      mockNotifications = MockUpdateNotifications();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('startSession fires notification on success', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        updateNotifications: mockNotifications,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+    });
+
+    test('approveProposal fires notification on success', () async {
+      final newVersion = makeTestTemplateVersion(
+        id: 'v2',
+        version: 2,
+        directives: 'Improved',
+      );
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const proposalCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments: '{"directives":"Improved","rationale":"Better"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [proposalCall]);
+      await strategy.processToolCalls(
+        toolCalls: [proposalCall],
+        manager: manager,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        updateNotifications: mockNotifications,
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      await workflow.approveProposal(sessionId: 'session-1');
+
+      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+    });
+
+    test('abandonSession fires notification', () async {
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        updateNotifications: mockNotifications,
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      await workflow.abandonSession(sessionId: 'session-1');
+
+      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+    });
+
+    test('no notification when updateNotifications is not set', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Workflow created without updateNotifications.
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      // Should not throw or crash without updateNotifications.
+      final result = await workflow.startSession(templateId: kTestTemplateId);
+      expect(result, isNotNull);
     });
   });
 }

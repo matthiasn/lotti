@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -104,6 +105,7 @@ class TemplateEvolutionWorkflow {
     this.templateService,
     this.syncService,
     this.contextBuilder,
+    this.updateNotifications,
   });
 
   final ConversationRepository conversationRepository;
@@ -114,6 +116,9 @@ class TemplateEvolutionWorkflow {
   final AgentTemplateService? templateService;
   final AgentSyncService? syncService;
   final EvolutionContextBuilder? contextBuilder;
+
+  /// When provided, fires after local DB writes so UI providers refresh.
+  final UpdateNotifications? updateNotifications;
 
   static const _uuid = Uuid();
   static const _logTag = 'TemplateEvolutionWorkflow';
@@ -296,6 +301,15 @@ RULES:
       return null;
     }
 
+    // Only one active session per template at a time.
+    if (getActiveSessionForTemplate(templateId) != null) {
+      developer.log(
+        'Session already active for template $templateId',
+        name: _logTag,
+      );
+      return null;
+    }
+
     // Fetch template and active version.
     final template = await svc.getTemplate(templateId);
     if (template == null) {
@@ -326,57 +340,60 @@ RULES:
       return null;
     }
 
-    // Gather evolution context data.
-    final metrics = await svc.computeMetrics(templateId);
-    final recentVersions = await svc.getVersionHistory(templateId, limit: 5);
-    final reports = await svc.getRecentInstanceReports(templateId);
-    final observations = await svc.getRecentInstanceObservations(templateId);
-    final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
-    final sessions = await svc.getEvolutionSessions(templateId);
-
-    // Pre-fetch payload content for observations so the builder can include
-    // the actual observation text (AgentMessageEntity only stores a reference).
-    final observationPayloads = <String, AgentMessagePayloadEntity>{};
-    for (final obs in observations) {
-      final payloadId = obs.contentEntryId;
-      if (payloadId != null) {
-        final entity = await svc.repository.getEntity(payloadId);
-        if (entity is AgentMessagePayloadEntity) {
-          observationPayloads[payloadId] = entity;
-        }
-      }
-    }
-
-    // Determine delta since last session.
-    final lastSessionDate =
-        sessions.isNotEmpty ? sessions.first.createdAt : null;
-    final changesSince =
-        await svc.countChangesSince(templateId, lastSessionDate);
-
-    // Build the LLM context.
-    final ctx = ctxBuilder.build(
-      template: template,
-      currentVersion: currentVersion,
-      recentVersions: recentVersions,
-      instanceReports: reports,
-      instanceObservations: observations,
-      pastNotes: notes,
-      metrics: metrics,
-      changesSinceLastSession: changesSince,
-      observationPayloads: observationPayloads,
-    );
-
-    // Determine session number.
-    final sessionNumber = sessions.isNotEmpty
-        ? sessions.map((s) => s.sessionNumber).reduce((a, b) => a > b ? a : b) +
-            1
-        : 1;
-
-    // Create the session entity, conversation, and send initial message.
-    // The entire setup is wrapped in try-catch so partial failures are cleaned
-    // up via abandonSession.
+    // Everything below is wrapped in try-catch so that exceptions from data
+    // fetches, context building, or the LLM call all return `null` instead of
+    // propagating to the UI caller.
     final sessionId = _uuid.v4();
     try {
+      // Gather evolution context data.
+      final metrics = await svc.computeMetrics(templateId);
+      final recentVersions = await svc.getVersionHistory(templateId, limit: 5);
+      final reports = await svc.getRecentInstanceReports(templateId);
+      final observations = await svc.getRecentInstanceObservations(templateId);
+      final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
+      final sessions = await svc.getEvolutionSessions(templateId);
+
+      // Pre-fetch payload content for observations so the builder can include
+      // the actual observation text (AgentMessageEntity only stores a ref).
+      final observationPayloads = <String, AgentMessagePayloadEntity>{};
+      for (final obs in observations) {
+        final payloadId = obs.contentEntryId;
+        if (payloadId != null) {
+          final entity = await svc.repository.getEntity(payloadId);
+          if (entity is AgentMessagePayloadEntity) {
+            observationPayloads[payloadId] = entity;
+          }
+        }
+      }
+
+      // Determine delta since last session.
+      final lastSessionDate =
+          sessions.isNotEmpty ? sessions.first.createdAt : null;
+      final changesSince =
+          await svc.countChangesSince(templateId, lastSessionDate);
+
+      // Build the LLM context.
+      final ctx = ctxBuilder.build(
+        template: template,
+        currentVersion: currentVersion,
+        recentVersions: recentVersions,
+        instanceReports: reports,
+        instanceObservations: observations,
+        pastNotes: notes,
+        metrics: metrics,
+        changesSinceLastSession: changesSince,
+        observationPayloads: observationPayloads,
+      );
+
+      // Determine session number.
+      final sessionNumber = sessions.isNotEmpty
+          ? sessions
+                  .map((s) => s.sessionNumber)
+                  .reduce((a, b) => a > b ? a : b) +
+              1
+          : 1;
+
+      // Create the session entity, conversation, and send initial message.
       final now = clock.now();
       final session = AgentDomainEntity.evolutionSession(
         id: sessionId,
@@ -414,6 +431,8 @@ RULES:
         tools: _buildToolDefinitions(),
         strategy: strategy,
       );
+
+      _notifyUpdate(templateId);
 
       return _extractLastAssistantContent(conversationId);
     } catch (e, s) {
@@ -536,8 +555,9 @@ RULES:
         );
       }
 
-      // Clean up.
+      // Clean up and notify UI.
       _cleanupSession(sessionId);
+      _notifyUpdate(active.templateId);
 
       developer.log(
         'Approved proposal for session $sessionId → version ${newVersion.id}',
@@ -583,34 +603,52 @@ RULES:
   Future<void> abandonSession({required String sessionId}) async {
     final active = activeSessions[sessionId];
     final sync = syncService;
+    var templateId = active?.templateId;
 
-    if (sync != null) {
-      // Persist any notes accumulated during the in-memory session.
-      if (active != null) {
-        await _persistNotes(
-          strategy: active.strategy,
-          templateId: active.templateId,
-          sessionId: sessionId,
-          sync: sync,
-        );
+    try {
+      if (sync != null) {
+        // Best-effort: persist any notes accumulated during the session.
+        // Notes are advisory — a failure here must not prevent cleanup.
+        if (active != null) {
+          try {
+            await _persistNotes(
+              strategy: active.strategy,
+              templateId: active.templateId,
+              sessionId: sessionId,
+              sync: sync,
+            );
+          } catch (e, s) {
+            developer.log(
+              'Failed to persist notes during abandon',
+              name: _logTag,
+              error: e,
+              stackTrace: s,
+            );
+          }
+        }
+
+        // Mark session as abandoned in the database.
+        final sessionEntity = await _getSessionEntity(sessionId);
+        if (sessionEntity != null &&
+            sessionEntity.status == EvolutionSessionStatus.active) {
+          templateId ??= sessionEntity.templateId;
+          final now = clock.now();
+          await sync.upsertEntity(
+            sessionEntity.copyWith(
+              status: EvolutionSessionStatus.abandoned,
+              completedAt: now,
+              updatedAt: now,
+            ),
+          );
+        }
       }
+    } finally {
+      _cleanupSession(sessionId);
 
-      // Mark session as abandoned in the database.
-      final sessionEntity = await _getSessionEntity(sessionId);
-      if (sessionEntity != null &&
-          sessionEntity.status == EvolutionSessionStatus.active) {
-        final now = clock.now();
-        await sync.upsertEntity(
-          sessionEntity.copyWith(
-            status: EvolutionSessionStatus.abandoned,
-            completedAt: now,
-            updatedAt: now,
-          ),
-        );
+      if (templateId != null) {
+        _notifyUpdate(templateId);
       }
     }
-
-    _cleanupSession(sessionId);
   }
 
   /// Get the active session for a template, if any.
@@ -709,6 +747,12 @@ RULES:
     if (active != null) {
       conversationRepository.deleteConversation(active.conversationId);
     }
+  }
+
+  /// Fire an update notification so UI providers watching this template
+  /// refresh. No-op when [updateNotifications] is not set.
+  void _notifyUpdate(String templateId) {
+    updateNotifications?.notify({templateId});
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible

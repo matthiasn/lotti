@@ -2002,7 +2002,7 @@ final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
 }
 
 String _$templateEvolutionWorkflowHash() =>
-    r'ee1a1bfe1e4c4912930257c3b163899b64e29a49';
+    r'9da43004b9bc7b8df56b7446206dfd25c7730ba2';
 
 /// Fetch evolution sessions for a template, newest-first.
 ///

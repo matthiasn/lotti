@@ -206,8 +206,7 @@ class AgentToolRegistry {
   static const evolutionAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
       name: 'propose_directives',
-      description:
-          'Formally propose a new version of the template directives. '
+      description: 'Formally propose a new version of the template directives. '
           'Include the COMPLETE rewritten directives text (not a diff) and a '
           'brief rationale explaining what changed and why.',
       parameters: {
@@ -242,8 +241,8 @@ class AgentToolRegistry {
             'enum': ['reflection', 'hypothesis', 'decision', 'pattern'],
             'description':
                 'The kind of note: reflection (observation about performance), '
-                'hypothesis (what might improve the template), decision (a '
-                'choice made during the session), pattern (a recurring theme).',
+                    'hypothesis (what might improve the template), decision (a '
+                    'choice made during the session), pattern (a recurring theme).',
           },
           'content': {
             'type': 'string',

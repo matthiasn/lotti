@@ -364,6 +364,7 @@ TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    updateNotifications: getIt<UpdateNotifications>(),
   );
 }
 
