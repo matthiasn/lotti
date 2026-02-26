@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.873" date="2026-02-27">
+      <description>
+          <p>Agent tools for task language, status, and label assignment. Correction examples and label context injection into agent prompts. Defer-first 120s throttle for bursty edit coalescing. Standardized report structure. ASR re-trigger for parent task notification.</p>
+      </description>
+    </release>
     <release version="0.9.872" date="2026-02-26">
       <description>
           <p>Agent throttle gate: 5-minute cooldown between automatic agent wakes to reduce token consumption during rapid task mutations. "Run Now" button and countdown timer on task agent chip. Throttle deadline persists across app restarts.</p>

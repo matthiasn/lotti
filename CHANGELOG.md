@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.873] - 2026-02-27
+### Added
+- Agent tools: `set_task_language`, `set_task_status`, and `assign_task_labels`
+  for automated task metadata management.
+- Correction examples context injection: agent receives per-category
+  transcription correction patterns for improved checklist editing.
+- Label context injection: agent receives assigned, suppressed, and available
+  labels for informed label assignment.
+- Defer-first throttle: initial agent wake deferred by 120 seconds to coalesce
+  bursty edits, down from 300-second post-execution cooldown.
+- Standardized agent report structure with TLDR, Achieved, What's left, and
+  Learnings sections.
+- ASR re-trigger: audio entry updates now notify the parent task, enabling
+  agent wakes when transcription arrives.
+
 ## [0.9.872] - 2026-02-26
 ### Added
 - Agent throttle gate: 5-minute cooldown between automatic subscription-triggered

@@ -1,7 +1,7 @@
 # Agent Refinement: Throttle Timing, New Tools, and Reporting
 
 **Date**: 2026-02-26
-**Status**: Draft
+**Status**: Implemented (PR #2705)
 **Related PRs**: #2703 (throttle), #2702/#2700 (template evolution), #2677 (agentic foundations)
 
 ## Overview
@@ -49,7 +49,7 @@ sequenceDiagram
     UpdateNotifications->>WakeOrchestrator: _onBatch(tokens)
     WakeOrchestrator->>WakeOrchestrator: match subscription, NOT throttled
     WakeOrchestrator->>WakeOrchestrator: Set initial throttle = now + 120s
-    Note over WakeOrchestrator: Do NOT enqueue immediately
+    Note over WakeOrchestrator: Do NOT dispatch immediately
     WakeOrchestrator->>Timer: schedule drain at t=120s
 
     User->>UpdateNotifications: edit task again (t=30s)
@@ -528,10 +528,10 @@ Cap at 50 correction examples.
 4. Validate via manual testing.
 
 ### Phase 4: Data Integration (Lower Priority)
-1. Extend `_buildUserMessage` with template/example injection.
-2. Start with directive-embedded examples (no new DB entities).
-3. Add context size limits.
-4. Iterate based on agent output quality.
+1. Create `CorrectionExamplesBuilder` class for testable context injection.
+2. Inject correction examples into `_buildUserMessage` from category data.
+3. Cap at 50 examples, sorted by recency.
+4. Add exception-safe `buildContext` with try/catch.
 
 ---
 
@@ -540,15 +540,20 @@ Cap at 50 correction examples.
 | File | Changes |
 |------|---------|
 | `lib/features/agents/wake/wake_orchestrator.dart` | Throttle window, `_onBatch` defer-first logic |
-| `lib/features/agents/tools/agent_tool_registry.dart` | Add `set_task_language`, `set_task_status` definitions |
-| `lib/features/agents/workflow/task_agent_workflow.dart` | New handlers, prompt updates, context injection |
+| `lib/features/agents/tools/agent_tool_registry.dart` | Add `set_task_language`, `set_task_status`, `assign_task_labels` definitions (11 tools) |
+| `lib/features/agents/workflow/task_agent_workflow.dart` | New handlers, prompt updates, context injection, report structure |
 | `lib/features/agents/tools/task_status_handler.dart` | **New file** — `TaskStatusHandler` |
 | `lib/features/agents/tools/task_language_handler.dart` | **New file** — `TaskLanguageHandler` |
-| `lib/features/agents/tools/task_label_handler.dart` | **New file** — label assignment handler |
+| `lib/features/agents/tools/task_label_handler.dart` | **New file** — label assignment handler + context builder |
+| `lib/features/agents/tools/correction_examples_builder.dart` | **New file** — correction examples context builder |
+| `lib/features/speech/state/recorder_controller.dart` | ASR parent task notification fix |
 | `test/features/agents/wake/wake_orchestrator_test.dart` | Updated throttle tests |
-| `test/features/agents/workflow/task_agent_workflow_test.dart` | New tool handler tests |
-| `test/features/agents/tools/task_status_handler_test.dart` | **New file** |
+| `test/features/agents/tools/task_status_handler_test.dart` | **New file** — 22 tests |
 | `test/features/agents/tools/task_language_handler_test.dart` | **New file** |
+| `test/features/agents/tools/task_label_handler_test.dart` | **New file** — 24 tests |
+| `test/features/agents/tools/correction_examples_builder_test.dart` | **New file** — 14 tests |
+| `test/features/agents/tools/agent_tool_registry_test.dart` | Updated tool count + `assign_task_labels` tests |
+| `test/features/tasks/ui/header/task_header_meta_card_test.dart` | Updated countdown test for 120s throttle |
 
 ---
 
