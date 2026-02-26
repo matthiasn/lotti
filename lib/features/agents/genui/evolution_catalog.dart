@@ -199,52 +199,109 @@ final evolutionNoteConfirmationItem = CatalogItem(
     final json = itemContext.data as Map<String, Object?>;
     final kind = json['kind'] as String? ?? 'reflection';
     final content = json['content'] as String? ?? '';
-    final context = itemContext.buildContext;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ModernBaseCard(
-        gradient: GameyGradients.cardDark(GameyColors.aiCyan),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(
-              _noteKindIcon(kind),
-              size: 18,
-              color: GameyColors.aiCyan,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.messages.agentEvolutionNoteRecorded,
-                    style: const TextStyle(
-                      color: GameyColors.aiCyan,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    content,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return _EvolutionNoteConfirmationCard(
+      kind: kind,
+      content: content,
     );
   },
 );
+
+/// Expandable card showing a recorded evolution note.
+///
+/// Starts collapsed (2 lines max) and expands to show the full content on tap.
+class _EvolutionNoteConfirmationCard extends StatefulWidget {
+  const _EvolutionNoteConfirmationCard({
+    required this.kind,
+    required this.content,
+  });
+
+  final String kind;
+  final String content;
+
+  @override
+  State<_EvolutionNoteConfirmationCard> createState() =>
+      _EvolutionNoteConfirmationCardState();
+}
+
+class _EvolutionNoteConfirmationCardState
+    extends State<_EvolutionNoteConfirmationCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: GestureDetector(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: ModernBaseCard(
+          gradient: GameyGradients.cardDark(GameyColors.aiCyan),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                _noteKindIcon(widget.kind),
+                size: 18,
+                color: GameyColors.aiCyan,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            context.messages.agentEvolutionNoteRecorded,
+                            style: const TextStyle(
+                              color: GameyColors.aiCyan,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                          size: 16,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 200),
+                      crossFadeState: _expanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      firstChild: Text(
+                        widget.content,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      secondChild: Text(
+                        widget.content,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Inline metrics summary widget.
 final metricsSummaryItem = CatalogItem(

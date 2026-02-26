@@ -182,7 +182,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Users prefer short reports.'), findsOneWidget);
+      // AnimatedCrossFade renders both children, so we expect 2 Text widgets.
+      expect(find.text('Users prefer short reports.'), findsNWidgets(2));
       expect(find.byIcon(Icons.psychology), findsOneWidget);
     });
 
@@ -236,6 +237,67 @@ void main() {
       );
 
       expect(find.byIcon(Icons.note), findsOneWidget);
+    });
+
+    testWidgets('starts collapsed and shows expand_more icon', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionNoteConfirmationItem, {
+            'kind': 'reflection',
+            'content': 'A long note that spans multiple lines to test '
+                'the expand/collapse behavior of the card widget.',
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsNothing);
+
+      // The collapsed text should have maxLines: 2
+      final collapsedText = tester.widgetList<Text>(find.byType(Text)).where(
+            (t) => t.maxLines == 2,
+          );
+      expect(collapsedText, isNotEmpty);
+    });
+
+    testWidgets('expands on tap and shows expand_less icon', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionNoteConfirmationItem, {
+            'kind': 'reflection',
+            'content': 'A long note that spans multiple lines to test '
+                'the expand/collapse behavior of the card widget.',
+          }),
+        ),
+      );
+
+      // Tap to expand
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+    });
+
+    testWidgets('collapses again on second tap', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(evolutionNoteConfirmationItem, {
+            'kind': 'reflection',
+            'content': 'A long note content.',
+          }),
+        ),
+      );
+
+      // Tap to expand
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+      // Tap again to collapse
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
     });
   });
 
