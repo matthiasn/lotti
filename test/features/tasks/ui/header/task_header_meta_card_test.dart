@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -879,118 +880,117 @@ void main() {
     );
 
     testWidgets(
-      'shows countdown when lastWakeAt is recent',
+      'shows countdown when nextWakeAt is in the future',
       (tester) async {
-        final task = testTask;
-        final agentEntity = makeTestIdentity();
+        // Use a fixed clock so the test is fully deterministic.
+        final now = DateTime(2024, 3, 15, 12);
+        await withClock(Clock.fixed(now), () async {
+          final task = testTask;
+          final agentEntity = makeTestIdentity();
 
-        // lastWakeAt 60 seconds ago → ~240 seconds remaining.
-        // Uses DateTime.now() because the widget's _computeRemainingSeconds
-        // uses DateTime.now() internally (not injectable clock).
-        final lastWakeAt = DateTime.now().subtract(
-          const Duration(seconds: 60),
-        );
-        final stateEntity = makeTestState(
-          agentId: agentEntity.agentId,
-          lastWakeAt: lastWakeAt,
-        );
+          // nextWakeAt 240 seconds in the future → countdown "4:00".
+          final nextWakeAt = now.add(const Duration(seconds: 240));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
 
-        final overrides = <Override>[
-          entryControllerProvider(id: task.meta.id).overrideWith(
-            () => _TestEntryController(task),
-          ),
-          configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(
-              flagName == enableAgentsFlag,
+          final overrides = <Override>[
+            entryControllerProvider(id: task.meta.id).overrideWith(
+              () => _TestEntryController(task),
             ),
-          ),
-          taskAgentProvider.overrideWith(
-            (ref, taskId) async => agentEntity,
-          ),
-          agentIsRunningProvider.overrideWith(
-            (ref, agentId) => Stream.value(false),
-          ),
-          agentStateProvider.overrideWith(
-            (ref, agentId) async => stateEntity,
-          ),
-          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        ];
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(
+                flagName == enableAgentsFlag,
+              ),
+            ),
+            taskAgentProvider.overrideWith(
+              (ref, taskId) async => agentEntity,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            agentStateProvider.overrideWith(
+              (ref, agentId) async => stateEntity,
+            ),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          ];
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: overrides,
-            child: TaskHeaderMetaCard(taskId: task.meta.id),
-          ),
-        );
-        await tester.pumpAndSettle();
-        // Let the post-frame callback run.
-        await tester.pump(const Duration(seconds: 1));
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: overrides,
+              child: TaskHeaderMetaCard(taskId: task.meta.id),
+            ),
+          );
+          await tester.pumpAndSettle();
+          // Let the post-frame callback run and start the countdown.
+          await tester.pump(const Duration(milliseconds: 100));
 
-        // The label should contain the countdown in "Agent m:ss" format.
-        // With ~240s remaining, we expect "Agent 3:" or "Agent 4:" prefix.
-        expect(
-          find.textContaining(RegExp(r'Agent [0-4]:\d{2}')),
-          findsOneWidget,
-        );
+          // With 240s remaining the countdown shows "Agent 4:00".
+          expect(
+            find.textContaining('Agent 4:00'),
+            findsOneWidget,
+          );
+        });
       },
     );
 
     testWidgets(
-      'does not show countdown when lastWakeAt is old (past throttle window)',
+      'does not show countdown when nextWakeAt is in the past',
       (tester) async {
-        final task = testTask;
-        final agentEntity = makeTestIdentity();
+        // Use a fixed clock so the test is fully deterministic.
+        final now = DateTime(2024, 3, 15, 12);
+        await withClock(Clock.fixed(now), () async {
+          final task = testTask;
+          final agentEntity = makeTestIdentity();
 
-        // lastWakeAt more than 300 seconds ago → no countdown.
-        // Uses DateTime.now() because the widget's _computeRemainingSeconds
-        // uses DateTime.now() internally (not injectable clock).
-        final lastWakeAt = DateTime.now().subtract(
-          const Duration(seconds: 400),
-        );
-        final stateEntity = makeTestState(
-          agentId: agentEntity.agentId,
-          lastWakeAt: lastWakeAt,
-        );
+          // nextWakeAt 100 seconds in the past → no countdown.
+          final nextWakeAt = now.subtract(const Duration(seconds: 100));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
 
-        final overrides = <Override>[
-          entryControllerProvider(id: task.meta.id).overrideWith(
-            () => _TestEntryController(task),
-          ),
-          configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(
-              flagName == enableAgentsFlag,
+          final overrides = <Override>[
+            entryControllerProvider(id: task.meta.id).overrideWith(
+              () => _TestEntryController(task),
             ),
-          ),
-          taskAgentProvider.overrideWith(
-            (ref, taskId) async => agentEntity,
-          ),
-          agentIsRunningProvider.overrideWith(
-            (ref, agentId) => Stream.value(false),
-          ),
-          agentStateProvider.overrideWith(
-            (ref, agentId) async => stateEntity,
-          ),
-          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        ];
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(
+                flagName == enableAgentsFlag,
+              ),
+            ),
+            taskAgentProvider.overrideWith(
+              (ref, taskId) async => agentEntity,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            agentStateProvider.overrideWith(
+              (ref, agentId) async => stateEntity,
+            ),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          ];
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: overrides,
-            child: TaskHeaderMetaCard(taskId: task.meta.id),
-          ),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: overrides,
+              child: TaskHeaderMetaCard(taskId: task.meta.id),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        final context = tester.element(find.byType(TaskHeaderMetaCard));
-        // Should show just "Agent" without countdown.
-        expect(
-          find.text(context.messages.taskAgentChipLabel),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining(RegExp(r'\d:\d{2}')),
-          findsNothing,
-        );
+          final context = tester.element(find.byType(TaskHeaderMetaCard));
+          // Should show just "Agent" without countdown.
+          expect(
+            find.text(context.messages.taskAgentChipLabel),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(RegExp(r'\d:\d{2}')),
+            findsNothing,
+          );
+        });
       },
     );
 

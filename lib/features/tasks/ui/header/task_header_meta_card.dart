@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -173,19 +174,21 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
     final agentId = identity.agentId;
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
     final agentStateAsync = ref.watch(agentStateProvider(agentId));
-    final lastWakeAt = agentStateAsync.value?.mapOrNull(
-      agentState: (s) => s.lastWakeAt,
+    final nextWakeAt = agentStateAsync.value?.mapOrNull(
+      agentState: (s) => s.nextWakeAt,
     );
 
-    // Compute countdown from lastWakeAt.
-    final remainingSeconds = _computeRemainingSeconds(lastWakeAt);
+    // Compute countdown from persisted nextWakeAt (the actual throttle
+    // deadline). This is the single source of truth — it is only set for
+    // subscription-triggered wakes and cleared on manual "Run Now".
+    final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
 
-    // Restart countdown timer when lastWakeAt changes.
+    // Restart countdown timer when nextWakeAt changes.
     ref.listen(agentStateProvider(agentId), (prev, next) {
-      final newLastWake = next.value?.mapOrNull(
-        agentState: (s) => s.lastWakeAt,
+      final newNextWake = next.value?.mapOrNull(
+        agentState: (s) => s.nextWakeAt,
       );
-      final newRemaining = _computeRemainingSeconds(newLastWake);
+      final newRemaining = _computeRemainingSeconds(newNextWake);
       if (newRemaining > 0) {
         _startCountdown(newRemaining);
       } else {
@@ -268,10 +271,9 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
     );
   }
 
-  int _computeRemainingSeconds(DateTime? lastWakeAt) {
-    if (lastWakeAt == null) return 0;
-    final deadline = lastWakeAt.add(WakeOrchestrator.throttleWindow);
-    final remaining = deadline.difference(DateTime.now());
+  int _computeRemainingSeconds(DateTime? nextWakeAt) {
+    if (nextWakeAt == null) return 0;
+    final remaining = nextWakeAt.difference(clock.now());
     return remaining.inSeconds
         .clamp(0, WakeOrchestrator.throttleWindow.inSeconds);
   }

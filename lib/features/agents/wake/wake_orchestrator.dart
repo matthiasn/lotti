@@ -280,10 +280,40 @@ class WakeOrchestrator {
   }
 
   /// Clear the throttle for [agentId], allowing an immediate wake.
+  ///
+  /// Also persists `nextWakeAt = null` so the cleared state survives
+  /// app restarts.
   void clearThrottle(String agentId) {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
     _deferredDrainTimers.remove(agentId);
+    _clearPersistedThrottle(agentId);
+  }
+
+  /// Persist `nextWakeAt = null` so that a cleared throttle is not
+  /// re-hydrated after an app restart.
+  ///
+  /// Guards against write races: if a new in-memory deadline has been set
+  /// between the `clearThrottle` call and this async write, the clear is
+  /// skipped to avoid overwriting the newer deadline.
+  Future<void> _clearPersistedThrottle(String agentId) async {
+    try {
+      // If a new deadline was set after clearThrottle but before this
+      // async continuation runs, skip the write to avoid clobbering it.
+      if (_throttleDeadlines.containsKey(agentId)) return;
+
+      final state = await repository.getAgentState(agentId);
+      if (state != null && state.nextWakeAt != null) {
+        await repository.upsertEntity(
+          state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
+        );
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to clear persisted throttle for $agentId: $e',
+        name: 'WakeOrchestrator',
+      );
+    }
   }
 
   /// Schedule a [Timer] that fires [processNext] when the throttle window
@@ -295,6 +325,9 @@ class WakeOrchestrator {
     _deferredDrainTimers[agentId] = Timer(remaining, () {
       _deferredDrainTimers.remove(agentId);
       _throttleDeadlines.remove(agentId);
+      // Clear the persisted nextWakeAt so the agent detail page and
+      // startup hydration don't see a stale past deadline.
+      unawaited(_clearPersistedThrottle(agentId));
       unawaited(processNext());
     });
   }
@@ -522,14 +555,13 @@ class WakeOrchestrator {
           continue;
         }
 
-        // Re-check suppression for jobs that were enqueued during an agent's
-        // execution — before recordMutatedEntities was called. Check both
-        // confirmed mutations and pre-registered suppression (the latter
-        // covers the window between DB writes and recordMutatedEntities).
-        // Note: throttle is NOT re-checked here — jobs that were already
-        // enqueued before the throttle was set should be allowed through.
+        // Re-check suppression and throttle for subscription jobs that were
+        // enqueued during an agent's execution — before the throttle deadline
+        // or recordMutatedEntities was set. This prevents a notification that
+        // arrived during execution from immediately running back-to-back.
         if (job.reason == WakeReason.subscription.name &&
-            (_isSuppressed(job.agentId, job.triggerTokens) ||
+            (_isThrottled(job.agentId) ||
+                _isSuppressed(job.agentId, job.triggerTokens) ||
                 _isPreRegisteredSuppressed(
                   job.agentId,
                   job.triggerTokens,
