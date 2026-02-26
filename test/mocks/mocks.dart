@@ -208,6 +208,8 @@ class MockEmbeddingsDb extends Mock implements EmbeddingsDb {}
 class MockOllamaEmbeddingRepository extends Mock
     implements OllamaEmbeddingRepository {}
 
+class MockHttpClient extends Mock implements http.Client {}
+
 class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
