@@ -354,6 +354,9 @@ void main() {
         agentIsRunningProvider.overrideWith(
           (ref, agentId) => Stream.value(false),
         ),
+        agentStateProvider.overrideWith(
+          (ref, agentId) async => null,
+        ),
       ];
 
       await tester.pumpWidget(
@@ -392,6 +395,9 @@ void main() {
           ),
           agentIsRunningProvider.overrideWith(
             (ref, agentId) => Stream.value(true),
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => null,
           ),
         ];
 
@@ -778,6 +784,212 @@ void main() {
             templateId: any(named: 'templateId'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows "Run Now" button when agent exists and is not running',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+        final mockService = MockTaskAgentService();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => null,
+          ),
+          taskAgentServiceProvider.overrideWithValue(mockService),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Play button should be visible.
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+        // Tap the play button.
+        when(() => mockService.triggerReanalysis(any())).thenReturn(null);
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        await tester.pumpAndSettle();
+
+        verify(() => mockService.triggerReanalysis(agentEntity.agentId))
+            .called(1);
+      },
+    );
+
+    testWidgets(
+      'hides "Run Now" button when agent is running',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(true),
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => null,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Play button should not be visible when running.
+        expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows countdown when lastWakeAt is recent',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+
+        // lastWakeAt 60 seconds ago → ~240 seconds remaining.
+        // Uses DateTime.now() because the widget's _computeRemainingSeconds
+        // uses DateTime.now() internally (not injectable clock).
+        final lastWakeAt = DateTime.now().subtract(
+          const Duration(seconds: 60),
+        );
+        final stateEntity = makeTestState(
+          agentId: agentEntity.agentId,
+          lastWakeAt: lastWakeAt,
+        );
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => stateEntity,
+          ),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Let the post-frame callback run.
+        await tester.pump(const Duration(seconds: 1));
+
+        // The label should contain the countdown in "Agent m:ss" format.
+        // With ~240s remaining, we expect "Agent 3:" or "Agent 4:" prefix.
+        expect(
+          find.textContaining(RegExp(r'Agent [0-4]:\d{2}')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not show countdown when lastWakeAt is old (past throttle window)',
+      (tester) async {
+        final task = testTask;
+        final agentEntity = makeTestIdentity();
+
+        // lastWakeAt more than 300 seconds ago → no countdown.
+        // Uses DateTime.now() because the widget's _computeRemainingSeconds
+        // uses DateTime.now() internally (not injectable clock).
+        final lastWakeAt = DateTime.now().subtract(
+          const Duration(seconds: 400),
+        );
+        final stateEntity = makeTestState(
+          agentId: agentEntity.agentId,
+          lastWakeAt: lastWakeAt,
+        );
+
+        final overrides = <Override>[
+          entryControllerProvider(id: task.meta.id).overrideWith(
+            () => _TestEntryController(task),
+          ),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+          taskAgentProvider.overrideWith(
+            (ref, taskId) async => agentEntity,
+          ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
+          agentStateProvider.overrideWith(
+            (ref, agentId) async => stateEntity,
+          ),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+        ];
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskHeaderMetaCard(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(TaskHeaderMetaCard));
+        // Should show just "Agent" without countdown.
+        expect(
+          find.text(context.messages.taskAgentChipLabel),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(RegExp(r'\d:\d{2}')),
+          findsNothing,
         );
       },
     );

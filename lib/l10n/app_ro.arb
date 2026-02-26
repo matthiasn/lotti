@@ -1564,6 +1564,14 @@
   "syncStepMeasurables": "Măsurabile",
   "syncStepTags": "Etichete",
   "taskAgentChipLabel": "Agent",
+  "taskAgentCountdownTooltip": "Următoarea rulare automată în {countdown}",
+  "@taskAgentCountdownTooltip": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentCreateChipLabel": "Creează agent",
   "taskAgentCreateError": "Eroare la crearea agentului: {error}",
   "@taskAgentCreateError": {
@@ -1573,6 +1581,7 @@
       }
     }
   },
+  "taskAgentRunNowTooltip": "Rulează acum",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",

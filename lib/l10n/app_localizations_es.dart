@@ -3916,12 +3916,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentChipLabel => 'Agente';
 
   @override
+  String taskAgentCountdownTooltip(String countdown) {
+    return 'Próxima ejecución automática en $countdown';
+  }
+
+  @override
   String get taskAgentCreateChipLabel => 'Crear agente';
 
   @override
   String taskAgentCreateError(String error) {
     return 'Error al crear el agente: $error';
   }
+
+  @override
+  String get taskAgentRunNowTooltip => 'Ejecutar ahora';
 
   @override
   String get taskCategoryAllLabel => 'todos';

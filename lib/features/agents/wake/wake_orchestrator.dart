@@ -82,6 +82,25 @@ class WakeOrchestrator {
 
   final _subscriptions = <AgentSubscription>[];
 
+  // ── Throttle state ──────────────────────────────────────────────────────
+
+  /// In-memory cache of the next allowed run time per agent.
+  ///
+  /// When a subscription-triggered wake completes, a deadline is set at
+  /// `clock.now() + throttleWindow`. Subsequent subscription notifications
+  /// for the same agent are dropped until the deadline expires.
+  /// Manual wakes (creation, reanalysis) bypass and clear the throttle.
+  final _throttleDeadlines = <String, DateTime>{};
+
+  /// Deferred drain timers that fire when the throttle window expires,
+  /// triggering [processNext] to pick up any work that arrived during
+  /// the cooldown period.
+  final _deferredDrainTimers = <String, Timer>{};
+
+  /// The minimum interval between subscription-triggered wakes for the
+  /// same agent. Manual wakes bypass this gate.
+  static const throttleWindow = Duration(seconds: 300);
+
   /// Pending post-execution drain timer.
   ///
   /// Scheduled after a job completes to pick up signals that arrived while
@@ -171,6 +190,7 @@ class WakeOrchestrator {
     _recentlyMutatedEntries.remove(agentId);
     _preRegisteredSuppression.remove(agentId);
     _wakeCounters.remove(agentId);
+    clearThrottle(agentId);
   }
 
   // ── Self-notification suppression ──────────────────────────────────────────
@@ -213,6 +233,72 @@ class WakeOrchestrator {
     }
   }
 
+  // ── Throttle management ────────────────────────────────────────────────────
+
+  /// Returns `true` when [agentId] is within its throttle cooldown window.
+  bool _isThrottled(String agentId) {
+    final deadline = _throttleDeadlines[agentId];
+    if (deadline == null) return false;
+    if (clock.now().isBefore(deadline)) return true;
+    // Expired — clean up.
+    _throttleDeadlines.remove(agentId);
+    return false;
+  }
+
+  /// Set the throttle deadline for [agentId] and persist it to the agent's
+  /// state entity via `nextWakeAt`.
+  Future<void> _setThrottleDeadline(String agentId) async {
+    final deadline = clock.now().add(throttleWindow);
+    _throttleDeadlines[agentId] = deadline;
+
+    // Persist to AgentStateEntity.nextWakeAt so the deadline survives
+    // app backgrounding / restart.
+    try {
+      final state = await repository.getAgentState(agentId);
+      if (state != null) {
+        await repository.upsertEntity(
+          state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
+        );
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to persist throttle deadline for $agentId: $e',
+        name: 'WakeOrchestrator',
+      );
+    }
+
+    _scheduleDeferredDrain(agentId, deadline);
+  }
+
+  /// Set a throttle deadline from an external source (e.g. startup hydration).
+  ///
+  /// If [deadline] is in the past, it is ignored.
+  void setThrottleDeadline(String agentId, DateTime deadline) {
+    if (deadline.isBefore(clock.now())) return;
+    _throttleDeadlines[agentId] = deadline;
+    _scheduleDeferredDrain(agentId, deadline);
+  }
+
+  /// Clear the throttle for [agentId], allowing an immediate wake.
+  void clearThrottle(String agentId) {
+    _throttleDeadlines.remove(agentId);
+    _deferredDrainTimers[agentId]?.cancel();
+    _deferredDrainTimers.remove(agentId);
+  }
+
+  /// Schedule a [Timer] that fires [processNext] when the throttle window
+  /// for [agentId] expires.
+  void _scheduleDeferredDrain(String agentId, DateTime deadline) {
+    _deferredDrainTimers[agentId]?.cancel();
+    final remaining = deadline.difference(clock.now());
+    if (remaining <= Duration.zero) return;
+    _deferredDrainTimers[agentId] = Timer(remaining, () {
+      _deferredDrainTimers.remove(agentId);
+      _throttleDeadlines.remove(agentId);
+      unawaited(processNext());
+    });
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   /// Start listening to [notificationStream].
@@ -235,6 +321,10 @@ class WakeOrchestrator {
   Future<void> stop() async {
     _pendingDrainTimer?.cancel();
     _pendingDrainTimer = null;
+    for (final timer in _deferredDrainTimers.values) {
+      timer.cancel();
+    }
+    _deferredDrainTimers.clear();
     await _notificationSub?.cancel();
     _notificationSub = null;
   }
@@ -267,6 +357,10 @@ class WakeOrchestrator {
     required String reason,
     Set<String> triggerTokens = const {},
   }) {
+    // Manual wakes bypass and clear the throttle gate so the user's action
+    // takes effect immediately.
+    clearThrottle(agentId);
+
     final now = clock.now();
     final runKey = RunKeyFactory.forManual(
       agentId: agentId,
@@ -298,11 +392,14 @@ class WakeOrchestrator {
       final suppressed = _isSuppressed(sub.agentId, matched);
       if (suppressed) continue;
 
-      // 3. Apply optional fine-grained predicate.
+      // 3. Throttle gate: skip if the agent is in its cooldown window.
+      if (_isThrottled(sub.agentId)) continue;
+
+      // 4. Apply optional fine-grained predicate.
       final predicate = sub.predicate;
       if (predicate != null && !predicate(matched)) continue;
 
-      // 4. Derive a deterministic run key and enqueue.
+      // 5. Derive a deterministic run key and enqueue.
       final counter = _wakeCounters[sub.agentId] ?? 0;
       _wakeCounters[sub.agentId] = counter + 1;
 
@@ -429,6 +526,8 @@ class WakeOrchestrator {
         // execution — before recordMutatedEntities was called. Check both
         // confirmed mutations and pre-registered suppression (the latter
         // covers the window between DB writes and recordMutatedEntities).
+        // Note: throttle is NOT re-checked here — jobs that were already
+        // enqueued before the throttle was set should be allowed through.
         if (job.reason == WakeReason.subscription.name &&
             (_isSuppressed(job.agentId, job.triggerTokens) ||
                 _isPreRegisteredSuppressed(
@@ -528,6 +627,12 @@ class WakeOrchestrator {
           WakeRunStatus.completed.name,
           completedAt: clock.now(),
         );
+
+        // Set the throttle deadline for subscription-triggered wakes so
+        // that rapid-fire mutations don't cause excessive LLM calls.
+        if (job.reason == WakeReason.subscription.name) {
+          await _setThrottleDeadline(job.agentId);
+        }
       } catch (e) {
         _preRegisteredSuppression.remove(job.agentId);
         developer.log(

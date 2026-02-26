@@ -1430,6 +1430,14 @@
   "syncStepMeasurables": "Měřitelné hodnoty",
   "syncStepTags": "Tagy",
   "taskAgentChipLabel": "Agent",
+  "taskAgentCountdownTooltip": "Příští automatické spuštění za {countdown}",
+  "@taskAgentCountdownTooltip": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
   "taskAgentCreateChipLabel": "Vytvořit agenta",
   "taskAgentCreateError": "Nepodařilo se vytvořit agenta: {error}",
   "@taskAgentCreateError": {
@@ -1439,6 +1447,7 @@
       }
     }
   },
+  "taskAgentRunNowTooltip": "Spustit nyní",
   "taskCategoryAllLabel": "vše",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "nepřiřazeno",

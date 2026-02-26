@@ -3861,12 +3861,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentChipLabel => 'Agent';
 
   @override
+  String taskAgentCountdownTooltip(String countdown) {
+    return 'Următoarea rulare automată în $countdown';
+  }
+
+  @override
   String get taskAgentCreateChipLabel => 'Creează agent';
 
   @override
   String taskAgentCreateError(String error) {
     return 'Eroare la crearea agentului: $error';
   }
+
+  @override
+  String get taskAgentRunNowTooltip => 'Rulează acum';
 
   @override
   String get taskCategoryAllLabel => 'toate';

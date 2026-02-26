@@ -386,6 +386,8 @@ void main() {
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => [link1, link2]);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => null);
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
@@ -403,10 +405,52 @@ void main() {
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => []);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => null);
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
         verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+
+      test('hydrates throttle deadline from persisted state', () async {
+        final futureDeadline = DateTime(2026, 3, 15, 12, 5);
+        final stateWithDeadline =
+            makeState().copyWith(nextWakeAt: futureDeadline);
+
+        when(
+          () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => stateWithDeadline);
+        when(
+          () => mockOrchestrator.setThrottleDeadline(any(), any()),
+        ).thenReturn(null);
+
+        await service.restoreSubscriptionsForAgent('agent-1');
+
+        verify(
+          () => mockOrchestrator.setThrottleDeadline(
+            'agent-1',
+            futureDeadline,
+          ),
+        ).called(1);
+      });
+
+      test('skips throttle hydration when nextWakeAt is null', () async {
+        when(
+          () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => makeState());
+
+        await service.restoreSubscriptionsForAgent('agent-1');
+
+        verifyNever(
+          () => mockOrchestrator.setThrottleDeadline(any(), any()),
+        );
       });
     });
 
@@ -443,6 +487,8 @@ void main() {
 
         when(() => mockRepository.getLinksFrom('ta-1', type: 'agent_task'))
             .thenAnswer((_) async => [link1, link2]);
+        when(() => mockRepository.getAgentState('ta-1'))
+            .thenAnswer((_) async => null);
 
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
 
@@ -522,6 +568,8 @@ void main() {
         when(() => mockRepository.getLinksFrom('ta-ok', type: 'agent_task'))
             .thenAnswer((_) async => [link]);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(() => mockRepository.getAgentState('ta-ok'))
+            .thenAnswer((_) async => null);
 
         // Should not throw — error is caught internally.
         await service.restoreSubscriptions();
