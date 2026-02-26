@@ -959,4 +959,113 @@ void main() {
       expect(metrics.activeInstanceCount, 2);
     });
   });
+
+  // ── Evolution data-fetching methods ──────────────────────────────────────
+
+  group('getRecentInstanceReports', () {
+    test('delegates to repository with default limit', () async {
+      final reports = [makeTestReport(id: 'r1'), makeTestReport(id: 'r2')];
+      when(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => reports);
+
+      final result = await service.getRecentInstanceReports(kTestTemplateId);
+
+      expect(result, hasLength(2));
+      verify(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+      ).called(1);
+    });
+
+    test('passes custom limit to repository', () async {
+      when(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 5),
+      ).thenAnswer((_) async => []);
+
+      await service.getRecentInstanceReports(kTestTemplateId, limit: 5);
+
+      verify(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 5),
+      ).called(1);
+    });
+  });
+
+  group('getRecentInstanceObservations', () {
+    test('delegates to repository with default limit', () async {
+      final obs = [
+        makeTestMessage(id: 'o1', kind: AgentMessageKind.observation),
+      ];
+      when(
+        () => mockRepo.getRecentObservationsByTemplate(
+          kTestTemplateId,
+        ),
+      ).thenAnswer((_) async => obs);
+
+      final result =
+          await service.getRecentInstanceObservations(kTestTemplateId);
+
+      expect(result, hasLength(1));
+    });
+  });
+
+  group('getRecentEvolutionNotes', () {
+    test('delegates to repository', () async {
+      final notes = [
+        makeTestEvolutionNote(id: 'n1'),
+        makeTestEvolutionNote(id: 'n2', kind: EvolutionNoteKind.decision),
+      ];
+      when(
+        () => mockRepo.getEvolutionNotes(kTestTemplateId),
+      ).thenAnswer((_) async => notes);
+
+      final result = await service.getRecentEvolutionNotes(kTestTemplateId);
+
+      expect(result, hasLength(2));
+      expect(result[0].id, 'n1');
+      expect(result[1].kind, EvolutionNoteKind.decision);
+    });
+  });
+
+  group('getEvolutionSessions', () {
+    test('delegates to repository', () async {
+      final sessions = [
+        makeTestEvolutionSession(id: 's1'),
+        makeTestEvolutionSession(
+          id: 's2',
+          status: EvolutionSessionStatus.completed,
+        ),
+      ];
+      when(
+        () => mockRepo.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async => sessions);
+
+      final result = await service.getEvolutionSessions(kTestTemplateId);
+
+      expect(result, hasLength(2));
+      expect(result[1].status, EvolutionSessionStatus.completed);
+    });
+  });
+
+  group('countChangesSince', () {
+    test('delegates to repository', () async {
+      final since = DateTime(2026, 2, 20);
+      when(
+        () => mockRepo.countChangedSinceForTemplate(kTestTemplateId, since),
+      ).thenAnswer((_) async => 42);
+
+      final count = await service.countChangesSince(kTestTemplateId, since);
+
+      expect(count, 42);
+    });
+
+    test('returns 0 for null since', () async {
+      when(
+        () => mockRepo.countChangedSinceForTemplate(kTestTemplateId, null),
+      ).thenAnswer((_) async => 0);
+
+      final count = await service.countChangesSince(kTestTemplateId, null);
+
+      expect(count, 0);
+    });
+  });
 }
