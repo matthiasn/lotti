@@ -82,6 +82,33 @@ enum WakeReason {
   reanalysis,
 }
 
+/// Status of an evolution session.
+enum EvolutionSessionStatus {
+  /// Session is currently in progress.
+  active,
+
+  /// Session completed with a new version created.
+  completed,
+
+  /// Session was abandoned without creating a version.
+  abandoned,
+}
+
+/// Kind of evolution note (the evolution agent's private reasoning).
+enum EvolutionNoteKind {
+  /// Reflective observation about template performance.
+  reflection,
+
+  /// Hypothesis about what might improve the template.
+  hypothesis,
+
+  /// A decision made during the session.
+  decision,
+
+  /// A recurring pattern noticed across sessions.
+  pattern,
+}
+
 /// Kind of message in the agent's message log.
 enum AgentMessageKind {
   /// Agent's private working notes (agentJournal entries).

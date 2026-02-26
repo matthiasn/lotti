@@ -235,6 +235,95 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  // ── Evolution queries ──────────────────────────────────────────────────────
+
+  /// Fetch the N most recent reports from all instances assigned to
+  /// [templateId] via `template_assignment` links.
+  Future<List<AgentReportEntity>> getRecentReportsByTemplate(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows = await _db.getRecentReportsByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentReportEntity>()
+        .toList();
+  }
+
+  /// Fetch the N most recent observation messages from all instances assigned
+  /// to [templateId] via `template_assignment` links.
+  Future<List<AgentMessageEntity>> getRecentObservationsByTemplate(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows =
+        await _db.getRecentObservationsByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentMessageEntity>()
+        .toList();
+  }
+
+  /// Fetch evolution sessions for [templateId], newest-first.
+  Future<List<EvolutionSessionEntity>> getEvolutionSessions(
+    String templateId, {
+    int limit = 10,
+  }) async {
+    final rows =
+        await _db.getEvolutionSessionsByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionSessionEntity>()
+        .toList();
+  }
+
+  /// Fetch evolution notes for [templateId], newest-first.
+  Future<List<EvolutionNoteEntity>> getEvolutionNotes(
+    String templateId, {
+    int limit = 50,
+  }) async {
+    final rows = await _db.getEvolutionNotesByTemplate(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionNoteEntity>()
+        .toList();
+  }
+
+  /// Count entities changed since [since] for instances of [templateId].
+  ///
+  /// Returns 0 if [since] is `null` (no previous acknowledgement).
+  Future<int> countChangedSinceForTemplate(
+    String templateId,
+    DateTime? since,
+  ) async {
+    if (since == null) return 0;
+    return _db
+        .countEntitiesChangedSinceForTemplate(templateId, since)
+        .getSingle();
+  }
+
+  /// Update the user rating on a wake-run log entry.
+  ///
+  /// Throws [StateError] if [runKey] does not match any existing row.
+  Future<void> updateWakeRunRating(
+    String runKey, {
+    required double rating,
+    required DateTime ratedAt,
+  }) async {
+    final updatedRows = await (_db.update(_db.wakeRunLog)
+          ..where((t) => t.runKey.equals(runKey)))
+        .write(
+      WakeRunLogCompanion(
+        userRating: Value(rating),
+        ratedAt: Value(ratedAt),
+      ),
+    );
+
+    if (updatedRows == 0) {
+      throw StateError('No wake_run_log row found for runKey: $runKey');
+    }
+  }
+
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
   /// Insert or update a link using on-conflict update semantics against the

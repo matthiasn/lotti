@@ -28,6 +28,8 @@ class AgentDbConversions {
       agentTemplate: (e) => e.deletedAt,
       agentTemplateVersion: (e) => e.deletedAt,
       agentTemplateHead: (e) => e.deletedAt,
+      evolutionSession: (e) => e.deletedAt,
+      evolutionNote: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -120,6 +122,8 @@ class AgentDbConversions {
       agentTemplate: (_) => 'agentTemplate',
       agentTemplateVersion: (_) => 'agentTemplateVersion',
       agentTemplateHead: (_) => 'agentTemplateHead',
+      evolutionSession: (_) => 'evolutionSession',
+      evolutionNote: (_) => 'evolutionNote',
       unknown: (_) => 'unknown',
     );
   }
@@ -136,6 +140,8 @@ class AgentDbConversions {
       agentReportHead: (head) => head.scope,
       agentTemplate: (t) => t.kind.name,
       agentTemplateVersion: (v) => v.status.name,
+      evolutionSession: (s) => s.status.name,
+      evolutionNote: (n) => n.kind.name,
     );
   }
 
@@ -155,6 +161,8 @@ class AgentDbConversions {
       agentTemplate: (e) => e.createdAt,
       agentTemplateVersion: (e) => e.createdAt,
       agentTemplateHead: (e) => e.updatedAt,
+      evolutionSession: (e) => e.createdAt,
+      evolutionNote: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -175,6 +183,8 @@ class AgentDbConversions {
       agentTemplate: (e) => e.updatedAt,
       agentTemplateVersion: (e) => e.createdAt,
       agentTemplateHead: (e) => e.updatedAt,
+      evolutionSession: (e) => e.updatedAt,
+      evolutionNote: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }

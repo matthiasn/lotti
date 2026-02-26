@@ -27,5 +27,22 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) => m.createAll(),
+      onUpgrade: (m, from, to) async {
+        if (from < 2) {
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN user_rating REAL',
+          );
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN rated_at DATETIME',
+          );
+        }
+      },
+    );
+  }
 }

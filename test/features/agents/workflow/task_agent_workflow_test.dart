@@ -656,6 +656,8 @@ void main() {
                 agentTemplate: (_) => false,
                 agentTemplateVersion: (_) => false,
                 agentTemplateHead: (_) => false,
+                evolutionSession: (_) => false,
+                evolutionNote: (_) => false,
                 unknown: (_) => false,
               ),
             )

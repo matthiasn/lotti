@@ -31,6 +31,10 @@ AgentDomainEntity _$AgentDomainEntityFromJson(Map<String, dynamic> json) {
       return AgentTemplateVersionEntity.fromJson(json);
     case 'agentTemplateHead':
       return AgentTemplateHeadEntity.fromJson(json);
+    case 'evolutionSession':
+      return EvolutionSessionEntity.fromJson(json);
+    case 'evolutionNote':
+      return EvolutionNoteEntity.fromJson(json);
 
     default:
       return AgentUnknownEntity.fromJson(json);
@@ -156,6 +160,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(AgentTemplateEntity value)? agentTemplate,
     TResult Function(AgentTemplateVersionEntity value)? agentTemplateVersion,
     TResult Function(AgentTemplateHeadEntity value)? agentTemplateHead,
+    TResult Function(EvolutionSessionEntity value)? evolutionSession,
+    TResult Function(EvolutionNoteEntity value)? evolutionNote,
     TResult Function(AgentUnknownEntity value)? unknown,
     required TResult orElse(),
   }) {
@@ -179,6 +185,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentTemplateVersion(_that);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that);
+      case EvolutionSessionEntity() when evolutionSession != null:
+        return evolutionSession(_that);
+      case EvolutionNoteEntity() when evolutionNote != null:
+        return evolutionNote(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -212,6 +222,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     required TResult Function(AgentTemplateVersionEntity value)
         agentTemplateVersion,
     required TResult Function(AgentTemplateHeadEntity value) agentTemplateHead,
+    required TResult Function(EvolutionSessionEntity value) evolutionSession,
+    required TResult Function(EvolutionNoteEntity value) evolutionNote,
     required TResult Function(AgentUnknownEntity value) unknown,
   }) {
     final _that = this;
@@ -234,6 +246,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentTemplateVersion(_that);
       case AgentTemplateHeadEntity():
         return agentTemplateHead(_that);
+      case EvolutionSessionEntity():
+        return evolutionSession(_that);
+      case EvolutionNoteEntity():
+        return evolutionNote(_that);
       case AgentUnknownEntity():
         return unknown(_that);
       case _:
@@ -264,6 +280,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(AgentTemplateEntity value)? agentTemplate,
     TResult? Function(AgentTemplateVersionEntity value)? agentTemplateVersion,
     TResult? Function(AgentTemplateHeadEntity value)? agentTemplateHead,
+    TResult? Function(EvolutionSessionEntity value)? evolutionSession,
+    TResult? Function(EvolutionNoteEntity value)? evolutionNote,
     TResult? Function(AgentUnknownEntity value)? unknown,
   }) {
     final _that = this;
@@ -286,6 +304,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return agentTemplateVersion(_that);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that);
+      case EvolutionSessionEntity() when evolutionSession != null:
+        return evolutionSession(_that);
+      case EvolutionNoteEntity() when evolutionNote != null:
+        return evolutionNote(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -407,6 +429,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(String id, String agentId, String versionId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentTemplateHead,
+    TResult Function(
+            String id,
+            String agentId,
+            String templateId,
+            int sessionNumber,
+            EvolutionSessionStatus status,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            String? proposedVersionId,
+            String? feedbackSummary,
+            double? userRating,
+            DateTime? completedAt,
+            DateTime? deletedAt)?
+        evolutionSession,
+    TResult Function(
+            String id,
+            String agentId,
+            String sessionId,
+            EvolutionNoteKind kind,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String content,
+            DateTime? deletedAt)?
+        evolutionNote,
     TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -520,6 +567,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case EvolutionSessionEntity() when evolutionSession != null:
+        return evolutionSession(
+            _that.id,
+            _that.agentId,
+            _that.templateId,
+            _that.sessionNumber,
+            _that.status,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.proposedVersionId,
+            _that.feedbackSummary,
+            _that.userRating,
+            _that.completedAt,
+            _that.deletedAt);
+      case EvolutionNoteEntity() when evolutionNote != null:
+        return evolutionNote(
+            _that.id,
+            _that.agentId,
+            _that.sessionId,
+            _that.kind,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.content,
+            _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -649,6 +721,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     required TResult Function(String id, String agentId, String versionId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)
         agentTemplateHead,
+    required TResult Function(
+            String id,
+            String agentId,
+            String templateId,
+            int sessionNumber,
+            EvolutionSessionStatus status,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            String? proposedVersionId,
+            String? feedbackSummary,
+            double? userRating,
+            DateTime? completedAt,
+            DateTime? deletedAt)
+        evolutionSession,
+    required TResult Function(
+            String id,
+            String agentId,
+            String sessionId,
+            EvolutionNoteKind kind,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String content,
+            DateTime? deletedAt)
+        evolutionNote,
     required TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)
         unknown,
@@ -761,6 +858,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
       case AgentTemplateHeadEntity():
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case EvolutionSessionEntity():
+        return evolutionSession(
+            _that.id,
+            _that.agentId,
+            _that.templateId,
+            _that.sessionNumber,
+            _that.status,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.proposedVersionId,
+            _that.feedbackSummary,
+            _that.userRating,
+            _that.completedAt,
+            _that.deletedAt);
+      case EvolutionNoteEntity():
+        return evolutionNote(
+            _that.id,
+            _that.agentId,
+            _that.sessionId,
+            _that.kind,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.content,
+            _that.deletedAt);
       case AgentUnknownEntity():
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -883,6 +1005,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(String id, String agentId, String versionId,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         agentTemplateHead,
+    TResult? Function(
+            String id,
+            String agentId,
+            String templateId,
+            int sessionNumber,
+            EvolutionSessionStatus status,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            String? proposedVersionId,
+            String? feedbackSummary,
+            double? userRating,
+            DateTime? completedAt,
+            DateTime? deletedAt)?
+        evolutionSession,
+    TResult? Function(
+            String id,
+            String agentId,
+            String sessionId,
+            EvolutionNoteKind kind,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String content,
+            DateTime? deletedAt)?
+        evolutionNote,
     TResult? Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -995,6 +1142,31 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
+      case EvolutionSessionEntity() when evolutionSession != null:
+        return evolutionSession(
+            _that.id,
+            _that.agentId,
+            _that.templateId,
+            _that.sessionNumber,
+            _that.status,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.proposedVersionId,
+            _that.feedbackSummary,
+            _that.userRating,
+            _that.completedAt,
+            _that.deletedAt);
+      case EvolutionNoteEntity() when evolutionNote != null:
+        return evolutionNote(
+            _that.id,
+            _that.agentId,
+            _that.sessionId,
+            _that.kind,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.content,
+            _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
             _that.vectorClock, _that.deletedAt);
@@ -2773,6 +2945,383 @@ class _$AgentTemplateHeadEntityCopyWithImpl<$Res>
           ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class EvolutionSessionEntity implements AgentDomainEntity {
+  const EvolutionSessionEntity(
+      {required this.id,
+      required this.agentId,
+      required this.templateId,
+      required this.sessionNumber,
+      required this.status,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.proposedVersionId,
+      this.feedbackSummary,
+      this.userRating,
+      this.completedAt,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'evolutionSession';
+  factory EvolutionSessionEntity.fromJson(Map<String, dynamic> json) =>
+      _$EvolutionSessionEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String templateId;
+  final int sessionNumber;
+  final EvolutionSessionStatus status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  final String? proposedVersionId;
+  final String? feedbackSummary;
+  final double? userRating;
+  final DateTime? completedAt;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $EvolutionSessionEntityCopyWith<EvolutionSessionEntity> get copyWith =>
+      _$EvolutionSessionEntityCopyWithImpl<EvolutionSessionEntity>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$EvolutionSessionEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is EvolutionSessionEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.templateId, templateId) ||
+                other.templateId == templateId) &&
+            (identical(other.sessionNumber, sessionNumber) ||
+                other.sessionNumber == sessionNumber) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.proposedVersionId, proposedVersionId) ||
+                other.proposedVersionId == proposedVersionId) &&
+            (identical(other.feedbackSummary, feedbackSummary) ||
+                other.feedbackSummary == feedbackSummary) &&
+            (identical(other.userRating, userRating) ||
+                other.userRating == userRating) &&
+            (identical(other.completedAt, completedAt) ||
+                other.completedAt == completedAt) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      templateId,
+      sessionNumber,
+      status,
+      createdAt,
+      updatedAt,
+      vectorClock,
+      proposedVersionId,
+      feedbackSummary,
+      userRating,
+      completedAt,
+      deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.evolutionSession(id: $id, agentId: $agentId, templateId: $templateId, sessionNumber: $sessionNumber, status: $status, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, proposedVersionId: $proposedVersionId, feedbackSummary: $feedbackSummary, userRating: $userRating, completedAt: $completedAt, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $EvolutionSessionEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $EvolutionSessionEntityCopyWith(EvolutionSessionEntity value,
+          $Res Function(EvolutionSessionEntity) _then) =
+      _$EvolutionSessionEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String templateId,
+      int sessionNumber,
+      EvolutionSessionStatus status,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      String? proposedVersionId,
+      String? feedbackSummary,
+      double? userRating,
+      DateTime? completedAt,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$EvolutionSessionEntityCopyWithImpl<$Res>
+    implements $EvolutionSessionEntityCopyWith<$Res> {
+  _$EvolutionSessionEntityCopyWithImpl(this._self, this._then);
+
+  final EvolutionSessionEntity _self;
+  final $Res Function(EvolutionSessionEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? templateId = null,
+    Object? sessionNumber = null,
+    Object? status = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? proposedVersionId = freezed,
+    Object? feedbackSummary = freezed,
+    Object? userRating = freezed,
+    Object? completedAt = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(EvolutionSessionEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      templateId: null == templateId
+          ? _self.templateId
+          : templateId // ignore: cast_nullable_to_non_nullable
+              as String,
+      sessionNumber: null == sessionNumber
+          ? _self.sessionNumber
+          : sessionNumber // ignore: cast_nullable_to_non_nullable
+              as int,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as EvolutionSessionStatus,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      proposedVersionId: freezed == proposedVersionId
+          ? _self.proposedVersionId
+          : proposedVersionId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      feedbackSummary: freezed == feedbackSummary
+          ? _self.feedbackSummary
+          : feedbackSummary // ignore: cast_nullable_to_non_nullable
+              as String?,
+      userRating: freezed == userRating
+          ? _self.userRating
+          : userRating // ignore: cast_nullable_to_non_nullable
+              as double?,
+      completedAt: freezed == completedAt
+          ? _self.completedAt
+          : completedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class EvolutionNoteEntity implements AgentDomainEntity {
+  const EvolutionNoteEntity(
+      {required this.id,
+      required this.agentId,
+      required this.sessionId,
+      required this.kind,
+      required this.createdAt,
+      required this.vectorClock,
+      required this.content,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'evolutionNote';
+  factory EvolutionNoteEntity.fromJson(Map<String, dynamic> json) =>
+      _$EvolutionNoteEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String sessionId;
+  final EvolutionNoteKind kind;
+  final DateTime createdAt;
+  @override
+  final VectorClock? vectorClock;
+  final String content;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $EvolutionNoteEntityCopyWith<EvolutionNoteEntity> get copyWith =>
+      _$EvolutionNoteEntityCopyWithImpl<EvolutionNoteEntity>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$EvolutionNoteEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is EvolutionNoteEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.sessionId, sessionId) ||
+                other.sessionId == sessionId) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.content, content) || other.content == content) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, agentId, sessionId, kind,
+      createdAt, vectorClock, content, deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.evolutionNote(id: $id, agentId: $agentId, sessionId: $sessionId, kind: $kind, createdAt: $createdAt, vectorClock: $vectorClock, content: $content, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $EvolutionNoteEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $EvolutionNoteEntityCopyWith(
+          EvolutionNoteEntity value, $Res Function(EvolutionNoteEntity) _then) =
+      _$EvolutionNoteEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String sessionId,
+      EvolutionNoteKind kind,
+      DateTime createdAt,
+      VectorClock? vectorClock,
+      String content,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$EvolutionNoteEntityCopyWithImpl<$Res>
+    implements $EvolutionNoteEntityCopyWith<$Res> {
+  _$EvolutionNoteEntityCopyWithImpl(this._self, this._then);
+
+  final EvolutionNoteEntity _self;
+  final $Res Function(EvolutionNoteEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? sessionId = null,
+    Object? kind = null,
+    Object? createdAt = null,
+    Object? vectorClock = freezed,
+    Object? content = null,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(EvolutionNoteEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      sessionId: null == sessionId
+          ? _self.sessionId
+          : sessionId // ignore: cast_nullable_to_non_nullable
+              as String,
+      kind: null == kind
+          ? _self.kind
+          : kind // ignore: cast_nullable_to_non_nullable
+              as EvolutionNoteKind,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      content: null == content
+          ? _self.content
+          : content // ignore: cast_nullable_to_non_nullable
+              as String,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable

@@ -378,6 +378,94 @@ Map<String, dynamic> _$AgentTemplateHeadEntityToJson(
       'runtimeType': instance.$type,
     };
 
+EvolutionSessionEntity _$EvolutionSessionEntityFromJson(
+        Map<String, dynamic> json) =>
+    EvolutionSessionEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      templateId: json['templateId'] as String,
+      sessionNumber: (json['sessionNumber'] as num).toInt(),
+      status: $enumDecode(_$EvolutionSessionStatusEnumMap, json['status']),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      proposedVersionId: json['proposedVersionId'] as String?,
+      feedbackSummary: json['feedbackSummary'] as String?,
+      userRating: (json['userRating'] as num?)?.toDouble(),
+      completedAt: json['completedAt'] == null
+          ? null
+          : DateTime.parse(json['completedAt'] as String),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$EvolutionSessionEntityToJson(
+        EvolutionSessionEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'templateId': instance.templateId,
+      'sessionNumber': instance.sessionNumber,
+      'status': _$EvolutionSessionStatusEnumMap[instance.status]!,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'proposedVersionId': instance.proposedVersionId,
+      'feedbackSummary': instance.feedbackSummary,
+      'userRating': instance.userRating,
+      'completedAt': instance.completedAt?.toIso8601String(),
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$EvolutionSessionStatusEnumMap = {
+  EvolutionSessionStatus.active: 'active',
+  EvolutionSessionStatus.completed: 'completed',
+  EvolutionSessionStatus.abandoned: 'abandoned',
+};
+
+EvolutionNoteEntity _$EvolutionNoteEntityFromJson(Map<String, dynamic> json) =>
+    EvolutionNoteEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      sessionId: json['sessionId'] as String,
+      kind: $enumDecode(_$EvolutionNoteKindEnumMap, json['kind']),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      content: json['content'] as String,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$EvolutionNoteEntityToJson(
+        EvolutionNoteEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'sessionId': instance.sessionId,
+      'kind': _$EvolutionNoteKindEnumMap[instance.kind]!,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'content': instance.content,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$EvolutionNoteKindEnumMap = {
+  EvolutionNoteKind.reflection: 'reflection',
+  EvolutionNoteKind.hypothesis: 'hypothesis',
+  EvolutionNoteKind.decision: 'decision',
+  EvolutionNoteKind.pattern: 'pattern',
+};
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,
