@@ -426,6 +426,12 @@ abstract class AppLocalizations {
   /// **'Avg Duration'**
   String get agentEvolutionMetricAvgDuration;
 
+  /// No description provided for @agentEvolutionMetricNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get agentEvolutionMetricNotAvailable;
+
   /// No description provided for @agentEvolutionMetricFailures.
   ///
   /// In en, this message translates to:

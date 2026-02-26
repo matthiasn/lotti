@@ -232,6 +232,38 @@ void main() {
         final result = computeTimeSeries(runs);
         expect(result.versionBuckets, isEmpty);
       });
+
+      test('sorts version buckets chronologically by earliest wake run', () {
+        final runs = [
+          makeTestWakeRun(
+            runKey: 'r1',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 17),
+            templateVersionId: 'version-10',
+          ),
+          makeTestWakeRun(
+            runKey: 'r2',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 16),
+            templateVersionId: 'version-2',
+          ),
+          makeTestWakeRun(
+            runKey: 'r3',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 15),
+            templateVersionId: 'version-1',
+          ),
+        ];
+
+        final result = computeTimeSeries(runs);
+        final ids = result.versionBuckets.map((b) => b.versionId).toList();
+        final numbers =
+            result.versionBuckets.map((b) => b.versionNumber).toList();
+
+        // Ordered by earliest run date, not lexicographically.
+        expect(ids, ['version-1', 'version-2', 'version-10']);
+        expect(numbers, [1, 2, 3]);
+      });
     });
   });
 }

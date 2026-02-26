@@ -87,6 +87,7 @@
   "agentEvolutionMttrLabel": "Temps moyen de résolution",
   "agentEvolutionMetricActive": "Actifs",
   "agentEvolutionMetricAvgDuration": "Durée moy.",
+  "agentEvolutionMetricNotAvailable": "N/D",
   "agentEvolutionMetricFailures": "Échecs",
   "agentEvolutionMetricSuccess": "Succès",
   "agentEvolutionMetricWakes": "Réveils",

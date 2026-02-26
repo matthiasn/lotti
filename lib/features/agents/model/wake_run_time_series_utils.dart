@@ -107,8 +107,17 @@ List<VersionPerformanceBucket> _computeVersionBuckets(
     byVersion.putIfAbsent(versionId, () => []).add(run);
   }
 
-  // Sort version IDs for consistent ordering.
-  final sortedVersionIds = byVersion.keys.toList()..sort();
+  // Sort version IDs by earliest wake run date (chronological order).
+  final sortedVersionIds = byVersion.keys.toList()
+    ..sort((a, b) {
+      final aFirst = byVersion[a]!
+          .map((r) => r.createdAt)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final bFirst = byVersion[b]!
+          .map((r) => r.createdAt)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      return aFirst.compareTo(bFirst);
+    });
 
   return sortedVersionIds.indexed.map((entry) {
     final (index, versionId) = entry;

@@ -86,6 +86,7 @@
   "agentEvolutionMttrLabel": "Mean Time to Resolution",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Avg Duration",
+  "agentEvolutionMetricNotAvailable": "N/A",
   "agentEvolutionMetricFailures": "Failures",
   "agentEvolutionMetricSuccess": "Success",
   "agentEvolutionMetricWakes": "Wakes",

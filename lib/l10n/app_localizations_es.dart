@@ -183,6 +183,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentEvolutionMetricAvgDuration => 'Duración media';
 
   @override
+  String get agentEvolutionMetricNotAvailable => 'N/D';
+
+  @override
   String get agentEvolutionMetricFailures => 'Fallos';
 
   @override

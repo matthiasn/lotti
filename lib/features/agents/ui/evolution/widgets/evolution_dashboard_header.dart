@@ -123,7 +123,7 @@ class _EvolutionDashboardHeaderState
 
     final avgDurationText = metrics.averageDuration != null
         ? '${metrics.averageDuration!.inSeconds}s'
-        : 'N/A';
+        : context.messages.agentEvolutionMetricNotAvailable;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),

@@ -539,6 +539,21 @@ void main() {
       expect(workflow.activeSessions, isEmpty);
       expect(convRepo.deletedIds, isNotEmpty);
     });
+
+    test('returns null when opening assistant content is missing', () async {
+      stubFullContext();
+      final convRepo = _TestConversationRepository();
+      final workflow = buildSessionWorkflow(convRepo: convRepo);
+
+      final response = await workflow.startSession(
+        templateId: kTestTemplateId,
+      );
+
+      expect(response, isNull);
+      // Session has been created but no assistant content could be extracted.
+      expect(workflow.activeSessions, hasLength(1));
+      expect(convRepo.deletedIds, isEmpty);
+    });
   });
 
   group('sendMessage', () {

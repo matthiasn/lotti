@@ -87,6 +87,7 @@
   "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Durată medie",
+  "agentEvolutionMetricNotAvailable": "N/D",
   "agentEvolutionMetricFailures": "Eșecuri",
   "agentEvolutionMetricSuccess": "Succes",
   "agentEvolutionMetricWakes": "Activări",

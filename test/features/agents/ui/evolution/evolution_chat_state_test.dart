@@ -122,6 +122,43 @@ void main() {
         );
       });
 
+      test('abandons session when startSession returns null but session exists',
+          () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => null);
+
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        final data = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        expect(data.sessionId, isNull);
+        expect(data.messages.last, isA<EvolutionSystemMessage>());
+        expect(
+          (data.messages.last as EvolutionSystemMessage).text,
+          'session_error',
+        );
+        // Verify the session was abandoned so it doesn't block future starts.
+        verify(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .called(1);
+      });
+
       test('includes proposal if opening response contains one', () async {
         const testProposal = PendingProposal(
           directives: 'new directives',
@@ -285,6 +322,255 @@ void main() {
           systemMessages.any((m) => m.text == 'proposal_rejected'),
           isTrue,
         );
+      });
+    });
+
+    group('GenUI surface drain', () {
+      test('drains surface IDs from opening turn into messages', () async {
+        final processor = A2uiMessageProcessor(
+          catalogs: [buildEvolutionCatalog()],
+        );
+        final bridge = GenUiBridge(processor: processor)
+          ..handleToolCall({
+            'surfaceId': 'surf-opening-1',
+            'rootType': 'MetricsSummary',
+            'data': {
+              'totalWakes': 10,
+              'successRate': 0.9,
+              'failureCount': 1,
+            },
+          });
+
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Here are your metrics.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(genUiBridge: bridge),
+            modelId: 'model-1',
+            processor: processor,
+            genUiBridge: bridge,
+            eventHandler: GenUiEventHandler(processor: processor)..listen(),
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        final data = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        // system + assistant + surface
+        expect(data.messages.length, 3);
+        expect(data.messages[2], isA<EvolutionSurfaceMessage>());
+        expect(
+          (data.messages[2] as EvolutionSurfaceMessage).surfaceId,
+          'surf-opening-1',
+        );
+        expect(data.processor, isNotNull);
+      });
+
+      test('drains surface IDs after sendMessage', () async {
+        final processor = A2uiMessageProcessor(
+          catalogs: [buildEvolutionCatalog()],
+        );
+        final bridge = GenUiBridge(processor: processor);
+        final session = ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-1',
+          strategy: EvolutionStrategy(genUiBridge: bridge),
+          modelId: 'model-1',
+          processor: processor,
+          genUiBridge: bridge,
+          eventHandler: GenUiEventHandler(processor: processor)..listen(),
+        );
+
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(session);
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.sendMessage(
+            sessionId: 'session-1',
+            userMessage: 'Show me metrics',
+          ),
+        ).thenAnswer((_) async {
+          // Simulate the workflow creating a surface during the response.
+          bridge.handleToolCall({
+            'surfaceId': 'surf-response-1',
+            'rootType': 'MetricsSummary',
+            'data': {
+              'totalWakes': 5,
+              'successRate': 1.0,
+              'failureCount': 0,
+            },
+          });
+          return 'Here are your metrics.';
+        });
+        when(() => mockWorkflow.getSession('session-1')).thenReturn(session);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .sendMessage('Show me metrics'),
+        );
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+
+        // system + assistant(opening) + user + assistant(response) + surface
+        expect(data.messages.length, 5);
+        expect(data.messages[4], isA<EvolutionSurfaceMessage>());
+        expect(
+          (data.messages[4] as EvolutionSurfaceMessage).surfaceId,
+          'surf-response-1',
+        );
+      });
+    });
+
+    group('GenUI proposal actions', () {
+      test('proposal_rejected callback routes through rejectProposal',
+          () async {
+        final processor = A2uiMessageProcessor(
+          catalogs: [buildEvolutionCatalog()],
+        );
+        final bridge = GenUiBridge(processor: processor);
+        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+        const testProposal = PendingProposal(
+          directives: 'new directives',
+          rationale: 'better performance',
+        );
+
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Here is my proposal.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(genUiBridge: bridge),
+            modelId: 'model-1',
+            processor: processor,
+            genUiBridge: bridge,
+            eventHandler: eventHandler,
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(testProposal);
+        when(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        eventHandler.onProposalAction?.call('surface-1', 'proposal_rejected');
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(data.proposal, isNull);
+        expect(
+          data.messages
+              .whereType<EvolutionSystemMessage>()
+              .any((m) => m.text == 'proposal_rejected'),
+          isTrue,
+        );
+        verify(() => mockWorkflow.rejectProposal(sessionId: 'session-1'))
+            .called(1);
+      });
+
+      test('proposal_approved callback routes through approveProposal',
+          () async {
+        final processor = A2uiMessageProcessor(
+          catalogs: [buildEvolutionCatalog()],
+        );
+        final bridge = GenUiBridge(processor: processor);
+        final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+        const testProposal = PendingProposal(
+          directives: 'new directives',
+          rationale: 'better performance',
+        );
+        final approvedVersion = makeTestTemplateVersion(version: 2);
+
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Here is my proposal.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(genUiBridge: bridge),
+            modelId: 'model-1',
+            processor: processor,
+            genUiBridge: bridge,
+            eventHandler: eventHandler,
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(testProposal);
+        when(
+          () => mockWorkflow.approveProposal(
+            sessionId: 'session-1',
+            userRating: any(named: 'userRating'),
+          ),
+        ).thenAnswer((_) async => approvedVersion);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        eventHandler.onProposalAction?.call('surface-1', 'proposal_approved');
+        await Future<void>.value();
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(data.proposal, isNull);
+        expect(
+          data.messages
+              .whereType<EvolutionSystemMessage>()
+              .any((m) => m.text == 'session_completed:2'),
+          isTrue,
+        );
+        verify(
+          () => mockWorkflow.approveProposal(
+            sessionId: 'session-1',
+          ),
+        ).called(1);
       });
     });
   });

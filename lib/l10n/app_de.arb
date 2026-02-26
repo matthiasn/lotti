@@ -87,6 +87,7 @@
   "agentEvolutionMttrLabel": "Mittlere Lösungszeit",
   "agentEvolutionMetricActive": "Aktiv",
   "agentEvolutionMetricAvgDuration": "Durchschn. Dauer",
+  "agentEvolutionMetricNotAvailable": "k. A.",
   "agentEvolutionMetricFailures": "Fehler",
   "agentEvolutionMetricSuccess": "Erfolg",
   "agentEvolutionMetricWakes": "Aufrufe",

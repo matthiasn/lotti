@@ -86,6 +86,10 @@ class EvolutionChatState extends _$EvolutionChatState {
 
     final session = workflow.getActiveSessionForTemplate(templateId);
     if (session == null || openingResponse == null) {
+      // Abandon any partially-created session to avoid blocking future starts.
+      if (session != null) {
+        await workflow.abandonSession(sessionId: session.sessionId);
+      }
       return EvolutionChatData(
         messages: [
           ...messages,
