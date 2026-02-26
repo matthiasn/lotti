@@ -204,7 +204,11 @@ class TaskLabelHandler {
       availableLabels.add({'id': def.id, 'name': def.name});
     }
 
-    if (availableLabels.isEmpty && assignedLabels.isEmpty) return '';
+    if (availableLabels.isEmpty &&
+        assignedLabels.isEmpty &&
+        suppressedLabels.isEmpty) {
+      return '';
+    }
 
     final buffer = StringBuffer();
 

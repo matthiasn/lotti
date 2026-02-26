@@ -24,10 +24,13 @@ class CorrectionExamplesBuilder {
     final categoryId = task.meta.categoryId;
     if (categoryId == null) return '';
 
-    final category = await journalDb.getCategoryById(categoryId);
-    if (category == null) return '';
-
-    return formatExamples(category.correctionExamples);
+    try {
+      final category = await journalDb.getCategoryById(categoryId);
+      if (category == null) return '';
+      return formatExamples(category.correctionExamples);
+    } catch (_) {
+      return '';
+    }
   }
 
   /// Formats a list of correction examples into a markdown section.

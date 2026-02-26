@@ -10,9 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockLabelAssignmentProcessor extends Mock
-    implements LabelAssignmentProcessor {}
-
 void main() {
   late MockLabelAssignmentProcessor mockProcessor;
   late Task task;
@@ -642,6 +639,44 @@ void main() {
         expect(result, contains('scoped-label'));
         // Label scoped to different category should NOT be available.
         expect(result, isNot(contains('other-cat-label')));
+      });
+
+      test('returns suppressed section even when no assigned/available',
+          () async {
+        // All labels are either suppressed or out-of-scope — no available.
+        final taskWithOnlySuppressed = task.copyWith(
+          meta: task.meta.copyWith(labelIds: null),
+          data: task.data.copyWith(
+            aiSuppressedLabelIds: {'label-1'},
+          ),
+        );
+
+        final outOfScopeLabel = LabelDefinition(
+          id: 'out-of-scope',
+          name: 'OutOfScope',
+          color: '#0000FF',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          applicableCategoryIds: ['cat-999'],
+        );
+
+        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+          (_) async => [testLabelDefinition1, outOfScopeLabel],
+        );
+
+        final result = await TaskLabelHandler.buildLabelContext(
+          task: taskWithOnlySuppressed,
+          journalDb: mockDb,
+        );
+
+        // Should NOT be empty — suppressed guidance is critical.
+        expect(result, isNotEmpty);
+        expect(result, contains('## Suppressed Labels'));
+        expect(result, contains('label-1'));
+        // No assigned or available sections.
+        expect(result, isNot(contains('## Assigned Labels')));
+        expect(result, isNot(contains('## Available Labels')));
       });
 
       test('excludes assigned and suppressed from available', () async {

@@ -62,6 +62,18 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test('returns empty string when getCategoryById throws', () async {
+        when(() => mockDb.getCategoryById('cat-1'))
+            .thenThrow(Exception('DB error'));
+
+        final result = await CorrectionExamplesBuilder.buildContext(
+          task: task,
+          journalDb: mockDb,
+        );
+
+        expect(result, isEmpty);
+      });
+
       test('returns empty string when examples list is empty', () async {
         when(() => mockDb.getCategoryById('cat-1')).thenAnswer(
           (_) async => categoryMindfulness.copyWith(

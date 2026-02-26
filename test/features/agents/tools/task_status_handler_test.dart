@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -290,24 +289,21 @@ void main() {
         );
       });
 
-      test('uses clock.now() for status createdAt', () {
-        fakeAsync((async) {
-          final fixedTime = DateTime(2024, 6, 15, 10, 30);
-          withClock(Clock.fixed(fixedTime), () async {
-            when(() => mockJournalRepo.updateJournalEntity(any()))
-                .thenAnswer((_) async => true);
+      test('uses clock.now() for status createdAt', () async {
+        final fixedTime = DateTime(2024, 6, 15, 10, 30);
+        await withClock(Clock.fixed(fixedTime), () async {
+          when(() => mockJournalRepo.updateJournalEntity(any()))
+              .thenAnswer((_) async => true);
 
-            final handler = TaskStatusHandler(
-              task: task,
-              journalRepository: mockJournalRepo,
-            );
+          final handler = TaskStatusHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-            final result = await handler.handle('GROOMED');
-            async.flushMicrotasks();
+          final result = await handler.handle('GROOMED');
 
-            expect(result.success, isTrue);
-            expect(result.updatedTask!.data.status.createdAt, fixedTime);
-          });
+          expect(result.success, isTrue);
+          expect(result.updatedTask!.data.status.createdAt, fixedTime);
         });
       });
 

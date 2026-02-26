@@ -9,14 +9,13 @@
 This plan addresses four areas of improvement for the Task Agent system discovered
 during real-world testing of the throttling/manual-trigger work from PR #2703:
 
-1. **Throttle timing adjustment** — switch from "run immediately + 5min cooldown" to
+1. **Throttle timing adjustment** — switch from "run immediately + 5-minute cooldown" to
    "defer first run by 2 minutes" to coalesce bursty edits.
 2. **New tools** — add `set_task_language` and `set_task_status` to the agent's
    tool registry.
 3. **Reporting & observations** — stop leaking internal notes into reports; increase
    observation verbosity.
-4. **Data integration** — pass checklist templates and correction examples into the
-   agent's context window.
+4. **Data integration** — pass correction examples into the agent's context window.
 
 ---
 
@@ -24,7 +23,7 @@ during real-world testing of the throttling/manual-trigger work from PR #2703:
 
 ### Current Behavior
 
-```
+```text
 User edits task → notification → _onBatch → enqueue → processNext → _drain → execute immediately
                                                        ↓
                                       Set 300s throttle deadline → deferred drain fires at 300s
@@ -34,6 +33,7 @@ The agent runs **immediately** on the first notification, then enforces a 5-minu
 cooldown. This creates two problems:
 - The first run fires before the user finishes making changes (bursty edits).
 - 300 seconds is long for a second pass once changes settle.
+- "5-minute cooldown" is too aggressive for iterative editing workflows.
 
 ### Proposed Behavior
 
@@ -185,9 +185,9 @@ AgentToolDefinition(
 ),
 ```
 
-#### Handler (task_agent_workflow.dart)
+#### Handler (task_language_handler.dart)
 
-Add a new `_handleSetLanguage` method and a new case in `_executeToolHandler`:
+Add a new `TaskLanguageHandler` class and a new case in `_executeToolHandler`:
 
 ```dart
 case 'set_task_language':
@@ -236,7 +236,7 @@ AgentToolDefinition(
 ),
 ```
 
-#### Handler (task_agent_workflow.dart)
+#### Handler (task_status_handler.dart)
 
 New `TaskStatusHandler` class (new file:
 `lib/features/agents/tools/task_status_handler.dart`):
@@ -259,7 +259,7 @@ directly using `clock.now()` from the `clock` package rather than calling
 
 Add to the "Tool Usage Guidelines" section:
 
-```
+```text
 - **Status**: Only transition status when there is clear evidence. For example:
   - Set "IN PROGRESS" when time is being logged on the task (especially
     combined with checklist items being checked off).
@@ -318,7 +318,7 @@ report markdown, making internal notes visible to the user.
 
 Update `taskAgentScaffold` to add:
 
-```
+```text
 ## Report vs Observations — Separation of Concerns
 
 The report (`update_report`) is the PUBLIC, user-facing summary. It should contain:
@@ -438,7 +438,7 @@ buffer
 
 #### Prompt Guidance (in taskAgentScaffold)
 
-```
+```text
 - **Labels**: If the task has fewer than 3 labels, assign relevant labels from
   the available list. Order by confidence (highest first), omit low confidence,
   cap at 3 per call. Never propose suppressed labels.
