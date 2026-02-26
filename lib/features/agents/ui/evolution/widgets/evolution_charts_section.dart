@@ -39,8 +39,8 @@ class EvolutionChartsSection extends ConsumerWidget {
     final daily = timeSeries.dailyBuckets;
     final versions = timeSeries.versionBuckets;
 
-    // Don't render anything if there's insufficient data for all charts.
-    if (daily.length < 2 && versions.length < 2) {
+    // Don't render anything if there's no data at all.
+    if (daily.isEmpty && versions.isEmpty) {
       return const SizedBox.shrink();
     }
 

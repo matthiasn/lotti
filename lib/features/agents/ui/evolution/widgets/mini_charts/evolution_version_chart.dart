@@ -19,7 +19,7 @@ class EvolutionVersionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (buckets.length < 2) return const SizedBox.shrink();
+    if (buckets.isEmpty) return const SizedBox.shrink();
 
     final spots = buckets.map((bucket) {
       return FlSpot(bucket.versionNumber.toDouble(), bucket.successRate);

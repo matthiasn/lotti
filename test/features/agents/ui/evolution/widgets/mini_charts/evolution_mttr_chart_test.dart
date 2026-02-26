@@ -19,8 +19,7 @@ void main() {
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when < 2 non-zero data points',
-        (tester) async {
+    testWidgets('renders dot for single non-zero data point', (tester) async {
       final buckets = [
         DailyWakeBucket(
           date: DateTime(2024, 3, 15),
@@ -45,8 +44,10 @@ void main() {
       );
       await tester.pump();
 
-      // Only one non-zero bucket, so should shrink
-      expect(find.byType(LineChart), findsNothing);
+      // Only one non-zero bucket → renders as a single dot
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData.first.dotData.show, isTrue);
+      expect(chart.data.lineBarsData.first.spots, hasLength(1));
     });
 
     testWidgets('converts durations to seconds for Y values', (tester) async {

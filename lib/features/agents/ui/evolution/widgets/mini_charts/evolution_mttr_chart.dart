@@ -22,8 +22,9 @@ class EvolutionMttrChart extends StatelessWidget {
     // Filter out zero-duration days (no completed runs).
     final nonZeroBuckets =
         buckets.where((b) => b.averageDuration > Duration.zero).toList();
-    if (nonZeroBuckets.length < 2) return const SizedBox.shrink();
+    if (nonZeroBuckets.isEmpty) return const SizedBox.shrink();
 
+    final isSingle = nonZeroBuckets.length == 1;
     final spots = nonZeroBuckets.indexed.map((entry) {
       final (index, bucket) = entry;
       return FlSpot(
@@ -47,9 +48,9 @@ class EvolutionMttrChart extends StatelessWidget {
               curveSmoothness: 0.3,
               color: _color,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(show: isSingle),
               belowBarData: BarAreaData(
-                show: true,
+                show: !isSingle,
                 color: _color.withValues(alpha: 0.15),
               ),
             ),

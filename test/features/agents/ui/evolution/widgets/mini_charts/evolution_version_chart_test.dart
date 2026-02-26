@@ -18,10 +18,21 @@ void main() {
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when < 2 data points', (tester) async {
+    testWidgets('renders LineChart with single data point', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EvolutionVersionChart(buckets: _makeVersionBuckets(1)),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(LineChart), findsOneWidget);
+    });
+
+    testWidgets('renders SizedBox.shrink for empty data', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EvolutionVersionChart(buckets: []),
         ),
       );
       await tester.pump();

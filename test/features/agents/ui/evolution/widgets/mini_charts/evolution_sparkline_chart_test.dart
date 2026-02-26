@@ -31,7 +31,8 @@ void main() {
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when < 2 data points', (tester) async {
+    testWidgets('renders LineChart with dot for single data point',
+        (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EvolutionSparklineChart(buckets: _makeBuckets(1)),
@@ -39,7 +40,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(LineChart), findsNothing);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData.first.dotData.show, isTrue);
+      expect(chart.data.lineBarsData.first.belowBarData.show, isFalse);
     });
 
     testWidgets('renders SizedBox.shrink for empty data', (tester) async {

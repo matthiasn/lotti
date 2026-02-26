@@ -6,7 +6,7 @@ import 'package:lotti/themes/gamey/colors.dart';
 /// Mini sparkline chart showing daily success rate over time.
 ///
 /// Renders a line chart with area fill, ~60px tall, no labels or tooltips.
-/// Returns [SizedBox.shrink] when fewer than 2 data points.
+/// With a single data point, shows a dot. Returns [SizedBox.shrink] when empty.
 class EvolutionSparklineChart extends StatelessWidget {
   const EvolutionSparklineChart({
     required this.buckets,
@@ -20,8 +20,9 @@ class EvolutionSparklineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (buckets.length < 2) return const SizedBox.shrink();
+    if (buckets.isEmpty) return const SizedBox.shrink();
 
+    final isSingle = buckets.length == 1;
     final spots = buckets.indexed.map((entry) {
       final (index, bucket) = entry;
       return FlSpot(index.toDouble(), bucket.successRate);
@@ -44,9 +45,9 @@ class EvolutionSparklineChart extends StatelessWidget {
               curveSmoothness: 0.3,
               color: _color,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(show: isSingle),
               belowBarData: BarAreaData(
-                show: true,
+                show: !isSingle,
                 color: _color.withValues(alpha: 0.15),
               ),
             ),

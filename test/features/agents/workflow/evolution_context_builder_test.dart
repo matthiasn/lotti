@@ -77,7 +77,7 @@ void main() {
     test('contains conversation rules', () {
       final ctx = buildWithDefaults();
 
-      expect(ctx.systemPrompt, contains('conversational'));
+      expect(ctx.systemPrompt, contains('propose improved directives'));
       expect(ctx.systemPrompt, contains('core identity'));
     });
   });
@@ -172,8 +172,8 @@ void main() {
     test('ends with prompt for user interaction', () {
       final ctx = buildWithDefaults();
 
-      expect(ctx.initialUserMessage, contains('review this data'));
-      expect(ctx.initialUserMessage, contains('patterns'));
+      expect(ctx.initialUserMessage, contains('Review this data'));
+      expect(ctx.initialUserMessage, contains('propose_directives'));
     });
   });
 

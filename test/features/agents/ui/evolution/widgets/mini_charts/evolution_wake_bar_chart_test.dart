@@ -18,10 +18,22 @@ void main() {
       expect(find.byType(BarChart), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when < 2 data points', (tester) async {
+    testWidgets('renders BarChart with single data point', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EvolutionWakeBarChart(buckets: _makeBuckets(1)),
+        ),
+      );
+      await tester.pump();
+
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      expect(chart.data.barGroups, hasLength(1));
+    });
+
+    testWidgets('renders SizedBox.shrink for empty data', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const EvolutionWakeBarChart(buckets: []),
         ),
       );
       await tester.pump();

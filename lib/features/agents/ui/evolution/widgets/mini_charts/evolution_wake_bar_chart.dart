@@ -19,7 +19,7 @@ class EvolutionWakeBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (buckets.length < 2) return const SizedBox.shrink();
+    if (buckets.isEmpty) return const SizedBox.shrink();
 
     final maxY = buckets.fold<int>(
       0,
