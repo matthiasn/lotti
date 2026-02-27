@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.877] - 2026-02-27
+### Added
+- Alibaba Cloud (Qwen) as AI inference provider with 5 models including text,
+  vision, reasoning, audio, and image generation variants via DashScope API.
+- Qwen3 Omni Flash for audio transcription via Alibaba provider.
+
 ## [0.9.876] - 2026-02-27
 ### Added
 - Outbox payload size tracking: records total payload size (JSON + file attachment)
@@ -149,8 +155,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   during recording (~2s latency). Available in both AI chat and the journal
   audio recording modal via a mode toggle.
 - Native WAV-to-M4A audio conversion via platform channels on iOS and macOS.
-- Alibaba Cloud (Qwen) as AI inference provider with 5 models including text,
-  vision, reasoning, and audio variants via DashScope API.
 
 ## [0.9.864] - 2026-02-18
 ### Improved

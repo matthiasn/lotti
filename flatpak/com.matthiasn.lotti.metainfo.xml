@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.877" date="2026-02-27">
+      <description>
+          <p>Alibaba Cloud (Qwen) as AI inference provider with 5 models including text, vision, reasoning, audio, and image generation variants via DashScope API. Qwen3 Omni Flash for audio transcription.</p>
+      </description>
+    </release>
     <release version="0.9.876" date="2026-02-27">
       <description>
           <p>Outbox payload size tracking: records total payload size (JSON message + file attachment bytes) for each outbox item, displays size in the outbox monitor, adds daily volume aggregation for sync analytics, and visualizes 30-day outbox throughput in a bar chart.</p>
@@ -88,7 +93,7 @@
     </release>
     <release version="0.9.865" date="2026-02-18">
       <description>
-          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS. New AI Provider: Alibaba Cloud (Qwen) with text, vision, reasoning, and audio models via DashScope API.</p>
+          <p>Real-Time Transcription: Live transcription via Mistral Voxtral WebSocket API with ~2s latency, showing subtitles as you speak. Mode toggle in both AI chat and journal audio recorder. Native WAV-to-M4A conversion on iOS and macOS.</p>
       </description>
     </release>
     <release version="0.9.864" date="2026-02-18">
