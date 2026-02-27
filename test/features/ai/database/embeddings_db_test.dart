@@ -1,43 +1,10 @@
-import 'dart:ffi';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
-import 'package:sqlite3/sqlite3.dart';
 
-/// Returns the platform-specific filename for the test sqlite3+vec library.
-///
-/// Built via `make build_test_sqlite_vec` before running tests.
-String get _testLibPath {
-  final root = Directory.current.path;
-  final String ext;
-  if (Platform.isMacOS) {
-    ext = 'dylib';
-  } else if (Platform.isWindows) {
-    ext = 'dll';
-  } else {
-    ext = 'so';
-  }
-  return '$root/packages/sqlite_vec/test_sqlite3_with_vec.$ext';
-}
-
-/// Whether the native sqlite-vec test library is available.
-bool get _sqliteVecAvailable => File(_testLibPath).existsSync();
-
-/// Registers the sqlite-vec extension with the global [sqlite3] instance.
-///
-/// The actual library override (`open.overrideFor`) is set in
-/// `flutter_test_config.dart` so it runs before any test accesses `sqlite3`.
-/// This function only needs to register the extension as an auto-extension
-/// so that new connections get vec0 virtual-table support.
-void _loadSqliteVecForTests() {
-  final customLib = DynamicLibrary.open(_testLibPath);
-  sqlite3.ensureExtensionLoaded(
-    SqliteExtension.inLibrary(customLib, 'sqlite3_vec_init'),
-  );
-}
+import 'load_sqlite_vec.dart';
 
 /// Creates a [Float32List] with [length] elements, all set to [value].
 Float32List _makeVector(int length, {double value = 0}) {
@@ -59,17 +26,17 @@ Float32List _makeSequentialVector(int length) {
 }
 
 void main() {
-  if (!_sqliteVecAvailable) {
+  if (!sqliteVecAvailable) {
     test('sqlite-vec not built — skipping', () {
       markTestSkipped(
-        'Native library not found at $_testLibPath. '
+        'Native library not found at $testSqliteVecLibPath. '
         'Run `make build_test_sqlite_vec` to enable these tests.',
       );
     });
     return;
   }
 
-  setUpAll(_loadSqliteVecForTests);
+  setUpAll(loadSqliteVecForTests);
 
   late EmbeddingsDb db;
 

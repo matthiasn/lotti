@@ -25,6 +25,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -200,6 +201,8 @@ MockJournalDb mockJournalDbWithSyncFlag({
 }
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
+
+class MockEmbeddingsDb extends Mock implements EmbeddingsDb {}
 
 class MockFts5Db extends Mock implements Fts5Db {}
 

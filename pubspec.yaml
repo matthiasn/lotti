@@ -114,6 +114,9 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
   sqlite3_flutter_libs: ^0.5.15
+  # Vendored locally because sqlite-vec is not yet published on pub.dev.
+  sqlite_vec:
+    path: packages/sqlite_vec
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1
   timezone: ^0.10.0

@@ -384,7 +384,11 @@ void main() {
     final stateBeforeDispose = container.read(chatRecorderControllerProvider);
     expect(stateBeforeDispose.amplitudeHistory.length, 5);
 
-    // Dispose the controller (simulates provider disposal)
+    // Dispose the controller (simulates provider disposal).
+    // The onDispose callback fires an unawaited async cleanup chain
+    // (cancel amp sub → dispose recorder → delete files → delete temp dir).
+    // Each step is a separate await, so we must pump multiple times to let
+    // the full chain settle.
     sub.close();
     container.dispose();
 

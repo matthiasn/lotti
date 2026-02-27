@@ -3,8 +3,8 @@ project(sqlite_vec LANGUAGES C)
 
 add_subdirectory("../src" sqlite_vec_build)
 
-# Install the DLL next to the executable so Flutter bundles it.
-install(TARGETS sqlite_vec
-  RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}"
+# List of absolute paths to libraries that should be bundled with the plugin.
+set(sqlite_vec_bundled_libraries
+  "$<TARGET_FILE:sqlite_vec>"
+  PARENT_SCOPE
 )

@@ -52,8 +52,8 @@ ARCH=$(uname -m)
 
 if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
   NEON_FLAG="-DSQLITE_VEC_ENABLE_NEON -flax-vector-conversions"
-elif [ "$ARCH" = "x86_64" ]; then
-  AVX_FLAG="-DSQLITE_VEC_ENABLE_AVX -mavx"
+# On x86_64 we intentionally skip AVX — scalar fallback is sufficient and
+# avoids illegal-instruction crashes on CI runners without AVX support.
 fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
