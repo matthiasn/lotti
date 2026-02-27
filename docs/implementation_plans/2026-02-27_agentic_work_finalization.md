@@ -258,7 +258,7 @@ graph TD
 ```
 
 - Remove old `/settings/templates/*` patterns
-- Add `/settings/agents`, `/settings/agents/:agentId`
+- Add `/settings/agents`
 - Template create/edit routes become `/settings/agents/templates/create` and `/settings/agents/templates/:templateId`
 - Agent instance detail: `/settings/agents/instances/:agentId`
 

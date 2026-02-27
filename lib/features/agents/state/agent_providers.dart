@@ -142,18 +142,17 @@ Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
 Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
   final templateService = ref.watch(agentTemplateServiceProvider);
   final templates = await templateService.listTemplates();
-  final sessions = <EvolutionSessionEntity>[];
-  for (final t in templates) {
-    final template = t.mapOrNull(agentTemplate: (tpl) => tpl);
-    if (template != null) {
-      final templateSessions = await templateService.getEvolutionSessions(
-        template.id,
-        limit: 100,
-      );
-      sessions.addAll(templateSessions);
-    }
-  }
-  sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  final templateIds = templates
+      .map((t) => t.mapOrNull(agentTemplate: (tpl) => tpl.id))
+      .whereType<String>()
+      .toList();
+
+  final sessionLists = await Future.wait(
+    templateIds.map(templateService.getEvolutionSessions),
+  );
+
+  final sessions = sessionLists.expand((items) => items).toList()
+    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   return sessions.cast<AgentDomainEntity>();
 }
 

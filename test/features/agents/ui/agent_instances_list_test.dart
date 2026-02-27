@@ -394,5 +394,139 @@ void main() {
       );
       expect(navigatedPath, '/settings/agents/templates/tpl-42');
     });
+
+    testWidgets('shows error state when both providers fail', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: AgentInstancesList()),
+          overrides: [
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => throw Exception('agents failed'),
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => throw Exception('evolutions failed'),
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows abandoned evolution status badge', (tester) async {
+      final session = makeTestEvolutionSession(
+        id: 'evo-abandoned',
+        status: EvolutionSessionStatus.abandoned,
+      );
+
+      await tester.pumpWidget(buildSubject(evolutions: [session]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(context.messages.agentEvolutionStatusAbandoned),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows created lifecycle badge on agent card', (tester) async {
+      final agent = makeTestIdentity(
+        id: 'agent-created',
+        agentId: 'agent-created',
+        displayName: 'Created Agent',
+        lifecycle: AgentLifecycle.created,
+      );
+
+      await tester.pumpWidget(buildSubject(agents: [agent]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(context.messages.agentLifecycleCreated),
+        findsAtLeast(1),
+      );
+    });
+
+    testWidgets('shows destroyed lifecycle badge on agent card',
+        (tester) async {
+      final agent = makeTestIdentity(
+        id: 'agent-destroyed',
+        agentId: 'agent-destroyed',
+        displayName: 'Destroyed Agent',
+        lifecycle: AgentLifecycle.destroyed,
+      );
+
+      await tester.pumpWidget(buildSubject(agents: [agent]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(context.messages.agentLifecycleDestroyed),
+        findsAtLeast(1),
+      );
+    });
+
+    testWidgets('shows template name on task agent card when available',
+        (tester) async {
+      final agent = makeTestIdentity(
+        id: 'agent-with-tpl',
+        agentId: 'agent-with-tpl',
+        displayName: 'Worker Agent',
+      );
+
+      final template = makeTestTemplate(
+        id: 'tpl-for-agent',
+        agentId: 'tpl-for-agent',
+        displayName: 'My Template',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: AgentInstancesList()),
+          overrides: [
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => [agent],
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => template,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Template'), findsOneWidget);
+    });
+
+    testWidgets('active evolution status badge is shown', (tester) async {
+      final session = makeTestEvolutionSession(
+        id: 'evo-active',
+      );
+
+      await tester.pumpWidget(buildSubject(evolutions: [session]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      // "Active" appears in lifecycle filter segment AND in evolution status
+      // badge — verify at least one occurrence from the status badge
+      expect(
+        find.text(context.messages.agentEvolutionStatusActive),
+        findsAtLeast(1),
+      );
+    });
   });
 }

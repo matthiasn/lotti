@@ -264,7 +264,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesFilterAll => 'Alle';
 
   @override
-  String get agentInstancesFilterDestroyed => 'Gelöscht';
+  String get agentInstancesFilterDestroyed => 'Zerstört';
 
   @override
   String get agentInstancesFilterDormant => 'Ruhend';
@@ -276,7 +276,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesKindEvolution => 'Evolution';
 
   @override
-  String get agentInstancesKindTaskAgent => 'Task Agent';
+  String get agentInstancesKindTaskAgent => 'Aufgaben-Agent';
 
   @override
   String get agentInstancesTitle => 'Instanzen';

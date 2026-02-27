@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -13,7 +14,10 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
   });
-  tearDown(tearDownTestGetIt);
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
 
   Widget buildSubject({
     List<AgentDomainEntity> templates = const [],
@@ -156,6 +160,104 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.add), findsOneWidget);
+    });
+
+    testWidgets('shows error state when templates fail to load',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentSettingsPage(),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) async => throw Exception('load failed'),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, templateId) async => null,
+            ),
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      expect(
+        find.text(context.messages.commonError),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows version number on template card', (tester) async {
+      final template = makeTestTemplate(
+        id: 'tpl-ver',
+        agentId: 'tpl-ver',
+        displayName: 'Versioned Template',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentSettingsPage(),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) async => [template],
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, templateId) async => makeTestTemplateVersion(
+                agentId: templateId,
+                version: 3,
+              ),
+            ),
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      expect(
+        find.text(context.messages.agentTemplateVersionLabel(3)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping template card navigates to template detail',
+        (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final template = makeTestTemplate(
+        id: 'tpl-nav',
+        agentId: 'tpl-nav',
+        displayName: 'Nav Template',
+      );
+
+      await tester.pumpWidget(buildSubject(templates: [template]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nav Template'));
+      expect(navigatedPath, '/settings/agents/templates/tpl-nav');
     });
   });
 }

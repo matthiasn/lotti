@@ -101,6 +101,48 @@ void main() {
       expect(find.byIcon(Icons.expand_more), findsOneWidget);
     });
 
+    testWidgets('parses bold TLDR prefix pattern', (tester) async {
+      const markdown = '# Title\n\n'
+          '**TLDR:** Quick summary here\n\n'
+          '## Details\n- More info\n';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown).first,
+      );
+      expect(gptMarkdown.data, contains('TLDR'));
+      expect(gptMarkdown.data, contains('Quick summary'));
+
+      // Expand button should exist for the details section
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Expand to verify additional content
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 2);
+      expect(markdowns.last.data, contains('Details'));
+    });
+
+    testWidgets('TLDR heading with no subsequent sections shows only TLDR',
+        (tester) async {
+      const markdown = '## 📋 TLDR\nJust the summary, nothing more.';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdowns = tester.widgetList<GptMarkdown>(
+        find.byType(GptMarkdown),
+      );
+      expect(gptMarkdowns.length, 1);
+      expect(gptMarkdowns.first.data, contains('Just the summary'));
+
+      // No expand button since there is no additional content
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+    });
+
     testWidgets('collapses back on second tap', (tester) async {
       const markdown = '## 📋 TLDR\nOverview.\n\n## ✅ Achieved\n- Item\n';
       await tester.pumpWidget(buildSubject(markdown));

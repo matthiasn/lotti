@@ -274,7 +274,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentInstancesKindEvolution => 'Evoluție';
 
   @override
-  String get agentInstancesKindTaskAgent => 'Agent sarcini';
+  String get agentInstancesKindTaskAgent => 'Agent de sarcini';
 
   @override
   String get agentInstancesTitle => 'Instanțe';

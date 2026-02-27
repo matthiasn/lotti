@@ -725,7 +725,7 @@ final class AllEvolutionSessionsProvider extends $FunctionalProvider<
 }
 
 String _$allEvolutionSessionsHash() =>
-    r'9b6c4875be81fd2dd1c8a833416ab335a58d62db';
+    r'0a3f06037fe006a0a71cf78ac78493d0c0e91c31';
 
 /// Fetch a single agent template by [templateId].
 ///

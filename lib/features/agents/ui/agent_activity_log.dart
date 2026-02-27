@@ -361,7 +361,8 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
             .substring(0, headingMatch.end + nextHeadingMatch.start)
             .trim();
       }
-      return content;
+      // TLDR is the only section — return just the TLDR portion
+      return content.substring(headingMatch.start).trim();
     }
 
     // Fallback: first paragraph
