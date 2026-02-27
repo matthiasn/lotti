@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.875" date="2026-02-27">
       <description>
-          <p>Fix task agent automatic trigger broken after throttle optimization: fixed deferred drain silently dropping when deadline expired, added safety-net periodic timer for stuck queue recovery, and fixed startup hydration race cancelling deferred drain timers.</p>
+          <p>Fix task agent automatic trigger broken after throttle optimization: fixed deferred drain silently dropping when deadline expired, added safety-net periodic timer for stuck queue recovery, and fixed startup hydration race cancelling deferred drain timers. Fix agent template model selection not persisted when editing.</p>
       </description>
     </release>
     <release version="0.9.874" date="2026-02-27">
