@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/ai/repository/ai_input_repository.dart' show AiInputRepository;
+import 'package:lotti/features/ai/repository/ai_input_repository.dart'
+    show AiInputRepository;
 
 /// Rewrites linked-task JSON context for task-agent prompt assembly.
 ///

@@ -21,8 +21,8 @@ The system is enabled only when `enableAgents` is true.
   - linked task context
 - Linked task context is enriched with `latestTaskAgentReport` from the linked
   task's associated task agent (via `agent_task` links + `agentReportHead`).
-- Legacy linked-task `latestSummary` payloads are stripped before prompt
-  submission and are no longer used for Task Agent execution.
+- Linked-task `latestSummary` payloads are stripped before prompt submission
+  and are not used for Task Agent execution.
 - MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
   avoid repeated journal lookups for shared task links.
 
@@ -157,3 +157,10 @@ sequenceDiagram
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes.
 - `state/`: Riverpod DI + read models + initialization wiring.
 - `ui/`: settings/templates/instances/detail/evolution screens.
+
+## Architecture Decision Records
+
+Current-state architecture stays in this README. Decision rationale and
+evolution history live in ADRs:
+
+- [`docs/adr/README.md`](../../../docs/adr/README.md)
