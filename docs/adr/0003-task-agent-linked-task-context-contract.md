@@ -22,9 +22,10 @@ and remain resilient when linked context/report resolution fails.
    - `taskAgentId`
    - `latestTaskAgentReport`
    - `latestTaskAgentReportCreatedAt`
-5. Resolve linked task agent by `agent_task` links sorted by:
+5. In `TaskAgentWorkflow._resolveLatestTaskAgentReport`, resolve linked task
+   agent by `agent_task` links sorted with:
    - primary: `createdAt` descending
-   - secondary: `link.id` ascending (deterministic tie-breaker)
+   - secondary: deterministic tie-breaker on `link.id`
 6. Keep failures non-fatal:
    - If linked-task context building fails, return `'{}'`.
    - If report lookup for one linked task fails, skip injection for that task.
