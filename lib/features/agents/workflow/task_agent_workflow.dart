@@ -510,10 +510,11 @@ class TaskAgentWorkflow {
           cachedInputTokens: usage.cachedInputTokens,
         ),
       );
-    } catch (e) {
+    } catch (e, s) {
       developer.log(
         'Failed to persist token usage for agent $agentId: $e',
         name: 'TaskAgentWorkflow',
+        stackTrace: s,
       );
     }
   }

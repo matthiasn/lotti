@@ -16,10 +16,10 @@ class InferenceUsage {
   /// Creates an [InferenceUsage] from a JSON map.
   factory InferenceUsage.fromJson(Map<String, dynamic> json) {
     return InferenceUsage(
-      inputTokens: json['inputTokens'] as int?,
-      outputTokens: json['outputTokens'] as int?,
-      thoughtsTokens: json['thoughtsTokens'] as int?,
-      cachedInputTokens: json['cachedInputTokens'] as int?,
+      inputTokens: (json['inputTokens'] as num?)?.toInt(),
+      outputTokens: (json['outputTokens'] as num?)?.toInt(),
+      thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
+      cachedInputTokens: (json['cachedInputTokens'] as num?)?.toInt(),
     );
   }
 
