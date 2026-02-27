@@ -2,8 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, WakeReason;
@@ -35,7 +35,7 @@ class TaskAgentService {
   final AgentSyncService syncService;
 
   static const _uuid = Uuid();
-  static const _agentKind = AgentKinds.taskAgent;
+  static const String _agentKind = AgentKinds.taskAgent;
 
   /// Create a new Task Agent for [taskId].
   ///

@@ -61,7 +61,7 @@ Future<TaskResolutionTimeSeries> templateTaskResolutionTimeSeries(
   );
 
   final linkedTasks = <_LinkedAgentTask>[];
-  for (final (agent: agent, links: links) in linksByAgent) {
+  for (final (: agent, : links) in linksByAgent) {
     for (final link in links) {
       linkedTasks.add(
         _LinkedAgentTask(

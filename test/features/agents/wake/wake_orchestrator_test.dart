@@ -97,7 +97,7 @@ void main() {
           );
 
           final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
+          orchestrator..start(controller.stream);
           emitAndDrain(async, controller, {'entity-1'});
 
           // Deferred drain fires after throttleWindow, consuming the job
@@ -136,7 +136,7 @@ void main() {
             );
 
           final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
+          orchestrator..start(controller.stream);
 
           // entity-1 should no longer match (replaced).
           emitTokens(async, controller, {'entity-1'});
