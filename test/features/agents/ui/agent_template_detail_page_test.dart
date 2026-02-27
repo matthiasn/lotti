@@ -277,9 +277,16 @@ void main() {
       );
     });
 
-    testWidgets('save calls createVersion', (tester) async {
+    testWidgets('save calls updateTemplate and createVersion', (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.updateTemplate(
+          templateId: any(named: 'templateId'),
+          displayName: any(named: 'displayName'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) async => makeTestTemplate(id: templateId));
       when(
         () => mockTemplateService.createVersion(
           templateId: any(named: 'templateId'),
@@ -299,6 +306,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      verify(
+        () => mockTemplateService.updateTemplate(
+          templateId: templateId,
+          displayName: 'Test Template',
+          modelId: 'models/gemini-3.1-pro-preview',
+        ),
+      ).called(1);
       verify(
         () => mockTemplateService.createVersion(
           templateId: templateId,
@@ -579,10 +593,10 @@ void main() {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
       when(
-        () => mockTemplateService.createVersion(
+        () => mockTemplateService.updateTemplate(
           templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
+          displayName: any(named: 'displayName'),
+          modelId: any(named: 'modelId'),
         ),
       ).thenThrow(Exception('save failed'));
 

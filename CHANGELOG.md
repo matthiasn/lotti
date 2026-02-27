@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.875] - 2026-02-27
+### Fixed
+- Task agent automatic trigger broken after throttle optimization: fixed
+  `_scheduleDeferredDrain` silently dropping drain when deadline already expired,
+  added periodic safety-net timer to recover stuck queue jobs, and fixed startup
+  hydration race that could cancel just-scheduled deferred drain timers.
+- Agent template model selection not persisted when editing: changing the AI model
+  in edit mode now correctly saves the updated model ID to the template entity.
 
 ## [0.9.874] - 2026-02-27
 ### Added

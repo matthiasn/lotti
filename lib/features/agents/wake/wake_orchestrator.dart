@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -130,6 +131,14 @@ class WakeOrchestrator {
 
   /// Set when a drain is requested while one is already in progress.
   bool _drainRequested = false;
+
+  /// Safety-net periodic timer that catches any scenario where a deferred
+  /// drain timer fails to fire (macOS App Nap, race conditions, etc.).
+  Timer? _safetyNetTimer;
+
+  /// Interval for the safety-net timer. Shorter than [throttleWindow] so
+  /// stuck jobs are recovered within a reasonable time.
+  static const safetyNetInterval = Duration(seconds: 60);
 
   /// Self-notification suppression state.
   ///
@@ -318,10 +327,23 @@ class WakeOrchestrator {
 
   /// Schedule a [Timer] that fires [processNext] when the throttle window
   /// for [agentId] expires.
+  ///
+  /// When [deadline] has already passed (`remaining <= Duration.zero`), the
+  /// throttle is cleared immediately and [processNext] is scheduled on the
+  /// next microtask to avoid reentrancy issues. This prevents a scenario
+  /// where the caller set `_throttleDeadlines[agentId]` but no timer fires
+  /// to clear it, leaving the agent permanently throttled.
   void _scheduleDeferredDrain(String agentId, DateTime deadline) {
     _deferredDrainTimers[agentId]?.cancel();
     final remaining = deadline.difference(clock.now());
-    if (remaining <= Duration.zero) return;
+    if (remaining <= Duration.zero) {
+      // Deadline already passed — clear throttle and drain immediately.
+      _deferredDrainTimers.remove(agentId);
+      _throttleDeadlines.remove(agentId);
+      unawaited(_clearPersistedThrottle(agentId));
+      scheduleMicrotask(() => unawaited(processNext()));
+      return;
+    }
     _deferredDrainTimers[agentId] = Timer(remaining, () {
       _deferredDrainTimers.remove(agentId);
       _throttleDeadlines.remove(agentId);
@@ -341,6 +363,10 @@ class WakeOrchestrator {
   ///
   /// If a previous subscription exists it is fully cancelled before the new
   /// one is attached, preventing stale event delivery.
+  ///
+  /// Also starts a periodic safety-net timer that catches scenarios where
+  /// the deferred drain timer fails to fire (e.g. macOS App Nap, race
+  /// conditions).
   Future<void> start(Stream<Set<String>> notificationStream) async {
     final oldSub = _notificationSub;
     if (oldSub != null) {
@@ -348,16 +374,40 @@ class WakeOrchestrator {
       await oldSub.cancel();
     }
     _notificationSub = notificationStream.listen(_onBatch);
+    _startSafetyNet();
   }
 
   /// Stop listening, cancel the subscription, and clean up timers.
   Future<void> stop() async {
+    _safetyNetTimer?.cancel();
+    _safetyNetTimer = null;
     for (final timer in _deferredDrainTimers.values) {
       timer.cancel();
     }
     _deferredDrainTimers.clear();
     await _notificationSub?.cancel();
     _notificationSub = null;
+  }
+
+  /// Starts a periodic safety-net timer that ensures the queue is eventually
+  /// drained even if a deferred drain timer fails to fire.
+  ///
+  /// Only triggers [processNext] when the queue has pending jobs AND no
+  /// drain is currently in progress. We intentionally do NOT check
+  /// `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
+  /// entry lingering in the map would permanently disable the safety net —
+  /// exactly the failure mode this mechanism is meant to recover from.
+  void _startSafetyNet() {
+    _safetyNetTimer?.cancel();
+    _safetyNetTimer = Timer.periodic(safetyNetInterval, (_) {
+      if (!queue.isEmpty && !_isDraining) {
+        developer.log(
+          'Safety-net drain: queue has ${queue.length} pending jobs',
+          name: 'WakeOrchestrator',
+        );
+        unawaited(processNext());
+      }
+    });
   }
 
   /// Rebuild in-memory subscriptions from persisted agent state on app startup.
@@ -490,11 +540,15 @@ class WakeOrchestrator {
       final deadline = now.add(throttleWindow);
       _throttleDeadlines[sub.agentId] = deadline;
       _scheduleDeferredDrain(sub.agentId, deadline);
-    }
 
-    // Note: we do NOT call processNext() here. Subscription-driven wakes
-    // are always deferred via the throttle timer. Manual wakes call
-    // processNext() directly from enqueueManualWake().
+      if (kDebugMode) {
+        developer.log(
+          'Deferred wake for ${sub.agentId}: '
+          'drain scheduled in ${throttleWindow.inSeconds}s',
+          name: 'WakeOrchestrator',
+        );
+      }
+    }
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's

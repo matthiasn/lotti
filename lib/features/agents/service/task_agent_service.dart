@@ -223,11 +223,12 @@ class TaskAgentService {
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.setThrottleDeadline(agentId, deadline);
-    } else {
-      // Clear any stale in-memory deadline that may have survived
-      // from a previous session or partial restore.
-      orchestrator.clearThrottle(agentId);
     }
+    // Note: we intentionally do NOT call clearThrottle when nextWakeAt is
+    // null. A concurrent _onBatch notification may have already scheduled a
+    // deferred drain timer for this agent (between _registerTaskSubscription
+    // and this async call). Calling clearThrottle would cancel that timer
+    // and leave the queued job permanently stuck.
   }
 
   /// Returns the ID of the first available template, or `null` if none exist.

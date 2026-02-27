@@ -122,6 +122,87 @@ void main() {
     });
   });
 
+  group('updateTemplate', () {
+    test('updates display name and model ID', () async {
+      stubTemplateExists();
+
+      final result = await service.updateTemplate(
+        templateId: kTestTemplateId,
+        displayName: 'New Name',
+        modelId: 'models/gemini-flash',
+      );
+
+      expect(result.displayName, 'New Name');
+      expect(result.modelId, 'models/gemini-flash');
+      verify(() => mockSync.upsertEntity(any())).called(1);
+    });
+
+    test('updates only display name when modelId is null', () async {
+      stubTemplateExists();
+
+      final result = await service.updateTemplate(
+        templateId: kTestTemplateId,
+        displayName: 'Renamed',
+      );
+
+      expect(result.displayName, 'Renamed');
+      // Model should remain the original from makeTestTemplate.
+      expect(result.modelId, 'models/gemini-3.1-pro-preview');
+    });
+
+    test('updates only model ID when displayName is null', () async {
+      stubTemplateExists();
+
+      final result = await service.updateTemplate(
+        templateId: kTestTemplateId,
+        modelId: 'models/gemini-flash',
+      );
+
+      // Name should remain the original from makeTestTemplate.
+      expect(result.displayName, 'Test Template');
+      expect(result.modelId, 'models/gemini-flash');
+    });
+
+    test('throws when template does not exist', () async {
+      when(() => mockRepo.getEntity('nonexistent'))
+          .thenAnswer((_) async => null);
+
+      await expectLater(
+        service.updateTemplate(
+          templateId: 'nonexistent',
+          displayName: 'New Name',
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('Template nonexistent not found'),
+          ),
+        ),
+      );
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('persists the updated entity via syncService', () async {
+      stubTemplateExists();
+
+      await service.updateTemplate(
+        templateId: kTestTemplateId,
+        displayName: 'Updated',
+        modelId: 'models/new-model',
+      );
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      final persisted = captured.first as AgentTemplateEntity;
+      expect(persisted.displayName, 'Updated');
+      expect(persisted.modelId, 'models/new-model');
+      expect(persisted.id, kTestTemplateId);
+    });
+  });
+
   group('createVersion', () {
     test('archives current version and creates new one', () async {
       stubTemplateExists();

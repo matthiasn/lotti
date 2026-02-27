@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.875" date="2026-02-27">
+      <description>
+          <p>Fix task agent automatic trigger broken after throttle optimization: fixed deferred drain silently dropping when deadline expired, added safety-net periodic timer for stuck queue recovery, and fixed startup hydration race cancelling deferred drain timers. Fix agent template model selection not persisted when editing.</p>
+      </description>
+    </release>
     <release version="0.9.874" date="2026-02-27">
       <description>
           <p>Evolution chat: multi-turn GenUI conversation for reviewing agent template performance and approving rewritten directives. Evolution dashboard with mini charts (success rate, wake history, version performance, MTTR trend). MTTR now measures true task resolution time. Labels in agent reports. Fix assign_task_labels crash and countdown timer digit jitter.</p>

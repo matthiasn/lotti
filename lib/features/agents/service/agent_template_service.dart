@@ -106,6 +106,40 @@ class AgentTemplateService {
     return template;
   }
 
+  /// Update template-level fields (display name, model ID).
+  ///
+  /// This updates the template entity itself, not its versioned directives.
+  /// Use [createVersion] to update directives.
+  Future<AgentTemplateEntity> updateTemplate({
+    required String templateId,
+    String? displayName,
+    String? modelId,
+  }) async {
+    final now = clock.now();
+
+    return syncService.runInTransaction(() async {
+      final template = await getTemplate(templateId);
+      if (template == null) {
+        throw StateError('Template $templateId not found');
+      }
+
+      final updated = template.copyWith(
+        displayName: displayName ?? template.displayName,
+        modelId: modelId ?? template.modelId,
+        updatedAt: now,
+      );
+      await syncService.upsertEntity(updated);
+
+      developer.log(
+        'Updated template $templateId '
+        '(name: ${updated.displayName}, model: ${updated.modelId})',
+        name: 'AgentTemplateService',
+      );
+
+      return updated;
+    });
+  }
+
   /// Create a new version of an existing template.
   ///
   /// Archives the current active version, creates the new version as active,

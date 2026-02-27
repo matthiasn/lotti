@@ -259,6 +259,14 @@ class _AgentTemplateDetailPageState
         ref.invalidate(agentTemplatesProvider);
         Navigator.of(context).pop();
       } else {
+        // Persist template-level fields (name, model).
+        await templateService.updateTemplate(
+          templateId: widget.templateId!,
+          displayName: name,
+          modelId: modelId,
+        );
+
+        // Create a new directive version.
         await templateService.createVersion(
           templateId: widget.templateId!,
           directives: directives,
@@ -272,6 +280,7 @@ class _AgentTemplateDetailPageState
         );
         ref
           ..invalidate(agentTemplatesProvider)
+          ..invalidate(agentTemplateProvider(widget.templateId!))
           ..invalidate(activeTemplateVersionProvider(widget.templateId!))
           ..invalidate(templateVersionHistoryProvider(widget.templateId!));
       }
