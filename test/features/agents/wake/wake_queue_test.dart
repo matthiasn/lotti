@@ -247,5 +247,35 @@ void main() {
         expect(result.agentId, 'agent-42');
       });
     });
+
+    group('removeByAgent', () {
+      test('removes all jobs for the given agent', () {
+        queue
+          ..enqueue(makeJob(runKey: 'r1'))
+          ..enqueue(makeJob(runKey: 'r2', agentId: 'agent-2'))
+          ..enqueue(makeJob(runKey: 'r3'));
+
+        final removed = queue.removeByAgent('agent-1');
+
+        expect(removed, hasLength(2));
+        expect(removed.map((j) => j.runKey), containsAll(['r1', 'r3']));
+        expect(queue.length, 1);
+        expect(queue.dequeue()!.agentId, 'agent-2');
+      });
+
+      test('returns empty list when no jobs match', () {
+        queue.enqueue(makeJob(runKey: 'r1'));
+
+        final removed = queue.removeByAgent('agent-99');
+
+        expect(removed, isEmpty);
+        expect(queue.length, 1);
+      });
+
+      test('returns empty list on empty queue', () {
+        final removed = queue.removeByAgent('agent-1');
+        expect(removed, isEmpty);
+      });
+    });
   });
 }

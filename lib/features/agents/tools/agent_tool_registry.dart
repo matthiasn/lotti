@@ -67,7 +67,10 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: 'update_task_due_date',
-      description: 'Update the due date for the task.',
+      description: 'Update the due date for the task. '
+          'Only call when you want to CHANGE the due date to a different value. '
+          'Do NOT call if the task already has the correct due date — check the '
+          'current dueDate in the task context first.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -82,7 +85,10 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: 'update_task_priority',
-      description: 'Update the priority of the task.',
+      description: 'Update the priority of the task. '
+          'Only call when you want to CHANGE the priority to a different value. '
+          'Do NOT call if the task already has the correct priority — check the '
+          'current priority in the task context first.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -169,7 +175,11 @@ class AgentToolRegistry {
       description:
           'Publish the updated task report. You MUST call this tool exactly '
           'once at the end of every wake with the full updated report as '
-          'markdown.',
+          'markdown. Follow the report structure defined in the system prompt '
+          '(📋 TLDR, ✅ Achieved, 📌 What is left to do, 💡 Learnings). '
+          'Do NOT include a title line (H1) or status bar — these are shown '
+          'in the task header UI. Write in the task content language. Express '
+          'your personality and voice from your directives.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -261,6 +271,9 @@ class AgentToolRegistry {
     AgentToolDefinition(
       name: 'set_task_status',
       description: 'Transition the task to a new status. '
+          'Only call when you want to CHANGE the status to a DIFFERENT value. '
+          'Do NOT call if the task is already at the target status — check the '
+          'current status in the task context first. '
           'Valid statuses: OPEN, IN PROGRESS, GROOMED, BLOCKED, ON HOLD. '
           'BLOCKED and ON HOLD require a reason. '
           'DONE and REJECTED are user-only and cannot be set by the agent. '

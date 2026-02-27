@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -252,6 +253,11 @@ class AgentReportHistoryLog extends ConsumerWidget {
   }
 }
 
+/// Displays an agent report as a collapsible card.
+///
+/// When collapsed, shows only the TLDR section extracted from the report.
+/// When expanded, renders the full [AgentReportEntity.content] via
+/// [GptMarkdown].
 class _ReportSnapshotCard extends StatefulWidget {
   const _ReportSnapshotCard({
     required this.report,
@@ -331,10 +337,14 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                   ),
                 ],
               ),
-              if (_expanded && report.content.isNotEmpty)
+              if (report.content.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
-                  child: GptMarkdown(report.content),
+                  child: _expanded
+                      ? GptMarkdown(report.content)
+                      : GptMarkdown(
+                          parseReportContent(report.content).tldr,
+                        ),
                 ),
             ],
           ),
@@ -396,17 +406,6 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                       ),
                     ),
                   ),
-                  if (toolName != null)
-                    Chip(
-                      label: Text(
-                        toolName,
-                        style: monoTabularStyle(
-                          fontSize: fontSizeSmall,
-                        ),
-                      ),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
                   if (isExpandable)
                     Icon(
                       _expanded ? Icons.expand_less : Icons.expand_more,
@@ -415,6 +414,20 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                     ),
                 ],
               ),
+              if (toolName != null && toolName.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
+                  child: Chip(
+                    label: Text(
+                      toolName,
+                      style: monoTabularStyle(
+                        fontSize: fontSizeSmall,
+                      ),
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               if (_expanded && contentId != null)
                 _ExpandedPayload(
                   payloadId: contentId,

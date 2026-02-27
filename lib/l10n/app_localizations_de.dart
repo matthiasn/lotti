@@ -241,6 +241,47 @@ class AppLocalizationsDe extends AppLocalizations {
       'Evolution-Sitzung wird gestartet...';
 
   @override
+  String agentEvolutionSessionTitle(int sessionNumber) {
+    return 'Evolution #$sessionNumber';
+  }
+
+  @override
+  String get agentEvolutionStatusAbandoned => 'Abgebrochen';
+
+  @override
+  String get agentEvolutionStatusActive => 'Aktiv';
+
+  @override
+  String get agentEvolutionStatusCompleted => 'Abgeschlossen';
+
+  @override
+  String get agentInstancesEmptyList => 'Keine Agenteninstanzen gefunden';
+
+  @override
+  String get agentInstancesFilterActive => 'Aktiv';
+
+  @override
+  String get agentInstancesFilterAll => 'Alle';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Zerstört';
+
+  @override
+  String get agentInstancesFilterDormant => 'Ruhend';
+
+  @override
+  String get agentInstancesKindAll => 'Alle';
+
+  @override
+  String get agentInstancesKindEvolution => 'Evolution';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Aufgaben-Agent';
+
+  @override
+  String get agentInstancesTitle => 'Instanzen';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -308,6 +349,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'Läuft';
+
+  @override
+  String get agentSettingsSubtitle => 'Vorlagen, Instanzen und Überwachung';
+
+  @override
+  String get agentSettingsTitle => 'Agenten';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';

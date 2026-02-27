@@ -13,52 +13,157 @@ void main() {
       );
     }
 
-    testWidgets('renders markdown content via GptMarkdown', (tester) async {
-      const markdown = '# Task Report\n\nTask is progressing well.';
-      await tester.pumpWidget(buildSubject(markdown));
-      await tester.pump();
-
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, markdown);
-    });
-
-    testWidgets('renders Card wrapper around markdown', (tester) async {
-      const markdown = '# Report Title';
-      await tester.pumpWidget(buildSubject(markdown));
-      await tester.pump();
-
-      expect(find.byType(Card), findsOneWidget);
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, markdown);
-    });
-
-    testWidgets('handles empty content gracefully', (tester) async {
+    testWidgets('renders nothing for empty content', (tester) async {
       await tester.pumpWidget(buildSubject(''));
       await tester.pump();
 
-      expect(find.byType(Card), findsOneWidget);
       expect(find.byType(GptMarkdown), findsNothing);
+      expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('passes full markdown string to GptMarkdown', (tester) async {
-      const markdown = '## Achieved\n- Task 1 done\n- Task 2 done';
+    testWidgets('renders TLDR section from structured report', (tester) async {
+      const markdown = '# Task Title\n\n'
+          '**Status:** in_progress\n\n'
+          '## 📋 TLDR\n'
+          'Task is progressing well.\n\n'
+          '## ✅ Achieved\n'
+          '- Item A\n\n'
+          '## 📌 What is left to do\n'
+          '- Item B\n';
       await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, markdown);
+      // TLDR section should be visible
+      final gptMarkdowns = tester.widgetList<GptMarkdown>(
+        find.byType(GptMarkdown),
+      );
+      // Only TLDR section visible initially (collapsed)
+      expect(gptMarkdowns.length, 1);
+      expect(gptMarkdowns.first.data, contains('TLDR'));
+      expect(gptMarkdowns.first.data, contains('Task is progressing well.'));
     });
 
-    testWidgets('renders multi-section markdown report', (tester) async {
-      const markdown = '# Sprint Report\n\n'
-          'Good progress overall.\n\n'
-          '## Completed\n- Feature A\n\n'
-          '## Remaining\n- Feature B\n';
+    testWidgets('expands to show additional content on tap', (tester) async {
+      const markdown = '# Task Title\n\n'
+          '## 📋 TLDR\n'
+          'Overview text.\n\n'
+          '## ✅ Achieved\n'
+          '- Done item\n';
       await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, markdown);
+      // Initially only TLDR visible
+      expect(
+        tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
+        1,
+      );
+
+      // Tap expand button
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // Now both TLDR and additional content visible
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 2);
+
+      // Additional content contains the achieved section
+      expect(markdowns.last.data, contains('Achieved'));
+      expect(markdowns.last.data, contains('Done item'));
+    });
+
+    testWidgets('renders full content without expand button for simple report',
+        (tester) async {
+      const markdown = 'Just a single paragraph with no line breaks.';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdowns = tester.widgetList<GptMarkdown>(
+        find.byType(GptMarkdown),
+      );
+      expect(gptMarkdowns, isNotEmpty);
+
+      // No expand button since there is no additional content
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+    });
+
+    testWidgets('fallback parsing uses first paragraph as TLDR',
+        (tester) async {
+      const markdown = 'First paragraph.\n\nSecond paragraph.';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown).first,
+      );
+      expect(gptMarkdown.data, 'First paragraph.');
+
+      // Expand button should exist since there's additional content
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    });
+
+    testWidgets('parses bold TLDR prefix pattern', (tester) async {
+      const markdown = '# Title\n\n'
+          '**TLDR:** Quick summary here\n\n'
+          '## Details\n- More info\n';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown).first,
+      );
+      expect(gptMarkdown.data, contains('TLDR'));
+      expect(gptMarkdown.data, contains('Quick summary'));
+
+      // Expand button should exist for the details section
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Expand to verify additional content
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 2);
+      expect(markdowns.last.data, contains('Details'));
+    });
+
+    testWidgets('TLDR heading with no subsequent sections shows only TLDR',
+        (tester) async {
+      const markdown = '## 📋 TLDR\nJust the summary, nothing more.';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      final gptMarkdowns = tester.widgetList<GptMarkdown>(
+        find.byType(GptMarkdown),
+      );
+      expect(gptMarkdowns.length, 1);
+      expect(gptMarkdowns.first.data, contains('Just the summary'));
+
+      // No expand button since there is no additional content
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+    });
+
+    testWidgets('collapses back on second tap', (tester) async {
+      const markdown = '## 📋 TLDR\nOverview.\n\n## ✅ Achieved\n- Item\n';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      // Expand
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
+        2,
+      );
+
+      // Collapse
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
+        1,
+      );
     });
   });
 }

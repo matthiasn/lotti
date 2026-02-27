@@ -104,6 +104,26 @@
   "agentEvolutionSessionCompleted": "Sitzung abgeschlossen — Version {version} erstellt",
   "agentEvolutionSessionError": "Evolution-Sitzung konnte nicht gestartet werden",
   "agentEvolutionSessionStarting": "Evolution-Sitzung wird gestartet...",
+  "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abgebrochen",
+  "agentEvolutionStatusActive": "Aktiv",
+  "agentEvolutionStatusCompleted": "Abgeschlossen",
+  "agentInstancesEmptyList": "Keine Agenteninstanzen gefunden",
+  "agentInstancesFilterActive": "Aktiv",
+  "agentInstancesFilterAll": "Alle",
+  "agentInstancesFilterDestroyed": "Zerstört",
+  "agentInstancesFilterDormant": "Ruhend",
+  "agentInstancesKindAll": "Alle",
+  "agentInstancesKindEvolution": "Evolution",
+  "agentInstancesKindTaskAgent": "Aufgaben-Agent",
+  "agentInstancesTitle": "Instanzen",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Erstellt",
   "agentLifecycleDestroyed": "Zerstört",
@@ -139,6 +159,8 @@
   "agentReportHistoryError": "Fehler beim Laden der Berichtshistorie.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
   "agentRunningIndicator": "Läuft",
+  "agentSettingsSubtitle": "Vorlagen, Instanzen und Überwachung",
+  "agentSettingsTitle": "Agenten",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
   "@agentStateErrorLoading": {

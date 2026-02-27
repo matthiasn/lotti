@@ -168,8 +168,8 @@ class TaskAgentWorkflow {
       );
     }
 
-    // 4. Resolve a Gemini inference provider using the template's model ID.
-    final modelId = templateCtx.template.modelId;
+    // 4. Resolve a Gemini inference provider from the template version.
+    final modelId = templateCtx.version.modelId ?? templateCtx.template.modelId;
     final provider = await resolveInferenceProvider(
       modelId: modelId,
       aiConfigRepository: aiConfigRepository,
@@ -521,16 +521,19 @@ structure with emojis for visual consistency:
 
 ### Required Sections
 
-1. **Title line** — Task title as an H1 heading.
-2. **Status bar** — A bold one-liner with status, priority, labels, estimate,
-   and due date (when set). Include assigned label names when the task has any.
-3. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
-4. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
+1. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
+   This is the first and most important section — it is what the user sees in
+   the collapsed view.
+2. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
    nothing has been achieved yet.
-5. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
+3. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
    the task is complete.
-6. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
+4. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
    the user. Omit if there are no noteworthy learnings.
+
+Do NOT include a title line (H1) or a status bar — these are already shown in
+the task header UI. Do NOT include a "Goal / Context" section — this is
+redundant with the task description.
 
 You MAY add additional sections if they add value (e.g., ⚠️ Blockers,
 📊 Metrics), but the core sections above should always be present when
@@ -539,10 +542,6 @@ applicable.
 ### Example report:
 
 ```
-# 🔐 Implement authentication module
-
-**Status:** 🚧 in_progress | **Priority:** P1 | **Labels:** auth, backend | **Estimate:** 4h | **Due:** 2026-02-25
-
 ## 📋 TLDR
 OAuth2 integration is 60% complete. Login UI is done, logout flow and
 integration tests remain.
@@ -564,7 +563,8 @@ integration tests remain.
 ### Writing style
 - Write in the task's detected language (match the language of the task
   content). If the task content is in German, write the report in German.
-- Keep it factual and user-facing. No agent self-commentary.
+- Express your personality and voice as defined in your directives.
+- Keep the report user-facing. No meta-commentary about being an agent.
 - Use present tense for current state, past tense for completed work.
 
 ## Report vs Observations — Separation of Concerns
@@ -585,6 +585,10 @@ and never shown to the user. They persist as your memory across wakes.
 
 ## Tool Usage Guidelines
 
+- **No-op rule**: Before calling ANY metadata tool (status, priority, due date,
+  estimate, language, labels), check the current value in the task context. If
+  the value is already what you would set, do NOT call the tool. Every
+  unnecessary tool call wastes a turn and clutters the audit log.
 - Only call tools when you have sufficient confidence in the change.
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
@@ -607,7 +611,8 @@ and never shown to the user. They persist as your memory across wakes.
   requests it, or when no estimate exists and you have high confidence.
   Do not retroactively adjust estimates based on time already spent
   unless specifically asked to do so.
-- **Status**: Only transition status when there is clear evidence:
+- **Status**: Do NOT call `set_task_status` if the task is already at the
+  target status. Only transition when there is clear evidence of a change:
   - Set "IN PROGRESS" when time is being logged on the task (especially
     combined with checklist items being checked off).
   - Set "BLOCKED" when the user mentions a blocker (always provide a reason).

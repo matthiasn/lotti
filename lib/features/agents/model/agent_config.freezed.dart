@@ -249,7 +249,7 @@ extension AgentConfigPatterns on AgentConfig {
 class _AgentConfig implements AgentConfig {
   const _AgentConfig(
       {this.maxTurnsPerWake = 5,
-      this.modelId = 'models/gemini-3.1-pro-preview'});
+      this.modelId = 'models/gemini-3-flash-preview'});
   factory _AgentConfig.fromJson(Map<String, dynamic> json) =>
       _$AgentConfigFromJson(json);
 

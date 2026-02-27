@@ -236,6 +236,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentEvolutionSessionStarting => 'Starting evolution session...';
 
   @override
+  String agentEvolutionSessionTitle(int sessionNumber) {
+    return 'Evolution #$sessionNumber';
+  }
+
+  @override
+  String get agentEvolutionStatusAbandoned => 'Abandoned';
+
+  @override
+  String get agentEvolutionStatusActive => 'Active';
+
+  @override
+  String get agentEvolutionStatusCompleted => 'Completed';
+
+  @override
+  String get agentInstancesEmptyList => 'No agent instances found';
+
+  @override
+  String get agentInstancesFilterActive => 'Active';
+
+  @override
+  String get agentInstancesFilterAll => 'All';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Destroyed';
+
+  @override
+  String get agentInstancesFilterDormant => 'Dormant';
+
+  @override
+  String get agentInstancesKindAll => 'All';
+
+  @override
+  String get agentInstancesKindEvolution => 'Evolution';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Task Agent';
+
+  @override
+  String get agentInstancesTitle => 'Instances';
+
+  @override
   String get agentLifecycleActive => 'Active';
 
   @override
@@ -302,6 +343,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'Running';
+
+  @override
+  String get agentSettingsSubtitle => 'Templates, instances, and monitoring';
+
+  @override
+  String get agentSettingsTitle => 'Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';

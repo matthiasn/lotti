@@ -84,11 +84,14 @@ Riverpod providers for dependency injection:
 
 ### UI (`ui/`)
 
-Agent inspection interface:
+Agent management and inspection interface:
 
+- **`agent_settings_page.dart`** — Landing page at `Settings > Agents` with two tabs: **Templates** (inline list of agent templates with kind badge, model ID, and version) and **Instances** (filterable list of task agents and evolution sessions).
+- **`agent_instances_list.dart`** — Filterable list of all agent instances. Two filter rows: a **Kind filter** (All / Task Agent / Evolution) and a **Lifecycle filter** (All / Active / Dormant / Destroyed, task agents only). Each card shows display name, kind/lifecycle badges, template name, timestamp, and a running indicator. Tapping navigates to `AgentDetailPage` or back to the template.
 - **`agent_detail_page.dart`** — Full inspection page with report, tabbed message views (Activity/Conversations/Observations), state info, and controls. Shows a running-state spinner in the app bar when the agent is actively executing.
-- **`agent_report_section.dart`** — Renders free-form Markdown report via `GptMarkdown`.
-- **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Tool call arguments and results render in monospace with a surface-tinted background. Uses `ValueKey` per message to preserve expansion state. Supports both provider-based and pre-fetched message lists via `AgentActivityLog.fromMessages`. Also contains `AgentObservationLog` — a filtered view showing only observation entries, all expanded by default for at-a-glance readability.
+- **`agent_report_section.dart`** — Expandable TLDR report renderer. Parses agent report markdown to extract the `## 📋 TLDR` section (always visible) and additional content (Achieved, Remaining, Learnings — shown on expand). Uses `AnimationController` for smooth expand/collapse transitions.
+- **`task_agent_report_section.dart`** — Wrapper widget for displaying the agent report on a task detail page. Watches `taskAgentProvider` → `agentReportProvider` and renders `AgentReportSection` when a report exists.
+- **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Tool call arguments and results render in monospace with a surface-tinted background. Uses `ValueKey` per message to preserve expansion state. Supports both provider-based and pre-fetched message lists via `AgentActivityLog.fromMessages`. Also contains `AgentObservationLog` — a filtered view showing only observation entries, all expanded by default for at-a-glance readability. `AgentReportHistoryLog` shows report snapshots with TLDR extraction for collapsed view.
 - **`agent_conversation_log.dart`** — Thread-grouped conversation view: messages grouped by `threadId` (wake cycle), sorted most-recent-first, each rendered as an `ExpansionTile` with timestamp, message count, and tool call count.
 - **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
 - **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
@@ -161,8 +164,11 @@ lib/features/agents/
 │   ├── agent_providers.dart         # Riverpod providers
 │   └── task_agent_providers.dart    # Task agent providers
 └── ui/
+    ├── agent_settings_page.dart     # Settings landing (Templates + Instances tabs)
+    ├── agent_instances_list.dart    # Filterable instance list (kind + lifecycle)
     ├── agent_detail_page.dart       # Inspection page (tabbed, running spinner)
-    ├── agent_report_section.dart    # Report renderer (Markdown)
+    ├── agent_report_section.dart    # Expandable TLDR report renderer
+    ├── task_agent_report_section.dart # Task-form agent report wrapper
     ├── agent_activity_log.dart      # Message log with expandable payloads
     ├── agent_conversation_log.dart  # Thread-grouped conversation view
     ├── agent_controls.dart          # Action buttons
@@ -193,4 +199,4 @@ Run `make test` to verify current test count and status.
 | Full saga recovery | MVP uses idempotency checks | 0B |
 | Persisted subscriptions | In-memory sufficient for single-device | 0B |
 | Memory compaction | Task agents have bounded history | 0C |
-| Configurable model selection | Hardcoded to Gemini for MVP | 0B |
+| ~~Configurable model selection~~ | ~~Hardcoded to Gemini for MVP~~ | Done |

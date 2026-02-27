@@ -187,7 +187,7 @@ void main() {
   final geminiModel = AiConfig.model(
     id: 'model-gemini-3-1-pro',
     name: 'Gemini 3.1 Pro Preview',
-    providerModelId: 'models/gemini-3.1-pro-preview',
+    providerModelId: 'models/gemini-3-flash-preview',
     inferenceProviderId: 'gemini-provider-001',
     createdAt: DateTime(2024),
     inputModalities: const [Modality.text],
@@ -1853,8 +1853,9 @@ void main() {
             () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
-            '{"minutes":30}',
+            '{"minutes":240}',
             // Uses taskWithCategory which has estimate: Duration(hours: 4)
+            // = 240 minutes. Same value triggers the no-op path.
           );
           expect(result.success, isTrue);
           verify(
@@ -1862,7 +1863,7 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('already set'),
+                that: contains('No change needed'),
               ),
             ),
           ).called(1);

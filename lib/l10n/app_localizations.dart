@@ -528,6 +528,84 @@ abstract class AppLocalizations {
   /// **'Starting evolution session...'**
   String get agentEvolutionSessionStarting;
 
+  /// No description provided for @agentEvolutionSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution #{sessionNumber}'**
+  String agentEvolutionSessionTitle(int sessionNumber);
+
+  /// No description provided for @agentEvolutionStatusAbandoned.
+  ///
+  /// In en, this message translates to:
+  /// **'Abandoned'**
+  String get agentEvolutionStatusAbandoned;
+
+  /// No description provided for @agentEvolutionStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentEvolutionStatusActive;
+
+  /// No description provided for @agentEvolutionStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get agentEvolutionStatusCompleted;
+
+  /// No description provided for @agentInstancesEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent instances found'**
+  String get agentInstancesEmptyList;
+
+  /// No description provided for @agentInstancesFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentInstancesFilterActive;
+
+  /// No description provided for @agentInstancesFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get agentInstancesFilterAll;
+
+  /// No description provided for @agentInstancesFilterDestroyed.
+  ///
+  /// In en, this message translates to:
+  /// **'Destroyed'**
+  String get agentInstancesFilterDestroyed;
+
+  /// No description provided for @agentInstancesFilterDormant.
+  ///
+  /// In en, this message translates to:
+  /// **'Dormant'**
+  String get agentInstancesFilterDormant;
+
+  /// No description provided for @agentInstancesKindAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get agentInstancesKindAll;
+
+  /// No description provided for @agentInstancesKindEvolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution'**
+  String get agentInstancesKindEvolution;
+
+  /// No description provided for @agentInstancesKindTaskAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Task Agent'**
+  String get agentInstancesKindTaskAgent;
+
+  /// No description provided for @agentInstancesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instances'**
+  String get agentInstancesTitle;
+
   /// No description provided for @agentLifecycleActive.
   ///
   /// In en, this message translates to:
@@ -653,6 +731,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Running'**
   String get agentRunningIndicator;
+
+  /// No description provided for @agentSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates, instances, and monitoring'**
+  String get agentSettingsSubtitle;
+
+  /// No description provided for @agentSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents'**
+  String get agentSettingsTitle;
 
   /// No description provided for @agentStateConsecutiveFailures.
   ///

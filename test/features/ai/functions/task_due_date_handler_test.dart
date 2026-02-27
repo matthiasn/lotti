@@ -209,12 +209,12 @@ void main() {
       });
     });
 
-    group('skipped updates (existing due date)', () {
-      test('should skip when due date already exists', () async {
+    group('no-op when same due date', () {
+      test('should no-op when requested date matches current', () async {
         final task = createTask(due: DateTime(2024, 1, 20));
         final toolCall = createDueDateToolCall(
-          dueDate: '2024-01-25',
-          reason: 'User mentioned next Friday',
+          dueDate: '2024-01-20',
+          reason: 'Confirming date',
           confidence: 'high',
         );
 
@@ -225,27 +225,17 @@ void main() {
 
         final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isFalse);
-        expect(result.wasSkipped, isTrue);
-        expect(result.requestedDate, DateTime(2024, 1, 25));
-        expect(result.reason, 'User mentioned next Friday');
-        expect(result.confidence, 'high');
-        expect(result.error, isNull); // Not an error, just skipped
-        expect(result.updatedTask, isNull);
-        expect(result.message, contains('already set to 2024-01-20'));
+        expect(result.success, isTrue);
+        expect(result.wasNoOp, isTrue);
+        expect(result.requestedDate, DateTime(2024, 1, 20));
+        expect(result.message, contains('No change needed'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call_due_date_456',
-            response: 'Due date already set to 2024-01-20. Skipped.',
-          ),
-        ).called(1);
       });
 
-      test('should not call onTaskUpdated when skipped', () async {
+      test('should not call onTaskUpdated when same date', () async {
         final task = createTask(due: DateTime(2024, 1, 22));
-        final toolCall = createDueDateToolCall(dueDate: '2024-01-30');
+        final toolCall = createDueDateToolCall(dueDate: '2024-01-22');
 
         var callbackCalled = false;
         final handler = TaskDueDateHandler(
@@ -257,6 +247,34 @@ void main() {
         await handler.processToolCall(toolCall, mockManager);
 
         expect(callbackCalled, isFalse);
+      });
+    });
+
+    group('updates existing due date to different value', () {
+      test('should update when requested date differs from current', () async {
+        final task = createTask(due: DateTime(2024, 1, 20));
+        final toolCall = createDueDateToolCall(
+          dueDate: '2024-01-25',
+          reason: 'User mentioned next Friday',
+          confidence: 'high',
+        );
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskDueDateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isTrue);
+        expect(result.requestedDate, DateTime(2024, 1, 25));
+        expect(result.updatedTask!.data.due, DateTime(2024, 1, 25));
+
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
     });
 

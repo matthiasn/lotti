@@ -977,6 +977,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 0);
     });
 
     tearDown(tearDownTestGetIt);
@@ -1675,6 +1677,239 @@ void main() {
     });
   });
 
+  group('allAgentInstancesProvider', () {
+    test('delegates to listAgents and casts result', () async {
+      final agents = [makeTestIdentity(id: 'a1', agentId: 'a1')];
+      when(() => mockService.listAgents()).thenAnswer((_) async => agents);
+
+      final container = createContainer();
+      final result = await container.read(allAgentInstancesProvider.future);
+
+      expect(result, hasLength(1));
+      expect((result[0] as AgentIdentityEntity).id, 'a1');
+      verify(() => mockService.listAgents()).called(1);
+    });
+
+    test('returns empty list when no agents exist', () async {
+      when(() => mockService.listAgents()).thenAnswer((_) async => []);
+
+      final container = createContainer();
+      final result = await container.read(allAgentInstancesProvider.future);
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('allEvolutionSessionsProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    test('aggregates sessions across templates sorted by updatedAt', () async {
+      final tpl1 = makeTestTemplate(id: 'tpl-1', agentId: 'tpl-1');
+      final tpl2 = makeTestTemplate(id: 'tpl-2', agentId: 'tpl-2');
+      when(() => mockTemplateService.listTemplates())
+          .thenAnswer((_) async => [tpl1, tpl2]);
+
+      final session1 = makeTestEvolutionSession(
+        id: 's1',
+        agentId: 'tpl-1',
+        updatedAt: DateTime(2024, 3, 15, 10),
+      );
+      final session2 = makeTestEvolutionSession(
+        id: 's2',
+        agentId: 'tpl-2',
+        updatedAt: DateTime(2024, 3, 15, 12),
+      );
+      when(() => mockTemplateService.getEvolutionSessions('tpl-1'))
+          .thenAnswer((_) async => [session1]);
+      when(() => mockTemplateService.getEvolutionSessions('tpl-2'))
+          .thenAnswer((_) async => [session2]);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(allEvolutionSessionsProvider.future);
+
+      expect(result, hasLength(2));
+      // Most recent first
+      expect((result[0] as EvolutionSessionEntity).id, 's2');
+      expect((result[1] as EvolutionSessionEntity).id, 's1');
+    });
+
+    test('returns empty when no templates exist', () async {
+      when(() => mockTemplateService.listTemplates())
+          .thenAnswer((_) async => []);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(allEvolutionSessionsProvider.future);
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('modelIdForThreadProvider', () {
+    test('returns model ID from template version', () async {
+      final wakeRun = makeTestWakeRun(
+        runKey: 'thread-abc',
+        templateVersionId: 'ver-1',
+      );
+      when(() => mockRepository.getWakeRun('thread-abc'))
+          .thenAnswer((_) async => wakeRun);
+
+      final version = makeTestTemplateVersion(
+        id: 'ver-1',
+        modelId: 'models/gemini-3-pro',
+      );
+      when(() => mockRepository.getEntity('ver-1'))
+          .thenAnswer((_) async => version);
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'models/gemini-3-pro');
+    });
+
+    test('returns null when wake run not found', () async {
+      when(() => mockRepository.getWakeRun('missing'))
+          .thenAnswer((_) async => null);
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'missing').future,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when template version has no modelId', () async {
+      final wakeRun = makeTestWakeRun(
+        runKey: 'thread-no-model',
+        templateVersionId: 'ver-2',
+      );
+      when(() => mockRepository.getWakeRun('thread-no-model'))
+          .thenAnswer((_) async => wakeRun);
+
+      final version = makeTestTemplateVersion(id: 'ver-2');
+      when(() => mockRepository.getEntity('ver-2'))
+          .thenAnswer((_) async => version);
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-no-model').future,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when wake run has no templateVersionId', () async {
+      final wakeRun = makeTestWakeRun(runKey: 'thread-no-ver');
+      when(() => mockRepository.getWakeRun('thread-no-ver'))
+          .thenAnswer((_) async => wakeRun);
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-no-ver').future,
+      );
+
+      expect(result, isNull);
+    });
+  });
+
+  group('agentInitializationProvider — orphan cleanup', () {
+    late MockWakeOrchestrator mockOrchestrator;
+    late MockTaskAgentWorkflow mockWorkflow;
+    late MockTaskAgentService mockTaskAgentService;
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() async {
+      await setUpTestGetIt();
+      mockOrchestrator = MockWakeOrchestrator();
+      mockWorkflow = MockTaskAgentWorkflow();
+      mockTaskAgentService = MockTaskAgentService();
+      mockTemplateService = MockAgentTemplateService();
+
+      when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
+      when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
+      when(() => mockTaskAgentService.restoreSubscriptions())
+          .thenAnswer((_) async {});
+      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    ProviderContainer createInitContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentServiceProvider.overrideWithValue(mockService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
+          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(
+              flagName == enableAgentsFlag,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('calls abandonOrphanedWakeRuns on startup', () async {
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 0);
+
+      final container = createInitContainer();
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockRepository.abandonOrphanedWakeRuns()).called(1);
+    });
+
+    test('logs when orphaned runs are found', () async {
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 3);
+
+      final container = createInitContainer();
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      // Should complete without error even when orphans exist.
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockRepository.abandonOrphanedWakeRuns()).called(1);
+    });
+  });
+
   group('evolutionNotesProvider', () {
     late MockAgentTemplateService mockTemplateService;
 
@@ -1801,6 +2036,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 0);
     });
 
     tearDown(tearDownTestGetIt);

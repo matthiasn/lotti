@@ -104,6 +104,26 @@
   "agentEvolutionSessionCompleted": "Sesiune finalizată — versiunea {version} creată",
   "agentEvolutionSessionError": "Sesiunea de evoluție nu a putut fi pornită",
   "agentEvolutionSessionStarting": "Se pornește sesiunea de evoluție...",
+  "agentEvolutionSessionTitle": "Evoluție #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abandonat",
+  "agentEvolutionStatusActive": "Activ",
+  "agentEvolutionStatusCompleted": "Finalizat",
+  "agentInstancesEmptyList": "Nu s-au găsit instanțe de agent",
+  "agentInstancesFilterActive": "Activ",
+  "agentInstancesFilterAll": "Toate",
+  "agentInstancesFilterDestroyed": "Distrus",
+  "agentInstancesFilterDormant": "Inactiv",
+  "agentInstancesKindAll": "Toate",
+  "agentInstancesKindEvolution": "Evoluție",
+  "agentInstancesKindTaskAgent": "Agent de sarcini",
+  "agentInstancesTitle": "Instanțe",
   "agentLifecycleActive": "Activ",
   "agentLifecycleCreated": "Creat",
   "agentLifecycleDestroyed": "Distrus",
@@ -139,6 +159,8 @@
   "agentReportHistoryError": "A apărut o eroare la încărcarea istoricului rapoartelor.",
   "agentReportNone": "Niciun raport disponibil încă.",
   "agentRunningIndicator": "În execuție",
+  "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
+  "agentSettingsTitle": "Agenți",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
   "@agentStateErrorLoading": {

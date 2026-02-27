@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -954,6 +955,98 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    });
+
+    testWidgets('collapsed report shows only TLDR section', (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-first',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: '## 📋 TLDR\n'
+              'Summary of the work.\n\n'
+              '## ✅ Achieved\n'
+              '- Built a spaceship\n',
+        ),
+        makeTestReport(
+          id: 'report-second',
+          createdAt: DateTime(2024, 3, 15, 9),
+          content: '## 📋 TLDR\n'
+              'Earlier summary.\n\n'
+              '## ✅ Achieved\n'
+              '- Prepared launch pad\n',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // Second report is collapsed — its GptMarkdown should render
+      // only the TLDR section, not the Achieved section.
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      // First report expanded (full content), second collapsed (TLDR only)
+      expect(markdowns.length, 2);
+      // The collapsed one should NOT contain "Achieved" content
+      expect(markdowns.last.data, contains('TLDR'));
+      expect(markdowns.last.data, isNot(contains('Achieved')));
+    });
+
+    testWidgets('collapsed report uses first paragraph as TLDR fallback',
+        (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-fallback',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: 'This has no TLDR heading.\n\n'
+              'Second paragraph with details.',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse the first (auto-expanded) report
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      // The collapsed content should be just the first paragraph
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 1);
+      expect(markdowns.first.data, contains('no TLDR heading'));
+      expect(markdowns.first.data, isNot(contains('Second paragraph')));
+    });
+
+    testWidgets(
+        'collapsed report shows TLDR-only section when it is the last section',
+        (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-tldr-only',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: '## 📋 TLDR\n'
+              'This is the entire report.',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse the report
+      await tester.tap(find.byType(InkWell));
+      await tester.pump();
+
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 1);
+      expect(markdowns.first.data, contains('TLDR'));
+      expect(markdowns.first.data, contains('entire report'));
     });
 
     testWidgets('ignores non-report entities in the list', (tester) async {

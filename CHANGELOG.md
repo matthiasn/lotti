@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.878] - 2026-02-27
+### Added
+- Settings > Agents page with Templates and Instances tabs, replacing the
+  standalone Agent Templates page.
+- Agent instances list with kind filter (All / Task Agent / Evolution) and
+  lifecycle filter (All / Active / Dormant / Destroyed).
+- Expandable TLDR agent report section on task detail page, shown when an
+  agent has produced a report.
+- Agent report format aligned with task summary structure (TLDR, Achieved,
+  Remaining, Learnings).
+
+### Changed
+- Agent default model changed from Gemini 3.1 Pro to Gemini 3 Flash.
+- Agent report section uses expandable TLDR pattern instead of plain markdown.
+- Agent report tool description now references system prompt structure and
+  encourages agents to express their personality.
+
 ## [0.9.877] - 2026-02-27
 ### Added
 - Alibaba Cloud (Qwen) as AI inference provider with 5 models including text,

@@ -717,9 +717,16 @@ class PersistenceLogic {
         overrideComparison: overrideComparison,
       );
       final applied = updateResult.applied;
+
+      // Include parent linked entry IDs so that agents subscribed to a
+      // parent (e.g. a task) are notified when a child entry is edited.
+      final parentIds =
+          await _journalDb.parentLinkedEntityIds(journalEntity.id).get();
+
       _updateNotifications.notify({
         ...journalEntity.affectedIds,
         if (linkedId != null) linkedId,
+        ...parentIds,
         labelUsageNotification,
       });
 

@@ -11,7 +11,7 @@ abstract class AgentConfig with _$AgentConfig {
     @Default(5) int maxTurnsPerWake,
 
     /// Model identifier to use for inference.
-    @Default('models/gemini-3.1-pro-preview') String modelId,
+    @Default('models/gemini-3-flash-preview') String modelId,
   }) = _AgentConfig;
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>

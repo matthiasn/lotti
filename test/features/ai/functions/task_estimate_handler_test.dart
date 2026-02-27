@@ -208,12 +208,12 @@ void main() {
       });
     });
 
-    group('skipped updates (existing estimate)', () {
-      test('should skip when estimate already exists', () async {
+    group('no-op when same estimate', () {
+      test('should no-op when requested minutes match current', () async {
         final task = createTask(estimate: const Duration(minutes: 60));
         final toolCall = createEstimateToolCall(
-          minutes: 120,
-          reason: 'User mentioned 2 hours',
+          minutes: 60,
+          reason: 'Confirming estimate',
           confidence: 'high',
         );
 
@@ -224,27 +224,17 @@ void main() {
 
         final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isFalse);
-        expect(result.wasSkipped, isTrue);
-        expect(result.requestedMinutes, 120);
-        expect(result.reason, 'User mentioned 2 hours');
-        expect(result.confidence, 'high');
-        expect(result.error, isNull); // Not an error, just skipped
-        expect(result.updatedTask, isNull);
-        expect(result.message, contains('already set to 60 minutes'));
+        expect(result.success, isTrue);
+        expect(result.wasNoOp, isTrue);
+        expect(result.requestedMinutes, 60);
+        expect(result.message, contains('No change needed'));
 
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call_estimate_123',
-            response: 'Estimate already set to 60 minutes. Skipped.',
-          ),
-        ).called(1);
       });
 
-      test('should not call onTaskUpdated when skipped', () async {
+      test('should not call onTaskUpdated when same estimate', () async {
         final task = createTask(estimate: const Duration(minutes: 30));
-        final toolCall = createEstimateToolCall(minutes: 60);
+        final toolCall = createEstimateToolCall(minutes: 30);
 
         var callbackCalled = false;
         final handler = TaskEstimateHandler(
@@ -256,6 +246,37 @@ void main() {
         await handler.processToolCall(toolCall, mockManager);
 
         expect(callbackCalled, isFalse);
+      });
+    });
+
+    group('updates existing estimate to different value', () {
+      test('should update when requested minutes differ', () async {
+        final task = createTask(estimate: const Duration(minutes: 60));
+        final toolCall = createEstimateToolCall(
+          minutes: 120,
+          reason: 'User mentioned 2 hours',
+          confidence: 'high',
+        );
+
+        when(() => mockJournalRepo.updateJournalEntity(any()))
+            .thenAnswer((_) async => true);
+
+        final handler = TaskEstimateHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.processToolCall(toolCall, mockManager);
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isTrue);
+        expect(result.requestedMinutes, 120);
+        expect(
+          result.updatedTask!.data.estimate,
+          const Duration(minutes: 120),
+        );
+
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
     });
 

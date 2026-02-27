@@ -37,6 +37,21 @@ void main() {
         .thenAnswer((_) async => template);
   }
 
+  /// Stub the full version-creation chain so that [updateTemplate] with a
+  /// model change (which triggers [createVersion]) succeeds.
+  void stubVersionCreationChain() {
+    final activeVersion = makeTestTemplateVersion();
+    final head = makeTestTemplateHead();
+    when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
+        .thenAnswer((_) async => activeVersion);
+    when(() => mockRepo.getTemplateHead(kTestTemplateId))
+        .thenAnswer((_) async => head);
+    when(() => mockRepo.getEntity(head.versionId))
+        .thenAnswer((_) async => activeVersion);
+    when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
+        .thenAnswer((_) async => 2);
+  }
+
   group('createTemplate', () {
     test('creates template, version, and head entities', () async {
       final result = await service.createTemplate(
@@ -125,6 +140,7 @@ void main() {
   group('updateTemplate', () {
     test('updates display name and model ID', () async {
       stubTemplateExists();
+      stubVersionCreationChain();
 
       final result = await service.updateTemplate(
         templateId: kTestTemplateId,
@@ -134,7 +150,8 @@ void main() {
 
       expect(result.displayName, 'New Name');
       expect(result.modelId, 'models/gemini-flash');
-      verify(() => mockSync.upsertEntity(any())).called(1);
+      // 1 template upsert + 3 from createVersion (archive, new, head).
+      verify(() => mockSync.upsertEntity(any())).called(4);
     });
 
     test('updates only display name when modelId is null', () async {
@@ -147,11 +164,12 @@ void main() {
 
       expect(result.displayName, 'Renamed');
       // Model should remain the original from makeTestTemplate.
-      expect(result.modelId, 'models/gemini-3.1-pro-preview');
+      expect(result.modelId, 'models/gemini-3-flash-preview');
     });
 
     test('updates only model ID when displayName is null', () async {
       stubTemplateExists();
+      stubVersionCreationChain();
 
       final result = await service.updateTemplate(
         templateId: kTestTemplateId,
@@ -186,6 +204,7 @@ void main() {
 
     test('persists the updated entity via syncService', () async {
       stubTemplateExists();
+      stubVersionCreationChain();
 
       await service.updateTemplate(
         templateId: kTestTemplateId,
@@ -196,10 +215,13 @@ void main() {
       final captured = verify(() => mockSync.upsertEntity(captureAny()))
           .captured
           .cast<AgentDomainEntity>();
+      // First upsert is the template itself.
       final persisted = captured.first as AgentTemplateEntity;
       expect(persisted.displayName, 'Updated');
       expect(persisted.modelId, 'models/new-model');
       expect(persisted.id, kTestTemplateId);
+      // Remaining 3 are from createVersion (archive, new version, head).
+      expect(captured, hasLength(4));
     });
   });
 

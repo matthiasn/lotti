@@ -29,7 +29,7 @@ void main() {
       stubResolution();
 
       final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         aiConfigRepository: mockAiConfig,
       );
 
@@ -57,7 +57,7 @@ void main() {
           .thenAnswer((_) async => testAiModel());
 
       final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         aiConfigRepository: mockAiConfig,
       );
 
@@ -68,7 +68,7 @@ void main() {
       stubResolution(apiKey: '');
 
       final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         aiConfigRepository: mockAiConfig,
       );
 
@@ -79,7 +79,7 @@ void main() {
       stubResolution();
 
       final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         aiConfigRepository: mockAiConfig,
         logTag: 'CustomTag',
       );
@@ -103,7 +103,7 @@ void main() {
           .thenAnswer((_) async => testInferenceProvider(id: 'provider-a'));
 
       final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         aiConfigRepository: mockAiConfig,
       );
 

@@ -415,7 +415,7 @@ final class AgentUpdateStreamProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentUpdateStreamHash() => r'b2ad428362e088c14beb6e64ff9b9dc5745ef8f4';
+String _$agentUpdateStreamHash() => r'e3bfb705740bff6560f2667ed721fc46546f3dea';
 
 /// Stream that emits when a specific agent's data changes (from sync or local
 /// wake). Detail providers watch this to self-invalidate.
@@ -639,6 +639,93 @@ final class AgentTemplatesProvider extends $FunctionalProvider<
 }
 
 String _$agentTemplatesHash() => r'11181589ced963f8f4bbf169e06f8d82e1667045';
+
+/// List all agent identity instances.
+
+@ProviderFor(allAgentInstances)
+final allAgentInstancesProvider = AllAgentInstancesProvider._();
+
+/// List all agent identity instances.
+
+final class AllAgentInstancesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// List all agent identity instances.
+  AllAgentInstancesProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'allAgentInstancesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$allAgentInstancesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    return allAgentInstances(ref);
+  }
+}
+
+String _$allAgentInstancesHash() => r'2def9e6a157e7a074a0e8144ec20ebcee741d8b2';
+
+/// List all evolution sessions across all templates.
+
+@ProviderFor(allEvolutionSessions)
+final allEvolutionSessionsProvider = AllEvolutionSessionsProvider._();
+
+/// List all evolution sessions across all templates.
+
+final class AllEvolutionSessionsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// List all evolution sessions across all templates.
+  AllEvolutionSessionsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'allEvolutionSessionsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$allEvolutionSessionsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    return allEvolutionSessions(ref);
+  }
+}
+
+String _$allEvolutionSessionsHash() =>
+    r'0a3f06037fe006a0a71cf78ac78493d0c0e91c31';
 
 /// Fetch a single agent template by [templateId].
 ///
@@ -1032,6 +1119,127 @@ final class TemplateForAgentFamily extends $Family
 
   @override
   String toString() => r'templateForAgentProvider';
+}
+
+/// Resolve the model ID used for a specific wake thread.
+///
+/// Looks up the wake run by [threadId] (which equals the run key), then
+/// resolves the template version to read the `modelId` that was configured
+/// when that version was created.
+
+@ProviderFor(modelIdForThread)
+final modelIdForThreadProvider = ModelIdForThreadFamily._();
+
+/// Resolve the model ID used for a specific wake thread.
+///
+/// Looks up the wake run by [threadId] (which equals the run key), then
+/// resolves the template version to read the `modelId` that was configured
+/// when that version was created.
+
+final class ModelIdForThreadProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
+    with $FutureModifier<String?>, $FutureProvider<String?> {
+  /// Resolve the model ID used for a specific wake thread.
+  ///
+  /// Looks up the wake run by [threadId] (which equals the run key), then
+  /// resolves the template version to read the `modelId` that was configured
+  /// when that version was created.
+  ModelIdForThreadProvider._(
+      {required ModelIdForThreadFamily super.from,
+      required (
+        String,
+        String,
+      )
+          super.argument})
+      : super(
+          retry: null,
+          name: r'modelIdForThreadProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$modelIdForThreadHash();
+
+  @override
+  String toString() {
+    return r'modelIdForThreadProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String?> create(Ref ref) {
+    final argument = this.argument as (
+      String,
+      String,
+    );
+    return modelIdForThread(
+      ref,
+      argument.$1,
+      argument.$2,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ModelIdForThreadProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$modelIdForThreadHash() => r'486d16169ec92f86045907fc9c4a6c564009b17d';
+
+/// Resolve the model ID used for a specific wake thread.
+///
+/// Looks up the wake run by [threadId] (which equals the run key), then
+/// resolves the template version to read the `modelId` that was configured
+/// when that version was created.
+
+final class ModelIdForThreadFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+            FutureOr<String?>,
+            (
+              String,
+              String,
+            )> {
+  ModelIdForThreadFamily._()
+      : super(
+          retry: null,
+          name: r'modelIdForThreadProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Resolve the model ID used for a specific wake thread.
+  ///
+  /// Looks up the wake run by [threadId] (which equals the run key), then
+  /// resolves the template version to read the `modelId` that was configured
+  /// when that version was created.
+
+  ModelIdForThreadProvider call(
+    String agentId,
+    String threadId,
+  ) =>
+      ModelIdForThreadProvider._(argument: (
+        agentId,
+        threadId,
+      ), from: this);
+
+  @override
+  String toString() => r'modelIdForThreadProvider';
 }
 
 /// Fetch the latest report for an agent by [agentId].
@@ -2315,4 +2523,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'987992e7e80752d4d42473f5ebd80c1f6d775b02';
+    r'082d6ee5478da03b1bf6a5a2441bef0b34819eec';

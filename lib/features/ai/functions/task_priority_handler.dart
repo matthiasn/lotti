@@ -185,28 +185,8 @@ class TaskPriorityHandler {
         );
       }
 
-      // Check if priority was explicitly set (not default p2Medium)
+      // No-op if requested priority equals current value.
       final currentPriority = task.data.priority;
-      final wasExplicitlySet = currentPriority != TaskPriority.p2Medium;
-
-      if (wasExplicitlySet) {
-        final message =
-            'Priority already set to ${currentPriority.short}. Skipped.';
-        developer.log(
-          'Task already has priority: ${currentPriority.short}',
-          name: 'TaskPriorityHandler',
-        );
-        _sendResponse(call.id, message, manager);
-        return TaskPriorityResult(
-          success: false,
-          message: message,
-          requestedPriority: priority,
-          reason: reason,
-          confidence: confidence,
-        );
-      }
-
-      // Skip DB write if requested priority equals current (no-op optimization)
       if (priority == currentPriority) {
         final message = 'Priority already ${priority.short}. No change needed.';
         developer.log(

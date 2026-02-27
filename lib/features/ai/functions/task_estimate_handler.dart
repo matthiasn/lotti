@@ -210,21 +210,18 @@ class TaskEstimateHandler {
         );
       }
 
-      // Check if estimate already exists (treat zero as "not set")
+      // No-op if requested estimate equals current value.
       final currentEstimate = task.data.estimate;
-      final hasExistingEstimate =
-          currentEstimate != null && currentEstimate.inMinutes > 0;
-
-      if (hasExistingEstimate) {
+      if (currentEstimate != null && currentEstimate.inMinutes == minutes) {
         final message =
-            'Estimate already set to ${currentEstimate.inMinutes} minutes. Skipped.';
+            'Estimate already set to $minutes minutes. No change needed.';
         developer.log(
-          'Task already has estimate: ${currentEstimate.inMinutes} minutes',
+          'Estimate unchanged: $minutes minutes',
           name: 'TaskEstimateHandler',
         );
         _sendResponse(call.id, message, manager);
         return TaskEstimateResult(
-          success: false,
+          success: true,
           message: message,
           requestedMinutes: minutes,
           reason: reason,

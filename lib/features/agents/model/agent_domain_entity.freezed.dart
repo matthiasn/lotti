@@ -424,6 +424,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String? modelId,
             DateTime? deletedAt)?
         agentTemplateVersion,
     TResult Function(String id, String agentId, String versionId,
@@ -563,6 +564,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.modelId,
             _that.deletedAt);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -716,6 +718,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String? modelId,
             DateTime? deletedAt)
         agentTemplateVersion,
     required TResult Function(String id, String agentId, String versionId,
@@ -854,6 +857,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.modelId,
             _that.deletedAt);
       case AgentTemplateHeadEntity():
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -1000,6 +1004,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String authoredBy,
             DateTime createdAt,
             VectorClock? vectorClock,
+            String? modelId,
             DateTime? deletedAt)?
         agentTemplateVersion,
     TResult? Function(String id, String agentId, String versionId,
@@ -1138,6 +1143,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.authoredBy,
             _that.createdAt,
             _that.vectorClock,
+            _that.modelId,
             _that.deletedAt);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -2658,6 +2664,7 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
       required this.authoredBy,
       required this.createdAt,
       required this.vectorClock,
+      this.modelId,
       this.deletedAt,
       final String? $type})
       : $type = $type ?? 'agentTemplateVersion';
@@ -2675,6 +2682,9 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
   final DateTime createdAt;
   @override
   final VectorClock? vectorClock;
+
+  /// The model ID configured on the template when this version was created.
+  final String? modelId;
   @override
   final DateTime? deletedAt;
 
@@ -2715,6 +2725,7 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
                 other.createdAt == createdAt) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -2722,11 +2733,11 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, id, agentId, version, status,
-      directives, authoredBy, createdAt, vectorClock, deletedAt);
+      directives, authoredBy, createdAt, vectorClock, modelId, deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, modelId: $modelId, deletedAt: $deletedAt)';
   }
 }
 
@@ -2747,6 +2758,7 @@ abstract mixin class $AgentTemplateVersionEntityCopyWith<$Res>
       String authoredBy,
       DateTime createdAt,
       VectorClock? vectorClock,
+      String? modelId,
       DateTime? deletedAt});
 }
 
@@ -2771,6 +2783,7 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
     Object? authoredBy = null,
     Object? createdAt = null,
     Object? vectorClock = freezed,
+    Object? modelId = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(AgentTemplateVersionEntity(
@@ -2806,6 +2819,10 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
           ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
+      modelId: freezed == modelId
+          ? _self.modelId
+          : modelId // ignore: cast_nullable_to_non_nullable
+              as String?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable

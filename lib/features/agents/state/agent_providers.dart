@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:async/async.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -90,7 +91,20 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
 @riverpod
 Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
   final notifications = getIt<UpdateNotifications>();
-  return notifications.updateStream.where((ids) => ids.contains(agentId));
+  final orchestrator = ref.watch(wakeOrchestratorProvider);
+
+  // Merge the global notification stream (filtered by agentId) with the
+  // orchestrator's dedicated state-change stream. The orchestrator writes
+  // throttle state (nextWakeAt) via the repository directly, bypassing
+  // UpdateNotifications, so we merge its stateChanged stream to ensure
+  // the UI refreshes for countdown display.
+  final notificationStream =
+      notifications.updateStream.where((ids) => ids.contains(agentId));
+  final orchestratorStream =
+      orchestrator.stateChanged.where((id) => id == agentId).map(
+            (id) => <String>{id},
+          );
+  return StreamGroup.merge([notificationStream, orchestratorStream]);
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
@@ -127,6 +141,33 @@ AgentTemplateService agentTemplateService(Ref ref) {
 Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
   final service = ref.watch(agentTemplateServiceProvider);
   return service.listTemplates();
+}
+
+/// List all agent identity instances.
+@riverpod
+Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
+  final service = ref.watch(agentServiceProvider);
+  final agents = await service.listAgents();
+  return agents.cast<AgentDomainEntity>();
+}
+
+/// List all evolution sessions across all templates.
+@riverpod
+Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final templates = await templateService.listTemplates();
+  final templateIds = templates
+      .map((t) => t.mapOrNull(agentTemplate: (tpl) => tpl.id))
+      .whereType<String>()
+      .toList();
+
+  final sessionLists = await Future.wait(
+    templateIds.map(templateService.getEvolutionSessions),
+  );
+
+  final sessions = sessionLists.expand((items) => items).toList()
+    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  return sessions.cast<AgentDomainEntity>();
 }
 
 /// Fetch a single agent template by [templateId].
@@ -176,6 +217,30 @@ Future<AgentDomainEntity?> templateForAgent(
   ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentTemplateServiceProvider);
   return service.getTemplateForAgent(agentId);
+}
+
+/// Resolve the model ID used for a specific wake thread.
+///
+/// Looks up the wake run by [threadId] (which equals the run key), then
+/// resolves the template version to read the `modelId` that was configured
+/// when that version was created.
+@riverpod
+Future<String?> modelIdForThread(
+  Ref ref,
+  String agentId,
+  String threadId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+
+  final wakeRun = await repository.getWakeRun(threadId);
+  if (wakeRun?.templateVersionId != null) {
+    final versionEntity =
+        await repository.getEntity(wakeRun!.templateVersionId!);
+    final version = versionEntity?.mapOrNull(agentTemplateVersion: (v) => v);
+    if (version?.modelId != null) return version!.modelId;
+  }
+
+  return null;
 }
 
 /// Fetch the latest report for an agent by [agentId].
@@ -460,17 +525,28 @@ Future<void> agentInitialization(Ref ref) async {
     orchestrator.stop();
   });
 
-  // 1. Wire the workflow executor into the orchestrator.
+  // 1. Mark any orphaned 'running' wake runs as 'abandoned' so the activity
+  //    log is not confused by stale entries from a previous app lifecycle.
+  final repository = ref.read(agentRepositoryProvider);
+  final abandonedCount = await repository.abandonOrphanedWakeRuns();
+  if (abandonedCount > 0) {
+    developer.log(
+      'Marked $abandonedCount orphaned wake run(s) as abandoned on startup',
+      name: 'agentInitialization',
+    );
+  }
+
+  // 2. Wire the workflow executor into the orchestrator.
   _wireWakeExecutor(ref, orchestrator, workflow);
 
-  // 2. Start the orchestrator on the local update stream.
+  // 3. Start the orchestrator on the local update stream.
   final updateNotifications = getIt<UpdateNotifications>();
   await orchestrator.start(updateNotifications.localUpdateStream);
 
-  // 3. Wire the sync event processor for cross-device agent data.
+  // 4. Wire the sync event processor for cross-device agent data.
   _wireSyncEventProcessor(ref, orchestrator);
 
-  // 4. Seed default templates and restore subscriptions.
+  // 5. Seed default templates and restore subscriptions.
   await templateService.seedDefaults();
   await taskAgentService.restoreSubscriptions();
 }

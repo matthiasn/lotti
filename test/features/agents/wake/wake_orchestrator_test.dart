@@ -1628,6 +1628,53 @@ void main() {
           ).called(1);
         });
       });
+      test('removes pending subscription jobs for the same agent', () {
+        fakeAsync((async) {
+          final capturedEntries = <WakeRunLogData>[];
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntries.add(
+              invocation.namedArguments[#entry] as WakeRunLogData,
+            );
+          });
+
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+          // ignore: cascade_invocations
+          orchestrator.addSubscription(
+            AgentSubscription(
+              id: 'sub-1',
+              agentId: 'agent-1',
+              matchEntityIds: {'task-1'},
+            ),
+          );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Emit a notification that enqueues a subscription job.
+          controller.add({'task-1'});
+          async.flushMicrotasks();
+
+          // The job is deferred (not yet executed). Queue should have 1 job.
+          expect(queue.length, 1);
+
+          // Manual wake should remove the pending subscription job and
+          // enqueue only the manual one → single execution.
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+
+          // Only one wake run should have been executed (the manual one).
+          expect(capturedEntries, hasLength(1));
+          expect(capturedEntries.first.reason, 'manual');
+
+          controller.close();
+        });
+      });
     });
 
     group('monotonic wake counter', () {
@@ -1731,8 +1778,8 @@ void main() {
 
     group('deferred drain via throttle timer', () {
       test(
-          'throttle deferred drain picks up work that arrived during '
-          'throttle window', () {
+          'notification during post-execution throttle enqueues for '
+          'deferred drain', () {
         fakeAsync((async) {
           var executionCount = 0;
 
@@ -1759,8 +1806,9 @@ void main() {
           emitAndDrain(async, controller, {'entity-1'});
           expect(executionCount, 1);
 
-          // Agent is now throttled (post-execution throttle). A second
-          // notification merges tokens into the throttle window.
+          // Agent is now throttled (post-execution throttle). An external
+          // notification arrives — no queued job to merge into, so a new
+          // job is enqueued for the deferred drain.
           emitTokens(async, controller, {'entity-1'});
 
           // Advance past the post-execution throttle to fire deferred drain.
@@ -1768,7 +1816,7 @@ void main() {
             ..elapse(WakeOrchestrator.throttleWindow)
             ..flushMicrotasks();
 
-          // The deferred job should now have been processed.
+          // Second execution — the external change triggers a follow-up wake.
           expect(executionCount, 2);
 
           controller.close();
@@ -2813,6 +2861,142 @@ void main() {
         );
 
         expect(sub.predicate, isNull);
+      });
+    });
+
+    group('stateChanged stream', () {
+      test('emits agentId when throttle deadline is set after execution',
+          () async {
+        fakeAsync((async) {
+          final controller = StreamController<Set<String>>.broadcast();
+          final agentState = makeTestState(agentId: 'agent-1');
+
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => agentState);
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
+
+          final emissions = <String>[];
+          orchestrator.stateChanged.listen(emissions.add);
+
+          orchestrator.start(controller.stream);
+
+          // First wake: triggers execution and then sets throttle deadline
+          emitAndDrain(async, controller, {'entity-1'});
+          async.flushMicrotasks();
+
+          // After the execution completes, _setThrottleDeadline is called
+          // which adds to stateChanged.
+          expect(emissions, contains('agent-1'));
+
+          controller.close();
+        });
+      });
+
+      test('emits agentId when clearThrottle persists null nextWakeAt',
+          () async {
+        fakeAsync((async) {
+          final controller = StreamController<Set<String>>.broadcast();
+          final agentState =
+              makeTestState(agentId: 'agent-1', nextWakeAt: DateTime(2024));
+
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => agentState);
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
+
+          // ignore: cascade_invocations
+          orchestrator.start(controller.stream);
+
+          // Execute to set a throttle deadline
+          emitAndDrain(async, controller, {'entity-1'});
+          async.flushMicrotasks();
+
+          final emissions = <String>[];
+          orchestrator.stateChanged.listen(emissions.add);
+
+          // Clear the throttle
+          orchestrator.clearThrottle('agent-1');
+          async.flushMicrotasks();
+
+          // _clearPersistedThrottle is async — the emission may arrive
+          // after microtasks settle.
+          expect(emissions, contains('agent-1'));
+
+          controller.close();
+        });
+      });
+    });
+
+    group('enqueueManualWake', () {
+      test('clears pending subscription jobs for agent', () {
+        fakeAsync((async) {
+          final controller = StreamController<Set<String>>.broadcast();
+          final executedRunKeys = <String>[];
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, tokens, threadId) async {
+              executedRunKeys.add(runKey);
+              return null;
+            };
+
+          // ignore: cascade_invocations
+          orchestrator.start(controller.stream);
+
+          // Emit a notification to enqueue a subscription job
+          emitTokens(async, controller, {'entity-1'});
+
+          // Queue should have the subscription job
+          expect(queue.isEmpty, isFalse);
+
+          // Manual wake supersedes the subscription job.
+          // enqueueManualWake calls removeByAgent (clearing the subscription
+          // job) then enqueues a manual job and calls processNext.
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'user_trigger',
+          );
+          async.flushMicrotasks();
+
+          // Only one execution should have occurred (the manual wake),
+          // not the subscription job. The manual wake's processNext
+          // consumes the manual job.
+          expect(executedRunKeys, hasLength(1));
+
+          // The deferred drain should not fire the removed subscription job
+          // when the throttle window elapses.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          // Still only one execution — the subscription job was removed.
+          expect(executedRunKeys, hasLength(1));
+
+          controller.close();
+        });
       });
     });
   });

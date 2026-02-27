@@ -1,7 +1,8 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
-import 'package:lotti/features/agents/ui/agent_template_list_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
     as new_categories;
@@ -68,9 +69,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/habits/by_id/:habitId',
         '/settings/habits/create',
         '/settings/habits/search/:searchTerm',
-        '/settings/templates',
-        '/settings/templates/create',
-        '/settings/templates/:templateId',
+        '/settings/agents',
+        '/settings/agents/templates/create',
+        '/settings/agents/templates/:templateId',
+        '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
@@ -301,25 +303,37 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: CreateHabitPage(),
         ),
 
-      // Agent Templates
-      if (pathContains('templates/create'))
+      // Agents
+      if (pathContains('agents/templates/create'))
         const BeamPage(
-          key: ValueKey('settings-templates-create'),
+          key: ValueKey('settings-agents-templates-create'),
           child: AgentTemplateDetailPage(),
         )
-      else if (pathContains('templates') && pathContainsKey('templateId'))
+      else if (pathContains('agents/templates') &&
+          pathContainsKey('templateId'))
         BeamPage(
           key: ValueKey(
-            'settings-templates-${state.pathParameters['templateId']}',
+            'settings-agents-templates-'
+            '${state.pathParameters['templateId']}',
           ),
           child: AgentTemplateDetailPage(
             templateId: state.pathParameters['templateId'],
           ),
         )
-      else if (pathContains('templates'))
+      else if (pathContains('agents/instances') && pathContainsKey('agentId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-agents-instances-'
+            '${state.pathParameters['agentId']}',
+          ),
+          child: AgentDetailPage(
+            agentId: state.pathParameters['agentId']!,
+          ),
+        )
+      else if (pathContains('agents'))
         const BeamPage(
-          key: ValueKey('settings-templates'),
-          child: AgentTemplateListPage(),
+          key: ValueKey('settings-agents'),
+          child: AgentSettingsPage(),
         ),
 
       // Flags

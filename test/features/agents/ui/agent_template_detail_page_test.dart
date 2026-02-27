@@ -146,16 +146,17 @@ void main() {
       );
     });
 
-    testWidgets('save is disabled without a model selected', (tester) async {
+    testWidgets('save is enabled with default model pre-selected',
+        (tester) async {
       await tester.pumpWidget(buildCreateSubject());
       await tester.pumpAndSettle();
 
-      // Enter a name but no model selected
+      // Enter a name — model is pre-selected to Gemini Flash
       final nameField = find.byType(TextField).first;
       await tester.enterText(nameField, 'My Template');
       await tester.pump();
 
-      // Create button should be disabled (not tappable)
+      // Create button should be enabled since model defaults to Flash
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       final createButton = find.text(context.messages.createButton);
       expect(createButton, findsOneWidget);
@@ -167,7 +168,7 @@ void main() {
           matching: find.byType(FilledButton),
         ),
       );
-      expect(button.onPressed, isNull);
+      expect(button.onPressed, isNotNull);
     });
 
     testWidgets('save calls createTemplate and pops', (tester) async {
@@ -310,7 +311,7 @@ void main() {
         () => mockTemplateService.updateTemplate(
           templateId: templateId,
           displayName: 'Test Template',
-          modelId: 'models/gemini-3.1-pro-preview',
+          modelId: 'models/gemini-3-flash-preview',
         ),
       ).called(1);
       verify(

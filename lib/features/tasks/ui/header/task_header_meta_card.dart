@@ -245,16 +245,7 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
                   size: 16,
                   color: context.colorScheme.primary,
                 ),
-          label: Text(
-            countdownText != null
-                ? '${context.messages.taskAgentChipLabel} $countdownText'
-                : context.messages.taskAgentChipLabel,
-            style: countdownText != null
-                ? const TextStyle(
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  )
-                : null,
-          ),
+          label: Text(context.messages.taskAgentChipLabel),
           tooltip: isRunning
               ? context.messages.agentRunningIndicator
               : showCountdown
@@ -269,6 +260,7 @@ class _TaskAgentChipState extends ConsumerState<_TaskAgentChip> {
             );
           },
         ),
+        if (showCountdown) _CountdownPill(countdownText: countdownText!),
       ],
     );
   }
@@ -407,4 +399,39 @@ String _formatCountdown(int totalSeconds) {
   final m = totalSeconds ~/ 60;
   final s = totalSeconds % 60;
   return '$m:${s.toString().padLeft(2, '0')}';
+}
+
+/// Fixed-width pill that displays the agent wake countdown timer.
+///
+/// Uses a fixed width so the layout doesn't shift as digits change,
+/// preventing the "breathing" effect on each tick.
+class _CountdownPill extends StatelessWidget {
+  const _CountdownPill({required this.countdownText});
+
+  final String countdownText;
+
+  /// Fixed width that comfortably fits "XX:XX" in bodySmall with
+  /// tabular figures.
+  static const double _pillWidth = 52;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _pillWidth,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        countdownText,
+        textAlign: TextAlign.center,
+        style: context.textTheme.bodySmall?.copyWith(
+          fontFeatures: [const FontFeature.tabularFigures()],
+          fontWeight: FontWeight.w600,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
 }

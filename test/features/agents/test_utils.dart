@@ -169,7 +169,7 @@ AgentTemplateEntity makeTestTemplate({
   String agentId = kTestTemplateId,
   String displayName = 'Test Template',
   AgentTemplateKind kind = AgentTemplateKind.taskAgent,
-  String modelId = 'models/gemini-3.1-pro-preview',
+  String modelId = 'models/gemini-3-flash-preview',
   Set<String> categoryIds = const {},
   DateTime? createdAt,
   DateTime? updatedAt,
@@ -195,6 +195,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
   AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
   String directives = 'You are a helpful agent.',
   String authoredBy = 'user',
+  String? modelId,
   DateTime? createdAt,
   VectorClock? vectorClock,
 }) {
@@ -205,6 +206,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
     status: status,
     directives: directives,
     authoredBy: authoredBy,
+    modelId: modelId,
     createdAt: createdAt ?? kAgentTestDate,
     vectorClock: vectorClock,
   ) as AgentTemplateVersionEntity;
@@ -439,7 +441,7 @@ AiConfigInferenceProvider testInferenceProvider({
 /// Creates a test [AiConfigModel] for use in provider resolution tests.
 AiConfigModel testAiModel({
   String id = 'model-1',
-  String providerModelId = 'models/gemini-3.1-pro-preview',
+  String providerModelId = 'models/gemini-3-flash-preview',
   String inferenceProviderId = 'provider-1',
 }) {
   return AiConfig.model(
