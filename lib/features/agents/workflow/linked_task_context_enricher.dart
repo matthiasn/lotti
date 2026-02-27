@@ -104,7 +104,11 @@ class LinkedTaskContextEnricher {
       }
 
       final sortedLinks = links.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        ..sort((a, b) {
+          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+          if (byCreatedAt != 0) return byCreatedAt;
+          return a.id.compareTo(b.id);
+        });
 
       for (final link in sortedLinks) {
         final report = await agentRepository.getLatestReport(

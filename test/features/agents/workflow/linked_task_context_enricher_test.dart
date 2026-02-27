@@ -109,5 +109,53 @@ void main() {
       );
       expect(row.containsKey('latestSummary'), isFalse);
     });
+
+    test('uses link id as deterministic tie-breaker for equal createdAt',
+        () async {
+      final now = DateTime(2024, 6, 15, 12);
+      final linkB = AgentLink.agentTask(
+        id: 'link-b',
+        fromId: 'agent-b',
+        toId: 'task-4',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      );
+      final linkA = AgentLink.agentTask(
+        id: 'link-a',
+        fromId: 'agent-a',
+        toId: 'task-4',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      );
+      when(() => mockRepository.getLinksTo('task-4', type: 'agent_task'))
+          .thenAnswer((_) async => [linkB, linkA]);
+
+      final reportA = AgentDomainEntity.agentReport(
+        id: 'r-a',
+        agentId: 'agent-a',
+        scope: 'current',
+        createdAt: now,
+        vectorClock: null,
+        content: 'report-a',
+      ) as AgentReportEntity;
+      when(() => mockRepository.getLatestReport('agent-a', 'current'))
+          .thenAnswer((_) async => reportA);
+
+      const rawJson = '{"linked":[{"id":"task-4","latestSummary":"legacy"}]}';
+
+      final result = await enricher.enrich(rawJson);
+      final decoded = jsonDecode(result) as Map<String, dynamic>;
+      final linkedRows = decoded['linked'] as List<dynamic>;
+      final row = linkedRows.first as Map<String, dynamic>;
+
+      verify(() => mockRepository.getLatestReport('agent-a', 'current'))
+          .called(1);
+      verifyNever(() => mockRepository.getLatestReport('agent-b', 'current'));
+      expect(row['taskAgentId'], 'agent-a');
+      expect(row['latestTaskAgentReport'], 'report-a');
+      expect(row.containsKey('latestSummary'), isFalse);
+    });
   });
 }
