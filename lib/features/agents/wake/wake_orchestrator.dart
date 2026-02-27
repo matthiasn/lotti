@@ -393,14 +393,16 @@ class WakeOrchestrator {
   /// drained even if a deferred drain timer fails to fire.
   ///
   /// Only triggers [processNext] when the queue has pending jobs AND no
-  /// deferred drain timer is active AND no drain is currently in progress.
+  /// drain is currently in progress. We intentionally do NOT check
+  /// `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
+  /// entry lingering in the map would permanently disable the safety net —
+  /// exactly the failure mode this mechanism is meant to recover from.
   void _startSafetyNet() {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = Timer.periodic(safetyNetInterval, (_) {
-      if (!queue.isEmpty && _deferredDrainTimers.isEmpty && !_isDraining) {
+      if (!queue.isEmpty && !_isDraining) {
         developer.log(
-          'Safety-net drain: queue has ${queue.length} pending jobs '
-          'with no deferred timers',
+          'Safety-net drain: queue has ${queue.length} pending jobs',
           name: 'WakeOrchestrator',
         );
         unawaited(processNext());
