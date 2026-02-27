@@ -1269,6 +1269,7 @@
   "outboxMonitorLabelSent": "sent",
   "outboxMonitorLabelSuccess": "success",
   "outboxMonitorNoAttachment": "no attachment",
+  "outboxMonitorPayloadSizeLabel": "Size",
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetriesLabel": "Retries",
   "outboxMonitorRetry": "retry",

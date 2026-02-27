@@ -4878,6 +4878,12 @@ abstract class AppLocalizations {
   /// **'no attachment'**
   String get outboxMonitorNoAttachment;
 
+  /// No description provided for @outboxMonitorPayloadSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get outboxMonitorPayloadSizeLabel;
+
   /// No description provided for @outboxMonitorRetries.
   ///
   /// In en, this message translates to:

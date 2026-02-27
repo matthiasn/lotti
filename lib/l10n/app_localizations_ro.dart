@@ -2712,6 +2712,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxMonitorNoAttachment => 'fără atașament';
 
   @override
+  String get outboxMonitorPayloadSizeLabel => 'Dimensiune';
+
+  @override
   String get outboxMonitorRetries => 'reîncercare';
 
   @override

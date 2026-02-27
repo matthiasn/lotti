@@ -1152,6 +1152,7 @@
   "outboxMonitorLabelSent": "gesendet",
   "outboxMonitorLabelSuccess": "Erfolgreich",
   "outboxMonitorNoAttachment": "kein Anhang",
+  "outboxMonitorPayloadSizeLabel": "Größe",
   "outboxMonitorRetries": "Wiederholungen",
   "outboxMonitorRetriesLabel": "Wiederholungen",
   "outboxMonitorRetry": "wiederholen",

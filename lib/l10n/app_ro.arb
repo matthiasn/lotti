@@ -1152,6 +1152,7 @@
   "outboxMonitorLabelSent": "trimis",
   "outboxMonitorLabelSuccess": "succes",
   "outboxMonitorNoAttachment": "fără atașament",
+  "outboxMonitorPayloadSizeLabel": "Dimensiune",
   "outboxMonitorRetries": "reîncercare",
   "outboxMonitorRetriesLabel": "Reîncercări",
   "outboxMonitorRetry": "reincercare",

@@ -127,6 +127,14 @@ class OutboxListItem extends StatelessWidget {
               label: context.messages.outboxMonitorAttachmentLabel,
               value: viewModel.attachmentValue,
             ),
+            if (viewModel.payloadSizeLabel != null) ...[
+              const SizedBox(height: 4),
+              _MetaRow(
+                icon: Icons.data_usage_rounded,
+                label: context.messages.outboxMonitorPayloadSizeLabel,
+                value: viewModel.payloadSizeLabel!,
+              ),
+            ],
           ],
         ),
       ),

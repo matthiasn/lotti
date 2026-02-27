@@ -2762,6 +2762,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get outboxMonitorNoAttachment => 'pas de pièce jointe';
 
   @override
+  String get outboxMonitorPayloadSizeLabel => 'Taille';
+
+  @override
   String get outboxMonitorRetries => 'retries';
 
   @override

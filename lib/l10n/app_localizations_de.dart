@@ -2715,6 +2715,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get outboxMonitorNoAttachment => 'kein Anhang';
 
   @override
+  String get outboxMonitorPayloadSizeLabel => 'Größe';
+
+  @override
   String get outboxMonitorRetries => 'Wiederholungen';
 
   @override
