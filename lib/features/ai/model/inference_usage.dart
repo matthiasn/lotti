@@ -1,7 +1,10 @@
+import 'package:meta/meta.dart';
+
 /// Usage statistics from AI inference responses.
 ///
 /// Contains token counts for tracking API usage and costs.
 /// All fields are nullable to support providers that don't report usage.
+@immutable
 class InferenceUsage {
   const InferenceUsage({
     this.inputTokens,
@@ -9,6 +12,16 @@ class InferenceUsage {
     this.thoughtsTokens,
     this.cachedInputTokens,
   });
+
+  /// Creates an [InferenceUsage] from a JSON map.
+  factory InferenceUsage.fromJson(Map<String, dynamic> json) {
+    return InferenceUsage(
+      inputTokens: json['inputTokens'] as int?,
+      outputTokens: json['outputTokens'] as int?,
+      thoughtsTokens: json['thoughtsTokens'] as int?,
+      cachedInputTokens: json['cachedInputTokens'] as int?,
+    );
+  }
 
   /// Empty usage when no data is available
   static const empty = InferenceUsage();
@@ -47,10 +60,37 @@ class InferenceUsage {
     );
   }
 
+  /// Serializes this usage to a JSON map.
+  Map<String, dynamic> toJson() {
+    return {
+      if (inputTokens != null) 'inputTokens': inputTokens,
+      if (outputTokens != null) 'outputTokens': outputTokens,
+      if (thoughtsTokens != null) 'thoughtsTokens': thoughtsTokens,
+      if (cachedInputTokens != null) 'cachedInputTokens': cachedInputTokens,
+    };
+  }
+
   static int? _addNullable(int? a, int? b) {
     if (a == null && b == null) return null;
     return (a ?? 0) + (b ?? 0);
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InferenceUsage &&
+          inputTokens == other.inputTokens &&
+          outputTokens == other.outputTokens &&
+          thoughtsTokens == other.thoughtsTokens &&
+          cachedInputTokens == other.cachedInputTokens;
+
+  @override
+  int get hashCode => Object.hash(
+        inputTokens,
+        outputTokens,
+        thoughtsTokens,
+        cachedInputTokens,
+      );
 
   @override
   String toString() {

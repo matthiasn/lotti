@@ -33,6 +33,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.deletedAt,
       changeSet: (e) => e.deletedAt,
       changeDecision: (e) => e.deletedAt,
+      wakeTokenUsage: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -40,6 +41,7 @@ class AgentDbConversions {
       agentMessage: (m) => m.threadId,
       agentReport: (r) => r.threadId,
       changeSet: (c) => c.threadId,
+      wakeTokenUsage: (e) => e.threadId,
     );
 
     return AgentEntitiesCompanion(
@@ -130,6 +132,7 @@ class AgentDbConversions {
       evolutionNote: (_) => 'evolutionNote',
       changeSet: (_) => 'changeSet',
       changeDecision: (_) => 'changeDecision',
+      wakeTokenUsage: (_) => 'wakeTokenUsage',
       unknown: (_) => 'unknown',
     );
   }
@@ -173,6 +176,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.createdAt,
       changeSet: (e) => e.createdAt,
       changeDecision: (e) => e.createdAt,
+      wakeTokenUsage: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -197,6 +201,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.createdAt,
       changeSet: (e) => e.resolvedAt ?? e.createdAt,
       changeDecision: (e) => e.createdAt,
+      wakeTokenUsage: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }

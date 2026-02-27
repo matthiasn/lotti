@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -22,7 +23,7 @@ class _TestConversationRepository extends ConversationRepository {
   final List<String> deletedIds = [];
 
   /// Optional delegate to control sendMessage behavior (e.g., throwing).
-  Future<void> Function()? sendMessageDelegate;
+  Future<InferenceUsage?> Function()? sendMessageDelegate;
 
   /// Optional delegate to control createConversation behavior (e.g., throwing).
   String Function()? createConversationDelegate;
@@ -61,7 +62,7 @@ class _TestConversationRepository extends ConversationRepository {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
     required String model,
@@ -72,9 +73,10 @@ class _TestConversationRepository extends ConversationRepository {
     ConversationStrategy? strategy,
   }) async {
     if (sendMessageDelegate != null) {
-      await sendMessageDelegate!();
+      return sendMessageDelegate!();
     }
     // Otherwise no-op: the assistant response is pre-loaded in getConversation.
+    return null;
   }
 }
 

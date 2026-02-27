@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -288,7 +289,7 @@ class TaskAgentWorkflow {
       }
 
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
-      await conversationRepository.sendMessage(
+      final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
         model: modelId,
@@ -297,6 +298,17 @@ class TaskAgentWorkflow {
         tools: tools,
         temperature: 0.3,
         strategy: strategy,
+      );
+
+      // Persist token usage as a synced entity (non-fatal on failure).
+      await _persistTokenUsage(
+        usage: usage,
+        agentId: agentId,
+        runKey: runKey,
+        threadId: threadId,
+        modelId: modelId,
+        templateCtx: templateCtx,
+        now: now,
       );
 
       // Capture the final assistant response from the conversation manager.
@@ -465,6 +477,46 @@ class TaskAgentWorkflow {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────
+
+  /// Persist token usage from a wake cycle as a synced entity.
+  ///
+  /// Non-fatal: failures are logged but do not abort the wake.
+  Future<void> _persistTokenUsage({
+    required InferenceUsage? usage,
+    required String agentId,
+    required String runKey,
+    required String threadId,
+    required String modelId,
+    required _TemplateContext templateCtx,
+    required DateTime now,
+  }) async {
+    if (usage == null || !usage.hasData) return;
+
+    try {
+      await syncService.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: _uuid.v4(),
+          agentId: agentId,
+          runKey: runKey,
+          threadId: threadId,
+          modelId: modelId,
+          templateId: templateCtx.template.id,
+          templateVersionId: templateCtx.version.id,
+          createdAt: now,
+          vectorClock: null,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          thoughtsTokens: usage.thoughtsTokens,
+          cachedInputTokens: usage.cachedInputTokens,
+        ),
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to persist token usage for agent $agentId: $e',
+        name: 'TaskAgentWorkflow',
+      );
+    }
+  }
 
   /// Resolves the template and its active version for the given [agentId].
   ///

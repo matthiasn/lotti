@@ -39,6 +39,8 @@ AgentDomainEntity _$AgentDomainEntityFromJson(Map<String, dynamic> json) {
       return ChangeSetEntity.fromJson(json);
     case 'changeDecision':
       return ChangeDecisionEntity.fromJson(json);
+    case 'wakeTokenUsage':
+      return WakeTokenUsageEntity.fromJson(json);
 
     default:
       return AgentUnknownEntity.fromJson(json);
@@ -168,6 +170,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(EvolutionNoteEntity value)? evolutionNote,
     TResult Function(ChangeSetEntity value)? changeSet,
     TResult Function(ChangeDecisionEntity value)? changeDecision,
+    TResult Function(WakeTokenUsageEntity value)? wakeTokenUsage,
     TResult Function(AgentUnknownEntity value)? unknown,
     required TResult orElse(),
   }) {
@@ -199,6 +202,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return changeSet(_that);
       case ChangeDecisionEntity() when changeDecision != null:
         return changeDecision(_that);
+      case WakeTokenUsageEntity() when wakeTokenUsage != null:
+        return wakeTokenUsage(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -236,6 +241,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     required TResult Function(EvolutionNoteEntity value) evolutionNote,
     required TResult Function(ChangeSetEntity value) changeSet,
     required TResult Function(ChangeDecisionEntity value) changeDecision,
+    required TResult Function(WakeTokenUsageEntity value) wakeTokenUsage,
     required TResult Function(AgentUnknownEntity value) unknown,
   }) {
     final _that = this;
@@ -266,6 +272,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return changeSet(_that);
       case ChangeDecisionEntity():
         return changeDecision(_that);
+      case WakeTokenUsageEntity():
+        return wakeTokenUsage(_that);
       case AgentUnknownEntity():
         return unknown(_that);
       case _:
@@ -300,6 +308,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(EvolutionNoteEntity value)? evolutionNote,
     TResult? Function(ChangeSetEntity value)? changeSet,
     TResult? Function(ChangeDecisionEntity value)? changeDecision,
+    TResult? Function(WakeTokenUsageEntity value)? wakeTokenUsage,
     TResult? Function(AgentUnknownEntity value)? unknown,
   }) {
     final _that = this;
@@ -330,6 +339,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return changeSet(_that);
       case ChangeDecisionEntity() when changeDecision != null:
         return changeDecision(_that);
+      case WakeTokenUsageEntity() when wakeTokenUsage != null:
+        return wakeTokenUsage(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -503,6 +514,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? rejectionReason,
             DateTime? deletedAt)?
         changeDecision,
+    TResult Function(
+            String id,
+            String agentId,
+            String runKey,
+            String threadId,
+            String modelId,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? templateId,
+            String? templateVersionId,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            DateTime? deletedAt)?
+        wakeTokenUsage,
     TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -667,6 +694,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.deletedAt);
+      case WakeTokenUsageEntity() when wakeTokenUsage != null:
+        return wakeTokenUsage(
+            _that.id,
+            _that.agentId,
+            _that.runKey,
+            _that.threadId,
+            _that.modelId,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.templateId,
+            _that.templateVersionId,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
             _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -849,6 +892,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? rejectionReason,
             DateTime? deletedAt)
         changeDecision,
+    required TResult Function(
+            String id,
+            String agentId,
+            String runKey,
+            String threadId,
+            String modelId,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? templateId,
+            String? templateVersionId,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            DateTime? deletedAt)
+        wakeTokenUsage,
     required TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)
         unknown,
@@ -1012,6 +1071,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.deletedAt);
+      case WakeTokenUsageEntity():
+        return wakeTokenUsage(
+            _that.id,
+            _that.agentId,
+            _that.runKey,
+            _that.threadId,
+            _that.modelId,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.templateId,
+            _that.templateVersionId,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
             _that.deletedAt);
       case AgentUnknownEntity():
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -1187,6 +1262,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String? rejectionReason,
             DateTime? deletedAt)?
         changeDecision,
+    TResult? Function(
+            String id,
+            String agentId,
+            String runKey,
+            String threadId,
+            String modelId,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? templateId,
+            String? templateVersionId,
+            int? inputTokens,
+            int? outputTokens,
+            int? thoughtsTokens,
+            int? cachedInputTokens,
+            DateTime? deletedAt)?
+        wakeTokenUsage,
     TResult? Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -1350,6 +1441,22 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.deletedAt);
+      case WakeTokenUsageEntity() when wakeTokenUsage != null:
+        return wakeTokenUsage(
+            _that.id,
+            _that.agentId,
+            _that.runKey,
+            _that.threadId,
+            _that.modelId,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.templateId,
+            _that.templateVersionId,
+            _that.inputTokens,
+            _that.outputTokens,
+            _that.thoughtsTokens,
+            _that.cachedInputTokens,
             _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -3917,6 +4024,237 @@ class _$ChangeDecisionEntityCopyWithImpl<$Res>
           ? _self.rejectionReason
           : rejectionReason // ignore: cast_nullable_to_non_nullable
               as String?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class WakeTokenUsageEntity implements AgentDomainEntity {
+  const WakeTokenUsageEntity(
+      {required this.id,
+      required this.agentId,
+      required this.runKey,
+      required this.threadId,
+      required this.modelId,
+      required this.createdAt,
+      required this.vectorClock,
+      this.templateId,
+      this.templateVersionId,
+      this.inputTokens,
+      this.outputTokens,
+      this.thoughtsTokens,
+      this.cachedInputTokens,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'wakeTokenUsage';
+  factory WakeTokenUsageEntity.fromJson(Map<String, dynamic> json) =>
+      _$WakeTokenUsageEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String runKey;
+  final String threadId;
+  final String modelId;
+  final DateTime createdAt;
+  @override
+  final VectorClock? vectorClock;
+  final String? templateId;
+  final String? templateVersionId;
+  final int? inputTokens;
+  final int? outputTokens;
+  final int? thoughtsTokens;
+  final int? cachedInputTokens;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $WakeTokenUsageEntityCopyWith<WakeTokenUsageEntity> get copyWith =>
+      _$WakeTokenUsageEntityCopyWithImpl<WakeTokenUsageEntity>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$WakeTokenUsageEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is WakeTokenUsageEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.runKey, runKey) || other.runKey == runKey) &&
+            (identical(other.threadId, threadId) ||
+                other.threadId == threadId) &&
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.templateId, templateId) ||
+                other.templateId == templateId) &&
+            (identical(other.templateVersionId, templateVersionId) ||
+                other.templateVersionId == templateVersionId) &&
+            (identical(other.inputTokens, inputTokens) ||
+                other.inputTokens == inputTokens) &&
+            (identical(other.outputTokens, outputTokens) ||
+                other.outputTokens == outputTokens) &&
+            (identical(other.thoughtsTokens, thoughtsTokens) ||
+                other.thoughtsTokens == thoughtsTokens) &&
+            (identical(other.cachedInputTokens, cachedInputTokens) ||
+                other.cachedInputTokens == cachedInputTokens) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      runKey,
+      threadId,
+      modelId,
+      createdAt,
+      vectorClock,
+      templateId,
+      templateVersionId,
+      inputTokens,
+      outputTokens,
+      thoughtsTokens,
+      cachedInputTokens,
+      deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.wakeTokenUsage(id: $id, agentId: $agentId, runKey: $runKey, threadId: $threadId, modelId: $modelId, createdAt: $createdAt, vectorClock: $vectorClock, templateId: $templateId, templateVersionId: $templateVersionId, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $WakeTokenUsageEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $WakeTokenUsageEntityCopyWith(WakeTokenUsageEntity value,
+          $Res Function(WakeTokenUsageEntity) _then) =
+      _$WakeTokenUsageEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String runKey,
+      String threadId,
+      String modelId,
+      DateTime createdAt,
+      VectorClock? vectorClock,
+      String? templateId,
+      String? templateVersionId,
+      int? inputTokens,
+      int? outputTokens,
+      int? thoughtsTokens,
+      int? cachedInputTokens,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$WakeTokenUsageEntityCopyWithImpl<$Res>
+    implements $WakeTokenUsageEntityCopyWith<$Res> {
+  _$WakeTokenUsageEntityCopyWithImpl(this._self, this._then);
+
+  final WakeTokenUsageEntity _self;
+  final $Res Function(WakeTokenUsageEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? runKey = null,
+    Object? threadId = null,
+    Object? modelId = null,
+    Object? createdAt = null,
+    Object? vectorClock = freezed,
+    Object? templateId = freezed,
+    Object? templateVersionId = freezed,
+    Object? inputTokens = freezed,
+    Object? outputTokens = freezed,
+    Object? thoughtsTokens = freezed,
+    Object? cachedInputTokens = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(WakeTokenUsageEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      runKey: null == runKey
+          ? _self.runKey
+          : runKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      threadId: null == threadId
+          ? _self.threadId
+          : threadId // ignore: cast_nullable_to_non_nullable
+              as String,
+      modelId: null == modelId
+          ? _self.modelId
+          : modelId // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      templateId: freezed == templateId
+          ? _self.templateId
+          : templateId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      templateVersionId: freezed == templateVersionId
+          ? _self.templateVersionId
+          : templateVersionId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      inputTokens: freezed == inputTokens
+          ? _self.inputTokens
+          : inputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      outputTokens: freezed == outputTokens
+          ? _self.outputTokens
+          : outputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      thoughtsTokens: freezed == thoughtsTokens
+          ? _self.thoughtsTokens
+          : thoughtsTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
+      cachedInputTokens: freezed == cachedInputTokens
+          ? _self.cachedInputTokens
+          : cachedInputTokens // ignore: cast_nullable_to_non_nullable
+              as int?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable

@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -40,7 +41,7 @@ class MockConversationRepository extends ConversationRepository {
   final List<String> deletedConversationIds = [];
 
   /// Delegate for sendMessage — set in tests to control behavior.
-  Future<void> Function({
+  Future<InferenceUsage?> Function({
     required String conversationId,
     required String message,
     required String model,
@@ -75,7 +76,7 @@ class MockConversationRepository extends ConversationRepository {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
     required String model,
@@ -86,7 +87,7 @@ class MockConversationRepository extends ConversationRepository {
     ConversationStrategy? strategy,
   }) async {
     if (sendMessageDelegate != null) {
-      await sendMessageDelegate!(
+      return sendMessageDelegate!(
         conversationId: conversationId,
         message: message,
         model: model,
@@ -97,6 +98,7 @@ class MockConversationRepository extends ConversationRepository {
         strategy: strategy,
       );
     }
+    return null;
   }
 }
 
@@ -574,6 +576,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -677,6 +680,7 @@ void main() {
                 evolutionNote: (_) => false,
                 changeSet: (_) => false,
                 changeDecision: (_) => false,
+                wakeTokenUsage: (_) => false,
                 unknown: (_) => false,
               ),
             )
@@ -823,6 +827,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -934,6 +939,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -1020,6 +1026,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         return workflow.execute(
@@ -1137,6 +1144,7 @@ void main() {
           strategy,
         }) async {
           capturedMessage = message;
+          return null;
         };
 
         await workflow.execute(
@@ -1573,6 +1581,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         return workflow.execute(
@@ -2276,6 +2285,7 @@ void main() {
                 manager: mockConversationManager,
               );
             }
+            return null;
           };
 
           final result = await workflow.execute(
@@ -2337,6 +2347,7 @@ void main() {
                 manager: mockConversationManager,
               );
             }
+            return null;
           };
 
           final result = await workflow.execute(
@@ -2414,6 +2425,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         final result = await workflow.execute(

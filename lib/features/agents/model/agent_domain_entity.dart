@@ -231,6 +231,28 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 
+  /// Token usage record for a single wake cycle.
+  ///
+  /// Immutable, append-only. Synced via Matrix so usage is visible across
+  /// all devices. The [agentId] is the agent instance; [templateId] and
+  /// [templateVersionId] enable per-template aggregation.
+  const factory AgentDomainEntity.wakeTokenUsage({
+    required String id,
+    required String agentId,
+    required String runKey,
+    required String threadId,
+    required String modelId,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? templateId,
+    String? templateVersionId,
+    int? inputTokens,
+    int? outputTokens,
+    int? thoughtsTokens,
+    int? cachedInputTokens,
+    DateTime? deletedAt,
+  }) = WakeTokenUsageEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,

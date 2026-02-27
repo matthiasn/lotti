@@ -2626,6 +2626,18 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getTokenUsageByAgentId(String agentId, int limit) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'wakeTokenUsage\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(agentId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
