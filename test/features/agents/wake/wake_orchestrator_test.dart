@@ -684,14 +684,6 @@ void main() {
           controller.close();
         });
       });
-
-      test('reconstructSubscriptions completes without error', () {
-        fakeAsync((async) {
-          orchestrator.reconstructSubscriptions();
-          async.flushMicrotasks();
-          // Should complete without throwing
-        });
-      });
     });
 
     group('processNext', () {
@@ -2864,54 +2856,24 @@ void main() {
       });
     });
 
-    group('stateChanged stream', () {
-      test('emits agentId when throttle deadline is set after execution',
+    group('onPersistedStateChanged callback', () {
+      test(
+          'invokes callback when throttle deadline is persisted after execution',
           () async {
         fakeAsync((async) {
           final controller = StreamController<Set<String>>.broadcast();
           final agentState = makeTestState(agentId: 'agent-1');
+          final changedAgentIds = <String>[];
 
           when(() => mockRepository.getAgentState('agent-1'))
               .thenAnswer((_) async => agentState);
 
-          orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
-
-          final emissions = <String>[];
-          orchestrator.stateChanged.listen(emissions.add);
-
-          orchestrator.start(controller.stream);
-
-          // First wake: triggers execution and then sets throttle deadline
-          emitAndDrain(async, controller, {'entity-1'});
-          async.flushMicrotasks();
-
-          // After the execution completes, _setThrottleDeadline is called
-          // which adds to stateChanged.
-          expect(emissions, contains('agent-1'));
-
-          controller.close();
-        });
-      });
-
-      test('emits agentId when clearThrottle persists null nextWakeAt',
-          () async {
-        fakeAsync((async) {
-          final controller = StreamController<Set<String>>.broadcast();
-          final agentState =
-              makeTestState(agentId: 'agent-1', nextWakeAt: DateTime(2024));
-
-          when(() => mockRepository.getAgentState('agent-1'))
-              .thenAnswer((_) async => agentState);
-
-          orchestrator
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            onPersistedStateChanged: changedAgentIds.add,
+          )
             ..addSubscription(
               AgentSubscription(
                 id: 'sub-1',
@@ -2924,21 +2886,52 @@ void main() {
           // ignore: cascade_invocations
           orchestrator.start(controller.stream);
 
-          // Execute to set a throttle deadline
+          // First wake: triggers execution and then persists throttle deadline.
           emitAndDrain(async, controller, {'entity-1'});
           async.flushMicrotasks();
 
-          final emissions = <String>[];
-          orchestrator.stateChanged.listen(emissions.add);
+          expect(changedAgentIds, contains('agent-1'));
+          controller.close();
+        });
+      });
 
-          // Clear the throttle
+      test('invokes callback when clearThrottle persists null nextWakeAt',
+          () async {
+        fakeAsync((async) {
+          final controller = StreamController<Set<String>>.broadcast();
+          final changedAgentIds = <String>[];
+          final agentState =
+              makeTestState(agentId: 'agent-1', nextWakeAt: DateTime(2024));
+
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => agentState);
+
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            onPersistedStateChanged: changedAgentIds.add,
+          )
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
+
+          // ignore: cascade_invocations
+          orchestrator.start(controller.stream);
+
+          // Execute once to set a throttle deadline, then clear it.
+          emitAndDrain(async, controller, {'entity-1'});
+          async.flushMicrotasks();
+
           orchestrator.clearThrottle('agent-1');
           async.flushMicrotasks();
 
-          // _clearPersistedThrottle is async — the emission may arrive
-          // after microtasks settle.
-          expect(emissions, contains('agent-1'));
-
+          expect(changedAgentIds, contains('agent-1'));
           controller.close();
         });
       });

@@ -1,202 +1,169 @@
-# Agents Feature
+# Agents Architecture
 
-This module implements the minimum viable agentic infrastructure for Lotti. The first agent kind is the **Task Agent** — a persistent, mostly-asleep agent that maintains a first-class task summary report and performs incremental metadata updates via tool calls.
+This feature provides persistent, sync-aware agents for Lotti, centered on:
 
-## Overview
+1. Task Agents (production path): wake on task changes, run tool calls, and keep a durable report.
+2. Template Evolution Sessions: chat-driven directive evolution with versioned template history.
 
-The agent feature is gated behind the `enableAgents` config flag. When disabled, no agent infrastructure is initialized and no agent-related UI elements appear.
+The system is enabled only when `enableAgents` is true.
 
-### What the Task Agent Does
+## Runtime Scope
 
-1. **Observes** a single task's knowledge graph (the task itself, linked entries, checklists, time entries) from the journal domain in `db.sqlite`. The agent does not own this data.
-2. **Maintains** its internal operational state in a separate `agent.sqlite` database: reports, messages, wake history, and tool call records.
-3. **Produces** a persistent "task summary" report as free-form Markdown, viewable without LLM recompute, rendered via `GptMarkdown`.
-4. **Calls tools** to mutate journal-domain data via existing handlers (`TaskEstimateHandler`, `TaskDueDateHandler`, `TaskPriorityHandler`, `LottiBatchChecklistHandler`, `LottiChecklistUpdateHandler`, `TaskTitleHandler`).
-5. **Records observations** via the `record_observations` tool — private notes accumulated across wakes for longitudinal awareness.
-6. **Wakes incrementally**: sees what changed since its last wake, updates only what is affected, and persists its new state.
+- Journal domain (`db.sqlite`): source-of-truth task/checklist/time data.
+- Agent domain (`agent.sqlite`): agent identities, state, messages, reports, template versions, wake runs.
+- Inference path: template-selected model (`models/gemini-3-flash-preview` default), resolved via AI config.
 
-## Architecture
+### Task Context Assembly (Current)
 
-### Database (`database/`)
+- Task agent wake prompts include:
+  - current task JSON context
+  - current report + recent observations
+  - linked task context
+- Linked task context for agents is built directly in
+  `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
+  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
+  `latestTaskAgentReport` from each linked task's associated task agent (via
+  `agent_task` links + `agentReportHead`).
+- Linked-task `latestSummary` payloads are stripped before prompt submission
+  and are not used for Task Agent execution.
+- MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
+  avoid repeated journal lookups for shared task links.
 
-A separate SQLite database (`agent.sqlite`) managed by Drift:
+## High-Level Architecture
 
-- **`agent_database.drift`** — SQL schema with four tables: `agent_entities` (all entity variants), `agent_links` (relationships), `wake_run_log` (execution history), `saga_log` (cross-domain write tracking).
-- **`agent_database.dart`** — Drift `GeneratedDatabase` class.
-- **`agent_db_conversions.dart`** — Bidirectional mapping between Drift rows and Freezed models, handling type/subtype discrimination and the `updatedAt` fallback for immutable variants.
-- **`agent_repository.dart`** — Typed CRUD access: entity upsert/get, link upsert/query, wake run log, saga log.
+```mermaid
+flowchart LR
+  UI["Task/UI Surfaces"] --> INIT["agentInitializationProvider"]
+  INIT --> ORCH["WakeOrchestrator"]
+  ORCH --> WF["TaskAgentWorkflow"]
+  WF --> CONV["ConversationRepository"]
+  CONV --> MODEL["Inference Provider (Gemini/OpenAI compatible)"]
+  MODEL --> STRAT["TaskAgentStrategy"]
+  STRAT --> EXEC["AgentToolExecutor"]
+  EXEC --> TOOLS["Task Tool Handlers"]
+  TOOLS --> JOURNAL["Journal Repository/DB"]
 
-### Models (`model/`)
+  WF --> SYNC["AgentSyncService"]
+  SYNC --> AGENTDB["AgentRepository -> agent.sqlite"]
+  SYNC --> OUTBOX["Sync Outbox"]
 
-Freezed sealed unions following the `JournalEntity` / `EntryLink` patterns:
-
-- **`agent_domain_entity.dart`** — `AgentDomainEntity` with 7 variants: `agent` (identity), `agentState`, `agentMessage`, `agentMessagePayload`, `agentReport`, `agentReportHead`, `unknown` (forward-compat fallback). Uses `@Freezed(fallbackUnion: 'unknown')`.
-- **`agent_link.dart`** — `AgentLink` with 6 variants: `basic` (fallback), `agentState`, `messagePrev`, `messagePayload`, `toolEffect`, `agentTask`. Uses `@Freezed(fallbackUnion: 'basic')`.
-- **`agent_config.dart`** — `AgentConfig`, `AgentSlots`, `AgentMessageMetadata` as Freezed data classes.
-- **`agent_enums.dart`** — `AgentLifecycle`, `AgentInteractionMode`, `AgentRunStatus`, `AgentMessageKind`.
-- **`template_performance_metrics.dart`** — `TemplatePerformanceMetrics` Freezed data class aggregating wake-run log data for a template (total wakes, success/failure counts, avg duration, active instances).
-
-### Wake Infrastructure (`wake/`)
-
-The wake system handles agent activation in response to data changes:
-
-- **`run_key_factory.dart`** — Deterministic SHA-256 run key generation for subscription, timer, and user-initiated wakes. Uses `SplayTreeMap` for canonical JSON key ordering in `actionStableId`. Also generates `operationId` for saga idempotency.
-- **`wake_queue.dart`** — In-memory FIFO queue with run-key deduplication and token coalescing. Rapid-fire notifications for the same agent merge into one pending job.
-- **`wake_runner.dart`** — Single-flight execution engine. Each agent can have at most one concurrent wake; additional requests wait or re-enqueue. Exposes a `runningAgentIds` broadcast stream for reactive UI feedback.
-- **`wake_orchestrator.dart`** — Notification listener that matches `UpdateNotifications` tokens against agent subscriptions, applies self-notification suppression via token-presence tracking, and dispatches wake jobs. Event-driven: `_onBatch` calls `unawaited(processNext())` after enqueueing. Includes a post-execution drain timer (30s) that picks up signals deferred while the agent was busy, preventing lost concurrent signals. The `WakeExecutor` callback connects to `TaskAgentWorkflow` for actual agent execution.
-
-### Tools (`tools/`)
-
-Tool definitions and execution with safety enforcement:
-
-- **`agent_tool_registry.dart`** — Declarative tool definitions (name, description, JSON Schema parameters) for the 7 Task Agent tools: `set_task_title`, `update_task_estimate`, `update_task_due_date`, `update_task_priority`, `add_multiple_checklist_items`, `update_checklist_items`, `record_observations`.
-- **`agent_tool_executor.dart`** — Orchestrates tool execution with **fail-closed category enforcement** (checks `allowedCategoryIds` before any handler invocation), audit message persistence with payload content (tool arguments for action messages, tool output for result messages), and vector clock capture for self-notification suppression.
-- **`task_title_handler.dart`** — The only new handler (all others reuse existing handlers from `lib/features/ai/functions/`). Updates a task's title via `journalRepository.updateJournalEntity`.
-
-### Workflow (`workflow/`)
-
-The full wake cycle implementation:
-
-- **`task_agent_strategy.dart`** — `ConversationStrategy` implementation that dispatches LLM tool calls to `AgentToolExecutor`. The `record_observations` tool is intercepted locally (no executor needed since it doesn't modify journal entities) — observations accumulate in memory and are retrieved via `extractObservations()`. The final text response becomes the report via `extractReportContent()`. Each message turn is persisted to `agent.sqlite` for durability.
-- **`task_agent_workflow.dart`** — Assembles context (agent state, current report, agentJournal observations, task details from `AiInputRepository`, trigger delta), resolves a Gemini inference provider, runs the conversation via `ConversationRepository`, persists the updated report and observations, and updates agent state. Persists the user message as an `agentMessage` (kind=user) for inspectability. Includes `conversationRepository.deleteConversation(conversationId)` cleanup in a `finally` block.
-- **`template_evolution_workflow.dart`** — LLM-assisted template evolution via multi-turn sessions. Manages 1-on-1 dialogues with the evolution agent using tool-based proposals and notes. Supports proposal approval/rejection, session abandonment, and idempotent retry.
-
-### Service Layer (`service/`)
-
-High-level agent lifecycle management:
-
-- **`agent_service.dart`** — `AgentService` provides `createAgent`, `getAgent`, `listAgents`, `getAgentReport`, `pauseAgent`, `resumeAgent`, `destroyAgent`. Each mutation writes via `AgentSyncService` (which enqueues changes for cross-device sync) and reads via `AgentRepository`. Lifecycle transitions update the identity entity and manage wake subscriptions.
-- **`task_agent_service.dart`** — `TaskAgentService` provides task-specific operations: `createTaskAgent` (creates agent + state + link + subscription), `getTaskAgentForTask` (lookup via `agent_task` link), `triggerReanalysis` (manual re-wake), `restoreSubscriptions` (queries active agents, filters for task_agent kind, registers subscriptions on app startup), `restoreSubscriptionsForAgent` (re-registers subscriptions for a single agent after resume).
-- **`agent_template_service.dart`** — `AgentTemplateService` provides template CRUD, versioning, category filtering, rollback, and `computeMetrics` (aggregates wake-run log data into `TemplatePerformanceMetrics`).
-
-### Sync (`sync/`)
-
-Cross-device synchronization of agent state:
-
-- **`agent_sync_service.dart`** — `AgentSyncService` wraps `AgentRepository` with sync-aware writes. Every `upsertEntity` / `upsertLink` call persists to `agent.sqlite` and enqueues a `SyncAgentEntity` / `SyncAgentLink` outbox message. Supports zone-based transaction isolation: `runInTransaction` buffers outbox messages and flushes them only on successful commit. Nested transactions are supported via a depth counter — inner commits leave messages buffered until the outermost transaction completes. Rollback (exception) at any level discards all buffered messages. Concurrent transaction chains are isolated via Dart zones, each carrying its own buffer and depth counter.
-
-### State (`state/`)
-
-Riverpod providers for dependency injection:
-
-- **`agent_providers.dart`** — `keepAlive` providers for `AgentDatabase`, `AgentRepository`, `WakeQueue`, `WakeRunner`, `WakeOrchestrator`, `AgentService`, `AgentSyncService`, `TaskAgentWorkflow`. Auto-disposed async providers for `agentReport`, `agentState`, `agentIdentity`, `agentRecentMessages`, `agentMessagePayloadText`, `agentIsRunning` (reactive stream), `agentMessagesByThread` (grouped by wake cycle). The `agentInitializationProvider` wires the workflow into the orchestrator, starts listening to `UpdateNotifications`, and wires the `WakeOrchestrator` into `SyncEventProcessor` for incoming agent subscription restoration.
-- **`task_agent_providers.dart`** — `keepAlive` provider for `TaskAgentService`, auto-disposed async provider for `taskAgent(taskId)`.
-
-### UI (`ui/`)
-
-Agent management and inspection interface:
-
-- **`agent_settings_page.dart`** — Landing page at `Settings > Agents` with two tabs: **Templates** (inline list of agent templates with kind badge, model ID, and version) and **Instances** (filterable list of task agents and evolution sessions).
-- **`agent_instances_list.dart`** — Filterable list of all agent instances. Two filter rows: a **Kind filter** (All / Task Agent / Evolution) and a **Lifecycle filter** (All / Active / Dormant / Destroyed, task agents only). Each card shows display name, kind/lifecycle badges, template name, timestamp, and a running indicator. Tapping navigates to `AgentDetailPage` or back to the template.
-- **`agent_detail_page.dart`** — Full inspection page with report, tabbed message views (Activity/Conversations/Observations), state info, and controls. Shows a running-state spinner in the app bar when the agent is actively executing.
-- **`agent_report_section.dart`** — Expandable TLDR report renderer. Parses agent report markdown to extract the `## 📋 TLDR` section (always visible) and additional content (Achieved, Remaining, Learnings — shown on expand). Uses `AnimationController` for smooth expand/collapse transitions.
-- **`task_agent_report_section.dart`** — Wrapper widget for displaying the agent report on a task detail page. Watches `taskAgentProvider` → `agentReportProvider` and renders `AgentReportSection` when a report exists.
-- **`agent_activity_log.dart`** — Chronological message list with kind badges, timestamps, and expandable payload text. Tool call arguments and results render in monospace with a surface-tinted background. Uses `ValueKey` per message to preserve expansion state. Supports both provider-based and pre-fetched message lists via `AgentActivityLog.fromMessages`. Also contains `AgentObservationLog` — a filtered view showing only observation entries, all expanded by default for at-a-glance readability. `AgentReportHistoryLog` shows report snapshots with TLDR extraction for collapsed view.
-- **`agent_conversation_log.dart`** — Thread-grouped conversation view: messages grouped by `threadId` (wake cycle), sorted most-recent-first, each rendered as an `ExpansionTile` with timestamp, message count, and tool call count.
-- **`agent_controls.dart`** — Pause/resume (with subscription restore), re-analyze, destroy, and hard-delete actions. Uses busy-state guards and error snackbars.
-- **`agent_date_format.dart`** — Shared date formatting utilities using `intl.DateFormat`.
-
-## Memory Model
-
-The Task Agent maintains two kinds of persistent memory:
-
-1. **Report** (user-facing) — Rewritten each wake. Always viewable, always current. Free-form markdown rendered via `GptMarkdown`.
-2. **AgentJournal** (agent-private) — Append-only observation notes accumulated across wakes via the `record_observations` tool. Gives the agent longitudinal awareness.
-
-On each wake, the LLM sees: system prompt + current report + all agentJournal observations + delta (changed entities). Full conversation turns from prior wakes are NOT replayed — they exist only as audit trail.
-
-### Observation capture
-
-Observations are captured via the `record_observations` tool call during the conversation, not by parsing the LLM's text output. This is structurally reliable — the tool call arguments are always well-formed JSON, avoiding brittle regex parsing of Markdown headings. The `TaskAgentStrategy` intercepts this tool locally (no `AgentToolExecutor` involvement since it doesn't modify journal entities) and accumulates observations in memory. After the conversation completes, `extractObservations()` returns the accumulated list for persistence.
-
-## Safety Boundaries
-
-- Tool calls are scoped to `Agent.allowedCategoryIds` — **fail-closed** on scope violation.
-- Inference payload is bounded to the task the agent owns + linked entities.
-- All tool calls are logged as `AgentMessage` records (audit trail).
-- User can pause/destroy any agent immediately via the agent detail page.
-- Agent cannot create, delete, or modify entities outside its owned task's subgraph.
-
-## Production Wiring
-
-The agent infrastructure is connected for production via:
-
-1. **`agentInitializationProvider`** (keepAlive) — watches the `enableAgents` config flag. When enabled, starts the `WakeOrchestrator` listening to `UpdateNotifications.updateStream`, wires the `TaskAgentWorkflow` into the orchestrator via a `WakeExecutor` callback, restores subscriptions for active agents, and wires the `WakeOrchestrator` into `SyncEventProcessor` so incoming `SyncAgentLink` messages can restore subscriptions.
-2. **`entry_controller.dart`** — watches `agentInitializationProvider` to eagerly initialize the agent infrastructure when any entry is viewed.
-3. **`WakeOrchestrator.processNext()`** — event-driven dispatch: `_onBatch` calls `unawaited(processNext())` after enqueueing wake jobs. The executor calls `TaskAgentWorkflow.execute()`, updates wake run status, records mutated entries for self-notification suppression, and clears queue history after success.
-
-## File Structure
-
-```text
-lib/features/agents/
-├── README.md
-├── model/
-│   ├── agent_domain_entity.dart     # Freezed sealed union (7 variants)
-│   ├── agent_link.dart              # Freezed sealed union (6 variants)
-│   ├── agent_config.dart            # AgentConfig, AgentSlots, AgentMessageMetadata
-│   ├── agent_enums.dart             # All agent-domain enums
-│   └── template_performance_metrics.dart # Freezed metrics aggregation
-├── database/
-│   ├── agent_database.dart          # Drift database class
-│   ├── agent_database.drift         # SQL schema
-│   ├── agent_db_conversions.dart    # Type mapping
-│   └── agent_repository.dart        # CRUD + query repository
-├── wake/
-│   ├── run_key_factory.dart         # Deterministic run key generation
-│   ├── wake_queue.dart              # In-memory FIFO queue with dedup
-│   ├── wake_runner.dart             # Single-flight execution engine
-│   └── wake_orchestrator.dart       # Notification listener + subscriptions
-├── tools/
-│   ├── agent_tool_registry.dart     # Tool definitions (7 tools)
-│   ├── agent_tool_executor.dart     # Enforcement + audit + dispatch
-│   └── task_title_handler.dart      # New set_task_title handler
-├── workflow/
-│   ├── task_agent_strategy.dart     # ConversationStrategy for task agent
-│   ├── task_agent_workflow.dart     # Full wake cycle orchestration
-│   └── template_evolution_workflow.dart # LLM-assisted directive evolution
-├── service/
-│   ├── agent_service.dart           # Lifecycle management
-│   ├── task_agent_service.dart      # Task-agent-specific operations
-│   └── agent_template_service.dart  # Template CRUD, versioning, metrics
-├── sync/
-│   └── agent_sync_service.dart      # Sync-aware writes + transaction isolation
-├── state/
-│   ├── agent_providers.dart         # Riverpod providers
-│   └── task_agent_providers.dart    # Task agent providers
-└── ui/
-    ├── agent_settings_page.dart     # Settings landing (Templates + Instances tabs)
-    ├── agent_instances_list.dart    # Filterable instance list (kind + lifecycle)
-    ├── agent_detail_page.dart       # Inspection page (tabbed, running spinner)
-    ├── agent_report_section.dart    # Expandable TLDR report renderer
-    ├── task_agent_report_section.dart # Task-form agent report wrapper
-    ├── agent_activity_log.dart      # Message log with expandable payloads
-    ├── agent_conversation_log.dart  # Thread-grouped conversation view
-    ├── agent_controls.dart          # Action buttons
-    └── agent_date_format.dart       # Shared date formatting utilities
+  TEMPLATEUI["Template UI"] --> EVO["TemplateEvolutionWorkflow"]
+  EVO --> MODEL
+  EVO --> AGENTDB
 ```
 
-## Testing
+## Call Trees
 
-Tests mirror the source structure under `test/features/agents/`:
+### 1) Subscription Wake (Task Change -> Agent Run)
 
-- **Model tests** — Serialization roundtrips for all entity and link variants (46 tests)
-- **Database tests** — Repository CRUD for entities, links, wake run log, saga log (46 tests)
-- **Wake tests** — Run key determinism (incl. canonical key ordering), queue dedup, single-flight, orchestrator matching + dispatch (76 tests)
-- **Tool tests** — Category enforcement, audit logging, vector clock capture, handler dispatch, registry validation incl. `record_observations` (54 tests)
-- **Sync tests** — Transaction isolation (buffer, flush, nested commit/rollback, zone isolation), entity/link upsert with outbox enqueue
-- **Service tests** — Lifecycle management, task agent creation, link lookups, `restoreSubscriptions`, `restoreSubscriptionsForAgent`, `computeMetrics` aggregation
-- **Workflow tests** — Context assembly, conversation execution, report persistence, tool-based observation capture, template evolution proposal generation
-- **State tests** — Riverpod provider unit tests for agent report, state, identity, messages, payload text, initialization, and task agent lookup
-- **UI tests** — Widget tests for agent detail page, Markdown report rendering, activity log, controls, date formatting
+```mermaid
+flowchart TD
+  A["UpdateNotifications.localUpdateStream"] --> B["WakeOrchestrator._onBatch(tokens)"]
+  B --> C["match subscriptions + suppression + throttle"]
+  C --> D["WakeQueue.enqueue/mergeTokens"]
+  D --> E["WakeOrchestrator.processNext()"]
+  E --> F["WakeOrchestrator._drain()"]
+  F --> G["WakeOrchestrator._executeJob(job)"]
+  G --> H["wakeExecutor callback (_wireWakeExecutor)"]
+  H --> I["TaskAgentWorkflow.execute(...)"]
+  I --> J["ConversationRepository.sendMessage(...)"]
+  J --> K["TaskAgentStrategy.processToolCalls(...)"]
+  K --> L["AgentToolExecutor.execute(...)"]
+  L --> M["Task handlers + Journal writes"]
+  I --> N["persist report/messages/state via AgentSyncService"]
+  N --> O["WakeOrchestrator marks wake_run status"]
+  O --> P["Persisted throttle update -> UpdateNotifications.notify(fromSync: true)"]
+```
 
-Run `make test` to verify current test count and status.
+### 2) Manual Reanalysis (Agent Detail -> Immediate Run)
 
-## Deferred Items
+```mermaid
+flowchart TD
+  A["AgentControls._triggerReanalysis()"] --> B["TaskAgentService.triggerReanalysis(agentId)"]
+  B --> C["WakeOrchestrator.enqueueManualWake(reason: reanalysis)"]
+  C --> D["clearThrottle + remove queued subscription jobs for agent"]
+  D --> E["WakeQueue.enqueue(manual job)"]
+  E --> F["WakeOrchestrator.processNext()"]
+  F --> G["TaskAgentWorkflow.execute(...)"]
+```
 
-| Item | Reason | Phase |
-|---|---|---|
-| `NotificationBatch` envelope | MVP uses raw token sets | 0B |
-| Full saga recovery | MVP uses idempotency checks | 0B |
-| Persisted subscriptions | In-memory sufficient for single-device | 0B |
-| Memory compaction | Task agents have bounded history | 0C |
-| ~~Configurable model selection~~ | ~~Hardcoded to Gemini for MVP~~ | Done |
+## Sequence Diagrams
+
+### A) Task Edit -> Orchestrated AI Run
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant T as Task UI
+  participant N as UpdateNotifications
+  participant O as WakeOrchestrator
+  participant W as TaskAgentWorkflow
+  participant C as ConversationRepository
+  participant M as Model Provider
+  participant X as AgentToolExecutor
+  participant J as Journal Repository
+  participant ADB as Agent Repository
+
+  U->>T: Edit task/checklist
+  T->>N: Emit changed entity tokens
+  N->>O: _onBatch(tokens)
+  O->>O: Match subscription, apply suppression/throttle
+  O->>O: Enqueue/merge wake job
+  O->>O: processNext -> _executeJob
+  O->>W: wakeExecutor(agentId, runKey, triggers, threadId)
+  W->>C: sendMessage(system+context+tools)
+  C->>M: LLM request
+  M-->>C: tool calls / final assistant content
+  C->>X: Execute tool call
+  X->>J: Persist task mutation(s)
+  X-->>W: Tool execution result + mutated entity ids
+  W->>ADB: Persist thought/report/observations/state
+  W-->>O: WakeResult (success or throw on failure)
+  O->>ADB: Update wake_run status
+  O->>N: notify({agentId, AGENT_CHANGED}, fromSync: true) on nextWakeAt writes
+```
+
+### B) Template Evolution Chat (UI -> LLM -> Versioning)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant EUI as EvolutionChatPage
+  participant S as EvolutionChatState
+  participant EW as TemplateEvolutionWorkflow
+  participant C as ConversationRepository
+  participant M as Model Provider
+  participant TS as AgentTemplateService
+  participant ADB as Agent Repository
+
+  U->>EUI: Open evolve template
+  EUI->>S: build(templateId)
+  S->>EW: startSession(templateId)
+  EW->>TS: load template/version/metrics/history/context inputs
+  EW->>C: createConversation + initial sendMessage
+  C->>M: LLM call (tools: propose_directives, record_evolution_note)
+  M-->>EW: proposal + notes via strategy
+  EW->>ADB: persist evolution session + notes
+  U->>EUI: Approve proposal
+  EUI->>S: approveProposal()
+  S->>EW: approveProposal(sessionId)
+  EW->>TS: createVersion(...)
+  EW->>ADB: mark session completed
+```
+
+## Module Responsibilities
+
+- `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
+- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`).
+- `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
+- `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics.
+- `sync/`: transaction-aware outbox buffering for agent entity/link writes.
+- `state/`: Riverpod DI + read models + initialization wiring.
+- `ui/`: settings/templates/instances/detail/evolution screens.
+
+## Architecture Decision Records
+
+Current-state architecture stays in this README. Decision rationale and
+evolution history live in ADRs:
+
+- [`docs/adr/README.md`](../../../docs/adr/README.md)

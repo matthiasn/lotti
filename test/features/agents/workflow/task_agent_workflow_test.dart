@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -7,12 +10,15 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -137,6 +143,7 @@ void main() {
   late MockConversationManager mockConversationManager;
   late MockJournalRepository mockJournalRepository;
   late MockChecklistRepository mockChecklistRepository;
+  late MockLabelsRepository mockLabelsRepository;
   late MockAgentTemplateService mockTemplateService;
   late TaskAgentWorkflow workflow;
 
@@ -209,6 +216,7 @@ void main() {
     mockCloudInferenceRepository = MockCloudInferenceRepository();
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
+    mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
 
     registerAllFallbackValues();
@@ -217,6 +225,13 @@ void main() {
     when(
       () => mockAgentRepository.updateWakeRunTemplate(any(), any(), any()),
     ).thenAnswer((_) async {});
+    when(
+      () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
+    ).thenAnswer((_) async => <AgentLink>[]);
+    when(() => mockAiInputRepository.buildLinkedFromContext(any()))
+        .thenAnswer((_) async => <AiLinkedTaskContext>[]);
+    when(() => mockAiInputRepository.buildLinkedToContext(any()))
+        .thenAnswer((_) async => <AiLinkedTaskContext>[]);
 
     // Default template stubs — tests that need different behavior override.
     when(() => mockTemplateService.getTemplateForAgent(agentId))
@@ -233,6 +248,7 @@ void main() {
       cloudInferenceRepository: mockCloudInferenceRepository,
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
+      labelsRepository: mockLabelsRepository,
       syncService: mockSyncService,
       templateService: mockTemplateService,
     );
@@ -465,6 +481,7 @@ void main() {
           cloudInferenceRepository: mockCloudInferenceRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
         );
@@ -1044,7 +1061,37 @@ void main() {
         List<AgentMessageEntity> observations = const [],
         String linkedTasksJson = '{}',
         Set<String> triggerTokens = const {},
+        bool throwOnLinkedContextBuild = false,
       }) async {
+        List<AiLinkedTaskContext> parseLinkedTasks(dynamic rawRows) {
+          if (rawRows is! List) return const <AiLinkedTaskContext>[];
+          return rawRows.whereType<Map<String, dynamic>>().map((row) {
+            final id = (row['id'] as String?) ?? 'linked-task';
+            return AiLinkedTaskContext(
+              id: id,
+              title: (row['title'] as String?) ?? id,
+              status: (row['status'] as String?) ?? 'OPEN',
+              statusSince: DateTime(2024),
+              priority: (row['priority'] as String?) ?? 'M',
+              estimate: (row['estimate'] as String?) ?? '00:00',
+              timeSpent: (row['timeSpent'] as String?) ?? '00:00',
+              createdAt: DateTime(2024),
+              labels: const <Map<String, String>>[],
+              languageCode: row['languageCode'] as String?,
+              latestSummary: row['latestSummary'] as String?,
+            );
+          }).toList();
+        }
+
+        final parsed = jsonDecode(linkedTasksJson);
+        final linkedMap =
+            parsed is Map<String, dynamic> ? parsed : <String, dynamic>{};
+        final linkedFrom = parseLinkedTasks(linkedMap['linked_from']);
+        final linkedTo = [
+          ...parseLinkedTasks(linkedMap['linked_to']),
+          ...parseLinkedTasks(linkedMap['linked']),
+        ];
+
         when(() => mockAgentRepository.getAgentState(agentId))
             .thenAnswer((_) async => testAgentState);
         when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
@@ -1057,8 +1104,15 @@ void main() {
         ).thenAnswer((_) async => observations);
         when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
             .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => linkedTasksJson);
+        if (throwOnLinkedContextBuild) {
+          when(() => mockAiInputRepository.buildLinkedFromContext(taskId))
+              .thenThrow(Exception('linked context failed'));
+        } else {
+          when(() => mockAiInputRepository.buildLinkedFromContext(taskId))
+              .thenAnswer((_) async => linkedFrom);
+        }
+        when(() => mockAiInputRepository.buildLinkedToContext(taskId))
+            .thenAnswer((_) async => linkedTo);
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -1189,14 +1243,104 @@ void main() {
         expect(message, contains('(no content)'));
       });
 
-      test('includes linked tasks when non-empty', () async {
+      test(
+          'includes linked tasks and uses linked task-agent report instead of summary',
+          () async {
+        final linkedReport = AgentDomainEntity.agentReport(
+          id: 'linked-report-1',
+          agentId: 'linked-agent-1',
+          scope: 'current',
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          content: '## Linked Agent Report\nFrom task agent.',
+        ) as AgentReportEntity;
+        final link = AgentLink.agentTask(
+          id: 'link-1',
+          fromId: 'linked-agent-1',
+          toId: 't2',
+          createdAt: DateTime(2024, 6, 14),
+          updatedAt: DateTime(2024, 6, 14),
+          vectorClock: null,
+        );
+        when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
+            .thenAnswer((_) async => [link]);
+        when(() => mockAgentRepository.getLatestReport(
+            'linked-agent-1', 'current')).thenAnswer((_) async => linkedReport);
+
         final message = await executeAndCaptureMessage(
-          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
+              '"latestSummary":"Legacy summary"}]}',
         );
 
         expect(message, isNotNull);
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
+        expect(message, contains('latestTaskAgentReport'));
+        expect(message, contains('From task agent.'));
+        expect(message, isNot(contains('latestSummary')));
+      });
+
+      test('uses link id as deterministic tie-breaker for equal createdAt',
+          () async {
+        final now = DateTime(2024, 6, 14, 8);
+        final linkB = AgentLink.agentTask(
+          id: 'link-b',
+          fromId: 'linked-agent-b',
+          toId: 't2',
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        );
+        final linkA = AgentLink.agentTask(
+          id: 'link-a',
+          fromId: 'linked-agent-a',
+          toId: 't2',
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        );
+        when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
+            .thenAnswer((_) async => [linkB, linkA]);
+
+        // With descending tie-breaking on ID, 'link-b' sorts before 'link-a',
+        // so the workflow resolves the report for 'linked-agent-b' first.
+        final reportB = AgentDomainEntity.agentReport(
+          id: 'linked-report-b',
+          agentId: 'linked-agent-b',
+          scope: 'current',
+          createdAt: now,
+          vectorClock: null,
+          content: 'report-b',
+        ) as AgentReportEntity;
+        when(() => mockAgentRepository.getLatestReport(
+            'linked-agent-b', 'current')).thenAnswer((_) async => reportB);
+
+        final message = await executeAndCaptureMessage(
+          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+        );
+
+        verify(
+          () =>
+              mockAgentRepository.getLatestReport('linked-agent-b', 'current'),
+        ).called(1);
+        verifyNever(
+          () =>
+              mockAgentRepository.getLatestReport('linked-agent-a', 'current'),
+        );
+        expect(message, isNotNull);
+        expect(message, contains('report-b'));
+      });
+
+      test('falls back to empty linked-task context when build throws',
+          () async {
+        final message = await executeAndCaptureMessage(
+          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
+              '"latestSummary":"Legacy summary"}]}',
+          throwOnLinkedContextBuild: true,
+        );
+
+        expect(message, isNotNull);
+        expect(message, isNot(contains('## Linked Tasks')));
       });
 
       test('omits linked tasks section when empty', () async {
@@ -1546,6 +1690,76 @@ void main() {
             response: any(
               named: 'response',
               that: contains('non-empty string'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('assign_task_labels with non-array labels returns error', () async {
+        final result = await executeWithToolCallOnRealTask(
+          'assign_task_labels',
+          '{"labels":"not-an-array"}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('"labels" must be an array'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('assign_task_labels assigns valid labels and reports mutation',
+          () async {
+        await getIt.reset();
+        addTearDown(getIt.reset);
+        getIt
+          ..registerSingleton<LoggingService>(MockLoggingService())
+          ..registerSingleton<LabelAssignmentRateLimiter>(
+            LabelAssignmentRateLimiter(),
+          );
+
+        when(() => mockJournalDb.getLabelDefinitionById('label-1')).thenAnswer(
+          (_) async => LabelDefinition(
+            id: 'label-1',
+            createdAt: DateTime(2024, 3),
+            updatedAt: DateTime(2024, 3),
+            name: 'Urgent',
+            color: '#FF0000',
+            vectorClock: null,
+          ),
+        );
+        when(
+          () => mockLabelsRepository.addLabels(
+            journalEntityId: taskId,
+            addedLabelIds: ['label-1'],
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await executeWithToolCallOnRealTask(
+          'assign_task_labels',
+          '{"labels":[{"id":"label-1","confidence":"high"}]}',
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockLabelsRepository.addLabels(
+            journalEntityId: taskId,
+            addedLabelIds: ['label-1'],
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('"assigned":["label-1"]'),
+                contains('Assigned 1 label(s)'),
+              ),
             ),
           ),
         ).called(1);
@@ -2297,6 +2511,7 @@ void main() {
           cloudInferenceRepository: mockCloudInferenceRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
         );

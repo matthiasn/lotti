@@ -15,7 +15,8 @@ class WakeJob {
   /// The agent that should be woken.
   final String agentId;
 
-  /// Wake trigger category: `'subscription'`, `'timer'`, or `'userInitiated'`.
+  /// Wake trigger category: currently `'subscription'`, `'creation'`,
+  /// or `'reanalysis'`.
   final String reason;
 
   /// The DB-notification tokens that triggered this wake.
@@ -25,7 +26,7 @@ class WakeJob {
   /// notifications.
   final Set<String> triggerTokens;
 
-  /// Optional identifier for the subscription or timer that fired.
+  /// Optional identifier for the subscription that fired.
   final String? reasonId;
 
   /// Wall-clock time the job was created (not persisted; in-memory only).

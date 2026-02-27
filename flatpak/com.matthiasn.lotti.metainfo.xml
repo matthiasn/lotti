@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.879" date="2026-02-27">
+      <description>
+          <p>Task-agent linked task context now uses latest linked task-agent reports instead of legacy summaries. Persisted throttle-state refresh now routes through update notifications, and MTTR chart loading de-duplicates linked task lookups with concurrent resolution.</p>
+      </description>
+    </release>
     <release version="0.9.878" date="2026-02-27">
       <description>
           <p>Settings > Agents page with Templates and Instances tabs, kind and lifecycle filters. Expandable TLDR agent report on task detail page. Agent default model changed to Gemini 3 Flash. Report format aligned with task summary structure.</p>

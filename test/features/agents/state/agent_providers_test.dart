@@ -56,6 +56,72 @@ void main() {
     return container;
   }
 
+  group('dependency providers', () {
+    setUp(() async {
+      await getIt.reset();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    test('maybeUpdateNotificationsProvider returns null when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(maybeUpdateNotificationsProvider), isNull);
+    });
+
+    test('updateNotificationsProvider throws when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        () => container.read(updateNotificationsProvider),
+        throwsA(
+          predicate<Object>(
+            (error) => error
+                .toString()
+                .contains('UpdateNotifications is not registered in GetIt'),
+          ),
+        ),
+      );
+    });
+
+    test('updateNotificationsProvider returns registered instance', () {
+      final mockNotifications = MockUpdateNotifications();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(updateNotificationsProvider),
+        same(mockNotifications),
+      );
+    });
+
+    test('maybeSyncEventProcessorProvider returns null when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(maybeSyncEventProcessorProvider), isNull);
+    });
+
+    test('maybeSyncEventProcessorProvider returns registered instance', () {
+      final mockProcessor = MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(maybeSyncEventProcessorProvider),
+        same(mockProcessor),
+      );
+    });
+  });
+
   group('agentDatabaseProvider', () {
     test('creates database and closes on dispose', () async {
       final container = ProviderContainer();
@@ -1143,6 +1209,68 @@ void main() {
     );
 
     test(
+      'wakeExecutor throws when workflow returns unsuccessful result',
+      () async {
+        final identity = makeTestIdentity();
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => const WakeResult(
+            success: false,
+            error: 'workflow failed',
+          ),
+        );
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+        await expectLater(
+          capturedExecutor!(
+            kTestAgentId,
+            'run-key-fail',
+            {'tok-fail'},
+            'thread-fail',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'workflow failed',
+            ),
+          ),
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verifyNever(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        );
+      },
+    );
+
+    test(
       'wakeExecutor fires update notification after successful execution',
       () async {
         final identity = makeTestIdentity();
@@ -1508,6 +1636,46 @@ void main() {
       expect(orchestrator.repository, same(mockRepo));
       expect(orchestrator.queue, same(queue));
       expect(orchestrator.runner, same(runner));
+    });
+
+    test(
+        'wires persisted-state callback to UpdateNotifications when registered',
+        () async {
+      final mockRepo = MockAgentRepository();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      final mockNotifications = MockUpdateNotifications();
+      addTearDown(runner.dispose);
+
+      when(
+        () => mockNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      ).thenReturn(null);
+
+      await getIt.reset();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+      addTearDown(getIt.reset);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+      orchestrator.onPersistedStateChanged?.call(kTestAgentId);
+
+      verify(
+        () => mockNotifications.notify(
+          {kTestAgentId, agentNotification},
+          fromSync: true,
+        ),
+      ).called(1);
     });
   });
 

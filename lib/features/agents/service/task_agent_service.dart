@@ -3,11 +3,13 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:uuid/uuid.dart';
@@ -34,7 +36,7 @@ class TaskAgentService {
   final AgentSyncService syncService;
 
   static const _uuid = Uuid();
-  static const _agentKind = 'task_agent';
+  static const String _agentKind = AgentKinds.taskAgent;
 
   /// Create a new Task Agent for [taskId].
   ///
@@ -78,12 +80,13 @@ class TaskAgentService {
       // calls from both committing.
       final linksForTask = await repository.getLinksTo(
         taskId,
-        type: 'agent_task',
+        type: AgentLinkTypes.agentTask,
       );
       if (linksForTask.isNotEmpty) {
+        final primaryLink = _selectPrimaryTaskLink(linksForTask);
         throw StateError(
           'A task agent already exists for task $taskId '
-          '(agent ${linksForTask.first.fromId})',
+          '(agent ${primaryLink.fromId})',
         );
       }
 
@@ -161,10 +164,11 @@ class TaskAgentService {
   /// Looks up `AgentTaskLink`s pointing to [taskId] and resolves the agent
   /// identity from the link's `fromId`.
   Future<AgentIdentityEntity?> getTaskAgentForTask(String taskId) async {
-    final links = await repository.getLinksTo(taskId, type: 'agent_task');
+    final links =
+        await repository.getLinksTo(taskId, type: AgentLinkTypes.agentTask);
     if (links.isEmpty) return null;
 
-    final agentId = links.first.fromId;
+    final agentId = _selectPrimaryTaskLink(links).fromId;
     return agentService.getAgent(agentId);
   }
 
@@ -204,7 +208,7 @@ class TaskAgentService {
   Future<void> restoreSubscriptionsForAgent(String agentId) async {
     final links = await repository.getLinksFrom(
       agentId,
-      type: 'agent_task',
+      type: AgentLinkTypes.agentTask,
     );
     for (final link in links) {
       _registerTaskSubscription(agentId, link.toId);
@@ -231,10 +235,19 @@ class TaskAgentService {
     // and leave the queued job permanently stuck.
   }
 
-  /// Returns the ID of the first available template, or `null` if none exist.
+  /// Returns the ID of the best default template, or `null` if none exist.
+  ///
+  /// Prefers the well-known Laura template if it exists, otherwise falls back
+  /// to the most recently created template. This ensures a predictable default
+  /// even when the user has deleted and recreated templates.
   Future<String?> _resolveDefaultTemplateId() async {
     final templates = await repository.getAllTemplates();
     if (templates.isEmpty) return null;
+
+    // Prefer the seeded Laura template as the default.
+    final laura = templates.where((t) => t.id == lauraTemplateId).firstOrNull;
+    if (laura != null) return laura.id;
+
     return templates.first.id;
   }
 
@@ -260,7 +273,7 @@ class TaskAgentService {
       try {
         final links = await repository.getLinksFrom(
           agent.agentId,
-          type: 'agent_task',
+          type: AgentLinkTypes.agentTask,
         );
 
         for (final link in links) {
@@ -285,5 +298,26 @@ class TaskAgentService {
       'Restored $count task agent subscriptions',
       name: 'TaskAgentService',
     );
+  }
+
+  AgentLink _selectPrimaryTaskLink(List<AgentLink> links) {
+    final sorted = links.toList()
+      ..sort((a, b) {
+        final createdAtComparison = b.createdAt.compareTo(a.createdAt);
+        if (createdAtComparison != 0) {
+          return createdAtComparison;
+        }
+        return b.id.compareTo(a.id);
+      });
+
+    if (sorted.length > 1) {
+      developer.log(
+        'Multiple task-agent links found for task ${sorted.first.toId}; '
+        'choosing latest link ${sorted.first.id} (${sorted.first.fromId})',
+        name: 'TaskAgentService',
+      );
+    }
+
+    return sorted.first;
   }
 }

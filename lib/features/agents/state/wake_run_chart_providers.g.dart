@@ -198,7 +198,7 @@ final class TemplateTaskResolutionTimeSeriesProvider
 }
 
 String _$templateTaskResolutionTimeSeriesHash() =>
-    r'f5c58f12d507947c4cb5941470da6875d44d0414';
+    r'eb202bbb84afab4fcb72aeb7426cc6dce47fdc45';
 
 /// Computes task resolution time-series (true MTTR) for a template.
 ///

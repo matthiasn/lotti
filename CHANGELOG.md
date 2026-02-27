@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.879] - 2026-02-27
+### Changed
+- Task-agent linked task context now uses latest linked task-agent reports
+  instead of legacy linked task summaries.
+- Agent state refresh for persisted throttle updates now routes via
+  `UpdateNotifications` (removing the dedicated orchestrator state stream).
+- Template MTTR chart data loading now de-duplicates linked task lookups and
+  resolves agent/task queries concurrently.
+
 ## [0.9.878] - 2026-02-27
 ### Added
 - Settings > Agents page with Templates and Instances tabs, replacing the

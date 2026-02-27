@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -116,10 +117,11 @@ class AgentService {
     return agents;
   }
 
-  /// Get the latest report for [agentId] in [scope] (defaults to 'current').
+  /// Get the latest report for [agentId] in [scope]
+  /// (defaults to [AgentReportScopes.current]).
   Future<AgentReportEntity?> getAgentReport(
     String agentId, [
-    String scope = 'current',
+    String scope = AgentReportScopes.current,
   ]) async {
     return repository.getLatestReport(agentId, scope);
   }

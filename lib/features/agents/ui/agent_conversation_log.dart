@@ -73,20 +73,16 @@ class AgentConversationLog extends ConsumerWidget {
       }
     }
 
-    // Sort threads most-recent-first by latest message timestamp.
-    final sortedKeys = threads.keys.toList()
-      ..sort((a, b) {
-        final aLast = threads[a]!.last as AgentMessageEntity;
-        final bLast = threads[b]!.last as AgentMessageEntity;
-        return bLast.createdAt.compareTo(aLast.createdAt);
-      });
+    // agentMessagesByThreadProvider already returns threads ordered
+    // most-recent-first, so keep that ordering here.
+    final orderedKeys = threads.keys.toList();
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: sortedKeys.length,
+      itemCount: orderedKeys.length,
       itemBuilder: (context, index) {
-        final threadId = sortedKeys[index];
+        final threadId = orderedKeys[index];
         final messages = threads[threadId]!;
         return _ThreadTile(
           threadId: threadId,

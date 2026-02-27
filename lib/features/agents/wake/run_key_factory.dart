@@ -34,24 +34,6 @@ class RunKeyFactory {
     );
   }
 
-  /// Timer wake: SHA256(agentId | timerId | scheduledAt).
-  static String forTimer({
-    required String agentId,
-    required String timerId,
-    required DateTime scheduledAt,
-  }) {
-    return _sha256('$agentId|$timerId|${scheduledAt.toIso8601String()}');
-  }
-
-  /// User-initiated wake: SHA256(agentId | sessionId | turnId).
-  static String forUserInitiated({
-    required String agentId,
-    required String sessionId,
-    required String turnId,
-  }) {
-    return _sha256('$agentId|$sessionId|$turnId');
-  }
-
   /// Manual (system/user) wake: SHA256(agentId | reason | timestamp).
   ///
   /// Uses the ISO-8601 timestamp to ensure uniqueness across invocations.
