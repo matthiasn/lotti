@@ -605,6 +605,16 @@
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardTitle": "AI Setup Wizard",
   "aiTaskSummaryCancelScheduled": "Cancel scheduled summary",
+  "aiTaskSummaryDeleteConfirmMessage": "Do you really want to delete {count} task summaries? This cannot be undone.",
+  "@aiTaskSummaryDeleteConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiTaskSummaryDeleteConfirmTitle": "Delete Task Summaries",
+  "aiTaskSummaryDeleteTooltip": "Delete all task summaries",
   "aiTaskSummaryRunning": "Thinking about summarizing task...",
   "aiTaskSummaryScheduled": "Summary in {time}",
   "@aiTaskSummaryScheduled": {

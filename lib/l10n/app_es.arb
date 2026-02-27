@@ -488,6 +488,16 @@
   "aiSetupWizardSafeToRunMultiple": "Se puede ejecutar varias veces - los elementos existentes se conservarán",
   "aiSetupWizardTitle": "Asistente de configuración AI",
   "aiTaskSummaryCancelScheduled": "Cancelar resumen programado",
+  "aiTaskSummaryDeleteConfirmMessage": "¿Realmente quieres eliminar {count} resúmenes de tareas? Esto no se puede deshacer.",
+  "@aiTaskSummaryDeleteConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiTaskSummaryDeleteConfirmTitle": "Eliminar resúmenes de tareas",
+  "aiTaskSummaryDeleteTooltip": "Eliminar todos los resúmenes de tareas",
   "aiTaskSummaryRunning": "Pensando en resumir la tarea...",
   "aiTaskSummaryScheduled": "Resumen en {time}",
   "@aiTaskSummaryScheduled": {

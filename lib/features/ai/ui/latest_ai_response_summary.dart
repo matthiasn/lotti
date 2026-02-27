@@ -9,9 +9,12 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/latest_summary_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// A wrapper widget for AiResponseSummary that automatically fetches
 /// the latest AI response using LatestSummaryController.
@@ -112,11 +115,15 @@ class _LatestAiResponseSummaryState
         );
       },
       data: (aiResponse) {
-        // Update previous response when we get a new one and it's not running
-        if (!isRunning &&
-            aiResponse != null &&
-            aiResponse != _previousResponse) {
-          _previousResponse = aiResponse;
+        // Update previous response when we get a new one and it's not running.
+        // Clear it when the response is null and not running (e.g. after
+        // bulk deletion) so we don't keep showing a stale summary.
+        if (!isRunning) {
+          if (aiResponse != null && aiResponse != _previousResponse) {
+            _previousResponse = aiResponse;
+          } else if (aiResponse == null) {
+            _previousResponse = null;
+          }
         }
 
         // Use the current response if available, otherwise use the previous one
@@ -173,6 +180,19 @@ class _LatestAiResponseSummaryState
                 if (!isRunning && !isScheduled && promptId != null) ...[
                   IconButton(
                     icon: Icon(
+                      Icons.delete_outline,
+                      color: context.colorScheme.outline,
+                    ),
+                    tooltip: context.messages.aiTaskSummaryDeleteTooltip,
+                    onPressed: () => _showDeleteConfirmation(
+                      context,
+                      ref,
+                      widget.id,
+                      widget.aiResponseType,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
                       Icons.refresh,
                       color: context.colorScheme.outline,
                     ),
@@ -215,6 +235,51 @@ class _LatestAiResponseSummaryState
         );
       },
     );
+  }
+}
+
+Future<void> _showDeleteConfirmation(
+  BuildContext context,
+  WidgetRef ref,
+  String taskId,
+  AiResponseType aiResponseType,
+) async {
+  final summaries = await allAiResponses(
+    ref,
+    id: taskId,
+    aiResponseType: aiResponseType,
+  );
+
+  final count = summaries.length;
+  if (count == 0 || !context.mounted) return;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(context.messages.aiTaskSummaryDeleteConfirmTitle),
+      content: Text(
+        context.messages.aiTaskSummaryDeleteConfirmMessage(count),
+      ),
+      actions: [
+        LottiTertiaryButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          label: context.messages.cancelButton,
+        ),
+        LottiPrimaryButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          label: context.messages.deleteButton,
+          icon: Icons.delete_forever_outlined,
+          isDestructive: true,
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed ?? false) {
+    final journalRepository = ref.read(journalRepositoryProvider);
+    for (final summary in summaries) {
+      await journalRepository.deleteJournalEntity(summary.meta.id);
+    }
   }
 }
 

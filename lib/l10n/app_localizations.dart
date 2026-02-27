@@ -2016,6 +2016,24 @@ abstract class AppLocalizations {
   /// **'Cancel scheduled summary'**
   String get aiTaskSummaryCancelScheduled;
 
+  /// No description provided for @aiTaskSummaryDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you really want to delete {count} task summaries? This cannot be undone.'**
+  String aiTaskSummaryDeleteConfirmMessage(int count);
+
+  /// No description provided for @aiTaskSummaryDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Task Summaries'**
+  String get aiTaskSummaryDeleteConfirmTitle;
+
+  /// No description provided for @aiTaskSummaryDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all task summaries'**
+  String get aiTaskSummaryDeleteTooltip;
+
   /// No description provided for @aiTaskSummaryRunning.
   ///
   /// In en, this message translates to:

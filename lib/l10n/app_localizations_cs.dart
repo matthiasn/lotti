@@ -1083,6 +1083,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiTaskSummaryCancelScheduled => 'Zrušit plánovaný souhrn';
 
   @override
+  String aiTaskSummaryDeleteConfirmMessage(int count) {
+    return 'Opravdu chcete smazat $count shrnutí úkolů? Tuto akci nelze vrátit zpět.';
+  }
+
+  @override
+  String get aiTaskSummaryDeleteConfirmTitle => 'Smazat shrnutí úkolů';
+
+  @override
+  String get aiTaskSummaryDeleteTooltip => 'Smazat všechna shrnutí úkolů';
+
+  @override
   String get aiTaskSummaryRunning => 'Přemýšlím o shrnutí úkolu...';
 
   @override

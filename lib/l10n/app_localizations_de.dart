@@ -1094,6 +1094,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Geplante Zusammenfassung abbrechen';
 
   @override
+  String aiTaskSummaryDeleteConfirmMessage(int count) {
+    return 'Möchtest du wirklich $count Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.';
+  }
+
+  @override
+  String get aiTaskSummaryDeleteConfirmTitle =>
+      'Aufgabenzusammenfassungen löschen';
+
+  @override
+  String get aiTaskSummaryDeleteTooltip =>
+      'Alle Aufgabenzusammenfassungen löschen';
+
+  @override
   String get aiTaskSummaryRunning =>
       'Denke über die Zusammenfassung der Aufgabe nach...';
 
