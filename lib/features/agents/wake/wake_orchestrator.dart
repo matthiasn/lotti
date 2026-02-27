@@ -69,6 +69,7 @@ class WakeOrchestrator {
     required this.queue,
     required this.runner,
     this.wakeExecutor,
+    this.onAgentStateChanged,
   });
 
   final AgentRepository repository;
@@ -79,6 +80,11 @@ class WakeOrchestrator {
   /// [processNext]. When set, the orchestrator delegates to this function
   /// after acquiring the run lock and persisting the wake-run entry.
   WakeExecutor? wakeExecutor;
+
+  /// Called after the orchestrator persists a change to an agent's state
+  /// (e.g. `nextWakeAt`). This allows the UI layer to be notified even
+  /// though the write bypasses the main notification stream.
+  void Function(String agentId)? onAgentStateChanged;
 
   final _subscriptions = <AgentSubscription>[];
 
@@ -262,6 +268,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
         );
+        onAgentStateChanged?.call(agentId);
       }
     } catch (e) {
       developer.log(
@@ -315,6 +322,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
         );
+        onAgentStateChanged?.call(agentId);
       }
     } catch (e) {
       developer.log(
@@ -449,6 +457,11 @@ class WakeOrchestrator {
     // takes effect immediately.
     clearThrottle(agentId);
 
+    // Remove any pending subscription-driven jobs for this agent — the manual
+    // wake supersedes them, preventing a double-run where both the queued
+    // subscription job and the manual job execute back-to-back.
+    queue.removeByAgent(agentId);
+
     final now = clock.now();
     final runKey = RunKeyFactory.forManual(
       agentId: agentId,
@@ -471,6 +484,14 @@ class WakeOrchestrator {
   // ── Internal notification handling ─────────────────────────────────────────
 
   void _onBatch(Set<String> tokens) {
+    if (_subscriptions.isEmpty) {
+      developer.log(
+        'Batch received ${tokens.length} token(s) but NO subscriptions '
+        'registered — notifications will be ignored',
+        name: 'WakeOrchestrator',
+      );
+      return;
+    }
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
       final matched = tokens.intersection(sub.matchEntityIds);
@@ -562,9 +583,9 @@ class WakeOrchestrator {
       // Defer-first: instead of dispatching immediately, set a throttle
       // deadline and schedule a deferred drain. This allows bursty edits
       // to coalesce into a single wake cycle.
-      final deadline = now.add(throttleWindow);
-      _throttleDeadlines[sub.agentId] = deadline;
-      _scheduleDeferredDrain(sub.agentId, deadline);
+      // Uses _setThrottleDeadline to persist nextWakeAt so the UI shows a
+      // countdown timer.
+      unawaited(_setThrottleDeadline(sub.agentId));
 
       developer.log(
         'Deferred wake for ${sub.agentId}: '

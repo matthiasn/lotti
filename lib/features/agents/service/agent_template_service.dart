@@ -82,6 +82,7 @@ class AgentTemplateService {
       authoredBy: authoredBy,
       createdAt: now,
       vectorClock: null,
+      modelId: modelId,
     );
 
     final head = AgentDomainEntity.agentTemplateHead(
@@ -108,8 +109,8 @@ class AgentTemplateService {
 
   /// Update template-level fields (display name, model ID).
   ///
-  /// This updates the template entity itself, not its versioned directives.
-  /// Use [createVersion] to update directives.
+  /// When [modelId] changes, a new template version is created so the model
+  /// is historically tracked per-version.
   Future<AgentTemplateEntity> updateTemplate({
     required String templateId,
     String? displayName,
@@ -123,12 +124,28 @@ class AgentTemplateService {
         throw StateError('Template $templateId not found');
       }
 
+      final modelChanged = modelId != null && modelId != template.modelId;
+
       final updated = template.copyWith(
         displayName: displayName ?? template.displayName,
         modelId: modelId ?? template.modelId,
         updatedAt: now,
       );
       await syncService.upsertEntity(updated);
+
+      // When the model changes, create a new version so the change is
+      // recorded in the version history.
+      if (modelChanged) {
+        final activeVersion =
+            await repository.getActiveTemplateVersion(templateId);
+        if (activeVersion != null) {
+          await createVersion(
+            templateId: templateId,
+            directives: activeVersion.directives,
+            authoredBy: 'system:model_change',
+          );
+        }
+      }
 
       developer.log(
         'Updated template $templateId '
@@ -178,7 +195,7 @@ class AgentTemplateService {
       final nextVersion =
           await repository.getNextTemplateVersionNumber(templateId);
 
-      // Create the new version.
+      // Create the new version, recording the template's configured model ID.
       final newVersion = AgentDomainEntity.agentTemplateVersion(
         id: newVersionId,
         agentId: templateId,
@@ -188,6 +205,7 @@ class AgentTemplateService {
         authoredBy: authoredBy,
         createdAt: now,
         vectorClock: null,
+        modelId: template.modelId,
       ) as AgentTemplateVersionEntity;
       await syncService.upsertEntity(newVersion);
 

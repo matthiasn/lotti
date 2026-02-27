@@ -76,6 +76,22 @@ class WakeQueue {
     return false;
   }
 
+  /// Remove all queued jobs for [agentId] and return them.
+  ///
+  /// Used when a manual wake supersedes pending subscription wakes — the
+  /// manual run replaces any queued work for the same agent.
+  List<WakeJob> removeByAgent(String agentId) {
+    final removed = <WakeJob>[];
+    _queue.removeWhere((job) {
+      if (job.agentId == agentId) {
+        removed.add(job);
+        return true;
+      }
+      return false;
+    });
+    return removed;
+  }
+
   /// Re-enqueue a previously dequeued job without deduplication.
   ///
   /// Used by the orchestrator to put back jobs whose agent is currently busy.

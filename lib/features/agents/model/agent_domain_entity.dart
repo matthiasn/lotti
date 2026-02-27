@@ -133,6 +133,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required String authoredBy,
     required DateTime createdAt,
     required VectorClock? vectorClock,
+
+    /// The model ID configured on the template when this version was created.
+    String? modelId,
     DateTime? deletedAt,
   }) = AgentTemplateVersionEntity;
 

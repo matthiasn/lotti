@@ -366,16 +366,17 @@ After initial implementation, several UX and reliability issues were identified 
 - Made TLDR the first section
 - Added explicit instruction not to include title/status/goal
 
-#### 2. Display Model in Conversation Thread
+#### 2. Display Model in Conversation Thread (per-conversation, not live)
 **Status**: Done
 
 **Problem**: No UI showed which model (Flash vs Pro) generated a conversation.
 
-**Changes** (`lib/features/agents/ui/agent_conversation_log.dart`):
-- Converted `_ThreadTile` from `StatelessWidget` to `ConsumerWidget`
-- Watches `templateForAgentProvider(agentId)` to resolve the template
-- Extracts and displays `modelId` (stripped of `models/` prefix) in subtitle
-- Added `agentId` parameter to `_ThreadTile`
+**Changes**:
+- Added `modelId` field to `AgentTemplateVersionEntity` (`lib/features/agents/model/agent_domain_entity.dart`) — captures the template's configured model when the version is created
+- Updated both version creation sites in `AgentTemplateService` to pass `modelId`
+- Added `modelIdForThreadProvider` (`lib/features/agents/state/agent_providers.dart`) — resolves model from `wake_run_log.template_version_id` → `AgentTemplateVersionEntity.modelId`, falls back to live template for pre-existing data
+- Converted `_ThreadTile` to `ConsumerWidget`, watches `modelIdForThreadProvider` to show the actual model used for each conversation (not the current template config)
+- Displays model ID (stripped of `models/` prefix) in thread subtitle
 
 #### 3. Fix Thread Timestamp to Show Start Time + Duration
 **Status**: Done
@@ -419,7 +420,42 @@ After initial implementation, several UX and reliability issues were identified 
 - Call on startup in `agentInitialization` provider (`lib/features/agents/state/agent_providers.dart`)
 - Updated test mocks to stub the new method
 
+#### 7. Model ID on Template Version + Version on Model Change
+**Status**: Done
+
+**Problem**: The model displayed in the conversation thread came from the live template config, not from the version used at the time of the conversation. Also, changing the model on a template did not create a new immutable version.
+
+**Changes**:
+- Added `String? modelId` field to `AgentTemplateVersionEntity` (`lib/features/agents/model/agent_domain_entity.dart`)
+- Updated `AgentTemplateService.createVersion()` to record `template.modelId` on new versions
+- Updated `AgentTemplateService.updateTemplate()` to create a new version when `modelId` changes (author: `system:model_change`)
+- Updated workflow to resolve model from version: `templateCtx.version.modelId ?? templateCtx.template.modelId`
+- Updated `modelIdForThreadProvider` to look up model from the wake run's template version
+
+#### 8. Fix Checklist → Agent Wake (No Countdown Visible)
+**Status**: Done
+
+**Problem**: Two issues prevented the countdown from appearing:
+1. The defer-first path in `_onBatch` set the throttle deadline in-memory only — it did not persist `nextWakeAt` to the database.
+2. Even after persisting, the UI never rebuilt because `_setThrottleDeadline` and `_clearPersistedThrottle` write via `repository.upsertEntity()` which bypasses `UpdateNotifications` — the Riverpod `agentStateProvider` never received a refresh signal.
+
+**Changes**:
+- Replaced inline throttle deadline setting in `_onBatch` with `_setThrottleDeadline()` call (`wake_orchestrator.dart`)
+- Added `onAgentStateChanged` callback to `WakeOrchestrator` — fires after any `nextWakeAt` persistence (set or clear)
+- Wired callback in `wakeOrchestratorProvider` to `UpdateNotifications.notify({agentId})` so the UI countdown provider rebuilds (`agent_providers.dart`)
+- Added diagnostic log when `_onBatch` receives tokens with no subscriptions registered
+
+#### 9. Fix Double-Run on Manual Wake After Notification
+**Status**: Done
+
+**Problem**: When a notification-triggered job was queued (e.g. from unchecking checklist items) and the user then triggered a manual wake, both the pending subscription job AND the manual job executed back-to-back.
+
+**Changes**:
+- Added `WakeQueue.removeByAgent()` method (`lib/features/agents/wake/wake_queue.dart`) to remove all queued jobs for a given agent
+- Updated `enqueueManualWake()` (`lib/features/agents/wake/wake_orchestrator.dart`) to call `queue.removeByAgent(agentId)` before enqueuing the manual job — the manual run supersedes pending subscription wakes
+- Added tests for `removeByAgent` and the manual-wake-removes-subscription-jobs behavior
+
 ### Verification
 - Analyzer: Zero warnings/infos for entire project
-- All 1212 agent tests pass
+- All 1216 agent tests pass
 - Formatter: All files formatted

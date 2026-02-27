@@ -168,8 +168,8 @@ class TaskAgentWorkflow {
       );
     }
 
-    // 4. Resolve a Gemini inference provider using the template's model ID.
-    final modelId = templateCtx.template.modelId;
+    // 4. Resolve a Gemini inference provider from the template version.
+    final modelId = templateCtx.version.modelId ?? templateCtx.template.modelId;
     final provider = await resolveInferenceProvider(
       modelId: modelId,
       aiConfigRepository: aiConfigRepository,

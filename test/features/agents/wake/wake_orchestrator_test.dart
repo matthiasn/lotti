@@ -1628,6 +1628,53 @@ void main() {
           ).called(1);
         });
       });
+      test('removes pending subscription jobs for the same agent', () {
+        fakeAsync((async) {
+          final capturedEntries = <WakeRunLogData>[];
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((invocation) async {
+            capturedEntries.add(
+              invocation.namedArguments[#entry] as WakeRunLogData,
+            );
+          });
+
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async => null;
+          // ignore: cascade_invocations
+          orchestrator.addSubscription(
+            AgentSubscription(
+              id: 'sub-1',
+              agentId: 'agent-1',
+              matchEntityIds: {'task-1'},
+            ),
+          );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Emit a notification that enqueues a subscription job.
+          controller.add({'task-1'});
+          async.flushMicrotasks();
+
+          // The job is deferred (not yet executed). Queue should have 1 job.
+          expect(queue.length, 1);
+
+          // Manual wake should remove the pending subscription job and
+          // enqueue only the manual one → single execution.
+          orchestrator.enqueueManualWake(
+            agentId: 'agent-1',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+
+          // Only one wake run should have been executed (the manual one).
+          expect(capturedEntries, hasLength(1));
+          expect(capturedEntries.first.reason, 'manual');
+
+          controller.close();
+        });
+      });
     });
 
     group('monotonic wake counter', () {

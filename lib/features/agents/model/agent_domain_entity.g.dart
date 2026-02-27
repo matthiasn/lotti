@@ -324,6 +324,7 @@ AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      modelId: json['modelId'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -341,6 +342,7 @@ Map<String, dynamic> _$AgentTemplateVersionEntityToJson(
       'authoredBy': instance.authoredBy,
       'createdAt': instance.createdAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'modelId': instance.modelId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

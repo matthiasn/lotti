@@ -127,19 +127,15 @@ class _ThreadTile extends ConsumerWidget {
 
     final shortId = threadId.length > 7 ? threadId.substring(0, 7) : threadId;
 
-    // Resolve model from template.
-    final templateAsync = ref.watch(templateForAgentProvider(agentId));
-    final modelLabel = templateAsync.whenData((entity) {
-      if (entity == null) return null;
-      final template = entity.mapOrNull(agentTemplate: (t) => t);
-      if (template == null) return null;
-      final modelId = template.modelId;
+    // Resolve the model that was used for this specific conversation,
+    // from the template version recorded at wake time.
+    final modelAsync = ref.watch(modelIdForThreadProvider(agentId, threadId));
+    final model = modelAsync.whenData((modelId) {
+      if (modelId == null) return null;
       // Strip prefix like 'models/' for display.
       final slashIndex = modelId.lastIndexOf('/');
       return slashIndex >= 0 ? modelId.substring(slashIndex + 1) : modelId;
-    });
-
-    final model = modelLabel.value;
+    }).value;
 
     return ExpansionTile(
       initiallyExpanded: initiallyExpanded,

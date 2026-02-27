@@ -139,8 +139,9 @@ class TaskAgentStrategy extends ConversationStrategy {
         continue;
       }
 
+      final argsBytes = args.toString().length;
       developer.log(
-        'Processing tool call: $toolName with args: $args',
+        'Processing tool call: $toolName ($argsBytes bytes)',
         name: 'TaskAgentStrategy',
       );
 

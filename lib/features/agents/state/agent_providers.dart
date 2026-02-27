@@ -96,10 +96,12 @@ Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
+  final notifications = getIt<UpdateNotifications>();
   return WakeOrchestrator(
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
+    onAgentStateChanged: (agentId) => notifications.notify({agentId}),
   );
 }
 
@@ -203,6 +205,30 @@ Future<AgentDomainEntity?> templateForAgent(
   ref.watch(agentUpdateStreamProvider(agentId));
   final service = ref.watch(agentTemplateServiceProvider);
   return service.getTemplateForAgent(agentId);
+}
+
+/// Resolve the model ID used for a specific wake thread.
+///
+/// Looks up the wake run by [threadId] (which equals the run key), then
+/// resolves the template version to read the `modelId` that was configured
+/// when that version was created.
+@riverpod
+Future<String?> modelIdForThread(
+  Ref ref,
+  String agentId,
+  String threadId,
+) async {
+  final repository = ref.watch(agentRepositoryProvider);
+
+  final wakeRun = await repository.getWakeRun(threadId);
+  if (wakeRun?.templateVersionId != null) {
+    final versionEntity =
+        await repository.getEntity(wakeRun!.templateVersionId!);
+    final version = versionEntity?.mapOrNull(agentTemplateVersion: (v) => v);
+    if (version?.modelId != null) return version!.modelId;
+  }
+
+  return null;
 }
 
 /// Fetch the latest report for an agent by [agentId].

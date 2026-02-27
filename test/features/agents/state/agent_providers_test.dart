@@ -1494,6 +1494,11 @@ void main() {
       final runner = WakeRunner();
       addTearDown(runner.dispose);
 
+      // Register UpdateNotifications for the provider to access via GetIt.
+      final notifications = UpdateNotifications();
+      getIt.registerSingleton<UpdateNotifications>(notifications);
+      addTearDown(() => getIt.unregister<UpdateNotifications>());
+
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(mockRepo),
@@ -1508,6 +1513,7 @@ void main() {
       expect(orchestrator.repository, same(mockRepo));
       expect(orchestrator.queue, same(queue));
       expect(orchestrator.runner, same(runner));
+      expect(orchestrator.onAgentStateChanged, isNotNull);
     });
   });
 
