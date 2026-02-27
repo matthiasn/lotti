@@ -83,6 +83,54 @@ void main() {
       expect(db.path, embeddingsDbPath(tempDir.path));
     });
   });
+
+  group('initProductionEmbeddingsDb', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp
+          .createTempSync('embeddings_production_init_test_');
+    });
+
+    tearDown(() {
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('calls extension loader and returns a functional database', () {
+      var extensionLoaderCalled = false;
+      final db = initProductionEmbeddingsDb(
+        documentsPath: tempDir.path,
+        extensionLoader: () => extensionLoaderCalled = true,
+      );
+      addTeardownDb(db);
+
+      expect(extensionLoaderCalled, isTrue);
+      expect(db, isA<EmbeddingsDb>());
+      expect(db.count, 0);
+      expect(db.path, embeddingsDbPath(tempDir.path));
+    });
+
+    test('creates the database file on disk', () {
+      final db = initProductionEmbeddingsDb(
+        documentsPath: tempDir.path,
+        extensionLoader: () {},
+      );
+      addTeardownDb(db);
+
+      final dbFile = File(embeddingsDbPath(tempDir.path));
+      expect(dbFile.existsSync(), isTrue);
+    });
+
+    test('propagates extension loader errors', () {
+      expect(
+        () => initProductionEmbeddingsDb(
+          documentsPath: tempDir.path,
+          extensionLoader: () => throw StateError('no native lib'),
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
 }
 
 /// Registers a teardown to close the database after the test.

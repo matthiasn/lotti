@@ -24,6 +24,5 @@ if(UNIX AND NOT APPLE)
 endif()
 
 set_target_properties(sqlite_vec PROPERTIES
-  PUBLIC_HEADER sqlite-vec.h
   OUTPUT_NAME "sqlite_vec"
 )

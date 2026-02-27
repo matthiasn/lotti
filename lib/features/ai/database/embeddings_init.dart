@@ -1,4 +1,5 @@
 import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:sqlite_vec/sqlite_vec.dart';
@@ -20,11 +21,13 @@ String embeddingsDbPath(String documentsPath) =>
 /// (which statically links sqlite-vec into the test library).
 ///
 /// Safe to call multiple times — `ensureExtensionLoaded` is idempotent.
+// coverage:ignore-start
 void loadSqliteVecExtension() {
   sqlite3.ensureExtensionLoaded(
     SqliteExtension.inLibrary(vec0, 'sqlite3_vec_init'),
   );
 }
+// coverage:ignore-end
 
 /// Creates and opens an [EmbeddingsDb] at the standard file location.
 ///
@@ -39,8 +42,15 @@ EmbeddingsDb createEmbeddingsDb({required String documentsPath}) {
 /// 1. Loads the sqlite-vec extension from the native FFI plugin.
 /// 2. Creates and opens the database at `<documentsPath>/embeddings.sqlite`.
 ///
+/// The [extensionLoader] parameter exists for testability — in production it
+/// defaults to [loadSqliteVecExtension]; tests can pass a no-op or the test
+/// loader instead.
+///
 /// Returns the opened [EmbeddingsDb] ready for use.
-EmbeddingsDb initProductionEmbeddingsDb({required String documentsPath}) {
-  loadSqliteVecExtension();
+EmbeddingsDb initProductionEmbeddingsDb({
+  required String documentsPath,
+  @visibleForTesting void Function()? extensionLoader,
+}) {
+  (extensionLoader ?? loadSqliteVecExtension)();
   return createEmbeddingsDb(documentsPath: documentsPath);
 }

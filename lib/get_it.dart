@@ -154,12 +154,14 @@ Future<void> registerSingletons() async {
   // EmbeddingsDb depends on the sqlite-vec native extension which may not be
   // available on all platforms (e.g. CI runners without AVX).  Register lazily
   // so a failure here doesn't prevent app startup.
+  // coverage:ignore-start
   _registerLazyServiceSafely<EmbeddingsDb>(
     () => initProductionEmbeddingsDb(
       documentsPath: getIt<Directory>().path,
     ),
     'EmbeddingsDb',
   );
+  // coverage:ignore-end
 
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
