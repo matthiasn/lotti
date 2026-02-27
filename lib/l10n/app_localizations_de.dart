@@ -395,6 +395,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTabReports => 'Berichte';
 
   @override
+  String get agentTabStats => 'Statistik';
+
+  @override
   String get agentTokenUsageCachedTokens => 'Gecacht';
 
   @override

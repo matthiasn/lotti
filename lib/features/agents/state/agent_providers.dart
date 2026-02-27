@@ -333,18 +333,34 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   return entities.whereType<AgentMessageEntity>().toList();
 }
 
-/// Aggregated token usage summaries for an agent, grouped by model ID.
+/// Raw token usage records for an agent.
 ///
-/// Fetches all `WakeTokenUsageEntity` records for [agentId] and aggregates
-/// them into per-model summaries sorted by total tokens descending.
+/// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+/// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+/// derive their state from this to avoid redundant database queries.
 @riverpod
-Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
+Future<List<AgentDomainEntity>> agentTokenUsageRecords(
   Ref ref,
   String agentId,
 ) async {
   ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
   final records = await repository.getTokenUsageForAgent(agentId);
+  return records.cast<AgentDomainEntity>();
+}
+
+/// Aggregated token usage summaries for an agent, grouped by model ID.
+///
+/// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+@riverpod
+Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
+  Ref ref,
+  String agentId,
+) async {
+  final entities =
+      await ref.watch(agentTokenUsageRecordsProvider(agentId).future);
+  final records = entities.whereType<WakeTokenUsageEntity>();
 
   final map = <String, AgentTokenUsageSummary>{};
   for (final r in records) {
@@ -362,6 +378,38 @@ Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
 
   return map.values.toList()
     ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+}
+
+/// Aggregated token usage summary for a specific thread.
+///
+/// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+/// and folds into a single [AgentTokenUsageSummary].
+/// Returns `null` if no records match.
+@riverpod
+Future<AgentTokenUsageSummary?> tokenUsageForThread(
+  Ref ref,
+  String agentId,
+  String threadId,
+) async {
+  final entities =
+      await ref.watch(agentTokenUsageRecordsProvider(agentId).future);
+  final threadRecords = entities
+      .whereType<WakeTokenUsageEntity>()
+      .where((r) => r.threadId == threadId)
+      .toList();
+  if (threadRecords.isEmpty) return null;
+
+  return threadRecords.fold<AgentTokenUsageSummary>(
+    AgentTokenUsageSummary(modelId: threadRecords.first.modelId),
+    (summary, r) => AgentTokenUsageSummary(
+      modelId: summary.modelId,
+      inputTokens: summary.inputTokens + (r.inputTokens ?? 0),
+      outputTokens: summary.outputTokens + (r.outputTokens ?? 0),
+      thoughtsTokens: summary.thoughtsTokens + (r.thoughtsTokens ?? 0),
+      cachedInputTokens: summary.cachedInputTokens + (r.cachedInputTokens ?? 0),
+      wakeCount: summary.wakeCount + 1,
+    ),
+  );
 }
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.

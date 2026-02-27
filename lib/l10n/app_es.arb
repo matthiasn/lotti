@@ -180,6 +180,7 @@
   "agentTabConversations": "Conversaciones",
   "agentTabObservations": "Observaciones",
   "agentTabReports": "Informes",
+  "agentTabStats": "Estadísticas",
   "agentTokenUsageCachedTokens": "En caché",
   "agentTokenUsageEmpty": "Aún no se ha registrado el uso de tokens.",
   "agentTokenUsageErrorLoading": "Error al cargar el uso de tokens: {error}",

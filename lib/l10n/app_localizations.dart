@@ -816,6 +816,12 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get agentTabReports;
 
+  /// No description provided for @agentTabStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats'**
+  String get agentTabStats;
+
   /// No description provided for @agentTokenUsageCachedTokens.
   ///
   /// In en, this message translates to:

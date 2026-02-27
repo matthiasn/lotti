@@ -180,6 +180,7 @@
   "agentTabConversations": "Conversații",
   "agentTabObservations": "Observații",
   "agentTabReports": "Rapoarte",
+  "agentTabStats": "Statistici",
   "agentTokenUsageCachedTokens": "Din cache",
   "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
   "agentTokenUsageErrorLoading": "Eroare la încărcarea utilizării tokenilor: {error}",

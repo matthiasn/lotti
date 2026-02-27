@@ -394,6 +394,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTabReports => 'Rapoarte';
 
   @override
+  String get agentTabStats => 'Statistici';
+
+  @override
   String get agentTokenUsageCachedTokens => 'Din cache';
 
   @override

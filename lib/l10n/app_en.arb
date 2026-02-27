@@ -186,6 +186,7 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
+  "agentTabStats": "Stats",
   "agentTokenUsageCachedTokens": "Cached",
   "agentTokenUsageEmpty": "No token usage recorded yet.",
   "agentTokenUsageErrorLoading": "Failed to load token usage: {error}",

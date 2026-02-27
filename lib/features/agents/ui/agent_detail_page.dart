@@ -118,45 +118,134 @@ class AgentDetailPage extends ConsumerWidget {
           padding: const EdgeInsets.only(
             bottom: AppTheme.spacingLarge,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Messages (tabbed: Activity, Reports, Conversations, Observations)
-              _AgentMessagesSection(agentId: agentId),
-
-              const Divider(indent: 16, endIndent: 16),
-
-              // Template assignment
-              _TemplateSection(agentId: agentId),
-
-              const Divider(indent: 16, endIndent: 16),
-
-              // Controls
-              AgentControls(
-                agentId: agentId,
-                lifecycle: identity.lifecycle,
-              ),
-
-              const Divider(indent: 16, endIndent: 16),
-
-              // State info
-              _buildStateInfo(context, stateAsync),
-
-              const Divider(indent: 16, endIndent: 16),
-
-              // Token usage
-              AgentTokenUsageSection(agentId: agentId),
-            ],
+          child: _AgentMessagesSection(
+            agentId: agentId,
+            lifecycle: identity.lifecycle,
+            stateAsync: stateAsync,
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildStateInfo(
-    BuildContext context,
-    AsyncValue<AgentDomainEntity?> stateAsync,
-  ) {
+/// Tabbed section showing agent data in five views:
+/// - Stats: token usage, template, controls, state info (default)
+/// - Reports: report history snapshots
+/// - Conversations: grouped by thread (wake cycle)
+/// - Observations: observation-only entries, expanded by default
+/// - Activity: flat chronological log
+class _AgentMessagesSection extends StatefulWidget {
+  const _AgentMessagesSection({
+    required this.agentId,
+    required this.lifecycle,
+    required this.stateAsync,
+  });
+
+  final String agentId;
+  final AgentLifecycle lifecycle;
+  final AsyncValue<AgentDomainEntity?> stateAsync;
+
+  @override
+  State<_AgentMessagesSection> createState() => _AgentMessagesSectionState();
+}
+
+class _AgentMessagesSectionState extends State<_AgentMessagesSection>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.cardPadding,
+          ),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: [
+              Tab(text: context.messages.agentTabStats),
+              Tab(text: context.messages.agentTabReports),
+              Tab(text: context.messages.agentTabConversations),
+              Tab(text: context.messages.agentTabObservations),
+              Tab(text: context.messages.agentTabActivity),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+        IndexedStack(
+          index: _tabController.index,
+          children: [
+            _StatsTab(
+              agentId: widget.agentId,
+              lifecycle: widget.lifecycle,
+              stateAsync: widget.stateAsync,
+            ),
+            AgentReportHistoryLog(agentId: widget.agentId),
+            AgentConversationLog(agentId: widget.agentId),
+            AgentObservationLog(agentId: widget.agentId),
+            AgentActivityLog(agentId: widget.agentId),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Stats tab content: token usage, template, controls, and state info.
+class _StatsTab extends StatelessWidget {
+  const _StatsTab({
+    required this.agentId,
+    required this.lifecycle,
+    required this.stateAsync,
+  });
+
+  final String agentId;
+  final AgentLifecycle lifecycle;
+  final AsyncValue<AgentDomainEntity?> stateAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AgentTokenUsageSection(agentId: agentId),
+        const Divider(indent: 16, endIndent: 16),
+        _TemplateSection(agentId: agentId),
+        const Divider(indent: 16, endIndent: 16),
+        AgentControls(agentId: agentId, lifecycle: lifecycle),
+        const Divider(indent: 16, endIndent: 16),
+        _AgentStateSection(stateAsync: stateAsync),
+      ],
+    );
+  }
+}
+
+/// Shows the agent state info (revision, wake count, failures, dates).
+class _AgentStateSection extends StatelessWidget {
+  const _AgentStateSection({required this.stateAsync});
+
+  final AsyncValue<AgentDomainEntity?> stateAsync;
+
+  @override
+  Widget build(BuildContext context) {
     // Use .value to preserve previous data during reloads.
     final stateEntity = stateAsync.value;
 
@@ -224,73 +313,6 @@ class AgentDetailPage extends ConsumerWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Tabbed section showing agent messages in four views:
-/// - Activity: flat chronological log
-/// - Reports: report history snapshots
-/// - Conversations: grouped by thread (wake cycle)
-/// - Observations: observation-only entries, expanded by default
-class _AgentMessagesSection extends StatefulWidget {
-  const _AgentMessagesSection({required this.agentId});
-
-  final String agentId;
-
-  @override
-  State<_AgentMessagesSection> createState() => _AgentMessagesSectionState();
-}
-
-class _AgentMessagesSectionState extends State<_AgentMessagesSection>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.cardPadding,
-          ),
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            tabs: [
-              Tab(text: context.messages.agentTabActivity),
-              Tab(text: context.messages.agentTabReports),
-              Tab(text: context.messages.agentTabConversations),
-              Tab(text: context.messages.agentTabObservations),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppTheme.spacingSmall),
-        IndexedStack(
-          index: _tabController.index,
-          children: [
-            AgentActivityLog(agentId: widget.agentId),
-            AgentReportHistoryLog(agentId: widget.agentId),
-            AgentConversationLog(agentId: widget.agentId),
-            AgentObservationLog(agentId: widget.agentId),
-          ],
-        ),
-      ],
     );
   }
 }

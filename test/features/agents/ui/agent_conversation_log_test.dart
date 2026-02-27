@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 
@@ -346,6 +347,51 @@ void main() {
 
       // Duration should be shown as "2m 30s"
       expect(find.textContaining('2m 30s'), findsOneWidget);
+    });
+
+    testWidgets('shows token count in thread subtitle when available',
+        (tester) async {
+      final threads = <String, List<AgentDomainEntity>>{
+        'thread-tokens': [
+          makeTestMessage(
+            id: 'msg-1',
+            threadId: 'thread-tokens',
+            createdAt: DateTime(2024, 3, 15, 10),
+          ),
+          makeTestMessage(
+            id: 'msg-2',
+            threadId: 'thread-tokens',
+            createdAt: DateTime(2024, 3, 15, 10, 2),
+          ),
+        ],
+      };
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentConversationLog(agentId: _testAgentId),
+          overrides: [
+            agentMessagesByThreadProvider.overrideWith(
+              (ref, agentId) async => threads,
+            ),
+            agentReportHistoryProvider.overrideWith(
+              (ref, agentId) async => <AgentDomainEntity>[],
+            ),
+            tokenUsageForThreadProvider.overrideWith(
+              (ref, args) async => const AgentTokenUsageSummary(
+                modelId: 'models/gemini-2.5-pro',
+                inputTokens: 1000,
+                outputTokens: 400,
+                thoughtsTokens: 100,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The token count should appear formatted in the subtitle.
+      expect(find.textContaining('1,500 tokens'), findsOneWidget);
     });
 
     testWidgets('tool call messages start expanded in threads', (tester) async {

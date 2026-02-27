@@ -189,17 +189,19 @@ void main() {
       );
     });
 
-    testWidgets('shows Activity, Reports, Conversations, and Observations tabs',
+    testWidgets(
+        'shows Stats, Reports, Conversations, Observations, and Activity tabs',
         (tester) async {
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestIdentity()),
       );
       await tester.pump();
 
-      expect(find.text('Activity'), findsOneWidget);
+      expect(find.text('Stats'), findsOneWidget);
       expect(find.text('Reports'), findsOneWidget);
       expect(find.text('Conversations'), findsOneWidget);
       expect(find.text('Observations'), findsOneWidget);
+      expect(find.text('Activity'), findsOneWidget);
     });
 
     testWidgets('shows state info section with values', (tester) async {
