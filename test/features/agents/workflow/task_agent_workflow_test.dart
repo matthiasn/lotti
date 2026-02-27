@@ -1853,8 +1853,9 @@ void main() {
             () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
-            '{"minutes":30}',
+            '{"minutes":240}',
             // Uses taskWithCategory which has estimate: Duration(hours: 4)
+            // = 240 minutes. Same value triggers the no-op path.
           );
           expect(result.success, isTrue);
           verify(
@@ -1862,7 +1863,7 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('already set'),
+                that: contains('No change needed'),
               ),
             ),
           ).called(1);

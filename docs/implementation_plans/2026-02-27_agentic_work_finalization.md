@@ -99,14 +99,13 @@ flowchart TD
 flowchart TD
     subgraph "Report Structure (Aligned)"
         TLDR["**TLDR:** 3-4 lines, bold, emojis<br/>(always visible, expandable)"]
-        GOAL["**Goal:** 1-3 sentences"]
         ACHIEVED["**Achieved results:** ✅ items"]
         REMAINING["**Remaining steps:** numbered list"]
         LEARNINGS["**Learnings:** 💡 items"]
         ANNOYANCES["**Annoyances:** 🤯 items"]
         LINKS["**Links:** markdown URLs"]
 
-        TLDR --> GOAL --> ACHIEVED --> REMAINING --> LEARNINGS --> ANNOYANCES --> LINKS
+        TLDR --> ACHIEVED --> REMAINING --> LEARNINGS --> ANNOYANCES --> LINKS
     end
 
     subgraph "Generation Flow"
@@ -230,7 +229,7 @@ stateDiagram-v2
 **Two filter rows**:
 1. **Kind filter** — `SegmentedButton<String?>`: All | Task Agent | Evolution
    - Task Agents: `AgentIdentityEntity` with `kind == 'task_agent'` from `AgentService.listAgents()`
-   - Evolution agents: `EvolutionSessionEntity` from `AgentTemplateService.getEvolutionSessions()` — these are sessions against templates, not identity entities. Display them with a distinct badge ("Evolution") and show the template name instead of task name.
+   - Evolution sessions: `EvolutionSessionEntity` from `AgentTemplateService.getEvolutionSessions()` (canonical source). These are sessions against templates, not identity entities. Display them with a distinct badge ("Evolution") and show the template name.
 2. **Lifecycle filter** — `SegmentedButton<AgentLifecycle?>`: All | Active | Dormant | Destroyed (only applies to Task Agents; evolution sessions have their own status)
 
 - List of `ModernBaseCard` items showing: name (from template), kind badge, lifecycle/status badge, associated task/template name, last activity time

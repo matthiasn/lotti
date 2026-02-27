@@ -165,6 +165,8 @@ void main() {
         .thenAnswer((_) async {});
     when(() => journalDb.addLabeled(any<JournalEntity>()))
         .thenAnswer((_) async {});
+    when(() => journalDb.parentLinkedEntityIds(any<String>()))
+        .thenReturn(MockSelectable<String>([]));
 
     getIt
       ..registerSingleton<JournalDb>(journalDb)

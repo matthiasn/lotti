@@ -283,6 +283,71 @@ void main() {
       expect(tile.initiallyExpanded, isTrue);
     });
 
+    testWidgets('shows model ID in thread subtitle when available',
+        (tester) async {
+      final threads = <String, List<AgentDomainEntity>>{
+        'thread-model': [
+          makeTestMessage(
+            id: 'msg-1',
+            threadId: 'thread-model',
+            createdAt: DateTime(2024, 3, 15, 10),
+          ),
+          makeTestMessage(
+            id: 'msg-2',
+            threadId: 'thread-model',
+            createdAt: DateTime(2024, 3, 15, 10, 2),
+          ),
+        ],
+      };
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentConversationLog(agentId: _testAgentId),
+          overrides: [
+            agentMessagesByThreadProvider.overrideWith(
+              (ref, agentId) async => threads,
+            ),
+            agentReportHistoryProvider.overrideWith(
+              (ref, agentId) async => <AgentDomainEntity>[],
+            ),
+            modelIdForThreadProvider.overrideWith(
+              (ref, args) async => 'models/gemini-3-flash-preview',
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The model name should appear stripped of prefix.
+      expect(find.textContaining('gemini-3-flash-preview'), findsOneWidget);
+    });
+
+    testWidgets('shows duration in thread title', (tester) async {
+      final threads = <String, List<AgentDomainEntity>>{
+        'thread-dur': [
+          makeTestMessage(
+            id: 'msg-start',
+            threadId: 'thread-dur',
+            createdAt: DateTime(2024, 3, 15, 10),
+          ),
+          makeTestMessage(
+            id: 'msg-end',
+            threadId: 'thread-dur',
+            createdAt: DateTime(2024, 3, 15, 10, 2, 30),
+          ),
+        ],
+      };
+
+      await tester.pumpWidget(
+        buildSubject(threadsValue: AsyncValue.data(threads)),
+      );
+      await tester.pump();
+
+      // Duration should be shown as "2m 30s"
+      expect(find.textContaining('2m 30s'), findsOneWidget);
+    });
+
     testWidgets('tool call messages start expanded in threads', (tester) async {
       final threads = <String, List<AgentDomainEntity>>{
         'thread-1': [

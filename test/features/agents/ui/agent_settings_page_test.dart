@@ -242,6 +242,18 @@ void main() {
       );
     });
 
+    testWidgets('tapping FAB navigates to template creation', (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+
+      expect(navigatedPath, '/settings/agents/templates/create');
+    });
+
     testWidgets('tapping template card navigates to template detail',
         (tester) async {
       String? navigatedPath;

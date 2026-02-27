@@ -1740,6 +1740,61 @@ void main() {
     });
   });
 
+  group('abandonOrphanedWakeRuns', () {
+    test('marks running wake runs as abandoned', () async {
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-running-1', status: 'running'),
+      );
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-running-2', status: 'running'),
+      );
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-completed', status: 'completed'),
+      );
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-pending'),
+      );
+
+      final abandoned = await repo.abandonOrphanedWakeRuns();
+
+      expect(abandoned, 2);
+
+      // Verify running runs are now abandoned.
+      final run1 = await repo.getWakeRun('run-running-1');
+      expect(run1!.status, 'abandoned');
+      expect(
+        run1.errorMessage,
+        contains('abandoned on startup'),
+      );
+
+      final run2 = await repo.getWakeRun('run-running-2');
+      expect(run2!.status, 'abandoned');
+
+      // Verify non-running runs are untouched.
+      final completed = await repo.getWakeRun('run-completed');
+      expect(completed!.status, 'completed');
+
+      final pending = await repo.getWakeRun('run-pending');
+      expect(pending!.status, 'pending');
+    });
+
+    test('returns zero when no running wake runs exist', () async {
+      await repo.insertWakeRun(
+        entry: makeWakeRun(runKey: 'run-done', status: 'completed'),
+      );
+
+      final abandoned = await repo.abandonOrphanedWakeRuns();
+
+      expect(abandoned, 0);
+    });
+
+    test('returns zero on empty table', () async {
+      final abandoned = await repo.abandonOrphanedWakeRuns();
+
+      expect(abandoned, 0);
+    });
+  });
+
   group('getAllEntities', () {
     test('returns all entity types', () async {
       await repo.upsertEntity(makeAgent(id: 'agent-a', agentId: 'a-001'));

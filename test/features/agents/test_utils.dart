@@ -195,6 +195,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
   AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
   String directives = 'You are a helpful agent.',
   String authoredBy = 'user',
+  String? modelId,
   DateTime? createdAt,
   VectorClock? vectorClock,
 }) {
@@ -205,6 +206,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
     status: status,
     directives: directives,
     authoredBy: authoredBy,
+    modelId: modelId,
     createdAt: createdAt ?? kAgentTestDate,
     vectorClock: vectorClock,
   ) as AgentTemplateVersionEntity;

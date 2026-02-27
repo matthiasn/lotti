@@ -117,6 +117,9 @@ class _ThreadTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (messages.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final firstMsg = messages.first;
     final lastMsg = messages.last;
     final toolCallCount =

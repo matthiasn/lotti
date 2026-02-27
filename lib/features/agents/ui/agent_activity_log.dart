@@ -252,6 +252,11 @@ class AgentReportHistoryLog extends ConsumerWidget {
   }
 }
 
+/// Displays an agent report as a collapsible card.
+///
+/// When collapsed, shows only the TLDR section extracted from the report.
+/// When expanded, renders the full [AgentReportEntity.content] via
+/// [GptMarkdown].
 class _ReportSnapshotCard extends StatefulWidget {
   const _ReportSnapshotCard({
     required this.report,
@@ -434,7 +439,7 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                     ),
                 ],
               ),
-              if (toolName != null)
+              if (toolName != null && toolName.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
                   child: Chip(
