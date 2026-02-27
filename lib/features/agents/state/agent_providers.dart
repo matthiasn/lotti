@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -496,6 +497,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     checklistRepository: ref.watch(checklistRepositoryProvider),
+    labelsRepository: ref.watch(labelsRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
   );

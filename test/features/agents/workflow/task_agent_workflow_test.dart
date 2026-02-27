@@ -138,6 +138,7 @@ void main() {
   late MockConversationManager mockConversationManager;
   late MockJournalRepository mockJournalRepository;
   late MockChecklistRepository mockChecklistRepository;
+  late MockLabelsRepository mockLabelsRepository;
   late MockAgentTemplateService mockTemplateService;
   late TaskAgentWorkflow workflow;
 
@@ -210,6 +211,7 @@ void main() {
     mockCloudInferenceRepository = MockCloudInferenceRepository();
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
+    mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
 
     registerAllFallbackValues();
@@ -237,6 +239,7 @@ void main() {
       cloudInferenceRepository: mockCloudInferenceRepository,
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
+      labelsRepository: mockLabelsRepository,
       syncService: mockSyncService,
       templateService: mockTemplateService,
     );
@@ -469,6 +472,7 @@ void main() {
           cloudInferenceRepository: mockCloudInferenceRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
         );
@@ -2328,6 +2332,7 @@ void main() {
           cloudInferenceRepository: mockCloudInferenceRepository,
           journalRepository: mockJournalRepository,
           checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
           syncService: mockSyncService,
           templateService: mockTemplateService,
         );

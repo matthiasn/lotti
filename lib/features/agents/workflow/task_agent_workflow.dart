@@ -37,11 +37,6 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -73,6 +68,7 @@ class TaskAgentWorkflow {
     required this.cloudInferenceRepository,
     required this.journalRepository,
     required this.checklistRepository,
+    required this.labelsRepository,
     required this.syncService,
     required this.templateService,
     LinkedTaskContextEnricher? linkedTaskContextEnricher,
@@ -93,6 +89,7 @@ class TaskAgentWorkflow {
   final CloudInferenceRepository cloudInferenceRepository;
   final JournalRepository journalRepository;
   final ChecklistRepository checklistRepository;
+  final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
   final LinkedTaskContextEnricher linkedTaskContextEnricher;
 
@@ -991,16 +988,9 @@ and never shown to the user. They persist as your memory across wakes.
       );
     }
 
-    final labelsRepo = LabelsRepository(
-      getIt<PersistenceLogic>(),
-      journalDb,
-      getIt<EntitiesCacheService>(),
-      getIt<LoggingService>(),
-      getIt<UpdateNotifications>(),
-    );
     final processor = LabelAssignmentProcessor(
       db: journalDb,
-      repository: labelsRepo,
+      repository: labelsRepository,
     );
     final handler = TaskLabelHandler(
       task: task,
