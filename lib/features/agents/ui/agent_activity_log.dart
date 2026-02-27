@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -341,41 +342,15 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                   padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
                   child: _expanded
                       ? GptMarkdown(report.content)
-                      : GptMarkdown(_extractTldr(report.content)),
+                      : GptMarkdown(
+                          parseReportContent(report.content).tldr,
+                        ),
                 ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  /// Extracts the TLDR section from the report content for collapsed view.
-  static String _extractTldr(String content) {
-    // Try to find ## 📋 TLDR heading and extract that section
-    final tldrHeadingRegex = RegExp(r'## 📋 TLDR\n', multiLine: true);
-    final headingMatch = tldrHeadingRegex.firstMatch(content);
-
-    if (headingMatch != null) {
-      final afterTldr = content.substring(headingMatch.end);
-      final nextHeadingRegex = RegExp(r'\n## ', multiLine: true);
-      final nextHeadingMatch = nextHeadingRegex.firstMatch(afterTldr);
-
-      if (nextHeadingMatch != null) {
-        return content
-            .substring(
-              headingMatch.start,
-              headingMatch.end + nextHeadingMatch.start,
-            )
-            .trim();
-      }
-      // TLDR is the only section — return just the TLDR portion
-      return content.substring(headingMatch.start).trim();
-    }
-
-    // Fallback: first paragraph
-    final paragraphs = content.split(RegExp(r'\n\n+'));
-    return paragraphs.first.trim();
   }
 }
 
