@@ -20,9 +20,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart' show UpdateNotifications;
 import 'package:lotti/services/logging_service.dart' show LoggingService;
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;
@@ -1112,6 +1114,294 @@ void main() {
       expect(iconButton.tooltip, 'Generate summary now');
 
       container.dispose();
+    });
+  });
+
+  group('LatestAiResponseSummary Bulk Delete Tests', () {
+    const testId = 'test-entity-1';
+    const testResponseType = AiResponseType.taskSummary;
+    late MockJournalRepository mockJournalRepository;
+    late AiResponseEntry testResponse1;
+    late AiResponseEntry testResponse2;
+    late AiResponseEntry testResponse3;
+
+    setUp(() {
+      mockJournalRepository = MockJournalRepository();
+
+      final baseDate = DateTime(2025, 3, 15, 10);
+      testResponse1 = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-1',
+          createdAt: baseDate,
+          updatedAt: baseDate,
+          dateFrom: baseDate,
+          dateTo: baseDate,
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response: 'First summary',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+
+      testResponse2 = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-2',
+          createdAt: baseDate.add(const Duration(hours: 1)),
+          updatedAt: baseDate.add(const Duration(hours: 1)),
+          dateFrom: baseDate.add(const Duration(hours: 1)),
+          dateTo: baseDate.add(const Duration(hours: 1)),
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response: 'Second summary',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+
+      testResponse3 = AiResponseEntry(
+        meta: Metadata(
+          id: 'response-3',
+          createdAt: baseDate.add(const Duration(hours: 2)),
+          updatedAt: baseDate.add(const Duration(hours: 2)),
+          dateFrom: baseDate.add(const Duration(hours: 2)),
+          dateTo: baseDate.add(const Duration(hours: 2)),
+        ),
+        data: const AiResponseData(
+          model: 'gpt-4',
+          temperature: 0.7,
+          systemMessage: 'System message',
+          prompt: 'User prompt',
+          thoughts: '',
+          response: 'Third summary',
+          type: AiResponseType.taskSummary,
+          promptId: 'prompt-1',
+        ),
+      );
+    });
+
+    testWidgets('shows delete button when summaries exist and not running',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer(
+        (_) async => [testResponse1, testResponse2, testResponse3],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+      // Verify tooltip
+      final iconButton = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.delete_outline),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(iconButton.tooltip, 'Delete all task summaries');
+    });
+
+    testWidgets('hides delete button when no summaries exist', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
+    });
+
+    testWidgets('hides delete button when inference is running',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer(
+        (_) async => [testResponse1],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: makeTestableWidgetWithScaffold(
+            const LatestAiResponseSummary(
+              id: testId,
+              aiResponseType: testResponseType,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Delete button should be visible initially
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+      // Set status to running
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testId,
+              aiResponseType: testResponseType,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.running);
+
+      await tester.pump();
+
+      // Delete button should be hidden while running
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
+
+      container.dispose();
+    });
+
+    testWidgets('tapping delete shows confirmation dialog with count',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer(
+        (_) async => [testResponse1, testResponse2, testResponse3],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the delete button
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is shown
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Delete Task Summaries'), findsOneWidget);
+      expect(
+        find.textContaining('3 task summaries'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('confirming deletion calls deleteJournalEntity for each',
+        (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer(
+        (_) async => [testResponse1, testResponse2, testResponse3],
+      );
+      when(() => mockJournalRepository.deleteJournalEntity(any()))
+          .thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the delete button
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Tap the Delete confirmation button
+      await tester.tap(find.byType(LottiPrimaryButton));
+      await tester.pumpAndSettle();
+
+      // Verify deleteJournalEntity was called for each summary
+      verify(() => mockJournalRepository.deleteJournalEntity('response-1'))
+          .called(1);
+      verify(() => mockJournalRepository.deleteJournalEntity('response-2'))
+          .called(1);
+      verify(() => mockJournalRepository.deleteJournalEntity('response-3'))
+          .called(1);
+    });
+
+    testWidgets('canceling deletion does not delete', (tester) async {
+      when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
+          .thenAnswer(
+        (_) async => [testResponse1, testResponse2],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const LatestAiResponseSummary(
+            id: testId,
+            aiResponseType: testResponseType,
+          ),
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the delete button
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is shown
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // Tap Cancel
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Dialog should be dismissed
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // deleteJournalEntity should never have been called
+      verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));
     });
   });
 }

@@ -1074,6 +1074,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTaskSummaryCancelScheduled => 'Cancel scheduled summary';
 
   @override
+  String aiTaskSummaryDeleteConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Do you really want to delete $count task summaries? This cannot be undone.',
+      one:
+          'Do you really want to delete this task summary? This cannot be undone.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiTaskSummaryDeleteConfirmTitle => 'Delete Task Summaries';
+
+  @override
+  String get aiTaskSummaryDeleteTooltip => 'Delete all task summaries';
+
+  @override
   String get aiTaskSummaryRunning => 'Thinking about summarizing task...';
 
   @override

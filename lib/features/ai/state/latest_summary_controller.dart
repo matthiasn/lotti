@@ -18,6 +18,22 @@ final latestSummaryControllerProvider = AsyncNotifierProvider.autoDispose
   LatestSummaryController.new,
 );
 
+/// Fetches all AI response entries of the given type linked to [id].
+/// Used for bulk operations like counting or deleting all task summaries.
+Future<List<AiResponseEntry>> allAiResponses(
+  WidgetRef ref, {
+  required String id,
+  required AiResponseType aiResponseType,
+}) async {
+  final linked =
+      await ref.read(journalRepositoryProvider).getLinkedEntities(linkedTo: id);
+
+  return linked
+      .whereType<AiResponseEntry>()
+      .where((element) => element.data.type == aiResponseType)
+      .toList();
+}
+
 class LatestSummaryController extends AsyncNotifier<AiResponseEntry?> {
   LatestSummaryController(this._params);
 

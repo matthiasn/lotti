@@ -488,6 +488,16 @@
   "aiSetupWizardSafeToRunMultiple": "Poate fi rulat de mai multe ori - elementele existente vor fi păstrate",
   "aiSetupWizardTitle": "Asistent de configurare AI",
   "aiTaskSummaryCancelScheduled": "Anulează rezumatul programat",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Vrei cu adevărat să ștergi acest rezumat al sarcinii? Această acțiune nu poate fi anulată.} other{Vrei cu adevărat să ștergi {count} rezumate ale sarcinilor? Această acțiune nu poate fi anulată.}}",
+  "@aiTaskSummaryDeleteConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiTaskSummaryDeleteConfirmTitle": "Șterge rezumatele sarcinilor",
+  "aiTaskSummaryDeleteTooltip": "Șterge toate rezumatele sarcinilor",
   "aiTaskSummaryRunning": "Se gândește la rezumarea sarcinii...",
   "aiTaskSummaryScheduled": "Rezumat în {time}",
   "@aiTaskSummaryScheduled": {
