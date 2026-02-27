@@ -56,6 +56,72 @@ void main() {
     return container;
   }
 
+  group('dependency providers', () {
+    setUp(() async {
+      await getIt.reset();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    test('maybeUpdateNotificationsProvider returns null when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(maybeUpdateNotificationsProvider), isNull);
+    });
+
+    test('updateNotificationsProvider throws when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        () => container.read(updateNotificationsProvider),
+        throwsA(
+          predicate<Object>(
+            (error) => error
+                .toString()
+                .contains('UpdateNotifications is not registered in GetIt'),
+          ),
+        ),
+      );
+    });
+
+    test('updateNotificationsProvider returns registered instance', () {
+      final mockNotifications = MockUpdateNotifications();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(updateNotificationsProvider),
+        same(mockNotifications),
+      );
+    });
+
+    test('maybeSyncEventProcessorProvider returns null when unregistered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(maybeSyncEventProcessorProvider), isNull);
+    });
+
+    test('maybeSyncEventProcessorProvider returns registered instance', () {
+      final mockProcessor = MockSyncEventProcessor();
+      getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(maybeSyncEventProcessorProvider),
+        same(mockProcessor),
+      );
+    });
+  });
+
   group('agentDatabaseProvider', () {
     test('creates database and closes on dispose', () async {
       final container = ProviderContainer();

@@ -97,7 +97,7 @@ void main() {
           );
 
           final controller = StreamController<Set<String>>.broadcast();
-          orchestrator..start(controller.stream);
+          orchestrator.start(controller.stream);
           emitAndDrain(async, controller, {'entity-1'});
 
           // Deferred drain fires after throttleWindow, consuming the job
@@ -136,7 +136,7 @@ void main() {
             );
 
           final controller = StreamController<Set<String>>.broadcast();
-          orchestrator..start(controller.stream);
+          orchestrator.start(controller.stream);
 
           // entity-1 should no longer match (replaced).
           emitTokens(async, controller, {'entity-1'});
@@ -2883,6 +2883,7 @@ void main() {
             )
             ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
 
+          // ignore: cascade_invocations
           orchestrator.start(controller.stream);
 
           // First wake: triggers execution and then persists throttle deadline.
@@ -2920,6 +2921,7 @@ void main() {
             )
             ..wakeExecutor = (agentId, runKey, tokens, threadId) async => null;
 
+          // ignore: cascade_invocations
           orchestrator.start(controller.stream);
 
           // Execute once to set a throttle deadline, then clear it.

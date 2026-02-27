@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -1581,6 +1583,76 @@ void main() {
             response: any(
               named: 'response',
               that: contains('non-empty string'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('assign_task_labels with non-array labels returns error', () async {
+        final result = await executeWithToolCallOnRealTask(
+          'assign_task_labels',
+          '{"labels":"not-an-array"}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('"labels" must be an array'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('assign_task_labels assigns valid labels and reports mutation',
+          () async {
+        await getIt.reset();
+        addTearDown(getIt.reset);
+        getIt
+          ..registerSingleton<LoggingService>(MockLoggingService())
+          ..registerSingleton<LabelAssignmentRateLimiter>(
+            LabelAssignmentRateLimiter(),
+          );
+
+        when(() => mockJournalDb.getLabelDefinitionById('label-1')).thenAnswer(
+          (_) async => LabelDefinition(
+            id: 'label-1',
+            createdAt: DateTime(2024, 3),
+            updatedAt: DateTime(2024, 3),
+            name: 'Urgent',
+            color: '#FF0000',
+            vectorClock: null,
+          ),
+        );
+        when(
+          () => mockLabelsRepository.addLabels(
+            journalEntityId: taskId,
+            addedLabelIds: ['label-1'],
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await executeWithToolCallOnRealTask(
+          'assign_task_labels',
+          '{"labels":[{"id":"label-1","confidence":"high"}]}',
+        );
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockLabelsRepository.addLabels(
+            journalEntityId: taskId,
+            addedLabelIds: ['label-1'],
+          ),
+        ).called(1);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('"assigned":["label-1"]'),
+                contains('Assigned 1 label(s)'),
+              ),
             ),
           ),
         ).called(1);
