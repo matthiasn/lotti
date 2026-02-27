@@ -16,7 +16,6 @@ import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -26,6 +25,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../test_helper.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 class _TestEntryController extends EntryController {
@@ -53,55 +53,37 @@ class _NullEntryController extends EntryController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockEntitiesCacheService mockEntitiesCacheService;
+  late TestGetItMocks mocks;
 
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeTaskData());
+  });
 
-    final mockPersistenceLogic = MockPersistenceLogic();
-    final mockEditorStateService = MockEditorStateService();
-    final mockJournalDb = MockJournalDb();
-    final mockUpdateNotifications = MockUpdateNotifications();
+  setUp(() async {
+    mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<TimeService>(TimeService());
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
-    when(() => mockUpdateNotifications.localUpdateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
-    when(() => mockJournalDb.journalEntityById(any()))
-        .thenAnswer((_) async => null);
-    when(() => mockJournalDb.getLinkedEntities(any()))
+        final mockEntitiesCacheService = MockEntitiesCacheService();
+        when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
+        when(() => mockEntitiesCacheService.sortedLabels).thenReturn([]);
+        when(() => mockEntitiesCacheService.getLabelById(any()))
+            .thenReturn(null);
+        getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      },
+    );
+
+    when(() => mocks.journalDb.getLinkedEntities(any()))
         .thenAnswer((_) async => <JournalEntity>[]);
-    when(mockJournalDb.watchConfigFlags)
+    when(mocks.journalDb.watchConfigFlags)
         .thenAnswer((_) => const Stream<Set<ConfigFlag>>.empty());
-
-    getIt
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<TimeService>(TimeService());
   });
 
-  setUp(() {
-    mockEntitiesCacheService = MockEntitiesCacheService();
-    when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-    when(() => mockEntitiesCacheService.sortedLabels).thenReturn([]);
-    when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-    if (!getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
-    }
-  });
-
-  tearDown(() {
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-  });
-
-  tearDownAll(() async {
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   Widget buildSubject({
     required Task task,

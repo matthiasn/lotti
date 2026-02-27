@@ -358,7 +358,10 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
 
       if (nextHeadingMatch != null) {
         return content
-            .substring(0, headingMatch.end + nextHeadingMatch.start)
+            .substring(
+              headingMatch.start,
+              headingMatch.end + nextHeadingMatch.start,
+            )
             .trim();
       }
       // TLDR is the only section — return just the TLDR portion

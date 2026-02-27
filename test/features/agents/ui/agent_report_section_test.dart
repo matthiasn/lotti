@@ -74,16 +74,17 @@ void main() {
 
     testWidgets('renders full content without expand button for simple report',
         (tester) async {
-      const markdown = '# Simple Report\n\nJust one paragraph.';
+      const markdown = 'Just a single paragraph with no line breaks.';
       await tester.pumpWidget(buildSubject(markdown));
       await tester.pump();
 
-      // No expand button since there is no additional content
-      // (fallback: first paragraph only, second paragraph is "additional")
       final gptMarkdowns = tester.widgetList<GptMarkdown>(
         find.byType(GptMarkdown),
       );
       expect(gptMarkdowns, isNotEmpty);
+
+      // No expand button since there is no additional content
+      expect(find.byIcon(Icons.expand_more), findsNothing);
     });
 
     testWidgets('fallback parsing uses first paragraph as TLDR',
