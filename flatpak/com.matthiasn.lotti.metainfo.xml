@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.874" date="2026-02-27">
+      <description>
+          <p>Evolution chat: multi-turn GenUI conversation for reviewing agent template performance and approving rewritten directives. Evolution dashboard with mini charts (success rate, wake history, version performance, MTTR trend). MTTR now measures true task resolution time. Labels in agent reports. Fix assign_task_labels crash and countdown timer digit jitter.</p>
+      </description>
+    </release>
     <release version="0.9.873" date="2026-02-27">
       <description>
           <p>Agent tools for task language, status, and label assignment. Correction examples and label context injection into agent prompts. Defer-first 120s throttle for bursty edit coalescing. Standardized report structure. ASR re-trigger for parent task notification.</p>

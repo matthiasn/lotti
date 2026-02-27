@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.874] - 2026-02-27
+### Added
+- Evolution chat: multi-turn GenUI conversation for reviewing agent template
+  performance, providing structured feedback, and approving LLM-rewritten
+  directives.
+- Evolution dashboard with 2x2 mini chart grid: success rate sparkline, wake
+  history bar chart, version performance comparison, and MTTR trend.
+- MTTR chart now measures true task resolution time (agent creation to task
+  DONE/REJECTED) instead of individual wake run execution duration.
+- GenUI catalog integration for evolution workflow: proposal cards with
+  approve/reject actions, note confirmation cards with expand/collapse, and
+  version comparison diffs.
+- Labels included in agent task summary reports.
+
+### Fixed
+- `assign_task_labels` tool crash due to `LabelsRepository` not being available
+  outside Riverpod context.
+- Countdown timer digit "breathing" fixed with tabular figures font feature.
+
 ## [0.9.873] - 2026-02-27
 ### Added
 - Agent tools: `set_task_language`, `set_task_status`, and `assign_task_labels`

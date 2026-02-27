@@ -150,6 +150,95 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Tip de entitate neașteptat.';
 
   @override
+  String get agentEvolutionChartMttrTrend => 'Tendință MTTR';
+
+  @override
+  String get agentEvolutionChartSuccessRateTrend => 'Rata de succes';
+
+  @override
+  String get agentEvolutionChartVersionPerformance => 'Pe versiune';
+
+  @override
+  String get agentEvolutionChartWakeHistory => 'Istoric wake-uri';
+
+  @override
+  String get agentEvolutionChatPlaceholder =>
+      'Împărtășiți feedback sau întrebați despre performanță...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Directive curente';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Performanță';
+
+  @override
+  String get agentEvolutionMetricActive => 'Active';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Durată medie';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Eșecuri';
+
+  @override
+  String get agentEvolutionMetricNotAvailable => 'N/D';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Succes';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Activări';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Timp mediu de rezolvare';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Notă înregistrată';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justificare';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Propunere respinsă — continuați conversația';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Modificări propuse';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Directive propuse';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Adecvat';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Excelent';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Necesită îmbunătățiri';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'Cât de bine funcționează acest șablon?';
+
+  @override
+  String get agentEvolutionSessionAbandoned =>
+      'Sesiune încheiată fără modificări';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Sesiune finalizată — versiunea $version creată';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'Sesiunea de evoluție nu a putut fi pornită';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Se pornește sesiunea de evoluție...';
+
+  @override
   String get agentLifecycleActive => 'Activ';
 
   @override
@@ -304,54 +393,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateEvolveApprove => 'Aprobă și salvează';
 
   @override
-  String get agentTemplateEvolveButton => 'Evoluează șablonul';
-
-  @override
-  String get agentTemplateEvolveCurrentLabel => 'Directivele actuale';
-
-  @override
-  String get agentTemplateEvolveError =>
-      'Nu s-a putut genera propunerea de evoluție';
-
-  @override
-  String get agentTemplateEvolvePreviewTitle => 'Modificări propuse';
-
-  @override
-  String get agentTemplateEvolveProposedLabel => 'Directivele propuse';
-
-  @override
   String get agentTemplateEvolveReject => 'Respinge';
-
-  @override
-  String get agentTemplateEvolveSuccess => 'Șablonul a fost evoluat cu succes';
-
-  @override
-  String get agentTemplateEvolvingProgress =>
-      'Se generează directive îmbunătățite...';
-
-  @override
-  String get agentTemplateFeedbackChangesHint =>
-      'Descrie ce ai dori să schimbi...';
-
-  @override
-  String get agentTemplateFeedbackChangesLabel => 'Modificări specifice';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkHint =>
-      'Descrie problemele sau deficiențele...';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkLabel => 'Ce nu a funcționat';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedHint =>
-      'Descrie ce face bine agentul...';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedLabel => 'Ce a funcționat bine';
-
-  @override
-  String get agentTemplateFeedbackTitle => 'Feedback';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -373,27 +415,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateMetricsActiveInstances => 'Instanțe active';
 
   @override
-  String get agentTemplateMetricsAvgDuration => 'Durata medie';
-
-  @override
-  String agentTemplateMetricsDurationSeconds(int count) {
-    return '$count s';
-  }
-
-  @override
-  String get agentTemplateMetricsFailureCount => 'Eșecuri';
-
-  @override
-  String get agentTemplateMetricsFirstWake => 'Prima activare';
-
-  @override
-  String get agentTemplateMetricsLastWake => 'Ultima activare';
-
-  @override
   String get agentTemplateMetricsSuccessRate => 'Rata de succes';
-
-  @override
-  String get agentTemplateMetricsTitle => 'Indicatori de performanță';
 
   @override
   String get agentTemplateMetricsTotalWakes => 'Total activări';
@@ -423,11 +445,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Nicio versiune';
-
-  @override
-  String agentTemplateOneOnOneTitle(String templateName) {
-    return '1-la-1 cu $templateName';
-  }
 
   @override
   String get agentTemplateRollbackAction => 'Revino la această versiune';

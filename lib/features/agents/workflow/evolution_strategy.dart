@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -36,6 +37,11 @@ class PendingNote {
 /// After each LLM turn, the strategy returns [ConversationAction.wait] to
 /// hand control back to the user for the next message.
 class EvolutionStrategy extends ConversationStrategy {
+  EvolutionStrategy({this.genUiBridge});
+
+  /// Optional GenUI bridge for handling `render_surface` tool calls.
+  final GenUiBridge? genUiBridge;
+
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
 
@@ -67,6 +73,23 @@ class EvolutionStrategy extends ConversationStrategy {
     for (final call in toolCalls) {
       final name = call.function.name;
       final args = _parseArgs(call.function.arguments);
+
+      // Delegate GenUI tool calls to the bridge if available.
+      if (genUiBridge != null && genUiBridge!.isGenUiTool(name)) {
+        try {
+          final surfaceId = genUiBridge!.handleToolCall(args);
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Surface "$surfaceId" rendered successfully.',
+          );
+        } catch (e) {
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: 'Error rendering surface: $e',
+          );
+        }
+        continue;
+      }
 
       switch (name) {
         case 'propose_directives':
@@ -116,6 +139,24 @@ class EvolutionStrategy extends ConversationStrategy {
       directives: directives,
       rationale: rationale,
     );
+
+    // Automatically render a GenUI proposal surface so the user always has
+    // approve/reject buttons, even if the model doesn't call render_surface.
+    final bridge = genUiBridge;
+    if (bridge != null) {
+      try {
+        bridge.handleToolCall({
+          'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
+          'rootType': 'EvolutionProposal',
+          'data': {
+            'directives': directives,
+            'rationale': rationale,
+          },
+        });
+      } catch (_) {
+        // Best-effort rendering: proposal is recorded regardless.
+      }
+    }
 
     manager.addToolResponse(
       toolCallId: callId,

@@ -1,9 +1,12 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/genui_bridge.dart';
+import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -19,35 +22,6 @@ import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
-/// Structured feedback from the user about a template's performance.
-class EvolutionFeedback {
-  const EvolutionFeedback({
-    this.enjoyed = '',
-    this.didntWork = '',
-    this.specificChanges = '',
-  });
-
-  final String enjoyed;
-  final String didntWork;
-  final String specificChanges;
-
-  bool get isEmpty =>
-      enjoyed.trim().isEmpty &&
-      didntWork.trim().isEmpty &&
-      specificChanges.trim().isEmpty;
-}
-
-/// A proposal for updated directives, ready for user approval.
-class EvolutionProposal {
-  const EvolutionProposal({
-    required this.proposedDirectives,
-    required this.originalDirectives,
-  });
-
-  final String proposedDirectives;
-  final String originalDirectives;
-}
-
 /// Tracks in-memory state for an active evolution session.
 class ActiveEvolutionSession {
   ActiveEvolutionSession({
@@ -56,6 +30,9 @@ class ActiveEvolutionSession {
     required this.conversationId,
     required this.strategy,
     required this.modelId,
+    this.processor,
+    this.genUiBridge,
+    this.eventHandler,
   });
 
   final String sessionId;
@@ -63,6 +40,15 @@ class ActiveEvolutionSession {
   final String conversationId;
   final EvolutionStrategy strategy;
   final String modelId;
+
+  /// GenUI message processor for rendering dynamic surfaces.
+  final A2uiMessageProcessor? processor;
+
+  /// Bridge between OpenAI tool calls and GenUI surface creation.
+  final GenUiBridge? genUiBridge;
+
+  /// Routes GenUI surface events to evolution chat logic.
+  final GenUiEventHandler? eventHandler;
 
   /// Cached version from a previous approval attempt, keyed by the directives
   /// text. Reused on retry only if the proposal hasn't changed.
@@ -92,11 +78,9 @@ class ActiveEvolutionSession {
 /// Workflow that uses an LLM to propose improved template directives based on
 /// performance metrics and user feedback.
 ///
-/// Supports two modes:
-/// - **Legacy single-turn**: [proposeEvolution] creates a one-shot conversation.
-/// - **Multi-turn session**: [startSession] / [sendMessage] / [approveProposal]
-///   enable a 1-on-1 dialogue with the evolution agent, with tool-based
-///   proposals and notes.
+/// Uses multi-turn sessions: [startSession] / [sendMessage] / [approveProposal]
+/// enable a 1-on-1 dialogue with the evolution agent, with tool-based
+/// proposals and notes.
 class TemplateEvolutionWorkflow {
   TemplateEvolutionWorkflow({
     required this.conversationRepository,
@@ -112,7 +96,7 @@ class TemplateEvolutionWorkflow {
   final AiConfigRepository aiConfigRepository;
   final CloudInferenceRepository cloudInferenceRepository;
 
-  /// Required for multi-turn sessions. Optional to preserve backwards compat.
+  /// Required for multi-turn sessions.
   final AgentTemplateService? templateService;
   final AgentSyncService? syncService;
   final EvolutionContextBuilder? contextBuilder;
@@ -126,162 +110,6 @@ class TemplateEvolutionWorkflow {
   /// Active sessions keyed by session entity ID.
   @visibleForTesting
   final activeSessions = <String, ActiveEvolutionSession>{};
-
-  /// Propose evolved directives for a template.
-  ///
-  /// Creates a single-turn conversation with a meta-prompt instructing the LLM
-  /// to rewrite the template's directives based on metrics and feedback.
-  ///
-  /// Returns `null` if the provider cannot be resolved or the LLM fails.
-  Future<EvolutionProposal?> proposeEvolution({
-    required AgentTemplateEntity template,
-    required AgentTemplateVersionEntity currentVersion,
-    required TemplatePerformanceMetrics metrics,
-    required EvolutionFeedback feedback,
-  }) async {
-    final provider = await resolveInferenceProvider(
-      modelId: template.modelId,
-      aiConfigRepository: aiConfigRepository,
-      logTag: 'TemplateEvolutionWorkflow',
-    );
-    if (provider == null) {
-      developer.log(
-        'Cannot resolve provider for model ${template.modelId}',
-        name: 'TemplateEvolutionWorkflow',
-      );
-      return null;
-    }
-
-    final systemPrompt = _buildMetaPrompt();
-    final userMessage = _buildUserMessage(
-      template: template,
-      currentVersion: currentVersion,
-      metrics: metrics,
-      feedback: feedback,
-    );
-
-    String? conversationId;
-    try {
-      conversationId = conversationRepository.createConversation(
-        systemMessage: systemPrompt,
-        maxTurns: 1,
-      );
-
-      final inferenceRepo = CloudInferenceWrapper(
-        cloudRepository: cloudInferenceRepository,
-      );
-
-      await conversationRepository.sendMessage(
-        conversationId: conversationId,
-        message: userMessage,
-        model: template.modelId,
-        provider: provider,
-        inferenceRepo: inferenceRepo,
-      );
-
-      final manager = conversationRepository.getConversation(conversationId);
-      if (manager == null) return null;
-
-      // Extract the last assistant content.
-      String? proposedDirectives;
-      for (final message in manager.messages.reversed) {
-        if (message
-            case ChatCompletionAssistantMessage(content: final content?)) {
-          if (content.isNotEmpty) {
-            proposedDirectives = content;
-            break;
-          }
-        }
-      }
-
-      if (proposedDirectives == null || proposedDirectives.isEmpty) {
-        return null;
-      }
-
-      // Strip markdown fences if the LLM wrapped the output.
-      proposedDirectives = stripMarkdownFences(proposedDirectives).trim();
-      if (proposedDirectives.isEmpty) return null;
-
-      return EvolutionProposal(
-        proposedDirectives: proposedDirectives,
-        originalDirectives: currentVersion.directives,
-      );
-    } catch (e, s) {
-      developer.log(
-        'Evolution proposal failed',
-        name: 'TemplateEvolutionWorkflow',
-        error: e,
-        stackTrace: s,
-      );
-      return null;
-    } finally {
-      if (conversationId != null) {
-        conversationRepository.deleteConversation(conversationId);
-      }
-    }
-  }
-
-  String _buildMetaPrompt() {
-    return '''
-You are a prompt engineering specialist. Your task is to rewrite 
-agent template directives based on performance data and user feedback.
-
-RULES:
-- Output ONLY the rewritten directives text. No explanations, no preamble.
-- Preserve the agent's core identity and purpose.
-- Incorporate user feedback to improve weak areas.
-- Keep the same general length and structure unless changes are needed.
-- Use clear, actionable language.
-- Do not wrap your output in markdown code fences.''';
-  }
-
-  String _buildUserMessage({
-    required AgentTemplateEntity template,
-    required AgentTemplateVersionEntity currentVersion,
-    required TemplatePerformanceMetrics metrics,
-    required EvolutionFeedback feedback,
-  }) {
-    final buffer = StringBuffer()
-      ..writeln('## Template: ${template.displayName}')
-      ..writeln()
-      ..writeln('### Current Directives')
-      ..writeln(currentVersion.directives)
-      ..writeln()
-      ..writeln('### Performance Metrics')
-      ..writeln('- Total wakes: ${metrics.totalWakes}')
-      ..writeln(
-        '- Success rate: ${(metrics.successRate * 100).toStringAsFixed(1)}%',
-      )
-      ..writeln('- Failures: ${metrics.failureCount}')
-      ..writeln(
-        '- Average duration: '
-        '${metrics.averageDuration == null ? "N/A" : "${metrics.averageDuration!.inSeconds}s"}',
-      )
-      ..writeln('- Active instances: ${metrics.activeInstanceCount}')
-      ..writeln()
-      ..writeln('### User Feedback');
-
-    if (feedback.enjoyed.trim().isNotEmpty) {
-      buffer.writeln('**What worked well:** ${feedback.enjoyed}');
-    }
-    if (feedback.didntWork.trim().isNotEmpty) {
-      buffer.writeln("**What didn't work:** ${feedback.didntWork}");
-    }
-    if (feedback.specificChanges.trim().isNotEmpty) {
-      buffer.writeln('**Requested changes:** ${feedback.specificChanges}');
-    }
-
-    buffer
-      ..writeln()
-      ..writeln(
-        'Rewrite the directives above, incorporating the feedback and '
-        'optimizing for better performance. Output ONLY the new directives.',
-      );
-
-    return buffer.toString();
-  }
-
-  // ── Multi-turn session API ─────────────────────────────────────────────────
 
   /// Start a new multi-turn evolution session for [templateId].
   ///
@@ -407,7 +235,13 @@ RULES:
       ) as EvolutionSessionEntity;
       await sync.upsertEntity(session);
 
-      final strategy = EvolutionStrategy();
+      // Set up GenUI infrastructure.
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final bridge = GenUiBridge(processor: processor);
+      final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+      final strategy = EvolutionStrategy(genUiBridge: bridge);
       final conversationId = conversationRepository.createConversation(
         systemMessage: ctx.systemPrompt,
       );
@@ -418,6 +252,9 @@ RULES:
         conversationId: conversationId,
         strategy: strategy,
         modelId: template.modelId,
+        processor: processor,
+        genUiBridge: bridge,
+        eventHandler: eventHandler,
       );
 
       await conversationRepository.sendMessage(
@@ -428,7 +265,7 @@ RULES:
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
         ),
-        tools: _buildToolDefinitions(),
+        tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
       );
 
@@ -477,7 +314,7 @@ RULES:
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
         ),
-        tools: _buildToolDefinitions(),
+        tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,
       );
 
@@ -651,6 +488,10 @@ RULES:
     }
   }
 
+  /// Get the active session by session ID.
+  ActiveEvolutionSession? getSession(String sessionId) =>
+      activeSessions[sessionId];
+
   /// Get the active session for a template, if any.
   ActiveEvolutionSession? getActiveSessionForTemplate(String templateId) {
     for (final session in activeSessions.values) {
@@ -745,6 +586,8 @@ RULES:
   void _cleanupSession(String sessionId) {
     final active = activeSessions.remove(sessionId);
     if (active != null) {
+      active.eventHandler?.dispose();
+      active.processor?.dispose();
       conversationRepository.deleteConversation(active.conversationId);
     }
   }
@@ -756,9 +599,9 @@ RULES:
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return AgentToolRegistry.evolutionAgentTools.map((def) {
+  /// [ChatCompletionTool] objects, including the GenUI render_surface tool.
+  List<ChatCompletionTool> _buildToolDefinitions({GenUiBridge? bridge}) {
+    final tools = AgentToolRegistry.evolutionAgentTools.map((def) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(
@@ -768,25 +611,11 @@ RULES:
         ),
       );
     }).toList();
-  }
 
-  // ── Legacy single-turn helpers ──────────────────────────────────────────────
-
-  /// Strips leading/trailing markdown code fences (``` or ```text) from the
-  /// LLM output if present.
-  @visibleForTesting
-  static String stripMarkdownFences(String text) {
-    var trimmed = text.trim();
-    // Match opening fence: ```<optional language>
-    final openPattern = RegExp(r'^```\w*\s*\n?');
-    final closePattern = RegExp(r'\n?```\s*$');
-
-    if (openPattern.hasMatch(trimmed) && closePattern.hasMatch(trimmed)) {
-      trimmed = trimmed
-          .replaceFirst(openPattern, '')
-          .replaceFirst(closePattern, '')
-          .trim();
+    if (bridge != null) {
+      tools.add(bridge.toolDefinition);
     }
-    return trimmed;
+
+    return tools;
   }
 }

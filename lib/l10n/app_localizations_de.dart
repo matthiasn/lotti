@@ -152,6 +152,95 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Unerwarteter Entitätstyp.';
 
   @override
+  String get agentEvolutionChartMttrTrend => 'MTTR-Trend';
+
+  @override
+  String get agentEvolutionChartSuccessRateTrend => 'Erfolgstrend';
+
+  @override
+  String get agentEvolutionChartVersionPerformance => 'Nach Version';
+
+  @override
+  String get agentEvolutionChartWakeHistory => 'Wake-Verlauf';
+
+  @override
+  String get agentEvolutionChatPlaceholder =>
+      'Feedback teilen oder nach Leistung fragen...';
+
+  @override
+  String get agentEvolutionCurrentDirectives => 'Aktuelle Anweisungen';
+
+  @override
+  String get agentEvolutionDashboardTitle => 'Leistung';
+
+  @override
+  String get agentEvolutionMetricActive => 'Aktiv';
+
+  @override
+  String get agentEvolutionMetricAvgDuration => 'Durchschn. Dauer';
+
+  @override
+  String get agentEvolutionMetricFailures => 'Fehler';
+
+  @override
+  String get agentEvolutionMetricNotAvailable => 'k. A.';
+
+  @override
+  String get agentEvolutionMetricSuccess => 'Erfolg';
+
+  @override
+  String get agentEvolutionMetricWakes => 'Aufrufe';
+
+  @override
+  String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
+
+  @override
+  String get agentEvolutionNoteRecorded => 'Notiz aufgezeichnet';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Begründung';
+
+  @override
+  String get agentEvolutionProposalRejected =>
+      'Vorschlag abgelehnt — Gespräch fortsetzen';
+
+  @override
+  String get agentEvolutionProposalTitle => 'Vorgeschlagene Änderungen';
+
+  @override
+  String get agentEvolutionProposedDirectives => 'Vorgeschlagene Anweisungen';
+
+  @override
+  String get agentEvolutionRatingAdequate => 'Ausreichend';
+
+  @override
+  String get agentEvolutionRatingExcellent => 'Ausgezeichnet';
+
+  @override
+  String get agentEvolutionRatingNeedsWork => 'Verbesserungsbedarf';
+
+  @override
+  String get agentEvolutionRatingPrompt =>
+      'Wie gut funktioniert dieses Template?';
+
+  @override
+  String get agentEvolutionSessionAbandoned =>
+      'Sitzung ohne Änderungen beendet';
+
+  @override
+  String agentEvolutionSessionCompleted(int version) {
+    return 'Sitzung abgeschlossen — Version $version erstellt';
+  }
+
+  @override
+  String get agentEvolutionSessionError =>
+      'Evolution-Sitzung konnte nicht gestartet werden';
+
+  @override
+  String get agentEvolutionSessionStarting =>
+      'Evolution-Sitzung wird gestartet...';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -305,56 +394,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateEvolveApprove => 'Genehmigen & Speichern';
 
   @override
-  String get agentTemplateEvolveButton => 'Vorlage weiterentwickeln';
-
-  @override
-  String get agentTemplateEvolveCurrentLabel => 'Aktuelle Anweisungen';
-
-  @override
-  String get agentTemplateEvolveError =>
-      'Vorschlag konnte nicht generiert werden';
-
-  @override
-  String get agentTemplateEvolvePreviewTitle => 'Vorgeschlagene Änderungen';
-
-  @override
-  String get agentTemplateEvolveProposedLabel => 'Vorgeschlagene Anweisungen';
-
-  @override
   String get agentTemplateEvolveReject => 'Ablehnen';
-
-  @override
-  String get agentTemplateEvolveSuccess =>
-      'Vorlage erfolgreich weiterentwickelt';
-
-  @override
-  String get agentTemplateEvolvingProgress =>
-      'Verbesserte Anweisungen werden generiert...';
-
-  @override
-  String get agentTemplateFeedbackChangesHint =>
-      'Beschreibe, was du ändern möchtest...';
-
-  @override
-  String get agentTemplateFeedbackChangesLabel => 'Konkrete Änderungen';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkHint =>
-      'Beschreibe Probleme oder Schwächen...';
-
-  @override
-  String get agentTemplateFeedbackDidntWorkLabel =>
-      'Was nicht funktioniert hat';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedHint =>
-      'Beschreibe, was der Agent gut macht...';
-
-  @override
-  String get agentTemplateFeedbackEnjoyedLabel => 'Was gut funktioniert hat';
-
-  @override
-  String get agentTemplateFeedbackTitle => 'Rückmeldung';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -375,27 +415,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateMetricsActiveInstances => 'Aktive Instanzen';
 
   @override
-  String get agentTemplateMetricsAvgDuration => 'Durchschn. Dauer';
-
-  @override
-  String agentTemplateMetricsDurationSeconds(int count) {
-    return '$count s';
-  }
-
-  @override
-  String get agentTemplateMetricsFailureCount => 'Fehler';
-
-  @override
-  String get agentTemplateMetricsFirstWake => 'Erste Aktivierung';
-
-  @override
-  String get agentTemplateMetricsLastWake => 'Letzte Aktivierung';
-
-  @override
   String get agentTemplateMetricsSuccessRate => 'Erfolgsrate';
-
-  @override
-  String get agentTemplateMetricsTitle => 'Leistungskennzahlen';
 
   @override
   String get agentTemplateMetricsTotalWakes => 'Aktivierungen gesamt';
@@ -426,11 +446,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTemplateNoVersions => 'Keine Versionen';
-
-  @override
-  String agentTemplateOneOnOneTitle(String templateName) {
-    return '1-zu-1 mit $templateName';
-  }
 
   @override
   String get agentTemplateRollbackAction => 'Auf diese Version zurücksetzen';

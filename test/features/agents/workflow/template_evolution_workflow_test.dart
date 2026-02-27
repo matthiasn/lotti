@@ -129,263 +129,6 @@ void main() {
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
   }
 
-  group('EvolutionFeedback', () {
-    test('isEmpty returns true when all fields are blank', () {
-      const feedback = EvolutionFeedback();
-      expect(feedback.isEmpty, isTrue);
-    });
-
-    test('isEmpty returns false when any field has content', () {
-      const feedback = EvolutionFeedback(enjoyed: 'great reports');
-      expect(feedback.isEmpty, isFalse);
-    });
-
-    test('isEmpty trims whitespace', () {
-      const feedback = EvolutionFeedback(enjoyed: '   ');
-      expect(feedback.isEmpty, isTrue);
-    });
-  });
-
-  group('proposeEvolution', () {
-    test('returns proposal when provider resolves and LLM responds', () async {
-      final convRepo = _TestConversationRepository(
-        assistantResponse: 'You are an improved agent.',
-      );
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final version = makeTestTemplateVersion();
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: version,
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(
-          enjoyed: 'Clear reports',
-          didntWork: 'Too verbose',
-          specificChanges: 'Be more concise',
-        ),
-      );
-
-      expect(proposal, isNotNull);
-      expect(proposal!.proposedDirectives, 'You are an improved agent.');
-      expect(proposal.originalDirectives, version.directives);
-      expect(convRepo.deletedIds, contains('test-conv-id'));
-    });
-
-    test('strips markdown fences from LLM response', () async {
-      final convRepo = _TestConversationRepository(
-        assistantResponse: '```\nYou are a better agent.\n```',
-      );
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNotNull);
-      expect(proposal!.proposedDirectives, 'You are a better agent.');
-    });
-
-    test('returns null when model is not configured', () async {
-      final convRepo = _TestConversationRepository();
-
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-    });
-
-    test('returns null when provider has no API key', () async {
-      final convRepo = _TestConversationRepository();
-      stubProviderResolution(apiKey: '');
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-    });
-
-    test('cleans up conversation even when response is null', () async {
-      final convRepo = _TestConversationRepository();
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-      expect(convRepo.deletedIds, contains('test-conv-id'));
-    });
-
-    test('returns null when provider is not an inference provider type',
-        () async {
-      final convRepo = _TestConversationRepository();
-
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [testAiModel()]);
-      // Return a model config instead of an inference provider.
-      when(() => mockAiConfig.getConfigById('provider-1'))
-          .thenAnswer((_) async => testAiModel());
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-    });
-
-    test('returns null when sendMessage throws', () async {
-      final convRepo = _TestConversationRepository()
-        ..sendMessageDelegate = () async {
-          throw Exception('LLM failure');
-        };
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-      // Conversation should still be cleaned up in finally block.
-      expect(convRepo.deletedIds, contains('test-conv-id'));
-    });
-
-    test('returns null when LLM returns empty string', () async {
-      final convRepo = _TestConversationRepository(assistantResponse: '');
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(enjoyed: 'good'),
-      );
-
-      expect(proposal, isNull);
-    });
-
-    test('builds user message with partial feedback fields', () async {
-      final convRepo = _TestConversationRepository(
-        assistantResponse: 'Improved directives.',
-      );
-      stubProviderResolution();
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: convRepo,
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-      );
-
-      // Only didntWork is populated.
-      final proposal = await workflow.proposeEvolution(
-        template: makeTestTemplate(),
-        currentVersion: makeTestTemplateVersion(),
-        metrics: makeTestMetrics(),
-        feedback: const EvolutionFeedback(didntWork: 'Too slow'),
-      );
-
-      expect(proposal, isNotNull);
-      expect(proposal!.proposedDirectives, 'Improved directives.');
-    });
-  });
-
-  group('stripMarkdownFences', () {
-    test('strips triple backtick fences', () {
-      expect(
-        TemplateEvolutionWorkflow.stripMarkdownFences('```\nHello\n```'),
-        'Hello',
-      );
-    });
-
-    test('strips fences with language tag', () {
-      expect(
-        TemplateEvolutionWorkflow.stripMarkdownFences(
-          '```text\nHello world\n```',
-        ),
-        'Hello world',
-      );
-    });
-
-    test('leaves unfenced text unchanged', () {
-      expect(
-        TemplateEvolutionWorkflow.stripMarkdownFences('Just plain text'),
-        'Just plain text',
-      );
-    });
-  });
-
-  // ── Multi-turn session tests ──────────────────────────────────────────────
-
   group('startSession', () {
     late MockAgentTemplateService mockTemplateService;
     late MockAgentSyncService mockSyncService;
@@ -538,6 +281,21 @@ void main() {
       expect(response, isNull);
       expect(workflow.activeSessions, isEmpty);
       expect(convRepo.deletedIds, isNotEmpty);
+    });
+
+    test('returns null when opening assistant content is missing', () async {
+      stubFullContext();
+      final convRepo = _TestConversationRepository();
+      final workflow = buildSessionWorkflow(convRepo: convRepo);
+
+      final response = await workflow.startSession(
+        templateId: kTestTemplateId,
+      );
+
+      expect(response, isNull);
+      // Session has been created but no assistant content could be extracted.
+      expect(workflow.activeSessions, hasLength(1));
+      expect(convRepo.deletedIds, isEmpty);
     });
   });
 

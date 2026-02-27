@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -299,6 +302,163 @@ void main() {
       expect(action, ConversationAction.wait);
       expect(strategy.latestProposal, isNotNull);
       expect(strategy.pendingNotes, hasLength(1));
+    });
+  });
+
+  group('auto-surface on propose_directives', () {
+    late GenUiBridge bridge;
+    late EvolutionStrategy strategyWithBridge;
+    late ConversationManager bridgeManager;
+
+    setUp(() {
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      bridge = GenUiBridge(processor: processor);
+      strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
+      bridgeManager = ConversationManager(conversationId: 'test-auto')
+        ..initialize(systemMessage: 'You are an evolution agent.');
+    });
+
+    test('propose_directives automatically creates a GenUI surface', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'directives': 'Be concise and helpful.',
+          'rationale': 'User feedback suggested brevity.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestProposal, isNotNull);
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(1));
+      expect(surfaceIds.first, startsWith('proposal-'));
+    });
+
+    test('propose_directives with empty directives does not create surface',
+        () async {
+      final toolCall = makeToolCall(
+        name: 'propose_directives',
+        args: {'directives': '  ', 'rationale': 'Whatever'},
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestProposal, isNull);
+      expect(bridge.drainPendingSurfaceIds(), isEmpty);
+    });
+  });
+
+  group('GenUI bridge delegation', () {
+    late GenUiBridge bridge;
+    late EvolutionStrategy strategyWithBridge;
+    late ConversationManager bridgeManager;
+
+    setUp(() {
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      bridge = GenUiBridge(processor: processor);
+      strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
+      bridgeManager = ConversationManager(conversationId: 'test-bridge')
+        ..initialize(systemMessage: 'You are an evolution agent.');
+    });
+
+    test('delegates render_surface to GenUiBridge', () async {
+      final toolCall = makeToolCall(
+        name: 'render_surface',
+        args: {
+          'surfaceId': 'surf-1',
+          'rootType': 'MetricsSummary',
+          'data': {
+            'totalWakes': 5,
+            'successRate': 0.9,
+            'failureCount': 1,
+          },
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(bridge.drainPendingSurfaceIds(), ['surf-1']);
+      // Should not affect proposal or notes.
+      expect(strategyWithBridge.latestProposal, isNull);
+      expect(strategyWithBridge.pendingNotes, isEmpty);
+    });
+
+    test('processes render_surface alongside other tools', () async {
+      final surfaceCall = makeToolCall(
+        name: 'render_surface',
+        args: {
+          'surfaceId': 'surf-2',
+          'rootType': 'EvolutionNoteConfirmation',
+          'data': {'kind': 'reflection', 'content': 'Noted.'},
+        },
+      );
+      final proposalCall = makeToolCall(
+        id: 'call-2',
+        name: 'propose_directives',
+        args: {
+          'directives': 'Be concise.',
+          'rationale': 'Users prefer short answers.',
+        },
+      );
+      bridgeManager.addAssistantMessage(
+        toolCalls: [surfaceCall, proposalCall],
+      );
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [surfaceCall, proposalCall],
+        manager: bridgeManager,
+      );
+
+      // 2 surfaces: one explicit render_surface + one auto from
+      // propose_directives.
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(2));
+      expect(surfaceIds.first, 'surf-2');
+      expect(surfaceIds.last, startsWith('proposal-'));
+      expect(strategyWithBridge.latestProposal, isNotNull);
+      expect(
+        strategyWithBridge.latestProposal!.directives,
+        'Be concise.',
+      );
+    });
+
+    test('without bridge, render_surface falls through to unknown tool',
+        () async {
+      // Strategy without bridge.
+      final noBridgeStrategy = EvolutionStrategy();
+      final toolCall = makeToolCall(
+        name: 'render_surface',
+        args: {
+          'surfaceId': 'x',
+          'rootType': 'MetricsSummary',
+          'data': <String, dynamic>{},
+        },
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await noBridgeStrategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      // No crash, treated as unknown tool.
     });
   });
 

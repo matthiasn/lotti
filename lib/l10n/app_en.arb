@@ -76,6 +76,40 @@
   },
   "agentDetailNotFound": "Agent not found.",
   "agentDetailUnexpectedType": "Unexpected entity type.",
+  "agentEvolutionChartMttrTrend": "MTTR Trend",
+  "agentEvolutionChartSuccessRateTrend": "Success Trend",
+  "agentEvolutionChartVersionPerformance": "By Version",
+  "agentEvolutionChartWakeHistory": "Wake History",
+  "agentEvolutionChatPlaceholder": "Share feedback or ask about performance...",
+  "agentEvolutionCurrentDirectives": "Current Directives",
+  "agentEvolutionDashboardTitle": "Performance",
+  "agentEvolutionMetricActive": "Active",
+  "agentEvolutionMetricAvgDuration": "Avg Duration",
+  "agentEvolutionMetricFailures": "Failures",
+  "agentEvolutionMetricNotAvailable": "N/A",
+  "agentEvolutionMetricSuccess": "Success",
+  "agentEvolutionMetricWakes": "Wakes",
+  "agentEvolutionMttrLabel": "Mean Time to Resolution",
+  "agentEvolutionNoteRecorded": "Note Recorded",
+  "agentEvolutionProposalRationale": "Rationale",
+  "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
+  "agentEvolutionProposalTitle": "Proposed Changes",
+  "agentEvolutionProposedDirectives": "Proposed Directives",
+  "agentEvolutionRatingAdequate": "Adequate",
+  "agentEvolutionRatingExcellent": "Excellent",
+  "agentEvolutionRatingNeedsWork": "Needs work",
+  "agentEvolutionRatingPrompt": "How well is this template performing?",
+  "agentEvolutionSessionAbandoned": "Session ended without changes",
+  "agentEvolutionSessionCompleted": "Session completed — version {version} created",
+  "@agentEvolutionSessionCompleted": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionSessionError": "Failed to start evolution session",
+  "agentEvolutionSessionStarting": "Starting evolution session...",
   "agentLifecycleActive": "Active",
   "agentLifecycleCreated": "Created",
   "agentLifecycleDestroyed": "Destroyed",
@@ -186,65 +220,9 @@
   "@agentTemplateEvolveApprove": {
     "description": "Button to accept and save proposed directive changes."
   },
-  "agentTemplateEvolveButton": "Evolve Template",
-  "@agentTemplateEvolveButton": {
-    "description": "Button label to trigger template evolution."
-  },
-  "agentTemplateEvolveCurrentLabel": "Current Directives",
-  "@agentTemplateEvolveCurrentLabel": {
-    "description": "Label for the current directives shown during evolution preview."
-  },
-  "agentTemplateEvolveError": "Failed to generate evolution proposal",
-  "@agentTemplateEvolveError": {
-    "description": "Error message when AI evolution proposal generation fails."
-  },
-  "agentTemplateEvolvePreviewTitle": "Proposed Changes",
-  "@agentTemplateEvolvePreviewTitle": {
-    "description": "Title for the preview dialog showing proposed directive changes."
-  },
-  "agentTemplateEvolveProposedLabel": "Proposed Directives",
-  "@agentTemplateEvolveProposedLabel": {
-    "description": "Label for the AI-proposed directives shown during evolution preview."
-  },
   "agentTemplateEvolveReject": "Reject",
   "@agentTemplateEvolveReject": {
     "description": "Button to reject the proposed directive changes."
-  },
-  "agentTemplateEvolveSuccess": "Template evolved successfully",
-  "@agentTemplateEvolveSuccess": {
-    "description": "Snackbar message after successfully evolving a template."
-  },
-  "agentTemplateEvolvingProgress": "Generating improved directives...",
-  "@agentTemplateEvolvingProgress": {
-    "description": "Progress message shown while AI generates improved directives."
-  },
-  "agentTemplateFeedbackChangesHint": "Describe what you'd like changed...",
-  "@agentTemplateFeedbackChangesHint": {
-    "description": "Placeholder hint for the specific-changes feedback text field."
-  },
-  "agentTemplateFeedbackChangesLabel": "Specific changes",
-  "@agentTemplateFeedbackChangesLabel": {
-    "description": "Label for the feedback field where users describe desired changes."
-  },
-  "agentTemplateFeedbackDidntWorkHint": "Describe issues or shortcomings...",
-  "@agentTemplateFeedbackDidntWorkHint": {
-    "description": "Placeholder hint for the what-didn't-work feedback text field."
-  },
-  "agentTemplateFeedbackDidntWorkLabel": "What didn't work",
-  "@agentTemplateFeedbackDidntWorkLabel": {
-    "description": "Label for the feedback field where users describe issues."
-  },
-  "agentTemplateFeedbackEnjoyedHint": "Describe what the agent does well...",
-  "@agentTemplateFeedbackEnjoyedHint": {
-    "description": "Placeholder hint for the what-worked-well feedback text field."
-  },
-  "agentTemplateFeedbackEnjoyedLabel": "What worked well",
-  "@agentTemplateFeedbackEnjoyedLabel": {
-    "description": "Label for the feedback field where users describe positives."
-  },
-  "agentTemplateFeedbackTitle": "Feedback",
-  "@agentTemplateFeedbackTitle": {
-    "description": "Title for the template feedback section used during evolution."
   },
   "agentTemplateInstanceCount": "{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}",
   "@agentTemplateInstanceCount": {
@@ -262,38 +240,9 @@
   "@agentTemplateMetricsActiveInstances": {
     "description": "Metric label for the number of active agent instances."
   },
-  "agentTemplateMetricsAvgDuration": "Avg Duration",
-  "@agentTemplateMetricsAvgDuration": {
-    "description": "Metric label for the average wake duration."
-  },
-  "agentTemplateMetricsDurationSeconds": "{count}s",
-  "@agentTemplateMetricsDurationSeconds": {
-    "description": "Formatted duration in seconds shown in template performance metrics.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentTemplateMetricsFailureCount": "Failures",
-  "@agentTemplateMetricsFailureCount": {
-    "description": "Metric label for the total number of agent wake failures."
-  },
-  "agentTemplateMetricsFirstWake": "First Wake",
-  "@agentTemplateMetricsFirstWake": {
-    "description": "Metric label for the timestamp of the first agent wake."
-  },
-  "agentTemplateMetricsLastWake": "Last Wake",
-  "@agentTemplateMetricsLastWake": {
-    "description": "Metric label for the timestamp of the most recent agent wake."
-  },
   "agentTemplateMetricsSuccessRate": "Success Rate",
   "@agentTemplateMetricsSuccessRate": {
     "description": "Metric label for the percentage of successful agent wakes."
-  },
-  "agentTemplateMetricsTitle": "Performance Metrics",
-  "@agentTemplateMetricsTitle": {
-    "description": "Section title for the template performance metrics panel."
   },
   "agentTemplateMetricsTotalWakes": "Total Wakes",
   "@agentTemplateMetricsTotalWakes": {
@@ -330,14 +279,6 @@
   "agentTemplateNoVersions": "No versions",
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
-  },
-  "agentTemplateOneOnOneTitle": "1-on-1 with {templateName}",
-  "@agentTemplateOneOnOneTitle": {
-    "placeholders": {
-      "templateName": {
-        "type": "String"
-      }
-    }
   },
   "agentTemplateRollbackAction": "Roll Back to This Version",
   "@agentTemplateRollbackAction": {

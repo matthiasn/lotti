@@ -366,6 +366,168 @@ abstract class AppLocalizations {
   /// **'Unexpected entity type.'**
   String get agentDetailUnexpectedType;
 
+  /// No description provided for @agentEvolutionChartMttrTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'MTTR Trend'**
+  String get agentEvolutionChartMttrTrend;
+
+  /// No description provided for @agentEvolutionChartSuccessRateTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Success Trend'**
+  String get agentEvolutionChartSuccessRateTrend;
+
+  /// No description provided for @agentEvolutionChartVersionPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'By Version'**
+  String get agentEvolutionChartVersionPerformance;
+
+  /// No description provided for @agentEvolutionChartWakeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake History'**
+  String get agentEvolutionChartWakeHistory;
+
+  /// No description provided for @agentEvolutionChatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Share feedback or ask about performance...'**
+  String get agentEvolutionChatPlaceholder;
+
+  /// No description provided for @agentEvolutionCurrentDirectives.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Directives'**
+  String get agentEvolutionCurrentDirectives;
+
+  /// No description provided for @agentEvolutionDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get agentEvolutionDashboardTitle;
+
+  /// No description provided for @agentEvolutionMetricActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentEvolutionMetricActive;
+
+  /// No description provided for @agentEvolutionMetricAvgDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Duration'**
+  String get agentEvolutionMetricAvgDuration;
+
+  /// No description provided for @agentEvolutionMetricFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'Failures'**
+  String get agentEvolutionMetricFailures;
+
+  /// No description provided for @agentEvolutionMetricNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'N/A'**
+  String get agentEvolutionMetricNotAvailable;
+
+  /// No description provided for @agentEvolutionMetricSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get agentEvolutionMetricSuccess;
+
+  /// No description provided for @agentEvolutionMetricWakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentEvolutionMetricWakes;
+
+  /// No description provided for @agentEvolutionMttrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mean Time to Resolution'**
+  String get agentEvolutionMttrLabel;
+
+  /// No description provided for @agentEvolutionNoteRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Note Recorded'**
+  String get agentEvolutionNoteRecorded;
+
+  /// No description provided for @agentEvolutionProposalRationale.
+  ///
+  /// In en, this message translates to:
+  /// **'Rationale'**
+  String get agentEvolutionProposalRationale;
+
+  /// No description provided for @agentEvolutionProposalRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal rejected — continue the conversation'**
+  String get agentEvolutionProposalRejected;
+
+  /// No description provided for @agentEvolutionProposalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Changes'**
+  String get agentEvolutionProposalTitle;
+
+  /// No description provided for @agentEvolutionProposedDirectives.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed Directives'**
+  String get agentEvolutionProposedDirectives;
+
+  /// No description provided for @agentEvolutionRatingAdequate.
+  ///
+  /// In en, this message translates to:
+  /// **'Adequate'**
+  String get agentEvolutionRatingAdequate;
+
+  /// No description provided for @agentEvolutionRatingExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get agentEvolutionRatingExcellent;
+
+  /// No description provided for @agentEvolutionRatingNeedsWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs work'**
+  String get agentEvolutionRatingNeedsWork;
+
+  /// No description provided for @agentEvolutionRatingPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'How well is this template performing?'**
+  String get agentEvolutionRatingPrompt;
+
+  /// No description provided for @agentEvolutionSessionAbandoned.
+  ///
+  /// In en, this message translates to:
+  /// **'Session ended without changes'**
+  String get agentEvolutionSessionAbandoned;
+
+  /// No description provided for @agentEvolutionSessionCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Session completed — version {version} created'**
+  String agentEvolutionSessionCompleted(int version);
+
+  /// No description provided for @agentEvolutionSessionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start evolution session'**
+  String get agentEvolutionSessionError;
+
+  /// No description provided for @agentEvolutionSessionStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting evolution session...'**
+  String get agentEvolutionSessionStarting;
+
   /// No description provided for @agentLifecycleActive.
   ///
   /// In en, this message translates to:
@@ -648,95 +810,11 @@ abstract class AppLocalizations {
   /// **'Approve & Save'**
   String get agentTemplateEvolveApprove;
 
-  /// Button label to trigger template evolution.
-  ///
-  /// In en, this message translates to:
-  /// **'Evolve Template'**
-  String get agentTemplateEvolveButton;
-
-  /// Label for the current directives shown during evolution preview.
-  ///
-  /// In en, this message translates to:
-  /// **'Current Directives'**
-  String get agentTemplateEvolveCurrentLabel;
-
-  /// Error message when AI evolution proposal generation fails.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to generate evolution proposal'**
-  String get agentTemplateEvolveError;
-
-  /// Title for the preview dialog showing proposed directive changes.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposed Changes'**
-  String get agentTemplateEvolvePreviewTitle;
-
-  /// Label for the AI-proposed directives shown during evolution preview.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposed Directives'**
-  String get agentTemplateEvolveProposedLabel;
-
   /// Button to reject the proposed directive changes.
   ///
   /// In en, this message translates to:
   /// **'Reject'**
   String get agentTemplateEvolveReject;
-
-  /// Snackbar message after successfully evolving a template.
-  ///
-  /// In en, this message translates to:
-  /// **'Template evolved successfully'**
-  String get agentTemplateEvolveSuccess;
-
-  /// Progress message shown while AI generates improved directives.
-  ///
-  /// In en, this message translates to:
-  /// **'Generating improved directives...'**
-  String get agentTemplateEvolvingProgress;
-
-  /// Placeholder hint for the specific-changes feedback text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe what you\'d like changed...'**
-  String get agentTemplateFeedbackChangesHint;
-
-  /// Label for the feedback field where users describe desired changes.
-  ///
-  /// In en, this message translates to:
-  /// **'Specific changes'**
-  String get agentTemplateFeedbackChangesLabel;
-
-  /// Placeholder hint for the what-didn't-work feedback text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe issues or shortcomings...'**
-  String get agentTemplateFeedbackDidntWorkHint;
-
-  /// Label for the feedback field where users describe issues.
-  ///
-  /// In en, this message translates to:
-  /// **'What didn\'t work'**
-  String get agentTemplateFeedbackDidntWorkLabel;
-
-  /// Placeholder hint for the what-worked-well feedback text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe what the agent does well...'**
-  String get agentTemplateFeedbackEnjoyedHint;
-
-  /// Label for the feedback field where users describe positives.
-  ///
-  /// In en, this message translates to:
-  /// **'What worked well'**
-  String get agentTemplateFeedbackEnjoyedLabel;
-
-  /// Title for the template feedback section used during evolution.
-  ///
-  /// In en, this message translates to:
-  /// **'Feedback'**
-  String get agentTemplateFeedbackTitle;
 
   /// No description provided for @agentTemplateInstanceCount.
   ///
@@ -756,47 +834,11 @@ abstract class AppLocalizations {
   /// **'Active Instances'**
   String get agentTemplateMetricsActiveInstances;
 
-  /// Metric label for the average wake duration.
-  ///
-  /// In en, this message translates to:
-  /// **'Avg Duration'**
-  String get agentTemplateMetricsAvgDuration;
-
-  /// Formatted duration in seconds shown in template performance metrics.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}s'**
-  String agentTemplateMetricsDurationSeconds(int count);
-
-  /// Metric label for the total number of agent wake failures.
-  ///
-  /// In en, this message translates to:
-  /// **'Failures'**
-  String get agentTemplateMetricsFailureCount;
-
-  /// Metric label for the timestamp of the first agent wake.
-  ///
-  /// In en, this message translates to:
-  /// **'First Wake'**
-  String get agentTemplateMetricsFirstWake;
-
-  /// Metric label for the timestamp of the most recent agent wake.
-  ///
-  /// In en, this message translates to:
-  /// **'Last Wake'**
-  String get agentTemplateMetricsLastWake;
-
   /// Metric label for the percentage of successful agent wakes.
   ///
   /// In en, this message translates to:
   /// **'Success Rate'**
   String get agentTemplateMetricsSuccessRate;
-
-  /// Section title for the template performance metrics panel.
-  ///
-  /// In en, this message translates to:
-  /// **'Performance Metrics'**
-  String get agentTemplateMetricsTitle;
 
   /// Metric label for the total number of agent wakes.
   ///
@@ -851,12 +893,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No versions'**
   String get agentTemplateNoVersions;
-
-  /// No description provided for @agentTemplateOneOnOneTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'1-on-1 with {templateName}'**
-  String agentTemplateOneOnOneTitle(String templateName);
 
   /// Button label to roll back a template to a previous version.
   ///

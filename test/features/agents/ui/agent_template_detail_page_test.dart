@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -847,6 +850,82 @@ void main() {
         find.text(context.messages.agentTemplateInstanceCount(1)),
         findsOneWidget,
       );
+    });
+
+    testWidgets('reseeds directives when active version changes',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final v1 = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: templateId,
+        directives: 'Version 1 directives',
+      );
+      final v2 = makeTestTemplateVersion(
+        id: 'v2',
+        agentId: templateId,
+        version: 2,
+        directives: 'Version 2 directives',
+      );
+
+      // Start with v1 as active version.
+      var currentVersion = v1;
+
+      final overrides = [
+        agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        agentTemplateProvider.overrideWith(
+          (ref, id) async =>
+              makeTestTemplate(id: templateId, agentId: templateId),
+        ),
+        activeTemplateVersionProvider.overrideWith(
+          (ref, id) async => currentVersion,
+        ),
+        templateVersionHistoryProvider.overrideWith(
+          (ref, id) async => <AgentDomainEntity>[currentVersion],
+        ),
+        agentTemplatesProvider.overrideWith(
+          (ref) async => <AgentDomainEntity>[],
+        ),
+        ..._aiConfigOverrides(),
+      ];
+
+      final container = ProviderContainer(overrides: overrides);
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MediaQuery(
+            data: MediaQueryData(
+              size: Size(400, 800),
+            ),
+            child: MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: AgentTemplateDetailPage(templateId: templateId),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify v1 directives are shown.
+      expect(find.text('Version 1 directives'), findsOneWidget);
+
+      // Simulate evolution approval: switch to v2 and invalidate.
+      currentVersion = v2;
+      container.invalidate(activeTemplateVersionProvider(templateId));
+      await tester.pumpAndSettle();
+
+      // Directive field should now show v2 directives.
+      expect(find.text('Version 2 directives'), findsOneWidget);
+      expect(find.text('Version 1 directives'), findsNothing);
     });
 
     testWidgets('shows evolve action button in edit mode', (tester) async {

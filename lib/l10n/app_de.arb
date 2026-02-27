@@ -77,6 +77,33 @@
   },
   "agentDetailNotFound": "Agent nicht gefunden.",
   "agentDetailUnexpectedType": "Unerwarteter Entitätstyp.",
+  "agentEvolutionChartMttrTrend": "MTTR-Trend",
+  "agentEvolutionChartSuccessRateTrend": "Erfolgstrend",
+  "agentEvolutionChartVersionPerformance": "Nach Version",
+  "agentEvolutionChartWakeHistory": "Wake-Verlauf",
+  "agentEvolutionChatPlaceholder": "Feedback teilen oder nach Leistung fragen...",
+  "agentEvolutionCurrentDirectives": "Aktuelle Anweisungen",
+  "agentEvolutionDashboardTitle": "Leistung",
+  "agentEvolutionMetricActive": "Aktiv",
+  "agentEvolutionMetricAvgDuration": "Durchschn. Dauer",
+  "agentEvolutionMetricFailures": "Fehler",
+  "agentEvolutionMetricNotAvailable": "k. A.",
+  "agentEvolutionMetricSuccess": "Erfolg",
+  "agentEvolutionMetricWakes": "Aufrufe",
+  "agentEvolutionMttrLabel": "Mittlere Lösungszeit",
+  "agentEvolutionNoteRecorded": "Notiz aufgezeichnet",
+  "agentEvolutionProposalRationale": "Begründung",
+  "agentEvolutionProposalRejected": "Vorschlag abgelehnt — Gespräch fortsetzen",
+  "agentEvolutionProposalTitle": "Vorgeschlagene Änderungen",
+  "agentEvolutionProposedDirectives": "Vorgeschlagene Anweisungen",
+  "agentEvolutionRatingAdequate": "Ausreichend",
+  "agentEvolutionRatingExcellent": "Ausgezeichnet",
+  "agentEvolutionRatingNeedsWork": "Verbesserungsbedarf",
+  "agentEvolutionRatingPrompt": "Wie gut funktioniert dieses Template?",
+  "agentEvolutionSessionAbandoned": "Sitzung ohne Änderungen beendet",
+  "agentEvolutionSessionCompleted": "Sitzung abgeschlossen — Version {version} erstellt",
+  "agentEvolutionSessionError": "Evolution-Sitzung konnte nicht gestartet werden",
+  "agentEvolutionSessionStarting": "Evolution-Sitzung wird gestartet...",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Erstellt",
   "agentLifecycleDestroyed": "Zerstört",
@@ -145,21 +172,7 @@
   "agentTemplateEmptyList": "Noch keine Vorlagen. Tippe auf +, um eine zu erstellen.",
   "agentTemplateEvolveAction": "Mit KI weiterentwickeln",
   "agentTemplateEvolveApprove": "Genehmigen & Speichern",
-  "agentTemplateEvolveButton": "Vorlage weiterentwickeln",
-  "agentTemplateEvolveCurrentLabel": "Aktuelle Anweisungen",
-  "agentTemplateEvolveError": "Vorschlag konnte nicht generiert werden",
-  "agentTemplateEvolvePreviewTitle": "Vorgeschlagene Änderungen",
-  "agentTemplateEvolveProposedLabel": "Vorgeschlagene Anweisungen",
   "agentTemplateEvolveReject": "Ablehnen",
-  "agentTemplateEvolveSuccess": "Vorlage erfolgreich weiterentwickelt",
-  "agentTemplateEvolvingProgress": "Verbesserte Anweisungen werden generiert...",
-  "agentTemplateFeedbackChangesHint": "Beschreibe, was du ändern möchtest...",
-  "agentTemplateFeedbackChangesLabel": "Konkrete Änderungen",
-  "agentTemplateFeedbackDidntWorkHint": "Beschreibe Probleme oder Schwächen...",
-  "agentTemplateFeedbackDidntWorkLabel": "Was nicht funktioniert hat",
-  "agentTemplateFeedbackEnjoyedHint": "Beschreibe, was der Agent gut macht...",
-  "agentTemplateFeedbackEnjoyedLabel": "Was gut funktioniert hat",
-  "agentTemplateFeedbackTitle": "Rückmeldung",
   "agentTemplateInstanceCount": "{count, plural, =0{Keine Instanzen} =1{1 Instanz} other{{count} Instanzen}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -170,21 +183,7 @@
   },
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",
   "agentTemplateMetricsActiveInstances": "Aktive Instanzen",
-  "agentTemplateMetricsAvgDuration": "Durchschn. Dauer",
-  "agentTemplateMetricsDurationSeconds": "{count} s",
-  "@agentTemplateMetricsDurationSeconds": {
-    "description": "Formatted duration in seconds shown in template performance metrics.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentTemplateMetricsFailureCount": "Fehler",
-  "agentTemplateMetricsFirstWake": "Erste Aktivierung",
-  "agentTemplateMetricsLastWake": "Letzte Aktivierung",
   "agentTemplateMetricsSuccessRate": "Erfolgsrate",
-  "agentTemplateMetricsTitle": "Leistungskennzahlen",
   "agentTemplateMetricsTotalWakes": "Aktivierungen gesamt",
   "agentTemplateModelLabel": "Modell-ID",
   "agentTemplateModelRequirements": "Nur Reasoning-Modelle mit Funktionsaufrufen werden angezeigt",
@@ -194,14 +193,6 @@
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
   "agentTemplateNotFound": "Vorlage nicht gefunden",
   "agentTemplateNoVersions": "Keine Versionen",
-  "agentTemplateOneOnOneTitle": "1-zu-1 mit {templateName}",
-  "@agentTemplateOneOnOneTitle": {
-    "placeholders": {
-      "templateName": {
-        "type": "String"
-      }
-    }
-  },
   "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
   "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",
   "@agentTemplateRollbackConfirm": {

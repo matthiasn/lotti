@@ -7,7 +7,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:mocktail/mocktail.dart';
@@ -132,10 +131,6 @@ void registerAllFallbackValues() {
   // Enum fallbacks
   registerFallbackValue(AiConfigType.inferenceProvider);
 
-  // Template evolution workflow fallbacks
-  registerFallbackValue(
-    const EvolutionFeedback(),
-  );
   registerFallbackValue(
     const TemplatePerformanceMetrics(
       templateId: 'fallback-template',

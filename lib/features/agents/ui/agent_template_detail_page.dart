@@ -8,7 +8,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
-import 'package:lotti/features/agents/ui/agent_one_on_one_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -43,6 +43,7 @@ class _AgentTemplateDetailPageState
   late TextEditingController _directivesController;
   String? _selectedModelId;
   bool _didSeedControllers = false;
+  String? _seededVersionId;
   bool _isSaving = false;
 
   @override
@@ -102,14 +103,19 @@ class _AgentTemplateDetailPageState
       );
     }
 
-    // Seed controllers once from loaded data.
+    // Seed controllers from loaded data. Re-seed when the active version
+    // changes (e.g. after an evolution proposal is approved).
     if (!_didSeedControllers) {
       _nameController.text = template.displayName;
       _selectedModelId = template.modelId;
       if (activeVersion != null) {
         _directivesController.text = activeVersion.directives;
+        _seededVersionId = activeVersion.id;
       }
       _didSeedControllers = true;
+    } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
+      _directivesController.text = activeVersion.directives;
+      _seededVersionId = activeVersion.id;
     }
 
     return _buildScaffold(
@@ -159,7 +165,7 @@ class _AgentTemplateDetailPageState
                   LottiSecondaryButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => AgentOneOnOnePage(
+                        builder: (_) => EvolutionChatPage(
                           templateId: widget.templateId!,
                         ),
                       ),

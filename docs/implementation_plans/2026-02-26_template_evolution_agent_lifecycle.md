@@ -13,7 +13,8 @@
 3. [Phase 2: Architecture & Logic Layer](#phase-2-architecture--logic-layer)
 4. [Phase 3: Generative UI & Dashboard Widgets](#phase-3-generative-ui--dashboard-widgets)
 5. [Phase 4: Testing Strategy](#phase-4-testing-strategy)
-6. [Appendix: Implementation Sequence](#appendix-implementation-sequence)
+6. [Phase 5: GenUI Integration (Hybrid Bridge)](#phase-5-genui-integration-hybrid-bridge)
+7. [Appendix: Implementation Sequence](#appendix-implementation-sequence)
 
 ---
 
@@ -880,6 +881,203 @@ EvolutionNoteEntity makeTestEvolutionNote({
 
 ---
 
+## Phase 5: GenUI Integration (Hybrid Bridge)
+
+**PR scope:** Add `genui` v0.7.0 as rendering layer for rich agent content in evolution chat. Keeps Lotti's conversation layer (ConversationRepository, ConversationManager, EvolutionStrategy) intact. GenUI surfaces render inline in the chat when the LLM calls the `render_surface` tool.
+
+**Status:** In progress (2026-02-26)
+
+### 5.0 GenUI v0.7.0 Actual API
+
+The genui package (v0.7.0, from `flutter/genui`) uses a message-driven architecture:
+
+| Plan Term | Actual API (v0.7.0) |
+|-----------|---------------------|
+| `SurfaceController` | `A2uiMessageProcessor` |
+| `Surface` widget | `GenUiSurface(host:, surfaceId:)` |
+| `SurfaceContext` | Not needed — `GenUiSurface` takes `host` + `surfaceId` |
+| `A2uiMessage.createSurface(...)` | `SurfaceUpdate` + `BeginRendering` (two messages) |
+| `Catalog(items: [...])` | `Catalog([...])` |
+| `CatalogItem` constructor | `CatalogItem(name:, dataSchema:, widgetBuilder:)` |
+
+Key classes:
+- `A2uiMessageProcessor({required catalogs})` — manages surfaces, implements `GenUiHost`
+- `GenUiSurface(host:, surfaceId:, defaultBuilder:)` — renders a dynamic surface
+- `CatalogItem(name:, dataSchema:, widgetBuilder:)` — widget type definition
+- `CatalogItemContext` — passed to widgetBuilder with `data`, `id`, `buildChild`, `dispatchEvent`, `buildContext`, `dataContext`, `surfaceId`
+- `Component(id:, componentProperties:)` — a single node in a surface tree
+- `SurfaceUpdate(surfaceId:, components:)` — adds/updates components
+- `BeginRendering(surfaceId:, root:, catalogId:)` — starts rendering
+- `UserActionEvent(name:, sourceComponentId:)` — user interaction event
+- `Schema` / `S` — JSON schema builder (`S.object()`, `S.string()`, etc.)
+
+### 5.1 Architecture
+
+```
+LLM response with tool call: "render_surface"
+  → EvolutionStrategy detects genui tool (via GenUiBridge.isGenUiTool)
+    → GenUiBridge constructs Component + SurfaceUpdate + BeginRendering
+      → A2uiMessageProcessor.handleMessage(...)
+        → surfaceUpdates stream emits SurfaceAdded
+          → EvolutionChatState adds EvolutionSurfaceMessage to chat
+            → GenUiSurface(host: processor, surfaceId: id) renders inline
+
+User interaction on surface (approve/reject button)
+  → CatalogItem's dispatchEvent → UserActionEvent
+    → A2uiMessageProcessor.onSubmit stream
+      → GenUiEventHandler routes to approveProposal()/rejectProposal()
+```
+
+### 5.2 New Files
+
+#### `lib/features/agents/genui/evolution_catalog.dart`
+
+Defines 4 custom `CatalogItem`s using Gamey theme:
+
+| CatalogItem | Purpose | Schema Fields |
+|---|---|---|
+| `EvolutionProposal` | Proposal card with approve/reject | `directives`, `rationale`, `currentDirectives?` |
+| `EvolutionNoteConfirmation` | Note recorded confirmation | `kind` (enum), `content` |
+| `MetricsSummary` | Inline metrics display | `totalWakes`, `successRate`, `failureCount`, `averageDurationSeconds?`, `activeInstances?` |
+| `VersionComparison` | Before/after directives | `beforeVersion`, `afterVersion`, `beforeDirectives`, `afterDirectives`, `changesSummary?` |
+
+Each `widgetBuilder` receives `CatalogItemContext` and uses existing Lotti theme widgets (`ModernBaseCard`, `GameyColors`). The `EvolutionProposal` item dispatches `UserActionEvent(name: 'proposal_approved')` / `UserActionEvent(name: 'proposal_rejected')` via `context.dispatchEvent()`.
+
+```dart
+Catalog buildEvolutionCatalog() => Catalog([proposalItem, noteItem, metricsItem, versionItem]);
+```
+
+#### `lib/features/agents/genui/genui_bridge.dart`
+
+Bridges OpenAI tool calls to genui's A2UI message protocol:
+
+```dart
+class GenUiBridge {
+  GenUiBridge({required this.processor});
+  final A2uiMessageProcessor processor;
+
+  /// OpenAI tool definition for "render_surface"
+  ChatCompletionTool get toolDefinition;
+
+  /// Check if a tool name is the genui bridge tool
+  bool isGenUiTool(String name) => name == 'render_surface';
+
+  /// Process a render_surface tool call:
+  /// 1. Parse args → Component with componentProperties: {rootType: data}
+  /// 2. Send SurfaceUpdate(surfaceId, [component]) to processor
+  /// 3. Send BeginRendering(surfaceId, root: component.id, catalogId) to processor
+  /// 4. Return surfaceId for chat state
+  String handleToolCall(Map<String, dynamic> args);
+}
+```
+
+The `render_surface` tool schema:
+```json
+{
+  "name": "render_surface",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surfaceId": {"type": "string"},
+      "rootType": {"type": "string", "enum": ["EvolutionProposal", "EvolutionNoteConfirmation", "MetricsSummary", "VersionComparison"]},
+      "data": {"type": "object", "description": "Properties matching the widget schema"}
+    },
+    "required": ["surfaceId", "rootType", "data"]
+  }
+}
+```
+
+#### `lib/features/agents/genui/genui_event_handler.dart`
+
+Listens to `A2uiMessageProcessor.onSubmit` stream and routes `UserActionEvent`s:
+
+```dart
+class GenUiEventHandler {
+  GenUiEventHandler({required this.processor});
+  final A2uiMessageProcessor processor;
+
+  /// Called when user taps approve/reject on a proposal surface
+  void Function(String surfaceId, String action)? onProposalAction;
+
+  /// Start listening — call once after processor is created
+  StreamSubscription<UserUiInteractionMessage> listen();
+}
+```
+
+### 5.3 Modified Files
+
+#### `evolution_chat_message.dart`
+Add new freezed variant:
+```dart
+const factory EvolutionChatMessage.surface({
+  required String surfaceId,
+  required DateTime timestamp,
+}) = EvolutionSurfaceMessage;
+```
+
+#### `evolution_strategy.dart`
+- Accept optional `GenUiBridge` in constructor
+- In `processToolCalls()`, check `genUiBridge?.isGenUiTool(name)` before existing switch
+- If genui tool: delegate to `genUiBridge.handleToolCall(args)`, add tool response
+- Track created surface IDs via `List<String> get pendingSurfaceIds` (drained by chat state)
+
+#### `template_evolution_workflow.dart`
+- In `startSession()`: create `A2uiMessageProcessor` with evolution catalog, create `GenUiBridge`, pass to `EvolutionStrategy`
+- Store processor + bridge in `ActiveEvolutionSession`
+- In `_buildToolDefinitions()`: append `genUiBridge.toolDefinition`
+- In session cleanup: dispose `A2uiMessageProcessor`
+
+#### `evolution_chat_state.dart`
+- After each LLM response: drain `strategy.pendingSurfaceIds`, add `EvolutionSurfaceMessage` entries
+- Add `A2uiMessageProcessor? processor` to `EvolutionChatData`
+- Listen for genui events (proposal_approved/rejected) and route to existing approve/reject logic
+- Dispose processor on session end
+
+#### `evolution_chat_page.dart`
+Add `EvolutionSurfaceMessage` case to message rendering switch:
+```dart
+EvolutionSurfaceMessage(:final surfaceId) => GenUiSurface(
+  host: chatData.processor!,
+  surfaceId: surfaceId,
+),
+```
+
+#### `evolution_context_builder.dart`
+Update system prompt to tell the LLM about the `render_surface` tool and available widget types.
+
+### 5.4 Test Files
+
+| File | Type | Tests |
+|---|---|---|
+| `test/features/agents/genui/evolution_catalog_test.dart` | Unit | Each CatalogItem builds valid widget from sample data; schema validation |
+| `test/features/agents/genui/genui_bridge_test.dart` | Unit | Tool definition format; handleToolCall creates surfaces; isGenUiTool detection |
+| `test/features/agents/genui/genui_event_handler_test.dart` | Unit | Events routed correctly |
+| Extend `evolution_strategy_test.dart` | Unit | GenUI tool calls delegated; Lotti tools still work; surface IDs tracked |
+| Extend `template_evolution_workflow_test.dart` | Unit | Tool definitions include render_surface; controller lifecycle |
+| Extend `evolution_chat_state_test.dart` | Unit | Surface messages added after LLM response; processor in state |
+| Extend `evolution_chat_page_test.dart` | Widget | Surface messages render GenUiSurface widget |
+
+### 5.5 Localization (new keys, 5 arb files)
+
+- `agentEvolutionNoteRecorded` — "Note Recorded"
+
+### 5.6 Implementation Order
+
+1. Add `genui: ^0.7.0` to `pubspec.yaml`, `pub get` ✅
+2. Create `evolution_catalog.dart` with 4 CatalogItems + tests
+3. Create `genui_bridge.dart` (tool def + A2UI message construction) + tests
+4. Create `genui_event_handler.dart` + tests
+5. Add `EvolutionSurfaceMessage` variant → `build_runner`
+6. Modify `EvolutionStrategy` to accept/delegate GenUiBridge + extend tests
+7. Modify `TemplateEvolutionWorkflow` to wire up processor/bridge/session + extend tests
+8. Modify `EvolutionChatState` for surface messages + event routing + extend tests
+9. Modify `EvolutionChatPage` to render `GenUiSurface` widget + extend tests
+10. Update system prompt in `EvolutionContextBuilder`
+11. L10n keys → `make l10n` + `make sort_arb_files`
+12. Full verification: analyzer, formatter, all agent tests
+
+---
+
 ## Appendix: Implementation Sequence
 
 ```mermaid
@@ -921,6 +1119,7 @@ gantt
 | **PR 4** | `feat: chat-based 1-on-1 interface` | PR 3 |
 | **PR 5** | `feat: dashboard widgets (growth, activity, rating, MTTR)` | PR 4 |
 | **PR 6** | `test: version propagation integration test` | PR 3+ |
+| **PR 7** | `feat: genui integration for evolution chat (hybrid bridge)` | PR 4 |
 
 ### Localization Keys Needed
 
