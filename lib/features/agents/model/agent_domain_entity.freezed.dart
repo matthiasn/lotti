@@ -35,6 +35,10 @@ AgentDomainEntity _$AgentDomainEntityFromJson(Map<String, dynamic> json) {
       return EvolutionSessionEntity.fromJson(json);
     case 'evolutionNote':
       return EvolutionNoteEntity.fromJson(json);
+    case 'changeSet':
+      return ChangeSetEntity.fromJson(json);
+    case 'changeDecision':
+      return ChangeDecisionEntity.fromJson(json);
 
     default:
       return AgentUnknownEntity.fromJson(json);
@@ -162,6 +166,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult Function(AgentTemplateHeadEntity value)? agentTemplateHead,
     TResult Function(EvolutionSessionEntity value)? evolutionSession,
     TResult Function(EvolutionNoteEntity value)? evolutionNote,
+    TResult Function(ChangeSetEntity value)? changeSet,
+    TResult Function(ChangeDecisionEntity value)? changeDecision,
     TResult Function(AgentUnknownEntity value)? unknown,
     required TResult orElse(),
   }) {
@@ -189,6 +195,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return evolutionSession(_that);
       case EvolutionNoteEntity() when evolutionNote != null:
         return evolutionNote(_that);
+      case ChangeSetEntity() when changeSet != null:
+        return changeSet(_that);
+      case ChangeDecisionEntity() when changeDecision != null:
+        return changeDecision(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -224,6 +234,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     required TResult Function(AgentTemplateHeadEntity value) agentTemplateHead,
     required TResult Function(EvolutionSessionEntity value) evolutionSession,
     required TResult Function(EvolutionNoteEntity value) evolutionNote,
+    required TResult Function(ChangeSetEntity value) changeSet,
+    required TResult Function(ChangeDecisionEntity value) changeDecision,
     required TResult Function(AgentUnknownEntity value) unknown,
   }) {
     final _that = this;
@@ -250,6 +262,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return evolutionSession(_that);
       case EvolutionNoteEntity():
         return evolutionNote(_that);
+      case ChangeSetEntity():
+        return changeSet(_that);
+      case ChangeDecisionEntity():
+        return changeDecision(_that);
       case AgentUnknownEntity():
         return unknown(_that);
       case _:
@@ -282,6 +298,8 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
     TResult? Function(AgentTemplateHeadEntity value)? agentTemplateHead,
     TResult? Function(EvolutionSessionEntity value)? evolutionSession,
     TResult? Function(EvolutionNoteEntity value)? evolutionNote,
+    TResult? Function(ChangeSetEntity value)? changeSet,
+    TResult? Function(ChangeDecisionEntity value)? changeDecision,
     TResult? Function(AgentUnknownEntity value)? unknown,
   }) {
     final _that = this;
@@ -308,6 +326,10 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
         return evolutionSession(_that);
       case EvolutionNoteEntity() when evolutionNote != null:
         return evolutionNote(_that);
+      case ChangeSetEntity() when changeSet != null:
+        return changeSet(_that);
+      case ChangeDecisionEntity() when changeDecision != null:
+        return changeDecision(_that);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that);
       case _:
@@ -455,6 +477,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             DateTime? deletedAt)?
         evolutionNote,
+    TResult Function(
+            String id,
+            String agentId,
+            String taskId,
+            String threadId,
+            String runKey,
+            ChangeSetStatus status,
+            List<ChangeItem> items,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? resolvedAt,
+            DateTime? deletedAt)?
+        changeSet,
+    TResult Function(
+            String id,
+            String agentId,
+            String changeSetId,
+            int itemIndex,
+            String toolName,
+            ChangeDecisionVerdict verdict,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? taskId,
+            String? rejectionReason,
+            DateTime? deletedAt)?
+        changeDecision,
     TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -593,6 +641,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.deletedAt);
+      case ChangeSetEntity() when changeSet != null:
+        return changeSet(
+            _that.id,
+            _that.agentId,
+            _that.taskId,
+            _that.threadId,
+            _that.runKey,
+            _that.status,
+            _that.items,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.resolvedAt,
+            _that.deletedAt);
+      case ChangeDecisionEntity() when changeDecision != null:
+        return changeDecision(
+            _that.id,
+            _that.agentId,
+            _that.changeSetId,
+            _that.itemIndex,
+            _that.toolName,
+            _that.verdict,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.taskId,
+            _that.rejectionReason,
             _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -749,6 +823,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             DateTime? deletedAt)
         evolutionNote,
+    required TResult Function(
+            String id,
+            String agentId,
+            String taskId,
+            String threadId,
+            String runKey,
+            ChangeSetStatus status,
+            List<ChangeItem> items,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? resolvedAt,
+            DateTime? deletedAt)
+        changeSet,
+    required TResult Function(
+            String id,
+            String agentId,
+            String changeSetId,
+            int itemIndex,
+            String toolName,
+            ChangeDecisionVerdict verdict,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? taskId,
+            String? rejectionReason,
+            DateTime? deletedAt)
+        changeDecision,
     required TResult Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)
         unknown,
@@ -886,6 +986,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.deletedAt);
+      case ChangeSetEntity():
+        return changeSet(
+            _that.id,
+            _that.agentId,
+            _that.taskId,
+            _that.threadId,
+            _that.runKey,
+            _that.status,
+            _that.items,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.resolvedAt,
+            _that.deletedAt);
+      case ChangeDecisionEntity():
+        return changeDecision(
+            _that.id,
+            _that.agentId,
+            _that.changeSetId,
+            _that.itemIndex,
+            _that.toolName,
+            _that.verdict,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.taskId,
+            _that.rejectionReason,
             _that.deletedAt);
       case AgentUnknownEntity():
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -1035,6 +1161,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             String content,
             DateTime? deletedAt)?
         evolutionNote,
+    TResult? Function(
+            String id,
+            String agentId,
+            String taskId,
+            String threadId,
+            String runKey,
+            ChangeSetStatus status,
+            List<ChangeItem> items,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            DateTime? resolvedAt,
+            DateTime? deletedAt)?
+        changeSet,
+    TResult? Function(
+            String id,
+            String agentId,
+            String changeSetId,
+            int itemIndex,
+            String toolName,
+            ChangeDecisionVerdict verdict,
+            DateTime createdAt,
+            VectorClock? vectorClock,
+            String? taskId,
+            String? rejectionReason,
+            DateTime? deletedAt)?
+        changeDecision,
     TResult? Function(String id, String agentId, DateTime createdAt,
             VectorClock? vectorClock, DateTime? deletedAt)?
         unknown,
@@ -1172,6 +1324,32 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.content,
+            _that.deletedAt);
+      case ChangeSetEntity() when changeSet != null:
+        return changeSet(
+            _that.id,
+            _that.agentId,
+            _that.taskId,
+            _that.threadId,
+            _that.runKey,
+            _that.status,
+            _that.items,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.resolvedAt,
+            _that.deletedAt);
+      case ChangeDecisionEntity() when changeDecision != null:
+        return changeDecision(
+            _that.id,
+            _that.agentId,
+            _that.changeSetId,
+            _that.itemIndex,
+            _that.toolName,
+            _that.verdict,
+            _that.createdAt,
+            _that.vectorClock,
+            _that.taskId,
+            _that.rejectionReason,
             _that.deletedAt);
       case AgentUnknownEntity() when unknown != null:
         return unknown(_that.id, _that.agentId, _that.createdAt,
@@ -3339,6 +3517,406 @@ class _$EvolutionNoteEntityCopyWithImpl<$Res>
           ? _self.content
           : content // ignore: cast_nullable_to_non_nullable
               as String,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class ChangeSetEntity implements AgentDomainEntity {
+  const ChangeSetEntity(
+      {required this.id,
+      required this.agentId,
+      required this.taskId,
+      required this.threadId,
+      required this.runKey,
+      required this.status,
+      required final List<ChangeItem> items,
+      required this.createdAt,
+      required this.vectorClock,
+      this.resolvedAt,
+      this.deletedAt,
+      final String? $type})
+      : _items = items,
+        $type = $type ?? 'changeSet';
+  factory ChangeSetEntity.fromJson(Map<String, dynamic> json) =>
+      _$ChangeSetEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String taskId;
+  final String threadId;
+  final String runKey;
+  final ChangeSetStatus status;
+  final List<ChangeItem> _items;
+  List<ChangeItem> get items {
+    if (_items is EqualUnmodifiableListView) return _items;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_items);
+  }
+
+  final DateTime createdAt;
+  @override
+  final VectorClock? vectorClock;
+  final DateTime? resolvedAt;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ChangeSetEntityCopyWith<ChangeSetEntity> get copyWith =>
+      _$ChangeSetEntityCopyWithImpl<ChangeSetEntity>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ChangeSetEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is ChangeSetEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.taskId, taskId) || other.taskId == taskId) &&
+            (identical(other.threadId, threadId) ||
+                other.threadId == threadId) &&
+            (identical(other.runKey, runKey) || other.runKey == runKey) &&
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality().equals(other._items, _items) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.resolvedAt, resolvedAt) ||
+                other.resolvedAt == resolvedAt) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      taskId,
+      threadId,
+      runKey,
+      status,
+      const DeepCollectionEquality().hash(_items),
+      createdAt,
+      vectorClock,
+      resolvedAt,
+      deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.changeSet(id: $id, agentId: $agentId, taskId: $taskId, threadId: $threadId, runKey: $runKey, status: $status, items: $items, createdAt: $createdAt, vectorClock: $vectorClock, resolvedAt: $resolvedAt, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $ChangeSetEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $ChangeSetEntityCopyWith(
+          ChangeSetEntity value, $Res Function(ChangeSetEntity) _then) =
+      _$ChangeSetEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String taskId,
+      String threadId,
+      String runKey,
+      ChangeSetStatus status,
+      List<ChangeItem> items,
+      DateTime createdAt,
+      VectorClock? vectorClock,
+      DateTime? resolvedAt,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$ChangeSetEntityCopyWithImpl<$Res>
+    implements $ChangeSetEntityCopyWith<$Res> {
+  _$ChangeSetEntityCopyWithImpl(this._self, this._then);
+
+  final ChangeSetEntity _self;
+  final $Res Function(ChangeSetEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? taskId = null,
+    Object? threadId = null,
+    Object? runKey = null,
+    Object? status = null,
+    Object? items = null,
+    Object? createdAt = null,
+    Object? vectorClock = freezed,
+    Object? resolvedAt = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(ChangeSetEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      taskId: null == taskId
+          ? _self.taskId
+          : taskId // ignore: cast_nullable_to_non_nullable
+              as String,
+      threadId: null == threadId
+          ? _self.threadId
+          : threadId // ignore: cast_nullable_to_non_nullable
+              as String,
+      runKey: null == runKey
+          ? _self.runKey
+          : runKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _self.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as ChangeSetStatus,
+      items: null == items
+          ? _self._items
+          : items // ignore: cast_nullable_to_non_nullable
+              as List<ChangeItem>,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      resolvedAt: freezed == resolvedAt
+          ? _self.resolvedAt
+          : resolvedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class ChangeDecisionEntity implements AgentDomainEntity {
+  const ChangeDecisionEntity(
+      {required this.id,
+      required this.agentId,
+      required this.changeSetId,
+      required this.itemIndex,
+      required this.toolName,
+      required this.verdict,
+      required this.createdAt,
+      required this.vectorClock,
+      this.taskId,
+      this.rejectionReason,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'changeDecision';
+  factory ChangeDecisionEntity.fromJson(Map<String, dynamic> json) =>
+      _$ChangeDecisionEntityFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String agentId;
+  final String changeSetId;
+  final int itemIndex;
+  final String toolName;
+  final ChangeDecisionVerdict verdict;
+  final DateTime createdAt;
+  @override
+  final VectorClock? vectorClock;
+  final String? taskId;
+  final String? rejectionReason;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ChangeDecisionEntityCopyWith<ChangeDecisionEntity> get copyWith =>
+      _$ChangeDecisionEntityCopyWithImpl<ChangeDecisionEntity>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ChangeDecisionEntityToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is ChangeDecisionEntity &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.agentId, agentId) || other.agentId == agentId) &&
+            (identical(other.changeSetId, changeSetId) ||
+                other.changeSetId == changeSetId) &&
+            (identical(other.itemIndex, itemIndex) ||
+                other.itemIndex == itemIndex) &&
+            (identical(other.toolName, toolName) ||
+                other.toolName == toolName) &&
+            (identical(other.verdict, verdict) || other.verdict == verdict) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.taskId, taskId) || other.taskId == taskId) &&
+            (identical(other.rejectionReason, rejectionReason) ||
+                other.rejectionReason == rejectionReason) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      changeSetId,
+      itemIndex,
+      toolName,
+      verdict,
+      createdAt,
+      vectorClock,
+      taskId,
+      rejectionReason,
+      deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentDomainEntity.changeDecision(id: $id, agentId: $agentId, changeSetId: $changeSetId, itemIndex: $itemIndex, toolName: $toolName, verdict: $verdict, createdAt: $createdAt, vectorClock: $vectorClock, taskId: $taskId, rejectionReason: $rejectionReason, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $ChangeDecisionEntityCopyWith<$Res>
+    implements $AgentDomainEntityCopyWith<$Res> {
+  factory $ChangeDecisionEntityCopyWith(ChangeDecisionEntity value,
+          $Res Function(ChangeDecisionEntity) _then) =
+      _$ChangeDecisionEntityCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String agentId,
+      String changeSetId,
+      int itemIndex,
+      String toolName,
+      ChangeDecisionVerdict verdict,
+      DateTime createdAt,
+      VectorClock? vectorClock,
+      String? taskId,
+      String? rejectionReason,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$ChangeDecisionEntityCopyWithImpl<$Res>
+    implements $ChangeDecisionEntityCopyWith<$Res> {
+  _$ChangeDecisionEntityCopyWithImpl(this._self, this._then);
+
+  final ChangeDecisionEntity _self;
+  final $Res Function(ChangeDecisionEntity) _then;
+
+  /// Create a copy of AgentDomainEntity
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? agentId = null,
+    Object? changeSetId = null,
+    Object? itemIndex = null,
+    Object? toolName = null,
+    Object? verdict = null,
+    Object? createdAt = null,
+    Object? vectorClock = freezed,
+    Object? taskId = freezed,
+    Object? rejectionReason = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(ChangeDecisionEntity(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      agentId: null == agentId
+          ? _self.agentId
+          : agentId // ignore: cast_nullable_to_non_nullable
+              as String,
+      changeSetId: null == changeSetId
+          ? _self.changeSetId
+          : changeSetId // ignore: cast_nullable_to_non_nullable
+              as String,
+      itemIndex: null == itemIndex
+          ? _self.itemIndex
+          : itemIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      toolName: null == toolName
+          ? _self.toolName
+          : toolName // ignore: cast_nullable_to_non_nullable
+              as String,
+      verdict: null == verdict
+          ? _self.verdict
+          : verdict // ignore: cast_nullable_to_non_nullable
+              as ChangeDecisionVerdict,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      taskId: freezed == taskId
+          ? _self.taskId
+          : taskId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rejectionReason: freezed == rejectionReason
+          ? _self.rejectionReason
+          : rejectionReason // ignore: cast_nullable_to_non_nullable
+              as String?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable

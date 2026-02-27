@@ -22,6 +22,10 @@ class AgentRepository {
 
   final AgentDatabase _db;
 
+  /// Multiplier for SQL LIMIT when post-query Dart filtering is applied.
+  /// Over-fetching compensates for rows discarded during in-memory filtering.
+  static const _overFetchMultiplier = 5;
+
   /// Run [action] inside a database transaction.
   ///
   /// All operations within the callback are committed atomically; if any
@@ -337,6 +341,59 @@ class AgentRepository {
     if (updatedRows == 0) {
       throw StateError('No wake_run_log row found for runKey: $runKey');
     }
+  }
+
+  // ── Change set queries ──────────────────────────────────────────────────────
+
+  /// Fetch pending or partially-resolved change sets for [agentId],
+  /// optionally filtered by [taskId].
+  ///
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
+  /// in Dart because `taskId` lives inside the serialized JSON data column,
+  /// not in a dedicated indexed column. At current volumes (single agent,
+  /// limit ≤ 20) this is adequate; a dedicated column + DB-level filter is
+  /// a future optimization if query counts grow.
+  Future<List<ChangeSetEntity>> getPendingChangeSets(
+    String agentId, {
+    String? taskId,
+    int limit = 20,
+  }) async {
+    // When filtering by taskId in Dart, over-fetch from DB to compensate for
+    // rows that will be discarded. Without a dedicated taskId column we cannot
+    // filter at the SQL level.
+    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final rows = await _db.getPendingChangeSetsForAgent(agentId, dbLimit).get();
+    var results = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeSetEntity>()
+        .toList();
+    if (taskId != null) {
+      results = results.where((cs) => cs.taskId == taskId).toList();
+    }
+    return results.take(limit).toList();
+  }
+
+  /// Fetch recent change decisions for [agentId], optionally filtered by
+  /// [taskId].
+  ///
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
+  /// in Dart (same rationale as [getPendingChangeSets]). Used by the context
+  /// builder to assemble decision history for the agent's system prompt.
+  Future<List<ChangeDecisionEntity>> getRecentDecisions(
+    String agentId, {
+    String? taskId,
+    int limit = 20,
+  }) async {
+    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final rows = await _db.getRecentDecisionsForAgent(agentId, dbLimit).get();
+    var results = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+    if (taskId != null) {
+      results = results.where((d) => d.taskId == taskId).toList();
+    }
+    return results.take(limit).toList();
   }
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────

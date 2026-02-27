@@ -11,7 +11,8 @@
 *.env
 *.lock
 
-.claude/
+#.claude/
+.claude/settings.local.json
 tmp/
 
 # Flatpak generated files

@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 part 'agent_domain_entity.freezed.dart';
@@ -191,6 +192,44 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required String content,
     DateTime? deletedAt,
   }) = EvolutionNoteEntity;
+
+  /// A batch of proposed mutations from a single agent wake.
+  ///
+  /// The [agentId] stores the agent instance ID. The [taskId] identifies
+  /// the journal entity being modified. Items are individually confirmable
+  /// or rejectable by the user — batch tool calls (e.g.,
+  /// `add_multiple_checklist_items`) are exploded into per-item entries.
+  const factory AgentDomainEntity.changeSet({
+    required String id,
+    required String agentId,
+    required String taskId,
+    required String threadId,
+    required String runKey,
+    required ChangeSetStatus status,
+    required List<ChangeItem> items,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    DateTime? resolvedAt,
+    DateTime? deletedAt,
+  }) = ChangeSetEntity;
+
+  /// Records a user's verdict on a single change item.
+  ///
+  /// Persisted for decision history so the agent can learn which kinds of
+  /// suggestions are typically accepted or rejected.
+  const factory AgentDomainEntity.changeDecision({
+    required String id,
+    required String agentId,
+    required String changeSetId,
+    required int itemIndex,
+    required String toolName,
+    required ChangeDecisionVerdict verdict,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? taskId,
+    String? rejectionReason,
+    DateTime? deletedAt,
+  }) = ChangeDecisionEntity;
 
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({

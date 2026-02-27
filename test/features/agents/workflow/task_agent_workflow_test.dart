@@ -675,6 +675,8 @@ void main() {
                 agentTemplateHead: (_) => false,
                 evolutionSession: (_) => false,
                 evolutionNote: (_) => false,
+                changeSet: (_) => false,
+                changeDecision: (_) => false,
                 unknown: (_) => false,
               ),
             )

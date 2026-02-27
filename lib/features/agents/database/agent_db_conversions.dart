@@ -31,12 +31,15 @@ class AgentDbConversions {
       agentTemplateHead: (e) => e.deletedAt,
       evolutionSession: (e) => e.deletedAt,
       evolutionNote: (e) => e.deletedAt,
+      changeSet: (e) => e.deletedAt,
+      changeDecision: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
     final threadId = entity.mapOrNull(
       agentMessage: (m) => m.threadId,
       agentReport: (r) => r.threadId,
+      changeSet: (c) => c.threadId,
     );
 
     return AgentEntitiesCompanion(
@@ -125,6 +128,8 @@ class AgentDbConversions {
       agentTemplateHead: (_) => 'agentTemplateHead',
       evolutionSession: (_) => 'evolutionSession',
       evolutionNote: (_) => 'evolutionNote',
+      changeSet: (_) => 'changeSet',
+      changeDecision: (_) => 'changeDecision',
       unknown: (_) => 'unknown',
     );
   }
@@ -143,6 +148,8 @@ class AgentDbConversions {
       agentTemplateVersion: (v) => v.status.name,
       evolutionSession: (s) => s.status.name,
       evolutionNote: (n) => n.kind.name,
+      changeSet: (c) => c.status.name,
+      changeDecision: (d) => d.verdict.name,
     );
   }
 
@@ -164,6 +171,8 @@ class AgentDbConversions {
       agentTemplateHead: (e) => e.updatedAt,
       evolutionSession: (e) => e.createdAt,
       evolutionNote: (e) => e.createdAt,
+      changeSet: (e) => e.createdAt,
+      changeDecision: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -186,6 +195,8 @@ class AgentDbConversions {
       agentTemplateHead: (e) => e.updatedAt,
       evolutionSession: (e) => e.updatedAt,
       evolutionNote: (e) => e.createdAt,
+      changeSet: (e) => e.resolvedAt ?? e.createdAt,
+      changeDecision: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }

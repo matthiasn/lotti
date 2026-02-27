@@ -2588,6 +2588,44 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).map((QueryRow row) => row.read<int>('cnt'));
   }
 
+  Selectable<AgentEntity> getChangeSetsForAgent(String agentId, int limit) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(agentId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentEntity> getPendingChangeSetsForAgent(
+      String agentId, int limit) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(agentId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentEntity> getRecentDecisionsForAgent(
+      String agentId, int limit) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeDecision\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(agentId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
