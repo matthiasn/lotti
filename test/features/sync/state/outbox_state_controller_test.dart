@@ -17,7 +17,7 @@ void _stubDailyVolumes(
   MockSyncDatabase mock, {
   required List<OutboxDailyVolume> volumes,
 }) {
-  when(() => mock.getDailyOutboxVolume(days: 30))
+  when(() => mock.getDailyOutboxVolume(days: kOutboxVolumeDays))
       .thenAnswer((_) async => volumes);
 }
 

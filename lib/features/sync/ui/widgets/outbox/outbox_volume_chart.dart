@@ -8,12 +8,23 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Displays a bar chart of daily outbox sync volume (in KB) over the last
-/// 30 days.
+/// [kOutboxVolumeDays] days.
 class OutboxVolumeChart extends ConsumerWidget {
   const OutboxVolumeChart({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Log errors once on state transition, not on every rebuild.
+    ref.listen(outboxDailyVolumeProvider, (previous, next) {
+      if (next is AsyncError && previous is! AsyncError) {
+        getIt<LoggingService>().captureException(
+          next.error,
+          domain: 'OutboxVolumeChart',
+          stackTrace: next.stackTrace,
+        );
+      }
+    });
+
     final asyncVolume = ref.watch(outboxDailyVolumeProvider);
 
     return asyncVolume.when(
@@ -21,20 +32,14 @@ class OutboxVolumeChart extends ConsumerWidget {
         height: 200,
         child: Center(child: CircularProgressIndicator.adaptive()),
       ),
-      error: (error, stackTrace) {
-        getIt<LoggingService>().captureException(
-          error,
-          domain: 'OutboxVolumeChart',
-          stackTrace: stackTrace,
-        );
-        return Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingLarge),
-          child: Text(
-            context.messages.commonError,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
-        );
-      },
+      error: (error, stackTrace) => Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        child: Text(
+          context.messages.commonError,
+          key: const ValueKey('outboxVolumeChart-error'),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      ),
       data: (observations) {
         if (observations.isEmpty) {
           return const SizedBox.shrink();
@@ -42,7 +47,8 @@ class OutboxVolumeChart extends ConsumerWidget {
 
         final now = DateTime.now();
         final rangeEnd = DateTime(now.year, now.month, now.day + 1);
-        final rangeStart = rangeEnd.subtract(const Duration(days: 30));
+        final rangeStart =
+            rangeEnd.subtract(const Duration(days: kOutboxVolumeDays));
         final primaryColor = Theme.of(context).colorScheme.primary;
 
         return Column(

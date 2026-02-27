@@ -119,11 +119,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TimeSeriesBarChart), findsNothing);
-      // Shows generic localized error, not the raw exception message
-      expect(find.text('Error'), findsOneWidget);
+      // Shows generic localized error via a dedicated key,
+      // not the raw exception message
+      final errorFinder = find.byKey(const ValueKey('outboxVolumeChart-error'));
+      expect(errorFinder, findsOneWidget);
       expect(find.textContaining('Database error'), findsNothing);
 
-      final errorText = tester.widget<Text>(find.text('Error'));
+      final errorText = tester.widget<Text>(errorFinder);
       final context = tester.element(find.byType(OutboxVolumeChart));
       final expectedColor = Theme.of(context).colorScheme.error;
       expect(errorText.style?.color, expectedColor);

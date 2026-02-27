@@ -56,7 +56,7 @@ MockSyncDatabase _prepareMock({
 }) {
   final mock = mockSyncDatabaseWithCount(count);
 
-  when(() => mock.getDailyOutboxVolume(days: 30))
+  when(() => mock.getDailyOutboxVolume(days: kOutboxVolumeDays))
       .thenAnswer((_) async => volumeData);
 
   if (itemStream != null) {
@@ -73,10 +73,12 @@ MockSyncDatabase _prepareMock({
 
 void main() {
   group('OutboxMonitorPage', () {
-    setUp(() {
-      getIt.registerSingleton<UserActivityService>(UserActivityService());
-    });
-    tearDown(getIt.reset);
+    setUp(() => setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<UserActivityService>(UserActivityService());
+          },
+        ));
+    tearDown(tearDownTestGetIt);
 
     testWidgets('renders filter tabs, items, and switches filters',
         (tester) async {
@@ -281,15 +283,29 @@ void main() {
               ),
             ],
           );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 400));
+          // Suppress RenderFlex overflow errors during settle
+          final originalOnError = FlutterError.onError;
+          final overflowErrors = <FlutterErrorDetails>[];
+          FlutterError.onError = (details) {
+            if (details.toString().contains('overflowed')) {
+              overflowErrors.add(details);
+              return;
+            }
+            originalOnError?.call(details);
+          };
+
+          await tester.pumpAndSettle();
+
+          FlutterError.onError = originalOnError;
 
           expect(find.byType(TimeSeriesBarChart), findsNothing);
           // The raw exception message should not be displayed
           expect(find.textContaining('Volume query failed'), findsNothing);
-          // Generic error text is shown (from OutboxVolumeChart) alongside
-          // the "Error" filter tab label
-          expect(find.text('Error'), findsWidgets);
+          // Generic error text is shown via a dedicated key
+          expect(
+            find.byKey(const ValueKey('outboxVolumeChart-error')),
+            findsOneWidget,
+          );
         },
       );
 

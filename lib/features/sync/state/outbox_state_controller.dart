@@ -41,11 +41,14 @@ Stream<int> outboxPendingCount(Ref ref) {
   return syncDb.watchOutboxCount();
 }
 
-/// Future provider for daily outbox volume over the last 30 days.
+/// Number of days of outbox volume history to query and display.
+const kOutboxVolumeDays = 30;
+
+/// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
 /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
 @riverpod
 Future<List<Observation>> outboxDailyVolume(Ref ref) async {
   final syncDb = ref.watch(syncDatabaseProvider);
-  final volumes = await syncDb.getDailyOutboxVolume(days: 30);
+  final volumes = await syncDb.getDailyOutboxVolume(days: kOutboxVolumeDays);
   return volumes.map((v) => Observation(v.date, v.totalBytes / 1024)).toList();
 }
