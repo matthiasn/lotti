@@ -46,31 +46,63 @@ Future<TaskResolutionTimeSeries> templateTaskResolutionTimeSeries(
   final journalDb = ref.watch(journalDbProvider);
 
   final agents = await templateService.getAgentsForTemplate(templateId);
-  final entries = <TaskResolutionEntry>[];
+  if (agents.isEmpty) {
+    return computeResolutionTimeSeries(const []);
+  }
 
-  for (final agent in agents) {
-    final links = await repository.getLinksFrom(
-      agent.agentId,
-      type: 'agent_task',
-    );
+  final linksByAgent = await Future.wait(
+    agents.map((agent) async {
+      final links = await repository.getLinksFrom(
+        agent.agentId,
+        type: 'agent_task',
+      );
+      return (agent: agent, links: links);
+    }),
+  );
 
+  final linkedTasks = <_LinkedAgentTask>[];
+  for (final (agent: agent, links: links) in linksByAgent) {
     for (final link in links) {
-      final taskEntity = await journalDb.journalEntityById(link.toId);
-      if (taskEntity is! Task) continue;
-
-      final resolution = _findResolution(taskEntity.data.statusHistory);
-      entries.add(
-        TaskResolutionEntry(
+      linkedTasks.add(
+        _LinkedAgentTask(
           agentId: agent.agentId,
-          taskId: link.toId,
           agentCreatedAt: agent.createdAt,
-          resolvedAt: resolution?.createdAt,
-          resolution: resolution != null
-              ? (resolution is TaskDone ? 'done' : 'rejected')
-              : null,
+          taskId: link.toId,
         ),
       );
     }
+  }
+
+  if (linkedTasks.isEmpty) {
+    return computeResolutionTimeSeries(const []);
+  }
+
+  final taskById = <String, JournalEntity?>{};
+  await Future.wait(
+    linkedTasks.map((linkedTask) => linkedTask.taskId).toSet().map(
+      (taskId) async {
+        taskById[taskId] = await journalDb.journalEntityById(taskId);
+      },
+    ),
+  );
+
+  final entries = <TaskResolutionEntry>[];
+  for (final linkedTask in linkedTasks) {
+    final taskEntity = taskById[linkedTask.taskId];
+    if (taskEntity is! Task) continue;
+
+    final resolution = _findResolution(taskEntity.data.statusHistory);
+    entries.add(
+      TaskResolutionEntry(
+        agentId: linkedTask.agentId,
+        taskId: linkedTask.taskId,
+        agentCreatedAt: linkedTask.agentCreatedAt,
+        resolvedAt: resolution?.createdAt,
+        resolution: resolution != null
+            ? (resolution is TaskDone ? 'done' : 'rejected')
+            : null,
+      ),
+    );
   }
 
   return computeResolutionTimeSeries(entries);
@@ -84,4 +116,16 @@ TaskStatus? _findResolution(List<TaskStatus> statusHistory) {
     }
   }
   return null;
+}
+
+class _LinkedAgentTask {
+  const _LinkedAgentTask({
+    required this.agentId,
+    required this.agentCreatedAt,
+    required this.taskId,
+  });
+
+  final String agentId;
+  final DateTime agentCreatedAt;
+  final String taskId;
 }

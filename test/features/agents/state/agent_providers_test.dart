@@ -1571,6 +1571,46 @@ void main() {
       expect(orchestrator.queue, same(queue));
       expect(orchestrator.runner, same(runner));
     });
+
+    test(
+        'wires persisted-state callback to UpdateNotifications when registered',
+        () async {
+      final mockRepo = MockAgentRepository();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      final mockNotifications = MockUpdateNotifications();
+      addTearDown(runner.dispose);
+
+      when(
+        () => mockNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      ).thenReturn(null);
+
+      await getIt.reset();
+      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+      addTearDown(getIt.reset);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+      orchestrator.onPersistedStateChanged?.call(kTestAgentId);
+
+      verify(
+        () => mockNotifications.notify(
+          {kTestAgentId, agentNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
   });
 
   group('agentServiceProvider', () {

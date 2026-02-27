@@ -69,6 +69,7 @@ class WakeOrchestrator {
     required this.queue,
     required this.runner,
     this.wakeExecutor,
+    this.onPersistedStateChanged,
   });
 
   final AgentRepository repository;
@@ -80,14 +81,9 @@ class WakeOrchestrator {
   /// after acquiring the run lock and persisting the wake-run entry.
   WakeExecutor? wakeExecutor;
 
-  /// Emits the agentId whenever the orchestrator persists a throttle state
-  /// change (set or clear `nextWakeAt`). UI providers can watch this to
-  /// refresh the countdown without going through the shared notification
-  /// stream (which the orchestrator itself listens to).
-  final _stateChangedController = StreamController<String>.broadcast();
-
-  /// Stream of agentIds whose persisted throttle state changed.
-  Stream<String> get stateChanged => _stateChangedController.stream;
+  /// Optional callback fired when persisted throttle state changes for an
+  /// agent (set/clear `nextWakeAt`).
+  final void Function(String agentId)? onPersistedStateChanged;
 
   final _subscriptions = <AgentSubscription>[];
 
@@ -271,7 +267,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
         );
-        _stateChangedController.add(agentId);
+        onPersistedStateChanged?.call(agentId);
       }
     } catch (e) {
       developer.log(
@@ -325,7 +321,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
         );
-        _stateChangedController.add(agentId);
+        onPersistedStateChanged?.call(agentId);
       }
     } catch (e) {
       developer.log(
@@ -405,10 +401,6 @@ class WakeOrchestrator {
     _deferredDrainTimers.clear();
     await _notificationSub?.cancel();
     _notificationSub = null;
-    // Do NOT close _stateChangedController here — this orchestrator is a
-    // keep-alive singleton that may be restarted (e.g. when the agents flag
-    // toggles). Closing the broadcast controller would make subsequent
-    // .add() calls throw on a closed sink.
   }
 
   /// Starts a periodic safety-net timer that ensures the queue is eventually

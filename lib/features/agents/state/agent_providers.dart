@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:async/async.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -91,29 +90,26 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
 @riverpod
 Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
   final notifications = getIt<UpdateNotifications>();
-  final orchestrator = ref.watch(wakeOrchestratorProvider);
-
-  // Merge the global notification stream (filtered by agentId) with the
-  // orchestrator's dedicated state-change stream. The orchestrator writes
-  // throttle state (nextWakeAt) via the repository directly, bypassing
-  // UpdateNotifications, so we merge its stateChanged stream to ensure
-  // the UI refreshes for countdown display.
-  final notificationStream =
-      notifications.updateStream.where((ids) => ids.contains(agentId));
-  final orchestratorStream =
-      orchestrator.stateChanged.where((id) => id == agentId).map(
-            (id) => <String>{id},
-          );
-  return StreamGroup.merge([notificationStream, orchestratorStream]);
+  return notifications.updateStream.where((ids) => ids.contains(agentId));
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
+  void Function(String agentId)? onPersistedStateChanged;
+  if (getIt.isRegistered<UpdateNotifications>()) {
+    final notifications = getIt<UpdateNotifications>();
+    onPersistedStateChanged = (agentId) {
+      // Use update-only notifications so these state writes don't feed back
+      // into the orchestrator's local wake-trigger stream.
+      notifications.notify({agentId, agentNotification}, fromSync: true);
+    };
+  }
   return WakeOrchestrator(
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
+    onPersistedStateChanged: onPersistedStateChanged,
   );
 }
 

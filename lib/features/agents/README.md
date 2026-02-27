@@ -23,6 +23,8 @@ The system is enabled only when `enableAgents` is true.
   task's associated task agent (via `agent_task` links + `agentReportHead`).
 - Legacy linked-task `latestSummary` payloads are stripped before prompt
   submission and are no longer used for Task Agent execution.
+- MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
+  avoid repeated journal lookups for shared task links.
 
 ## High-Level Architecture
 
@@ -67,6 +69,7 @@ flowchart TD
   L --> M["Task handlers + Journal writes"]
   I --> N["persist report/messages/state via AgentSyncService"]
   N --> O["WakeOrchestrator marks wake_run status"]
+  O --> P["Persisted throttle update -> UpdateNotifications.notify(fromSync: true)"]
 ```
 
 ### 2) Manual Reanalysis (Agent Detail -> Immediate Run)
@@ -114,6 +117,7 @@ sequenceDiagram
   W->>ADB: Persist thought/report/observations/state
   W-->>O: WakeResult (success or throw on failure)
   O->>ADB: Update wake_run status
+  O->>N: notify({agentId, AGENT_CHANGED}, fromSync: true) on nextWakeAt writes
 ```
 
 ### B) Template Evolution Chat (UI -> LLM -> Versioning)
@@ -153,22 +157,3 @@ sequenceDiagram
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes.
 - `state/`: Riverpod DI + read models + initialization wiring.
 - `ui/`: settings/templates/instances/detail/evolution screens.
-
-## Architecture Review Findings (Current)
-
-1. Wake failure propagation was inconsistent at the wiring boundary: workflow-level failures could be treated as successful wake runs unless converted to exceptions.
-2. Thread ordering logic was duplicated in both provider and UI layers.
-3. The feature has grown enough that narrative architecture docs and decision docs should be split.
-
-## ADR Recommendation
-
-Keep this README as the feature map and operational call-flow reference. Move long-lived technical decisions to `docs/adr/`.
-
-Suggested structure:
-
-- `docs/adr/0001-agent-wake-throttle-and-suppression.md`
-- `docs/adr/0002-agent-template-version-head-model.md`
-- `docs/adr/0003-agent-sync-transaction-buffering.md`
-- `docs/adr/0004-evolution-session-lifecycle-and-genui.md`
-
-Each ADR should include: context, decision, alternatives considered, consequences, migration/rollback notes.

@@ -170,6 +170,83 @@ void main() {
       );
     });
 
+    test(
+        'loads each linked task entity once even when multiple agents link to it',
+        () async {
+      final createdAt = DateTime(2024, 3, 15, 10);
+      final resolvedAt = DateTime(2024, 3, 15, 13);
+
+      final agent1 = makeTestIdentity(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        createdAt: createdAt,
+      );
+      final agent2 = makeTestIdentity(
+        id: 'agent-2',
+        agentId: 'agent-2',
+        createdAt: createdAt,
+      );
+
+      when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => [agent1, agent2]);
+
+      when(() => mockRepository.getLinksFrom('agent-1', type: 'agent_task'))
+          .thenAnswer(
+        (_) async => [
+          model.AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'shared-task',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(() => mockRepository.getLinksFrom('agent-2', type: 'agent_task'))
+          .thenAnswer(
+        (_) async => [
+          model.AgentLink.agentTask(
+            id: 'link-2',
+            fromId: 'agent-2',
+            toId: 'shared-task',
+            createdAt: createdAt,
+            updatedAt: createdAt,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      when(() => mockJournalDb.journalEntityById('shared-task'))
+          .thenAnswer((_) async => _makeTask(
+                id: 'shared-task',
+                createdAt: createdAt,
+                statusHistory: [
+                  TaskStatus.open(
+                    id: uuid.v1(),
+                    createdAt: createdAt,
+                    utcOffset: 0,
+                  ),
+                  TaskStatus.done(
+                    id: uuid.v1(),
+                    createdAt: resolvedAt,
+                    utcOffset: 0,
+                  ),
+                ],
+              ));
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        templateTaskResolutionTimeSeriesProvider(kTestTemplateId).future,
+      );
+
+      expect(result.dailyBuckets, hasLength(1));
+      expect(result.dailyBuckets.first.resolvedCount, 2);
+      verify(() => mockJournalDb.journalEntityById('shared-task')).called(1);
+    });
+
     test('returns empty when no agents exist for template', () async {
       when(() => mockTemplateService.getAgentsForTemplate(kTestTemplateId))
           .thenAnswer((_) async => []);
