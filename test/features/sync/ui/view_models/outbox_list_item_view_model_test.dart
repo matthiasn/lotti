@@ -332,6 +332,8 @@ void main() {
           1023: '1023 B',
           1024: '1.0 KB',
           1048576: '1.0 MB',
+          1073741824: '1.00 GB',
+          1610612736: '1.50 GB',
         };
 
         for (final entry in cases.entries) {

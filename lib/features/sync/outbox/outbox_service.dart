@@ -247,7 +247,7 @@ class OutboxService {
       final messageToEnqueue = await _prepareMessage(syncMessage, host);
 
       final jsonString = json.encode(messageToEnqueue);
-      final jsonByteLength = jsonString.length;
+      final jsonByteLength = utf8.encode(jsonString).length;
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
         message: Value(jsonString),
@@ -706,7 +706,7 @@ class OutboxService {
           );
 
           final mergedJson = json.encode(mergedMessage.toJson());
-          final mergedPayloadSize = mergedJson.length + fileLength;
+          final mergedPayloadSize = utf8.encode(mergedJson).length + fileLength;
           await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
             newMessage: mergedJson,
@@ -841,7 +841,7 @@ class OutboxService {
             itemId: existingItem.id,
             newMessage: mergedJson,
             newSubject: subject,
-            payloadSize: mergedJson.length,
+            payloadSize: utf8.encode(mergedJson).length,
           );
 
           // Log covered clocks for debugging

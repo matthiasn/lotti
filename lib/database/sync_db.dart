@@ -636,40 +636,34 @@ class SyncDatabase extends _$SyncDatabase {
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(Duration(days: days));
 
-    final query = select(outbox)
-      ..where(
-        (t) =>
-            t.status.equals(OutboxStatus.sent.index) &
-            t.createdAt.isBiggerOrEqualValue(cutoff),
+    final cutoffSeconds = cutoff.millisecondsSinceEpoch ~/ 1000;
+    final rows = await customSelect(
+      "SELECT strftime('%Y-%m-%d', created_at, 'unixepoch') AS day, "
+      'COALESCE(SUM(payload_size), 0) AS total_bytes, '
+      'COUNT(*) AS item_count '
+      'FROM outbox '
+      'WHERE status = ? AND created_at >= ? '
+      "GROUP BY strftime('%Y-%m-%d', created_at, 'unixepoch') "
+      'ORDER BY day ASC',
+      variables: [
+        Variable.withInt(OutboxStatus.sent.index),
+        Variable.withInt(cutoffSeconds),
+      ],
+    ).get();
+
+    return rows.map((row) {
+      final dayString = row.read<String>('day');
+      final parts = dayString.split('-');
+      return OutboxDailyVolume(
+        date: DateTime.utc(
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+          int.parse(parts[2]),
+        ),
+        totalBytes: row.read<int>('total_bytes'),
+        itemCount: row.read<int>('item_count'),
       );
-
-    final items = await query.get();
-
-    // Group by date (day granularity, UTC)
-    final byDay = <DateTime, _DayAccumulator>{};
-    for (final item in items) {
-      final dayKey = DateTime.utc(
-        item.createdAt.year,
-        item.createdAt.month,
-        item.createdAt.day,
-      );
-      byDay.putIfAbsent(dayKey, _DayAccumulator.new)
-        ..totalBytes += item.payloadSize ?? 0
-        ..itemCount += 1;
-    }
-
-    final sorted = byDay.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-
-    return sorted
-        .map(
-          (e) => OutboxDailyVolume(
-            date: e.key,
-            totalBytes: e.value.totalBytes,
-            itemCount: e.value.itemCount,
-          ),
-        )
-        .toList();
+    }).toList();
   }
 
   @override
@@ -701,10 +695,4 @@ class SyncDatabase extends _$SyncDatabase {
       },
     );
   }
-}
-
-/// Internal helper for accumulating daily outbox volume.
-class _DayAccumulator {
-  int totalBytes = 0;
-  int itemCount = 0;
 }

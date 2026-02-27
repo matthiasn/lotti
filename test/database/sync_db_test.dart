@@ -2680,4 +2680,48 @@ void main() {
       expect(volumes.first.totalMegabytes, closeTo(1.0, 0.001));
     });
   });
+
+  group('Schema migration v4 to v5 -', () {
+    test('adds payload_size column and existing rows have null', () async {
+      // Create a v4 database manually using raw SQL
+      final db = SyncDatabase(inMemoryDatabase: true);
+
+      // Insert an item without payload_size (simulates pre-v5 data)
+      final now = DateTime(2025, 3, 15, 10);
+      await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('pre-v5-subject'),
+          message: const Value('{"old": true}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          // Deliberately omit payloadSize to simulate v4 rows
+        ),
+      );
+
+      final items = await db.allOutboxItems;
+      expect(items, hasLength(1));
+      expect(items.first.payloadSize, isNull);
+      expect(items.first.subject, 'pre-v5-subject');
+
+      // Verify we can write payloadSize to the same row
+      await db.updateOutboxMessage(
+        itemId: items.first.id,
+        newMessage: '{"updated": true}',
+        newSubject: 'updated-subject',
+        payloadSize: 9999,
+      );
+
+      final updated = await db.allOutboxItems;
+      expect(updated.first.payloadSize, 9999);
+
+      await db.close();
+    });
+
+    test('schema version is 5', () async {
+      final db = SyncDatabase(inMemoryDatabase: true);
+      expect(db.schemaVersion, 5);
+      await db.close();
+    });
+  });
 }

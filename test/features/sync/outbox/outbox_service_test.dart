@@ -757,10 +757,10 @@ void main() {
       expect(capturedCompanions, hasLength(1));
       final companion = capturedCompanions.single;
 
-      // payloadSize should equal the JSON message length
+      // payloadSize should equal the UTF-8 byte length of the JSON message
       final payloadSize = companion.payloadSize.value!;
-      final messageLength = companion.message.value.length;
-      expect(payloadSize, messageLength);
+      final messageByteLength = utf8.encode(companion.message.value).length;
+      expect(payloadSize, messageByteLength);
     });
 
     test('payloadSize is JSON length for simple message types', () async {
@@ -791,8 +791,8 @@ void main() {
       expect(capturedCompanions, hasLength(1));
       final companion = capturedCompanions.single;
       final payloadSize = companion.payloadSize.value!;
-      final messageLength = companion.message.value.length;
-      expect(payloadSize, messageLength);
+      final messageByteLength = utf8.encode(companion.message.value).length;
+      expect(payloadSize, messageByteLength);
     });
 
     test('enqueues entry link with coveredVectorClocks populated', () async {
@@ -883,6 +883,7 @@ void main() {
       // Capture the update call
       String? capturedMessage;
       String? capturedSubject;
+      int? capturedPayloadSize;
       when(
         () => syncDatabase.updateOutboxMessage(
           itemId: any(named: 'itemId'),
@@ -893,6 +894,7 @@ void main() {
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
         capturedSubject = invocation.namedArguments[#newSubject] as String?;
+        capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
         return 1;
       });
 
@@ -961,6 +963,14 @@ void main() {
       expect(coveredCounters, containsAll([5, 7]));
       expect(coveredCounters, hasLength(2));
       expect(capturedSubject, 'hhash:7');
+
+      // Verify merged payloadSize = utf8 byte length of merged JSON
+      // (no file attachment for text-only journal entry)
+      expect(capturedPayloadSize, isNotNull);
+      expect(
+        capturedPayloadSize,
+        utf8.encode(capturedMessage!).length,
+      );
     });
 
     test('accumulates multiple covered clocks across successive merges',
@@ -1214,6 +1224,7 @@ void main() {
 
       String? capturedMessage;
       String? capturedSubject;
+      int? capturedPayloadSize;
       when(
         () => syncDatabase.updateOutboxMessage(
           itemId: any(named: 'itemId'),
@@ -1224,6 +1235,7 @@ void main() {
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
         capturedSubject = invocation.namedArguments[#newSubject] as String?;
+        capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
         return 1;
       });
 
@@ -1281,6 +1293,13 @@ void main() {
       expect(coveredCounters, containsAll([3, 5]));
       expect(coveredCounters, hasLength(2));
       expect(capturedSubject, 'hhash:link:5');
+
+      // Verify merged payloadSize = utf8 byte length of merged JSON
+      expect(capturedPayloadSize, isNotNull);
+      expect(
+        capturedPayloadSize,
+        utf8.encode(capturedMessage!).length,
+      );
     });
 
     test('records sequence log entry during journal entity merge', () async {
