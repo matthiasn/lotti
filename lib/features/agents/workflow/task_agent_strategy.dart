@@ -171,10 +171,10 @@ class TaskAgentStrategy extends ConversationStrategy {
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
-        _addToChangeSet(csBuilder, toolName, args);
+        final response = _addToChangeSet(csBuilder, toolName, args);
         manager.addToolResponse(
           toolCallId: call.id,
-          response: 'Proposal queued for user review.',
+          response: response,
         );
         continue;
       }
@@ -334,24 +334,36 @@ class TaskAgentStrategy extends ConversationStrategy {
   ///
   /// Batch tools (listed in [AgentToolRegistry.explodedBatchTools]) are
   /// exploded into individual items; all others are added as a single item.
-  void _addToChangeSet(
+  ///
+  /// Returns a response string for the LLM. For batch tools with skipped
+  /// items, the response includes a warning.
+  String _addToChangeSet(
     ChangeSetBuilder csBuilder,
     String toolName,
     Map<String, dynamic> args,
   ) {
     final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
+    String response;
     if (batchKey != null) {
-      csBuilder.addBatchItem(
+      final result = csBuilder.addBatchItem(
         toolName: toolName,
         args: args,
         summaryPrefix: _humanToolPrefix(toolName),
       );
+      if (result.skipped > 0) {
+        response = 'Proposal queued for user review '
+            '(${result.added} item(s) queued, '
+            '${result.skipped} malformed item(s) skipped).';
+      } else {
+        response = 'Proposal queued for user review.';
+      }
     } else {
       csBuilder.addItem(
         toolName: toolName,
         args: args,
         humanSummary: _generateHumanSummary(toolName, args),
       );
+      response = 'Proposal queued for user review.';
     }
 
     developer.log(
@@ -359,6 +371,8 @@ class TaskAgentStrategy extends ConversationStrategy {
       '(${csBuilder.items.length} items total)',
       name: 'TaskAgentStrategy',
     );
+
+    return response;
   }
 
   /// Generate a human-readable summary for a single (non-batch) tool call.
@@ -373,8 +387,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       'update_task_due_date' => 'Set due date to ${args['dueDate'] ?? '?'}',
       'update_task_priority' => 'Set priority to ${args['priority'] ?? '?'}',
       'set_task_status' => 'Set status to ${args['status'] ?? '?'}',
-      'assign_task_labels' =>
-        'Assign ${(args['labels'] as List?)?.length ?? 0} label(s)',
+      'assign_task_labels' => () {
+          final labels = args['labels'];
+          final count = labels is List ? labels.length : 0;
+          return 'Assign $count label(s)';
+        }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }

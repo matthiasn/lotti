@@ -6,6 +6,17 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:uuid/uuid.dart';
 
+/// Result of adding batch items to a [ChangeSetBuilder].
+class BatchAddResult {
+  const BatchAddResult({required this.added, required this.skipped});
+
+  /// Number of valid items that were added.
+  final int added;
+
+  /// Number of array elements that were skipped (not `Map<String, dynamic>`).
+  final int skipped;
+}
+
 /// Accumulates deferred tool calls during an agent wake and produces a
 /// [ChangeSetEntity] at the end.
 ///
@@ -66,7 +77,10 @@ class ChangeSetBuilder {
   ///
   /// Each array element becomes a separate item with its own human summary.
   /// The [summaryPrefix] is prepended to each element's description.
-  void addBatchItem({
+  ///
+  /// Returns a [BatchAddResult] indicating how many items were added and how
+  /// many were skipped (non-map elements).
+  BatchAddResult addBatchItem({
     required String toolName,
     required Map<String, dynamic> args,
     required String summaryPrefix,
@@ -79,7 +93,7 @@ class ChangeSetBuilder {
         args: args,
         humanSummary: '$summaryPrefix (batch)',
       );
-      return;
+      return const BatchAddResult(added: 1, skipped: 0);
     }
 
     final array = args[arrayKey];
@@ -90,13 +104,15 @@ class ChangeSetBuilder {
         args: args,
         humanSummary: '$summaryPrefix (empty)',
       );
-      return;
+      return const BatchAddResult(added: 0, skipped: 0);
     }
 
     // Derive the singular tool name by replacing 'add_multiple_' with 'add_'
     // and 'update_checklist_items' with 'update_checklist_item'.
     final singularToolName = _singularize(toolName);
 
+    var added = 0;
+    var skipped = 0;
     for (final element in array) {
       if (element is Map<String, dynamic>) {
         final summary = _generateItemSummary(
@@ -111,8 +127,12 @@ class ChangeSetBuilder {
             humanSummary: summary,
           ),
         );
+        added++;
+      } else {
+        skipped++;
       }
     }
+    return BatchAddResult(added: added, skipped: skipped);
   }
 
   /// Build and persist the [ChangeSetEntity].
@@ -166,8 +186,8 @@ class ChangeSetBuilder {
       if (singularToolName.startsWith('update_')) {
         final id = args['id'] ?? '';
         final isChecked = args['isChecked'];
-        if (isChecked != null) {
-          final action = isChecked == true ? 'Check' : 'Uncheck';
+        if (isChecked is bool) {
+          final action = isChecked ? 'Check' : 'Uncheck';
           return '$action: "$title"';
         }
         return 'Update "$title" ($id)';
@@ -178,8 +198,8 @@ class ChangeSetBuilder {
     final id = args['id'];
     if (id is String) {
       final isChecked = args['isChecked'];
-      if (isChecked != null) {
-        final action = isChecked == true ? 'Check off' : 'Uncheck';
+      if (isChecked is bool) {
+        final action = isChecked ? 'Check off' : 'Uncheck';
         return '$action item $id';
       }
     }

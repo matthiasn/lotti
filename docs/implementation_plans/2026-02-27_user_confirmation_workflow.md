@@ -258,9 +258,8 @@ For example, if the agent calls:
 
 The builder produces **5 separate `ChangeItem` entries**, each with:
 
-- `toolName`: `"add_checklist_item"` (singular — the execution reassembles
-  confirmed items into a single `add_multiple_checklist_items` call, or
-  executes them individually)
+- `toolName`: `"add_checklist_item"` (singular — confirmed items are executed
+  individually via the singular handler in the initial implementation)
 - `args`: `{"title": "Design mockup"}` (just that one item)
 - `humanSummary`: `"Add checklist item: Design mockup"`
 
@@ -282,8 +281,8 @@ is a possible future optimization but is not implemented initially.
 ### 5.4 Human-Summary Generation
 
 The LLM is instructed (via system prompt amendment) to include a
-`humanSummary` field in every deferred tool call. This is a plain-text,
-user-facing description of what the change does, e.g.:
+`humanSummary` field in every deferred tool call. This is plain-text audit
+metadata persisted with each `ChangeItem` for traceability and debugging, e.g.:
 
 > "Set time estimate to 2 hours"
 > "Add checklist item: Design mockup"
@@ -293,7 +292,8 @@ the item's fields (e.g., title for checklist items), so the LLM does not need
 to provide individual summaries for each array element.
 
 If the LLM omits the summary for non-batch tools, the strategy falls back to a
-generated default from tool name + args.
+generated default from tool name + args. UI confirmation labels are localized
+independently and derived from `toolName` + `args`, not from `humanSummary`.
 
 ---
 
@@ -304,7 +304,7 @@ generated default from tool name + args.
 The change set surfaces as a compact card in the TLDR area at the bottom of the
 task detail view. This reuses the existing `ModernBaseCard` + Gamey theme.
 
-```
+```text
 ┌──────────────────────────────────────────────┐
 │  ✨ Laura suggests 7 changes                 │
 │                                              │
@@ -447,7 +447,7 @@ Future<List<ChangeDecisionEntity>> getRecentDecisions({
 The agent's system prompt context (assembled by the prompt builder) is extended
 with a new section:
 
-```
+```text
 ## Recent User Decisions
 
 The following shows how the user responded to your recent suggestions.
@@ -481,7 +481,7 @@ marked `expired` during the agent's next wake. Expired sets:
 
 - Are hidden from the UI.
 - Are NOT re-proposed (the agent sees them as "no decision" in history).
-- Can be cleaned up by a periodic background task.
+- They can be cleaned up by a periodic background task.
 
 ---
 
@@ -561,7 +561,7 @@ needs to render change sets inline during evolution sessions.
 | Risk | Mitigation |
 |---|---|
 | LLM omits `humanSummary` | Fallback generator from tool name + args |
-| Change set grows too large | Cap at 10 items per set; overflow items execute immediately with warning |
+| Change set grows too large | Cap at 10 items per set; overflow items are queued into a follow-up pending change set with a user-visible notice |
 | User never reviews change set | 7-day expiration + badge/notification |
 | Concurrent wakes produce competing sets | Each wake creates its own set; UI shows all pending sets |
 | Tool args become stale (task changed since wake) | Re-validate args at confirmation time; fail gracefully with user message |

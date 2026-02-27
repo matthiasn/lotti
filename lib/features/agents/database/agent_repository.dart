@@ -22,6 +22,10 @@ class AgentRepository {
 
   final AgentDatabase _db;
 
+  /// Multiplier for SQL LIMIT when post-query Dart filtering is applied.
+  /// Over-fetching compensates for rows discarded during in-memory filtering.
+  static const _overFetchMultiplier = 5;
+
   /// Run [action] inside a database transaction.
   ///
   /// All operations within the callback are committed atomically; if any
@@ -354,7 +358,11 @@ class AgentRepository {
     String? taskId,
     int limit = 20,
   }) async {
-    final rows = await _db.getPendingChangeSetsForAgent(agentId, limit).get();
+    // When filtering by taskId in Dart, over-fetch from DB to compensate for
+    // rows that will be discarded. Without a dedicated taskId column we cannot
+    // filter at the SQL level.
+    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final rows = await _db.getPendingChangeSetsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
@@ -362,7 +370,7 @@ class AgentRepository {
     if (taskId != null) {
       results = results.where((cs) => cs.taskId == taskId).toList();
     }
-    return results;
+    return results.take(limit).toList();
   }
 
   /// Fetch recent change decisions for [agentId], optionally filtered by
@@ -376,7 +384,8 @@ class AgentRepository {
     String? taskId,
     int limit = 20,
   }) async {
-    final rows = await _db.getRecentDecisionsForAgent(agentId, limit).get();
+    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final rows = await _db.getRecentDecisionsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeDecisionEntity>()
@@ -384,7 +393,7 @@ class AgentRepository {
     if (taskId != null) {
       results = results.where((d) => d.taskId == taskId).toList();
     }
-    return results;
+    return results.take(limit).toList();
   }
 
   // ── Link CRUD ──────────────────────────────────────────────────────────────

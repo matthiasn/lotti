@@ -195,7 +195,7 @@ class AgentDbConversions {
       agentTemplateHead: (e) => e.updatedAt,
       evolutionSession: (e) => e.updatedAt,
       evolutionNote: (e) => e.createdAt,
-      changeSet: (e) => e.createdAt,
+      changeSet: (e) => e.resolvedAt ?? e.createdAt,
       changeDecision: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );

@@ -988,6 +988,69 @@ void main() {
         expect(csBuilder.items[4].humanSummary, 'Set status to GROOMED');
         expect(csBuilder.items[5].humanSummary, 'Assign 1 label(s)');
       });
+
+      test('handles malformed labels arg without crashing', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-bad-labels',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'assign_task_labels',
+              arguments: jsonEncode({'labels': 'not-a-list'}),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(csBuilder.items, hasLength(1));
+        expect(csBuilder.items.first.humanSummary, 'Assign 0 label(s)');
+      });
+
+      test('warns LLM when batch items contain non-map elements', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-mixed',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: jsonEncode({
+                'items': [
+                  {'title': 'Valid item'},
+                  'not-a-map',
+                  42,
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Only the valid map item should be in the builder.
+        expect(csBuilder.items, hasLength(1));
+        expect(csBuilder.items.first.humanSummary, 'Add: "Valid item"');
+
+        // LLM should be warned about skipped items.
+        final captured = verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-mixed',
+            response: captureAny(named: 'response'),
+          ),
+        ).captured;
+        expect(
+            captured.last as String, contains('2 malformed item(s) skipped'));
+        expect(
+          captured.last as String,
+          contains('1 item(s) queued'),
+        );
+      });
     });
   });
 }
