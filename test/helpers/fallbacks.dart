@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -170,6 +171,27 @@ void registerAllFallbackValues() {
       createdAt: DateTime.fromMillisecondsSinceEpoch(0),
       vectorClock: null,
     ) as AgentTemplateVersionEntity,
+  );
+
+  // Change set fallbacks
+  registerFallbackValue(
+    AgentDomainEntity.changeSet(
+      id: 'fallback-cs',
+      agentId: 'fallback-agent',
+      taskId: 'fallback-task',
+      threadId: 'fallback-thread',
+      runKey: 'fallback-run',
+      status: ChangeSetStatus.pending,
+      items: const [
+        ChangeItem(
+          toolName: 'fallback_tool',
+          args: {},
+          humanSummary: 'Fallback',
+        ),
+      ],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      vectorClock: null,
+    ) as ChangeSetEntity,
   );
 
   // Common builtin fallbacks

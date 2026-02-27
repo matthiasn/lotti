@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
@@ -49,6 +50,7 @@ class TaskForm extends ConsumerWidget {
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
         ),
+        ChangeSetSummaryCard(taskId: taskId),
         LinkedTasksWidget(taskId: taskId),
         ChecklistsWidget(entryId: taskId, task: task),
       ],

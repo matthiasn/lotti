@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -276,6 +277,13 @@ class TaskAgentWorkflow {
         labelsRepository: labelsRepository,
       );
 
+      final changeSetBuilder = ChangeSetBuilder(
+        agentId: agentId,
+        taskId: taskId,
+        threadId: threadId,
+        runKey: runKey,
+      );
+
       final strategy = TaskAgentStrategy(
         executor: executor,
         syncService: syncService,
@@ -283,6 +291,7 @@ class TaskAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         taskId: taskId,
+        changeSetBuilder: changeSetBuilder,
         resolveCategoryId: (entityId) async {
           final entity = await journalDb.journalEntityById(entityId);
           return entity?.categoryId;
@@ -443,6 +452,9 @@ class TaskAgentWorkflow {
           );
         }
 
+        // 10b. Persist deferred change set (if any items were accumulated).
+        await changeSetBuilder.build(syncService);
+
         // 11. Persist state.
         await syncService.upsertEntity(
           state.copyWith(
@@ -455,10 +467,12 @@ class TaskAgentWorkflow {
         );
       });
 
-      _log(
-        'wake completed: ${observations.length} observations, '
-        '${executor.mutatedEntries.length} mutations',
-        subDomain: 'execute',
+      developer.log(
+        'Wake completed for agent $agentId: '
+        '${observations.length} observations, '
+        '${executor.mutatedEntries.length} mutations, '
+        '${changeSetBuilder.items.length} deferred changes',
+        name: 'TaskAgentWorkflow',
       );
 
       return WakeResult(

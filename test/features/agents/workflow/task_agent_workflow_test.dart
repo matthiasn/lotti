@@ -1,12 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/checklist_item_data.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -19,9 +16,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1797,7 +1792,14 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('set_task_title with missing title arg returns error', () async {
+      // ── Deferred tool calls ──────────────────────────────────────────
+      //
+      // All mutating tools are now deferred to a ChangeSetBuilder rather
+      // than executed immediately. The strategy responds with "Proposal
+      // queued for user review." and the actual validation/execution
+      // happens when the user confirms the change set.
+
+      test('set_task_title with missing title arg is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
           '{}',
@@ -1808,13 +1810,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('must be a string'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('update_task_estimate with null minutes returns error', () async {
+      test('update_task_estimate with null minutes is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'update_task_estimate',
           '{}',
@@ -1825,13 +1827,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('required'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('update_task_due_date with empty dueDate returns error', () async {
+      test('update_task_due_date with empty dueDate is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'update_task_due_date',
           '{"dueDate":""}',
@@ -1842,13 +1844,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty string'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('update_task_priority with empty priority returns error', () async {
+      test('update_task_priority with empty priority is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'update_task_priority',
           '{"priority":""}',
@@ -1859,13 +1861,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty string'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('assign_task_labels with non-array labels returns error', () async {
+      test('assign_task_labels with non-array labels is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'assign_task_labels',
           '{"labels":"not-an-array"}',
@@ -1876,66 +1878,39 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('"labels" must be an array'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('assign_task_labels assigns valid labels and reports mutation',
-          () async {
-        await getIt.reset();
-        addTearDown(getIt.reset);
-        getIt
-          ..registerSingleton<LoggingService>(MockLoggingService())
-          ..registerSingleton<LabelAssignmentRateLimiter>(
-            LabelAssignmentRateLimiter(),
-          );
-
-        when(() => mockJournalDb.getLabelDefinitionById('label-1')).thenAnswer(
-          (_) async => LabelDefinition(
-            id: 'label-1',
-            createdAt: DateTime(2024, 3),
-            updatedAt: DateTime(2024, 3),
-            name: 'Urgent',
-            color: '#FF0000',
-            vectorClock: null,
-          ),
-        );
-        when(
-          () => mockLabelsRepository.addLabels(
-            journalEntityId: taskId,
-            addedLabelIds: ['label-1'],
-          ),
-        ).thenAnswer((_) async => true);
-
+      test('assign_task_labels with valid labels is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'assign_task_labels',
           '{"labels":[{"id":"label-1","confidence":"high"}]}',
         );
 
         expect(result.success, isTrue);
-        verify(
+        // Labels are NOT executed immediately — they are deferred.
+        verifyNever(
           () => mockLabelsRepository.addLabels(
-            journalEntityId: taskId,
-            addedLabelIds: ['label-1'],
+            journalEntityId: any(named: 'journalEntityId'),
+            addedLabelIds: any(named: 'addedLabelIds'),
           ),
-        ).called(1);
+        );
         verify(
           () => mockConversationManager.addToolResponse(
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: allOf(
-                contains('"assigned":["label-1"]'),
-                contains('Assigned 1 label(s)'),
-              ),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('add_multiple_checklist_items with non-array items returns error',
+      test(
+          'add_multiple_checklist_items with non-array items is deferred',
           () async {
         final result = await executeWithToolCallOnRealTask(
           'add_multiple_checklist_items',
@@ -1947,13 +1922,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty array'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('update_checklist_items with non-array items returns error',
+      test('update_checklist_items with non-array items is deferred',
           () async {
         final result = await executeWithToolCallOnRealTask(
           'update_checklist_items',
@@ -1965,13 +1940,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty array'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('update_checklist_items with empty array returns error', () async {
+      test('update_checklist_items with empty array is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'update_checklist_items',
           '{"items":[]}',
@@ -1982,13 +1957,13 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty array'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      test('add_multiple_checklist_items with empty array returns error',
+      test('add_multiple_checklist_items with empty array is deferred',
           () async {
         final result = await executeWithToolCallOnRealTask(
           'add_multiple_checklist_items',
@@ -2000,65 +1975,50 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('non-empty array'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);
       });
 
-      group('handler parse failures (getIt required)', () {
-        late MockLoggingService mockLoggingService;
-
-        setUp(() async {
-          await getIt.reset();
-          mockLoggingService = MockLoggingService();
-          getIt
-            ..registerSingleton<JournalDb>(mockJournalDb)
-            ..registerSingleton<LoggingService>(mockLoggingService);
-        });
-
-        tearDown(getIt.reset);
-
-        test(
-            'add_multiple_checklist_items with string items triggers '
-            'parse failure', () async {
-          // Items pass the wrapper's List type check but the handler
-          // rejects string entries — exercises processFunctionCall failure.
-          final result = await executeWithToolCallOnRealTask(
-            'add_multiple_checklist_items',
-            '{"items":["Buy milk","Pay bills"]}',
-          );
-          expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('must be an object'),
-              ),
+      test(
+          'add_multiple_checklist_items with string items reports skipped',
+          () async {
+        // String items are skipped by the ChangeSetBuilder's batch
+        // exploder (they are not Map<String, dynamic>).
+        final result = await executeWithToolCallOnRealTask(
+          'add_multiple_checklist_items',
+          '{"items":["Buy milk","Pay bills"]}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('skipped'),
             ),
-          ).called(1);
-        });
+          ),
+        ).called(1);
+      });
 
-        test('update_checklist_items with missing id triggers parse failure',
-            () async {
-          // Items pass the wrapper's List/non-empty checks but the handler
-          // rejects missing "id" — exercises processFunctionCall failure.
-          final result = await executeWithToolCallOnRealTask(
-            'update_checklist_items',
-            '{"items":[{"isChecked":true}]}',
-          );
-          expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('missing required "id"'),
-              ),
+      test('update_checklist_items with missing id is deferred', () async {
+        // Items with missing id are still valid Maps and get deferred.
+        // Validation happens at confirmation time.
+        final result = await executeWithToolCallOnRealTask(
+          'update_checklist_items',
+          '{"items":[{"isChecked":true}]}',
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('Proposal queued for user review'),
             ),
-          ).called(1);
-        });
+          ),
+        ).called(1);
       });
 
       test('update_task_estimate accepts numeric string minutes', () async {
@@ -2145,9 +2105,8 @@ void main() {
         ).called(1);
       });
 
-      group('successful handler execution paths', () {
-        /// A Task without estimate, due date, and with default priority —
-        /// all three handlers will proceed to write when given this task.
+      group('deferred handler execution paths', () {
+        /// A Task without estimate, due date, and with default priority.
         final taskForUpdates = Task(
           data: TaskData(
             status: TaskStatus.open(
@@ -2170,76 +2129,77 @@ void main() {
           ),
         );
 
-        test('update_task_estimate succeeds and reports mutation', () async {
-          when(() => mockJournalRepository.updateJournalEntity(any()))
-              .thenAnswer((_) async => true);
-
+        test('update_task_estimate is deferred', () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
             '{"minutes":60}',
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
+          // Not executed immediately — deferred to change set.
+          verifyNever(
+            () => mockJournalRepository.updateJournalEntity(any()),
+          );
           verify(
             () => mockConversationManager.addToolResponse(
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('estimate updated'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_due_date succeeds and reports mutation', () async {
-          when(() => mockJournalRepository.updateJournalEntity(any()))
-              .thenAnswer((_) async => true);
-
+        test('update_task_due_date is deferred', () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_due_date',
             '{"dueDate":"2024-06-30"}',
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
+          verifyNever(
+            () => mockJournalRepository.updateJournalEntity(any()),
+          );
           verify(
             () => mockConversationManager.addToolResponse(
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('due date updated'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_priority succeeds and reports mutation', () async {
-          when(() => mockJournalRepository.updateJournalEntity(any()))
-              .thenAnswer((_) async => true);
-
+        test('update_task_priority is deferred', () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_priority',
             '{"priority":"P1"}',
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
+          verifyNever(
+            () => mockJournalRepository.updateJournalEntity(any()),
+          );
           verify(
             () => mockConversationManager.addToolResponse(
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('priority updated'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_estimate with already-set estimate is skipped',
+        test('update_task_estimate with already-set estimate is deferred',
             () async {
+          // Even when the value matches, it is still deferred — validation
+          // happens at confirmation time.
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
             '{"minutes":240}',
-            // Uses taskWithCategory which has estimate: Duration(hours: 4)
-            // = 240 minutes. Same value triggers the no-op path.
           );
           expect(result.success, isTrue);
           verify(
@@ -2247,14 +2207,16 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('No change needed'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_due_date with invalid format returns error',
+        test('update_task_due_date with invalid format is deferred',
             () async {
+          // Invalid args are still deferred — validation happens at
+          // confirmation time via TaskToolDispatcher.
           final result = await executeWithToolCallOnRealTask(
             'update_task_due_date',
             '{"dueDate":"not-a-date"}',
@@ -2266,13 +2228,13 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Invalid due date'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_priority with invalid priority returns error',
+        test('update_task_priority with invalid priority is deferred',
             () async {
           final result = await executeWithToolCallOnRealTask(
             'update_task_priority',
@@ -2285,117 +2247,48 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Invalid priority'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
 
-        test('update_task_estimate with persistence failure returns error',
+        test('update_task_estimate with persistence failure is deferred',
             () async {
-          when(() => mockJournalRepository.updateJournalEntity(any()))
-              .thenThrow(Exception('DB write failed'));
-
+          // The tool call is deferred regardless — no DB write happens yet.
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
             '{"minutes":60}',
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
+          verifyNever(
+            () => mockJournalRepository.updateJournalEntity(any()),
+          );
           verify(
             () => mockConversationManager.addToolResponse(
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Failed'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
       });
 
-      group('checklist handler success paths (with getIt)', () {
-        late MockLoggingService mockLoggingService;
-
-        /// Task with no checklists (empty checklistIds), correct category.
-        final taskNoChecklists = Task(
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 'status_id',
-              createdAt: DateTime(2024, 3, 15),
-              utcOffset: 60,
-            ),
-            title: 'Task for checklist tests',
-            statusHistory: [],
-            dateTo: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-          ),
-          meta: Metadata(
-            id: taskId,
-            createdAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            categoryId: 'cat-001',
-          ),
-        );
-
-        /// Task with an existing checklist.
-        final taskWithChecklist = Task(
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 'status_id',
-              createdAt: DateTime(2024, 3, 15),
-              utcOffset: 60,
-            ),
-            title: 'Task with checklist',
-            statusHistory: [],
-            dateTo: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            checklistIds: ['checklist-001'],
-          ),
-          meta: Metadata(
-            id: taskId,
-            createdAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            categoryId: 'cat-001',
-          ),
-        );
-
-        setUp(() async {
-          await getIt.reset();
-          mockLoggingService = MockLoggingService();
-
-          // Register mocks needed by handlers that use getIt internally.
-          // Cannot use setUpTestGetIt here because these tests need the
-          // same mockJournalDb instance that stubFullExecutePath() stubs.
-          getIt
-            ..registerSingleton<JournalDb>(mockJournalDb)
-            ..registerSingleton<LoggingService>(mockLoggingService);
-        });
-
-        tearDown(getIt.reset);
-
+      group('deferred checklist handler paths', () {
         test(
-            'add_multiple_checklist_items creates items via addItemToChecklist',
+            'add_multiple_checklist_items is deferred, not executed immediately',
             () async {
-          stubFullExecutePath();
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":[{"title":"Buy milk"}]}',
+          );
 
-          // Return task with existing checklist so addItemToChecklist path
-          // is used (simpler than autoCreateChecklist path).
-          when(() => mockJournalDb.journalEntityById(taskId))
-              .thenAnswer((_) async => taskWithChecklist);
-          when(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: any(named: 'toolCallId'),
-              response: any(named: 'response'),
-            ),
-          ).thenReturn(null);
-
-          // Stub addItemToChecklist to return a real ChecklistItem.
-          when(
+          expect(result.success, isTrue);
+          // Checklist items are NOT created immediately — they are deferred.
+          verifyNever(
             () => mockChecklistRepository.addItemToChecklist(
               checklistId: any(named: 'checklistId'),
               title: any(named: 'title'),
@@ -2403,142 +2296,43 @@ void main() {
               categoryId: any(named: 'categoryId'),
               checkedBy: any(named: 'checkedBy'),
             ),
-          ).thenAnswer((_) async {
-            return ChecklistItem(
-              meta: Metadata(
-                id: 'new-item-1',
-                createdAt: DateTime(2024, 3, 15),
-                dateFrom: DateTime(2024, 3, 15),
-                dateTo: DateTime(2024, 3, 15),
-                updatedAt: DateTime(2024, 3, 15),
-              ),
-              data: const ChecklistItemData(
-                title: 'Buy milk',
-                isChecked: false,
-                linkedChecklists: ['checklist-001'],
-              ),
-            );
-          });
-
-          mockConversationRepository.sendMessageDelegate = ({
-            required conversationId,
-            required message,
-            required model,
-            required provider,
-            required inferenceRepo,
-            tools,
-            temperature = 0.7,
-            strategy,
-          }) async {
-            if (strategy is TaskAgentStrategy) {
-              await strategy.processToolCalls(
-                toolCalls: [
-                  const ChatCompletionMessageToolCall(
-                    id: 'tc-batch',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: 'add_multiple_checklist_items',
-                      arguments: '{"items":[{"title":"Buy milk"}]}',
-                    ),
-                  ),
-                ],
-                manager: mockConversationManager,
-              );
-            }
-            return null;
-          };
-
-          final result = await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
           );
-
-          expect(result.success, isTrue);
-          // Verify the handler's addItemToChecklist was actually called.
           verify(
-            () => mockChecklistRepository.addItemToChecklist(
-              checklistId: 'checklist-001',
-              title: 'Buy milk',
-              isChecked: false,
-              categoryId: 'cat-001',
-              checkedBy: CheckedBySource.agent,
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Proposal queued for user review'),
+              ),
             ),
           ).called(1);
         });
 
-        test(
-            'update_checklist_items with no checklists on task returns '
-            'empty response', () async {
-          stubFullExecutePath();
-
-          // Return task with NO checklists — executeUpdates skips all items.
-          when(() => mockJournalDb.journalEntityById(taskId))
-              .thenAnswer((_) async => taskNoChecklists);
-          when(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: any(named: 'toolCallId'),
-              response: any(named: 'response'),
-            ),
-          ).thenReturn(null);
-
-          mockConversationRepository.sendMessageDelegate = ({
-            required conversationId,
-            required message,
-            required model,
-            required provider,
-            required inferenceRepo,
-            tools,
-            temperature = 0.7,
-            strategy,
-          }) async {
-            if (strategy is TaskAgentStrategy) {
-              await strategy.processToolCalls(
-                toolCalls: [
-                  const ChatCompletionMessageToolCall(
-                    id: 'tc-update',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: 'update_checklist_items',
-                      arguments: '{"items":[{"id":"item-1","isChecked":true}]}',
-                    ),
-                  ),
-                ],
-                manager: mockConversationManager,
-              );
-            }
-            return null;
-          };
-
-          final result = await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
+        test('update_checklist_items is deferred', () async {
+          final result = await executeWithToolCallOnRealTask(
+            'update_checklist_items',
+            '{"items":[{"id":"item-1","isChecked":true}]}',
           );
 
           expect(result.success, isTrue);
-          // The response should mention skipped items since task has no
-          // checklists.
           verify(
             () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-update',
+              toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Skipped'),
+                that: contains('Proposal queued for user review'),
               ),
             ),
           ).called(1);
         });
       });
 
-      test('task entity is not a Task type returns error', () async {
+      test('task entity is not a Task type — set_task_title is still deferred',
+          () async {
         stubFullExecutePath();
 
-        // Return a non-Task journal entity (e.g., a JournalEntry) that has the
-        // correct category. The resolveCategoryId passes, but the handler sees
-        // it's not a Task and returns an error.
+        // Return a non-Task journal entity. The strategy defers the tool
+        // call regardless — type validation happens at confirmation time.
         final nonTaskEntity = JournalEntry(
           meta: Metadata(
             id: taskId,
@@ -2551,7 +2345,6 @@ void main() {
           entryText: const EntryText(plainText: 'Not a task'),
         );
 
-        // First call from resolveCategoryId, second from _executeToolHandler.
         when(() => mockJournalDb.journalEntityById(taskId))
             .thenAnswer((_) async => nonTaskEntity);
         when(
@@ -2597,12 +2390,13 @@ void main() {
         );
 
         expect(result.success, isTrue);
+        // Tool call is deferred — not validated against entity type.
         verify(
           () => mockConversationManager.addToolResponse(
             toolCallId: 'tc-2',
             response: any(
               named: 'response',
-              that: contains('not a Task'),
+              that: contains('Proposal queued for user review'),
             ),
           ),
         ).called(1);

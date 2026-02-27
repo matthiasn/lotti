@@ -85,8 +85,28 @@ class TaskToolDispatcher {
       case 'update_task_priority':
         return _handleProcessToolCall(taskEntity, toolName, args, taskId);
 
+      case 'add_checklist_item':
+        return _handleBatchChecklist(
+          taskEntity,
+          'add_multiple_checklist_items',
+          {
+            'items': [args]
+          },
+          taskId,
+        );
+
       case 'add_multiple_checklist_items':
         return _handleBatchChecklist(taskEntity, toolName, args, taskId);
+
+      case 'update_checklist_item':
+        return _handleChecklistUpdate(
+          taskEntity,
+          'update_checklist_items',
+          {
+            'items': [args]
+          },
+          taskId,
+        );
 
       case 'update_checklist_items':
         return _handleChecklistUpdate(taskEntity, toolName, args, taskId);

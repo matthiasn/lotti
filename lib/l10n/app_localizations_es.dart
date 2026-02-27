@@ -1421,6 +1421,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get celebrationTapToContinue => 'Toca para continuar';
 
   @override
+  String get changeSetCardTitle => 'Cambios propuestos';
+
+  @override
+  String get changeSetConfirmAll => 'Confirmar todos';
+
+  @override
+  String get changeSetConfirmError => 'No se pudo aplicar el cambio';
+
+  @override
+  String get changeSetItemConfirmed => 'Cambio aplicado';
+
+  @override
+  String get changeSetItemRejected => 'Cambio rechazado';
+
+  @override
+  String changeSetPendingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pendientes',
+      one: '1 pendiente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get changeSetSwipeConfirm => 'Confirmar';
+
+  @override
+  String get changeSetSwipeReject => 'Rechazar';
+
+  @override
   String get chatInputCancelRealtime => 'Cancelar (Esc)';
 
   @override

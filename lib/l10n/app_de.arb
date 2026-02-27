@@ -623,6 +623,21 @@
   "categoryPromptFilterAll": "Alle",
   "categorySearchPlaceholder": "Kategorien suchen...",
   "celebrationTapToContinue": "Tippen zum Fortfahren",
+  "changeSetCardTitle": "Vorgeschlagene Änderungen",
+  "changeSetConfirmAll": "Alle bestätigen",
+  "changeSetConfirmError": "Änderung konnte nicht angewendet werden",
+  "changeSetItemConfirmed": "Änderung angewendet",
+  "changeSetItemRejected": "Änderung abgelehnt",
+  "changeSetPendingCount": "{count} ausstehend",
+  "@changeSetPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeSetSwipeConfirm": "Bestätigen",
+  "changeSetSwipeReject": "Ablehnen",
   "chatInputCancelRealtime": "Abbrechen (Esc)",
   "chatInputCancelRecording": "Aufnahme abbrechen (Esc)",
   "chatInputConfigureModel": "Modell konfigurieren",

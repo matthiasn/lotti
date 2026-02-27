@@ -138,7 +138,7 @@ class ChangeSetConfirmationService {
   });
 
   Future<ToolExecutionResult> confirmItem(ChangeSetEntity changeSet, int itemIndex);
-  Future<void> rejectItem(ChangeSetEntity changeSet, int itemIndex, {String? reason});
+  Future<bool> rejectItem(ChangeSetEntity changeSet, int itemIndex, {String? reason});
   Future<List<ToolExecutionResult>> confirmAll(ChangeSetEntity changeSet);
 }
 ```
@@ -264,7 +264,7 @@ Generate `.g.dart` files for the new `change_set_providers.dart` Riverpod provid
 
 ## Execution Order
 
-```
+```text
 Step 1 (dispatcher) ─┐
                       ├─→ Step 2 (service) ─→ Step 3 (providers) ─→ Step 5 (widget) ─→ Step 6 (integration)
 Step 4 (l10n) ────────┘                                              ↑

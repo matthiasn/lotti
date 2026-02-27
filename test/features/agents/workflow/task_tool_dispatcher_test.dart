@@ -476,6 +476,47 @@ void main() {
           expect(result.output, isNotEmpty);
         },
       );
+
+      test(
+        'add_checklist_item wraps as single-element batch',
+        () async {
+          when(
+            () => mockChecklistRepository.createChecklist(
+              taskId: any(named: 'taskId'),
+              items: any(named: 'items'),
+              title: any(named: 'title'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              checklist: null,
+              createdItems: <({String id, String title, bool isChecked})>[],
+            ),
+          );
+
+          final result = await dispatcher.dispatch(
+            'add_checklist_item',
+            {'title': 'Single item'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, isNotEmpty);
+        },
+      );
+
+      test(
+        'update_checklist_item wraps as single-element batch',
+        () async {
+          final result = await dispatcher.dispatch(
+            'update_checklist_item',
+            {'id': 'item-001', 'isChecked': true},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, isNotEmpty);
+        },
+      );
     });
   });
 }
