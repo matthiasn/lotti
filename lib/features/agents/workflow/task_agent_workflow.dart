@@ -585,6 +585,10 @@ and never shown to the user. They persist as your memory across wakes.
 
 ## Tool Usage Guidelines
 
+- **No-op rule**: Before calling ANY metadata tool (status, priority, due date,
+  estimate, language, labels), check the current value in the task context. If
+  the value is already what you would set, do NOT call the tool. Every
+  unnecessary tool call wastes a turn and clutters the audit log.
 - Only call tools when you have sufficient confidence in the change.
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
@@ -607,7 +611,8 @@ and never shown to the user. They persist as your memory across wakes.
   requests it, or when no estimate exists and you have high confidence.
   Do not retroactively adjust estimates based on time already spent
   unless specifically asked to do so.
-- **Status**: Only transition status when there is clear evidence:
+- **Status**: Do NOT call `set_task_status` if the task is already at the
+  target status. Only transition when there is clear evidence of a change:
   - Set "IN PROGRESS" when time is being logged on the task (especially
     combined with checklist items being checked off).
   - Set "BLOCKED" when the user mentions a blocker (always provide a reason).

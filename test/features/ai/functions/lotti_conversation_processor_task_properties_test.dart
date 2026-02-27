@@ -360,14 +360,14 @@ void main() {
           contains('Task estimate updated to 120 minutes'));
     });
 
-    test('should skip update when estimate already exists', () async {
-      // Arrange
+    test('should no-op when estimate matches current value', () async {
+      // Arrange — request the SAME estimate that already exists.
       final task = TestDataFactory.createTask(
         estimate: const Duration(minutes: 60),
       );
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'This will take about 2 hours';
+      const prompt = 'This will take about 1 hour';
 
       when(() => mockConversationManager.messages).thenReturn([]);
 
@@ -377,7 +377,7 @@ void main() {
         function: ChatCompletionMessageFunctionCall(
           name: 'update_task_estimate',
           arguments:
-              '{"minutes": 120, "reason": "User said 2 hours", "confidence": "high"}',
+              '{"minutes": 60, "reason": "Confirming estimate", "confidence": "high"}',
         ),
       );
 
@@ -420,13 +420,13 @@ void main() {
         autoChecklistService: mockAutoChecklistService,
       );
 
-      // Assert - should NOT call updateJournalEntity
+      // Assert - should NOT call updateJournalEntity (same value = no-op)
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
 
-      // Verify tool response indicates skip
+      // Verify tool response indicates no-op
       expect(capturedToolResponses['tool-1'],
-          contains('Estimate already set to 60 minutes'));
-      expect(capturedToolResponses['tool-1'], contains('Skipped'));
+          contains('already set to 60 minutes'));
+      expect(capturedToolResponses['tool-1'], contains('No change needed'));
     });
 
     test('should reject invalid minutes (negative)', () async {
@@ -715,13 +715,14 @@ void main() {
           contains('Task due date updated to 2024-01-19'));
     });
 
-    test('should skip update when due date already exists', () async {
-      // Arrange
+    test('should no-op when due date already matches requested value',
+        () async {
+      // Arrange - task already has the same due date the AI requests
       final existingDueDate = DateTime(2024, 1, 20);
       final task = TestDataFactory.createTask(due: existingDueDate);
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'This is due by Friday';
+      const prompt = 'This is due by Saturday';
 
       when(() => mockConversationManager.messages).thenReturn([]);
 
@@ -731,7 +732,7 @@ void main() {
         function: ChatCompletionMessageFunctionCall(
           name: 'update_task_due_date',
           arguments:
-              '{"dueDate": "2024-01-19", "reason": "User said Friday", "confidence": "high"}',
+              '{"dueDate": "2024-01-20", "reason": "User said Saturday", "confidence": "high"}',
         ),
       );
 
@@ -777,10 +778,10 @@ void main() {
       // Assert - should NOT call updateJournalEntity
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
 
-      // Verify tool response indicates skip
+      // Verify tool response indicates no-op
       expect(capturedToolResponses['tool-1'],
-          contains('Due date already set to 2024-01-20'));
-      expect(capturedToolResponses['tool-1'], contains('Skipped'));
+          contains('already set to 2024-01-20'));
+      expect(capturedToolResponses['tool-1'], contains('No change needed'));
     });
 
     test('should reject invalid date format', () async {
@@ -995,13 +996,13 @@ void main() {
           capturedToolResponses['tool-1'], contains('priority updated to P0'));
     });
 
-    test('should skip update when priority already exists (non-default)',
+    test('should no-op when priority already matches requested value',
         () async {
-      // Arrange - task with P1 priority (not default)
+      // Arrange - task already has the same priority the AI requests
       final task = TestDataFactory.createTask(priority: TaskPriority.p1High);
       final model = TestDataFactory.createModel();
       final promptConfig = TestDataFactory.createPromptConfig();
-      const prompt = 'This is urgent priority';
+      const prompt = 'This is high priority';
 
       when(() => mockConversationManager.messages).thenReturn([]);
 
@@ -1011,7 +1012,7 @@ void main() {
         function: ChatCompletionMessageFunctionCall(
           name: 'update_task_priority',
           arguments:
-              '{"priority": "P0", "reason": "User said urgent", "confidence": "high"}',
+              '{"priority": "P1", "reason": "User said high priority", "confidence": "high"}',
         ),
       );
 
@@ -1057,9 +1058,9 @@ void main() {
       // Assert - should NOT call updateJournalEntity
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
 
-      // Verify tool response indicates skip
-      expect(capturedToolResponses['tool-1'], contains('already set to P1'));
-      expect(capturedToolResponses['tool-1'], contains('Skipped'));
+      // Verify tool response indicates no-op
+      expect(capturedToolResponses['tool-1'], contains('already P1'));
+      expect(capturedToolResponses['tool-1'], contains('No change needed'));
     });
 
     test('should reject invalid priority value', () async {

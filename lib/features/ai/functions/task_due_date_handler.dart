@@ -212,18 +212,19 @@ class TaskDueDateHandler {
       // Normalize to midnight to ensure consistent storage
       final dueDate = parsed.dayAtMidnight;
 
-      // Check if due date already exists
+      // No-op if due date is already set to the requested value.
       final currentDue = task.data.due;
-      if (currentDue != null) {
+      if (currentDue != null && currentDue.dayAtMidnight == dueDate) {
         final formattedDate = currentDue.toIso8601String().split('T')[0];
-        final message = 'Due date already set to $formattedDate. Skipped.';
+        final message =
+            'Due date already set to $formattedDate. No change needed.';
         developer.log(
-          'Task already has due date: $formattedDate',
+          'Due date unchanged: $formattedDate',
           name: 'TaskDueDateHandler',
         );
         _sendResponse(call.id, message, manager);
         return TaskDueDateResult(
-          success: false,
+          success: true,
           message: message,
           requestedDate: dueDate,
           reason: reason,
