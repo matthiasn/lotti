@@ -29,3 +29,7 @@ Each ADR should contain:
 ## Index
 
 - [`0001-agent-capabilities-runtime-model.md`](./0001-agent-capabilities-runtime-model.md)
+- [`0002-wake-scheduling-and-throttling-policy.md`](./0002-wake-scheduling-and-throttling-policy.md)
+- [`0003-task-agent-linked-task-context-contract.md`](./0003-task-agent-linked-task-context-contract.md)
+- [`0004-task-agent-tool-execution-policy.md`](./0004-task-agent-tool-execution-policy.md)
+- [`0005-template-model-resolution-policy.md`](./0005-template-model-resolution-policy.md)
