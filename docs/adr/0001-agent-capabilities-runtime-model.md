@@ -27,6 +27,67 @@ and bursty task updates while remaining testable and easy to evolve.
    - Riverpod providers assemble orchestrator/workflow/runtime dependencies
    - GetIt access is isolated behind dependency providers where needed
 
+## Architecture Snapshot
+
+```mermaid
+flowchart LR
+  UI["Task UI"] --> INIT["agentInitializationProvider"]
+  INIT --> ORCH["WakeOrchestrator"]
+  ORCH --> WF["TaskAgentWorkflow"]
+  WF --> CONV["ConversationRepository"]
+  CONV --> MODEL["Inference Provider"]
+  WF --> EXEC["AgentToolExecutor"]
+  EXEC --> JOURNAL["Journal Repository and DB"]
+  WF --> SYNC["AgentSyncService"]
+  SYNC --> AGENTDB["AgentRepository and agent.sqlite"]
+  SYNC --> OUTBOX["Sync Outbox"]
+```
+
+## Wake Call Tree
+
+```mermaid
+flowchart TD
+  A["UpdateNotifications.localUpdateStream"] --> B["WakeOrchestrator._onBatch"]
+  B --> C["WakeOrchestrator.processNext"]
+  C --> D["WakeOrchestrator._drain"]
+  D --> E["WakeOrchestrator._executeJob"]
+  E --> F["wakeExecutor callback"]
+  F --> G["TaskAgentWorkflow.execute"]
+  G --> H["ConversationRepository.sendMessage"]
+  H --> I["TaskAgentStrategy.processToolCalls"]
+  I --> J["AgentToolExecutor.execute"]
+  J --> K["Task handlers"]
+  G --> L["AgentSyncService.upsertEntity and upsertLink"]
+  L --> M["AgentRepository writes"]
+```
+
+## Wake Sequence
+
+```mermaid
+sequenceDiagram
+  participant T as "Task UI"
+  participant N as "UpdateNotifications"
+  participant O as "WakeOrchestrator"
+  participant W as "TaskAgentWorkflow"
+  participant C as "ConversationRepository"
+  participant M as "Model Provider"
+  participant J as "Journal Repository"
+  participant A as "AgentRepository"
+
+  T->>N: "Emit changed tokens"
+  N->>O: "_onBatch(tokens)"
+  O->>O: "match + suppress + throttle + enqueue"
+  O->>O: "processNext and _executeJob"
+  O->>W: "wakeExecutor(agentId, runKey, triggers, threadId)"
+  W->>C: "sendMessage(system + context + tools)"
+  C->>M: "LLM request"
+  M-->>C: "tool calls and assistant text"
+  C->>J: "tool side-effects via handlers"
+  W->>A: "persist report/messages/state"
+  W-->>O: "WakeResult"
+  O->>A: "update wake_run status"
+```
+
 ## Consequences
 
 - Task-agent context reflects the latest durable agent output instead of summary
