@@ -31,6 +31,34 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'agent_providers.g.dart';
 
+/// Optional UpdateNotifications service from GetIt.
+@Riverpod(keepAlive: true)
+UpdateNotifications? maybeUpdateNotifications(Ref ref) {
+  if (!getIt.isRegistered<UpdateNotifications>()) {
+    return null;
+  }
+  return getIt<UpdateNotifications>();
+}
+
+/// Required UpdateNotifications service for agent runtime wiring.
+@Riverpod(keepAlive: true)
+UpdateNotifications updateNotifications(Ref ref) {
+  final notifications = ref.watch(maybeUpdateNotificationsProvider);
+  if (notifications == null) {
+    throw StateError('UpdateNotifications is not registered in GetIt');
+  }
+  return notifications;
+}
+
+/// Optional sync processor dependency for cross-device agent wiring.
+@Riverpod(keepAlive: true)
+SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
+  if (!getIt.isRegistered<SyncEventProcessor>()) {
+    return null;
+  }
+  return getIt<SyncEventProcessor>();
+}
+
 /// The agent database instance (lazy singleton).
 @Riverpod(keepAlive: true)
 AgentDatabase agentDatabase(Ref ref) {
@@ -89,16 +117,16 @@ Stream<bool> agentIsRunning(Ref ref, String agentId) async* {
 /// notification triggers a provider rebuild.
 @riverpod
 Stream<Set<String>> agentUpdateStream(Ref ref, String agentId) {
-  final notifications = getIt<UpdateNotifications>();
+  final notifications = ref.watch(updateNotificationsProvider);
   return notifications.updateStream.where((ids) => ids.contains(agentId));
 }
 
 /// The wake orchestrator (notification listener + subscription matching).
 @Riverpod(keepAlive: true)
 WakeOrchestrator wakeOrchestrator(Ref ref) {
+  final notifications = ref.watch(maybeUpdateNotificationsProvider);
   void Function(String agentId)? onPersistedStateChanged;
-  if (getIt.isRegistered<UpdateNotifications>()) {
-    final notifications = getIt<UpdateNotifications>();
+  if (notifications != null) {
     onPersistedStateChanged = (agentId) {
       // Use update-only notifications so these state writes don't feed back
       // into the orchestrator's local wake-trigger stream.
@@ -425,7 +453,7 @@ TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    updateNotifications: getIt<UpdateNotifications>(),
+    updateNotifications: ref.watch(updateNotificationsProvider),
   );
 }
 
@@ -510,6 +538,8 @@ Future<void> agentInitialization(Ref ref) async {
   final workflow = ref.watch(taskAgentWorkflowProvider);
   final taskAgentService = ref.watch(taskAgentServiceProvider);
   final templateService = ref.watch(agentTemplateServiceProvider);
+  final updateNotifications = ref.watch(updateNotificationsProvider);
+  final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
 
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
@@ -533,14 +563,22 @@ Future<void> agentInitialization(Ref ref) async {
   }
 
   // 2. Wire the workflow executor into the orchestrator.
-  _wireWakeExecutor(ref, orchestrator, workflow);
+  _wireWakeExecutor(
+    ref,
+    orchestrator,
+    workflow,
+    updateNotifications,
+  );
 
   // 3. Start the orchestrator on the local update stream.
-  final updateNotifications = getIt<UpdateNotifications>();
   await orchestrator.start(updateNotifications.localUpdateStream);
 
   // 4. Wire the sync event processor for cross-device agent data.
-  _wireSyncEventProcessor(ref, orchestrator);
+  _wireSyncEventProcessor(
+    ref,
+    orchestrator,
+    syncEventProcessor,
+  );
 
   // 5. Seed default templates and restore subscriptions.
   await templateService.seedDefaults();
@@ -553,6 +591,7 @@ void _wireWakeExecutor(
   Ref ref,
   WakeOrchestrator orchestrator,
   TaskAgentWorkflow workflow,
+  UpdateNotifications updateNotifications,
 ) {
   orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
     final agentService = ref.read(agentServiceProvider);
@@ -574,7 +613,7 @@ void _wireWakeExecutor(
     }
 
     // Notify the update stream so all detail providers self-invalidate.
-    getIt<UpdateNotifications>().notify({agentId, agentNotification});
+    updateNotifications.notify({agentId, agentNotification});
 
     return result.mutatedEntries;
   };
@@ -587,19 +626,16 @@ void _wireWakeExecutor(
 void _wireSyncEventProcessor(
   Ref ref,
   WakeOrchestrator orchestrator,
+  SyncEventProcessor? processor,
 ) {
-  if (!getIt.isRegistered<SyncEventProcessor>()) return;
-
-  final processor = getIt<SyncEventProcessor>();
+  if (processor == null) return;
   final repository = ref.read(agentRepositoryProvider);
   processor
     ..agentRepository = repository
     ..wakeOrchestrator = orchestrator;
   ref.onDispose(() {
-    if (getIt.isRegistered<SyncEventProcessor>()) {
-      getIt<SyncEventProcessor>()
-        ..agentRepository = null
-        ..wakeOrchestrator = null;
-    }
+    processor
+      ..agentRepository = null
+      ..wakeOrchestrator = null;
   });
 }

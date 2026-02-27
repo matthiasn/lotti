@@ -8,6 +8,153 @@ part of 'agent_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Optional UpdateNotifications service from GetIt.
+
+@ProviderFor(maybeUpdateNotifications)
+final maybeUpdateNotificationsProvider = MaybeUpdateNotificationsProvider._();
+
+/// Optional UpdateNotifications service from GetIt.
+
+final class MaybeUpdateNotificationsProvider extends $FunctionalProvider<
+    UpdateNotifications?,
+    UpdateNotifications?,
+    UpdateNotifications?> with $Provider<UpdateNotifications?> {
+  /// Optional UpdateNotifications service from GetIt.
+  MaybeUpdateNotificationsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'maybeUpdateNotificationsProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$maybeUpdateNotificationsHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateNotifications?> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UpdateNotifications? create(Ref ref) {
+    return maybeUpdateNotifications(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateNotifications? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateNotifications?>(value),
+    );
+  }
+}
+
+String _$maybeUpdateNotificationsHash() =>
+    r'e8339e677470a5a0354952e365c467218396a8f5';
+
+/// Required UpdateNotifications service for agent runtime wiring.
+
+@ProviderFor(updateNotifications)
+final updateNotificationsProvider = UpdateNotificationsProvider._();
+
+/// Required UpdateNotifications service for agent runtime wiring.
+
+final class UpdateNotificationsProvider extends $FunctionalProvider<
+    UpdateNotifications,
+    UpdateNotifications,
+    UpdateNotifications> with $Provider<UpdateNotifications> {
+  /// Required UpdateNotifications service for agent runtime wiring.
+  UpdateNotificationsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'updateNotificationsProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateNotificationsHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateNotifications> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UpdateNotifications create(Ref ref) {
+    return updateNotifications(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateNotifications value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateNotifications>(value),
+    );
+  }
+}
+
+String _$updateNotificationsHash() =>
+    r'97b9de5f312a3deff3ad088d92f3c1e227ad0755';
+
+/// Optional sync processor dependency for cross-device agent wiring.
+
+@ProviderFor(maybeSyncEventProcessor)
+final maybeSyncEventProcessorProvider = MaybeSyncEventProcessorProvider._();
+
+/// Optional sync processor dependency for cross-device agent wiring.
+
+final class MaybeSyncEventProcessorProvider extends $FunctionalProvider<
+    SyncEventProcessor?,
+    SyncEventProcessor?,
+    SyncEventProcessor?> with $Provider<SyncEventProcessor?> {
+  /// Optional sync processor dependency for cross-device agent wiring.
+  MaybeSyncEventProcessorProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'maybeSyncEventProcessorProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$maybeSyncEventProcessorHash();
+
+  @$internal
+  @override
+  $ProviderElement<SyncEventProcessor?> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SyncEventProcessor? create(Ref ref) {
+    return maybeSyncEventProcessor(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncEventProcessor? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncEventProcessor?>(value),
+    );
+  }
+}
+
+String _$maybeSyncEventProcessorHash() =>
+    r'efc9ebdc91606182cd75a614389472b9a9cff8d7';
+
 /// The agent database instance (lazy singleton).
 
 @ProviderFor(agentDatabase)
@@ -415,7 +562,7 @@ final class AgentUpdateStreamProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentUpdateStreamHash() => r'e3bfb705740bff6560f2667ed721fc46546f3dea';
+String _$agentUpdateStreamHash() => r'8f0b1579fbb78e4e89484e27e667756a64987f52';
 
 /// Stream that emits when a specific agent's data changes (from sync or local
 /// wake). Detail providers watch this to self-invalidate.
@@ -500,7 +647,7 @@ final class WakeOrchestratorProvider extends $FunctionalProvider<
   }
 }
 
-String _$wakeOrchestratorHash() => r'7e10bc88a2db8d318b6a094902ba52b1edf65bde';
+String _$wakeOrchestratorHash() => r'9826d5c37cd39817365afd2221a593558d1a5ca0';
 
 /// The high-level agent service.
 
@@ -2210,7 +2357,7 @@ final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
 }
 
 String _$templateEvolutionWorkflowHash() =>
-    r'9da43004b9bc7b8df56b7446206dfd25c7730ba2';
+    r'6c59b89698bcb0d7bf6370bcee5ff35e2c179e98';
 
 /// Fetch evolution sessions for a template, newest-first.
 ///
@@ -2523,4 +2670,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'082d6ee5478da03b1bf6a5a2441bef0b34819eec';
+    r'6862ec5250c33264b3484077afa361c470ca9ba0';
