@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -60,6 +62,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     required this.resolveCategoryId,
     required this.readVectorClock,
     required this.executeToolHandler,
+    this.changeSetBuilder,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -90,6 +93,13 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Executes a named tool handler with arguments.
   final ExecuteToolHandler executeToolHandler;
+
+  /// Optional builder for accumulating deferred tool calls into a change set.
+  ///
+  /// When provided, tools listed in [AgentToolRegistry.deferredTools] are
+  /// routed to the builder instead of being executed immediately. The change
+  /// set is persisted at the end of the wake via [ChangeSetBuilder.build].
+  final ChangeSetBuilder? changeSetBuilder;
 
   String? _reportMarkdown;
   String? _finalResponse;
@@ -154,6 +164,18 @@ class TaskAgentStrategy extends ConversationStrategy {
       }
       if (toolName == observationToolName) {
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+
+      // Route deferred tools to the change set builder when available.
+      final csBuilder = changeSetBuilder;
+      if (csBuilder != null &&
+          AgentToolRegistry.deferredTools.contains(toolName)) {
+        _addToChangeSet(csBuilder, toolName, args);
+        manager.addToolResponse(
+          toolCallId: call.id,
+          response: 'Proposal queued for user review.',
+        );
         continue;
       }
 
@@ -304,6 +326,66 @@ class TaskAgentStrategy extends ConversationStrategy {
         errorMessage: errorMsg,
       );
     }
+  }
+
+  // ── Change set helpers ──────────────────────────────────────────────────
+
+  /// Route a deferred tool call to the change set builder.
+  ///
+  /// Batch tools (listed in [AgentToolRegistry.explodedBatchTools]) are
+  /// exploded into individual items; all others are added as a single item.
+  void _addToChangeSet(
+    ChangeSetBuilder csBuilder,
+    String toolName,
+    Map<String, dynamic> args,
+  ) {
+    final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
+    if (batchKey != null) {
+      csBuilder.addBatchItem(
+        toolName: toolName,
+        args: args,
+        summaryPrefix: _humanToolPrefix(toolName),
+      );
+    } else {
+      csBuilder.addItem(
+        toolName: toolName,
+        args: args,
+        humanSummary: _generateHumanSummary(toolName, args),
+      );
+    }
+
+    developer.log(
+      'Deferred tool $toolName to change set '
+      '(${csBuilder.items.length} items total)',
+      name: 'TaskAgentStrategy',
+    );
+  }
+
+  /// Generate a human-readable summary for a single (non-batch) tool call.
+  static String _generateHumanSummary(
+    String toolName,
+    Map<String, dynamic> args,
+  ) {
+    return switch (toolName) {
+      'set_task_title' => 'Set title to "${args['title'] ?? ''}"',
+      'update_task_estimate' =>
+        'Set estimate to ${args['minutes'] ?? '?'} minutes',
+      'update_task_due_date' => 'Set due date to ${args['dueDate'] ?? '?'}',
+      'update_task_priority' => 'Set priority to ${args['priority'] ?? '?'}',
+      'set_task_status' => 'Set status to ${args['status'] ?? '?'}',
+      'assign_task_labels' =>
+        'Assign ${(args['labels'] as List?)?.length ?? 0} label(s)',
+      _ => '$toolName(${args.keys.join(", ")})',
+    };
+  }
+
+  /// Generate a human-readable prefix for batch tool explosion summaries.
+  static String _humanToolPrefix(String toolName) {
+    return switch (toolName) {
+      'add_multiple_checklist_items' => 'Checklist',
+      'update_checklist_items' => 'Checklist update',
+      _ => toolName,
+    };
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

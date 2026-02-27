@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -418,6 +419,67 @@ EvolutionNoteEntity makeTestEvolutionNote({
     vectorClock: vectorClock,
     content: content,
   ) as EvolutionNoteEntity;
+}
+
+// ── Change set entity factories ──────────────────────────────────────────────
+
+ChangeSetEntity makeTestChangeSet({
+  String id = 'cs-001',
+  String agentId = kTestAgentId,
+  String taskId = 'task-001',
+  String threadId = 'thread-001',
+  String runKey = 'run-key-001',
+  ChangeSetStatus status = ChangeSetStatus.pending,
+  List<ChangeItem>? items,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  DateTime? resolvedAt,
+}) {
+  return AgentDomainEntity.changeSet(
+    id: id,
+    agentId: agentId,
+    taskId: taskId,
+    threadId: threadId,
+    runKey: runKey,
+    status: status,
+    items: items ??
+        const [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Set estimate to 2 hours',
+          ),
+        ],
+    createdAt: createdAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    resolvedAt: resolvedAt,
+  ) as ChangeSetEntity;
+}
+
+ChangeDecisionEntity makeTestChangeDecision({
+  String id = 'cd-001',
+  String agentId = kTestAgentId,
+  String changeSetId = 'cs-001',
+  int itemIndex = 0,
+  String toolName = 'update_task_estimate',
+  ChangeDecisionVerdict verdict = ChangeDecisionVerdict.confirmed,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  String? taskId,
+  String? rejectionReason,
+}) {
+  return AgentDomainEntity.changeDecision(
+    id: id,
+    agentId: agentId,
+    changeSetId: changeSetId,
+    itemIndex: itemIndex,
+    toolName: toolName,
+    verdict: verdict,
+    createdAt: createdAt ?? kAgentTestDate,
+    vectorClock: vectorClock,
+    taskId: taskId,
+    rejectionReason: rejectionReason,
+  ) as ChangeDecisionEntity;
 }
 
 // ── AI config factories (for inference provider resolution tests) ────────────

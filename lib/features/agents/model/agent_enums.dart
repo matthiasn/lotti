@@ -112,6 +112,48 @@ enum EvolutionNoteKind {
   pattern,
 }
 
+/// Status of a change set (batch of proposed mutations).
+enum ChangeSetStatus {
+  /// Awaiting user review — no items have been resolved yet.
+  pending,
+
+  /// Some items have been confirmed or rejected, but others remain.
+  partiallyResolved,
+
+  /// All items have been resolved (confirmed or rejected).
+  resolved,
+
+  /// The change set was not reviewed within the expiration window.
+  expired,
+}
+
+/// Status of an individual change item within a change set.
+enum ChangeItemStatus {
+  /// Awaiting user decision.
+  pending,
+
+  /// User confirmed — the mutation has been applied.
+  confirmed,
+
+  /// User rejected — the mutation was not applied.
+  rejected,
+
+  /// User deferred — will review later.
+  deferred,
+}
+
+/// User's verdict on a single change item, persisted for decision history.
+enum ChangeDecisionVerdict {
+  /// User approved the proposed change.
+  confirmed,
+
+  /// User rejected the proposed change.
+  rejected,
+
+  /// User deferred the decision.
+  deferred,
+}
+
 /// Kind of message in the agent's message log.
 enum AgentMessageKind {
   /// Agent's private working notes (agentJournal entries).

@@ -28,6 +28,31 @@ class AgentToolDefinition {
 class AgentToolRegistry {
   AgentToolRegistry._();
 
+  /// Tools whose mutations require user confirmation before being applied.
+  ///
+  /// When the strategy encounters one of these tools, it adds the proposed
+  /// change to a `ChangeSetBuilder` instead of executing immediately.
+  static const deferredTools = <String>{
+    'assign_task_labels',
+    'set_task_title',
+    'update_task_estimate',
+    'update_task_due_date',
+    'update_task_priority',
+    'set_task_status',
+    'add_multiple_checklist_items',
+    'update_checklist_items',
+  };
+
+  /// Batch tools that should be exploded into individual change item entries.
+  ///
+  /// Each entry maps a tool name to the JSON key that contains the array of
+  /// items. The builder splits the array so each element becomes a separate
+  /// confirmable change item.
+  static const explodedBatchTools = <String, String>{
+    'add_multiple_checklist_items': 'items',
+    'update_checklist_items': 'items',
+  };
+
   /// All tools available to the Task Agent.
   static const taskAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(

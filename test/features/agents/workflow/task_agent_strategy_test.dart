@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:mocktail/mocktail.dart';
@@ -757,6 +758,235 @@ void main() {
           () => strategy.extractObservations().add('should fail'),
           throwsA(isA<UnsupportedError>()),
         );
+      });
+    });
+
+    group('deferred tools with changeSetBuilder', () {
+      late ChangeSetBuilder csBuilder;
+      late TaskAgentStrategy deferredStrategy;
+
+      setUp(() {
+        csBuilder = ChangeSetBuilder(
+          agentId: agentId,
+          taskId: taskId,
+          threadId: threadId,
+          runKey: runKey,
+        );
+
+        deferredStrategy = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(
+            success: true,
+            output: 'Tool executed successfully',
+            mutatedEntityId: taskId,
+          ),
+          changeSetBuilder: csBuilder,
+        );
+      });
+
+      test('routes deferred tools to change set builder', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'set_task_title',
+              arguments: jsonEncode({'title': 'New Title'}),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Should NOT delegate to executor.
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+
+        // Should respond with queued message.
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: 'Proposal queued for user review.',
+          ),
+        ).called(1);
+
+        // Item should be in the builder.
+        expect(csBuilder.hasItems, isTrue);
+        expect(csBuilder.items, hasLength(1));
+        expect(csBuilder.items.first.toolName, 'set_task_title');
+        expect(csBuilder.items.first.humanSummary, contains('New Title'));
+      });
+
+      test('still executes immediate tools (update_report)', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({'markdown': '# Report'}),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(deferredStrategy.extractReportContent(), '# Report');
+        expect(csBuilder.hasItems, isFalse);
+      });
+
+      test('explodes batch checklist tools into individual items', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-batch',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: jsonEncode({
+                'items': [
+                  {'title': 'Design mockup'},
+                  {'title': 'Implement API'},
+                  {'title': 'Write tests'},
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(csBuilder.items, hasLength(3));
+        expect(csBuilder.items[0].toolName, 'add_checklist_item');
+        expect(csBuilder.items[0].humanSummary, 'Add: "Design mockup"');
+        expect(csBuilder.items[1].humanSummary, 'Add: "Implement API"');
+        expect(csBuilder.items[2].humanSummary, 'Add: "Write tests"');
+      });
+
+      test('mixes deferred and immediate tools in one call', () async {
+        when(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'done',
+          ),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-deferred',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
+            ),
+          ),
+          ChatCompletionMessageToolCall(
+            id: 'call-report',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({'markdown': '# Summary'}),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Deferred tool should be in builder, not executed.
+        expect(csBuilder.items, hasLength(1));
+        expect(csBuilder.items.first.toolName, 'update_task_estimate');
+
+        // Report should be handled immediately.
+        expect(deferredStrategy.extractReportContent(), '# Summary');
+
+        // Executor should NOT have been called (only deferred + immediate).
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+      });
+
+      test('generates meaningful human summaries for each tool type', () async {
+        final deferredToolCalls = <String, Map<String, dynamic>>{
+          'set_task_title': {'title': 'Fix login bug'},
+          'update_task_estimate': {'minutes': 60},
+          'update_task_due_date': {'dueDate': '2024-06-30'},
+          'update_task_priority': {'priority': 'P1'},
+          'set_task_status': {'status': 'GROOMED'},
+          'assign_task_labels': {
+            'labels': [
+              {'id': 'l1', 'confidence': 'high'},
+            ],
+          },
+        };
+
+        for (final entry in deferredToolCalls.entries) {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-${entry.key}',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: entry.key,
+                arguments: jsonEncode(entry.value),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+        }
+
+        expect(csBuilder.items, hasLength(6));
+        expect(csBuilder.items[0].humanSummary, 'Set title to "Fix login bug"');
+        expect(csBuilder.items[1].humanSummary, 'Set estimate to 60 minutes');
+        expect(csBuilder.items[2].humanSummary, 'Set due date to 2024-06-30');
+        expect(csBuilder.items[3].humanSummary, 'Set priority to P1');
+        expect(csBuilder.items[4].humanSummary, 'Set status to GROOMED');
+        expect(csBuilder.items[5].humanSummary, 'Assign 1 label(s)');
       });
     });
   });

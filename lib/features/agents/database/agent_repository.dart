@@ -339,6 +339,49 @@ class AgentRepository {
     }
   }
 
+  // ── Change set queries ──────────────────────────────────────────────────────
+
+  /// Fetch pending or partially-resolved change sets for [agentId],
+  /// optionally filtered by [taskId].
+  ///
+  /// Returns newest-first, capped at [limit].
+  Future<List<ChangeSetEntity>> getPendingChangeSets(
+    String agentId, {
+    String? taskId,
+    int limit = 20,
+  }) async {
+    final rows = await _db.getPendingChangeSetsForAgent(agentId, limit).get();
+    var results = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeSetEntity>()
+        .toList();
+    if (taskId != null) {
+      results = results.where((cs) => cs.taskId == taskId).toList();
+    }
+    return results;
+  }
+
+  /// Fetch recent change decisions for [agentId], optionally filtered by
+  /// [taskId].
+  ///
+  /// Returns newest-first, capped at [limit]. Used by the context builder
+  /// to assemble decision history for the agent's system prompt.
+  Future<List<ChangeDecisionEntity>> getRecentDecisions(
+    String agentId, {
+    String? taskId,
+    int limit = 20,
+  }) async {
+    final rows = await _db.getRecentDecisionsForAgent(agentId, limit).get();
+    var results = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+    if (taskId != null) {
+      results = results.where((d) => d.taskId == taskId).toList();
+    }
+    return results;
+  }
+
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
   /// Insert or update a link using on-conflict update semantics against the

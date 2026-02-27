@@ -468,6 +468,97 @@ const _$EvolutionNoteKindEnumMap = {
   EvolutionNoteKind.pattern: 'pattern',
 };
 
+ChangeSetEntity _$ChangeSetEntityFromJson(Map<String, dynamic> json) =>
+    ChangeSetEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      taskId: json['taskId'] as String,
+      threadId: json['threadId'] as String,
+      runKey: json['runKey'] as String,
+      status: $enumDecode(_$ChangeSetStatusEnumMap, json['status']),
+      items: (json['items'] as List<dynamic>)
+          .map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      resolvedAt: json['resolvedAt'] == null
+          ? null
+          : DateTime.parse(json['resolvedAt'] as String),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$ChangeSetEntityToJson(ChangeSetEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'taskId': instance.taskId,
+      'threadId': instance.threadId,
+      'runKey': instance.runKey,
+      'status': _$ChangeSetStatusEnumMap[instance.status]!,
+      'items': instance.items,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'resolvedAt': instance.resolvedAt?.toIso8601String(),
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$ChangeSetStatusEnumMap = {
+  ChangeSetStatus.pending: 'pending',
+  ChangeSetStatus.partiallyResolved: 'partiallyResolved',
+  ChangeSetStatus.resolved: 'resolved',
+  ChangeSetStatus.expired: 'expired',
+};
+
+ChangeDecisionEntity _$ChangeDecisionEntityFromJson(
+        Map<String, dynamic> json) =>
+    ChangeDecisionEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      changeSetId: json['changeSetId'] as String,
+      itemIndex: (json['itemIndex'] as num).toInt(),
+      toolName: json['toolName'] as String,
+      verdict: $enumDecode(_$ChangeDecisionVerdictEnumMap, json['verdict']),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      taskId: json['taskId'] as String?,
+      rejectionReason: json['rejectionReason'] as String?,
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$ChangeDecisionEntityToJson(
+        ChangeDecisionEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'changeSetId': instance.changeSetId,
+      'itemIndex': instance.itemIndex,
+      'toolName': instance.toolName,
+      'verdict': _$ChangeDecisionVerdictEnumMap[instance.verdict]!,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'taskId': instance.taskId,
+      'rejectionReason': instance.rejectionReason,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$ChangeDecisionVerdictEnumMap = {
+  ChangeDecisionVerdict.confirmed: 'confirmed',
+  ChangeDecisionVerdict.rejected: 'rejected',
+  ChangeDecisionVerdict.deferred: 'deferred',
+};
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,

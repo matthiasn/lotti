@@ -33,3 +33,4 @@ Each ADR should contain:
 - [`0003-task-agent-linked-task-context-contract.md`](./0003-task-agent-linked-task-context-contract.md)
 - [`0004-task-agent-tool-execution-policy.md`](./0004-task-agent-tool-execution-policy.md)
 - [`0005-template-model-resolution-policy.md`](./0005-template-model-resolution-policy.md)
+- [`0006-change-set-deferred-tool-confirmation.md`](./0006-change-set-deferred-tool-confirmation.md)

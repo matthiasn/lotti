@@ -126,3 +126,11 @@ getEvolutionSessionsByTemplate: SELECT * FROM agent_entities WHERE agent_id = :t
 getEvolutionNotesByTemplate: SELECT * FROM agent_entities WHERE agent_id = :templateId AND type = 'evolutionNote' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 countEntitiesChangedSinceForTemplate: SELECT COUNT(*) AS cnt FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.updated_at > :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;
+
+-- Change set queries
+
+getChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+getPendingChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND subtype IN ('pending', 'partiallyResolved') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+getRecentDecisionsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeDecision' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
