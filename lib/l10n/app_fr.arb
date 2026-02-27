@@ -180,6 +180,23 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Rapports",
+  "agentTokenUsageCachedTokens": "En cache",
+  "agentTokenUsageEmpty": "Aucune utilisation de tokens enregistrée.",
+  "agentTokenUsageErrorLoading": "Échec du chargement de l'utilisation des tokens : {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Utilisation des tokens",
+  "agentTokenUsageInputTokens": "Entrée",
+  "agentTokenUsageModel": "Modèle",
+  "agentTokenUsageOutputTokens": "Sortie",
+  "agentTokenUsageThoughtsTokens": "Pensées",
+  "agentTokenUsageTotalTokens": "Total",
+  "agentTokenUsageWakeCount": "Réveils",
   "agentTemplateActiveInstancesTitle": "Instances actives",
   "agentTemplateAllProviders": "Tous les fournisseurs",
   "agentTemplateAssignedLabel": "Modèle d'agent",

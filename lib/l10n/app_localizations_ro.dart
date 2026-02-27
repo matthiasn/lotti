@@ -394,6 +394,39 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTabReports => 'Rapoarte';
 
   @override
+  String get agentTokenUsageCachedTokens => 'Din cache';
+
+  @override
+  String get agentTokenUsageEmpty =>
+      'Nu s-a înregistrat încă nicio utilizare de tokeni.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Eroare la încărcarea utilizării tokenilor: $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Utilizarea tokenilor';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Intrare';
+
+  @override
+  String get agentTokenUsageModel => 'Model';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Ieșire';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Gânduri';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Total';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Treziri';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Instanțe active';
 
   @override

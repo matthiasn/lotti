@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -330,6 +331,37 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   );
 
   return entities.whereType<AgentMessageEntity>().toList();
+}
+
+/// Aggregated token usage summaries for an agent, grouped by model ID.
+///
+/// Fetches all `WakeTokenUsageEntity` records for [agentId] and aggregates
+/// them into per-model summaries sorted by total tokens descending.
+@riverpod
+Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
+  Ref ref,
+  String agentId,
+) async {
+  ref.watch(agentUpdateStreamProvider(agentId));
+  final repository = ref.watch(agentRepositoryProvider);
+  final records = await repository.getTokenUsageForAgent(agentId);
+
+  final map = <String, AgentTokenUsageSummary>{};
+  for (final r in records) {
+    final existing = map[r.modelId];
+    map[r.modelId] = AgentTokenUsageSummary(
+      modelId: r.modelId,
+      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
+      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
+      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
+      cachedInputTokens:
+          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
+      wakeCount: (existing?.wakeCount ?? 0) + 1,
+    );
+  }
+
+  return map.values.toList()
+    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
 }
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.

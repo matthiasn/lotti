@@ -396,6 +396,39 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTabReports => 'Rapports';
 
   @override
+  String get agentTokenUsageCachedTokens => 'En cache';
+
+  @override
+  String get agentTokenUsageEmpty =>
+      'Aucune utilisation de tokens enregistrée.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Échec du chargement de l\'utilisation des tokens : $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Utilisation des tokens';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Entrée';
+
+  @override
+  String get agentTokenUsageModel => 'Modèle';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Sortie';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Pensées';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Total';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Réveils';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Instances actives';
 
   @override

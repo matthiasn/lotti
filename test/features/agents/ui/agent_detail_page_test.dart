@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
@@ -72,6 +73,9 @@ void main() {
         ),
         templateForAgentProvider.overrideWith(
           templateOverride ?? (ref, agentId) async => null,
+        ),
+        agentTokenUsageSummariesProvider.overrideWith(
+          (ref, agentId) async => <AgentTokenUsageSummary>[],
         ),
         agentServiceProvider.overrideWithValue(mockAgentService),
         taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),

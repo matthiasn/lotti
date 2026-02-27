@@ -186,6 +186,23 @@
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
+  "agentTokenUsageCachedTokens": "Cached",
+  "agentTokenUsageEmpty": "No token usage recorded yet.",
+  "agentTokenUsageErrorLoading": "Failed to load token usage: {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Token Usage",
+  "agentTokenUsageInputTokens": "Input",
+  "agentTokenUsageModel": "Model",
+  "agentTokenUsageOutputTokens": "Output",
+  "agentTokenUsageThoughtsTokens": "Thoughts",
+  "agentTokenUsageTotalTokens": "Total",
+  "agentTokenUsageWakeCount": "Wakes",
   "agentTemplateActiveInstancesTitle": "Active Instances",
   "@agentTemplateActiveInstancesTitle": {
     "description": "Section title for the list of active agent instances using this template."

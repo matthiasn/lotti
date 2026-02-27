@@ -816,6 +816,66 @@ abstract class AppLocalizations {
   /// **'Reports'**
   String get agentTabReports;
 
+  /// No description provided for @agentTokenUsageCachedTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached'**
+  String get agentTokenUsageCachedTokens;
+
+  /// No description provided for @agentTokenUsageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No token usage recorded yet.'**
+  String get agentTokenUsageEmpty;
+
+  /// No description provided for @agentTokenUsageErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load token usage: {error}'**
+  String agentTokenUsageErrorLoading(String error);
+
+  /// No description provided for @agentTokenUsageHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Token Usage'**
+  String get agentTokenUsageHeading;
+
+  /// No description provided for @agentTokenUsageInputTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get agentTokenUsageInputTokens;
+
+  /// No description provided for @agentTokenUsageModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get agentTokenUsageModel;
+
+  /// No description provided for @agentTokenUsageOutputTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get agentTokenUsageOutputTokens;
+
+  /// No description provided for @agentTokenUsageThoughtsTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts'**
+  String get agentTokenUsageThoughtsTokens;
+
+  /// No description provided for @agentTokenUsageTotalTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get agentTokenUsageTotalTokens;
+
+  /// No description provided for @agentTokenUsageWakeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentTokenUsageWakeCount;
+
   /// Section title for the list of active agent instances using this template.
   ///
   /// In en, this message translates to:

@@ -2243,4 +2243,127 @@ void main() {
       verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
     });
   });
+
+  group('agentTokenUsageSummariesProvider', () {
+    const agentId = kTestAgentId;
+
+    ProviderContainer createTokenContainer({
+      required List<WakeTokenUsageEntity> records,
+    }) {
+      final repo = MockAgentRepository();
+      when(() => repo.getTokenUsageForAgent(agentId))
+          .thenAnswer((_) async => records);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repo),
+          agentUpdateStreamProvider
+              .overrideWith((ref, agentId) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('returns empty list when no records', () async {
+      final container = createTokenContainer(records: []);
+      final result = await container.read(
+        agentTokenUsageSummariesProvider(agentId).future,
+      );
+      expect(result, isEmpty);
+    });
+
+    test('aggregates records by model', () async {
+      final now = DateTime(2025, 6, 15);
+      final container = createTokenContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: agentId,
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+            thoughtsTokens: 20,
+            cachedInputTokens: 10,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u2',
+            agentId: agentId,
+            runKey: 'run-2',
+            threadId: 't1',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 200,
+            outputTokens: 80,
+            thoughtsTokens: 30,
+            cachedInputTokens: 5,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u3',
+            agentId: agentId,
+            runKey: 'run-3',
+            threadId: 't2',
+            modelId: 'claude-sonnet',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 500,
+            outputTokens: 100,
+          ),
+        ],
+      );
+
+      final result = await container.read(
+        agentTokenUsageSummariesProvider(agentId).future,
+      );
+
+      expect(result, hasLength(2));
+
+      // Sorted by totalTokens descending: claude-sonnet (600) > gemini (480)
+      expect(result[0].modelId, 'claude-sonnet');
+      expect(result[0].inputTokens, 500);
+      expect(result[0].outputTokens, 100);
+      expect(result[0].wakeCount, 1);
+
+      expect(result[1].modelId, 'gemini-2.5-pro');
+      expect(result[1].inputTokens, 300);
+      expect(result[1].outputTokens, 130);
+      expect(result[1].thoughtsTokens, 50);
+      expect(result[1].cachedInputTokens, 15);
+      expect(result[1].wakeCount, 2);
+    });
+
+    test('handles null token fields gracefully', () async {
+      final now = DateTime(2025, 6, 15);
+      final container = createTokenContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: agentId,
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'model-a',
+            createdAt: now,
+            vectorClock: null,
+            // All token fields null
+          ),
+        ],
+      );
+
+      final result = await container.read(
+        agentTokenUsageSummariesProvider(agentId).future,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].inputTokens, 0);
+      expect(result[0].outputTokens, 0);
+      expect(result[0].thoughtsTokens, 0);
+      expect(result[0].cachedInputTokens, 0);
+      expect(result[0].wakeCount, 1);
+    });
+  });
 }

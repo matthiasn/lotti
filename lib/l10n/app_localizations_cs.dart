@@ -389,6 +389,38 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTabReports => 'Reports';
 
   @override
+  String get agentTokenUsageCachedTokens => 'Cached';
+
+  @override
+  String get agentTokenUsageEmpty => 'No token usage recorded yet.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Failed to load token usage: $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Token Usage';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Input';
+
+  @override
+  String get agentTokenUsageModel => 'Model';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Output';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Thoughts';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Total';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Wakes';
+
+  @override
   String get agentTemplateActiveInstancesTitle => 'Active Instances';
 
   @override

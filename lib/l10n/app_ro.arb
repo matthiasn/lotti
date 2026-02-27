@@ -180,6 +180,23 @@
   "agentTabConversations": "Conversații",
   "agentTabObservations": "Observații",
   "agentTabReports": "Rapoarte",
+  "agentTokenUsageCachedTokens": "Din cache",
+  "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
+  "agentTokenUsageErrorLoading": "Eroare la încărcarea utilizării tokenilor: {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Utilizarea tokenilor",
+  "agentTokenUsageInputTokens": "Intrare",
+  "agentTokenUsageModel": "Model",
+  "agentTokenUsageOutputTokens": "Ieșire",
+  "agentTokenUsageThoughtsTokens": "Gânduri",
+  "agentTokenUsageTotalTokens": "Total",
+  "agentTokenUsageWakeCount": "Treziri",
   "agentTemplateActiveInstancesTitle": "Instanțe active",
   "agentTemplateAllProviders": "Toți furnizorii",
   "agentTemplateAssignedLabel": "Șablon",

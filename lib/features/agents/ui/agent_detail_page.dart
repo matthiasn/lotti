@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -140,6 +141,11 @@ class AgentDetailPage extends ConsumerWidget {
 
               // State info
               _buildStateInfo(context, stateAsync),
+
+              const Divider(indent: 16, endIndent: 16),
+
+              // Token usage
+              AgentTokenUsageSection(agentId: agentId),
             ],
           ),
         ),
