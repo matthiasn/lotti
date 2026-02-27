@@ -488,7 +488,7 @@
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardTitle": "KI-Einrichtungsassistent",
   "aiTaskSummaryCancelScheduled": "Geplante Zusammenfassung abbrechen",
-  "aiTaskSummaryDeleteConfirmMessage": "Möchtest du wirklich {count} Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Möchtest du wirklich diese Aufgabenzusammenfassung löschen? Dies kann nicht rückgängig gemacht werden.} other{Möchtest du wirklich {count} Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
       "count": {

@@ -1090,16 +1090,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
-    return 'Doriți cu adevărat să ștergeți $count rezumate ale sarcinilor? Această acțiune nu poate fi anulată.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Vrei cu adevărat să ștergi $count rezumate ale sarcinilor? Această acțiune nu poate fi anulată.',
+      one:
+          'Vrei cu adevărat să ștergi acest rezumat al sarcinii? Această acțiune nu poate fi anulată.',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get aiTaskSummaryDeleteConfirmTitle =>
-      'Ștergeți rezumatele sarcinilor';
+  String get aiTaskSummaryDeleteConfirmTitle => 'Șterge rezumatele sarcinilor';
 
   @override
-  String get aiTaskSummaryDeleteTooltip =>
-      'Ștergeți toate rezumatele sarcinilor';
+  String get aiTaskSummaryDeleteTooltip => 'Șterge toate rezumatele sarcinilor';
 
   @override
   String get aiTaskSummaryRunning => 'Se gândește la rezumarea sarcinii...';

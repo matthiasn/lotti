@@ -345,7 +345,7 @@
   "aiSetupWizardSafeToRunMultiple": "Bezpečné spustit vícekrát - existující položky budou zachovány",
   "aiSetupWizardTitle": "Průvodce nastavením AI",
   "aiTaskSummaryCancelScheduled": "Zrušit plánovaný souhrn",
-  "aiTaskSummaryDeleteConfirmMessage": "Opravdu chcete smazat {count} shrnutí úkolů? Tuto akci nelze vrátit zpět.",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Opravdu chcete smazat toto shrnutí úkolu? Tuto akci nelze vrátit zpět.} other{Opravdu chcete smazat {count} shrnutí úkolů? Tuto akci nelze vrátit zpět.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
       "count": {

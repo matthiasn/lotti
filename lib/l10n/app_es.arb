@@ -488,7 +488,7 @@
   "aiSetupWizardSafeToRunMultiple": "Se puede ejecutar varias veces - los elementos existentes se conservarán",
   "aiSetupWizardTitle": "Asistente de configuración AI",
   "aiTaskSummaryCancelScheduled": "Cancelar resumen programado",
-  "aiTaskSummaryDeleteConfirmMessage": "¿Realmente quieres eliminar {count} resúmenes de tareas? Esto no se puede deshacer.",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{¿Realmente quieres eliminar este resumen de tarea? Esto no se puede deshacer.} other{¿Realmente quieres eliminar {count} resúmenes de tareas? Esto no se puede deshacer.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
       "count": {

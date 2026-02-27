@@ -1075,7 +1075,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
-    return 'Do you really want to delete $count task summaries? This cannot be undone.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Do you really want to delete $count task summaries? This cannot be undone.',
+      one:
+          'Do you really want to delete this task summary? This cannot be undone.',
+    );
+    return '$_temp0';
   }
 
   @override

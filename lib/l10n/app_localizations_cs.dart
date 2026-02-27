@@ -1084,7 +1084,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
-    return 'Opravdu chcete smazat $count shrnutí úkolů? Tuto akci nelze vrátit zpět.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Opravdu chcete smazat $count shrnutí úkolů? Tuto akci nelze vrátit zpět.',
+      one:
+          'Opravdu chcete smazat toto shrnutí úkolu? Tuto akci nelze vrátit zpět.',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -1112,7 +1112,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
-    return 'Veux-tu vraiment supprimer $count résumés de tâches ? Cette action est irréversible.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Veux-tu vraiment supprimer $count résumés de tâches ? Cette action est irréversible.',
+      one:
+          'Veux-tu vraiment supprimer ce résumé de tâche ? Cette action est irréversible.',
+    );
+    return '$_temp0';
   }
 
   @override

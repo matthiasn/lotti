@@ -1095,7 +1095,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String aiTaskSummaryDeleteConfirmMessage(int count) {
-    return 'Möchtest du wirklich $count Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Möchtest du wirklich $count Aufgabenzusammenfassungen löschen? Dies kann nicht rückgängig gemacht werden.',
+      one:
+          'Möchtest du wirklich diese Aufgabenzusammenfassung löschen? Dies kann nicht rückgängig gemacht werden.',
+    );
+    return '$_temp0';
   }
 
   @override

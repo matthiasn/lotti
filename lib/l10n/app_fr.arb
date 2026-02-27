@@ -488,7 +488,7 @@
   "aiSetupWizardSafeToRunMultiple": "Peut être exécuté plusieurs fois - les éléments existants seront conservés",
   "aiSetupWizardTitle": "Assistant de configuration AI",
   "aiTaskSummaryCancelScheduled": "Annuler le résumé programmé",
-  "aiTaskSummaryDeleteConfirmMessage": "Veux-tu vraiment supprimer {count} résumés de tâches ? Cette action est irréversible.",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Veux-tu vraiment supprimer ce résumé de tâche ? Cette action est irréversible.} other{Veux-tu vraiment supprimer {count} résumés de tâches ? Cette action est irréversible.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
       "count": {

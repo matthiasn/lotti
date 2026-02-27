@@ -253,6 +253,9 @@ Future<void> _showDeleteConfirmation(
   final count = summaries.length;
   if (count == 0 || !context.mounted) return;
 
+  // Read provider before the async gap to avoid accessing after unmount.
+  final journalRepository = ref.read(journalRepositoryProvider);
+
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -275,11 +278,12 @@ Future<void> _showDeleteConfirmation(
     ),
   );
 
-  if (confirmed ?? false) {
-    final journalRepository = ref.read(journalRepositoryProvider);
-    for (final summary in summaries) {
-      await journalRepository.deleteJournalEntity(summary.meta.id);
-    }
+  if (confirmed == true) {
+    await Future.wait(
+      summaries.map(
+        (summary) => journalRepository.deleteJournalEntity(summary.meta.id),
+      ),
+    );
   }
 }
 

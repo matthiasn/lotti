@@ -2019,7 +2019,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTaskSummaryDeleteConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'Do you really want to delete {count} task summaries? This cannot be undone.'**
+  /// **'{count, plural, =1{Do you really want to delete this task summary? This cannot be undone.} other{Do you really want to delete {count} task summaries? This cannot be undone.}}'**
   String aiTaskSummaryDeleteConfirmMessage(int count);
 
   /// No description provided for @aiTaskSummaryDeleteConfirmTitle.

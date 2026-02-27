@@ -24,6 +24,7 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;
@@ -1189,27 +1190,6 @@ void main() {
       );
     });
 
-    Widget buildTestWidget(
-      Widget child, {
-      List<Override> overrides = const [],
-    }) {
-      return ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: child,
-          ),
-        ),
-      );
-    }
-
     testWidgets('shows delete button when summaries exist and not running',
         (tester) async {
       when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
@@ -1218,7 +1198,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        buildTestWidget(
+        makeTestableWidgetWithScaffold(
           const LatestAiResponseSummary(
             id: testId,
             aiResponseType: testResponseType,
@@ -1248,7 +1228,7 @@ void main() {
           .thenAnswer((_) async => []);
 
       await tester.pumpWidget(
-        buildTestWidget(
+        makeTestableWidgetWithScaffold(
           const LatestAiResponseSummary(
             id: testId,
             aiResponseType: testResponseType,
@@ -1280,7 +1260,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: buildTestWidget(
+          child: makeTestableWidgetWithScaffold(
             const LatestAiResponseSummary(
               id: testId,
               aiResponseType: testResponseType,
@@ -1320,7 +1300,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        buildTestWidget(
+        makeTestableWidgetWithScaffold(
           const LatestAiResponseSummary(
             id: testId,
             aiResponseType: testResponseType,
@@ -1356,7 +1336,7 @@ void main() {
           .thenAnswer((_) async => true);
 
       await tester.pumpWidget(
-        buildTestWidget(
+        makeTestableWidgetWithScaffold(
           const LatestAiResponseSummary(
             id: testId,
             aiResponseType: testResponseType,
@@ -1393,7 +1373,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        buildTestWidget(
+        makeTestableWidgetWithScaffold(
           const LatestAiResponseSummary(
             id: testId,
             aiResponseType: testResponseType,

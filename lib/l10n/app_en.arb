@@ -605,7 +605,7 @@
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardTitle": "AI Setup Wizard",
   "aiTaskSummaryCancelScheduled": "Cancel scheduled summary",
-  "aiTaskSummaryDeleteConfirmMessage": "Do you really want to delete {count} task summaries? This cannot be undone.",
+  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Do you really want to delete this task summary? This cannot be undone.} other{Do you really want to delete {count} task summaries? This cannot be undone.}}",
   "@aiTaskSummaryDeleteConfirmMessage": {
     "placeholders": {
       "count": {
