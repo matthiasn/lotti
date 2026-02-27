@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:mocktail/mocktail.dart';
@@ -682,6 +683,64 @@ void main() {
         final templateLink =
             linkCalls.whereType<TemplateAssignmentLink>().single;
         expect(templateLink.fromId, kTestTemplateId);
+      });
+
+      test(
+          'prefers Laura template over other templates when templateId is null',
+          () async {
+        final identity = makeIdentity();
+        final otherTemplate = makeTestTemplate(
+          id: 'other-template',
+          agentId: 'other-template',
+          displayName: 'Other',
+        );
+        final lauraTemplate = makeTestTemplate(
+          id: lauraTemplateId,
+          agentId: lauraTemplateId,
+          displayName: 'Laura',
+        );
+
+        // Return other template first — Laura should still be preferred.
+        when(() => mockRepository.getLinksTo('task-laura', type: 'agent_task'))
+            .thenAnswer((_) async => []);
+        when(() => mockRepository.getAllTemplates())
+            .thenAnswer((_) async => [otherTemplate, lauraTemplate]);
+        // Stub getEntity for Laura template (used in transaction validation).
+        when(() => mockRepository.getEntity(lauraTemplateId))
+            .thenAnswer((_) async => lauraTemplate);
+        when(
+          () => mockAgentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+        when(() => mockRepository.getAgentState('agent-1'))
+            .thenAnswer((_) async => makeState());
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+        when(
+          () => mockOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
+
+        final result = await service.createTaskAgent(
+          taskId: 'task-laura',
+          allowedCategoryIds: const {},
+        );
+
+        expect(result, isA<AgentIdentityEntity>());
+
+        // Verify the template_assignment link uses the Laura template ID.
+        final linkCalls = verify(
+          () => mockSyncService.upsertLink(captureAny()),
+        ).captured;
+        final templateLink =
+            linkCalls.whereType<TemplateAssignmentLink>().single;
+        expect(templateLink.fromId, lauraTemplateId);
       });
 
       test('throws StateError when provided templateId does not exist',
