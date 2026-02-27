@@ -14,10 +14,9 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
   target_compile_options(sqlite_vec PRIVATE -DSQLITE_VEC_ENABLE_NEON)
 endif()
 
-# Enable AVX on x86_64
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
-  target_compile_options(sqlite_vec PRIVATE -DSQLITE_VEC_ENABLE_AVX)
-endif()
+# On x86_64 we intentionally omit -DSQLITE_VEC_ENABLE_AVX so the library
+# falls back to portable scalar code.  Many CI runners and VMs lack AVX
+# support, and at our scale the performance difference is negligible.
 
 # Link math library on Linux
 if(UNIX AND NOT APPLE)
