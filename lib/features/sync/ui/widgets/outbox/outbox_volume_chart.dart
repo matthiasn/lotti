@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
@@ -45,7 +46,7 @@ class OutboxVolumeChart extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        final now = DateTime.now();
+        final now = clock.now();
         final rangeEnd = DateTime(now.year, now.month, now.day + 1);
         final rangeStart =
             rangeEnd.subtract(const Duration(days: kOutboxVolumeDays));
