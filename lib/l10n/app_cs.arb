@@ -1041,6 +1041,7 @@
   "outboxMonitorRetryQueued": "Opakování naplánováno",
   "outboxMonitorSubjectLabel": "Předmět",
   "outboxMonitorSwitchLabel": "povoleno",
+  "outboxMonitorVolumeChartTitle": "Denní objem synchronizace",
   "privateLabel": "Soukromé",
   "promptAddOrRemoveModelsButton": "Přidat nebo odstranit modely",
   "promptAddPageTitle": "Přidat prompt",

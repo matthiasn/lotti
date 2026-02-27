@@ -1162,6 +1162,7 @@
   "outboxMonitorRetryQueued": "Wiederholung geplant",
   "outboxMonitorSubjectLabel": "Betreff",
   "outboxMonitorSwitchLabel": "aktiviert",
+  "outboxMonitorVolumeChartTitle": "Tägliches Sync-Volumen",
   "privateLabel": "Privat",
   "promptAddOrRemoveModelsButton": "Modelle hinzufügen oder entfernen",
   "promptAddPageTitle": "Prompt hinzufügen",

@@ -93,3 +93,49 @@ final class OutboxPendingCountProvider
 
 String _$outboxPendingCountHash() =>
     r'd1063a52cfb2ee4fc2c937a96f1d8f71ff2211cd';
+
+/// Future provider for daily outbox volume over the last 30 days.
+/// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
+
+@ProviderFor(outboxDailyVolume)
+final outboxDailyVolumeProvider = OutboxDailyVolumeProvider._();
+
+/// Future provider for daily outbox volume over the last 30 days.
+/// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
+
+final class OutboxDailyVolumeProvider extends $FunctionalProvider<
+        AsyncValue<List<Observation>>,
+        List<Observation>,
+        FutureOr<List<Observation>>>
+    with
+        $FutureModifier<List<Observation>>,
+        $FutureProvider<List<Observation>> {
+  /// Future provider for daily outbox volume over the last 30 days.
+  /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
+  OutboxDailyVolumeProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'outboxDailyVolumeProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$outboxDailyVolumeHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Observation>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Observation>> create(Ref ref) {
+    return outboxDailyVolume(ref);
+  }
+}
+
+String _$outboxDailyVolumeHash() => r'2af96c7aeafec4eded38b837ab2a0493b54160a0';

@@ -1,89 +1,137 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
+import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
+import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+// ---------------------------------------------------------------------------
+// Shared test helpers
+// ---------------------------------------------------------------------------
+
+final _epoch = DateTime.fromMillisecondsSinceEpoch(0);
+
+/// Pumps an [OutboxMonitorPage] with the given mock inside the standard
+/// test harness.
+Future<void> _pumpOutboxMonitorPage(
+  WidgetTester tester, {
+  required MockSyncDatabase mock,
+  List<Override> extraOverrides = const [],
+}) async {
+  getIt.registerSingleton<SyncDatabase>(mock);
+
+  await tester.pumpWidget(
+    makeTestableWidget(
+      const SizedBox(
+        width: 500,
+        height: 1000,
+        child: OutboxMonitorPage(),
+      ),
+      overrides: [
+        syncDatabaseProvider.overrideWithValue(mock),
+        ...extraOverrides,
+      ],
+    ),
+  );
+}
+
+MockSyncDatabase _prepareMock({
+  int count = 0,
+  Stream<List<OutboxItem>>? itemStream,
+  List<OutboxDailyVolume> volumeData = const [],
+}) {
+  final mock = mockSyncDatabaseWithCount(count);
+
+  when(() => mock.getDailyOutboxVolume(days: kOutboxVolumeDays))
+      .thenAnswer((_) async => volumeData);
+
+  if (itemStream != null) {
+    when(() => mock.watchOutboxItems(limit: any(named: 'limit')))
+        .thenAnswer((_) => itemStream);
+  }
+
+  return mock;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 void main() {
-  var syncDatabaseMock = MockSyncDatabase();
-  final testDateTime = DateTime.fromMillisecondsSinceEpoch(0);
+  group('OutboxMonitorPage', () {
+    setUp(() => setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<UserActivityService>(UserActivityService());
+          },
+        ));
+    tearDown(tearDownTestGetIt);
 
-  group('OutboxBadge Widget Tests - ', () {
-    setUp(() {
-      getIt.registerSingleton<UserActivityService>(UserActivityService());
-    });
-    tearDown(getIt.reset);
-
-    testWidgets('OutboxMonitor is rendered', (tester) async {
-      const testCount = 999;
-      syncDatabaseMock = mockSyncDatabaseWithCount(testCount);
-
-      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
-          .thenAnswer(
-        (_) => Stream<List<OutboxItem>>.fromIterable([
+    testWidgets('renders filter tabs, items, and switches filters',
+        (tester) async {
+      final mock = _prepareMock(
+        count: 999,
+        itemStream: Stream<List<OutboxItem>>.fromIterable([
           [
             OutboxItem(
               id: 1,
-              createdAt: testDateTime,
-              updatedAt: testDateTime,
-              status: 1,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 1, // sent
               retries: 0,
               message: '{"runtimeType":"aiConfigDelete","id":"config-id"}',
               subject: 'error-subject',
             ),
             OutboxItem(
               id: 2,
-              createdAt: testDateTime,
-              updatedAt: testDateTime,
-              status: 0,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 0, // pending
               retries: 1,
               message: '{"runtimeType":"aiConfigDelete","id":"pending"}',
               subject: 'pending-subject',
             ),
             OutboxItem(
               id: 3,
-              createdAt: testDateTime,
-              updatedAt: testDateTime,
-              status: 2,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2, // error
               retries: 2,
               message: '{"runtimeType":"aiConfigDelete","id":"sent"}',
               subject: 'sent-subject',
             ),
-          ]
+          ],
         ]),
       );
 
-      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 500,
-            height: 1000,
-            child: OutboxMonitorPage(),
-          ),
-        ),
-      );
-
+      await _pumpOutboxMonitorPage(tester, mock: mock);
       await tester.pumpAndSettle();
 
-      final pendingControlFinder =
-          find.byKey(const ValueKey('syncFilter-pending'));
-      expect(pendingControlFinder, findsOneWidget);
-      final successControlFinder =
-          find.byKey(const ValueKey('syncFilter-success'));
-      expect(successControlFinder, findsOneWidget);
-      final errorControlFinder = find.byKey(const ValueKey('syncFilter-error'));
-      expect(errorControlFinder, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('syncFilter-pending')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('syncFilter-success')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('syncFilter-error')),
+        findsOneWidget,
+      );
 
       expect(find.text('Pending · 1 item'), findsOneWidget);
       expect(find.text('Retries: 1 Retry'), findsOneWidget);
@@ -99,92 +147,59 @@ void main() {
       await tester.pumpAndSettle();
 
       final errorItems = tester
-          .widgetList<OutboxListItem>(
-            find.byType(OutboxListItem),
-          )
+          .widgetList<OutboxListItem>(find.byType(OutboxListItem))
           .toList();
       expect(errorItems, hasLength(1));
       expect(errorItems.first.showRetry, isTrue);
       expect(errorItems.first.showDelete, isTrue);
     });
 
-    testWidgets('delete button shows for error items and triggers confirmation',
-        (tester) async {
-      syncDatabaseMock = mockSyncDatabaseWithCount(1);
+    testWidgets(
+      'delete button shows for error items and triggers confirmation',
+      (tester) async {
+        final mock = _prepareMock(
+          count: 1,
+          itemStream: Stream<List<OutboxItem>>.fromIterable([
+            [
+              OutboxItem(
+                id: 1,
+                createdAt: _epoch,
+                updatedAt: _epoch,
+                status: 2,
+                retries: 5,
+                message: '{"runtimeType":"journalEntity","id":"test-id"}',
+                subject: 'error-subject',
+              ),
+            ],
+          ]),
+        );
 
-      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
-          .thenAnswer(
-        (_) => Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 1,
-              createdAt: testDateTime,
-              updatedAt: testDateTime,
-              status: 2, // error
-              retries: 5,
-              message: '{"runtimeType":"journalEntity","id":"test-id"}',
-              subject: 'error-subject',
-            ),
-          ]
-        ]),
-      );
+        when(() => mock.deleteOutboxItemById(1)).thenAnswer((_) async => 1);
 
-      when(() => syncDatabaseMock.deleteOutboxItemById(1))
-          .thenAnswer((_) async => 1);
+        await _pumpOutboxMonitorPage(tester, mock: mock);
+        await tester.pumpAndSettle();
 
-      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
+        await tester.tap(find.text('Error'));
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 500,
-            height: 1000,
-            child: OutboxMonitorPage(),
-          ),
-        ),
-      );
+        final deleteButtonFinder = find.byKey(const ValueKey('outboxDelete-1'));
+        expect(deleteButtonFinder, findsOneWidget);
 
-      await tester.pumpAndSettle();
+        await tester.tap(deleteButtonFinder);
+        await tester.pumpAndSettle();
 
-      // Switch to Error tab
-      await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
-
-      // Verify delete button is present
-      final deleteButtonFinder = find.byKey(const ValueKey('outboxDelete-1'));
-      expect(deleteButtonFinder, findsOneWidget);
-
-      // Tap delete button
-      await tester.tap(deleteButtonFinder);
-      await tester.pumpAndSettle();
-
-      // Verify confirmation dialog appears
-      expect(find.textContaining('delete this sync item'), findsOneWidget);
-      expect(find.text('DELETE'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-    });
+        expect(find.textContaining('delete this sync item'), findsOneWidget);
+        expect(find.text('DELETE'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders empty state when no outbox items', (tester) async {
-      syncDatabaseMock = mockSyncDatabaseWithCount(0);
-      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
-          .thenAnswer(
-        (_) => Stream<List<OutboxItem>>.fromIterable([
-          <OutboxItem>[],
-        ]),
+      final mock = _prepareMock(
+        itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
       );
 
-      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 500,
-            height: 1000,
-            child: OutboxMonitorPage(),
-          ),
-        ),
-      );
-
+      await _pumpOutboxMonitorPage(tester, mock: mock);
       await tester.pumpAndSettle();
 
       expect(find.text('Outbox is clear'), findsOneWidget);
@@ -193,23 +208,10 @@ void main() {
 
     testWidgets('shows loader before first snapshot then empty state',
         (tester) async {
-      syncDatabaseMock = mockSyncDatabaseWithCount(0);
       final controller = StreamController<List<OutboxItem>>();
-      when(() => syncDatabaseMock.watchOutboxItems(limit: any(named: 'limit')))
-          .thenAnswer((_) => controller.stream);
+      final mock = _prepareMock(itemStream: controller.stream);
 
-      getIt.registerSingleton<SyncDatabase>(syncDatabaseMock);
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 500,
-            height: 1000,
-            child: OutboxMonitorPage(),
-          ),
-        ),
-      );
-
+      await _pumpOutboxMonitorPage(tester, mock: mock);
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -219,6 +221,129 @@ void main() {
 
       expect(find.text('Outbox is clear'), findsOneWidget);
       await controller.close();
+    });
+
+    group('OutboxVolumeChart integration', () {
+      testWidgets(
+        'renders bar chart when volume data exists',
+        (tester) async {
+          final mock = _prepareMock(
+            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
+            volumeData: [
+              OutboxDailyVolume(
+                date: DateTime(2024, 3, 10),
+                totalBytes: 10240,
+                itemCount: 5,
+              ),
+              OutboxDailyVolume(
+                date: DateTime(2024, 3, 11),
+                totalBytes: 20480,
+                itemCount: 8,
+              ),
+            ],
+          );
+
+          await _pumpOutboxMonitorPage(tester, mock: mock);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(OutboxVolumeChart), findsOneWidget);
+          expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+          expect(find.text('Daily sync volume'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides bar chart when no volume data exists',
+        (tester) async {
+          final mock = _prepareMock(
+            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
+          );
+
+          await _pumpOutboxMonitorPage(tester, mock: mock);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(TimeSeriesBarChart), findsNothing);
+          expect(find.text('Daily sync volume'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows error state when provider fails',
+        (tester) async {
+          final mock = _prepareMock(
+            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
+          );
+
+          await _pumpOutboxMonitorPage(
+            tester,
+            mock: mock,
+            extraOverrides: [
+              outboxDailyVolumeProvider.overrideWith(
+                (ref) async => throw Exception('Volume query failed'),
+              ),
+            ],
+          );
+          // Suppress RenderFlex overflow errors during settle
+          final originalOnError = FlutterError.onError;
+          final overflowErrors = <FlutterErrorDetails>[];
+          FlutterError.onError = (details) {
+            if (details.toString().contains('overflowed')) {
+              overflowErrors.add(details);
+              return;
+            }
+            originalOnError?.call(details);
+          };
+
+          await tester.pumpAndSettle();
+
+          FlutterError.onError = originalOnError;
+
+          expect(find.byType(TimeSeriesBarChart), findsNothing);
+          // The raw exception message should not be displayed
+          expect(find.textContaining('Volume query failed'), findsNothing);
+          // Generic error text is shown via a dedicated key
+          expect(
+            find.byKey(const ValueKey('outboxVolumeChart-error')),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'chart coexists with outbox items list',
+        (tester) async {
+          final mock = _prepareMock(
+            count: 1,
+            itemStream: Stream<List<OutboxItem>>.fromIterable([
+              [
+                OutboxItem(
+                  id: 1,
+                  createdAt: _epoch,
+                  updatedAt: _epoch,
+                  status: 0,
+                  retries: 0,
+                  message: '{"runtimeType":"aiConfigDelete","id":"test"}',
+                  subject: 'test-subject',
+                ),
+              ],
+            ]),
+            volumeData: [
+              OutboxDailyVolume(
+                date: DateTime(2024, 3, 15),
+                totalBytes: 5120,
+                itemCount: 3,
+              ),
+            ],
+          );
+
+          await _pumpOutboxMonitorPage(tester, mock: mock);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+          expect(find.text('Daily sync volume'), findsOneWidget);
+          expect(find.byType(OutboxListItem), findsOneWidget);
+        },
+      );
     });
   });
 }

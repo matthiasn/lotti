@@ -4938,6 +4938,12 @@ abstract class AppLocalizations {
   /// **'enabled'**
   String get outboxMonitorSwitchLabel;
 
+  /// No description provided for @outboxMonitorVolumeChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sync volume'**
+  String get outboxMonitorVolumeChartTitle;
+
   /// No description provided for @privateLabel.
   ///
   /// In en, this message translates to:
