@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
+import 'package:lotti/features/agents/workflow/linked_task_context_enricher.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -74,7 +75,11 @@ class TaskAgentWorkflow {
     required this.checklistRepository,
     required this.syncService,
     required this.templateService,
-  });
+    LinkedTaskContextEnricher? linkedTaskContextEnricher,
+  }) : linkedTaskContextEnricher = linkedTaskContextEnricher ??
+            LinkedTaskContextEnricher(
+              agentRepository: agentRepository,
+            );
 
   final AgentRepository agentRepository;
 
@@ -89,6 +94,7 @@ class TaskAgentWorkflow {
   final JournalRepository journalRepository;
   final ChecklistRepository checklistRepository;
   final AgentTemplateService templateService;
+  final LinkedTaskContextEnricher linkedTaskContextEnricher;
 
   static const _uuid = Uuid();
 
@@ -747,127 +753,7 @@ and never shown to the user. They persist as your memory across wakes.
   /// where task summaries are being phased out in favor of task-agent reports.
   Future<String> _buildLinkedTasksContextJson(String taskId) async {
     final rawJson = await aiInputRepository.buildLinkedTasksJson(taskId);
-    return _replaceLinkedTaskSummariesWithReports(rawJson);
-  }
-
-  /// Rewrites linked-task JSON to remove summary fields and add task-agent
-  /// report snapshots.
-  Future<String> _replaceLinkedTaskSummariesWithReports(String rawJson) async {
-    if (rawJson.isEmpty || rawJson == '{}') {
-      return rawJson;
-    }
-
-    Map<String, dynamic> decoded;
-    try {
-      final parsed = jsonDecode(rawJson);
-      if (parsed is! Map<String, dynamic>) {
-        return rawJson;
-      }
-      decoded = parsed;
-    } catch (e) {
-      developer.log(
-        'Failed to decode linked task context JSON: $e',
-        name: 'TaskAgentWorkflow',
-      );
-      return rawJson;
-    }
-
-    final taskRows = _extractLinkedTaskRows(decoded);
-    if (taskRows.isEmpty) {
-      return rawJson;
-    }
-
-    final taskIds = taskRows
-        .map((row) => row['id'])
-        .whereType<String>()
-        .where((id) => id.isNotEmpty)
-        .toSet();
-
-    final reportByTaskId = <String, _LinkedTaskAgentReport?>{};
-    await Future.wait(
-      taskIds.map((id) async {
-        reportByTaskId[id] = await _resolveLatestTaskAgentReport(id);
-      }),
-    );
-
-    for (final row in taskRows) {
-      row.remove('latestSummary');
-
-      final linkedTaskId = row['id'];
-      if (linkedTaskId is! String || linkedTaskId.isEmpty) {
-        continue;
-      }
-
-      final linkedReport = reportByTaskId[linkedTaskId];
-      if (linkedReport == null) {
-        continue;
-      }
-
-      row['taskAgentId'] = linkedReport.agentId;
-      row['latestTaskAgentReport'] = linkedReport.content;
-      row['latestTaskAgentReportCreatedAt'] =
-          linkedReport.createdAt.toIso8601String();
-    }
-
-    return const JsonEncoder.withIndent('    ').convert(decoded);
-  }
-
-  /// Extracts map entries representing linked tasks from known JSON sections.
-  List<Map<String, dynamic>> _extractLinkedTaskRows(Map<String, dynamic> json) {
-    const sections = <String>['linked_from', 'linked_to', 'linked'];
-    final rows = <Map<String, dynamic>>[];
-    for (final section in sections) {
-      final value = json[section];
-      if (value is List) {
-        rows.addAll(value.whereType<Map<String, dynamic>>());
-      }
-    }
-    return rows;
-  }
-
-  /// Resolves the latest current report of the task agent associated with a
-  /// linked task, if any.
-  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
-    String linkedTaskId,
-  ) async {
-    try {
-      final links = await agentRepository.getLinksTo(
-        linkedTaskId,
-        type: 'agent_task',
-      );
-      if (links.isEmpty) {
-        return null;
-      }
-
-      final sortedLinks = links.toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      for (final link in sortedLinks) {
-        final report = await agentRepository.getLatestReport(
-          link.fromId,
-          'current',
-        );
-        if (report == null) {
-          continue;
-        }
-        final content = report.content.trim();
-        if (content.isEmpty) {
-          continue;
-        }
-        return _LinkedTaskAgentReport(
-          agentId: link.fromId,
-          content: content,
-          createdAt: report.createdAt,
-        );
-      }
-      return null;
-    } catch (e) {
-      developer.log(
-        'Failed to resolve linked task-agent report for task $linkedTaskId: $e',
-        name: 'TaskAgentWorkflow',
-      );
-      return null;
-    }
+    return linkedTaskContextEnricher.enrich(rawJson);
   }
 
   /// Resolves the text content of an observation message.
@@ -1330,18 +1216,6 @@ class _TemplateContext {
 
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
-}
-
-class _LinkedTaskAgentReport {
-  const _LinkedTaskAgentReport({
-    required this.agentId,
-    required this.content,
-    required this.createdAt,
-  });
-
-  final String agentId;
-  final String content;
-  final DateTime createdAt;
 }
 
 /// Result of a wake cycle execution.
