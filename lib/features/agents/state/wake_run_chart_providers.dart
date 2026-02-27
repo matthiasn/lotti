@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/database/agent_database.dart'
     show WakeRunLogData;
 import 'package:lotti/features/agents/database/agent_repository.dart'
     show AgentRepository;
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series_utils.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
@@ -54,7 +55,7 @@ Future<TaskResolutionTimeSeries> templateTaskResolutionTimeSeries(
     agents.map((agent) async {
       final links = await repository.getLinksFrom(
         agent.agentId,
-        type: 'agent_task',
+        type: AgentLinkTypes.agentTask,
       );
       return (agent: agent, links: links);
     }),

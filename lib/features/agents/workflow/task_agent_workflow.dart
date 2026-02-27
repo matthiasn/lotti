@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -137,8 +138,10 @@ class TaskAgentWorkflow {
       return const WakeResult(success: false, error: 'No active task ID');
     }
 
-    final lastReport =
-        await agentRepository.getLatestReport(agentId, 'current');
+    final lastReport = await agentRepository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
     final journalObservations = await agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
@@ -357,7 +360,7 @@ class TaskAgentWorkflow {
             AgentDomainEntity.agentReport(
               id: reportId,
               agentId: agentId,
-              scope: 'current',
+              scope: AgentReportScopes.current,
               createdAt: now,
               vectorClock: null,
               content: reportContent,
@@ -366,15 +369,17 @@ class TaskAgentWorkflow {
           );
 
           // Update the report head pointer.
-          final existingHead =
-              await agentRepository.getReportHead(agentId, 'current');
+          final existingHead = await agentRepository.getReportHead(
+            agentId,
+            AgentReportScopes.current,
+          );
           final headId = existingHead?.id ?? _uuid.v4();
 
           await syncService.upsertEntity(
             AgentDomainEntity.agentReportHead(
               id: headId,
               agentId: agentId,
-              scope: 'current',
+              scope: AgentReportScopes.current,
               reportId: reportId,
               updatedAt: now,
               vectorClock: null,

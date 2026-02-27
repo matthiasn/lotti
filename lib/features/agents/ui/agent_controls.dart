@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -65,7 +66,7 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
                           final repo = ref.read(agentRepositoryProvider);
                           final links = await repo.getLinksFrom(
                             widget.agentId,
-                            type: 'agent_task',
+                            type: AgentLinkTypes.agentTask,
                           );
 
                           await ref
