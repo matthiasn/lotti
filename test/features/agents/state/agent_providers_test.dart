@@ -977,6 +977,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 0);
     });
 
     tearDown(tearDownTestGetIt);
@@ -1801,6 +1803,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockRepository.abandonOrphanedWakeRuns())
+          .thenAnswer((_) async => 0);
     });
 
     tearDown(tearDownTestGetIt);

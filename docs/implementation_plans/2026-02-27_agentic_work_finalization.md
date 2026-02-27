@@ -345,3 +345,81 @@ gantt
 3. Step 3 (settings restructure) — new pages, routing, l10n
 4. Step 4 (evolution visibility) — depends on Step 3
 5. Step 5 (tests, cleanup) — done incrementally after each step
+
+---
+
+## Follow-up: UX/Reliability Improvements (2026-02-27)
+
+### Context
+After initial implementation, several UX and reliability issues were identified from task detail screenshots and usage feedback.
+
+### Completed Items
+
+#### 1. Streamlined Report Format (Remove Redundancy)
+**Status**: Done
+
+**Problem**: Report prompt instructed the agent to output Title (H1), Status bar, Goal section — all redundant with the task header UI.
+
+**Changes** (`lib/features/agents/workflow/task_agent_workflow.dart`):
+- Removed "Title line" and "Status bar" from Required Sections
+- Removed them from the example report
+- Made TLDR the first section
+- Added explicit instruction not to include title/status/goal
+
+#### 2. Display Model in Conversation Thread
+**Status**: Done
+
+**Problem**: No UI showed which model (Flash vs Pro) generated a conversation.
+
+**Changes** (`lib/features/agents/ui/agent_conversation_log.dart`):
+- Converted `_ThreadTile` from `StatelessWidget` to `ConsumerWidget`
+- Watches `templateForAgentProvider(agentId)` to resolve the template
+- Extracts and displays `modelId` (stripped of `models/` prefix) in subtitle
+- Added `agentId` parameter to `_ThreadTile`
+
+#### 3. Fix Thread Timestamp to Show Start Time + Duration
+**Status**: Done
+
+**Problem**: Thread tile showed the timestamp of the last message (end time), not when the conversation started. Users also wanted to see conversation duration.
+
+**Changes** (`lib/features/agents/ui/agent_conversation_log.dart`):
+- Changed from `messages.last` to `messages.first` for timestamp
+- Added duration calculation (last - first message)
+- Display format: `"2026-02-27 14:30 (2m 15s)"`
+- Added `_formatDuration()` helper
+
+#### 4. Fix Date Layout in Conversation Messages
+**Status**: Done
+
+**Problem**: Long tool names in the `_MessageCard` Row pushed the timestamp into vertical wrapping.
+
+**Changes** (`lib/features/agents/ui/agent_activity_log.dart`):
+- Split into two-row layout: Row 1 has KindBadge + Timestamp + ExpandIcon
+- Row 2 (only when tool name present) shows the tool name Chip with full width
+
+#### 5. Debug Logging for Checklist → Agent Wake
+**Status**: Done
+
+**Problem**: Checklist item completion may not reliably trigger agent runs. Need visibility into the notification chain.
+
+**Changes** (`lib/features/agents/wake/wake_orchestrator.dart`):
+- Added `developer.log` in `_onBatch` for token matching and suppression
+- Added `developer.log` in throttle path showing deadline
+- Added `developer.log` in `_scheduleDeferredDrain` for timer scheduling and firing
+- Removed `kDebugMode` guard from existing logging (now always logs)
+
+#### 6. Concurrency Guard for Orphaned Running Wakes
+**Status**: Done
+
+**Problem**: On hot restart, in-memory locks are lost, leaving wake runs stuck in `running` status forever.
+
+**Changes**:
+- Added `WakeRunStatus.abandoned` enum value (`lib/features/agents/model/agent_enums.dart`)
+- Added `AgentRepository.abandonOrphanedWakeRuns()` method (`lib/features/agents/database/agent_repository.dart`)
+- Call on startup in `agentInitialization` provider (`lib/features/agents/state/agent_providers.dart`)
+- Updated test mocks to stub the new method
+
+### Verification
+- Analyzer: Zero warnings/infos for entire project
+- All 1212 agent tests pass
+- Formatter: All files formatted

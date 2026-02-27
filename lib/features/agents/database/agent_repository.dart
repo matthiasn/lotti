@@ -427,6 +427,24 @@ class AgentRepository {
     return rows.first;
   }
 
+  /// Mark any wake runs still in `running` status as `abandoned`.
+  ///
+  /// Called on startup to clean up runs left behind by a hot restart or crash.
+  /// Returns the number of rows updated.
+  Future<int> abandonOrphanedWakeRuns() async {
+    return (_db.update(_db.wakeRunLog)
+          ..where(
+            (t) => t.status.equals(WakeRunStatus.running.name),
+          ))
+        .write(
+      WakeRunLogCompanion(
+        status: Value(WakeRunStatus.abandoned.name),
+        errorMessage:
+            const Value('Marked as abandoned on startup (orphaned run)'),
+      ),
+    );
+  }
+
   // ── Saga log ───────────────────────────────────────────────────────────────
 
   /// Insert a new [SagaLogData] entry.

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -344,7 +343,15 @@ class WakeOrchestrator {
       scheduleMicrotask(() => unawaited(processNext()));
       return;
     }
+    developer.log(
+      'Scheduling deferred drain for $agentId in ${remaining.inSeconds}s',
+      name: 'WakeOrchestrator',
+    );
     _deferredDrainTimers[agentId] = Timer(remaining, () {
+      developer.log(
+        'Deferred drain timer fired for $agentId — draining queue',
+        name: 'WakeOrchestrator',
+      );
       _deferredDrainTimers.remove(agentId);
       _throttleDeadlines.remove(agentId);
       // Clear the persisted nextWakeAt so the agent detail page and
@@ -469,15 +476,33 @@ class WakeOrchestrator {
       final matched = tokens.intersection(sub.matchEntityIds);
       if (matched.isEmpty) continue;
 
+      developer.log(
+        'Batch matched ${matched.length} token(s) for agent ${sub.agentId} '
+        '(sub: ${sub.id}): $matched',
+        name: 'WakeOrchestrator',
+      );
+
       // 2. Apply self-notification suppression.
       final suppressed = _isSuppressed(sub.agentId, matched);
-      if (suppressed) continue;
+      if (suppressed) {
+        developer.log(
+          'Suppressed self-notification for ${sub.agentId}',
+          name: 'WakeOrchestrator',
+        );
+        continue;
+      }
 
       // 3. Throttle gate: when the agent is already throttled, attempt to
       //    merge the new tokens into the queued job so they are processed
       //    when the deferred drain fires. If no job exists yet (e.g. the
       //    previous one was already dequeued), enqueue a fresh one.
       if (_isThrottled(sub.agentId)) {
+        final deadline = _throttleDeadlines[sub.agentId];
+        developer.log(
+          'Agent ${sub.agentId} throttled until $deadline — '
+          'merging/enqueuing tokens for deferred drain',
+          name: 'WakeOrchestrator',
+        );
         if (!queue.mergeTokens(sub.agentId, matched)) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
           _wakeCounters[sub.agentId] = counter + 1;
@@ -541,13 +566,11 @@ class WakeOrchestrator {
       _throttleDeadlines[sub.agentId] = deadline;
       _scheduleDeferredDrain(sub.agentId, deadline);
 
-      if (kDebugMode) {
-        developer.log(
-          'Deferred wake for ${sub.agentId}: '
-          'drain scheduled in ${throttleWindow.inSeconds}s',
-          name: 'WakeOrchestrator',
-        );
-      }
+      developer.log(
+        'Deferred wake for ${sub.agentId}: '
+        'drain scheduled in ${throttleWindow.inSeconds}s',
+        name: 'WakeOrchestrator',
+      );
     }
   }
 

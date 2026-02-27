@@ -426,17 +426,6 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                       ),
                     ),
                   ),
-                  if (toolName != null)
-                    Chip(
-                      label: Text(
-                        toolName,
-                        style: monoTabularStyle(
-                          fontSize: fontSizeSmall,
-                        ),
-                      ),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
                   if (isExpandable)
                     Icon(
                       _expanded ? Icons.expand_less : Icons.expand_more,
@@ -445,6 +434,20 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                     ),
                 ],
               ),
+              if (toolName != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
+                  child: Chip(
+                    label: Text(
+                      toolName,
+                      style: monoTabularStyle(
+                        fontSize: fontSizeSmall,
+                      ),
+                    ),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               if (_expanded && contentId != null)
                 _ExpandedPayload(
                   payloadId: contentId,

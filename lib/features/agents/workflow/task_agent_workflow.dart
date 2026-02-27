@@ -521,16 +521,19 @@ structure with emojis for visual consistency:
 
 ### Required Sections
 
-1. **Title line** — Task title as an H1 heading.
-2. **Status bar** — A bold one-liner with status, priority, labels, estimate,
-   and due date (when set). Include assigned label names when the task has any.
-3. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
-4. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
+1. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
+   This is the first and most important section — it is what the user sees in
+   the collapsed view.
+2. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
    nothing has been achieved yet.
-5. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
+3. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
    the task is complete.
-6. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
+4. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
    the user. Omit if there are no noteworthy learnings.
+
+Do NOT include a title line (H1) or a status bar — these are already shown in
+the task header UI. Do NOT include a "Goal / Context" section — this is
+redundant with the task description.
 
 You MAY add additional sections if they add value (e.g., ⚠️ Blockers,
 📊 Metrics), but the core sections above should always be present when
@@ -539,10 +542,6 @@ applicable.
 ### Example report:
 
 ```
-# 🔐 Implement authentication module
-
-**Status:** 🚧 in_progress | **Priority:** P1 | **Labels:** auth, backend | **Estimate:** 4h | **Due:** 2026-02-25
-
 ## 📋 TLDR
 OAuth2 integration is 60% complete. Login UI is done, logout flow and
 integration tests remain.

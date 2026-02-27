@@ -68,6 +68,9 @@ enum WakeRunStatus {
 
   /// The wake failed.
   failed,
+
+  /// The wake was found in `running` state on startup (orphaned).
+  abandoned,
 }
 
 /// Reason a wake was triggered.

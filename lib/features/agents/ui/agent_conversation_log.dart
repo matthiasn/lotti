@@ -90,6 +90,7 @@ class AgentConversationLog extends ConsumerWidget {
         final messages = threads[threadId]!;
         return _ThreadTile(
           threadId: threadId,
+          agentId: agentId,
           messages: messages.cast<AgentMessageEntity>(),
           report: reportsByThread[threadId],
           initiallyExpanded: index == 0,
@@ -99,27 +100,46 @@ class AgentConversationLog extends ConsumerWidget {
   }
 }
 
-class _ThreadTile extends StatelessWidget {
+class _ThreadTile extends ConsumerWidget {
   const _ThreadTile({
     required this.threadId,
     required this.messages,
+    required this.agentId,
     this.report,
     this.initiallyExpanded = false,
   });
 
   final String threadId;
+  final String agentId;
   final List<AgentMessageEntity> messages;
   final AgentReportEntity? report;
   final bool initiallyExpanded;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final firstMsg = messages.first;
     final lastMsg = messages.last;
     final toolCallCount =
         messages.where((m) => m.kind == AgentMessageKind.action).length;
-    final timestamp = formatAgentDateTime(lastMsg.createdAt);
+    final startTimestamp = formatAgentDateTime(firstMsg.createdAt);
+    final duration = lastMsg.createdAt.difference(firstMsg.createdAt);
+    final durationStr = _formatDuration(duration);
 
     final shortId = threadId.length > 7 ? threadId.substring(0, 7) : threadId;
+
+    // Resolve model from template.
+    final templateAsync = ref.watch(templateForAgentProvider(agentId));
+    final modelLabel = templateAsync.whenData((entity) {
+      if (entity == null) return null;
+      final template = entity.mapOrNull(agentTemplate: (t) => t);
+      if (template == null) return null;
+      final modelId = template.modelId;
+      // Strip prefix like 'models/' for display.
+      final slashIndex = modelId.lastIndexOf('/');
+      return slashIndex >= 0 ? modelId.substring(slashIndex + 1) : modelId;
+    });
+
+    final model = modelLabel.value;
 
     return ExpansionTile(
       initiallyExpanded: initiallyExpanded,
@@ -127,24 +147,29 @@ class _ThreadTile extends StatelessWidget {
         horizontal: AppTheme.cardPadding,
       ),
       title: Text(
-        timestamp,
+        durationStr.isNotEmpty
+            ? '$startTimestamp ($durationStr)'
+            : startTimestamp,
         style: context.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Text(
-        context.messages.agentConversationThreadSummary(
-          messages.length,
-          toolCallCount,
-          shortId,
-        ),
+        [
+          context.messages.agentConversationThreadSummary(
+            messages.length,
+            toolCallCount,
+            shortId,
+          ),
+          if (model != null) model,
+        ].join(' · '),
         style: context.textTheme.labelSmall?.copyWith(
           color: context.colorScheme.outline,
         ),
       ),
       children: [
         AgentActivityLog.fromMessages(
-          agentId: lastMsg.agentId,
+          agentId: firstMsg.agentId,
           messages: messages,
           expandToolCalls: true,
         ),
@@ -154,6 +179,17 @@ class _ThreadTile extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Format a [Duration] as a human-readable string (e.g., "2m 30s", "1h 5m").
+String _formatDuration(Duration d) {
+  if (d.inSeconds < 1) return '';
+  final hours = d.inHours;
+  final minutes = d.inMinutes.remainder(60);
+  final seconds = d.inSeconds.remainder(60);
+  if (hours > 0) return '${hours}h ${minutes}m';
+  if (minutes > 0) return '${minutes}m ${seconds}s';
+  return '${seconds}s';
 }
 
 /// Inline report card shown at the end of a conversation thread.

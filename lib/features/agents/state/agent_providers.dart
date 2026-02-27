@@ -487,17 +487,28 @@ Future<void> agentInitialization(Ref ref) async {
     orchestrator.stop();
   });
 
-  // 1. Wire the workflow executor into the orchestrator.
+  // 1. Mark any orphaned 'running' wake runs as 'abandoned' so the activity
+  //    log is not confused by stale entries from a previous app lifecycle.
+  final repository = ref.read(agentRepositoryProvider);
+  final abandonedCount = await repository.abandonOrphanedWakeRuns();
+  if (abandonedCount > 0) {
+    developer.log(
+      'Marked $abandonedCount orphaned wake run(s) as abandoned on startup',
+      name: 'agentInitialization',
+    );
+  }
+
+  // 2. Wire the workflow executor into the orchestrator.
   _wireWakeExecutor(ref, orchestrator, workflow);
 
-  // 2. Start the orchestrator on the local update stream.
+  // 3. Start the orchestrator on the local update stream.
   final updateNotifications = getIt<UpdateNotifications>();
   await orchestrator.start(updateNotifications.localUpdateStream);
 
-  // 3. Wire the sync event processor for cross-device agent data.
+  // 4. Wire the sync event processor for cross-device agent data.
   _wireSyncEventProcessor(ref, orchestrator);
 
-  // 4. Seed default templates and restore subscriptions.
+  // 5. Seed default templates and restore subscriptions.
   await templateService.seedDefaults();
   await taskAgentService.restoreSubscriptions();
 }
