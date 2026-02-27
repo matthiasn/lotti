@@ -2756,6 +2756,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get outboxMonitorNoAttachment => 'sin archivo adjunto';
 
   @override
+  String get outboxMonitorPayloadSizeLabel => 'Tamaño';
+
+  @override
   String get outboxMonitorRetries => 'reintentos';
 
   @override

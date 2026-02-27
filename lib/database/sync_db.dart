@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -59,6 +60,10 @@ class Outbox extends Table {
   /// When a pending item exists for the same entry, new updates can be merged
   /// to avoid sending redundant messages for rapidly-updated entries.
   TextColumn get outboxEntryId => text().named('outbox_entry_id').nullable()();
+
+  /// Total payload size in bytes (attachment file size + JSON message size).
+  /// Recorded at enqueue time for volume tracking and visualization.
+  IntColumn get payloadSize => integer().named('payload_size').nullable()();
 }
 
 /// Tracks sync sequence entries by (hostId, counter) to detect gaps
@@ -223,6 +228,7 @@ class SyncDatabase extends _$SyncDatabase {
         subject: candidate.subject,
         filePath: candidate.filePath,
         outboxEntryId: candidate.outboxEntryId,
+        payloadSize: candidate.payloadSize,
       );
     });
   }
@@ -608,18 +614,68 @@ class SyncDatabase extends _$SyncDatabase {
     required int itemId,
     required String newMessage,
     required String newSubject,
+    int? payloadSize,
   }) {
     return (update(outbox)..where((t) => t.id.equals(itemId))).write(
       OutboxCompanion(
         message: Value(newMessage),
         subject: Value(newSubject),
         updatedAt: Value(DateTime.now()),
+        payloadSize:
+            payloadSize != null ? Value(payloadSize) : const Value.absent(),
       ),
     );
   }
 
+  /// Get aggregated outbox volume per day for sent items.
+  /// Groups by send time (`updated_at`) so items appear on the day they
+  /// were actually transmitted, not the day they were created.
+  Future<List<OutboxDailyVolume>> getDailyOutboxVolume({
+    int days = 7,
+    DateTime? now,
+  }) async {
+    if (days <= 0) return const [];
+
+    final effectiveNow = (now ?? DateTime.now()).toUtc();
+    final startOfToday = DateTime.utc(
+      effectiveNow.year,
+      effectiveNow.month,
+      effectiveNow.day,
+    );
+    final cutoff = startOfToday.subtract(Duration(days: days - 1));
+
+    final cutoffSeconds = cutoff.millisecondsSinceEpoch ~/ 1000;
+    final rows = await customSelect(
+      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS day, "
+      'COALESCE(SUM(payload_size), 0) AS total_bytes, '
+      'COUNT(*) AS item_count '
+      'FROM outbox '
+      'WHERE status = ? AND updated_at >= ? '
+      'GROUP BY day '
+      'ORDER BY day ASC',
+      variables: [
+        Variable.withInt(OutboxStatus.sent.index),
+        Variable.withInt(cutoffSeconds),
+      ],
+    ).get();
+
+    return rows.map((row) {
+      final dayString = row.read<String>('day');
+      final parts = dayString.split('-');
+      return OutboxDailyVolume(
+        date: DateTime.utc(
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+          int.parse(parts[2]),
+        ),
+        totalBytes: row.read<int>('total_bytes'),
+        itemCount: row.read<int>('item_count'),
+      );
+    }).toList();
+  }
+
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -639,6 +695,10 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 4) {
           // Add outboxEntryId column for outbox deduplication
           await m.addColumn(outbox, outbox.outboxEntryId);
+        }
+        if (from < 5) {
+          // Add payloadSize column for volume tracking
+          await m.addColumn(outbox, outbox.payloadSize);
         }
       },
     );

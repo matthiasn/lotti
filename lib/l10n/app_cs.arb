@@ -1031,6 +1031,7 @@
   "outboxMonitorLabelSent": "odesláno",
   "outboxMonitorLabelSuccess": "úspěch",
   "outboxMonitorNoAttachment": "žádná příloha",
+  "outboxMonitorPayloadSizeLabel": "Velikost",
   "outboxMonitorRetries": "pokusy",
   "outboxMonitorRetriesLabel": "Počet pokusů",
   "outboxMonitorRetry": "zkusit znovu",

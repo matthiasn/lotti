@@ -2433,5 +2433,307 @@ void main() {
 
       expect(rowsAffected, 0);
     });
+
+    test('updateOutboxMessage updates payloadSize when provided', () async {
+      final database = db!;
+      final now = DateTime(2025, 3, 15, 10);
+
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.pending,
+          createdAt: now,
+          message: '{"data": "test"}',
+        ),
+      );
+
+      final items = await database.allOutboxItems;
+      expect(items, hasLength(1));
+
+      await database.updateOutboxMessage(
+        itemId: items.first.id,
+        newMessage: '{"data": "updated"}',
+        newSubject: 'updated',
+        payloadSize: 12345,
+      );
+
+      final updatedItems = await database.allOutboxItems;
+      expect(updatedItems.first.payloadSize, 12345);
+    });
+  });
+
+  group('Payload size tracking -', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('stores and retrieves payloadSize on outbox items', () async {
+      final database = db!;
+      final now = DateTime(2025, 3, 15, 10);
+
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{"test": true}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          payloadSize: const Value(4096),
+        ),
+      );
+
+      final items = await database.allOutboxItems;
+      expect(items, hasLength(1));
+      expect(items.first.payloadSize, 4096);
+    });
+
+    test('payloadSize defaults to null when not provided', () async {
+      final database = db!;
+      final now = DateTime(2025, 3, 15, 10);
+
+      await database.addOutboxItem(
+        _buildOutbox(status: OutboxStatus.pending, createdAt: now),
+      );
+
+      final items = await database.allOutboxItems;
+      expect(items, hasLength(1));
+      expect(items.first.payloadSize, isNull);
+    });
+
+    test('getDailyOutboxVolume returns empty for no sent items', () async {
+      final database = db!;
+      final now = DateTime(2025, 3, 15, 10);
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes, isEmpty);
+    });
+
+    test('getDailyOutboxVolume aggregates sent items by day', () async {
+      final database = db!;
+      final day1 = DateTime.utc(2025, 3, 14, 10);
+      final day2 = DateTime.utc(2025, 3, 15, 8);
+      final day2b = DateTime.utc(2025, 3, 15, 14);
+      final now = DateTime.utc(2025, 3, 16);
+
+      // Day 1: one item, 1000 bytes
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s1'),
+          message: const Value('m1'),
+          createdAt: Value(day1),
+          updatedAt: Value(day1),
+          payloadSize: const Value(1000),
+        ),
+      );
+
+      // Day 2: two items, 2000 + 3000 bytes
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s2'),
+          message: const Value('m2'),
+          createdAt: Value(day2),
+          updatedAt: Value(day2),
+          payloadSize: const Value(2000),
+        ),
+      );
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s3'),
+          message: const Value('m3'),
+          createdAt: Value(day2b),
+          updatedAt: Value(day2b),
+          payloadSize: const Value(3000),
+        ),
+      );
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes, hasLength(2));
+
+      // Day 1: 1 item, 1000 bytes
+      expect(volumes[0].itemCount, 1);
+      expect(volumes[0].totalBytes, 1000);
+
+      // Day 2: 2 items, 5000 bytes
+      expect(volumes[1].itemCount, 2);
+      expect(volumes[1].totalBytes, 5000);
+    });
+
+    test('getDailyOutboxVolume excludes non-sent items', () async {
+      final database = db!;
+      final day = DateTime.utc(2025, 3, 15, 10);
+      final now = DateTime.utc(2025, 3, 16);
+
+      // Pending item - should not be included
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('s1'),
+          message: const Value('m1'),
+          createdAt: Value(day),
+          updatedAt: Value(day),
+          payloadSize: const Value(1000),
+        ),
+      );
+
+      // Sent item - should be included
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s2'),
+          message: const Value('m2'),
+          createdAt: Value(day),
+          updatedAt: Value(day),
+          payloadSize: const Value(2000),
+        ),
+      );
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes, hasLength(1));
+      expect(volumes.first.totalBytes, 2000);
+      expect(volumes.first.itemCount, 1);
+    });
+
+    test('getDailyOutboxVolume respects days parameter', () async {
+      final database = db!;
+      final now = DateTime.utc(2025, 3, 20);
+      final recent = DateTime.utc(2025, 3, 19, 10);
+      final old = DateTime.utc(2025, 3, 10, 10);
+
+      // Old item - outside 7-day window
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('old'),
+          message: const Value('m'),
+          createdAt: Value(old),
+          updatedAt: Value(old),
+          payloadSize: const Value(1000),
+        ),
+      );
+
+      // Recent item - within 7-day window
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('recent'),
+          message: const Value('m'),
+          createdAt: Value(recent),
+          updatedAt: Value(recent),
+          payloadSize: const Value(2000),
+        ),
+      );
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes, hasLength(1));
+      expect(volumes.first.totalBytes, 2000);
+
+      // With larger window, both should appear
+      final allVolumes =
+          await database.getDailyOutboxVolume(days: 30, now: now);
+      expect(allVolumes, hasLength(2));
+    });
+
+    test('getDailyOutboxVolume treats null payloadSize as zero', () async {
+      final database = db!;
+      final day = DateTime.utc(2025, 3, 15, 10);
+      final now = DateTime.utc(2025, 3, 16);
+
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s1'),
+          message: const Value('m1'),
+          createdAt: Value(day),
+          updatedAt: Value(day),
+          // No payloadSize - should be treated as 0
+        ),
+      );
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes, hasLength(1));
+      expect(volumes.first.totalBytes, 0);
+      expect(volumes.first.itemCount, 1);
+    });
+
+    test('OutboxDailyVolume totalMegabytes computes correctly', () async {
+      final database = db!;
+      final day = DateTime.utc(2025, 3, 15, 10);
+      final now = DateTime.utc(2025, 3, 16);
+
+      await database.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s1'),
+          message: const Value('m1'),
+          createdAt: Value(day),
+          updatedAt: Value(day),
+          payloadSize: const Value(1048576), // exactly 1 MB
+        ),
+      );
+
+      final volumes = await database.getDailyOutboxVolume(now: now);
+      expect(volumes.first.totalMegabytes, closeTo(1.0, 0.001));
+    });
+  });
+
+  group('Payload size column behavior -', () {
+    late SyncDatabase db;
+
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('payloadSize defaults to null when omitted', () async {
+      final now = DateTime(2025, 3, 15, 10);
+      await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{"old": true}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final items = await db.allOutboxItems;
+      expect(items, hasLength(1));
+      expect(items.first.payloadSize, isNull);
+    });
+
+    test('updateOutboxMessage writes payloadSize to existing row', () async {
+      final now = DateTime(2025, 3, 15, 10);
+      await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{"old": true}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final items = await db.allOutboxItems;
+      await db.updateOutboxMessage(
+        itemId: items.first.id,
+        newMessage: '{"updated": true}',
+        newSubject: 'updated-subject',
+        payloadSize: 9999,
+      );
+
+      final updated = await db.allOutboxItems;
+      expect(updated.first.payloadSize, 9999);
+    });
+
+    test('schema version is 5', () {
+      expect(db.schemaVersion, 5);
+    });
   });
 }

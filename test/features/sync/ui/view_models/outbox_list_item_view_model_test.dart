@@ -286,5 +286,81 @@ void main() {
         capturedContext.messages.syncPayloadAgentLink,
       );
     });
+
+    group('payloadSizeLabel', () {
+      OutboxItem makeItem({int? payloadSize}) => OutboxItem(
+            id: 100,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            status: 0,
+            retries: 0,
+            message: jsonEncode({
+              'runtimeType': 'aiConfigDelete',
+              'id': 'config-id',
+            }),
+            subject: 'test',
+            payloadSize: payloadSize,
+          );
+
+      testWidgets('is null when payloadSize is null', (tester) async {
+        late OutboxListItemViewModel viewModel;
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: makeItem(),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+        expect(viewModel.payloadSizeLabel, isNull);
+      });
+
+      testWidgets('formats bytes correctly', (tester) async {
+        final cases = <int, String>{
+          500: '500 B',
+          2048: '2.0 KB',
+          1572864: '1.5 MB',
+          0: '0 B',
+          1023: '1023 B',
+          1024: '1.0 KB',
+          1048576: '1.0 MB',
+          1073741824: '1.00 GB',
+          1610612736: '1.50 GB',
+        };
+
+        for (final entry in cases.entries) {
+          late OutboxListItemViewModel viewModel;
+
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Builder(
+                builder: (context) {
+                  viewModel = OutboxListItemViewModel.fromItem(
+                    context: context,
+                    item: makeItem(payloadSize: entry.key),
+                  );
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          await tester.pump();
+          expect(
+            viewModel.payloadSizeLabel,
+            entry.value,
+            reason: '${entry.key} bytes should format as ${entry.value}',
+          );
+        }
+      });
+    });
   });
 }

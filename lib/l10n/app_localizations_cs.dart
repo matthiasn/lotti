@@ -2686,6 +2686,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get outboxMonitorNoAttachment => 'žádná příloha';
 
   @override
+  String get outboxMonitorPayloadSizeLabel => 'Velikost';
+
+  @override
   String get outboxMonitorRetries => 'pokusy';
 
   @override

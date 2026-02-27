@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.876] - 2026-02-27
+### Added
+- Outbox payload size tracking: records total payload size (JSON + file attachment)
+  for each outbox item and displays it in the outbox monitor list.
+- Daily outbox volume aggregation query with configurable time window.
+- Database migration (sync DB schema v5) adding `payload_size` column to outbox table.
+
 ## [0.9.875] - 2026-02-27
 ### Fixed
 - Task agent automatic trigger broken after throttle optimization: fixed

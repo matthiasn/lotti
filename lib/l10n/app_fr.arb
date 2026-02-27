@@ -1152,6 +1152,7 @@
   "outboxMonitorLabelSent": "envoyé",
   "outboxMonitorLabelSuccess": "succès",
   "outboxMonitorNoAttachment": "pas de pièce jointe",
+  "outboxMonitorPayloadSizeLabel": "Taille",
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetriesLabel": "Tentatives",
   "outboxMonitorRetry": "réessayer",

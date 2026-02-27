@@ -22,6 +22,7 @@ class OutboxListItemViewModel {
     required this.attachmentIcon,
     required this.semanticsLabel,
     this.subjectValue,
+    this.payloadSizeLabel,
   });
   factory OutboxListItemViewModel.fromItem({
     required BuildContext context,
@@ -106,6 +107,7 @@ class OutboxListItemViewModel {
       attachmentValue: attachmentValue,
       attachmentIcon: attachmentIcon,
       semanticsLabel: semanticsLabel,
+      payloadSizeLabel: _formatBytes(item.payloadSize),
     );
   }
 
@@ -120,6 +122,7 @@ class OutboxListItemViewModel {
   final IconData attachmentIcon;
   final String semanticsLabel;
   final String? subjectValue;
+  final String? payloadSizeLabel;
 
   static String _buildRetriesLabel({
     required int retryCount,
@@ -161,6 +164,18 @@ class OutboxListItemViewModel {
     } catch (_) {
       return messages.syncListUnknownPayload;
     }
+  }
+
+  static String? _formatBytes(int? bytes) {
+    if (bytes == null) return null;
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
   static String _titleCase(String value, String locale) {
