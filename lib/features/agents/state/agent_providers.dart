@@ -129,6 +129,34 @@ Future<List<AgentDomainEntity>> agentTemplates(Ref ref) async {
   return service.listTemplates();
 }
 
+/// List all agent identity instances.
+@riverpod
+Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
+  final service = ref.watch(agentServiceProvider);
+  final agents = await service.listAgents();
+  return agents.cast<AgentDomainEntity>();
+}
+
+/// List all evolution sessions across all templates.
+@riverpod
+Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final templates = await templateService.listTemplates();
+  final sessions = <EvolutionSessionEntity>[];
+  for (final t in templates) {
+    final template = t.mapOrNull(agentTemplate: (tpl) => tpl);
+    if (template != null) {
+      final templateSessions = await templateService.getEvolutionSessions(
+        template.id,
+        limit: 100,
+      );
+      sessions.addAll(templateSessions);
+    }
+  }
+  sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  return sessions.cast<AgentDomainEntity>();
+}
+
 /// Fetch a single agent template by [templateId].
 ///
 /// The returned entity is an [AgentTemplateEntity] (or `null`).

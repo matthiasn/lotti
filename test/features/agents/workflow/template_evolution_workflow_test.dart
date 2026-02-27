@@ -328,7 +328,7 @@ void main() {
         templateId: kTestTemplateId,
         conversationId: 'test-conv-id',
         strategy: EvolutionStrategy(),
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
       );
 
       final response = await workflow.sendMessage(
@@ -375,7 +375,7 @@ void main() {
         templateId: kTestTemplateId,
         conversationId: 'test-conv-id',
         strategy: EvolutionStrategy(),
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
       );
 
       final response = await workflow.sendMessage(
@@ -403,7 +403,7 @@ void main() {
         templateId: kTestTemplateId,
         conversationId: 'test-conv-id',
         strategy: EvolutionStrategy(),
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
       );
 
       final response = await workflow.sendMessage(

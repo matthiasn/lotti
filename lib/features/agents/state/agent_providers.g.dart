@@ -640,6 +640,93 @@ final class AgentTemplatesProvider extends $FunctionalProvider<
 
 String _$agentTemplatesHash() => r'11181589ced963f8f4bbf169e06f8d82e1667045';
 
+/// List all agent identity instances.
+
+@ProviderFor(allAgentInstances)
+final allAgentInstancesProvider = AllAgentInstancesProvider._();
+
+/// List all agent identity instances.
+
+final class AllAgentInstancesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// List all agent identity instances.
+  AllAgentInstancesProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'allAgentInstancesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$allAgentInstancesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    return allAgentInstances(ref);
+  }
+}
+
+String _$allAgentInstancesHash() => r'2def9e6a157e7a074a0e8144ec20ebcee741d8b2';
+
+/// List all evolution sessions across all templates.
+
+@ProviderFor(allEvolutionSessions)
+final allEvolutionSessionsProvider = AllEvolutionSessionsProvider._();
+
+/// List all evolution sessions across all templates.
+
+final class AllEvolutionSessionsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// List all evolution sessions across all templates.
+  AllEvolutionSessionsProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'allEvolutionSessionsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$allEvolutionSessionsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    return allEvolutionSessions(ref);
+  }
+}
+
+String _$allEvolutionSessionsHash() =>
+    r'9b6c4875be81fd2dd1c8a833416ab335a58d62db';
+
 /// Fetch a single agent template by [templateId].
 ///
 /// The returned entity is an [AgentTemplateEntity] (or `null`).

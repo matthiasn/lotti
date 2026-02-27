@@ -331,16 +331,42 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                   ),
                 ],
               ),
-              if (_expanded && report.content.isNotEmpty)
+              if (report.content.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
-                  child: GptMarkdown(report.content),
+                  child: _expanded
+                      ? GptMarkdown(report.content)
+                      : GptMarkdown(_extractTldr(report.content)),
                 ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Extracts the TLDR section from the report content for collapsed view.
+  static String _extractTldr(String content) {
+    // Try to find ## 📋 TLDR heading and extract that section
+    final tldrHeadingRegex = RegExp(r'## 📋 TLDR\n', multiLine: true);
+    final headingMatch = tldrHeadingRegex.firstMatch(content);
+
+    if (headingMatch != null) {
+      final afterTldr = content.substring(headingMatch.end);
+      final nextHeadingRegex = RegExp(r'\n## ', multiLine: true);
+      final nextHeadingMatch = nextHeadingRegex.firstMatch(afterTldr);
+
+      if (nextHeadingMatch != null) {
+        return content
+            .substring(0, headingMatch.end + nextHeadingMatch.start)
+            .trim();
+      }
+      return content;
+    }
+
+    // Fallback: first paragraph
+    final paragraphs = content.split(RegExp(r'\n\n+'));
+    return paragraphs.first.trim();
   }
 }
 

@@ -564,7 +564,8 @@ integration tests remain.
 ### Writing style
 - Write in the task's detected language (match the language of the task
   content). If the task content is in German, write the report in German.
-- Keep it factual and user-facing. No agent self-commentary.
+- Express your personality and voice as defined in your directives.
+- Keep the report user-facing. No meta-commentary about being an agent.
 - Use present tense for current state, past tense for completed work.
 
 ## Report vs Observations — Separation of Concerns

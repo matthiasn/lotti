@@ -90,7 +90,7 @@ class TaskAgentService {
       final identity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName ?? 'Task Agent',
-        config: const AgentConfig(),
+        config: AgentConfig(modelId: templateEntity.modelId),
         allowedCategoryIds: allowedCategoryIds,
       );
 

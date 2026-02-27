@@ -51,6 +51,9 @@ class _AgentTemplateDetailPageState
     super.initState();
     _nameController = TextEditingController();
     _directivesController = TextEditingController();
+    if (widget.isCreateMode) {
+      _selectedModelId = 'models/gemini-3-flash-preview';
+    }
   }
 
   @override

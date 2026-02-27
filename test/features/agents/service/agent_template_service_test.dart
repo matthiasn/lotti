@@ -147,7 +147,7 @@ void main() {
 
       expect(result.displayName, 'Renamed');
       // Model should remain the original from makeTestTemplate.
-      expect(result.modelId, 'models/gemini-3.1-pro-preview');
+      expect(result.modelId, 'models/gemini-3-flash-preview');
     });
 
     test('updates only model ID when displayName is null', () async {

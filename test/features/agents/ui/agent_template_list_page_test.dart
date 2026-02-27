@@ -70,7 +70,7 @@ void main() {
 
       // Model ID visible
       expect(
-        find.text('models/gemini-3.1-pro-preview'),
+        find.text('models/gemini-3-flash-preview'),
         findsNWidgets(2),
       );
     });

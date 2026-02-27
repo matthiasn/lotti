@@ -77,10 +77,10 @@ class SettingsPage extends ConsumerWidget {
           ),
           if (enableAgents)
             settingsCard(
-              title: context.messages.agentTemplatesTitle,
-              subtitle: context.messages.agentTemplateSettingsSubtitle,
+              title: context.messages.agentSettingsTitle,
+              subtitle: context.messages.agentSettingsSubtitle,
               icon: Icons.smart_toy_outlined,
-              onTap: () => context.beamToNamed('/settings/templates'),
+              onTap: () => context.beamToNamed('/settings/agents'),
             ),
           if (enableHabits)
             settingsCard(

@@ -240,6 +240,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'Iniciando sesión de evolución...';
 
   @override
+  String get agentInstancesFilterActive => 'Activo';
+
+  @override
+  String get agentInstancesFilterAll => 'Todos';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Destruido';
+
+  @override
+  String get agentInstancesFilterDormant => 'Inactivo';
+
+  @override
+  String get agentInstancesKindAll => 'Todos';
+
+  @override
+  String get agentInstancesKindEvolution => 'Evolución';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Agente de tareas';
+
+  @override
+  String get agentInstancesTitle => 'Instancias';
+
+  @override
   String get agentLifecycleActive => 'Activo';
 
   @override
@@ -307,6 +331,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'Ejecutando';
+
+  @override
+  String get agentSettingsSubtitle => 'Plantillas, instancias y monitoreo';
+
+  @override
+  String get agentSettingsTitle => 'Agentes';
 
   @override
   String get agentStateConsecutiveFailures => 'Fallos consecutivos';

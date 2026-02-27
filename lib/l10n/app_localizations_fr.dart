@@ -242,6 +242,30 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démarrage de la session d\'évolution...';
 
   @override
+  String get agentInstancesFilterActive => 'Actif';
+
+  @override
+  String get agentInstancesFilterAll => 'Tous';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Détruit';
+
+  @override
+  String get agentInstancesFilterDormant => 'En veille';
+
+  @override
+  String get agentInstancesKindAll => 'Tous';
+
+  @override
+  String get agentInstancesKindEvolution => 'Évolution';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Agent de tâches';
+
+  @override
+  String get agentInstancesTitle => 'Instances';
+
+  @override
   String get agentLifecycleActive => 'Actif';
 
   @override
@@ -309,6 +333,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'En cours';
+
+  @override
+  String get agentSettingsSubtitle => 'Modèles, instances et surveillance';
+
+  @override
+  String get agentSettingsTitle => 'Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Échecs consécutifs';

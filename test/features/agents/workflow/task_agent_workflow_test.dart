@@ -187,7 +187,7 @@ void main() {
   final geminiModel = AiConfig.model(
     id: 'model-gemini-3-1-pro',
     name: 'Gemini 3.1 Pro Preview',
-    providerModelId: 'models/gemini-3.1-pro-preview',
+    providerModelId: 'models/gemini-3-flash-preview',
     inferenceProviderId: 'gemini-provider-001',
     createdAt: DateTime(2024),
     inputModalities: const [Modality.text],

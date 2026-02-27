@@ -169,7 +169,10 @@ class AgentToolRegistry {
       description:
           'Publish the updated task report. You MUST call this tool exactly '
           'once at the end of every wake with the full updated report as '
-          'markdown.',
+          'markdown. Follow the report structure defined in the system prompt '
+          '(H1 title, status bar, 📋 TLDR, ✅ Achieved, 📌 What is left to '
+          'do, 💡 Learnings). Write in the task content language. Express '
+          'your personality and voice from your directives.',
       parameters: {
         'type': 'object',
         'properties': {

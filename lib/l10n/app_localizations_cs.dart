@@ -236,6 +236,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionSessionStarting => 'Starting evolution session...';
 
   @override
+  String get agentInstancesFilterActive => 'Active';
+
+  @override
+  String get agentInstancesFilterAll => 'All';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Destroyed';
+
+  @override
+  String get agentInstancesFilterDormant => 'Dormant';
+
+  @override
+  String get agentInstancesKindAll => 'All';
+
+  @override
+  String get agentInstancesKindEvolution => 'Evolution';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Task Agent';
+
+  @override
+  String get agentInstancesTitle => 'Instances';
+
+  @override
   String get agentLifecycleActive => 'Aktivní';
 
   @override
@@ -302,6 +326,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'Running';
+
+  @override
+  String get agentSettingsSubtitle => 'Templates, instances, and monitoring';
+
+  @override
+  String get agentSettingsTitle => 'Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';

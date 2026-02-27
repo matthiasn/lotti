@@ -239,6 +239,30 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se pornește sesiunea de evoluție...';
 
   @override
+  String get agentInstancesFilterActive => 'Activ';
+
+  @override
+  String get agentInstancesFilterAll => 'Toate';
+
+  @override
+  String get agentInstancesFilterDestroyed => 'Distrus';
+
+  @override
+  String get agentInstancesFilterDormant => 'Inactiv';
+
+  @override
+  String get agentInstancesKindAll => 'Toate';
+
+  @override
+  String get agentInstancesKindEvolution => 'Evoluție';
+
+  @override
+  String get agentInstancesKindTaskAgent => 'Agent sarcini';
+
+  @override
+  String get agentInstancesTitle => 'Instanțe';
+
+  @override
   String get agentLifecycleActive => 'Activ';
 
   @override
@@ -307,6 +331,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentRunningIndicator => 'În execuție';
+
+  @override
+  String get agentSettingsSubtitle => 'Șabloane, instanțe și monitorizare';
+
+  @override
+  String get agentSettingsTitle => 'Agenți';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';

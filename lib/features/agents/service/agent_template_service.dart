@@ -515,7 +515,7 @@ class AgentTemplateService {
         templateId: lauraTemplateId,
         displayName: 'Laura',
         kind: AgentTemplateKind.taskAgent,
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         directives: 'You are Laura, a diligent task management agent. '
             'You help users organize, prioritize, and complete their tasks '
             'efficiently. You write clear, actionable reports.',
@@ -528,7 +528,7 @@ class AgentTemplateService {
         templateId: tomTemplateId,
         displayName: 'Tom',
         kind: AgentTemplateKind.taskAgent,
-        modelId: 'models/gemini-3.1-pro-preview',
+        modelId: 'models/gemini-3-flash-preview',
         directives: 'You are Tom, a creative and analytical task agent. '
             'You help users think through problems, break down complex tasks, '
             'and find innovative solutions. You write insightful reports.',
