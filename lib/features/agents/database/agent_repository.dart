@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -70,8 +71,9 @@ class AgentRepository {
   ///
   /// Queries by `type = 'agentState'` and casts the first result.
   Future<AgentStateEntity?> getAgentState(String agentId) async {
-    final rows =
-        await _db.getAgentEntitiesByType(agentId, 'agentState', 1).get();
+    final rows = await _db
+        .getAgentEntitiesByType(agentId, AgentEntityTypes.agentState, 1)
+        .get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
     return entity.mapOrNull(agentState: (e) => e);
@@ -87,7 +89,7 @@ class AgentRepository {
     final rows = await _db
         .getAgentEntitiesByTypeAndSubtype(
           agentId,
-          'agentMessage',
+          AgentEntityTypes.agentMessage,
           kind.name,
           limit ?? -1,
         )
@@ -141,7 +143,12 @@ class AgentRepository {
     String scope,
   ) async {
     final rows = await _db
-        .getAgentEntitiesByTypeAndSubtype(agentId, 'agentReportHead', scope, 1)
+        .getAgentEntitiesByTypeAndSubtype(
+          agentId,
+          AgentEntityTypes.agentReportHead,
+          scope,
+          1,
+        )
         .get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
@@ -163,7 +170,11 @@ class AgentRepository {
   /// exists.
   Future<AgentTemplateHeadEntity?> getTemplateHead(String templateId) async {
     final rows = await _db
-        .getAgentEntitiesByType(templateId, 'agentTemplateHead', 1)
+        .getAgentEntitiesByType(
+          templateId,
+          AgentEntityTypes.agentTemplateHead,
+          1,
+        )
         .get();
     if (rows.isEmpty) return null;
     final entity = AgentDbConversions.fromEntityRow(rows.first);
@@ -189,7 +200,11 @@ class AgentRepository {
   /// Returns 1 if no versions exist yet.
   Future<int> getNextTemplateVersionNumber(String templateId) async {
     final rows = await _db
-        .getAgentEntitiesByType(templateId, 'agentTemplateVersion', -1)
+        .getAgentEntitiesByType(
+          templateId,
+          AgentEntityTypes.agentTemplateVersion,
+          -1,
+        )
         .get();
     if (rows.isEmpty) return 1;
 

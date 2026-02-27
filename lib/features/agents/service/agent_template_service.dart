@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
@@ -249,8 +250,10 @@ class AgentTemplateService {
 
   /// Resolve the template assigned to an agent via a templateAssignment link.
   Future<AgentTemplateEntity?> getTemplateForAgent(String agentId) async {
-    final links =
-        await repository.getLinksTo(agentId, type: 'template_assignment');
+    final links = await repository.getLinksTo(
+      agentId,
+      type: AgentLinkTypes.templateAssignment,
+    );
     if (links.isEmpty) return null;
     return getTemplate(links.first.fromId);
   }
@@ -262,8 +265,10 @@ class AgentTemplateService {
   Future<List<AgentIdentityEntity>> getAgentsForTemplate(
     String templateId,
   ) async {
-    final links =
-        await repository.getLinksFrom(templateId, type: 'template_assignment');
+    final links = await repository.getLinksFrom(
+      templateId,
+      type: AgentLinkTypes.templateAssignment,
+    );
     final agents = <AgentIdentityEntity>[];
     for (final link in links) {
       final entity = await repository.getEntity(link.toId);
@@ -320,7 +325,7 @@ class AgentTemplateService {
       // Soft-delete all versions for this template.
       final versions = await repository.getEntitiesByAgentId(
         templateId,
-        type: 'agentTemplateVersion',
+        type: AgentEntityTypes.agentTemplateVersion,
       );
       for (final entity in versions) {
         final version = entity.mapOrNull(agentTemplateVersion: (v) => v);
@@ -405,7 +410,7 @@ class AgentTemplateService {
   }) async {
     final entities = await repository.getEntitiesByAgentId(
       templateId,
-      type: 'agentTemplateVersion',
+      type: AgentEntityTypes.agentTemplateVersion,
       limit: limit,
     );
     final versions = entities.whereType<AgentTemplateVersionEntity>().toList()

@@ -16,6 +16,16 @@ abstract final class AgentLinkTypes {
   static const templateAssignment = 'template_assignment';
 }
 
+abstract final class AgentEntityTypes {
+  static const agentState = 'agentState';
+  static const agentMessage = 'agentMessage';
+  static const agentReport = 'agentReport';
+  static const agentReportHead = 'agentReportHead';
+  static const agentTemplate = 'agentTemplate';
+  static const agentTemplateVersion = 'agentTemplateVersion';
+  static const agentTemplateHead = 'agentTemplateHead';
+}
+
 abstract final class AgentReportScopes {
   static const current = 'current';
 }

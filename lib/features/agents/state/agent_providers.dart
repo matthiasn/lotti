@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
@@ -324,7 +325,7 @@ Future<List<AgentDomainEntity>> agentRecentMessages(
   // so no in-memory sort is needed.
   final entities = await repository.getEntitiesByAgentId(
     agentId,
-    type: 'agentMessage',
+    type: AgentEntityTypes.agentMessage,
     limit: 50,
   );
 
@@ -363,7 +364,7 @@ Future<Map<String, List<AgentDomainEntity>>> agentMessagesByThread(
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
-    type: 'agentMessage',
+    type: AgentEntityTypes.agentMessage,
     limit: 200,
   );
   final messages = entities.whereType<AgentMessageEntity>().toList();
@@ -404,7 +405,7 @@ Future<List<AgentDomainEntity>> agentObservationMessages(
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
-    type: 'agentMessage',
+    type: AgentEntityTypes.agentMessage,
     limit: 200,
   );
   return entities
@@ -426,7 +427,7 @@ Future<List<AgentDomainEntity>> agentReportHistory(
   final repository = ref.watch(agentRepositoryProvider);
   final entities = await repository.getEntitiesByAgentId(
     agentId,
-    type: 'agentReport',
+    type: AgentEntityTypes.agentReport,
     limit: 50,
   );
   return entities.whereType<AgentReportEntity>().toList();

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:uuid/uuid.dart';
@@ -234,10 +235,19 @@ class TaskAgentService {
     // and leave the queued job permanently stuck.
   }
 
-  /// Returns the ID of the first available template, or `null` if none exist.
+  /// Returns the ID of the best default template, or `null` if none exist.
+  ///
+  /// Prefers the well-known Laura template if it exists, otherwise falls back
+  /// to the most recently created template. This ensures a predictable default
+  /// even when the user has deleted and recreated templates.
   Future<String?> _resolveDefaultTemplateId() async {
     final templates = await repository.getAllTemplates();
     if (templates.isEmpty) return null;
+
+    // Prefer the seeded Laura template as the default.
+    final laura = templates.where((t) => t.id == lauraTemplateId).firstOrNull;
+    if (laura != null) return laura.id;
+
     return templates.first.id;
   }
 

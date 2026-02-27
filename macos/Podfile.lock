@@ -86,6 +86,7 @@ PODS:
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
     - sqlite3/session
+  - sqlite_vec (0.1.0)
   - super_native_extensions (0.0.1):
     - FlutterMacOS
   - url_launcher_macos (0.0.1):
@@ -125,6 +126,7 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin`)
   - sqlite3_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/darwin`)
+  - sqlite_vec (from `Flutter/ephemeral/.symlinks/plugins/sqlite_vec/macos`)
   - super_native_extensions (from `Flutter/ephemeral/.symlinks/plugins/super_native_extensions/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
   - video_player_avfoundation (from `Flutter/ephemeral/.symlinks/plugins/video_player_avfoundation/darwin`)
@@ -191,6 +193,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin
   sqlite3_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/sqlite3_flutter_libs/darwin
+  sqlite_vec:
+    :path: Flutter/ephemeral/.symlinks/plugins/sqlite_vec/macos
   super_native_extensions:
     :path: Flutter/ephemeral/.symlinks/plugins/super_native_extensions/macos
   url_launcher_macos:
@@ -231,6 +235,7 @@ SPEC CHECKSUMS:
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
   sqlite3_flutter_libs: d13b8b3003f18f596e542bcb9482d105577eff41
+  sqlite_vec: fa6c45b583005067b736242bb99795835e5a7ddf
   super_native_extensions: c2795d6d9aedf4a79fae25cb6160b71b50549189
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a

@@ -115,6 +115,7 @@ PODS:
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
     - sqlite3/session
+  - sqlite_vec (0.1.0)
   - super_native_extensions (0.0.1):
     - Flutter
   - url_launcher_ios (0.0.1):
@@ -154,6 +155,7 @@ DEPENDENCIES:
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/darwin`)
+  - sqlite_vec (from `.symlinks/plugins/sqlite_vec/ios`)
   - super_native_extensions (from `.symlinks/plugins/super_native_extensions/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
@@ -228,6 +230,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite_darwin/darwin"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/darwin"
+  sqlite_vec:
+    :path: ".symlinks/plugins/sqlite_vec/ios"
   super_native_extensions:
     :path: ".symlinks/plugins/super_native_extensions/ios"
   url_launcher_ios:
@@ -272,6 +276,7 @@ SPEC CHECKSUMS:
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   sqlite3: 8d708bc63e9f4ce48f0ad9d6269e478c5ced1d9b
   sqlite3_flutter_libs: d13b8b3003f18f596e542bcb9482d105577eff41
+  sqlite_vec: d90eb232ac782a99d7fa9bf9609136d5e645e9f2
   super_native_extensions: b763c02dc3a8fd078389f410bf15149179020cb4
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a

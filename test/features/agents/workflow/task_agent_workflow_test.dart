@@ -1302,16 +1302,18 @@ void main() {
         when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
             .thenAnswer((_) async => [linkB, linkA]);
 
-        final reportA = AgentDomainEntity.agentReport(
-          id: 'linked-report-a',
-          agentId: 'linked-agent-a',
+        // With descending tie-breaking on ID, 'link-b' sorts before 'link-a',
+        // so the workflow resolves the report for 'linked-agent-b' first.
+        final reportB = AgentDomainEntity.agentReport(
+          id: 'linked-report-b',
+          agentId: 'linked-agent-b',
           scope: 'current',
           createdAt: now,
           vectorClock: null,
-          content: 'report-a',
+          content: 'report-b',
         ) as AgentReportEntity;
         when(() => mockAgentRepository.getLatestReport(
-            'linked-agent-a', 'current')).thenAnswer((_) async => reportA);
+            'linked-agent-b', 'current')).thenAnswer((_) async => reportB);
 
         final message = await executeAndCaptureMessage(
           linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
@@ -1319,14 +1321,14 @@ void main() {
 
         verify(
           () =>
-              mockAgentRepository.getLatestReport('linked-agent-a', 'current'),
+              mockAgentRepository.getLatestReport('linked-agent-b', 'current'),
         ).called(1);
         verifyNever(
           () =>
-              mockAgentRepository.getLatestReport('linked-agent-b', 'current'),
+              mockAgentRepository.getLatestReport('linked-agent-a', 'current'),
         );
         expect(message, isNotNull);
-        expect(message, contains('report-a'));
+        expect(message, contains('report-b'));
       });
 
       test('falls back to empty linked-task context when build throws',

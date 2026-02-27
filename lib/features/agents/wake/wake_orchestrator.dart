@@ -776,6 +776,9 @@ class _WakeThrottleCoordinator {
     final deadline = clock.now().add(throttleWindow);
     _throttleDeadlines[agentId] = deadline;
 
+    // Write directly to repository (bypassing AgentSyncService) because
+    // throttle state is per-device and should NOT be synced to other devices.
+    // Each device maintains its own wake cooldown window independently.
     try {
       final state = await repository.getAgentState(agentId);
       if (state != null) {
@@ -814,6 +817,10 @@ class _WakeThrottleCoordinator {
     _deferredDrainTimers.clear();
   }
 
+  /// Clears the persisted `nextWakeAt` on the agent's state entity.
+  ///
+  /// Writes directly to repository (bypassing AgentSyncService) because
+  /// throttle state is per-device and should NOT be synced to other devices.
   Future<void> _clearPersistedThrottle(String agentId) async {
     try {
       if (_throttleDeadlines.containsKey(agentId)) return;
