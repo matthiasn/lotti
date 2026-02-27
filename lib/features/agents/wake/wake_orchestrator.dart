@@ -405,7 +405,10 @@ class WakeOrchestrator {
     _deferredDrainTimers.clear();
     await _notificationSub?.cancel();
     _notificationSub = null;
-    unawaited(_stateChangedController.close());
+    // Do NOT close _stateChangedController here — this orchestrator is a
+    // keep-alive singleton that may be restarted (e.g. when the agents flag
+    // toggles). Closing the broadcast controller would make subsequent
+    // .add() calls throw on a closed sink.
   }
 
   /// Starts a periodic safety-net timer that ensures the queue is eventually

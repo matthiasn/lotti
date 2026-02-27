@@ -176,8 +176,9 @@ class AgentToolRegistry {
           'Publish the updated task report. You MUST call this tool exactly '
           'once at the end of every wake with the full updated report as '
           'markdown. Follow the report structure defined in the system prompt '
-          '(H1 title, status bar, 📋 TLDR, ✅ Achieved, 📌 What is left to '
-          'do, 💡 Learnings). Write in the task content language. Express '
+          '(📋 TLDR, ✅ Achieved, 📌 What is left to do, 💡 Learnings). '
+          'Do NOT include a title line (H1) or status bar — these are shown '
+          'in the task header UI. Write in the task content language. Express '
           'your personality and voice from your directives.',
       parameters: {
         'type': 'object',
