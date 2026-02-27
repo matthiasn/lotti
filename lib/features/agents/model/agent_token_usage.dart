@@ -22,7 +22,10 @@ class AgentTokenUsageSummary {
   final int cachedInputTokens;
   final int wakeCount;
 
-  /// Total tokens across all categories.
+  /// Total tokens (input + output + thoughts).
+  ///
+  /// Note: [cachedInputTokens] is a subset of [inputTokens] (the portion
+  /// served from cache), so it is not added separately.
   int get totalTokens => inputTokens + outputTokens + thoughtsTokens;
 
   @override

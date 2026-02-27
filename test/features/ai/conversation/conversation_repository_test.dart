@@ -1322,6 +1322,256 @@ void main() {
         final manager = repository.getConversation(conversationId);
         expect(manager!.messages.length, 2);
       });
+      test('returns accumulated usage from single-turn response', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Hello',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+        );
+
+        streamController
+          ..add(
+            const CreateChatCompletionStreamResponse(
+              id: 'resp',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1700000000,
+            ),
+          )
+          ..add(
+            const CreateChatCompletionStreamResponse(
+              id: 'resp',
+              choices: [],
+              object: 'chat.completion.chunk',
+              created: 1700000000,
+              usage: CompletionUsage(
+                promptTokens: 100,
+                completionTokens: 50,
+                totalTokens: 150,
+              ),
+            ),
+          );
+        await streamController.close();
+
+        final usage = await sendFuture;
+
+        expect(usage, isNotNull);
+        expect(usage!.inputTokens, 100);
+        expect(usage.outputTokens, 50);
+      });
+
+      test('returns accumulated usage across multi-turn conversation',
+          () async {
+        var callCount = 0;
+
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) {
+            // First turn: tool call with usage
+            return Stream.fromIterable([
+              const CreateChatCompletionStreamResponse(
+                id: 'resp-1',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(
+                      toolCalls: [
+                        ChatCompletionStreamMessageToolCallChunk(
+                          index: 0,
+                          id: 'tool-1',
+                          type: ChatCompletionStreamMessageToolCallChunkType
+                              .function,
+                          function: ChatCompletionStreamMessageFunctionCall(
+                            name: 'test_function',
+                            arguments: '{}',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1700000000,
+                usage: CompletionUsage(
+                  promptTokens: 80,
+                  completionTokens: 20,
+                  totalTokens: 100,
+                ),
+              ),
+            ]);
+          } else {
+            // Second turn: final response with usage
+            return Stream.fromIterable([
+              const CreateChatCompletionStreamResponse(
+                id: 'resp-2',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1700000000,
+                usage: CompletionUsage(
+                  promptTokens: 120,
+                  completionTokens: 30,
+                  totalTokens: 150,
+                ),
+              ),
+            ]);
+          }
+        });
+
+        when(() => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            )).thenAnswer((_) async => ConversationAction.continueConversation);
+
+        when(() => mockStrategy.getContinuationPrompt(any()))
+            .thenReturn('Continue');
+
+        final usage = await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Multi-turn',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'test_function',
+                description: 'A test function',
+              ),
+            ),
+          ],
+        );
+
+        expect(usage, isNotNull);
+        // 80 + 120 = 200 input, 20 + 30 = 50 output
+        expect(usage!.inputTokens, 200);
+        expect(usage.outputTokens, 50);
+      });
+
+      test('returns null when no usage data in response', () async {
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer(
+          (_) => Stream.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'resp',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1700000000,
+            ),
+          ]),
+        );
+
+        final usage = await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'No usage',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+        );
+
+        expect(usage, isNull);
+      });
+
+      test('captures reasoning and cached tokens from usage details', () async {
+        when(() => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            )).thenAnswer(
+          (_) => Stream.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'resp',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1700000000,
+              usage: CompletionUsage(
+                promptTokens: 200,
+                completionTokens: 100,
+                totalTokens: 300,
+                completionTokensDetails: CompletionTokensDetails(
+                  reasoningTokens: 40,
+                ),
+                promptTokensDetails: PromptTokensDetails(
+                  cachedTokens: 50,
+                ),
+              ),
+            ),
+          ]),
+        );
+
+        final usage = await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Details',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+        );
+
+        expect(usage, isNotNull);
+        expect(usage!.inputTokens, 200);
+        expect(usage.outputTokens, 100);
+        expect(usage.thoughtsTokens, 40);
+        expect(usage.cachedInputTokens, 50);
+      });
     });
 
     group('Provider tests', () {

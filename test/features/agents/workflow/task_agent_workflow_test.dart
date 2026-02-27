@@ -597,6 +597,162 @@ void main() {
             .called(greaterThanOrEqualTo(6));
       });
 
+      test('persists wakeTokenUsage entity when usage data is returned',
+          () async {
+        // Return non-null usage from sendMessage.
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return const InferenceUsage(
+            inputTokens: 150,
+            outputTokens: 75,
+            thoughtsTokens: 30,
+            cachedInputTokens: 20,
+          );
+        };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        // Verify a wakeTokenUsage entity was persisted.
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, hasLength(1));
+        final entity = tokenUsageEntities.first as WakeTokenUsageEntity;
+        expect(entity.agentId, agentId);
+        expect(entity.runKey, runKey);
+        expect(entity.threadId, threadId);
+        expect(entity.inputTokens, 150);
+        expect(entity.outputTokens, 75);
+        expect(entity.thoughtsTokens, 30);
+        expect(entity.cachedInputTokens, 20);
+      });
+
+      test('does not persist wakeTokenUsage when usage is null', () async {
+        // Default delegate returns null.
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, isEmpty);
+      });
+
+      test('does not persist wakeTokenUsage when usage has no data', () async {
+        // Return an empty usage (hasData == false).
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return InferenceUsage.empty;
+        };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, isEmpty);
+      });
+
+      test('handles _persistTokenUsage failure gracefully', () async {
+        // Return usage data, but make the sync service throw on wakeTokenUsage.
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return const InferenceUsage(
+            inputTokens: 100,
+            outputTokens: 50,
+          );
+        };
+
+        // Make upsertEntity throw only for wakeTokenUsage entities.
+        var callCount = 0;
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          final entity = inv.positionalArguments[0] as AgentDomainEntity;
+          final isTokenUsage =
+              entity.mapOrNull(wakeTokenUsage: (_) => true) ?? false;
+          if (isTokenUsage) {
+            throw Exception('Sync failed');
+          }
+          callCount++;
+        });
+
+        // Should NOT fail the overall wake despite persistence error.
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Other entities (user message, state update, etc.) were still persisted.
+        expect(callCount, greaterThan(0));
+      });
+
       test('cleans up conversation in finally block even on success', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
