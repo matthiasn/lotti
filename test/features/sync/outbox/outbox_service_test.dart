@@ -636,6 +636,163 @@ void main() {
       // Ensure scheduling happens after enqueue
       expect(testService.enqueueCalls, 1);
       expect(testService.lastDelay, const Duration(seconds: 1));
+
+      // Verify payloadSize includes file length (10 bytes) + JSON length
+      expect(companion.payloadSize.value, isNotNull);
+      expect(companion.payloadSize.value, greaterThan(10));
+    });
+
+    test('payloadSize includes file bytes for journal image', () async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenAnswer((invocation) async {
+        capturedCompanions
+            .add(invocation.positionalArguments.first as OutboxCompanion);
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final sampleDate = DateTime.utc(2024);
+      final metadata = Metadata(
+        id: 'payload-test',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: const VectorClock({'hostA': 1}),
+      );
+      final imageData = ImageData(
+        capturedAt: sampleDate,
+        imageId: 'img-payload',
+        imageFile: 'payload-image.jpg',
+        imageDirectory: '/images/',
+      );
+      final journalEntity = JournalEntity.journalImage(
+        meta: metadata,
+        data: imageData,
+        entryText: const EntryText(plainText: 'Payload test'),
+      );
+
+      const jsonPath = '/entries/payload-test.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      const fileSize = 5000;
+      final imagePath =
+          '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+      File(imagePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(fileSize, 42));
+
+      // Build the message to compute expected JSON length
+      const syncMessage = SyncMessage.journalEntity(
+        id: 'payload-test',
+        jsonPath: jsonPath,
+        vectorClock: VectorClock({'device': 1}),
+        status: SyncEntryStatus.initial,
+      );
+
+      await testService.enqueueMessage(syncMessage);
+
+      expect(capturedCompanions, hasLength(1));
+      final companion = capturedCompanions.single;
+
+      // payloadSize = JSON message length + file size (5000)
+      final payloadSize = companion.payloadSize.value!;
+      expect(payloadSize, greaterThanOrEqualTo(fileSize));
+      // The JSON portion should be > 0, so total should exceed file size
+      expect(payloadSize, greaterThan(fileSize));
+    });
+
+    test('payloadSize is JSON length for entry link (no file)', () async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenAnswer((invocation) async {
+        capturedCompanions
+            .add(invocation.positionalArguments.first as OutboxCompanion);
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      final now = DateTime.utc(2024);
+      final link = EntryLink.basic(
+        id: 'link-payload',
+        fromId: 'from-entry',
+        toId: 'to-entry',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: const VectorClock({'hostA': 3}),
+      );
+
+      await testService.enqueueMessage(
+        SyncMessage.entryLink(
+          entryLink: link,
+          status: SyncEntryStatus.initial,
+        ),
+      );
+
+      expect(capturedCompanions, hasLength(1));
+      final companion = capturedCompanions.single;
+
+      // payloadSize should equal the JSON message length
+      final payloadSize = companion.payloadSize.value!;
+      final messageLength = companion.message.value.length;
+      expect(payloadSize, messageLength);
+    });
+
+    test('payloadSize is JSON length for simple message types', () async {
+      final capturedCompanions = <OutboxCompanion>[];
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
+          .thenAnswer((invocation) async {
+        capturedCompanions
+            .add(invocation.positionalArguments.first as OutboxCompanion);
+        return 1;
+      });
+
+      final testService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+      );
+
+      await testService.enqueueMessage(
+        const SyncMessage.aiConfigDelete(id: 'cfg-1'),
+      );
+
+      expect(capturedCompanions, hasLength(1));
+      final companion = capturedCompanions.single;
+      final payloadSize = companion.payloadSize.value!;
+      final messageLength = companion.message.value.length;
+      expect(payloadSize, messageLength);
     });
 
     test('enqueues entry link with coveredVectorClocks populated', () async {
@@ -731,6 +888,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -783,6 +941,7 @@ void main() {
           itemId: 1,
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -841,6 +1000,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -944,6 +1104,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1058,6 +1219,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((invocation) async {
         capturedMessage = invocation.namedArguments[#newMessage] as String?;
@@ -1099,6 +1261,7 @@ void main() {
           itemId: 1,
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).called(1);
       verifyNever(() => syncDatabase.addOutboxItem(any()));
@@ -1151,6 +1314,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1249,6 +1413,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       ).thenAnswer((_) async => 1);
 
@@ -1366,6 +1531,7 @@ void main() {
           itemId: any(named: 'itemId'),
           newMessage: any(named: 'newMessage'),
           newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
         ),
       );
     });

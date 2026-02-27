@@ -247,11 +247,13 @@ class OutboxService {
       final messageToEnqueue = await _prepareMessage(syncMessage, host);
 
       final jsonString = json.encode(messageToEnqueue);
+      final jsonByteLength = jsonString.length;
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
         message: Value(jsonString),
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
+        payloadSize: Value(jsonByteLength),
       );
 
       // Dispatch by message type using pattern matching
@@ -703,10 +705,13 @@ class OutboxService {
             coveredVectorClocks: coveredClocks,
           );
 
+          final mergedJson = json.encode(mergedMessage.toJson());
+          final mergedPayloadSize = mergedJson.length + fileLength;
           await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
-            newMessage: json.encode(mergedMessage.toJson()),
+            newMessage: mergedJson,
             newSubject: '$hostHash:$localCounter',
+            payloadSize: mergedPayloadSize,
           );
 
           // Log covered clocks for debugging
@@ -753,6 +758,8 @@ class OutboxService {
     }
 
     // No existing item or merge failed - create new outbox item with entryId
+    // Add file attachment size to the JSON payload size
+    final totalPayloadSize = (commonFields.payloadSize.value ?? 0) + fileLength;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         filePath: Value(
@@ -760,6 +767,7 @@ class OutboxService {
         ),
         subject: Value('$hostHash:$localCounter'),
         outboxEntryId: Value(msg.id),
+        payloadSize: Value(totalPayloadSize),
       ),
     );
     _loggingService.captureEvent(
@@ -828,10 +836,12 @@ class OutboxService {
           final mergedMessage =
               msg.copyWith(coveredVectorClocks: coveredClocks);
 
+          final mergedJson = json.encode(mergedMessage.toJson());
           await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
-            newMessage: json.encode(mergedMessage.toJson()),
+            newMessage: mergedJson,
             newSubject: subject,
+            payloadSize: mergedJson.length,
           );
 
           // Log covered clocks for debugging
