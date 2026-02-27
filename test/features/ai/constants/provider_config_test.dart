@@ -9,8 +9,10 @@ void main() {
         expect(
           ProviderConfig.defaultBaseUrls.keys.toSet(),
           containsAll([
+            InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.mistral,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -32,6 +34,13 @@ void main() {
         }
       });
 
+      test('should have correct URL for alibaba', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.alibaba],
+          equals('https://dashscope-intl.aliyuncs.com/compatible-mode/v1'),
+        );
+      });
+
       test('should have correct URL for genericOpenAi', () {
         expect(
           ProviderConfig.defaultBaseUrls[InferenceProviderType.genericOpenAi],
@@ -45,8 +54,10 @@ void main() {
         expect(
           ProviderConfig.defaultNames.keys.toSet(),
           containsAll([
+            InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.mistral,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -66,6 +77,13 @@ void main() {
             reason: '${entry.key} should have a non-empty name',
           );
         }
+      });
+
+      test('should have correct name for alibaba', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.alibaba],
+          equals('Alibaba Cloud (Qwen)'),
+        );
       });
 
       test('should have correct name for genericOpenAi', () {
@@ -89,6 +107,10 @@ void main() {
       });
 
       test('should not include cloud providers or genericOpenAi', () {
+        expect(
+          ProviderConfig.noApiKeyRequired,
+          isNot(contains(InferenceProviderType.alibaba)),
+        );
         expect(
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.gemini)),
@@ -176,6 +198,10 @@ void main() {
       });
 
       test('should return true for cloud providers and genericOpenAi', () {
+        expect(
+          ProviderConfig.requiresApiKey(InferenceProviderType.alibaba),
+          isTrue,
+        );
         expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.gemini),
           isTrue,

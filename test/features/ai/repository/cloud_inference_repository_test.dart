@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/providers/gemini_inference_repository_provider
 import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeminiInferenceRepository, GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -18,11 +19,10 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
-
-class MockHttpClient extends Mock implements http.Client {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
@@ -35,8 +35,6 @@ class FakeCreateChatCompletionRequest extends Fake
     implements CreateChatCompletionRequest {}
 
 class FakeRequest extends Fake implements http.Request {}
-
-class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
@@ -2276,7 +2274,7 @@ void main() {
       ).called(1);
     });
 
-    test('throws UnsupportedError for non-Gemini provider', () async {
+    test('throws UnsupportedError for unsupported provider type', () async {
       final ollamaProvider = AiConfigInferenceProvider(
         id: 'ollama-provider',
         name: 'Ollama',
@@ -2295,7 +2293,7 @@ void main() {
         throwsA(isA<UnsupportedError>().having(
           (e) => e.message,
           'message',
-          contains('only supported for Gemini providers'),
+          contains('not supported for'),
         )),
       );
     });
@@ -2483,9 +2481,69 @@ void main() {
         throwsA(isA<UnsupportedError>().having(
           (e) => e.message,
           'message',
-          contains('only supported for Gemini providers'),
+          contains('not supported for'),
         )),
       );
+    });
+
+    test('routes to DashScopeInferenceRepository for Alibaba provider',
+        () async {
+      final alibabaProvider = AiConfigInferenceProvider(
+        id: 'alibaba-provider',
+        name: 'Alibaba',
+        baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        apiKey: 'test-api-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.alibaba,
+      );
+
+      final mockDashScopeRepo = MockDashScopeInferenceRepository();
+      when(
+        () => mockDashScopeRepo.generateImage(
+          prompt: any(named: 'prompt'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+        ),
+      ).thenAnswer(
+        (_) async => const GeneratedImage(
+          bytes: [42, 43, 44],
+          mimeType: 'image/png',
+        ),
+      );
+
+      final alibabaContainer = ProviderContainer(
+        overrides: [
+          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
+          ollamaInferenceRepositoryProvider
+              .overrideWithValue(MockOllamaInferenceRepository()),
+          dashScopeInferenceRepositoryProvider
+              .overrideWithValue(mockDashScopeRepo),
+        ],
+      );
+
+      final ref = alibabaContainer.read(testRefProvider);
+      final alibabaRepository =
+          CloudInferenceRepository(ref, httpClient: mockHttpClient);
+
+      final result = await alibabaRepository.generateImage(
+        prompt: 'A sunset cat',
+        model: 'wan2.6-image',
+        provider: alibabaProvider,
+        systemMessage: 'Generate cover art',
+      );
+
+      expect(result.bytes, [42, 43, 44]);
+      expect(result.mimeType, 'image/png');
+
+      verify(
+        () => mockDashScopeRepo.generateImage(
+          prompt: 'A sunset cat',
+          model: 'wan2.6-image',
+          provider: alibabaProvider,
+        ),
+      ).called(1);
+
+      alibabaContainer.dispose();
     });
   });
 
@@ -3478,6 +3536,119 @@ void main() {
       final requestString = request.toString();
       expect(requestString,
           contains('format: ChatCompletionMessageInputAudioFormat.wav'));
+    });
+
+    test('Alibaba provider prefixes audio data with data URI', () {
+      // Arrange
+      final alibabaProvider = AiConfigInferenceProvider(
+        id: 'alibaba-provider',
+        name: 'Alibaba',
+        baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.alibaba,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Transcribed text',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      repository.generateWithAudio(
+        'Transcribe this audio.',
+        model: 'qwen3-omni-flash',
+        audioBase64: 'dGVzdC1hdWRpbw==',
+        baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        apiKey: 'test-key',
+        provider: alibabaProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert - audio data should be prefixed with data URI
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      expect(requestString, contains('data:;base64,dGVzdC1hdWRpbw=='));
+    });
+
+    test('non-Alibaba provider does not prefix audio data with data URI', () {
+      // Arrange
+      final genericProvider = AiConfigInferenceProvider(
+        id: 'generic-provider',
+        name: 'Generic',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      when(
+        () => mockClient.createChatCompletionStream(
+          request: any(named: 'request'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.fromIterable([
+          CreateChatCompletionStreamResponse(
+            id: 'response-id',
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+          ),
+        ]),
+      );
+
+      // Act
+      repository.generateWithAudio(
+        'Test prompt',
+        model: 'some-model',
+        audioBase64: 'dGVzdC1hdWRpbw==',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        provider: genericProvider,
+        overrideClient: mockClient,
+      );
+
+      // Assert - audio data should NOT have data URI prefix
+      final captured = verify(
+        () => mockClient.createChatCompletionStream(
+          request: captureAny(named: 'request'),
+        ),
+      ).captured;
+
+      final request = captured.first as CreateChatCompletionRequest;
+      final requestString = request.toString();
+      expect(requestString, isNot(contains('data:;base64,')));
+      expect(requestString, contains('dGVzdC1hdWRpbw=='));
     });
   });
 }

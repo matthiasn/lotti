@@ -62,6 +62,7 @@ class KnownModel {
 
 /// Known models for each inference provider type
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
+  InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
@@ -73,6 +74,77 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
+
+/// Alibaba Cloud models - Qwen family via DashScope (OpenAI-compatible)
+///
+/// These models run on Alibaba Cloud's DashScope API, which is fully
+/// OpenAI-compatible. They include text, vision, and reasoning models.
+/// API keys are obtained from the Alibaba Cloud Model Studio console.
+const List<KnownModel> alibabaModels = [
+  KnownModel(
+    providerModelId: 'qwen3-max',
+    name: 'Qwen3 Max',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Top-tier Qwen3 MoE model with 1T parameters. Best for complex '
+        'reasoning, analysis, and generation tasks.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen-flash',
+    name: 'Qwen Flash',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description:
+        'Fast and affordable model optimized for speed. Great for quick '
+        'tasks, summaries, and high-throughput workloads.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-plus',
+    name: 'Qwen3 VL Plus',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Top vision-language model with image understanding. Supports '
+        'multiple images per request via standard OpenAI vision format.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-vl-flash',
+    name: 'Qwen3 VL Flash',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Fast vision-language model for efficient image analysis and '
+        'visual question answering.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen3-omni-flash',
+    name: 'Qwen3 Omni Flash',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    supportsFunctionCalling: true,
+    description: 'Multimodal model with audio understanding. Supports up to '
+        '20 minutes of audio for transcription and analysis. '
+        'Accepts AMR, WAV, AAC, and MP3 formats.',
+  ),
+  KnownModel(
+    providerModelId: 'wan2.6-image',
+    name: 'Wan 2.6 Image',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text, Modality.image],
+    isReasoningModel: false,
+    description: 'Image generation model from the Wan family. Generates '
+        'high-quality images from text prompts via DashScope native API. '
+        'Supports sizes up to 1920x1080 with 16:9 aspect ratio.',
+  ),
+];
 
 /// Gemini models - Google's multimodal AI models
 const List<KnownModel> geminiModels = [
@@ -638,19 +710,76 @@ KnownModel? findOpenAiKnownModel(String providerModelId) {
 // =============================================================================
 
 /// Category names for FTUE test categories
+const ftueAlibabaCategoryName = 'Test Category Alibaba Enabled';
 const ftueGeminiCategoryName = 'Test Category Gemini Enabled';
 const ftueOpenAiCategoryName = 'Test Category OpenAI Enabled';
 const ftueMistralCategoryName = 'Test Category Mistral Enabled';
 
 /// Brand colors for FTUE test categories (hex format)
+const ftueAlibabaCategoryColor = '#FF6D00'; // Alibaba Orange
 const ftueGeminiCategoryColor = '#4285F4'; // Google Blue
 const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
 const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
 
 /// Brand colors as Color constants for UI usage
+const ftueAlibabaColor = Color(0xFFFF6D00);
 const ftueGeminiColor = Color(0xFF4285F4);
 const ftueOpenAiColor = Color(0xFF10A37F);
 const ftueMistralColor = Color(0xFFFF7000);
+
+// =============================================================================
+// Alibaba FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for Alibaba FTUE automation
+const ftueAlibabaFlashModelId = 'qwen-flash';
+const ftueAlibabaReasoningModelId = 'qwen3-max';
+const ftueAlibabaAudioModelId = 'qwen3-omni-flash';
+const ftueAlibabaVisionModelId = 'qwen3-vl-flash';
+const ftueAlibabaImageModelId = 'wan2.6-image';
+
+/// Finds a KnownModel by its provider model ID from the alibabaModels list.
+/// Returns null if not found.
+KnownModel? findAlibabaKnownModel(String providerModelId) {
+  return alibabaModels
+      .firstWhereOrNull((model) => model.providerModelId == providerModelId);
+}
+
+/// Returns the five KnownModel configurations needed for Alibaba FTUE.
+/// - Flash model (Qwen Flash) for fast processing tasks
+/// - Reasoning model (Qwen3 Max) for complex reasoning tasks
+/// - Audio model (Qwen3 Omni Flash) for transcription
+/// - Vision model (Qwen3 VL Flash) for image analysis
+/// - Image model (Wan 2.6 Image) for cover art generation
+({
+  KnownModel flash,
+  KnownModel reasoning,
+  KnownModel audio,
+  KnownModel vision,
+  KnownModel image,
+})? getAlibabaFtueKnownModels() {
+  final flash = findAlibabaKnownModel(ftueAlibabaFlashModelId);
+  final reasoning = findAlibabaKnownModel(ftueAlibabaReasoningModelId);
+  final audio = findAlibabaKnownModel(ftueAlibabaAudioModelId);
+  final vision = findAlibabaKnownModel(ftueAlibabaVisionModelId);
+  final image = findAlibabaKnownModel(ftueAlibabaImageModelId);
+
+  if (flash == null ||
+      reasoning == null ||
+      audio == null ||
+      vision == null ||
+      image == null) {
+    return null;
+  }
+
+  return (
+    flash: flash,
+    reasoning: reasoning,
+    audio: audio,
+    vision: vision,
+    image: image,
+  );
+}
 
 // =============================================================================
 // Mistral FTUE (First Time User Experience) Model Constants

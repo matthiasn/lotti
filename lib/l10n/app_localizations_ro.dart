@@ -795,6 +795,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiModelSettings => 'Setări model AI';
 
   @override
+  String get aiProviderAlibabaDescription =>
+      'Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope';
+
+  @override
+  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
+
+  @override
   String get aiProviderAnthropicDescription =>
       'Familia de asistenți AI Claude de la Anthropic';
 

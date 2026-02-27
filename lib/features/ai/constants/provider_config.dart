@@ -15,6 +15,8 @@ class ProviderConfig {
   /// These URLs are used as defaults when creating new provider configurations.
   /// Users can override these URLs in their provider settings.
   static const Map<InferenceProviderType, String> defaultBaseUrls = {
+    InferenceProviderType.alibaba:
+        'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
@@ -32,6 +34,7 @@ class ProviderConfig {
   ///
   /// These names are displayed in the UI when creating or editing provider configurations.
   static const Map<InferenceProviderType, String> defaultNames = {
+    InferenceProviderType.alibaba: 'Alibaba Cloud (Qwen)',
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
     InferenceProviderType.mistral: 'Mistral',

@@ -23,6 +23,9 @@ String get _testLibPath {
   return '$root/packages/sqlite_vec/test_sqlite3_with_vec.$ext';
 }
 
+/// Whether the native sqlite-vec test library is available.
+bool get _sqliteVecAvailable => File(_testLibPath).existsSync();
+
 /// Registers the sqlite-vec extension with the global [sqlite3] instance.
 ///
 /// The actual library override (`open.overrideFor`) is set in
@@ -30,15 +33,7 @@ String get _testLibPath {
 /// This function only needs to register the extension as an auto-extension
 /// so that new connections get vec0 virtual-table support.
 void _loadSqliteVecForTests() {
-  final path = _testLibPath;
-  if (!File(path).existsSync()) {
-    throw StateError(
-      'Test library not found at $path.\n'
-      'Run `make build_test_sqlite_vec` first.',
-    );
-  }
-
-  final customLib = DynamicLibrary.open(path);
+  final customLib = DynamicLibrary.open(_testLibPath);
   sqlite3.ensureExtensionLoaded(
     SqliteExtension.inLibrary(customLib, 'sqlite3_vec_init'),
   );
@@ -64,6 +59,16 @@ Float32List _makeSequentialVector(int length) {
 }
 
 void main() {
+  if (!_sqliteVecAvailable) {
+    test('sqlite-vec not built — skipping', () {
+      markTestSkipped(
+        'Native library not found at $_testLibPath. '
+        'Run `make build_test_sqlite_vec` to enable these tests.',
+      );
+    });
+    return;
+  }
+
   setUpAll(_loadSqliteVecForTests);
 
   late EmbeddingsDb db;

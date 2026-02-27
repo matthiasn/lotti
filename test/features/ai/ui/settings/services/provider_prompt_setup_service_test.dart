@@ -279,7 +279,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-        expect(find.text('Get started quickly with Ollama'), findsOneWidget);
+        expect(
+          find.text('Get started quickly with Ollama (local)'),
+          findsOneWidget,
+        );
         expect(find.text('Prompts to create:'), findsOneWidget);
 
         // Ollama should have 3 prompts (no Audio)
@@ -800,10 +803,13 @@ void main() {
         expect(identical(service1, service2), isTrue);
       });
 
-      test('supportedProviders should include Gemini, Ollama, and OpenAI', () {
+      test(
+          'supportedProviders should include Alibaba, Gemini, Ollama, and OpenAI',
+          () {
         expect(
           ProviderPromptSetupService.supportedProviders,
           containsAll([
+            InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -1966,6 +1972,765 @@ void main() {
       verify(() => mockCategoryRepository.createCategory(
             name: 'Test Category Mistral Enabled',
             color: '#FF7000', // Mistral Orange
+          )).called(1);
+    });
+  });
+
+  group('AlibabaFtueResult', () {
+    test('totalModels should return sum of modelsCreated and modelsVerified',
+        () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 2,
+        promptsCreated: 7,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalModels, equals(5));
+    });
+
+    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
+        () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 3,
+        modelsVerified: 2,
+        promptsCreated: 7,
+        promptsSkipped: 2,
+        categoryCreated: true,
+      );
+
+      expect(result.totalPrompts, equals(9));
+    });
+
+    test('should handle zero values correctly', () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+      );
+
+      expect(result.totalModels, equals(0));
+      expect(result.totalPrompts, equals(0));
+    });
+
+    test('should include optional categoryUpdated and categoryName', () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 5,
+        modelsVerified: 0,
+        promptsCreated: 9,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        categoryUpdated: true,
+        categoryName: 'Test Category Alibaba',
+      );
+
+      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryName, equals('Test Category Alibaba'));
+    });
+
+    test('should handle errors list', () {
+      const result = AlibabaFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Alibaba Error 1', 'Alibaba Error 2'],
+      );
+
+      expect(result.errors, hasLength(2));
+      expect(result.errors, contains('Alibaba Error 1'));
+      expect(result.errors, contains('Alibaba Error 2'));
+    });
+  });
+
+  group('Alibaba - Dialog UI', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late AiConfigInferenceProvider alibabaProvider;
+    late List<AiConfigModel> alibabaModels;
+
+    setUpAll(AiTestSetup.registerFallbackValues);
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+
+      alibabaProvider = AiTestDataFactory.createTestProvider(
+        id: 'alibaba-provider-id',
+        name: 'Alibaba Cloud (Qwen)',
+        type: InferenceProviderType.alibaba,
+        apiKey: 'test-alibaba-key',
+        baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      );
+
+      alibabaModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'alibaba-provider-id_qwen3_max',
+          name: 'Qwen3 Max',
+          inferenceProviderId: alibabaProvider.id,
+          inputModalities: [Modality.text],
+          isReasoningModel: true,
+          supportsFunctionCalling: true,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'alibaba-provider-id_qwen_flash',
+          name: 'Qwen Flash',
+          inferenceProviderId: alibabaProvider.id,
+          inputModalities: [Modality.text],
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'alibaba-provider-id_qwen3_omni_flash',
+          name: 'Qwen3 Omni Flash',
+          inferenceProviderId: alibabaProvider.id,
+          inputModalities: [Modality.text, Modality.audio],
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'alibaba-provider-id_qwen3_vl_flash',
+          name: 'Qwen3 VL Flash',
+          inferenceProviderId: alibabaProvider.id,
+          inputModalities: [Modality.text, Modality.image],
+        ),
+      ];
+    });
+
+    Widget createTestWidget({
+      required Widget child,
+      required Future<void> Function(BuildContext, WidgetRef) onPressed,
+    }) {
+      return AiTestWidgets.createTestWidget(
+        repository: mockRepository,
+        child: Consumer(
+          builder: (context, ref, _) => ElevatedButton(
+            onPressed: () => onPressed(context, ref),
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('should show dialog for Alibaba provider',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+    });
+
+    testWidgets('should display correct prompts for Alibaba',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
+      expect(
+        find.text('Get started quickly with Alibaba Cloud (Qwen)'),
+        findsOneWidget,
+      );
+      expect(find.text('Prompts to create:'), findsOneWidget);
+
+      // Alibaba should have 4 prompts
+      expect(find.text('Audio Transcript'), findsOneWidget);
+      expect(find.text('Image Analysis'), findsOneWidget);
+      expect(find.text('Checklist Updates'), findsOneWidget);
+      expect(find.text('Task Summary'), findsOneWidget);
+
+      // Model assignments
+      expect(find.text('Uses Qwen3 Omni Flash'), findsOneWidget);
+      expect(find.text('Uses Qwen3 VL Flash'), findsOneWidget);
+      expect(find.text('Uses Qwen3 Max'), findsNWidgets(2));
+    });
+
+    testWidgets('should display correct icons for Alibaba prompts',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.mic), findsOneWidget);
+      expect(find.byIcon(Icons.image), findsOneWidget);
+      expect(find.byIcon(Icons.checklist), findsOneWidget);
+      expect(find.byIcon(Icons.summarize), findsOneWidget);
+    });
+
+    testWidgets('should create 4 prompts for Alibaba when user confirms',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      bool? result;
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          result = await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Set Up Prompts'));
+      await tester.pump();
+
+      expect(result, isTrue);
+      verify(() => mockRepository.saveConfig(any())).called(4);
+    });
+
+    testWidgets('should create prompts with correct names for Alibaba',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+
+      final savedConfigs = <AiConfig>[];
+      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+        return Future.value();
+      });
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Set Up Prompts'));
+      await tester.pump();
+
+      final promptNames =
+          savedConfigs.whereType<AiConfigPrompt>().map((p) => p.name).toList();
+
+      expect(
+        promptNames,
+        contains('Audio Transcription - Qwen3 Omni Flash'),
+      );
+      expect(
+        promptNames,
+        contains('Image Analysis in Task Context - Qwen3 VL Flash'),
+      );
+      expect(promptNames, contains('Checklist Updates - Qwen3 Max'));
+      expect(promptNames, contains('Task Summary - Qwen3 Max'));
+    });
+
+    testWidgets('should show correct snackbar count for Alibaba (4 prompts)',
+        (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => alibabaModels);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget(
+        child: const Text('Test Button'),
+        onPressed: (context, ref) async {
+          await setupService.offerPromptSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test Button'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Set Up Prompts'));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.text('4 prompts created successfully!'), findsOneWidget);
+    });
+  });
+
+  group('Alibaba FTUE Setup - performAlibabaFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider alibabaProvider;
+
+    setUpAll(() {
+      registerFallbackValue(
+        AiConfig.model(
+          id: 'fallback-model',
+          name: 'Fallback',
+          providerModelId: 'fallback',
+          inferenceProviderId: 'fallback',
+          createdAt: DateTime(2024, 3, 15),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      registerFallbackValue(
+        AiConfig.prompt(
+          id: 'fallback-prompt',
+          name: 'Fallback',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'model',
+          modelIds: ['model'],
+          createdAt: DateTime(2024, 3, 15),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          useReasoning: false,
+        ),
+      );
+      registerFallbackValue(
+        CategoryDefinition(
+          id: 'fallback-category',
+          name: 'Fallback',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+    });
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      alibabaProvider = AiTestDataFactory.createTestProvider(
+        id: 'alibaba-provider-id',
+        name: 'Alibaba Cloud (Qwen)',
+        type: InferenceProviderType.alibaba,
+        apiKey: 'test-alibaba-key',
+        baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      );
+    });
+
+    Widget createAlibabaFtueTestWidget({
+      required Future<AlibabaFtueResult?> Function(BuildContext, WidgetRef)
+          onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('should return null for non-Alibaba provider',
+        (WidgetTester tester) async {
+      final geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+      );
+
+      AlibabaFtueResult? result;
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: geminiProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNull);
+    });
+
+    testWidgets('should create 5 models and 9 prompts when none exist',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueAlibabaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      AlibabaFtueResult? result;
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(5));
+      expect(result!.modelsVerified, equals(0));
+      expect(result!.promptsCreated, equals(9));
+      expect(result!.promptsSkipped, equals(0));
+      expect(result!.categoryCreated, isTrue);
+
+      // 5 models + 9 prompts = 14 saves
+      verify(() => mockRepository.saveConfig(any())).called(14);
+    });
+
+    testWidgets('should verify existing models and skip creation',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          name: 'Qwen Flash',
+          providerModelId: ftueAlibabaFlashModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          name: 'Qwen3 Max',
+          providerModelId: ftueAlibabaReasoningModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          name: 'Qwen3 Omni Flash',
+          providerModelId: ftueAlibabaAudioModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-vision',
+          name: 'Qwen3 VL Flash',
+          providerModelId: ftueAlibabaVisionModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-image',
+          name: 'Wan 2.6 Image',
+          providerModelId: ftueAlibabaImageModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueAlibabaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      AlibabaFtueResult? result;
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(0));
+      expect(result!.modelsVerified, equals(5));
+    });
+
+    testWidgets('should skip existing prompts with same preconfiguredPromptId',
+        (WidgetTester tester) async {
+      final existingModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'existing-flash',
+          providerModelId: ftueAlibabaFlashModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-reasoning',
+          providerModelId: ftueAlibabaReasoningModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-audio',
+          providerModelId: ftueAlibabaAudioModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-vision',
+          providerModelId: ftueAlibabaVisionModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-image',
+          providerModelId: ftueAlibabaImageModelId,
+          inferenceProviderId: alibabaProvider.id,
+        ),
+      ];
+
+      final existingPrompts = <AiConfig>[
+        AiConfig.prompt(
+          id: 'existing-prompt-id',
+          name: 'Task Summary',
+          systemMessage: 'system',
+          userMessage: 'user',
+          defaultModelId: 'existing-flash',
+          modelIds: ['existing-flash'],
+          createdAt: DateTime(2024, 3, 15),
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.taskSummary,
+          preconfiguredPromptId: 'task_summary',
+          useReasoning: false,
+        ),
+      ];
+
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => existingModels);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => existingPrompts);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueAlibabaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      AlibabaFtueResult? result;
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNotNull);
+      expect(result!.promptsSkipped, equals(1));
+      expect(result!.promptsCreated, equals(8));
+    });
+
+    testWidgets('should update existing category instead of creating new one',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+
+      final existingCategory = CategoryDefinition(
+        id: 'existing-category-id',
+        name: ftueAlibabaCategoryName,
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        private: false,
+        active: true,
+      );
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => [existingCategory]);
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      AlibabaFtueResult? result;
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return result = await setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNotNull);
+      expect(result!.categoryCreated, isFalse);
+      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryName, equals(ftueAlibabaCategoryName));
+
+      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          ));
+    });
+
+    testWidgets('should create category with Alibaba orange color',
+        (WidgetTester tester) async {
+      when(() => mockRepository.getConfigsByType(AiConfigType.model))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
+          .thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(() => mockCategoryRepository.getAllCategories())
+          .thenAnswer((_) async => <CategoryDefinition>[]);
+      when(() => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+          )).thenAnswer((_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueAlibabaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ));
+      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition);
+
+      await tester.pumpWidget(createAlibabaFtueTestWidget(
+        onPressed: (context, ref) async {
+          return setupService.performAlibabaFtueSetup(
+            context: context,
+            ref: ref,
+            provider: alibabaProvider,
+          );
+        },
+      ));
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      verify(() => mockCategoryRepository.createCategory(
+            name: ftueAlibabaCategoryName,
+            color: '#FF6D00', // Alibaba Orange
           )).called(1);
     });
   });

@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -58,6 +59,7 @@ class ProviderPromptSetupService {
 
   /// Provider types that support automatic prompt setup.
   static const Set<InferenceProviderType> supportedProviders = {
+    InferenceProviderType.alibaba,
     InferenceProviderType.gemini,
     InferenceProviderType.ollama,
     InferenceProviderType.openAi,
@@ -124,12 +126,7 @@ class ProviderPromptSetupService {
 
   /// Gets the display name for a provider type.
   String _getProviderDisplayName(InferenceProviderType type) {
-    return switch (type) {
-      InferenceProviderType.gemini => 'Gemini',
-      InferenceProviderType.ollama => 'Ollama',
-      InferenceProviderType.openAi => 'OpenAI',
-      _ => 'AI Provider',
-    };
+    return ProviderConfig.defaultNames[type] ?? 'AI Provider';
   }
 
   /// Selects the appropriate models for the provider based on its type.
@@ -148,10 +145,36 @@ class ProviderPromptSetupService {
     }
 
     return switch (provider.inferenceProviderType) {
+      InferenceProviderType.alibaba => _selectAlibabaModels(providerModels),
       InferenceProviderType.gemini => _selectGeminiModels(providerModels),
       InferenceProviderType.ollama => _selectOllamaModels(providerModels),
       _ => null,
     };
+  }
+
+  /// Selects models for Alibaba provider (reasoning, audio, vision/image).
+  _ModelSelection _selectAlibabaModels(List<AiConfigModel> models) {
+    // Find reasoning model (complex tasks)
+    final reasoningModel = models.firstWhere(
+      (m) => m.isReasoningModel,
+      orElse: () => models.first,
+    );
+
+    // Find audio model (transcription)
+    final audioModel = models.firstWhereOrNull(
+      (m) => m.inputModalities.contains(Modality.audio),
+    );
+
+    // Find vision model (image analysis)
+    final imageModel = models.firstWhereOrNull(
+      (m) => m.inputModalities.contains(Modality.image),
+    );
+
+    return _ModelSelection(
+      audioModel: audioModel,
+      reasoningModel: reasoningModel,
+      imageModel: imageModel,
+    );
   }
 
   /// Selects Flash and Pro models for Gemini provider.
@@ -217,6 +240,26 @@ class ProviderPromptSetupService {
     required _ModelSelection modelSelection,
   }) {
     return switch (providerType) {
+      InferenceProviderType.alibaba => [
+          if (modelSelection.audioModel != null)
+            PromptConfig(
+              template: audioTranscriptionPrompt,
+              model: modelSelection.audioModel!,
+            ),
+          if (modelSelection.imageModel != null)
+            PromptConfig(
+              template: imageAnalysisInTaskContextPrompt,
+              model: modelSelection.imageModel!,
+            ),
+          PromptConfig(
+            template: checklistUpdatesPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+          PromptConfig(
+            template: taskSummaryPrompt,
+            model: modelSelection.reasoningModel,
+          ),
+        ],
       InferenceProviderType.gemini => [
           if (modelSelection.audioModel != null)
             PromptConfig(
@@ -262,6 +305,30 @@ class ProviderPromptSetupService {
     required _ModelSelection modelSelection,
   }) {
     return switch (providerType) {
+      InferenceProviderType.alibaba => [
+          if (modelSelection.audioModel != null)
+            PromptPreviewInfo(
+              icon: Icons.mic,
+              name: 'Audio Transcript',
+              modelName: modelSelection.audioModel!.name,
+            ),
+          if (modelSelection.imageModel != null)
+            PromptPreviewInfo(
+              icon: Icons.image,
+              name: 'Image Analysis',
+              modelName: modelSelection.imageModel!.name,
+            ),
+          PromptPreviewInfo(
+            icon: Icons.checklist,
+            name: 'Checklist Updates',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+          PromptPreviewInfo(
+            icon: Icons.summarize,
+            name: 'Task Summary',
+            modelName: modelSelection.reasoningModel.name,
+          ),
+        ],
       InferenceProviderType.gemini => [
           if (modelSelection.audioModel != null)
             PromptPreviewInfo(
@@ -614,7 +681,8 @@ class FtuePromptConfig {
 
   final PreconfiguredPrompt template;
 
-  /// Which model to use: 'flash', 'pro', or 'image'
+  /// Which model to use: 'flash', 'pro', 'reasoning', 'audio', 'vision',
+  /// or 'image'.
   final String modelVariant;
   final String promptName;
 }
@@ -2009,6 +2077,513 @@ class _MistralFtueModelResult {
   final AiConfigModel flash;
   final AiConfigModel reasoning;
   final AiConfigModel audio;
+  final List<AiConfigModel> created;
+  final List<AiConfigModel> verified;
+}
+
+// =============================================================================
+// Alibaba FTUE (First Time User Experience) Setup
+// =============================================================================
+
+/// Result of the Alibaba FTUE setup process.
+class AlibabaFtueResult {
+  const AlibabaFtueResult({
+    required this.modelsCreated,
+    required this.modelsVerified,
+    required this.promptsCreated,
+    required this.promptsSkipped,
+    required this.categoryCreated,
+    this.categoryUpdated = false,
+    this.categoryName,
+    this.errors = const [],
+  });
+
+  final int modelsCreated;
+  final int modelsVerified;
+  final int promptsCreated;
+  final int promptsSkipped;
+  final bool categoryCreated;
+  final bool categoryUpdated;
+  final String? categoryName;
+  final List<String> errors;
+
+  int get totalModels => modelsCreated + modelsVerified;
+  int get totalPrompts => promptsCreated + promptsSkipped;
+}
+
+/// Extension to add Alibaba FTUE functionality to ProviderPromptSetupService.
+extension AlibabaFtueSetup on ProviderPromptSetupService {
+  /// Performs comprehensive FTUE setup for Alibaba providers.
+  ///
+  /// This creates:
+  /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen3 Max, Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
+  /// 2. 9 prompts with appropriate model assignments (including cover art generation)
+  /// 3. A test category with all prompts enabled and auto-selection configured
+  ///
+  /// Returns [AlibabaFtueResult] with details of what was created.
+  Future<AlibabaFtueResult?> performAlibabaFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+  }) async {
+    // Only works with Alibaba providers
+    if (provider.inferenceProviderType != InferenceProviderType.alibaba) {
+      return null;
+    }
+
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    // Step 1: Create/verify models
+    final modelResult = await _ensureAlibabaFtueModelsExist(
+      repository: repository,
+      providerId: provider.id,
+    );
+
+    if (modelResult == null) {
+      return const AlibabaFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        promptsCreated: 0,
+        promptsSkipped: 0,
+        categoryCreated: false,
+        errors: ['Failed to find required Alibaba model configurations'],
+      );
+    }
+
+    // Step 2: Create prompts
+    final promptResult = await _createAlibabaFtuePrompts(
+      repository: repository,
+      flashModel: modelResult.flash,
+      reasoningModel: modelResult.reasoning,
+      audioModel: modelResult.audio,
+      visionModel: modelResult.vision,
+      imageModel: modelResult.image,
+    );
+
+    // Step 3: Create or update category with auto-selection
+    final (category, categoryWasCreated) =
+        await _createOrUpdateAlibabaFtueCategory(
+      categoryRepository: categoryRepository,
+      prompts: promptResult.allPrompts,
+      flashModelId: modelResult.flash.id,
+      reasoningModelId: modelResult.reasoning.id,
+      audioModelId: modelResult.audio.id,
+      visionModelId: modelResult.vision.id,
+      imageModelId: modelResult.image.id,
+    );
+
+    return AlibabaFtueResult(
+      modelsCreated: modelResult.created.length,
+      modelsVerified: modelResult.verified.length,
+      promptsCreated: promptResult.created.length,
+      promptsSkipped: promptResult.skipped,
+      categoryCreated: categoryWasCreated,
+      categoryUpdated: !categoryWasCreated && category != null,
+      categoryName: category?.name,
+    );
+  }
+
+  /// Ensures the five FTUE models exist for the given Alibaba provider.
+  Future<_AlibabaFtueModelResult?> _ensureAlibabaFtueModelsExist({
+    required AiConfigRepository repository,
+    required String providerId,
+  }) async {
+    final knownModels = getAlibabaFtueKnownModels();
+    if (knownModels == null) {
+      return null;
+    }
+
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
+    final providerModels = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == providerId)
+        .toList();
+
+    final created = <AiConfigModel>[];
+    final verified = <AiConfigModel>[];
+    const uuid = Uuid();
+
+    // Enum-keyed map ensures the compiler catches missing roles.
+    final modelConfigs = {
+      _AlibabaModelRole.flash: (
+        known: knownModels.flash,
+        id: ftueAlibabaFlashModelId,
+      ),
+      _AlibabaModelRole.reasoning: (
+        known: knownModels.reasoning,
+        id: ftueAlibabaReasoningModelId,
+      ),
+      _AlibabaModelRole.audio: (
+        known: knownModels.audio,
+        id: ftueAlibabaAudioModelId,
+      ),
+      _AlibabaModelRole.vision: (
+        known: knownModels.vision,
+        id: ftueAlibabaVisionModelId,
+      ),
+      _AlibabaModelRole.image: (
+        known: knownModels.image,
+        id: ftueAlibabaImageModelId,
+      ),
+    };
+
+    final resolved = <_AlibabaModelRole, AiConfigModel>{};
+
+    for (final entry in modelConfigs.entries) {
+      final config = entry.value;
+
+      // Check if model with same providerModelId already exists
+      final existing = providerModels.firstWhereOrNull(
+        (m) => m.providerModelId == config.id,
+      );
+
+      AiConfigModel model;
+      if (existing != null) {
+        verified.add(existing);
+        model = existing;
+      } else {
+        model = config.known.toAiConfigModel(
+          id: uuid.v4(),
+          inferenceProviderId: providerId,
+        );
+        await repository.saveConfig(model);
+        created.add(model);
+      }
+
+      resolved[entry.key] = model;
+    }
+
+    // Verify all roles were resolved
+    final flash = resolved[_AlibabaModelRole.flash];
+    final reasoning = resolved[_AlibabaModelRole.reasoning];
+    final audio = resolved[_AlibabaModelRole.audio];
+    final vision = resolved[_AlibabaModelRole.vision];
+    final image = resolved[_AlibabaModelRole.image];
+
+    if (flash == null ||
+        reasoning == null ||
+        audio == null ||
+        vision == null ||
+        image == null) {
+      return null;
+    }
+
+    return _AlibabaFtueModelResult(
+      flash: flash,
+      reasoning: reasoning,
+      audio: audio,
+      vision: vision,
+      image: image,
+      created: created,
+      verified: verified,
+    );
+  }
+
+  /// Creates all FTUE prompts for Alibaba with idempotency checks.
+  Future<_FtuePromptResult> _createAlibabaFtuePrompts({
+    required AiConfigRepository repository,
+    required AiConfigModel flashModel,
+    required AiConfigModel reasoningModel,
+    required AiConfigModel audioModel,
+    required AiConfigModel visionModel,
+    required AiConfigModel imageModel,
+  }) async {
+    final created = <AiConfigPrompt>[];
+    final allPrompts = <AiConfigPrompt>[];
+    var skipped = 0;
+    const uuid = Uuid();
+
+    // Get existing prompts to check for duplicates
+    final existingPrompts =
+        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPromptsMap = <String, AiConfigPrompt>{};
+    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
+      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
+      existingPromptsMap[key] = p;
+    }
+
+    // Define all prompt configurations for Alibaba
+    final promptConfigs = _getAlibabaFtuePromptConfigs();
+
+    for (final config in promptConfigs) {
+      final model = switch (config.modelVariant) {
+        'flash' => flashModel,
+        'reasoning' => reasoningModel,
+        'audio' => audioModel,
+        'vision' => visionModel,
+        'image' => imageModel,
+        _ => flashModel,
+      };
+
+      // Check for existing prompt with same preconfiguredPromptId + modelId
+      final key = '${config.template.id}_${model.id}';
+      final existingPrompt = existingPromptsMap[key];
+      if (existingPrompt != null) {
+        allPrompts.add(existingPrompt);
+        skipped++;
+        continue;
+      }
+
+      // Qwen3 Max supports reasoning mode
+      final useReasoning = config.modelVariant == 'reasoning';
+
+      final prompt = AiConfig.prompt(
+        id: uuid.v4(),
+        name: config.promptName,
+        systemMessage: config.template.systemMessage,
+        userMessage: config.template.userMessage,
+        defaultModelId: model.id,
+        modelIds: [model.id],
+        createdAt: DateTime.now(),
+        useReasoning: useReasoning,
+        requiredInputData: config.template.requiredInputData,
+        aiResponseType: config.template.aiResponseType,
+        description: config.template.description,
+        trackPreconfigured: true,
+        preconfiguredPromptId: config.template.id,
+        defaultVariables: config.template.defaultVariables,
+      );
+
+      await repository.saveConfig(prompt);
+      final createdPrompt = prompt as AiConfigPrompt;
+      created.add(createdPrompt);
+      allPrompts.add(createdPrompt);
+    }
+
+    return _FtuePromptResult(
+      created: created,
+      skipped: skipped,
+      allPrompts: allPrompts,
+    );
+  }
+
+  /// Gets all prompt configurations for Alibaba FTUE.
+  ///
+  /// Model assignments:
+  /// - Qwen3 Max (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
+  /// - Qwen Flash (Flash): Task Summary (fast processing)
+  /// - Qwen3 Omni Flash (Audio): Audio transcription tasks
+  /// - Qwen3 VL Flash (Vision): Image analysis tasks
+  /// - Wan 2.6 (Image): Cover art / image generation
+  List<FtuePromptConfig> _getAlibabaFtuePromptConfigs() {
+    return const [
+      // Audio Transcription -> Audio model (dedicated transcription)
+      FtuePromptConfig(
+        template: audioTranscriptionPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription Alibaba Qwen3 Omni',
+      ),
+
+      // Audio Transcription with Task Context -> Audio model
+      FtuePromptConfig(
+        template: audioTranscriptionWithTaskContextPrompt,
+        modelVariant: 'audio',
+        promptName: 'Audio Transcription (Task Context) Alibaba Qwen3 Omni',
+      ),
+
+      // Task Summary -> Flash (fast processing)
+      FtuePromptConfig(
+        template: taskSummaryPrompt,
+        modelVariant: 'flash',
+        promptName: 'Task Summary Alibaba Qwen Flash',
+      ),
+
+      // Checklist Updates -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: checklistUpdatesPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Checklist Alibaba Qwen3 Max',
+      ),
+
+      // Image Analysis -> Vision (fast vision model)
+      FtuePromptConfig(
+        template: imageAnalysisPrompt,
+        modelVariant: 'vision',
+        promptName: 'Image Analysis Alibaba Qwen3 VL',
+      ),
+
+      // Image Analysis in Task Context -> Vision (fast vision model)
+      FtuePromptConfig(
+        template: imageAnalysisInTaskContextPrompt,
+        modelVariant: 'vision',
+        promptName: 'Image Analysis (Task Context) Alibaba Qwen3 VL',
+      ),
+
+      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: promptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Coding Prompt Alibaba Qwen3 Max',
+      ),
+
+      // Generate Image Prompt -> Reasoning (complex reasoning needed)
+      FtuePromptConfig(
+        template: imagePromptGenerationPrompt,
+        modelVariant: 'reasoning',
+        promptName: 'Image Prompt Alibaba Qwen3 Max',
+      ),
+
+      // Cover Art Generation -> Image model (Wan 2.6 for image generation)
+      FtuePromptConfig(
+        template: coverArtGenerationPrompt,
+        modelVariant: 'image',
+        promptName: 'Cover Art Alibaba Wan 2.6',
+      ),
+    ];
+  }
+
+  /// Creates or updates the FTUE test category for Alibaba.
+  Future<(CategoryDefinition?, bool)> _createOrUpdateAlibabaFtueCategory({
+    required CategoryRepository categoryRepository,
+    required List<AiConfigPrompt> prompts,
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+    required String visionModelId,
+    required String imageModelId,
+  }) async {
+    const categoryName = ftueAlibabaCategoryName;
+
+    // Build allowedPromptIds from all created prompts
+    final allowedPromptIds = prompts.map((p) => p.id).toList();
+
+    // Build automaticPrompts map with auto-selection logic
+    final automaticPrompts = _buildAlibabaFtueAutomaticPrompts(
+      prompts,
+      flashModelId: flashModelId,
+      reasoningModelId: reasoningModelId,
+      audioModelId: audioModelId,
+      visionModelId: visionModelId,
+      imageModelId: imageModelId,
+    );
+
+    // Check if category already exists
+    final allCategories = await categoryRepository.getAllCategories();
+    final existingCategory = allCategories
+        .where((c) => c.name == categoryName && c.deletedAt == null)
+        .firstOrNull;
+
+    if (existingCategory != null) {
+      // Update existing category with new prompts
+      final updatedCategory = existingCategory.copyWith(
+        allowedPromptIds: allowedPromptIds,
+        automaticPrompts: automaticPrompts,
+      );
+
+      await categoryRepository.updateCategory(updatedCategory);
+      return (updatedCategory, false);
+    }
+
+    // Create new category
+    final category = await categoryRepository.createCategory(
+      name: categoryName,
+      color: ftueAlibabaCategoryColor,
+    );
+
+    // Update with prompts configuration
+    final updatedCategory = category.copyWith(
+      allowedPromptIds: allowedPromptIds,
+      automaticPrompts: automaticPrompts,
+    );
+
+    await categoryRepository.updateCategory(updatedCategory);
+
+    return (updatedCategory, true);
+  }
+
+  /// Builds the automaticPrompts map for Alibaba FTUE auto-selection.
+  Map<AiResponseType, List<String>> _buildAlibabaFtueAutomaticPrompts(
+    List<AiConfigPrompt> prompts, {
+    required String flashModelId,
+    required String reasoningModelId,
+    required String audioModelId,
+    required String visionModelId,
+    required String imageModelId,
+  }) {
+    final map = <AiResponseType, List<String>>{};
+
+    String? findPromptId(String preconfiguredId, String modelId) {
+      return prompts
+          .firstWhereOrNull(
+            (p) =>
+                p.preconfiguredPromptId == preconfiguredId &&
+                p.defaultModelId == modelId,
+          )
+          ?.id;
+    }
+
+    // Audio Transcription -> Audio model (Qwen3 Omni Flash)
+    final audioTranscript = findPromptId('audio_transcription', audioModelId);
+    if (audioTranscript != null) {
+      map[AiResponseType.audioTranscription] = [audioTranscript];
+    }
+
+    // Image Analysis (task context) -> Vision (Qwen3 VL Flash)
+    final imageAnalysis =
+        findPromptId('image_analysis_task_context', visionModelId);
+    if (imageAnalysis != null) {
+      map[AiResponseType.imageAnalysis] = [imageAnalysis];
+    }
+
+    // Task Summary -> Flash (fast processing)
+    final taskSummary = findPromptId('task_summary', flashModelId);
+    if (taskSummary != null) {
+      map[AiResponseType.taskSummary] = [taskSummary];
+    }
+
+    // Checklist Updates -> Reasoning (Qwen3 Max)
+    final checklist = findPromptId('checklist_updates', reasoningModelId);
+    if (checklist != null) {
+      map[AiResponseType.checklistUpdates] = [checklist];
+    }
+
+    // Prompt Generation -> Reasoning (Qwen3 Max)
+    final promptGen = findPromptId('prompt_generation', reasoningModelId);
+    if (promptGen != null) {
+      map[AiResponseType.promptGeneration] = [promptGen];
+    }
+
+    // Image Prompt Generation -> Reasoning (Qwen3 Max)
+    final imagePrompt =
+        findPromptId('image_prompt_generation', reasoningModelId);
+    if (imagePrompt != null) {
+      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
+    }
+
+    // Image Generation -> Image model (Wan 2.6)
+    final imageGen = findPromptId('cover_art_generation', imageModelId);
+    if (imageGen != null) {
+      map[AiResponseType.imageGeneration] = [imageGen];
+    }
+
+    return map;
+  }
+}
+
+/// Model roles for Alibaba FTUE setup.
+///
+/// Using an enum instead of raw String keys ensures the compiler catches
+/// missing roles when the set of models changes.
+enum _AlibabaModelRole { flash, reasoning, audio, vision, image }
+
+/// Internal result class for Alibaba model creation.
+class _AlibabaFtueModelResult {
+  const _AlibabaFtueModelResult({
+    required this.flash,
+    required this.reasoning,
+    required this.audio,
+    required this.vision,
+    required this.image,
+    required this.created,
+    required this.verified,
+  });
+
+  final AiConfigModel flash;
+  final AiConfigModel reasoning;
+  final AiConfigModel audio;
+  final AiConfigModel vision;
+  final AiConfigModel image;
   final List<AiConfigModel> created;
   final List<AiConfigModel> verified;
 }

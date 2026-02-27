@@ -16,6 +16,19 @@ class FtueResultData {
     this.errors = const [],
   });
 
+  /// Creates from an AlibabaFtueResult
+  factory FtueResultData.fromAlibaba(AlibabaFtueResult result) =>
+      FtueResultData(
+        modelsCreated: result.modelsCreated,
+        modelsVerified: result.modelsVerified,
+        promptsCreated: result.promptsCreated,
+        promptsSkipped: result.promptsSkipped,
+        categoryCreated: result.categoryCreated,
+        categoryUpdated: result.categoryUpdated,
+        categoryName: result.categoryName,
+        errors: result.errors,
+      );
+
   /// Creates from a GeminiFtueResult
   factory FtueResultData.fromGemini(GeminiFtueResult result) => FtueResultData(
         modelsCreated: result.modelsCreated,
@@ -81,6 +94,19 @@ class FtueResultDialog extends StatelessWidget {
   });
 
   final FtueResultData result;
+
+  /// Shows the FTUE result dialog for Alibaba.
+  static Future<void> showAlibaba(
+    BuildContext context, {
+    required AlibabaFtueResult result,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => FtueResultDialog._internal(
+        result: FtueResultData.fromAlibaba(result),
+      ),
+    );
+  }
 
   /// Shows the FTUE result dialog for Gemini.
   static Future<void> show(

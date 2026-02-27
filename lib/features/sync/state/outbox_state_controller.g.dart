@@ -94,13 +94,13 @@ final class OutboxPendingCountProvider
 String _$outboxPendingCountHash() =>
     r'd1063a52cfb2ee4fc2c937a96f1d8f71ff2211cd';
 
-/// Future provider for daily outbox volume over the last 30 days.
+/// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
 /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
 
 @ProviderFor(outboxDailyVolume)
 final outboxDailyVolumeProvider = OutboxDailyVolumeProvider._();
 
-/// Future provider for daily outbox volume over the last 30 days.
+/// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
 /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
 
 final class OutboxDailyVolumeProvider extends $FunctionalProvider<
@@ -110,7 +110,7 @@ final class OutboxDailyVolumeProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<Observation>>,
         $FutureProvider<List<Observation>> {
-  /// Future provider for daily outbox volume over the last 30 days.
+  /// Future provider for daily outbox volume over the last [kOutboxVolumeDays].
   /// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
   OutboxDailyVolumeProvider._()
       : super(
@@ -138,4 +138,4 @@ final class OutboxDailyVolumeProvider extends $FunctionalProvider<
   }
 }
 
-String _$outboxDailyVolumeHash() => r'2af96c7aeafec4eded38b837ab2a0493b54160a0';
+String _$outboxDailyVolumeHash() => r'4b860d94f32e31ae0ac6377ddb62e63baf8a55bc';
