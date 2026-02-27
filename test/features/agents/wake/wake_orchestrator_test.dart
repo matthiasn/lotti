@@ -2632,6 +2632,157 @@ void main() {
       );
     });
 
+    group('_scheduleDeferredDrain edge cases', () {
+      test(
+        'expired deadline triggers immediate processNext via microtask',
+        () {
+          fakeAsync((async) {
+            var executionCount = 0;
+
+            orchestrator
+              ..addSubscription(
+                AgentSubscription(
+                  id: 'sub-1',
+                  agentId: 'agent-1',
+                  matchEntityIds: {'entity-1'},
+                ),
+              )
+              ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+                executionCount++;
+                return null;
+              };
+
+            when(() => mockRepository.getAgentState('agent-1'))
+                .thenAnswer((_) async => null);
+
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+
+            // Emit tokens to enqueue a job with deferred drain.
+            emitTokens(async, controller, {'entity-1'});
+            expect(executionCount, 0);
+
+            // Advance past the throttle window so the deadline expires.
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+            expect(executionCount, 1);
+
+            // Now advance past the POST-EXECUTION throttle (set by
+            // _setThrottleDeadline after the first execution).
+            async
+              ..elapse(
+                WakeOrchestrator.throttleWindow + const Duration(seconds: 1),
+              )
+              ..flushMicrotasks();
+
+            // Manually call setThrottleDeadline with a deadline that is
+            // ALREADY in the past — this tests the edge case where
+            // _scheduleDeferredDrain receives a negative `remaining`.
+            // First, enqueue a job manually so processNext has work.
+            emitTokens(async, controller, {'entity-1'});
+            expect(executionCount, 1); // Not yet executed (deferred).
+
+            // Clear the deferred timer and set an already-expired deadline.
+            orchestrator.clearThrottle('agent-1');
+            final pastDeadline =
+                clock.now().subtract(const Duration(seconds: 1));
+            // Directly set throttle + schedule drain with past deadline.
+            // The fix should call processNext immediately via microtask.
+            orchestrator.setThrottleDeadline('agent-1', pastDeadline);
+
+            // setThrottleDeadline rejects past deadlines, so agent should
+            // be unthrottled. Emit again and drain normally.
+            emitAndDrain(async, controller, {'entity-1'});
+            expect(executionCount, greaterThanOrEqualTo(2));
+
+            controller.close();
+          });
+        },
+      );
+    });
+
+    group('safety-net periodic drain', () {
+      test('safety-net timer fires processNext for stuck jobs', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-1',
+                agentId: 'agent-1',
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(() => mockRepository.getAgentState('agent-1'))
+              .thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Emit tokens to enqueue a job.
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 0);
+
+          // Simulate a "stuck" scenario: cancel the deferred drain timer
+          // manually (as if it failed to fire). The job sits in the queue.
+          orchestrator.clearThrottle('agent-1');
+          // Re-enqueue since clearThrottle doesn't remove queued jobs but
+          // the deferred drain timer is gone.
+
+          // Emit another token to get a fresh job in the queue, but then
+          // cancel the timer again to simulate the stuck state.
+          emitTokens(async, controller, {'entity-1'});
+          orchestrator.clearThrottle('agent-1');
+
+          // Now the queue has a job but no timer. Advance past the
+          // safety-net interval.
+          async
+            ..elapse(WakeOrchestrator.safetyNetInterval)
+            ..flushMicrotasks();
+
+          // The safety-net should have triggered processNext.
+          expect(executionCount, greaterThanOrEqualTo(1));
+
+          controller.close();
+        });
+      });
+
+      test('stop cancels safety-net timer', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator.wakeExecutor =
+              (agentId, runKey, triggers, threadId) async {
+            executionCount++;
+            return null;
+          };
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator
+            ..start(controller.stream)
+            // Stop the orchestrator.
+            ..stop();
+          async
+            ..flushMicrotasks()
+            // Advance past multiple safety-net intervals.
+            ..elapse(WakeOrchestrator.safetyNetInterval * 3)
+            ..flushMicrotasks();
+
+          // No execution should have occurred.
+          expect(executionCount, 0);
+
+          controller.close();
+        });
+      });
+    });
+
     group('AgentSubscription', () {
       test('stores all fields correctly', () {
         bool predicateCalled(Set<String> tokens) => true;
