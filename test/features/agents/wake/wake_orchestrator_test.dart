@@ -684,14 +684,6 @@ void main() {
           controller.close();
         });
       });
-
-      test('reconstructSubscriptions completes without error', () {
-        fakeAsync((async) {
-          orchestrator.reconstructSubscriptions();
-          async.flushMicrotasks();
-          // Should complete without throwing
-        });
-      });
     });
 
     group('processNext', () {

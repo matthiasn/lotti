@@ -424,22 +424,6 @@ class WakeOrchestrator {
     });
   }
 
-  /// Rebuild in-memory subscriptions from persisted agent state on app startup.
-  ///
-  /// Fetches all active (non-destroyed) agents from the repository and
-  /// restores their subscriptions.  The actual subscription definitions are
-  /// agent-kind–specific and will be populated by each agent's own
-  /// initialisation logic; this hook exists so the orchestrator can be primed
-  /// before the first notification batch arrives.
-  ///
-  /// Concrete agent services should call [addSubscription] during their own
-  /// startup after this method returns.
-  Future<void> reconstructSubscriptions() async {
-    // The workflow layer is responsible for registering subscriptions per
-    // agent kind.  This method is a no-op at the infrastructure level and is
-    // provided as an extension point called by the owning service on startup.
-  }
-
   // ── Manual wake enqueue ──────────────────────────────────────────────────
 
   /// Enqueue a user- or system-initiated wake for [agentId].

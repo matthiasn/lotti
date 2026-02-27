@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 
@@ -192,13 +193,13 @@ class AgentDbConversions {
   /// Extract the type string for the `agent_links.type` column.
   static String linkType(model.AgentLink link) {
     return link.map(
-      basic: (_) => 'basic',
-      agentState: (_) => 'agent_state',
-      messagePrev: (_) => 'message_prev',
-      messagePayload: (_) => 'message_payload',
-      toolEffect: (_) => 'tool_effect',
-      agentTask: (_) => 'agent_task',
-      templateAssignment: (_) => 'template_assignment',
+      basic: (_) => AgentLinkTypes.basic,
+      agentState: (_) => AgentLinkTypes.agentState,
+      messagePrev: (_) => AgentLinkTypes.messagePrev,
+      messagePayload: (_) => AgentLinkTypes.messagePayload,
+      toolEffect: (_) => AgentLinkTypes.toolEffect,
+      agentTask: (_) => AgentLinkTypes.agentTask,
+      templateAssignment: (_) => AgentLinkTypes.templateAssignment,
     );
   }
 }
