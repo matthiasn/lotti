@@ -104,6 +104,18 @@
   "agentEvolutionSessionCompleted": "Sesiune finalizată — versiunea {version} creată",
   "agentEvolutionSessionError": "Sesiunea de evoluție nu a putut fi pornită",
   "agentEvolutionSessionStarting": "Se pornește sesiunea de evoluție...",
+  "agentEvolutionSessionTitle": "Evoluție #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abandonat",
+  "agentEvolutionStatusActive": "Activ",
+  "agentEvolutionStatusCompleted": "Finalizat",
+  "agentInstancesEmptyList": "Nu s-au găsit instanțe de agent",
   "agentInstancesFilterActive": "Activ",
   "agentInstancesFilterAll": "Toate",
   "agentInstancesFilterDestroyed": "Distrus",

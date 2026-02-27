@@ -125,7 +125,10 @@ void main() {
       await tester.tap(find.text(context.messages.agentInstancesTitle));
       await tester.pumpAndSettle();
 
-      expect(find.text('Evolution #3'), findsOneWidget);
+      expect(
+        find.text(context.messages.agentEvolutionSessionTitle(3)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('template card shows kind badge and model ID', (tester) async {

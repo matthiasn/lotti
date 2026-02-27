@@ -528,6 +528,36 @@ abstract class AppLocalizations {
   /// **'Starting evolution session...'**
   String get agentEvolutionSessionStarting;
 
+  /// No description provided for @agentEvolutionSessionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution #{sessionNumber}'**
+  String agentEvolutionSessionTitle(int sessionNumber);
+
+  /// No description provided for @agentEvolutionStatusAbandoned.
+  ///
+  /// In en, this message translates to:
+  /// **'Abandoned'**
+  String get agentEvolutionStatusAbandoned;
+
+  /// No description provided for @agentEvolutionStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get agentEvolutionStatusActive;
+
+  /// No description provided for @agentEvolutionStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get agentEvolutionStatusCompleted;
+
+  /// No description provided for @agentInstancesEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent instances found'**
+  String get agentInstancesEmptyList;
+
   /// No description provided for @agentInstancesFilterActive.
   ///
   /// In en, this message translates to:

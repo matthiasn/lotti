@@ -242,6 +242,23 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démarrage de la session d\'évolution...';
 
   @override
+  String agentEvolutionSessionTitle(int sessionNumber) {
+    return 'Évolution #$sessionNumber';
+  }
+
+  @override
+  String get agentEvolutionStatusAbandoned => 'Abandonné';
+
+  @override
+  String get agentEvolutionStatusActive => 'Actif';
+
+  @override
+  String get agentEvolutionStatusCompleted => 'Terminé';
+
+  @override
+  String get agentInstancesEmptyList => 'Aucune instance d\'agent trouvée';
+
+  @override
   String get agentInstancesFilterActive => 'Actif';
 
   @override

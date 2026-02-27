@@ -239,6 +239,23 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se pornește sesiunea de evoluție...';
 
   @override
+  String agentEvolutionSessionTitle(int sessionNumber) {
+    return 'Evoluție #$sessionNumber';
+  }
+
+  @override
+  String get agentEvolutionStatusAbandoned => 'Abandonat';
+
+  @override
+  String get agentEvolutionStatusActive => 'Activ';
+
+  @override
+  String get agentEvolutionStatusCompleted => 'Finalizat';
+
+  @override
+  String get agentInstancesEmptyList => 'Nu s-au găsit instanțe de agent';
+
+  @override
   String get agentInstancesFilterActive => 'Activ';
 
   @override

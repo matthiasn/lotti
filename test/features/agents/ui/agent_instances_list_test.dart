@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
@@ -13,7 +16,10 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
   });
-  tearDown(tearDownTestGetIt);
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
 
   Widget buildSubject({
     List<AgentDomainEntity> agents = const [],
@@ -77,8 +83,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(AgentInstancesList));
       expect(find.text('Task Worker'), findsOneWidget);
-      expect(find.text('Evolution #2'), findsOneWidget);
+      expect(
+        find.text(context.messages.agentEvolutionSessionTitle(2)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('filters to only task agents', (tester) async {
@@ -100,7 +110,10 @@ void main() {
       await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
 
       expect(find.text('Task Worker'), findsOneWidget);
-      expect(find.text('Evolution #1'), findsNothing);
+      expect(
+        find.text(context.messages.agentEvolutionSessionTitle(1)),
+        findsNothing,
+      );
     });
 
     testWidgets('filters to only evolution sessions', (tester) async {
@@ -123,7 +136,10 @@ void main() {
       await tapSegment(tester, context.messages.agentInstancesKindEvolution);
 
       expect(find.text('Task Worker'), findsNothing);
-      expect(find.text('Evolution #5'), findsOneWidget);
+      expect(
+        find.text(context.messages.agentEvolutionSessionTitle(5)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('lifecycle filter narrows task agents', (tester) async {
@@ -191,7 +207,11 @@ void main() {
       await tester.pumpWidget(buildSubject(evolutions: [session]));
       await tester.pumpAndSettle();
 
-      expect(find.text('completed'), findsOneWidget);
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(context.messages.agentEvolutionStatusCompleted),
+        findsOneWidget,
+      );
     });
 
     testWidgets('running agent shows progress indicator', (tester) async {
@@ -252,6 +272,127 @@ void main() {
         find.text(context.messages.agentInstancesFilterDestroyed),
         findsNothing,
       );
+    });
+
+    testWidgets('task agent filter renders when evolution provider is loading',
+        (tester) async {
+      final agent = makeTestIdentity(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        displayName: 'Ready Agent',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: AgentInstancesList()),
+          overrides: [
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => [agent],
+            ),
+            // Evolution provider never completes — simulates slow fetch.
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) => Completer<List<AgentDomainEntity>>().future,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final context = tester.element(find.byType(AgentInstancesList));
+
+      // Select "Task Agent" filter so evolution loading doesn't block us
+      await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
+
+      // Task agent should be visible despite evolution still loading
+      expect(find.text('Ready Agent'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('evolution filter renders when agent provider errors',
+        (tester) async {
+      final session = makeTestEvolutionSession(
+        id: 'evo-1',
+        sessionNumber: 7,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: AgentInstancesList()),
+          overrides: [
+            // Agent provider errors
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => throw Exception('agent fetch failed'),
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => [session],
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final context = tester.element(find.byType(AgentInstancesList));
+
+      // Select "Evolution" filter so agent error doesn't block us
+      await tapSegment(tester, context.messages.agentInstancesKindEvolution);
+
+      // Evolution session should be visible despite agent provider error
+      expect(
+        find.text(context.messages.agentEvolutionSessionTitle(7)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping task agent card navigates to agent detail',
+        (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final agent = makeTestIdentity(
+        id: 'agent-nav',
+        agentId: 'agent-nav',
+        displayName: 'Nav Agent',
+      );
+
+      await tester.pumpWidget(buildSubject(agents: [agent]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nav Agent'));
+      expect(navigatedPath, '/settings/agents/instances/agent-nav');
+    });
+
+    testWidgets('tapping evolution card navigates to template detail',
+        (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final session = makeTestEvolutionSession(
+        id: 'evo-nav',
+        templateId: 'tpl-42',
+      );
+
+      await tester.pumpWidget(buildSubject(evolutions: [session]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      await tester.tap(
+        find.text(context.messages.agentEvolutionSessionTitle(1)),
+      );
+      expect(navigatedPath, '/settings/agents/templates/tpl-42');
     });
   });
 }

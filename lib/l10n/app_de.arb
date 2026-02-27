@@ -104,6 +104,18 @@
   "agentEvolutionSessionCompleted": "Sitzung abgeschlossen — Version {version} erstellt",
   "agentEvolutionSessionError": "Evolution-Sitzung konnte nicht gestartet werden",
   "agentEvolutionSessionStarting": "Evolution-Sitzung wird gestartet...",
+  "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abgebrochen",
+  "agentEvolutionStatusActive": "Aktiv",
+  "agentEvolutionStatusCompleted": "Abgeschlossen",
+  "agentInstancesEmptyList": "Keine Agenteninstanzen gefunden",
   "agentInstancesFilterActive": "Aktiv",
   "agentInstancesFilterAll": "Alle",
   "agentInstancesFilterDestroyed": "Gelöscht",

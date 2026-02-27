@@ -241,6 +241,23 @@ class AppLocalizationsDe extends AppLocalizations {
       'Evolution-Sitzung wird gestartet...';
 
   @override
+  String agentEvolutionSessionTitle(int sessionNumber) {
+    return 'Evolution #$sessionNumber';
+  }
+
+  @override
+  String get agentEvolutionStatusAbandoned => 'Abgebrochen';
+
+  @override
+  String get agentEvolutionStatusActive => 'Aktiv';
+
+  @override
+  String get agentEvolutionStatusCompleted => 'Abgeschlossen';
+
+  @override
+  String get agentInstancesEmptyList => 'Keine Agenteninstanzen gefunden';
+
+  @override
   String get agentInstancesFilterActive => 'Aktiv';
 
   @override

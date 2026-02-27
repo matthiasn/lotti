@@ -110,6 +110,18 @@
   },
   "agentEvolutionSessionError": "Failed to start evolution session",
   "agentEvolutionSessionStarting": "Starting evolution session...",
+  "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abandoned",
+  "agentEvolutionStatusActive": "Active",
+  "agentEvolutionStatusCompleted": "Completed",
+  "agentInstancesEmptyList": "No agent instances found",
   "agentInstancesFilterActive": "Active",
   "agentInstancesFilterAll": "All",
   "agentInstancesFilterDestroyed": "Destroyed",

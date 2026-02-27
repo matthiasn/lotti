@@ -104,6 +104,18 @@
   "agentEvolutionSessionCompleted": "Session terminée — version {version} créée",
   "agentEvolutionSessionError": "Impossible de démarrer la session d'évolution",
   "agentEvolutionSessionStarting": "Démarrage de la session d'évolution...",
+  "agentEvolutionSessionTitle": "Évolution #{sessionNumber}",
+  "@agentEvolutionSessionTitle": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "agentEvolutionStatusAbandoned": "Abandonné",
+  "agentEvolutionStatusActive": "Actif",
+  "agentEvolutionStatusCompleted": "Terminé",
+  "agentInstancesEmptyList": "Aucune instance d'agent trouvée",
   "agentInstancesFilterActive": "Actif",
   "agentInstancesFilterAll": "Tous",
   "agentInstancesFilterDestroyed": "Détruit",

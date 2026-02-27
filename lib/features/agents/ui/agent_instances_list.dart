@@ -114,16 +114,19 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
     AsyncValue<List<AgentDomainEntity>> agentsAsync,
     AsyncValue<List<AgentDomainEntity>> evolutionAsync,
   ) {
+    final needsAgents = _kindFilter != _InstanceKind.evolution;
+    final needsEvolutions = _kindFilter != _InstanceKind.taskAgent;
+
     final agents = agentsAsync.value;
     final evolutions = evolutionAsync.value;
 
-    if ((agentsAsync.isLoading && agents == null) ||
-        (evolutionAsync.isLoading && evolutions == null)) {
+    if ((needsAgents && agentsAsync.isLoading && agents == null) ||
+        (needsEvolutions && evolutionAsync.isLoading && evolutions == null)) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if ((agentsAsync.hasError && agents == null) ||
-        (evolutionAsync.hasError && evolutions == null)) {
+    if ((needsAgents && agentsAsync.hasError && agents == null) ||
+        (needsEvolutions && evolutionAsync.hasError && evolutions == null)) {
       return Center(
         child: Text(
           context.messages.commonError,
@@ -172,7 +175,7 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
             ),
             const SizedBox(height: 16),
             Text(
-              context.messages.agentTemplateEmptyList,
+              context.messages.agentInstancesEmptyList,
               style: context.textTheme.titleMedium?.copyWith(
                 color: Theme.of(context).disabledColor,
               ),
@@ -343,7 +346,7 @@ class _EvolutionSessionCard extends StatelessWidget {
           color: context.colorScheme.tertiary,
         ),
         title: Text(
-          'Evolution #${session.sessionNumber}',
+          context.messages.agentEvolutionSessionTitle(session.sessionNumber),
           style: context.textTheme.titleMedium,
         ),
         subtitle: Wrap(
@@ -356,7 +359,7 @@ class _EvolutionSessionCard extends StatelessWidget {
               color: context.colorScheme.tertiary,
             ),
             _Badge(
-              label: session.status.name,
+              label: _evolutionStatusLabel(context, session.status),
               color: _evolutionStatusColor(context, session.status),
             ),
             Text(
@@ -373,6 +376,20 @@ class _EvolutionSessionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _evolutionStatusLabel(
+    BuildContext context,
+    EvolutionSessionStatus status,
+  ) {
+    return switch (status) {
+      EvolutionSessionStatus.active =>
+        context.messages.agentEvolutionStatusActive,
+      EvolutionSessionStatus.completed =>
+        context.messages.agentEvolutionStatusCompleted,
+      EvolutionSessionStatus.abandoned =>
+        context.messages.agentEvolutionStatusAbandoned,
+    };
   }
 
   Color _evolutionStatusColor(

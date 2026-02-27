@@ -157,7 +157,7 @@ void main() {
       expect(find.text('Measurable Types'), findsOneWidget);
     });
 
-    testWidgets('shows Agent Templates card when enableAgentsFlag is ON',
+    testWidgets('shows Agents card when enableAgentsFlag is ON',
         (tester) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -184,15 +184,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent Templates'), findsOneWidget);
+      expect(find.text('Agents'), findsOneWidget);
       // Subtitle verifies the full card structure rendered, not just the title.
       expect(
-        find.text('Manage agent personalities and directives'),
+        find.text('Templates, instances, and monitoring'),
         findsOneWidget,
       );
     });
 
-    testWidgets('hides Agent Templates when enableAgentsFlag is OFF',
+    testWidgets('hides Agents card when enableAgentsFlag is OFF',
         (tester) async {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
@@ -211,10 +211,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Agent Templates'), findsNothing);
+      expect(find.text('Agents'), findsNothing);
       // Subtitle also absent when the flag is off.
       expect(
-        find.text('Manage agent personalities and directives'),
+        find.text('Templates, instances, and monitoring'),
         findsNothing,
       );
     });
