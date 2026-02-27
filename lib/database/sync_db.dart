@@ -628,22 +628,30 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   /// Get aggregated outbox volume per day for sent items.
-  /// Returns daily totals of payload bytes and item counts.
+  /// Groups by send time (`updated_at`) so items appear on the day they
+  /// were actually transmitted, not the day they were created.
   Future<List<OutboxDailyVolume>> getDailyOutboxVolume({
     int days = 7,
     DateTime? now,
   }) async {
-    final effectiveNow = now ?? DateTime.now();
-    final cutoff = effectiveNow.subtract(Duration(days: days));
+    if (days <= 0) return const [];
+
+    final effectiveNow = (now ?? DateTime.now()).toUtc();
+    final startOfToday = DateTime.utc(
+      effectiveNow.year,
+      effectiveNow.month,
+      effectiveNow.day,
+    );
+    final cutoff = startOfToday.subtract(Duration(days: days - 1));
 
     final cutoffSeconds = cutoff.millisecondsSinceEpoch ~/ 1000;
     final rows = await customSelect(
-      "SELECT strftime('%Y-%m-%d', created_at, 'unixepoch') AS day, "
+      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS day, "
       'COALESCE(SUM(payload_size), 0) AS total_bytes, '
       'COUNT(*) AS item_count '
       'FROM outbox '
-      'WHERE status = ? AND created_at >= ? '
-      "GROUP BY strftime('%Y-%m-%d', created_at, 'unixepoch') "
+      'WHERE status = ? AND updated_at >= ? '
+      'GROUP BY day '
       'ORDER BY day ASC',
       variables: [
         Variable.withInt(OutboxStatus.sent.index),

@@ -4,7 +4,7 @@
 
 The sync system uses an outbox table (Drift ORM, `SyncDatabase`) to queue items for sending via Matrix. Currently, the outbox tracks status, retries, timestamps, and message content — but not the **byte size** of what is actually being sent. The goal is to record payload sizes at enqueue time so we can later visualize daily sync volume (MB sent per day) and break it down by type (audio, photo, JSON entry).
 
-The outbox service already computes `fileLength` for attachments (audio/image files) at enqueue time (`outbox_service.dart:665-672`) but discards it after logging. The JSON message size is also readily available as `jsonString.length`. This plan captures both values in a new database column.
+The outbox service already computes `fileLength` for attachments (audio/image files) at enqueue time (`outbox_service.dart:665-672`) but discards it after logging. The JSON message byte size is computed as `utf8.encode(jsonString).length` for accurate UTF-8 byte counts. This plan captures both values in a new database column.
 
 ## Implementation Steps
 
@@ -38,7 +38,7 @@ Returns a list of `OutboxDailyVolume` records (date, totalBytes, itemCount). Thi
 
 **File:** `lib/features/sync/outbox/outbox_service.dart`
 
-- In `enqueueMessage()`: compute `jsonString.length` (line 249) and include it in `commonFields` as `payloadSize`.
+- In `enqueueMessage()`: compute `utf8.encode(jsonString).length` and include it in `commonFields` as `payloadSize`.
 - In `_enqueueJournalEntity()`: add `fileLength` on top of the JSON length already in `commonFields`.
 - In `_enqueueEntryLink()`: uses the JSON length from `commonFields` (no file attachment).
 - In `_enqueueSimple()`: uses the JSON length from `commonFields`.

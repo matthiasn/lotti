@@ -2681,30 +2681,46 @@ void main() {
     });
   });
 
-  group('Schema migration v4 to v5 -', () {
-    test('adds payload_size column and existing rows have null', () async {
-      // Create a v4 database manually using raw SQL
-      final db = SyncDatabase(inMemoryDatabase: true);
+  group('Payload size column behavior -', () {
+    late SyncDatabase db;
 
-      // Insert an item without payload_size (simulates pre-v5 data)
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('payloadSize defaults to null when omitted', () async {
       final now = DateTime(2025, 3, 15, 10);
       await db.addOutboxItem(
         OutboxCompanion(
           status: Value(OutboxStatus.pending.index),
-          subject: const Value('pre-v5-subject'),
+          subject: const Value('subject'),
           message: const Value('{"old": true}'),
           createdAt: Value(now),
           updatedAt: Value(now),
-          // Deliberately omit payloadSize to simulate v4 rows
         ),
       );
 
       final items = await db.allOutboxItems;
       expect(items, hasLength(1));
       expect(items.first.payloadSize, isNull);
-      expect(items.first.subject, 'pre-v5-subject');
+    });
 
-      // Verify we can write payloadSize to the same row
+    test('updateOutboxMessage writes payloadSize to existing row', () async {
+      final now = DateTime(2025, 3, 15, 10);
+      await db.addOutboxItem(
+        OutboxCompanion(
+          status: Value(OutboxStatus.pending.index),
+          subject: const Value('subject'),
+          message: const Value('{"old": true}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final items = await db.allOutboxItems;
       await db.updateOutboxMessage(
         itemId: items.first.id,
         newMessage: '{"updated": true}',
@@ -2714,14 +2730,10 @@ void main() {
 
       final updated = await db.allOutboxItems;
       expect(updated.first.payloadSize, 9999);
-
-      await db.close();
     });
 
-    test('schema version is 5', () async {
-      final db = SyncDatabase(inMemoryDatabase: true);
+    test('schema version is 5', () {
       expect(db.schemaVersion, 5);
-      await db.close();
     });
   });
 }

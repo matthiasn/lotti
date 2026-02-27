@@ -200,5 +200,82 @@ void main() {
 
       await db.close();
     });
+
+    test('v5 migration adds payload_size column to outbox', () async {
+      // Create a v4 database with the outbox table lacking payload_size
+      final dbFile = File(path.join(testDirectory!.path, 'test_sync_v5.db'));
+      final sqlite = sqlite3.open(dbFile.path);
+
+      // v4 schema: outbox with outbox_entry_id but no payload_size
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS outbox (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          status INTEGER NOT NULL DEFAULT 0,
+          retries INTEGER NOT NULL DEFAULT 0,
+          message TEXT NOT NULL,
+          subject TEXT NOT NULL,
+          file_path TEXT,
+          outbox_entry_id TEXT
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS sync_sequence_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          host_id TEXT NOT NULL,
+          counter INTEGER NOT NULL,
+          entry_id TEXT NOT NULL,
+          status INTEGER NOT NULL DEFAULT 0,
+          request_count INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          payload_type TEXT
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS host_activity (
+          host_id TEXT NOT NULL PRIMARY KEY,
+          last_seen_at INTEGER NOT NULL,
+          last_requested_at INTEGER
+        )
+      ''');
+
+      // Insert a v4 row (no payload_size column)
+      final createdAtSeconds =
+          DateTime(2024, 6, 15).millisecondsSinceEpoch ~/ 1000;
+      sqlite.execute('''
+        INSERT INTO outbox (created_at, updated_at, status, retries, message, subject)
+        VALUES ($createdAtSeconds, $createdAtSeconds, 0, 0, '{"v4": true}', 'v4-subject')
+      ''');
+
+      sqlite.execute('PRAGMA user_version = 4');
+      sqlite.dispose();
+
+      // Open with SyncDatabase to trigger v4→v5 migration
+      final db = SyncDatabase(overriddenFilename: 'test_sync_v5.db');
+
+      // Verify schema version updated
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
+      expect(versionResult.first.read<int>('user_version'), 5);
+
+      // Verify existing row survived with null payload_size
+      final items = await db.oldestOutboxItems(10);
+      expect(items, hasLength(1));
+      expect(items.first.subject, 'v4-subject');
+      expect(items.first.payloadSize, isNull);
+
+      // Verify payload_size column is usable
+      await db.updateOutboxMessage(
+        itemId: items.first.id,
+        newMessage: '{"v5": true}',
+        newSubject: 'v5-subject',
+        payloadSize: 42,
+      );
+      final updated = await db.oldestOutboxItems(10);
+      expect(updated.first.payloadSize, 42);
+
+      await db.close();
+    });
   });
 }
