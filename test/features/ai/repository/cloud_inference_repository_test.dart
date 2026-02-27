@@ -19,11 +19,10 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
-
-class MockHttpClient extends Mock implements http.Client {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
@@ -31,16 +30,11 @@ class MockOllamaInferenceRepository extends Mock
 class MockGeminiInferenceRepository extends Mock
     implements GeminiInferenceRepository {}
 
-class MockDashScopeInferenceRepository extends Mock
-    implements DashScopeInferenceRepository {}
-
 // We need to register fallback values for complex types that will be used with 'any()' matcher
 class FakeCreateChatCompletionRequest extends Fake
     implements CreateChatCompletionRequest {}
 
 class FakeRequest extends Fake implements http.Request {}
-
-class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
@@ -3572,7 +3566,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -3628,7 +3622,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );

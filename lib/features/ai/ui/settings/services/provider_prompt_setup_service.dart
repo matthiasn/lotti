@@ -152,7 +152,7 @@ class ProviderPromptSetupService {
     };
   }
 
-  /// Selects models for Alibaba provider (flash, reasoning, audio, vision).
+  /// Selects models for Alibaba provider (reasoning, audio, vision/image).
   _ModelSelection _selectAlibabaModels(List<AiConfigModel> models) {
     // Find reasoning model (complex tasks)
     final reasoningModel = models.firstWhere(
@@ -681,7 +681,8 @@ class FtuePromptConfig {
 
   final PreconfiguredPrompt template;
 
-  /// Which model to use: 'flash', 'pro', or 'image'
+  /// Which model to use: 'flash', 'pro', 'reasoning', 'audio', 'vision',
+  /// or 'image'.
   final String modelVariant;
   final String promptName;
 }
@@ -2364,7 +2365,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   /// - Qwen Flash (Flash): Task Summary (fast processing)
   /// - Qwen3 Omni Flash (Audio): Audio transcription tasks
   /// - Qwen3 VL Flash (Vision): Image analysis tasks
-  /// Note: No image generation model available for Alibaba
+  /// - Wan 2.6 (Image): Cover art / image generation
   List<FtuePromptConfig> _getAlibabaFtuePromptConfigs() {
     return const [
       // Audio Transcription -> Audio model (dedicated transcription)

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -346,3 +348,10 @@ class FakeAiConfigInferenceProvider extends Fake
 class FakeChatSession extends Fake implements ChatSession {}
 
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
+
+class MockDashScopeInferenceRepository extends Mock
+    implements DashScopeInferenceRepository {}
+
+class MockHttpClient extends Mock implements http.Client {}
+
+class FakeBaseRequest extends Fake implements http.BaseRequest {}

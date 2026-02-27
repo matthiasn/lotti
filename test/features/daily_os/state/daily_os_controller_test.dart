@@ -1143,7 +1143,7 @@ void main() {
 
     test('does not throw when disposed during polling delay', () {
       fakeAsync((async) {
-        withClock(async.getClock(DateTime.now()), () {
+        withClock(async.getClock(DateTime(2024, 3, 15)), () {
           final today = clock.now().dayAtMidnight;
 
           final timelineData = DailyTimelineData(

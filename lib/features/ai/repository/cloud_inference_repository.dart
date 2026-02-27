@@ -595,10 +595,13 @@ class CloudInferenceRepository {
           referenceImages: referenceImages,
         );
       case InferenceProviderType.alibaba:
+        // Note: DashScope's Wan model does not support systemMessage.
+        // It supports at most one reference image in interleave mode.
         return _dashScopeRepository.generateImage(
           prompt: prompt,
           model: model,
           provider: provider,
+          referenceImages: referenceImages,
         );
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:

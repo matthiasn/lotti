@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dashscope_inference_repository.g.dart';
@@ -48,6 +49,7 @@ class DashScopeInferenceRepository {
     required String prompt,
     required String model,
     required AiConfigInferenceProvider provider,
+    List<ProcessedReferenceImage>? referenceImages,
   }) async {
     final baseUrl = _extractBaseHost(provider.baseUrl);
     final uri = Uri.parse('$baseUrl$_imageGenerationPath');
@@ -63,6 +65,7 @@ class DashScopeInferenceRepository {
     final body = _buildRequestBody(
       prompt: prompt,
       model: model,
+      referenceImage: referenceImages?.firstOrNull,
     );
 
     final request = http.Request('POST', uri)
@@ -84,8 +87,11 @@ class DashScopeInferenceRepository {
       );
     }
 
-    // Collect the full SSE response
-    final responseBody = await streamedResponse.stream.bytesToString();
+    // Collect the full SSE response (with timeout to avoid hanging if the
+    // server starts responding but then stalls mid-stream).
+    final responseBody = await streamedResponse.stream
+        .bytesToString()
+        .timeout(_imageGenerationTimeout);
 
     // Extract image URL from SSE events
     final imageUrl = _extractImageUrlFromSse(responseBody);
@@ -131,25 +137,39 @@ class DashScopeInferenceRepository {
   ///   `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
   /// We need just the host part for the native DashScope API:
   ///   `https://dashscope-intl.aliyuncs.com`
+  ///
+  /// Preserves any explicit port (e.g. for proxy or self-hosted endpoints).
   String _extractBaseHost(String baseUrl) {
     final uri = Uri.parse(baseUrl);
-    return '${uri.scheme}://${uri.host}';
+    final authority = uri.hasPort ? '${uri.host}:${uri.port}' : uri.host;
+    return '${uri.scheme}://$authority';
   }
 
   /// Builds the DashScope native API request body for image generation.
+  ///
+  /// When [referenceImage] is provided, it is included as the first content
+  /// part (DashScope supports 0-1 reference images in interleave mode).
   Map<String, dynamic> _buildRequestBody({
     required String prompt,
     required String model,
+    ProcessedReferenceImage? referenceImage,
   }) {
+    final contentParts = <Map<String, String>>[
+      if (referenceImage != null)
+        {
+          'image':
+              'data:${referenceImage.mimeType};base64,${referenceImage.base64Data}',
+        },
+      {'text': prompt},
+    ];
+
     return {
       'model': model,
       'input': {
         'messages': [
           {
             'role': 'user',
-            'content': [
-              {'text': prompt},
-            ],
+            'content': contentParts,
           },
         ],
       },

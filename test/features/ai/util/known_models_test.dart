@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -582,7 +584,7 @@ void main() {
       test('FTUE category constants have expected values', () {
         expect(ftueAlibabaCategoryName, 'Test Category Alibaba Enabled');
         expect(ftueAlibabaCategoryColor, '#FF6D00');
-        expect(ftueAlibabaColor, isNotNull);
+        expect(ftueAlibabaColor, const Color(0xFFFF6D00));
       });
     });
 

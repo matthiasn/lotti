@@ -28,9 +28,15 @@ const Set<InferenceProviderType> ftueSupportedProviderTypes = {
 /// Extension providing FTUE-related properties for provider types.
 extension FtueProviderTypeExtension on InferenceProviderType {
   /// Returns the display name for FTUE dialogs, or null if not supported.
-  String? get ftueDisplayName => ftueSupportedProviderTypes.contains(this)
-      ? ProviderConfig.defaultNames[this]
-      : null;
+  String? get ftueDisplayName {
+    if (!ftueSupportedProviderTypes.contains(this)) return null;
+    assert(
+      ProviderConfig.defaultNames.containsKey(this),
+      'Provider type $this is FTUE-supported but missing from '
+      'ProviderConfig.defaultNames',
+    );
+    return ProviderConfig.defaultNames[this];
+  }
 }
 
 /// Service that determines whether FTUE setup should be triggered for a provider.
@@ -50,7 +56,7 @@ class FtueTriggerService extends _$FtueTriggerService {
   /// Determines whether FTUE should be triggered for the given provider.
   ///
   /// Returns [FtueTriggerResult.shouldShowFtue] if:
-  /// - The provider type is supported (Gemini, OpenAI, or Mistral) AND
+  /// - The provider type is supported (Alibaba, Gemini, OpenAI, or Mistral) AND
   /// - This is the first provider of this type (count == 1 after creation)
   ///
   /// Returns [FtueTriggerResult.skipNotFirstProvider] if there's already

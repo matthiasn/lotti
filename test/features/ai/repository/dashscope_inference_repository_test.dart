@@ -7,11 +7,10 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
-
-class FakeBaseRequest extends Fake implements http.BaseRequest {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -241,6 +240,87 @@ void main() {
           expect(params['size'], '1280*720');
           expect(params['stream'], true);
           expect(params['enable_interleave'], true);
+        });
+
+        test('includes reference image in request body when provided',
+            () async {
+          final provider = createProvider();
+          const imageUrl =
+              'https://dashscope-result.oss.aliyuncs.com/image.png';
+          final sseBody = buildSseResponse([imageEvent(imageUrl)]);
+
+          http.Request? capturedRequest;
+          when(() => mockHttpClient.send(any())).thenAnswer((invocation) async {
+            capturedRequest = invocation.positionalArguments[0] as http.Request;
+            return createStreamedResponse(sseBody);
+          });
+
+          when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
+            (_) async => http.Response.bytes([1], 200),
+          );
+
+          const refImage = ProcessedReferenceImage(
+            base64Data: 'dGVzdA==',
+            mimeType: 'image/png',
+            originalId: 'ref-1',
+          );
+
+          await repository.generateImage(
+            prompt: 'A sunset over mountains',
+            model: 'wan2.6-image',
+            provider: provider,
+            referenceImages: [refImage],
+          );
+
+          final body =
+              jsonDecode(capturedRequest!.body) as Map<String, dynamic>;
+          final input = body['input'] as Map<String, dynamic>;
+          final messages = input['messages'] as List<dynamic>;
+          final content =
+              (messages[0] as Map<String, dynamic>)['content'] as List<dynamic>;
+
+          // Reference image should be first content part
+          expect(content.length, 2);
+          final imagePart = content[0] as Map<String, dynamic>;
+          expect(imagePart['image'], 'data:image/png;base64,dGVzdA==');
+
+          // Text prompt should be second
+          final textPart = content[1] as Map<String, dynamic>;
+          expect(textPart['text'], 'A sunset over mountains');
+        });
+
+        test('omits reference image when none provided', () async {
+          final provider = createProvider();
+          const imageUrl =
+              'https://dashscope-result.oss.aliyuncs.com/image.png';
+          final sseBody = buildSseResponse([imageEvent(imageUrl)]);
+
+          http.Request? capturedRequest;
+          when(() => mockHttpClient.send(any())).thenAnswer((invocation) async {
+            capturedRequest = invocation.positionalArguments[0] as http.Request;
+            return createStreamedResponse(sseBody);
+          });
+
+          when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
+            (_) async => http.Response.bytes([1], 200),
+          );
+
+          await repository.generateImage(
+            prompt: 'A sunset',
+            model: 'wan2.6-image',
+            provider: provider,
+          );
+
+          final body =
+              jsonDecode(capturedRequest!.body) as Map<String, dynamic>;
+          final input = body['input'] as Map<String, dynamic>;
+          final messages = input['messages'] as List<dynamic>;
+          final content =
+              (messages[0] as Map<String, dynamic>)['content'] as List<dynamic>;
+
+          // Only text prompt, no image
+          expect(content.length, 1);
+          expect((content[0] as Map<String, dynamic>)['text'], 'A sunset');
         });
 
         test('parses MIME type from content-type header', () async {
@@ -781,6 +861,36 @@ void main() {
         expect(
           capturedRequest!.url.toString(),
           startsWith('https://dashscope-intl.aliyuncs.com/api/v1/'),
+        );
+      });
+
+      test('preserves custom port from base URL', () async {
+        final provider = createProvider(
+          baseUrl: 'https://proxy.example.com:8443/compatible-mode/v1',
+        );
+        const imageUrl = 'https://dashscope-result.oss.aliyuncs.com/image.png';
+        final sseBody = buildSseResponse([imageEvent(imageUrl)]);
+
+        http.BaseRequest? capturedRequest;
+        when(() => mockHttpClient.send(any())).thenAnswer((invocation) async {
+          capturedRequest =
+              invocation.positionalArguments[0] as http.BaseRequest;
+          return createStreamedResponse(sseBody);
+        });
+
+        when(() => mockHttpClient.get(Uri.parse(imageUrl))).thenAnswer(
+          (_) async => http.Response.bytes([1], 200),
+        );
+
+        await repository.generateImage(
+          prompt: 'test',
+          model: 'wan2.6-image',
+          provider: provider,
+        );
+
+        expect(
+          capturedRequest!.url.toString(),
+          startsWith('https://proxy.example.com:8443/api/v1/'),
         );
       });
     });
