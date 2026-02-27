@@ -56,10 +56,8 @@ MockSyncDatabase _prepareMock({
 }) {
   final mock = mockSyncDatabaseWithCount(count);
 
-  if (volumeData.isNotEmpty) {
-    when(() => mock.getDailyOutboxVolume(days: 30))
-        .thenAnswer((_) async => volumeData);
-  }
+  when(() => mock.getDailyOutboxVolume(days: 30))
+      .thenAnswer((_) async => volumeData);
 
   if (itemStream != null) {
     when(() => mock.watchOutboxItems(limit: any(named: 'limit')))
@@ -283,10 +281,15 @@ void main() {
               ),
             ],
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
 
           expect(find.byType(TimeSeriesBarChart), findsNothing);
-          expect(find.textContaining('Volume query failed'), findsOneWidget);
+          // The raw exception message should not be displayed
+          expect(find.textContaining('Volume query failed'), findsNothing);
+          // Generic error text is shown (from OutboxVolumeChart) alongside
+          // the "Error" filter tab label
+          expect(find.text('Error'), findsWidgets);
         },
       );
 

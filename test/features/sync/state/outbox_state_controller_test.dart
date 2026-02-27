@@ -12,6 +12,15 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
+/// Stubs [MockSyncDatabase.getDailyOutboxVolume] with the given [volumes].
+void _stubDailyVolumes(
+  MockSyncDatabase mock, {
+  required List<OutboxDailyVolume> volumes,
+}) {
+  when(() => mock.getDailyOutboxVolume(days: 30))
+      .thenAnswer((_) async => volumes);
+}
+
 void main() {
   group('OutboxStateController', () {
     late MockJournalDb mockDb;
@@ -286,8 +295,7 @@ void main() {
           ),
         ];
 
-        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
-            .thenAnswer((_) async => volumes);
+        _stubDailyVolumes(mockSyncDb, volumes: volumes);
 
         final result = await container.read(outboxDailyVolumeProvider.future);
 
@@ -305,8 +313,7 @@ void main() {
           ),
         ];
 
-        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
-            .thenAnswer((_) async => volumes);
+        _stubDailyVolumes(mockSyncDb, volumes: volumes);
 
         final result = await container.read(outboxDailyVolumeProvider.future);
 
@@ -316,8 +323,7 @@ void main() {
       });
 
       test('returns empty list when no volume data', () async {
-        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
-            .thenAnswer((_) async => <OutboxDailyVolume>[]);
+        _stubDailyVolumes(mockSyncDb, volumes: <OutboxDailyVolume>[]);
 
         final result = await container.read(outboxDailyVolumeProvider.future);
 
@@ -333,8 +339,7 @@ void main() {
           ),
         ];
 
-        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
-            .thenAnswer((_) async => volumes);
+        _stubDailyVolumes(mockSyncDb, volumes: volumes);
 
         final result = await container.read(outboxDailyVolumeProvider.future);
 

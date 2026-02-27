@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Displays a bar chart of daily outbox sync volume (in KB) over the last
@@ -19,13 +21,20 @@ class OutboxVolumeChart extends ConsumerWidget {
         height: 200,
         child: Center(child: CircularProgressIndicator.adaptive()),
       ),
-      error: (error, _) => Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        child: Text(
-          error.toString(),
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-        ),
-      ),
+      error: (error, stackTrace) {
+        getIt<LoggingService>().captureException(
+          error,
+          domain: 'OutboxVolumeChart',
+          stackTrace: stackTrace,
+        );
+        return Padding(
+          padding: const EdgeInsets.all(AppTheme.spacingLarge),
+          child: Text(
+            context.messages.commonError,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        );
+      },
       data: (observations) {
         if (observations.isEmpty) {
           return const SizedBox.shrink();
@@ -40,8 +49,7 @@ class OutboxVolumeChart extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: AppTheme.spacingLarge,
+              padding: const EdgeInsets.only(
                 top: AppTheme.spacingLarge,
                 bottom: AppTheme.spacingSmall,
               ),

@@ -12,6 +12,8 @@ import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
 
+import '../../../../widget_test_utils.dart';
+
 // ---------------------------------------------------------------------------
 // Shared test helpers
 // ---------------------------------------------------------------------------
@@ -130,14 +132,12 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() async {
-    await getIt.reset();
-    getIt.registerSingleton<UserActivityService>(UserActivityService());
-  });
-
-  tearDown(() async {
-    await getIt.reset();
-  });
+  setUp(() => setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<UserActivityService>(UserActivityService());
+        },
+      ));
+  tearDown(tearDownTestGetIt);
 
   group('SyncListScaffold', () {
     testWidgets(
@@ -187,7 +187,8 @@ void main() {
         expect(find.text('Error item'), findsOneWidget);
 
         await tester.tap(find.byKey(const ValueKey('syncFilter-error')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         final errorSummary = l10n.syncListCountSummary(
           _formattedLabel(
