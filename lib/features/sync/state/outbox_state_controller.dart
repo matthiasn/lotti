@@ -1,5 +1,7 @@
+import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'outbox_state_controller.g.dart';
@@ -37,4 +39,13 @@ Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
 Stream<int> outboxPendingCount(Ref ref) {
   final syncDb = ref.watch(syncDatabaseProvider);
   return syncDb.watchOutboxCount();
+}
+
+/// Future provider for daily outbox volume over the last 30 days.
+/// Maps [OutboxDailyVolume] entries to [Observation]s with KB values.
+@riverpod
+Future<List<Observation>> outboxDailyVolume(Ref ref) async {
+  final syncDb = ref.watch(syncDatabaseProvider);
+  final volumes = await syncDb.getDailyOutboxVolume(days: 30);
+  return volumes.map((v) => Observation(v.date, v.totalBytes / 1024)).toList();
 }

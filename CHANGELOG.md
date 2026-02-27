@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for each outbox item and displays it in the outbox monitor list.
 - Daily outbox volume aggregation query with configurable time window.
 - Database migration (sync DB schema v5) adding `payload_size` column to outbox table.
+- Daily sync volume bar chart on the Outbox Monitor page showing 30 days of
+  outbox throughput in KB.
+- `headerSliver` slot on `SyncListScaffold` for inserting content between the
+  filter header and the list.
 
 ## [0.9.875] - 2026-02-27
 ### Fixed

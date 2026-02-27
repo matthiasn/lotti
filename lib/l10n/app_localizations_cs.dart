@@ -2718,6 +2718,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get outboxMonitorSwitchLabel => 'povoleno';
 
   @override
+  String get outboxMonitorVolumeChartTitle => 'Denní objem synchronizace';
+
+  @override
   String get privateLabel => 'Soukromé';
 
   @override

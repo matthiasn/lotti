@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
+import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -157,6 +158,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       title: context.messages.settingsSyncOutboxTitle,
       subtitle: context.messages.settingsAdvancedOutboxSubtitle,
       stream: _stream,
+      headerSliver: const OutboxVolumeChart(),
       filters: filters,
       initialFilter: _OutboxListFilter.pending,
       emptyIcon: Icons.inbox_rounded,

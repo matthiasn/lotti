@@ -2794,6 +2794,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get outboxMonitorSwitchLabel => 'activé';
 
   @override
+  String get outboxMonitorVolumeChartTitle =>
+      'Volume de synchronisation quotidien';
+
+  @override
   String get privateLabel => 'Privé';
 
   @override

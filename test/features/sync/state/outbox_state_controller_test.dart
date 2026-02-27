@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -266,6 +268,77 @@ void main() {
 
         final state = container.read(outboxPendingCountProvider);
         expect(state.hasError, isTrue);
+      });
+    });
+
+    group('outboxDailyVolumeProvider', () {
+      test('maps OutboxDailyVolume to Observation with KB values', () async {
+        final volumes = [
+          OutboxDailyVolume(
+            date: DateTime(2024, 3, 15),
+            totalBytes: 1024,
+            itemCount: 2,
+          ),
+          OutboxDailyVolume(
+            date: DateTime(2024, 3, 16),
+            totalBytes: 2048,
+            itemCount: 5,
+          ),
+        ];
+
+        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
+            .thenAnswer((_) async => volumes);
+
+        final result = await container.read(outboxDailyVolumeProvider.future);
+
+        expect(result, hasLength(2));
+        expect(result[0], Observation(DateTime(2024, 3, 15), 1));
+        expect(result[1], Observation(DateTime(2024, 3, 16), 2));
+      });
+
+      test('converts bytes to KB correctly', () async {
+        final volumes = [
+          OutboxDailyVolume(
+            date: DateTime(2024, 3, 15),
+            totalBytes: 5120,
+            itemCount: 1,
+          ),
+        ];
+
+        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
+            .thenAnswer((_) async => volumes);
+
+        final result = await container.read(outboxDailyVolumeProvider.future);
+
+        expect(result, hasLength(1));
+        expect(result[0].value, 5);
+        expect(result[0].dateTime, DateTime(2024, 3, 15));
+      });
+
+      test('returns empty list when no volume data', () async {
+        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
+            .thenAnswer((_) async => <OutboxDailyVolume>[]);
+
+        final result = await container.read(outboxDailyVolumeProvider.future);
+
+        expect(result, isEmpty);
+      });
+
+      test('handles fractional KB values', () async {
+        final volumes = [
+          OutboxDailyVolume(
+            date: DateTime(2024, 3, 15),
+            totalBytes: 512,
+            itemCount: 1,
+          ),
+        ];
+
+        when(() => mockSyncDb.getDailyOutboxVolume(days: 30))
+            .thenAnswer((_) async => volumes);
+
+        final result = await container.read(outboxDailyVolumeProvider.future);
+
+        expect(result[0].value, 0.5);
       });
     });
 

@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.876" date="2026-02-27">
       <description>
-          <p>Outbox payload size tracking: records total payload size (JSON message + file attachment bytes) for each outbox item, displays size in the outbox monitor, and adds daily volume aggregation for sync analytics.</p>
+          <p>Outbox payload size tracking: records total payload size (JSON message + file attachment bytes) for each outbox item, displays size in the outbox monitor, adds daily volume aggregation for sync analytics, and visualizes 30-day outbox throughput in a bar chart.</p>
       </description>
     </release>
     <release version="0.9.875" date="2026-02-27">

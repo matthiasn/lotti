@@ -68,6 +68,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     this.emptyDescriptionBuilder,
     this.initialFilter,
     this.listPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+    this.headerSliver,
     this.listKey,
     this.backButton = true,
     super.key,
@@ -110,6 +111,9 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
 
   /// Optional key applied to the list view.
   final Key? listKey;
+
+  /// Optional widget inserted as a sliver between the header and list content.
+  final Widget? headerSliver;
 
   /// Whether to display the back button in the `SliverTitleBar`.
   final bool backButton;
@@ -285,6 +289,16 @@ class _SyncListScaffoldState<T, F extends Enum>
                     showBackButton: widget.backButton,
                     bottom: headerBottom,
                   ),
+                  if (widget.headerSliver != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          start: effectivePadding.start,
+                          end: effectivePadding.end,
+                        ),
+                        child: widget.headerSliver,
+                      ),
+                    ),
                   if (!hasData)
                     const SliverFillRemaining(
                       hasScrollBody: false,

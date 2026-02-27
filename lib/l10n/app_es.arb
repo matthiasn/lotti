@@ -1162,6 +1162,7 @@
   "outboxMonitorRetryQueued": "Reintento programado",
   "outboxMonitorSubjectLabel": "Asunto",
   "outboxMonitorSwitchLabel": "habilitado",
+  "outboxMonitorVolumeChartTitle": "Volumen de sincronización diario",
   "privateLabel": "Privado",
   "promptAddOrRemoveModelsButton": "Añadir o eliminar modelos",
   "promptAddPageTitle": "Añadir prompt",

@@ -469,6 +469,9 @@ Key helpers:
   its own on/off toggle. The global Matrix sync flag governs enablement.
 - Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,
   segmented filters, payload metadata, and confirmation-backed retry actions.
+- Outbox Monitor includes a 30-day daily sync volume bar chart
+  (`OutboxVolumeChart`) rendered via the `headerSliver` slot, powered by
+  `outboxDailyVolumeProvider` which maps `OutboxDailyVolume` entries to KB.
 - Matrix Stats is a full page under `/settings/sync/stats`, rendered in a
   styled card with a large, subtle loading indicator.
 - Advanced Settings no longer contains Matrix/Outbox/Conflicts tiles; those

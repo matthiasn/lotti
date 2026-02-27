@@ -1279,6 +1279,7 @@
   "outboxMonitorRetryQueued": "Retry scheduled",
   "outboxMonitorSubjectLabel": "Subject",
   "outboxMonitorSwitchLabel": "enabled",
+  "outboxMonitorVolumeChartTitle": "Daily sync volume",
   "privateLabel": "Private",
   "promptAddOrRemoveModelsButton": "Add or Remove Models",
   "promptAddPageTitle": "Add Prompt",

@@ -2744,6 +2744,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxMonitorSwitchLabel => 'pornit';
 
   @override
+  String get outboxMonitorVolumeChartTitle => 'Volum de sincronizare zilnic';
+
+  @override
   String get privateLabel => 'Privat';
 
   @override
