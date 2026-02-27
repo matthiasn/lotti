@@ -785,6 +785,9 @@ SELECT * FROM journal
 linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
+parentLinkedEntityIds:
+SELECT from_id FROM linked_entries WHERE to_id = :to_id;
+
 linksFromId:
 SELECT * FROM linked_entries
   WHERE from_id = :from_id

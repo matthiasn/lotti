@@ -1778,8 +1778,8 @@ void main() {
 
     group('deferred drain via throttle timer', () {
       test(
-          'throttle deferred drain picks up work that arrived during '
-          'throttle window', () {
+          'notification during post-execution throttle enqueues for '
+          'deferred drain', () {
         fakeAsync((async) {
           var executionCount = 0;
 
@@ -1806,8 +1806,9 @@ void main() {
           emitAndDrain(async, controller, {'entity-1'});
           expect(executionCount, 1);
 
-          // Agent is now throttled (post-execution throttle). A second
-          // notification merges tokens into the throttle window.
+          // Agent is now throttled (post-execution throttle). An external
+          // notification arrives — no queued job to merge into, so a new
+          // job is enqueued for the deferred drain.
           emitTokens(async, controller, {'entity-1'});
 
           // Advance past the post-execution throttle to fire deferred drain.
@@ -1815,7 +1816,7 @@ void main() {
             ..elapse(WakeOrchestrator.throttleWindow)
             ..flushMicrotasks();
 
-          // The deferred job should now have been processed.
+          // Second execution — the external change triggers a follow-up wake.
           expect(executionCount, 2);
 
           controller.close();

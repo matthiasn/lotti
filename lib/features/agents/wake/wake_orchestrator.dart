@@ -69,7 +69,6 @@ class WakeOrchestrator {
     required this.queue,
     required this.runner,
     this.wakeExecutor,
-    this.onAgentStateChanged,
   });
 
   final AgentRepository repository;
@@ -81,10 +80,14 @@ class WakeOrchestrator {
   /// after acquiring the run lock and persisting the wake-run entry.
   WakeExecutor? wakeExecutor;
 
-  /// Called after the orchestrator persists a change to an agent's state
-  /// (e.g. `nextWakeAt`). This allows the UI layer to be notified even
-  /// though the write bypasses the main notification stream.
-  void Function(String agentId)? onAgentStateChanged;
+  /// Emits the agentId whenever the orchestrator persists a throttle state
+  /// change (set or clear `nextWakeAt`). UI providers can watch this to
+  /// refresh the countdown without going through the shared notification
+  /// stream (which the orchestrator itself listens to).
+  final _stateChangedController = StreamController<String>.broadcast();
+
+  /// Stream of agentIds whose persisted throttle state changed.
+  Stream<String> get stateChanged => _stateChangedController.stream;
 
   final _subscriptions = <AgentSubscription>[];
 
@@ -268,7 +271,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
         );
-        onAgentStateChanged?.call(agentId);
+        _stateChangedController.add(agentId);
       }
     } catch (e) {
       developer.log(
@@ -322,7 +325,7 @@ class WakeOrchestrator {
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
         );
-        onAgentStateChanged?.call(agentId);
+        _stateChangedController.add(agentId);
       }
     } catch (e) {
       developer.log(
@@ -402,6 +405,7 @@ class WakeOrchestrator {
     _deferredDrainTimers.clear();
     await _notificationSub?.cancel();
     _notificationSub = null;
+    unawaited(_stateChangedController.close());
   }
 
   /// Starts a periodic safety-net timer that ensures the queue is eventually
@@ -503,9 +507,8 @@ class WakeOrchestrator {
         name: 'WakeOrchestrator',
       );
 
-      // 2. Apply self-notification suppression.
-      final suppressed = _isSuppressed(sub.agentId, matched);
-      if (suppressed) {
+      // 2. Apply post-execution self-notification suppression.
+      if (_isSuppressed(sub.agentId, matched)) {
         developer.log(
           'Suppressed self-notification for ${sub.agentId}',
           name: 'WakeOrchestrator',
@@ -513,21 +516,20 @@ class WakeOrchestrator {
         continue;
       }
 
-      // 3. Throttle gate: when the agent is already throttled, attempt to
-      //    merge the new tokens into the queued job so they are processed
-      //    when the deferred drain fires. If no job exists yet (e.g. the
-      //    previous one was already dequeued), enqueue a fresh one.
-      if (_isThrottled(sub.agentId)) {
-        final deadline = _throttleDeadlines[sub.agentId];
-        developer.log(
-          'Agent ${sub.agentId} throttled until $deadline — '
-          'merging/enqueuing tokens for deferred drain',
-          name: 'WakeOrchestrator',
-        );
-        if (!queue.mergeTokens(sub.agentId, matched)) {
+      // 3. During-execution gate: when the agent is actively executing,
+      //    silently queue the notification for the drain re-check instead
+      //    of going through the throttle/defer path. The drain re-check
+      //    uses _isPreRegisteredSuppressed (with actual subscription IDs)
+      //    and _isSuppressed (with actual mutation records) to distinguish
+      //    the agent's own writes from legitimate external changes.
+      //    This avoids creating spurious countdown timers and prevents
+      //    the double-run race where the safety-net dequeues a job during
+      //    its async gap.
+      if (runner.isRunning(sub.agentId)) {
+        final merged = queue.mergeTokens(sub.agentId, matched);
+        if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
           _wakeCounters[sub.agentId] = counter + 1;
-          final now = clock.now();
           queue.enqueue(
             WakeJob(
               runKey: RunKeyFactory.forSubscription(
@@ -535,24 +537,44 @@ class WakeOrchestrator {
                 subscriptionId: sub.id,
                 batchTokens: matched,
                 wakeCounter: counter,
-                timestamp: now,
+                timestamp: clock.now(),
               ),
               agentId: sub.agentId,
               reason: WakeReason.subscription.name,
               triggerTokens: Set<String>.from(matched),
               reasonId: sub.id,
-              createdAt: now,
+              createdAt: clock.now(),
             ),
           );
         }
+        developer.log(
+          'Agent ${sub.agentId} executing — '
+          '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'}',
+          name: 'WakeOrchestrator',
+        );
         continue;
       }
 
-      // 4. Apply optional fine-grained predicate.
+      // 4. Throttle gate: when the agent is throttled (but not executing),
+      //    merge tokens into the queued job or enqueue a new one so the
+      //    deferred drain timer can pick it up.
+      if (_isThrottled(sub.agentId)) {
+        final deadline = _throttleDeadlines[sub.agentId];
+        final merged = queue.mergeTokens(sub.agentId, matched);
+        developer.log(
+          'Agent ${sub.agentId} throttled until $deadline — '
+          '${merged ? 'merged tokens' : 'enqueuing for deferred drain'}',
+          name: 'WakeOrchestrator',
+        );
+        if (merged) continue;
+        // Fall through to enqueue a new job for the deferred drain.
+      }
+
+      // 5. Apply optional fine-grained predicate.
       final predicate = sub.predicate;
       if (predicate != null && !predicate(matched)) continue;
 
-      // 5. Derive a deterministic run key and enqueue.
+      // 6. Derive a deterministic run key and enqueue.
       final counter = _wakeCounters[sub.agentId] ?? 0;
       _wakeCounters[sub.agentId] = counter + 1;
 
@@ -620,18 +642,17 @@ class WakeOrchestrator {
   /// execution starts).
   ///
   /// Only used during the drain re-check, NOT during `_onBatch`.
+  ///
+  /// No TTL — the suppression is explicitly cleared in [_executeJob] after
+  /// the executor returns (both success and failure paths). Using a TTL would
+  /// cause the suppression to expire mid-execution for long-running agents,
+  /// allowing their own writes to trigger spurious follow-up wakes.
   bool _isPreRegisteredSuppressed(
     String agentId,
     Set<String> matchedTokens,
   ) {
     final record = _preRegisteredSuppression[agentId];
     if (record == null || record.entityIds.isEmpty) return false;
-
-    final elapsed = clock.now().difference(record.recordedAt);
-    if (elapsed > _suppressionTtl) {
-      _preRegisteredSuppression.remove(agentId);
-      return false;
-    }
 
     return matchedTokens.every(record.entityIds.contains);
   }

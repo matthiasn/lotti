@@ -18,6 +18,7 @@ environment:
   sdk: '>=3.0.1 <4.0.0'
 
 dependencies:
+  async: ^2.13.0
   beamer: ^1.5.2
   cached_network_image: ^3.2.0
   calendar_view: ^1.2.0
@@ -140,7 +141,6 @@ dependency_overrides:
 dev_dependencies:
   arb_utils: ^0.10.1
   archive: ^4.0.7
-  async: any
   build_runner: ^2.5.4
   cross_file: any
   custom_lint: ^0.8.0

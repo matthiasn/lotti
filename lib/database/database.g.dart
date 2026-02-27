@@ -6576,6 +6576,16 @@ abstract class _$JournalDb extends GeneratedDatabase {
         }).map((QueryRow row) => row.read<String>('to_id'));
   }
 
+  Selectable<String> parentLinkedEntityIds(String toId) {
+    return customSelect('SELECT from_id FROM linked_entries WHERE to_id = ?1',
+        variables: [
+          Variable<String>(toId)
+        ],
+        readsFrom: {
+          linkedEntries,
+        }).map((QueryRow row) => row.read<String>('from_id'));
+  }
+
   Selectable<LinkedDbEntry> linksFromId(String fromId, List<bool?> hidden) {
     var $arrayStartIndex = 2;
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);

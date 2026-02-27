@@ -415,7 +415,7 @@ final class AgentUpdateStreamProvider extends $FunctionalProvider<
   }
 }
 
-String _$agentUpdateStreamHash() => r'b2ad428362e088c14beb6e64ff9b9dc5745ef8f4';
+String _$agentUpdateStreamHash() => r'e3bfb705740bff6560f2667ed721fc46546f3dea';
 
 /// Stream that emits when a specific agent's data changes (from sync or local
 /// wake). Detail providers watch this to self-invalidate.
@@ -1125,8 +1125,7 @@ final class TemplateForAgentFamily extends $Family
 ///
 /// Looks up the wake run by [threadId] (which equals the run key), then
 /// resolves the template version to read the `modelId` that was configured
-/// when that version was created.  Falls back to the live template's model
-/// if the version has no recorded `modelId` (pre-existing data).
+/// when that version was created.
 
 @ProviderFor(modelIdForThread)
 final modelIdForThreadProvider = ModelIdForThreadFamily._();
@@ -1135,8 +1134,7 @@ final modelIdForThreadProvider = ModelIdForThreadFamily._();
 ///
 /// Looks up the wake run by [threadId] (which equals the run key), then
 /// resolves the template version to read the `modelId` that was configured
-/// when that version was created.  Falls back to the live template's model
-/// if the version has no recorded `modelId` (pre-existing data).
+/// when that version was created.
 
 final class ModelIdForThreadProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
@@ -1145,8 +1143,7 @@ final class ModelIdForThreadProvider
   ///
   /// Looks up the wake run by [threadId] (which equals the run key), then
   /// resolves the template version to read the `modelId` that was configured
-  /// when that version was created.  Falls back to the live template's model
-  /// if the version has no recorded `modelId` (pre-existing data).
+  /// when that version was created.
   ModelIdForThreadProvider._(
       {required ModelIdForThreadFamily super.from,
       required (
@@ -1201,14 +1198,13 @@ final class ModelIdForThreadProvider
   }
 }
 
-String _$modelIdForThreadHash() => r'ca1580caadf3c0cb623529dcbd7dacfc0a2b7fb6';
+String _$modelIdForThreadHash() => r'486d16169ec92f86045907fc9c4a6c564009b17d';
 
 /// Resolve the model ID used for a specific wake thread.
 ///
 /// Looks up the wake run by [threadId] (which equals the run key), then
 /// resolves the template version to read the `modelId` that was configured
-/// when that version was created.  Falls back to the live template's model
-/// if the version has no recorded `modelId` (pre-existing data).
+/// when that version was created.
 
 final class ModelIdForThreadFamily extends $Family
     with
@@ -1231,8 +1227,7 @@ final class ModelIdForThreadFamily extends $Family
   ///
   /// Looks up the wake run by [threadId] (which equals the run key), then
   /// resolves the template version to read the `modelId` that was configured
-  /// when that version was created.  Falls back to the live template's model
-  /// if the version has no recorded `modelId` (pre-existing data).
+  /// when that version was created.
 
   ModelIdForThreadProvider call(
     String agentId,
