@@ -570,6 +570,13 @@ void _wireWakeExecutor(
       threadId: threadId,
     );
 
+    // Propagate workflow-level failures to the orchestrator by throwing.
+    // WakeOrchestrator converts executor exceptions into failed wake-run
+    // status, ensuring run-log accuracy.
+    if (!result.success) {
+      throw StateError(result.error ?? 'Task agent wake failed');
+    }
+
     // Notify the update stream so all detail providers self-invalidate.
     getIt<UpdateNotifications>().notify({agentId, agentNotification});
 

@@ -7,6 +7,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -217,6 +218,9 @@ void main() {
     when(
       () => mockAgentRepository.updateWakeRunTemplate(any(), any(), any()),
     ).thenAnswer((_) async {});
+    when(
+      () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
+    ).thenAnswer((_) async => <AgentLink>[]);
 
     // Default template stubs — tests that need different behavior override.
     when(() => mockTemplateService.getTemplateForAgent(agentId))
@@ -1189,14 +1193,41 @@ void main() {
         expect(message, contains('(no content)'));
       });
 
-      test('includes linked tasks when non-empty', () async {
+      test(
+          'includes linked tasks and uses linked task-agent report instead of summary',
+          () async {
+        final linkedReport = AgentDomainEntity.agentReport(
+          id: 'linked-report-1',
+          agentId: 'linked-agent-1',
+          scope: 'current',
+          createdAt: DateTime(2024, 6, 14, 8),
+          vectorClock: null,
+          content: '## Linked Agent Report\nFrom task agent.',
+        ) as AgentReportEntity;
+        final link = AgentLink.agentTask(
+          id: 'link-1',
+          fromId: 'linked-agent-1',
+          toId: 't2',
+          createdAt: DateTime(2024, 6, 14),
+          updatedAt: DateTime(2024, 6, 14),
+          vectorClock: null,
+        );
+        when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
+            .thenAnswer((_) async => [link]);
+        when(() => mockAgentRepository.getLatestReport(
+            'linked-agent-1', 'current')).thenAnswer((_) async => linkedReport);
+
         final message = await executeAndCaptureMessage(
-          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
+              '"latestSummary":"Legacy summary"}]}',
         );
 
         expect(message, isNotNull);
         expect(message, contains('## Linked Tasks'));
         expect(message, contains('Related'));
+        expect(message, contains('latestTaskAgentReport'));
+        expect(message, contains('From task agent.'));
+        expect(message, isNot(contains('latestSummary')));
       });
 
       test('omits linked tasks section when empty', () async {

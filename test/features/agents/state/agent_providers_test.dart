@@ -1143,6 +1143,68 @@ void main() {
     );
 
     test(
+      'wakeExecutor throws when workflow returns unsuccessful result',
+      () async {
+        final identity = makeTestIdentity();
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => const WakeResult(
+            success: false,
+            error: 'workflow failed',
+          ),
+        );
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+        await expectLater(
+          capturedExecutor!(
+            kTestAgentId,
+            'run-key-fail',
+            {'tok-fail'},
+            'thread-fail',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'workflow failed',
+            ),
+          ),
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verifyNever(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        );
+      },
+    );
+
+    test(
       'wakeExecutor fires update notification after successful execution',
       () async {
         final identity = makeTestIdentity();
