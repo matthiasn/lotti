@@ -451,6 +451,113 @@ void main() {
     });
   });
 
+  group('AgentDbConversions — wakeTokenUsage entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-001',
+        agentId: agentId,
+        runKey: 'run-001',
+        threadId: 'thread-001',
+        modelId: 'models/gemini-3.1-pro',
+        templateId: 'tpl-001',
+        templateVersionId: 'ver-001',
+        inputTokens: 1000,
+        outputTokens: 500,
+        thoughtsTokens: 200,
+        cachedInputTokens: 300,
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('usage-001'));
+      expect(companion.agentId, const Value(agentId));
+      expect(companion.type, const Value('wakeTokenUsage'));
+      // No subtype for wakeTokenUsage.
+      expect(companion.subtype, const Value<String?>.absent());
+      expect(companion.threadId, const Value('thread-001'));
+      expect(companion.createdAt, Value(createdAt));
+      // Immutable — updatedAt = createdAt.
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('fromEntityRow roundtrips wakeTokenUsage variant', () {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-002',
+        agentId: agentId,
+        runKey: 'run-002',
+        threadId: 'thread-002',
+        modelId: 'models/gemini-3.1-flash',
+        templateId: 'tpl-002',
+        templateVersionId: 'ver-003',
+        inputTokens: 2000,
+        outputTokens: 800,
+        thoughtsTokens: 150,
+        cachedInputTokens: 500,
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'usage-002',
+        agentId: agentId,
+        type: 'wakeTokenUsage',
+        threadId: 'thread-002',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<WakeTokenUsageEntity>());
+      final usage = result as WakeTokenUsageEntity;
+      expect(usage.runKey, 'run-002');
+      expect(usage.modelId, 'models/gemini-3.1-flash');
+      expect(usage.templateId, 'tpl-002');
+      expect(usage.templateVersionId, 'ver-003');
+      expect(usage.inputTokens, 2000);
+      expect(usage.outputTokens, 800);
+      expect(usage.thoughtsTokens, 150);
+      expect(usage.cachedInputTokens, 500);
+    });
+
+    test('roundtrips with null optional fields', () {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-003',
+        agentId: agentId,
+        runKey: 'run-003',
+        threadId: 'thread-003',
+        modelId: 'models/gemini-3.1-pro',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'usage-003',
+        agentId: agentId,
+        type: 'wakeTokenUsage',
+        threadId: 'thread-003',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<WakeTokenUsageEntity>());
+      final usage = result as WakeTokenUsageEntity;
+      expect(usage.templateId, equals(null));
+      expect(usage.inputTokens, equals(null));
+      expect(usage.outputTokens, equals(null));
+      expect(usage.thoughtsTokens, equals(null));
+      expect(usage.cachedInputTokens, equals(null));
+    });
+  });
+
   group('AgentDbConversions.toEntityCompanion — thread_id population', () {
     test('populates threadId for agentMessage entities', () {
       final message = AgentDomainEntity.agentMessage(

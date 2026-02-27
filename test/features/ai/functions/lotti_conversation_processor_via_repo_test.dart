@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -74,7 +75,7 @@ class MockConversationRepository extends ConversationRepository {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
     required String model,
@@ -97,6 +98,7 @@ class MockConversationRepository extends ConversationRepository {
         strategy: strategy,
       );
     }
+    return null;
   }
 }
 

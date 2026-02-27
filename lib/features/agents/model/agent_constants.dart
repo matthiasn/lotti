@@ -24,6 +24,7 @@ abstract final class AgentEntityTypes {
   static const agentTemplate = 'agentTemplate';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';
+  static const wakeTokenUsage = 'wakeTokenUsage';
 }
 
 abstract final class AgentReportScopes {

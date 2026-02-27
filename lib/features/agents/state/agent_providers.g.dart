@@ -1755,7 +1755,7 @@ final class AgentRecentMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentRecentMessagesHash() =>
-    r'e2f7d7c0351250705af48635b57b674fdefb7721';
+    r'80b0b758f267eba8aba8bf2597338c4547cdf71e';
 
 /// Fetch recent messages for an agent by [agentId].
 ///
@@ -1964,7 +1964,7 @@ final class AgentMessagesByThreadProvider extends $FunctionalProvider<
 }
 
 String _$agentMessagesByThreadHash() =>
-    r'391b4396f7dce55356e51185d5e112580acc23f1';
+    r'61afa9ccae181277496e1c17a9e3af536d49a3ef';
 
 /// Fetch recent messages grouped by thread ID for an agent.
 ///
@@ -2073,7 +2073,7 @@ final class AgentObservationMessagesProvider extends $FunctionalProvider<
 }
 
 String _$agentObservationMessagesHash() =>
-    r'f6f7cadcd29a155a6ccfe0457ab02a1b3648c67d';
+    r'09bbd3427f7387fb44d098430be0ba3d7e654d12';
 
 /// Fetch recent observation messages for an agent by [agentId].
 ///
@@ -2177,7 +2177,7 @@ final class AgentReportHistoryProvider extends $FunctionalProvider<
 }
 
 String _$agentReportHistoryHash() =>
-    r'95dd6cf095f3d23687d372dc216cb29c4062845f';
+    r'0819f2713626430d6116a56bd898f91adae882ea';
 
 /// Fetch all report snapshots for an agent by [agentId], most-recent first.
 ///
@@ -2601,7 +2601,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'4e523ddb904093dc073b153f27b361d0e992d05b';
+String _$taskAgentWorkflowHash() => r'3b7eaf13a1a94f39d9ee177e5866eb67f2900c32';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

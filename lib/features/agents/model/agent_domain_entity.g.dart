@@ -559,6 +559,50 @@ const _$ChangeDecisionVerdictEnumMap = {
   ChangeDecisionVerdict.deferred: 'deferred',
 };
 
+WakeTokenUsageEntity _$WakeTokenUsageEntityFromJson(
+        Map<String, dynamic> json) =>
+    WakeTokenUsageEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      runKey: json['runKey'] as String,
+      threadId: json['threadId'] as String,
+      modelId: json['modelId'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      templateId: json['templateId'] as String?,
+      templateVersionId: json['templateVersionId'] as String?,
+      inputTokens: (json['inputTokens'] as num?)?.toInt(),
+      outputTokens: (json['outputTokens'] as num?)?.toInt(),
+      thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
+      cachedInputTokens: (json['cachedInputTokens'] as num?)?.toInt(),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$WakeTokenUsageEntityToJson(
+        WakeTokenUsageEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'runKey': instance.runKey,
+      'threadId': instance.threadId,
+      'modelId': instance.modelId,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'templateId': instance.templateId,
+      'templateVersionId': instance.templateVersionId,
+      'inputTokens': instance.inputTokens,
+      'outputTokens': instance.outputTokens,
+      'thoughtsTokens': instance.thoughtsTokens,
+      'cachedInputTokens': instance.cachedInputTokens,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,

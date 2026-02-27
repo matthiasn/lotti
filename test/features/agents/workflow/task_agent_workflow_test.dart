@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -40,7 +41,7 @@ class MockConversationRepository extends ConversationRepository {
   final List<String> deletedConversationIds = [];
 
   /// Delegate for sendMessage — set in tests to control behavior.
-  Future<void> Function({
+  Future<InferenceUsage?> Function({
     required String conversationId,
     required String message,
     required String model,
@@ -75,7 +76,7 @@ class MockConversationRepository extends ConversationRepository {
   }
 
   @override
-  Future<void> sendMessage({
+  Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
     required String model,
@@ -86,7 +87,7 @@ class MockConversationRepository extends ConversationRepository {
     ConversationStrategy? strategy,
   }) async {
     if (sendMessageDelegate != null) {
-      await sendMessageDelegate!(
+      return sendMessageDelegate!(
         conversationId: conversationId,
         message: message,
         model: model,
@@ -97,6 +98,7 @@ class MockConversationRepository extends ConversationRepository {
         strategy: strategy,
       );
     }
+    return null;
   }
 }
 
@@ -574,6 +576,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -592,6 +595,162 @@ void main() {
         // + state update = 6 total.
         verify(() => mockSyncService.upsertEntity(any()))
             .called(greaterThanOrEqualTo(6));
+      });
+
+      test('persists wakeTokenUsage entity when usage data is returned',
+          () async {
+        // Return non-null usage from sendMessage.
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return const InferenceUsage(
+            inputTokens: 150,
+            outputTokens: 75,
+            thoughtsTokens: 30,
+            cachedInputTokens: 20,
+          );
+        };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        // Verify a wakeTokenUsage entity was persisted.
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, hasLength(1));
+        final entity = tokenUsageEntities.first as WakeTokenUsageEntity;
+        expect(entity.agentId, agentId);
+        expect(entity.runKey, runKey);
+        expect(entity.threadId, threadId);
+        expect(entity.inputTokens, 150);
+        expect(entity.outputTokens, 75);
+        expect(entity.thoughtsTokens, 30);
+        expect(entity.cachedInputTokens, 20);
+      });
+
+      test('does not persist wakeTokenUsage when usage is null', () async {
+        // Default delegate returns null.
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, isEmpty);
+      });
+
+      test('does not persist wakeTokenUsage when usage has no data', () async {
+        // Return an empty usage (hasData == false).
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return InferenceUsage.empty;
+        };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        final captured =
+            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+
+        final tokenUsageEntities = captured
+            .whereType<AgentDomainEntity>()
+            .where(
+              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+            )
+            .toList();
+
+        expect(tokenUsageEntities, isEmpty);
+      });
+
+      test('handles _persistTokenUsage failure gracefully', () async {
+        // Return usage data, but make the sync service throw on wakeTokenUsage.
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          return const InferenceUsage(
+            inputTokens: 100,
+            outputTokens: 50,
+          );
+        };
+
+        // Make upsertEntity throw only for wakeTokenUsage entities.
+        var callCount = 0;
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
+          final entity = inv.positionalArguments[0] as AgentDomainEntity;
+          final isTokenUsage =
+              entity.mapOrNull(wakeTokenUsage: (_) => true) ?? false;
+          if (isTokenUsage) {
+            throw Exception('Sync failed');
+          }
+          callCount++;
+        });
+
+        // Should NOT fail the overall wake despite persistence error.
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        // Other entities (user message, state update, etc.) were still persisted.
+        expect(callCount, greaterThan(0));
       });
 
       test('cleans up conversation in finally block even on success', () async {
@@ -677,6 +836,7 @@ void main() {
                 evolutionNote: (_) => false,
                 changeSet: (_) => false,
                 changeDecision: (_) => false,
+                wakeTokenUsage: (_) => false,
                 unknown: (_) => false,
               ),
             )
@@ -823,6 +983,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -934,6 +1095,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -1020,6 +1182,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         return workflow.execute(
@@ -1137,6 +1300,7 @@ void main() {
           strategy,
         }) async {
           capturedMessage = message;
+          return null;
         };
 
         await workflow.execute(
@@ -1573,6 +1737,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         return workflow.execute(
@@ -2276,6 +2441,7 @@ void main() {
                 manager: mockConversationManager,
               );
             }
+            return null;
           };
 
           final result = await workflow.execute(
@@ -2337,6 +2503,7 @@ void main() {
                 manager: mockConversationManager,
               );
             }
+            return null;
           };
 
           final result = await workflow.execute(
@@ -2414,6 +2581,7 @@ void main() {
               manager: mockConversationManager,
             );
           }
+          return null;
         };
 
         final result = await workflow.execute(

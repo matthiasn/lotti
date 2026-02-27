@@ -134,3 +134,5 @@ getChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AN
 getPendingChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND subtype IN ('pending', 'partiallyResolved') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getRecentDecisionsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeDecision' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+
+getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;

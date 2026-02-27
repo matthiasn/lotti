@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -58,8 +59,11 @@ class ConversationRepository extends _$ConversationRepository {
     return _conversations[conversationId];
   }
 
-  /// Send a message in a conversation
-  Future<void> sendMessage({
+  /// Send a message in a conversation.
+  ///
+  /// Returns the accumulated [InferenceUsage] across all turns, or `null`
+  /// if no usage data was reported by the inference provider.
+  Future<InferenceUsage?> sendMessage({
     required String conversationId,
     required String message,
     required String model,
@@ -80,7 +84,7 @@ class ConversationRepository extends _$ConversationRepository {
     // Check if we can continue
     if (!manager.canContinue()) {
       manager.emitError('Maximum conversation turns reached');
-      return;
+      return null;
     }
 
     // OpenAI GPT-5 models only accept temperature=1.0 (the default).
@@ -92,6 +96,7 @@ class ConversationRepository extends _$ConversationRepository {
 
     // Start conversation loop
     var shouldContinue = true;
+    var accumulated = InferenceUsage.empty;
 
     while (shouldContinue) {
       try {
@@ -124,8 +129,19 @@ class ConversationRepository extends _$ConversationRepository {
         // Use StringBuffer for each tool call to safely accumulate arguments
         // This prevents JSON corruption when chunks are split mid-character or arrive out of order
         final toolCallArgumentBuffers = <String, StringBuffer>{};
+        InferenceUsage? turnUsage;
 
         await for (final response in stream) {
+          // Capture usage from the response (typically on the final chunk).
+          if (response.usage != null) {
+            final u = response.usage!;
+            turnUsage = InferenceUsage(
+              inputTokens: u.promptTokens,
+              outputTokens: u.completionTokens,
+              thoughtsTokens: u.completionTokensDetails?.reasoningTokens,
+              cachedInputTokens: u.promptTokensDetails?.cachedTokens,
+            );
+          }
           if (response.choices?.isNotEmpty ?? false) {
             final delta = response.choices!.first.delta;
 
@@ -238,6 +254,11 @@ class ConversationRepository extends _$ConversationRepository {
           }
         }
 
+        // Accumulate token usage from this turn.
+        if (turnUsage != null) {
+          accumulated = accumulated.merge(turnUsage);
+        }
+
         // Add assistant message
         final content = contentBuffer.toString();
 
@@ -310,6 +331,8 @@ class ConversationRepository extends _$ConversationRepository {
         shouldContinue = false;
       }
     }
+
+    return accumulated.hasData ? accumulated : null;
   }
 
   /// Delete a conversation
