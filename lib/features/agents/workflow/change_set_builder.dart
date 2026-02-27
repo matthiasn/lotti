@@ -145,11 +145,10 @@ class ChangeSetBuilder {
     if (toolName == 'update_checklist_items') {
       return 'update_checklist_item';
     }
-    // Generic fallback: drop trailing 's'.
-    if (toolName.endsWith('s')) {
-      return toolName.substring(0, toolName.length - 1);
-    }
-    return toolName;
+    throw ArgumentError(
+      'Unsupported batch tool for singularization: $toolName. '
+      'Add an explicit mapping above.',
+    );
   }
 
   /// Generate a human-readable summary for a single exploded item.

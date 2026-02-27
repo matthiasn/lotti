@@ -274,11 +274,10 @@ rejecting the title correction on item B.
 
 #### Execution of confirmed batch items
 
-When confirmed items share the same original batch tool, they are
-**re-aggregated** into a single tool call for efficiency. E.g., if the user
-confirms 4 out of 5 checklist items, a single `add_multiple_checklist_items`
-call is made with those 4 items. This avoids N separate API calls while still
-giving the user per-item control.
+Confirmed items are executed individually using the singular tool handler (e.g.,
+`add_checklist_item`). This keeps the execution path simple — each `ChangeItem`
+maps directly to one tool invocation. Re-aggregation into a single batch call
+is a possible future optimization but is not implemented initially.
 
 ### 5.4 Human-Summary Generation
 

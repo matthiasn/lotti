@@ -344,7 +344,11 @@ class AgentRepository {
   /// Fetch pending or partially-resolved change sets for [agentId],
   /// optionally filtered by [taskId].
   ///
-  /// Returns newest-first, capped at [limit].
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
+  /// in Dart because `taskId` lives inside the serialized JSON data column,
+  /// not in a dedicated indexed column. At current volumes (single agent,
+  /// limit ≤ 20) this is adequate; a dedicated column + DB-level filter is
+  /// a future optimization if query counts grow.
   Future<List<ChangeSetEntity>> getPendingChangeSets(
     String agentId, {
     String? taskId,
@@ -364,8 +368,9 @@ class AgentRepository {
   /// Fetch recent change decisions for [agentId], optionally filtered by
   /// [taskId].
   ///
-  /// Returns newest-first, capped at [limit]. Used by the context builder
-  /// to assemble decision history for the agent's system prompt.
+  /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
+  /// in Dart (same rationale as [getPendingChangeSets]). Used by the context
+  /// builder to assemble decision history for the agent's system prompt.
   Future<List<ChangeDecisionEntity>> getRecentDecisions(
     String agentId, {
     String? taskId,
