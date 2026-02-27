@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/linked_task_context_enricher.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -127,6 +128,17 @@ class _NullManagerConversationRepository extends MockConversationRepository {
 
   @override
   ConversationManager? getConversation(String conversationId) => null;
+}
+
+class _ThrowingLinkedTaskContextEnricher extends LinkedTaskContextEnricher {
+  _ThrowingLinkedTaskContextEnricher({
+    required super.agentRepository,
+  });
+
+  @override
+  Future<String> enrich(String jsonString) async {
+    throw Exception('enrichment failed');
+  }
 }
 
 void main() {
@@ -1234,6 +1246,36 @@ void main() {
         expect(message, contains('latestTaskAgentReport'));
         expect(message, contains('From task agent.'));
         expect(message, isNot(contains('latestSummary')));
+      });
+
+      test('falls back to raw linked tasks JSON when enrichment throws',
+          () async {
+        workflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          linkedTaskContextEnricher: _ThrowingLinkedTaskContextEnricher(
+            agentRepository: mockAgentRepository,
+          ),
+        );
+
+        final message = await executeAndCaptureMessage(
+          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
+              '"latestSummary":"Legacy summary"}]}',
+        );
+
+        expect(message, isNotNull);
+        expect(message, contains('## Linked Tasks'));
+        expect(message, contains('latestSummary'));
+        expect(message, contains('Legacy summary'));
       });
 
       test('omits linked tasks section when empty', () async {

@@ -754,8 +754,19 @@ and never shown to the user. They persist as your memory across wakes.
   /// This keeps prompt context aligned with the Agent Capabilities architecture
   /// where task summaries are being phased out in favor of task-agent reports.
   Future<String> _buildLinkedTasksContextJson(String taskId) async {
-    final rawJson = await aiInputRepository.buildLinkedTasksJson(taskId);
-    return linkedTaskContextEnricher.enrich(rawJson);
+    String? rawJson;
+    try {
+      rawJson = await aiInputRepository.buildLinkedTasksJson(taskId);
+      return await linkedTaskContextEnricher.enrich(rawJson);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to enrich linked tasks context for task $taskId: $e',
+        name: 'TaskAgentWorkflow',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return rawJson ?? '{}';
+    }
   }
 
   /// Resolves the text content of an observation message.
