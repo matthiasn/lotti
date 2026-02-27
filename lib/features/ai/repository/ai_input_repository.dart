@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -242,9 +241,7 @@ class AiInputRepository {
   /// Build context for tasks that link TO this task (children/subtasks).
   /// These are tasks where the current task is the target of the link.
   ///
-  /// This method is primarily used internally by [buildLinkedTasksJson].
-  /// It is exposed for testing purposes only.
-  @visibleForTesting
+  /// Shared by [buildLinkedTasksJson] and Task Agent context assembly.
   Future<List<AiLinkedTaskContext>> buildLinkedFromContext(
     String taskId,
   ) async {
@@ -263,9 +260,7 @@ class AiInputRepository {
   /// Build context for tasks this task links TO (parents/epics).
   /// These are tasks where the current task is the source of the link.
   ///
-  /// This method is primarily used internally by [buildLinkedTasksJson].
-  /// It is exposed for testing purposes only.
-  @visibleForTesting
+  /// Shared by [buildLinkedTasksJson] and Task Agent context assembly.
   Future<List<AiLinkedTaskContext>> buildLinkedToContext(String taskId) async {
     // Get entities that this task links TO (where fromId = taskId)
     final linkedEntities = await _db.getLinkedEntities(taskId);

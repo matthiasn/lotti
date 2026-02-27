@@ -19,8 +19,11 @@ The system is enabled only when `enableAgents` is true.
   - current task JSON context
   - current report + recent observations
   - linked task context
-- Linked task context is enriched with `latestTaskAgentReport` from the linked
-  task's associated task agent (via `agent_task` links + `agentReportHead`).
+- Linked task context for agents is built directly in
+  `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
+  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
+  `latestTaskAgentReport` from each linked task's associated task agent (via
+  `agent_task` links + `agentReportHead`).
 - Linked-task `latestSummary` payloads are stripped before prompt submission
   and are not used for Task Agent execution.
 - MTTR chart inputs resolve linked tasks with de-duplicated task fetches to

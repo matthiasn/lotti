@@ -19,7 +19,6 @@ import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
-import 'package:lotti/features/agents/workflow/linked_task_context_enricher.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -72,11 +71,7 @@ class TaskAgentWorkflow {
     required this.labelsRepository,
     required this.syncService,
     required this.templateService,
-    LinkedTaskContextEnricher? linkedTaskContextEnricher,
-  }) : linkedTaskContextEnricher = linkedTaskContextEnricher ??
-            LinkedTaskContextEnricher(
-              agentRepository: agentRepository,
-            );
+  });
 
   final AgentRepository agentRepository;
 
@@ -92,7 +87,6 @@ class TaskAgentWorkflow {
   final ChecklistRepository checklistRepository;
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
-  final LinkedTaskContextEnricher linkedTaskContextEnricher;
 
   static const _uuid = Uuid();
 
@@ -747,25 +741,124 @@ and never shown to the user. They persist as your memory across wakes.
 
   /// Builds linked-task context JSON for the wake prompt.
   ///
-  /// Starts from [AiInputRepository.buildLinkedTasksJson], then:
-  /// 1. Removes legacy `latestSummary` fields.
-  /// 2. Injects the latest task-agent report for each linked task when present.
+  /// Forked from [AiInputRepository.buildLinkedTasksJson] for the task-agent
+  /// wake path:
+  /// 1. Builds linked task context directly from linked task entities.
+  /// 2. Removes legacy `latestSummary` fields.
+  /// 3. Injects the latest task-agent report for each linked task when present.
   ///
   /// This keeps prompt context aligned with the Agent Capabilities architecture
   /// where task summaries are being phased out in favor of task-agent reports.
   Future<String> _buildLinkedTasksContextJson(String taskId) async {
-    String? rawJson;
     try {
-      rawJson = await aiInputRepository.buildLinkedTasksJson(taskId);
-      return await linkedTaskContextEnricher.enrich(rawJson);
+      final linkedFrom = await aiInputRepository.buildLinkedFromContext(taskId);
+      final linkedTo = await aiInputRepository.buildLinkedToContext(taskId);
+
+      final linkedFromRows = linkedFrom
+          .map((context) => Map<String, dynamic>.from(context.toJson()))
+          .toList();
+      final linkedToRows = linkedTo
+          .map((context) => Map<String, dynamic>.from(context.toJson()))
+          .toList();
+      final allRows = [...linkedFromRows, ...linkedToRows];
+
+      if (allRows.isEmpty) {
+        return '{}';
+      }
+
+      for (final row in allRows) {
+        row.remove('latestSummary');
+      }
+
+      final taskIds = allRows
+          .map((row) => row['id'])
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+
+      final reportByTaskId = <String, _LinkedTaskAgentReport?>{};
+      await Future.wait(
+        taskIds.map((id) async {
+          reportByTaskId[id] = await _resolveLatestTaskAgentReport(id);
+        }),
+      );
+
+      for (final row in allRows) {
+        final linkedTaskId = row['id'];
+        if (linkedTaskId is! String || linkedTaskId.isEmpty) {
+          continue;
+        }
+
+        final linkedReport = reportByTaskId[linkedTaskId];
+        if (linkedReport == null) {
+          continue;
+        }
+
+        row['taskAgentId'] = linkedReport.agentId;
+        row['latestTaskAgentReport'] = linkedReport.content;
+        row['latestTaskAgentReportCreatedAt'] =
+            linkedReport.createdAt.toIso8601String();
+      }
+
+      return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
+        'linked_from': linkedFromRows,
+        'linked_to': linkedToRows,
+      });
     } catch (e, stackTrace) {
       developer.log(
-        'Failed to enrich linked tasks context for task $taskId: $e',
+        'Failed to build linked tasks context for task $taskId: $e',
         name: 'TaskAgentWorkflow',
         error: e,
         stackTrace: stackTrace,
       );
-      return rawJson ?? '{}';
+      return '{}';
+    }
+  }
+
+  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
+    String linkedTaskId,
+  ) async {
+    try {
+      final links = await agentRepository.getLinksTo(
+        linkedTaskId,
+        type: AgentLinkTypes.agentTask,
+      );
+      if (links.isEmpty) {
+        return null;
+      }
+
+      final sortedLinks = links.toList()
+        ..sort((a, b) {
+          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+          if (byCreatedAt != 0) return byCreatedAt;
+          return a.id.compareTo(b.id);
+        });
+
+      for (final link in sortedLinks) {
+        final report = await agentRepository.getLatestReport(
+          link.fromId,
+          AgentReportScopes.current,
+        );
+        if (report == null) {
+          continue;
+        }
+        final content = report.content.trim();
+        if (content.isEmpty) {
+          continue;
+        }
+        return _LinkedTaskAgentReport(
+          agentId: link.fromId,
+          content: content,
+          createdAt: report.createdAt,
+        );
+      }
+      return null;
+    } catch (e) {
+      developer.log(
+        'Failed to resolve linked task-agent report for task $linkedTaskId: $e',
+        name: 'TaskAgentWorkflow',
+      );
+      return null;
     }
   }
 
@@ -1214,6 +1307,18 @@ and never shown to the user. They persist as your memory across wakes.
     }
     return null;
   }
+}
+
+class _LinkedTaskAgentReport {
+  const _LinkedTaskAgentReport({
+    required this.agentId,
+    required this.content,
+    required this.createdAt,
+  });
+
+  final String agentId;
+  final String content;
+  final DateTime createdAt;
 }
 
 /// Resolved template and version pair for prompt composition.
