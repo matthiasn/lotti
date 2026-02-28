@@ -81,6 +81,38 @@ sealed class AiConfig with _$AiConfig {
     String? preconfiguredPromptId,
   }) = AiConfigPrompt;
 
+  /// Inference profile — named bundle of model assignments per capability slot.
+  ///
+  /// Each slot stores a `providerModelId` string (the same kind of string used
+  /// by `AgentTemplateEntity.modelId`). At runtime, each slot is resolved via
+  /// the existing `resolveInferenceProvider()` chain:
+  /// `providerModelId → AiConfigModel → AiConfigInferenceProvider`.
+  const factory AiConfig.inferenceProfile({
+    required String id,
+    required String name,
+    required DateTime createdAt,
+
+    /// providerModelId string for agentic thinking (tool calling, reasoning).
+    required String thinkingModelId,
+
+    /// providerModelId string for image recognition / vision tasks.
+    String? imageRecognitionModelId,
+
+    /// providerModelId string for audio transcription.
+    String? transcriptionModelId,
+
+    /// providerModelId string for image generation.
+    String? imageGenerationModelId,
+
+    /// Whether this is a system-seeded default (non-deletable).
+    @Default(false) bool isDefault,
+
+    /// Whether this profile requires a desktop environment (e.g. Ollama).
+    @Default(false) bool desktopOnly,
+    DateTime? updatedAt,
+    String? description,
+  }) = AiConfigInferenceProfile;
+
   factory AiConfig.fromJson(Map<String, dynamic> json) =>
       _$AiConfigFromJson(json);
 }
@@ -89,6 +121,7 @@ enum AiConfigType {
   inferenceProvider,
   prompt,
   model,
+  inferenceProfile,
 }
 
 /// Checks if a given [AiConfigModel] meets the requirements specified by a [AiConfigPrompt].

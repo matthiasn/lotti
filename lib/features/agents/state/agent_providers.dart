@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -813,8 +814,11 @@ Future<void> agentInitialization(Ref ref) async {
     syncEventProcessor,
   );
 
-  // 5. Seed default templates and restore subscriptions.
+  // 5. Seed default templates, profiles, and restore subscriptions.
   await templateService.seedDefaults();
+  await ProfileSeedingService(
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+  ).seedDefaults();
   await taskAgentService.restoreSubscriptions();
 }
 

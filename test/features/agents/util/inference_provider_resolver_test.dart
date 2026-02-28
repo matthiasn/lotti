@@ -64,7 +64,7 @@ void main() {
       expect(provider, isNull);
     });
 
-    test('returns null when provider has empty API key', () async {
+    test('returns null when cloud provider has empty API key', () async {
       stubResolution(apiKey: '');
 
       final provider = await resolveInferenceProvider(
@@ -73,6 +73,24 @@ void main() {
       );
 
       expect(provider, isNull);
+    });
+
+    test('returns provider for local provider with empty API key', () async {
+      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
+        (_) async => [
+          testAiModel(inferenceProviderId: 'provider-local'),
+        ],
+      );
+      when(() => mockAiConfig.getConfigById('provider-local'))
+          .thenAnswer((_) async => testLocalInferenceProvider());
+
+      final provider = await resolveInferenceProvider(
+        modelId: 'models/gemini-3-flash-preview',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(provider, isNotNull);
+      expect(provider!.inferenceProviderType, InferenceProviderType.ollama);
     });
 
     test('accepts custom logTag', () async {

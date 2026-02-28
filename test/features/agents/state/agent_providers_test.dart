@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -1114,6 +1115,7 @@ void main() {
     late MockTaskAgentWorkflow mockWorkflow;
     late MockTaskAgentService mockTaskAgentService;
     late MockAgentTemplateService mockTemplateService;
+    late MockAiConfigRepository mockAiConfigRepo;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -1121,6 +1123,7 @@ void main() {
       mockWorkflow = MockTaskAgentWorkflow();
       mockTaskAgentService = MockTaskAgentService();
       mockTemplateService = MockAgentTemplateService();
+      mockAiConfigRepo = MockAiConfigRepository();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -1131,6 +1134,10 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepository.abandonOrphanedWakeRuns())
           .thenAnswer((_) async => 0);
+      // Profile seeding stubs.
+      when(() => mockAiConfigRepo.getConfigById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -1146,6 +1153,7 @@ void main() {
           taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag && enableAgents,
@@ -2219,6 +2227,7 @@ void main() {
     late MockTaskAgentWorkflow mockWorkflow;
     late MockTaskAgentService mockTaskAgentService;
     late MockAgentTemplateService mockTemplateService;
+    late MockAiConfigRepository mockAiConfigRepo;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -2226,12 +2235,17 @@ void main() {
       mockWorkflow = MockTaskAgentWorkflow();
       mockTaskAgentService = MockTaskAgentService();
       mockTemplateService = MockAgentTemplateService();
+      mockAiConfigRepo = MockAiConfigRepository();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      // Profile seeding stubs.
+      when(() => mockAiConfigRepo.getConfigById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -2245,6 +2259,7 @@ void main() {
           taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag,
@@ -2403,6 +2418,7 @@ void main() {
     late MockTaskAgentWorkflow mockWorkflow;
     late MockTaskAgentService mockTaskAgentService;
     late MockAgentTemplateService mockTemplateService;
+    late MockAiConfigRepository mockAiConfigRepo;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -2410,6 +2426,7 @@ void main() {
       mockWorkflow = MockTaskAgentWorkflow();
       mockTaskAgentService = MockTaskAgentService();
       mockTemplateService = MockAgentTemplateService();
+      mockAiConfigRepo = MockAiConfigRepository();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -2418,6 +2435,10 @@ void main() {
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       when(() => mockRepository.abandonOrphanedWakeRuns())
           .thenAnswer((_) async => 0);
+      // Profile seeding stubs.
+      when(() => mockAiConfigRepo.getConfigById(any()))
+          .thenAnswer((_) async => null);
+      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -2434,6 +2455,7 @@ void main() {
           taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
           ),

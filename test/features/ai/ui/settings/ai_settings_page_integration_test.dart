@@ -27,6 +27,7 @@ void main() {
           AiConfigType.inferenceProvider => config is AiConfigInferenceProvider,
           AiConfigType.model => config is AiConfigModel,
           AiConfigType.prompt => config is AiConfigPrompt,
+          AiConfigType.inferenceProfile => config is AiConfigInferenceProfile,
         };
       }).toList();
     }

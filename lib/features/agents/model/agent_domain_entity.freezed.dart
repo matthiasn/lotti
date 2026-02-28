@@ -446,6 +446,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
+            String? profileId,
             DateTime? deletedAt)?
         agentTemplate,
     TResult Function(
@@ -458,6 +459,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String? modelId,
+            String? profileId,
             DateTime? deletedAt)?
         agentTemplateVersion,
     TResult Function(String id, String agentId, String versionId,
@@ -628,6 +630,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.updatedAt,
             _that.vectorClock,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateVersionEntity() when agentTemplateVersion != null:
         return agentTemplateVersion(
@@ -640,6 +643,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.modelId,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -824,6 +828,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
+            String? profileId,
             DateTime? deletedAt)
         agentTemplate,
     required TResult Function(
@@ -836,6 +841,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String? modelId,
+            String? profileId,
             DateTime? deletedAt)
         agentTemplateVersion,
     required TResult Function(String id, String agentId, String versionId,
@@ -1005,6 +1011,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.updatedAt,
             _that.vectorClock,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateVersionEntity():
         return agentTemplateVersion(
@@ -1017,6 +1024,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.modelId,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateHeadEntity():
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -1194,6 +1202,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             DateTime updatedAt,
             VectorClock? vectorClock,
+            String? profileId,
             DateTime? deletedAt)?
         agentTemplate,
     TResult? Function(
@@ -1206,6 +1215,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime createdAt,
             VectorClock? vectorClock,
             String? modelId,
+            String? profileId,
             DateTime? deletedAt)?
         agentTemplateVersion,
     TResult? Function(String id, String agentId, String versionId,
@@ -1375,6 +1385,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.updatedAt,
             _that.vectorClock,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateVersionEntity() when agentTemplateVersion != null:
         return agentTemplateVersion(
@@ -1387,6 +1398,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.createdAt,
             _that.vectorClock,
             _that.modelId,
+            _that.profileId,
             _that.deletedAt);
       case AgentTemplateHeadEntity() when agentTemplateHead != null:
         return agentTemplateHead(_that.id, _that.agentId, _that.versionId,
@@ -2757,6 +2769,7 @@ class AgentTemplateEntity implements AgentDomainEntity {
       required this.createdAt,
       required this.updatedAt,
       required this.vectorClock,
+      this.profileId,
       this.deletedAt,
       final String? $type})
       : _categoryIds = categoryIds,
@@ -2782,6 +2795,7 @@ class AgentTemplateEntity implements AgentDomainEntity {
   final DateTime updatedAt;
   @override
   final VectorClock? vectorClock;
+  final String? profileId;
   @override
   final DateTime? deletedAt;
 
@@ -2822,6 +2836,8 @@ class AgentTemplateEntity implements AgentDomainEntity {
                 other.updatedAt == updatedAt) &&
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
+            (identical(other.profileId, profileId) ||
+                other.profileId == profileId) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -2839,11 +2855,12 @@ class AgentTemplateEntity implements AgentDomainEntity {
       createdAt,
       updatedAt,
       vectorClock,
+      profileId,
       deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentTemplate(id: $id, agentId: $agentId, displayName: $displayName, kind: $kind, modelId: $modelId, categoryIds: $categoryIds, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentTemplate(id: $id, agentId: $agentId, displayName: $displayName, kind: $kind, modelId: $modelId, categoryIds: $categoryIds, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, profileId: $profileId, deletedAt: $deletedAt)';
   }
 }
 
@@ -2865,6 +2882,7 @@ abstract mixin class $AgentTemplateEntityCopyWith<$Res>
       DateTime createdAt,
       DateTime updatedAt,
       VectorClock? vectorClock,
+      String? profileId,
       DateTime? deletedAt});
 }
 
@@ -2890,6 +2908,7 @@ class _$AgentTemplateEntityCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? vectorClock = freezed,
+    Object? profileId = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(AgentTemplateEntity(
@@ -2929,6 +2948,10 @@ class _$AgentTemplateEntityCopyWithImpl<$Res>
           ? _self.vectorClock
           : vectorClock // ignore: cast_nullable_to_non_nullable
               as VectorClock?,
+      profileId: freezed == profileId
+          ? _self.profileId
+          : profileId // ignore: cast_nullable_to_non_nullable
+              as String?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt
           : deletedAt // ignore: cast_nullable_to_non_nullable
@@ -2950,6 +2973,7 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
       required this.createdAt,
       required this.vectorClock,
       this.modelId,
+      this.profileId,
       this.deletedAt,
       final String? $type})
       : $type = $type ?? 'agentTemplateVersion';
@@ -2970,6 +2994,9 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
 
   /// The model ID configured on the template when this version was created.
   final String? modelId;
+
+  /// The profile ID configured on the template when this version was created.
+  final String? profileId;
   @override
   final DateTime? deletedAt;
 
@@ -3011,18 +3038,31 @@ class AgentTemplateVersionEntity implements AgentDomainEntity {
             (identical(other.vectorClock, vectorClock) ||
                 other.vectorClock == vectorClock) &&
             (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            (identical(other.profileId, profileId) ||
+                other.profileId == profileId) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, agentId, version, status,
-      directives, authoredBy, createdAt, vectorClock, modelId, deletedAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      agentId,
+      version,
+      status,
+      directives,
+      authoredBy,
+      createdAt,
+      vectorClock,
+      modelId,
+      profileId,
+      deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, modelId: $modelId, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentTemplateVersion(id: $id, agentId: $agentId, version: $version, status: $status, directives: $directives, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, modelId: $modelId, profileId: $profileId, deletedAt: $deletedAt)';
   }
 }
 
@@ -3044,6 +3084,7 @@ abstract mixin class $AgentTemplateVersionEntityCopyWith<$Res>
       DateTime createdAt,
       VectorClock? vectorClock,
       String? modelId,
+      String? profileId,
       DateTime? deletedAt});
 }
 
@@ -3069,6 +3110,7 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? vectorClock = freezed,
     Object? modelId = freezed,
+    Object? profileId = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(AgentTemplateVersionEntity(
@@ -3107,6 +3149,10 @@ class _$AgentTemplateVersionEntityCopyWithImpl<$Res>
       modelId: freezed == modelId
           ? _self.modelId
           : modelId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      profileId: freezed == profileId
+          ? _self.profileId
+          : profileId // ignore: cast_nullable_to_non_nullable
               as String?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt

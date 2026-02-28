@@ -388,7 +388,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'No Gemini provider configured');
+        expect(result.error, 'No inference provider configured');
       });
 
       test('when template exists but no active version', () async {
@@ -902,7 +902,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'No Gemini provider configured');
+        expect(result.error, 'No inference provider configured');
       });
 
       test('returns error when provider has empty API key', () async {
@@ -932,7 +932,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, 'No Gemini provider configured');
+        expect(result.error, 'No inference provider configured');
       });
     });
 

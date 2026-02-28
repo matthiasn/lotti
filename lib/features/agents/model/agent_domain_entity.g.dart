@@ -285,6 +285,7 @@ AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      profileId: json['profileId'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -303,6 +304,7 @@ Map<String, dynamic> _$AgentTemplateEntityToJson(
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'profileId': instance.profileId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };
@@ -325,6 +327,7 @@ AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       modelId: json['modelId'] as String?,
+      profileId: json['profileId'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -343,6 +346,7 @@ Map<String, dynamic> _$AgentTemplateVersionEntityToJson(
       'createdAt': instance.createdAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
       'modelId': instance.modelId,
+      'profileId': instance.profileId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

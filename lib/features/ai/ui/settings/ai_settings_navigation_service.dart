@@ -126,6 +126,9 @@ class AiSettingsNavigationService {
             configId: config.id,
           ),
         ),
+      // Profiles are managed on a dedicated page, not via this navigation.
+      AiConfigInferenceProfile() =>
+        throw ArgumentError('Inference profiles are not edited via this route'),
     };
   }
 
