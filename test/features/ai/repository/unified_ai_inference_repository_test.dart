@@ -6878,13 +6878,15 @@ Take into account the following task context:
 }
 
 // Helper methods to create test objects
+final _fixedDate = DateTime(2025);
+
 Metadata _createMetadata({String? id, String? categoryId}) {
   return Metadata(
     id: id ?? 'test-id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: _fixedDate,
+    updatedAt: _fixedDate,
+    dateFrom: _fixedDate,
+    dateTo: _fixedDate,
     categoryId: categoryId,
   );
 }

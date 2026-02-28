@@ -424,7 +424,7 @@ tool schema:
 
 Update the tool `description` to mention the policy:
 
-```
+```text
 'Update one or more existing checklist items. You can mark items as '
 'done/undone or correct titles. When an item was last toggled by the '
 'user, you must provide a reason citing evidence from AFTER the '
@@ -434,7 +434,7 @@ Update the tool `description` to mention the policy:
 
 Update the `isChecked` field description:
 
-```
+```text
 'New checked status. For items last set by the user, you must also '
 'provide a reason citing post-dated evidence. Without a reason, the '
 'isChecked change will be rejected for user-set items.'
@@ -529,7 +529,7 @@ final updatedData = entity.data.copyWith(
 
 Add a new section to `taskAgentScaffold` under "Tool Usage Guidelines":
 
-```
+```text
 - **Checklist sovereignty**: Checklist items track who last toggled them
   (user or agent) and when (`checkedAt`). Rules:
   - If YOU (the agent) last set the item, you can freely change it.

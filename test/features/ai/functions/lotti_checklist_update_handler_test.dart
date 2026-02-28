@@ -1338,7 +1338,7 @@ void main() {
         );
       });
 
-      test('stamps checkedBy: agent on title-only update', () async {
+      test('preserves user provenance on title-only update', () async {
         // Title-only updates should NOT change checkedBy/checkedAt
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',

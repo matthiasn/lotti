@@ -1,3 +1,4 @@
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -129,6 +130,7 @@ void registerAllFallbackValues() {
   );
 
   // Enum fallbacks
+  registerFallbackValue(CheckedBySource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
 
   registerFallbackValue(

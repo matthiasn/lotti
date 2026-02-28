@@ -91,7 +91,6 @@ void main() {
   setUpAll(() {
     registerFallbackValue(TestDataFactory.createTask());
     registerFallbackValue(TestDataFactory.createChecklistItemData());
-    registerFallbackValue(CheckedBySource.user);
   });
 
   setUp(() {

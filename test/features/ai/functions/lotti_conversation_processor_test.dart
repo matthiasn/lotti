@@ -315,7 +315,6 @@ void main() {
       content: ChatCompletionUserMessageContent.string('test'),
     ));
     registerFallbackValue(MockOllamaInferenceRepository());
-    registerFallbackValue(CheckedBySource.user);
   });
 
   setUp(() {

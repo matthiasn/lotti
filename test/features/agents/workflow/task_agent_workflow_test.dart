@@ -1785,7 +1785,6 @@ void main() {
         when(() => mockJournalRepository.updateJournalEntity(any()))
             .thenAnswer((_) async => true);
         registerFallbackValue(taskNoTitle);
-        registerFallbackValue(CheckedBySource.user);
 
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
