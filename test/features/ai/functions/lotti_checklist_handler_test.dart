@@ -245,19 +245,21 @@ void main() {
               title: 'Buy milk',
               isChecked: false,
               categoryId: testTask.meta.categoryId,
+              checkedBy: CheckedBySource.agent,
             )).thenAnswer((_) async => ChecklistItem(
               meta: Metadata(
                 id: 'item-123',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-                dateFrom: DateTime.now(),
-                dateTo: DateTime.now(),
+                createdAt: DateTime(2025),
+                updatedAt: DateTime(2025),
+                dateFrom: DateTime(2025),
+                dateTo: DateTime(2025),
                 categoryId: testTask.meta.categoryId,
               ),
               data: const ChecklistItemData(
                 title: 'Buy milk',
                 isChecked: false,
                 linkedChecklists: ['existing-checklist'],
+                checkedBy: CheckedBySource.agent,
               ),
             ));
 
@@ -278,6 +280,7 @@ void main() {
               title: 'Buy milk',
               isChecked: false,
               categoryId: testTask.meta.categoryId,
+              checkedBy: CheckedBySource.agent,
             )).called(1);
       });
 

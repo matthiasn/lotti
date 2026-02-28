@@ -182,6 +182,7 @@ class TestDataFactory {
     String? title,
     bool isChecked = false,
     List<String>? linkedChecklists,
+    CheckedBySource? checkedBy,
   }) {
     final itemId = id ?? _uuid.v4();
     return ChecklistItem(
@@ -197,6 +198,7 @@ class TestDataFactory {
         title: title ?? 'Test Item',
         isChecked: isChecked,
         linkedChecklists: linkedChecklists ?? ['checklist-1'],
+        checkedBy: checkedBy ?? CheckedBySource.user,
       ),
     );
   }
@@ -853,6 +855,8 @@ void main() {
         id: itemId,
         title: 'Buy groceries',
         linkedChecklists: [checklistId],
+        // Agent-owned so sovereignty guard allows isChecked update
+        checkedBy: CheckedBySource.agent,
       );
       final promptConfig = TestDataFactory.createPromptConfig();
       final model = TestDataFactory.createModel();
@@ -928,6 +932,8 @@ void main() {
         id: itemId,
         title: 'mac OS settings', // Typo: should be macOS
         linkedChecklists: [checklistId],
+        // Agent-owned so sovereignty guard allows isChecked update
+        checkedBy: CheckedBySource.agent,
       );
       final promptConfig = TestDataFactory.createPromptConfig();
       final model = TestDataFactory.createModel();
@@ -1115,6 +1121,9 @@ JournalDbEntity _createDbEntity(ChecklistItem item) {
         'title': item.data.title,
         'isChecked': item.data.isChecked,
         'linkedChecklists': item.data.linkedChecklists,
+        'checkedBy': item.data.checkedBy.name,
+        if (item.data.checkedAt != null)
+          'checkedAt': item.data.checkedAt!.toIso8601String(),
       },
     }),
     schemaVersion: 1,

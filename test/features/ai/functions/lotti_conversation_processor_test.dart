@@ -315,6 +315,7 @@ void main() {
       content: ChatCompletionUserMessageContent.string('test'),
     ));
     registerFallbackValue(MockOllamaInferenceRepository());
+    registerFallbackValue(CheckedBySource.user);
   });
 
   setUp(() {
@@ -685,21 +686,23 @@ void main() {
             title: 'new item',
             isChecked: false,
             categoryId: any(named: 'categoryId'),
+            checkedBy: CheckedBySource.agent,
           )).thenAnswer((_) async {
         final itemId = _uuid.v4();
         return ChecklistItem(
           meta: Metadata(
             id: itemId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
             categoryId: 'test-category',
           ),
           data: const ChecklistItemData(
             title: 'new item',
             isChecked: false,
             linkedChecklists: [],
+            checkedBy: CheckedBySource.agent,
           ),
         );
       });
@@ -738,6 +741,7 @@ void main() {
             title: 'new item',
             isChecked: false,
             categoryId: any(named: 'categoryId'),
+            checkedBy: CheckedBySource.agent,
           )).called(1);
 
       verifyNever(() => mockAutoChecklistService.autoCreateChecklist(

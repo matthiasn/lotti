@@ -120,6 +120,8 @@ class ChecklistRepository {
             title: item.title,
             isChecked: item.isChecked,
             categoryId: newChecklist.meta.categoryId,
+            checkedBy: item.checkedBy,
+            checkedAt: item.checkedAt,
           );
           if (checklistItem != null) {
             createdIds.add(checklistItem.id);
@@ -159,6 +161,8 @@ class ChecklistRepository {
     required String title,
     required bool isChecked,
     required String? categoryId,
+    CheckedBySource? checkedBy,
+    DateTime? checkedAt,
   }) async {
     try {
       final meta = await _persistenceLogic.createMetadata();
@@ -168,6 +172,8 @@ class ChecklistRepository {
           title: title,
           isChecked: isChecked,
           linkedChecklists: [checklistId],
+          checkedBy: checkedBy ?? CheckedBySource.user,
+          checkedAt: checkedAt,
         ),
       );
 
@@ -285,6 +291,8 @@ class ChecklistRepository {
     required String title,
     required bool isChecked,
     required String? categoryId,
+    CheckedBySource? checkedBy,
+    DateTime? checkedAt,
   }) async {
     try {
       // Create the new checklist item first
@@ -293,6 +301,8 @@ class ChecklistRepository {
         title: title,
         isChecked: isChecked,
         categoryId: categoryId,
+        checkedBy: checkedBy,
+        checkedAt: checkedAt,
       );
 
       if (newItem == null) {
