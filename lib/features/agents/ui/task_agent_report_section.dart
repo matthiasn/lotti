@@ -71,6 +71,18 @@ class _TaskAgentReportSectionState
     _countdownSeconds = 0;
   }
 
+  /// Defers [_stopCountdown] to a post-frame callback so we never mutate
+  /// state synchronously during [build].
+  void _scheduleStopCountdown() {
+    if (_countdownTimer == null && _countdownSeconds == 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _stopCountdown();
+        setState(() {});
+      }
+    });
+  }
+
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
     final remaining = nextWakeAt.difference(clock.now());
@@ -84,7 +96,7 @@ class _TaskAgentReportSectionState
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
 
     if (!enableAgents) {
-      _stopCountdown();
+      _scheduleStopCountdown();
       return const SizedBox.shrink();
     }
 
@@ -95,7 +107,7 @@ class _TaskAgentReportSectionState
       error: (_, __) => const SizedBox.shrink(),
       data: (agentEntity) {
         if (agentEntity == null) {
-          _stopCountdown();
+          _scheduleStopCountdown();
           return _buildCreateAgentRow(context);
         }
         final identity = agentEntity.mapOrNull(agent: (e) => e);
@@ -174,7 +186,7 @@ class _TaskAgentReportSectionState
 
     // Seed the timer on first build if a countdown is active.
     if (isRunning) {
-      _stopCountdown();
+      _scheduleStopCountdown();
     } else if (_countdownTimer == null && remainingSeconds > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startCountdown(remainingSeconds);

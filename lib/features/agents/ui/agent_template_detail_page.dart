@@ -202,7 +202,7 @@ class _AgentTemplateDetailPageState
                     ),
               rightButtons: [
                 LottiSecondaryButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => getIt<NavService>().beamBack(),
                   label: context.messages.cancelButton,
                 ),
                 LottiPrimaryButton(
