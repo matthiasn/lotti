@@ -6,6 +6,11 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:uuid/uuid.dart';
 
+/// Resolves a checklist item's title from its ID.
+///
+/// Returns `null` if the item cannot be found.
+typedef ChecklistItemTitleResolver = Future<String?> Function(String itemId);
+
 /// Result of adding batch items to a [ChangeSetBuilder].
 class BatchAddResult {
   const BatchAddResult({required this.added, required this.skipped});
@@ -29,6 +34,7 @@ class ChangeSetBuilder {
     required this.taskId,
     required this.threadId,
     required this.runKey,
+    this.checklistItemTitleResolver,
   });
 
   /// The agent instance ID.
@@ -42,6 +48,11 @@ class ChangeSetBuilder {
 
   /// The run key for the current wake cycle.
   final String runKey;
+
+  /// Optional resolver for checklist item titles. When provided, the builder
+  /// looks up the current title of checklist items that the LLM references
+  /// by ID only (without including the title in the tool args).
+  final ChecklistItemTitleResolver? checklistItemTitleResolver;
 
   final List<ChangeItem> _items = [];
   static const _uuid = Uuid();
@@ -80,11 +91,11 @@ class ChangeSetBuilder {
   ///
   /// Returns a [BatchAddResult] indicating how many items were added and how
   /// many were skipped (non-map elements).
-  BatchAddResult addBatchItem({
+  Future<BatchAddResult> addBatchItem({
     required String toolName,
     required Map<String, dynamic> args,
     required String summaryPrefix,
-  }) {
+  }) async {
     final arrayKey = AgentToolRegistry.explodedBatchTools[toolName];
     if (arrayKey == null) {
       // Not a known batch tool — fall back to a single item.
@@ -115,7 +126,7 @@ class ChangeSetBuilder {
     var skipped = 0;
     for (final element in array) {
       if (element is Map<String, dynamic>) {
-        final summary = _generateItemSummary(
+        final summary = await _generateItemSummary(
           singularToolName,
           element,
           summaryPrefix,
@@ -172,11 +183,11 @@ class ChangeSetBuilder {
   }
 
   /// Generate a human-readable summary for a single exploded item.
-  static String _generateItemSummary(
+  Future<String> _generateItemSummary(
     String singularToolName,
     Map<String, dynamic> args,
     String prefix,
-  ) {
+  ) async {
     // For checklist items, use the title.
     final title = args['title'];
     if (title is String && title.isNotEmpty) {
@@ -184,26 +195,50 @@ class ChangeSetBuilder {
         return 'Add: "$title"';
       }
       if (singularToolName.startsWith('update_')) {
-        final id = args['id'] ?? '';
         final isChecked = args['isChecked'];
         if (isChecked is bool) {
           final action = isChecked ? 'Check' : 'Uncheck';
           return '$action: "$title"';
         }
-        return 'Update "$title" ($id)';
+        return 'Update: "$title"';
       }
     }
 
-    // For updates by ID only (no title change).
+    // For updates by ID only (no title in args) — resolve from DB.
     final id = args['id'];
     if (id is String) {
+      final resolvedTitle = await _resolveTitle(id);
       final isChecked = args['isChecked'];
       if (isChecked is bool) {
         final action = isChecked ? 'Check off' : 'Uncheck';
-        return '$action item $id';
+        if (resolvedTitle != null) {
+          return '$action: "$resolvedTitle"';
+        }
+        return '$action item ${_truncateId(id)}';
       }
+      if (resolvedTitle != null) {
+        return '$prefix: "$resolvedTitle"';
+      }
+      return '$prefix item ${_truncateId(id)}';
     }
 
     return '$prefix item';
   }
+
+  /// Resolve a checklist item title via the injected resolver.
+  ///
+  /// Returns `null` if no resolver is set or the item cannot be found.
+  Future<String?> _resolveTitle(String itemId) async {
+    final resolver = checklistItemTitleResolver;
+    if (resolver == null) return null;
+    try {
+      return await resolver(itemId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Truncate a UUID to a short prefix for display as a fallback.
+  static String _truncateId(String id) =>
+      id.length > 8 ? '${id.substring(0, 8)}…' : id;
 }

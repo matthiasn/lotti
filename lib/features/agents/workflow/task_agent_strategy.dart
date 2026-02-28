@@ -171,7 +171,7 @@ class TaskAgentStrategy extends ConversationStrategy {
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
-        final response = _addToChangeSet(csBuilder, toolName, args);
+        final response = await _addToChangeSet(csBuilder, toolName, args);
         manager.addToolResponse(
           toolCallId: call.id,
           response: response,
@@ -337,15 +337,15 @@ class TaskAgentStrategy extends ConversationStrategy {
   ///
   /// Returns a response string for the LLM. For batch tools with skipped
   /// items, the response includes a warning.
-  String _addToChangeSet(
+  Future<String> _addToChangeSet(
     ChangeSetBuilder csBuilder,
     String toolName,
     Map<String, dynamic> args,
-  ) {
+  ) async {
     final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
     String response;
     if (batchKey != null) {
-      final result = csBuilder.addBatchItem(
+      final result = await csBuilder.addBatchItem(
         toolName: toolName,
         args: args,
         summaryPrefix: _humanToolPrefix(toolName),

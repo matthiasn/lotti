@@ -69,8 +69,9 @@ void main() {
   });
 
   group('addBatchItem', () {
-    test('explodes add_multiple_checklist_items into individual items', () {
-      builder.addBatchItem(
+    test('explodes add_multiple_checklist_items into individual items',
+        () async {
+      await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {
           'items': [
@@ -90,8 +91,8 @@ void main() {
       expect(builder.items[2].humanSummary, 'Add: "Write tests"');
     });
 
-    test('explodes update_checklist_items into individual items', () {
-      builder.addBatchItem(
+    test('explodes update_checklist_items into individual items', () async {
+      await builder.addBatchItem(
         toolName: 'update_checklist_items',
         args: {
           'items': [
@@ -109,8 +110,9 @@ void main() {
       expect(builder.items[1].humanSummary, contains('Revised title'));
     });
 
-    test('handles check-only update (no title) by ID', () {
-      builder.addBatchItem(
+    test('handles check-only update (no title) by ID with truncated ID',
+        () async {
+      await builder.addBatchItem(
         toolName: 'update_checklist_items',
         args: {
           'items': [
@@ -121,11 +123,120 @@ void main() {
       );
 
       expect(builder.items, hasLength(1));
+      // Short ID — no truncation needed.
       expect(builder.items.first.humanSummary, 'Check off item item-42');
     });
 
-    test('handles uncheck update', () {
-      builder.addBatchItem(
+    test('truncates long UUIDs in fallback display', () async {
+      await builder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {
+              'id': '2ff860d0-141d-11f1-a937-89a8ebc23f0b',
+              'isChecked': true,
+            },
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(builder.items, hasLength(1));
+      expect(
+        builder.items.first.humanSummary,
+        'Check off item 2ff860d0…',
+      );
+    });
+
+    test('resolves title from resolver for ID-only updates', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemTitleResolver: (id) async {
+          if (id == 'item-42') return 'Buy groceries';
+          return null;
+        },
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-42', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Check off: "Buy groceries"',
+      );
+    });
+
+    test('falls back to truncated ID when resolver returns null', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemTitleResolver: (_) async => null,
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {
+              'id': 'abcdefgh-1234-5678-9012-abcdefghijkl',
+              'isChecked': false,
+            },
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Uncheck item abcdefgh…',
+      );
+    });
+
+    test('falls back gracefully when resolver throws', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemTitleResolver: (_) async => throw Exception('DB error'),
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {
+              'id': '12345678-abcd-ef01-2345-678901234567',
+              'isChecked': true,
+            },
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Check off item 12345678…',
+      );
+    });
+
+    test('handles uncheck update', () async {
+      await builder.addBatchItem(
         toolName: 'update_checklist_items',
         args: {
           'items': [
@@ -138,8 +249,8 @@ void main() {
       expect(builder.items.first.humanSummary, 'Uncheck item item-7');
     });
 
-    test('falls back to single item for unknown batch tool', () {
-      builder.addBatchItem(
+    test('falls back to single item for unknown batch tool', () async {
+      await builder.addBatchItem(
         toolName: 'unknown_batch_tool',
         args: {
           'items': [1, 2, 3]
@@ -152,8 +263,8 @@ void main() {
       expect(builder.items.first.humanSummary, 'Unknown (batch)');
     });
 
-    test('handles empty array gracefully', () {
-      builder.addBatchItem(
+    test('handles empty array gracefully', () async {
+      await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'items': <dynamic>[]},
         summaryPrefix: 'Checklist',
@@ -163,8 +274,8 @@ void main() {
       expect(builder.items.first.humanSummary, 'Checklist (empty)');
     });
 
-    test('handles missing array key gracefully', () {
-      builder.addBatchItem(
+    test('handles missing array key gracefully', () async {
+      await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'wrong_key': 'value'},
         summaryPrefix: 'Checklist',
@@ -223,7 +334,7 @@ void main() {
     });
 
     test('builds entity with exploded batch items', () async {
-      builder.addBatchItem(
+      await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {
           'items': [
