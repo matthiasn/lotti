@@ -2914,5 +2914,77 @@ void main() {
         expect(result.error, isNull);
       });
     });
+
+    group('null domainLogger fallback', () {
+      test('_logError falls back to developer.log when domainLogger is null',
+          () async {
+        // Create a workflow without domainLogger.
+        final nullLoggerWorkflow = TaskAgentWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+        );
+
+        // Set up enough stubs to get into the main try block, then make
+        // sendMessage throw to trigger _logError via the outer catch.
+        when(() => mockAgentRepository.getAgentState(agentId))
+            .thenAnswer((_) async => testAgentState);
+        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
+            .thenAnswer((_) async => '{"title":"Test Task"}');
+        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
+            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
+            .thenAnswer((_) async => null);
+        when(() => mockConversationManager.messages).thenReturn([]);
+
+        // Make sendMessage throw to trigger the outer catch → _logError.
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          throw Exception('LLM unavailable');
+        };
+
+        final result = await nullLoggerWorkflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: 'run-key-1',
+          triggerTokens: const {},
+          threadId: 'thread-1',
+        );
+
+        // Should return error result (not throw), having logged via
+        // developer.log fallback.
+        expect(result.success, isFalse);
+        expect(result.error, contains('LLM unavailable'));
+      });
+    });
   });
 }

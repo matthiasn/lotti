@@ -618,6 +618,36 @@ void main() {
       });
     });
 
+    group('null domainLogger fallback', () {
+      test(
+          'restoreSubscriptions logs to developer.log when domainLogger is null',
+          () async {
+        // Create a service without domainLogger to exercise the else branch.
+        final nullLoggerService = TaskAgentService(
+          agentService: mockAgentService,
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+        );
+
+        final failingAgent = makeIdentity(agentId: 'ta-fail');
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [failingAgent]);
+        when(
+          () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
+        ).thenThrow(Exception('DB error'));
+
+        // Should not throw — error is caught and logged via developer.log.
+        await nullLoggerService.restoreSubscriptions();
+
+        // Verify no subscription was registered (agent errored out).
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+    });
+
     group('syncService routing', () {
       test('routes entity and link writes through syncService', () async {
         final identity = makeIdentity();

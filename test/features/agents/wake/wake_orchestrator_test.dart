@@ -3114,6 +3114,70 @@ void main() {
     });
   });
 
+  group('_drain(generation) bail-out', () {
+    test('old drain bails out when generation changes during iteration', () {
+      fakeAsync((async) {
+        final stuckCompleter = Completer<Map<String, VectorClock>?>();
+        final executedAgentIds = <String>[];
+
+        orchestrator
+          ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+            executedAgentIds.add(agentId);
+            if (agentId == 'slow-agent') return stuckCompleter.future;
+            return Future.value();
+          }
+          ..addSubscription(
+            AgentSubscription(
+              id: 'sub-slow',
+              agentId: 'slow-agent',
+              matchEntityIds: {'entity-slow'},
+            ),
+          )
+          ..addSubscription(
+            AgentSubscription(
+              id: 'sub-ok',
+              agentId: 'ok-agent',
+              matchEntityIds: {'entity-ok'},
+            ),
+          );
+
+        final controller = StreamController<Set<String>>.broadcast();
+        orchestrator.start(controller.stream);
+
+        // Trigger slow-agent — drain starts, executor blocks.
+        emitAndDrain(async, controller, {'entity-slow'});
+        expect(executedAgentIds, contains('slow-agent'));
+
+        // Advance past the 5-minute drain timeout.
+        async
+          ..elapse(const Duration(minutes: 6))
+          ..flushMicrotasks();
+
+        // Trigger ok-agent — force-resets stale drain (increments
+        // generation) and starts a new drain.
+        emitAndDrain(async, controller, {'entity-ok'});
+        expect(executedAgentIds, contains('ok-agent'));
+
+        // Complete the stuck executor — the old _drain resumes, loops
+        // back to while(true), checks generation, and bails out via
+        // `if (_drainGeneration != generation) return`.
+        stuckCompleter.complete(null);
+        async.flushMicrotasks();
+
+        // Verify the orchestrator is in a clean state.
+        executedAgentIds.clear();
+        orchestrator.enqueueManualWake(
+          agentId: 'ok-agent',
+          reason: 'test',
+        );
+        async.flushMicrotasks();
+        expect(executedAgentIds, contains('ok-agent'));
+
+        controller.close();
+      });
+    });
+  });
+
   group('domain logging integration', () {
     test('_logError delegates to domainLogger when present', () {
       fakeAsync((async) {
