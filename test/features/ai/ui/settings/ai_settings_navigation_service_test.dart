@@ -116,8 +116,8 @@ void main() {
       });
     });
 
-    group('Unsupported Config Types', () {
-      testWidgets('should throw ArgumentError for inference profile config',
+    group('Profile Navigation', () {
+      testWidgets('navigateToConfigEdit accepts inference profile config',
           (WidgetTester tester) async {
         final testProfile = AiTestDataFactory.createTestProfile(
           id: 'test-profile-id',
@@ -131,7 +131,20 @@ void main() {
 
         expect(
           () => service.navigateToConfigEdit(context, testProfile),
-          throwsA(isA<ArgumentError>()),
+          returnsNormally,
+        );
+      });
+
+      testWidgets('navigateToCreateProfile accepts valid context',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(Scaffold));
+
+        expect(
+          () => service.navigateToCreateProfile(context),
+          returnsNormally,
         );
       });
     });

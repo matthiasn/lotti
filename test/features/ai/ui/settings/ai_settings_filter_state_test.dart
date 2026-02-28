@@ -198,6 +198,14 @@ void main() {
             .hasActiveFilters,
         isFalse,
       );
+
+      // Profiles tab - never has active filters
+      expect(
+        AiSettingsFilterState.initial()
+            .copyWith(activeTab: AiSettingsTab.profiles)
+            .hasActiveFilters,
+        isFalse,
+      );
     });
 
     test('resetPromptFilters preserves search query but clears prompt filters',
@@ -259,6 +267,17 @@ void main() {
       final resetProviderState = providerState.resetCurrentTabFilters();
       expect(resetProviderState.selectedProviders,
           {'provider1'}); // Should NOT be reset
+
+      // Test on Profiles tab (should not change anything)
+      const profileState = AiSettingsFilterState(
+        searchQuery: 'test',
+        selectedProviders: {'provider1'},
+        activeTab: AiSettingsTab.profiles,
+      );
+
+      final resetProfileState = profileState.resetCurrentTabFilters();
+      expect(resetProfileState.selectedProviders,
+          {'provider1'}); // Should NOT be reset
     });
   });
 
@@ -267,13 +286,15 @@ void main() {
       expect(AiSettingsTab.providers.displayName, 'Providers');
       expect(AiSettingsTab.models.displayName, 'Models');
       expect(AiSettingsTab.prompts.displayName, 'Prompts');
+      expect(AiSettingsTab.profiles.displayName, 'Profiles');
     });
 
     test('contains expected tab values', () {
-      expect(AiSettingsTab.values, hasLength(3));
+      expect(AiSettingsTab.values, hasLength(4));
       expect(AiSettingsTab.values, contains(AiSettingsTab.providers));
       expect(AiSettingsTab.values, contains(AiSettingsTab.models));
       expect(AiSettingsTab.values, contains(AiSettingsTab.prompts));
+      expect(AiSettingsTab.values, contains(AiSettingsTab.profiles));
     });
   });
 }
