@@ -1396,7 +1396,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get changeSetCardTitle => 'Modificări propuse';
 
   @override
-  String get changeSetConfirmAll => 'Confirmă toate';
+  String get changeSetConfirmAll => 'Confirmați toate';
 
   @override
   String get changeSetConfirmError => 'Modificarea nu a putut fi aplicată';
@@ -1413,10 +1413,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get changeSetSwipeConfirm => 'Confirmă';
+  String get changeSetSwipeConfirm => 'Confirmați';
 
   @override
-  String get changeSetSwipeReject => 'Respinge';
+  String get changeSetSwipeReject => 'Respingeți';
 
   @override
   String get chatInputCancelRealtime => 'Anulează (Esc)';

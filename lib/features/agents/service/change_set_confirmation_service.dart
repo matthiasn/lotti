@@ -73,7 +73,24 @@ class ChangeSetConfirmationService {
       name: 'ChangeSetConfirmationService',
     );
 
-    // 1. Execute the tool call.
+    // 1. Mark the item as confirmed and persist the decision BEFORE
+    //    dispatching the tool. This ensures that if the process dies after
+    //    a successful dispatch but before persistence, the item will not
+    //    remain pending and be re-executed on retry.
+    await _persistDecision(
+      changeSet: current,
+      itemIndex: itemIndex,
+      toolName: item.toolName,
+      verdict: ChangeDecisionVerdict.confirmed,
+    );
+    await _updateChangeSetItemStatus(
+      current,
+      itemIndex,
+      ChangeItemStatus.confirmed,
+    );
+
+    // 2. Execute the tool call. If dispatch fails, revert the status back
+    //    to pending so the user can retry.
     final result = await _toolDispatcher.dispatch(
       item.toolName,
       item.args,
@@ -83,26 +100,16 @@ class ChangeSetConfirmationService {
     if (!result.success) {
       developer.log(
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
-        '${result.errorMessage ?? result.output}',
+        '${result.errorMessage ?? result.output} — reverting to pending',
         name: 'ChangeSetConfirmationService',
+      );
+      await _updateChangeSetItemStatus(
+        current,
+        itemIndex,
+        ChangeItemStatus.pending,
       );
       return result;
     }
-
-    // 2. Persist the decision (only on successful tool dispatch).
-    await _persistDecision(
-      changeSet: current,
-      itemIndex: itemIndex,
-      toolName: item.toolName,
-      verdict: ChangeDecisionVerdict.confirmed,
-    );
-
-    // 3. Update the change set item status and overall status.
-    await _updateChangeSetItemStatus(
-      current,
-      itemIndex,
-      ChangeItemStatus.confirmed,
-    );
 
     return result;
   }

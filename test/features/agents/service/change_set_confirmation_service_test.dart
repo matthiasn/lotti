@@ -61,8 +61,9 @@ void main() {
 
   group('ChangeSetConfirmationService', () {
     group('confirmItem', () {
-      test('dispatches tool call and persists confirmed decision', () async {
+      test('persists decision before dispatch and returns result', () async {
         final changeSet = makeChangeSetWith();
+        final upsertOrder = <String>[];
 
         when(
           () => mockToolDispatcher.dispatch(
@@ -79,13 +80,24 @@ void main() {
 
         when(
           () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((invocation) async {
+          final entity = invocation.positionalArguments[0];
+          if (entity is ChangeDecisionEntity) {
+            upsertOrder.add('decision');
+          } else if (entity is ChangeSetEntity) {
+            upsertOrder.add('changeSet');
+          }
+        });
 
         await withClock(testClock, () async {
           final result = await service.confirmItem(changeSet, 0);
 
           expect(result.success, isTrue);
           expect(result.output, 'Estimate set to 120 minutes');
+
+          // Decision and status update are persisted BEFORE tool dispatch
+          // to prevent duplicate side effects on crash/retry.
+          expect(upsertOrder, ['decision', 'changeSet']);
 
           // Verify tool dispatch was called with the correct args.
           verify(
@@ -121,7 +133,7 @@ void main() {
         });
       });
 
-      test('does not persist decision when tool dispatch fails', () async {
+      test('reverts item to pending when tool dispatch fails', () async {
         final changeSet = makeChangeSetWith();
 
         when(
@@ -134,15 +146,40 @@ void main() {
           ),
         );
 
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
         await withClock(testClock, () async {
           final result = await service.confirmItem(changeSet, 0);
 
           expect(result.success, isFalse);
           expect(result.output, 'Task not found');
 
-          // No decision or change set update should be persisted.
-          verifyNever(
-            () => mockSyncService.upsertEntity(any()),
+          // Decision + status were persisted before dispatch, then status
+          // was reverted on failure. Expect 3 upsert calls:
+          // 1. decision, 2. confirmed status, 3. reverted to pending.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          expect(captured, hasLength(3));
+
+          // First: decision entity
+          expect(captured[0], isA<ChangeDecisionEntity>());
+
+          // Second: item marked as confirmed
+          final confirmedSet = captured[1] as ChangeSetEntity;
+          expect(
+            confirmedSet.items[0].status,
+            ChangeItemStatus.confirmed,
+          );
+
+          // Third: reverted back to pending
+          final revertedSet = captured[2] as ChangeSetEntity;
+          expect(
+            revertedSet.items[0].status,
+            ChangeItemStatus.pending,
           );
         });
       });
@@ -240,6 +277,9 @@ void main() {
           final captured = verify(
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
+
+          // Two upserts: decision + change set status update (before dispatch).
+          expect(captured, hasLength(2));
 
           final updatedChangeSet = captured[1] as ChangeSetEntity;
           expect(updatedChangeSet.status, ChangeSetStatus.resolved);

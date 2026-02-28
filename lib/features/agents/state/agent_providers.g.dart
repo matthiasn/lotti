@@ -157,7 +157,7 @@ String _$maybeSyncEventProcessorHash() =>
 
 /// Domain logger for agent runtime / workflow structured logging.
 ///
-/// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+/// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
 /// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
 /// without rebuilding the provider. This prevents a flag toggle from
 /// cascading into orchestrator/workflow/service rebuilds and unintentionally
@@ -168,7 +168,7 @@ final domainLoggerProvider = DomainLoggerProvider._();
 
 /// Domain logger for agent runtime / workflow structured logging.
 ///
-/// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+/// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
 /// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
 /// without rebuilding the provider. This prevents a flag toggle from
 /// cascading into orchestrator/workflow/service rebuilds and unintentionally
@@ -179,7 +179,7 @@ final class DomainLoggerProvider
     with $Provider<DomainLogger> {
   /// Domain logger for agent runtime / workflow structured logging.
   ///
-  /// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+  /// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
   /// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
   /// without rebuilding the provider. This prevents a flag toggle from
   /// cascading into orchestrator/workflow/service rebuilds and unintentionally

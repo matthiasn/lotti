@@ -624,7 +624,7 @@
   "categorySearchPlaceholder": "Caută categorii...",
   "celebrationTapToContinue": "Atingeți pentru a continua",
   "changeSetCardTitle": "Modificări propuse",
-  "changeSetConfirmAll": "Confirmă toate",
+  "changeSetConfirmAll": "Confirmați toate",
   "changeSetConfirmError": "Modificarea nu a putut fi aplicată",
   "changeSetItemConfirmed": "Modificare aplicată",
   "changeSetItemRejected": "Modificare respinsă",
@@ -636,8 +636,8 @@
       }
     }
   },
-  "changeSetSwipeConfirm": "Confirmă",
-  "changeSetSwipeReject": "Respinge",
+  "changeSetSwipeConfirm": "Confirmați",
+  "changeSetSwipeReject": "Respingeți",
   "chatInputCancelRealtime": "Anulează (Esc)",
   "chatInputCancelRecording": "Anulează înregistrarea (Esc)",
   "chatInputConfigureModel": "Configurează modelul",
