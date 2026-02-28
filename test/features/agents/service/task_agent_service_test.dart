@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -361,6 +362,19 @@ void main() {
             reason: 'reanalysis',
           ),
         ).called(1);
+      });
+    });
+
+    group('cancelScheduledWake', () {
+      test('clears throttle and removes queued jobs', () {
+        final queue = WakeQueue();
+        when(() => mockOrchestrator.clearThrottle(any())).thenReturn(null);
+        when(() => mockOrchestrator.queue).thenReturn(queue);
+
+        service.cancelScheduledWake('agent-1');
+
+        verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+        verify(() => mockOrchestrator.queue).called(1);
       });
     });
 

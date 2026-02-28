@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -270,6 +273,23 @@ void main() {
 
       await tester.tap(find.text('Nav Template'));
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
+    });
+
+    testWidgets('tapping back chevron calls NavService.beamBack',
+        (tester) async {
+      final mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+      when(mockNavService.beamBack).thenReturn(null);
+      getIt.registerSingleton<NavService>(mockNavService);
+      addTearDown(() => getIt.unregister<NavService>());
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(mockNavService.beamBack).called(1);
     });
   });
 }

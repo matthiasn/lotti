@@ -10,6 +10,7 @@ _AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) =>
     _AiInputTaskObject(
       title: json['title'] as String,
       status: json['status'] as String,
+      priority: json['priority'] as String,
       estimatedDuration: json['estimatedDuration'] as String,
       timeSpent: json['timeSpent'] as String,
       creationDate: DateTime.parse(json['creationDate'] as String),
@@ -19,6 +20,9 @@ _AiInputTaskObject _$AiInputTaskObjectFromJson(Map<String, dynamic> json) =>
       logEntries: (json['logEntries'] as List<dynamic>)
           .map((e) => AiInputLogEntryObject.fromJson(e as Map<String, dynamic>))
           .toList(),
+      dueDate: json['dueDate'] == null
+          ? null
+          : DateTime.parse(json['dueDate'] as String),
       languageCode: json['languageCode'] as String?,
     );
 
@@ -26,11 +30,13 @@ Map<String, dynamic> _$AiInputTaskObjectToJson(_AiInputTaskObject instance) =>
     <String, dynamic>{
       'title': instance.title,
       'status': instance.status,
+      'priority': instance.priority,
       'estimatedDuration': instance.estimatedDuration,
       'timeSpent': instance.timeSpent,
       'creationDate': instance.creationDate.toIso8601String(),
       'actionItems': instance.actionItems,
       'logEntries': instance.logEntries,
+      'dueDate': instance.dueDate?.toIso8601String(),
       'languageCode': instance.languageCode,
     };
 

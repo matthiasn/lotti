@@ -44,11 +44,11 @@ class TaskForm extends ConsumerWidget {
           EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
           const SizedBox(height: 10),
         ],
+        TaskAgentReportSection(taskId: taskId),
         LatestAiResponseSummary(
           id: taskId,
           aiResponseType: AiResponseType.taskSummary,
         ),
-        TaskAgentReportSection(taskId: taskId),
         LinkedTasksWidget(taskId: taskId),
         ChecklistsWidget(entryId: taskId, task: task),
       ],

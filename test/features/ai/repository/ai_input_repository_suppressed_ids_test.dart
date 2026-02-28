@@ -23,6 +23,7 @@ class TestAiInputRepo extends AiInputRepository {
     return AiInputTaskObject(
       title: 't',
       status: 'OPEN',
+      priority: 'P2',
       creationDate: DateTime(2024),
       actionItems: const [],
       logEntries: const [],

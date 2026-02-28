@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -42,7 +43,9 @@ class AgentDetailPage extends ConsumerWidget {
 
     if (identityAsync.hasError && identityEntity == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: agentBackButton(context),
+        ),
         body: Center(
           child: Text(
             context.messages.agentDetailErrorLoading(
@@ -58,7 +61,9 @@ class AgentDetailPage extends ConsumerWidget {
 
     if (identityEntity == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: agentBackButton(context),
+        ),
         body: Center(
           child: Text(
             context.messages.agentDetailNotFound,
@@ -71,7 +76,9 @@ class AgentDetailPage extends ConsumerWidget {
     final identity = identityEntity.mapOrNull(agent: (e) => e);
     if (identity == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: agentBackButton(context),
+        ),
         body: Center(
           child: Text(
             context.messages.agentDetailUnexpectedType,
@@ -86,6 +93,7 @@ class AgentDetailPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: agentBackButton(context),
         title: Row(
           children: [
             Flexible(

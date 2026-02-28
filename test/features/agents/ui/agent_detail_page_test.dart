@@ -10,7 +10,10 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -21,10 +24,23 @@ const String _testAgentId = kTestAgentId;
 void main() {
   late MockAgentService mockAgentService;
   late MockTaskAgentService mockTaskAgentService;
+  late MockNavService mockNavService;
 
   setUp(() {
     mockAgentService = MockAgentService();
     mockTaskAgentService = MockTaskAgentService();
+    mockNavService = MockNavService();
+    when(() => mockNavService.currentPath).thenReturn('/tasks');
+    when(() => mockNavService.beamBack()).thenReturn(null);
+    if (!getIt.isRegistered<NavService>()) {
+      getIt.registerSingleton<NavService>(mockNavService);
+    }
+  });
+
+  tearDown(() async {
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
   });
 
   /// Builds [AgentDetailPage] with provider overrides.
@@ -418,8 +434,12 @@ void main() {
       // The running spinner should appear in the app bar.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // The tooltip with the running indicator label should be present.
-      expect(find.byType(Tooltip), findsOneWidget);
+      // The running indicator tooltip should be present (back button also has one).
+      final context = tester.element(find.byType(AgentDetailPage));
+      expect(
+        find.byTooltip(context.messages.agentRunningIndicator),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides running spinner when agent is not running',
@@ -567,5 +587,90 @@ void main() {
         );
       },
     );
+  });
+
+  group('AgentDetailPage - back navigation', () {
+    testWidgets('back chevron calls Navigator.pop when not in settings path',
+        (tester) async {
+      // Default setUp already sets currentPath to '/tasks'.
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestIdentity()),
+      );
+      await tester.pump();
+
+      // Verify we can find the page before tapping.
+      expect(find.byType(AgentDetailPage), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      // Navigator.pop removes the page from the tree.
+      expect(find.byType(AgentDetailPage), findsNothing);
+      // beamBack must NOT have been called — only Navigator.pop.
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron calls beamBack when in settings path',
+        (tester) async {
+      when(() => mockNavService.currentPath)
+          .thenReturn('/settings/agents/agent-1');
+
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestIdentity()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on error state scaffold', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) =>
+              Future<AgentDomainEntity?>.error(Exception('fail')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_left), findsNothing);
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on null identity scaffold', (tester) async {
+      await tester.pumpWidget(buildDataSubject());
+      await tester.pump();
+
+      expect(find.byType(AgentDetailPage), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentDetailPage), findsNothing);
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on unexpected entity type scaffold',
+        (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestState()),
+      );
+      await tester.pump();
+
+      expect(find.byType(AgentDetailPage), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentDetailPage), findsNothing);
+      verifyNever(() => mockNavService.beamBack());
+    });
   });
 }

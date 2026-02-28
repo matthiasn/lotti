@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -50,6 +51,13 @@ void main() {
         .thenAnswer((_) async => activeVersion);
     when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
         .thenAnswer((_) async => 2);
+    when(
+      () => mockRepo.getEntitiesByAgentId(
+        kTestTemplateId,
+        type: AgentEntityTypes.agentTemplateVersion,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <AgentDomainEntity>[activeVersion]);
   }
 
   group('createTemplate', () {
@@ -239,6 +247,15 @@ void main() {
           .thenAnswer((_) async => currentVersion);
       when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
           .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => <AgentDomainEntity>[currentVersion],
+      );
 
       final result = await service.createVersion(
         templateId: kTestTemplateId,
@@ -254,12 +271,82 @@ void main() {
       verify(() => mockSync.upsertEntity(any())).called(3);
     });
 
+    test('archives ALL stale active versions, not just head', () async {
+      stubTemplateExists();
+      final currentHead = makeTestTemplateHead(versionId: 'ver-3');
+      final v1 = makeTestTemplateVersion(
+        id: 'ver-1',
+        // Stale active status from a previous bug:
+        // ignore: avoid_redundant_argument_values
+        status: AgentTemplateVersionStatus.active,
+      );
+      final v2 = makeTestTemplateVersion(
+        id: 'ver-2',
+        version: 2,
+        // Also stale active:
+        // ignore: avoid_redundant_argument_values
+        status: AgentTemplateVersionStatus.active,
+      );
+      final v3 = makeTestTemplateVersion(
+        id: 'ver-3',
+        version: 3,
+        // Current head — active:
+        // ignore: avoid_redundant_argument_values
+        status: AgentTemplateVersionStatus.active,
+      );
+
+      when(() => mockRepo.getTemplateHead(kTestTemplateId))
+          .thenAnswer((_) async => currentHead);
+      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
+          .thenAnswer((_) async => 4);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[v3, v2, v1]);
+
+      await service.createVersion(
+        templateId: kTestTemplateId,
+        directives: 'New directives.',
+        authoredBy: 'admin',
+      );
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+
+      // 5 upserts: 3 archived versions + new version + updated head.
+      expect(captured, hasLength(5));
+
+      // All three old versions should be archived.
+      final archivedVersions = captured
+          .whereType<AgentTemplateVersionEntity>()
+          .where(
+            (v) => v.status == AgentTemplateVersionStatus.archived,
+          )
+          .toList();
+      expect(archivedVersions, hasLength(3));
+      expect(
+        archivedVersions.map((v) => v.id).toSet(),
+        equals({'ver-1', 'ver-2', 'ver-3'}),
+      );
+    });
+
     test('creates first version when no head exists', () async {
       stubTemplateExists();
       when(() => mockRepo.getTemplateHead(kTestTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
           .thenAnswer((_) async => 1);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[]);
 
       final result = await service.createVersion(
         templateId: kTestTemplateId,
@@ -282,6 +369,13 @@ void main() {
       when(() => mockRepo.getEntity('ver-gone')).thenAnswer((_) async => null);
       when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
           .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[]);
 
       final result = await service.createVersion(
         templateId: kTestTemplateId,
@@ -681,6 +775,15 @@ void main() {
           .thenAnswer((_) async => targetVersion);
       when(() => mockRepo.getEntity('ver-old'))
           .thenAnswer((_) async => currentVersion);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => <AgentDomainEntity>[currentVersion, targetVersion],
+      );
 
       await service.rollbackToVersion(
         templateId: kTestTemplateId,
@@ -691,7 +794,8 @@ void main() {
           .captured
           .cast<AgentDomainEntity>();
 
-      // 3 upserts: archive current, reactivate target, update head.
+      // 3 upserts: archive current (only non-archived), reactivate target,
+      // update head.
       expect(captured.length, 3);
 
       final archivedCurrent = captured[0] as AgentTemplateVersionEntity;

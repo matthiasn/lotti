@@ -172,14 +172,6 @@ class TaskLabelHandler {
     final existingIds = (task.meta.labelIds ?? const <String>[]).toSet();
     final suppressedIds = task.data.aiSuppressedLabelIds ?? const <String>{};
 
-    // Build assigned labels list.
-    final assignedLabels = <Map<String, String>>[];
-    for (final def in activeDefs) {
-      if (existingIds.contains(def.id)) {
-        assignedLabels.add({'id': def.id, 'name': def.name});
-      }
-    }
-
     // Build suppressed labels list.
     final suppressedLabels = <Map<String, String>>[];
     for (final def in activeDefs) {
@@ -204,22 +196,14 @@ class TaskLabelHandler {
       availableLabels.add({'id': def.id, 'name': def.name});
     }
 
-    if (availableLabels.isEmpty &&
-        assignedLabels.isEmpty &&
-        suppressedLabels.isEmpty) {
+    if (availableLabels.isEmpty && suppressedLabels.isEmpty) {
       return '';
     }
 
     final buffer = StringBuffer();
 
-    if (assignedLabels.isNotEmpty) {
-      buffer
-        ..writeln('## Assigned Labels')
-        ..writeln('```json')
-        ..writeln(jsonEncode(assignedLabels))
-        ..writeln('```')
-        ..writeln();
-    }
+    // Assigned labels are already included in the Current Task Context JSON,
+    // so we only emit suppressed and available labels here.
 
     if (suppressedLabels.isNotEmpty) {
       buffer

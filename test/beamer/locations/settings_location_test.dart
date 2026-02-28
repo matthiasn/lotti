@@ -500,9 +500,10 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AgentTemplateDetailPage>());
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentTemplateDetailPage>());
     });
 
     test('buildPages builds AgentTemplateDetailPage with templateId', () {
@@ -518,10 +519,11 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AgentTemplateDetailPage>());
-      final detailPage = pages[1].child as AgentTemplateDetailPage;
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentTemplateDetailPage>());
+      final detailPage = pages[2].child as AgentTemplateDetailPage;
       expect(detailPage.templateId, 'tmpl-123');
     });
 
@@ -538,10 +540,11 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AgentDetailPage>());
-      final detailPage = pages[1].child as AgentDetailPage;
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentDetailPage>());
+      final detailPage = pages[2].child as AgentDetailPage;
       expect(detailPage.agentId, 'agent-456');
     });
 

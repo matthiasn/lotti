@@ -173,6 +173,10 @@
   "agentReportHistoryEmpty": "No report snapshots yet.",
   "agentReportHistoryError": "An error occurred while loading the report history.",
   "agentReportNone": "No report available yet.",
+  "agentReportSectionTitle": "Agent Report",
+  "@agentReportSectionTitle": {
+    "description": "Header title for the agent report section on a task page."
+  },
   "agentRunningIndicator": "Running",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
@@ -337,7 +341,7 @@
       }
     }
   },
-  "agentTemplateSaveNewVersion": "Save as New Version",
+  "agentTemplateSaveNewVersion": "Save",
   "@agentTemplateSaveNewVersion": {
     "description": "Button label to save current edits as a new template version."
   },
@@ -1755,6 +1759,7 @@
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Measurables",
   "syncStepTags": "Tags",
+  "taskAgentCancelTimerTooltip": "Cancel",
   "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Next auto-run in {countdown}",
   "@taskAgentCountdownTooltip": {
@@ -1773,7 +1778,7 @@
       }
     }
   },
-  "taskAgentRunNowTooltip": "Run now",
+  "taskAgentRunNowTooltip": "Refresh",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
   "taskCategoryUnassignedLabel": "unassigned",

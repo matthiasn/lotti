@@ -6851,9 +6851,10 @@ Take into account the following task context:
           .thenAnswer((_) async => AiInputTaskObject(
                 title: 'Test Task',
                 status: 'In Progress',
+                priority: 'P2',
                 estimatedDuration: '1 hour',
                 timeSpent: '30 minutes',
-                creationDate: DateTime.now(),
+                creationDate: DateTime(2024, 3, 15),
                 actionItems: [],
                 logEntries: [],
               ));

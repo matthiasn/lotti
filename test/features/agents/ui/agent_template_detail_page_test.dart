@@ -10,16 +10,22 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+late MockNavService _mockNavService;
 
 final _testDate = DateTime(2024, 3, 15);
 
@@ -85,6 +91,10 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
     mockTemplateService = MockAgentTemplateService();
+    _mockNavService = MockNavService();
+    when(() => _mockNavService.currentPath).thenReturn('/settings/agents');
+    when(() => _mockNavService.beamBack()).thenReturn(null);
+    getIt.registerSingleton<NavService>(_mockNavService);
   });
 
   tearDown(tearDownTestGetIt);
@@ -461,8 +471,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -492,8 +502,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -644,8 +654,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -985,6 +995,40 @@ void main() {
       );
     });
 
+    testWidgets('bottom bar hidden on Stats and Reports tabs', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Bottom bar visible on Settings tab
+      expect(find.byType(FormBottomBar), findsOneWidget);
+      expect(
+        find.text(context.messages.agentTemplateSaveNewVersion),
+        findsOneWidget,
+      );
+
+      // Switch to Stats tab — bottom bar should disappear
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsNothing);
+
+      // Switch to Reports tab — bottom bar should still be hidden
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsNothing);
+
+      // Switch back to Settings tab — bottom bar should reappear
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsOneWidget);
+    });
+
     testWidgets('Stats tab shows token usage section', (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
@@ -1091,12 +1135,13 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
       await tester.pumpAndSettle();
 
-      // Report content visible
-      expect(find.text('Weekly summary: all good.'), findsOneWidget);
-      expect(find.text('Task progress update.'), findsOneWidget);
+      // Report content visible (rendered via GptMarkdown inside
+      // AgentReportSection)
+      expect(find.textContaining('Weekly summary'), findsOneWidget);
+      expect(find.textContaining('Task progress'), findsOneWidget);
 
-      // Cards are rendered
-      expect(find.byType(Card), findsNWidgets(2));
+      // Each report renders inside a ModernBaseCard
+      expect(find.byType(AgentReportSection), findsNWidgets(2));
     });
 
     testWidgets('Reports tab skips non-AgentReportEntity items',
@@ -1161,11 +1206,12 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
       await tester.pumpAndSettle();
 
-      // Valid report is shown
-      expect(find.text('Valid report.'), findsOneWidget);
-      // Only one Card for the valid report (non-report item renders as
-      // SizedBox.shrink, not a Card)
-      expect(find.byType(Card), findsOneWidget);
+      // Valid report is shown (rendered via GptMarkdown inside
+      // AgentReportSection)
+      expect(find.textContaining('Valid report'), findsOneWidget);
+      // Only one AgentReportSection for the valid report (non-report item
+      // renders as SizedBox.shrink)
+      expect(find.byType(AgentReportSection), findsOneWidget);
     });
 
     testWidgets('Reports tab shows loading indicator', (tester) async {
@@ -1279,6 +1325,129 @@ void main() {
         find.text(context.messages.commonError),
         findsOneWidget,
       );
+    });
+  });
+
+  group('AgentTemplateDetailPage - back navigation', () {
+    const templateId = 'tpl-nav-001';
+
+    testWidgets('back chevron calls beamBack when in settings path',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron calls Navigator.pop when not in settings path',
+        (tester) async {
+      when(() => _mockNavService.currentPath).thenReturn('/tasks');
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verifyNever(() => _mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on create mode', (tester) async {
+      await tester.pumpWidget(buildCreateSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on error state', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-error'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) => throw Exception('provider failed'),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on not-found state', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-missing'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('cancel button navigates back', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      await tester.tap(find.text(context.messages.cancelButton));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
     });
   });
 }

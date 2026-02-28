@@ -167,6 +167,7 @@
   "agentReportHistoryEmpty": "Noch keine Berichts-Snapshots.",
   "agentReportHistoryError": "Fehler beim Laden der Berichtshistorie.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
+  "agentReportSectionTitle": "Agentenbericht",
   "agentRunningIndicator": "Läuft",
   "agentSettingsSubtitle": "Vorlagen, Instanzen und Überwachung",
   "agentSettingsTitle": "Agenten",
@@ -238,7 +239,7 @@
       }
     }
   },
-  "agentTemplateSaveNewVersion": "Als neue Version speichern",
+  "agentTemplateSaveNewVersion": "Speichern",
   "agentTemplateSelectTitle": "Vorlage auswählen",
   "agentTemplateSettingsSubtitle": "Agenten-Persönlichkeiten und Anweisungen verwalten",
   "agentTemplateSettingsTab": "Einstellungen",
@@ -1623,6 +1624,7 @@
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Messgrößen",
   "syncStepTags": "Tags",
+  "taskAgentCancelTimerTooltip": "Abbrechen",
   "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Nächster automatischer Lauf in {countdown}",
   "@taskAgentCountdownTooltip": {
@@ -1641,7 +1643,7 @@
       }
     }
   },
-  "taskAgentRunNowTooltip": "Jetzt ausführen",
+  "taskAgentRunNowTooltip": "Aktualisieren",
   "taskCategoryAllLabel": "Alle",
   "taskCategoryLabel": "Kategorie:",
   "taskCategoryUnassignedLabel": "Nicht zugewiesen",

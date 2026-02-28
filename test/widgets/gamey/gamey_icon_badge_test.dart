@@ -171,7 +171,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(GameyIconBadge));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(GameyIconBadge),
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pump();
 
       expect(tapCount, equals(1));
@@ -442,7 +447,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(GameyFeatureIconBadge));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(GameyFeatureIconBadge),
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pump();
 
       expect(tapped, isTrue);

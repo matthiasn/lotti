@@ -738,6 +738,12 @@ abstract class AppLocalizations {
   /// **'No report available yet.'**
   String get agentReportNone;
 
+  /// Header title for the agent report section on a task page.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Report'**
+  String get agentReportSectionTitle;
+
   /// No description provided for @agentRunningIndicator.
   ///
   /// In en, this message translates to:
@@ -1041,7 +1047,7 @@ abstract class AppLocalizations {
   /// Button label to save current edits as a new template version.
   ///
   /// In en, this message translates to:
-  /// **'Save as New Version'**
+  /// **'Save'**
   String get agentTemplateSaveNewVersion;
 
   /// Title for the template selection dialog when creating an agent.
@@ -7231,6 +7237,12 @@ abstract class AppLocalizations {
   /// **'Tags'**
   String get syncStepTags;
 
+  /// No description provided for @taskAgentCancelTimerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get taskAgentCancelTimerTooltip;
+
   /// No description provided for @taskAgentChipLabel.
   ///
   /// In en, this message translates to:
@@ -7258,7 +7270,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentRunNowTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Run now'**
+  /// **'Refresh'**
   String get taskAgentRunNowTooltip;
 
   /// No description provided for @taskCategoryAllLabel.

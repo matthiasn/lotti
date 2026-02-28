@@ -169,7 +169,8 @@ void main() {
       expect(find.text('System'), findsOneWidget);
     });
 
-    testWidgets('shows tool name chip for action messages', (tester) async {
+    testWidgets('shows tool name as text (not Chip) for action messages',
+        (tester) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
@@ -185,6 +186,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('analyzeTask'), findsOneWidget);
+      // Tool name is rendered as plain Text, not a Chip widget.
+      expect(find.byType(Chip), findsNothing);
     });
 
     testWidgets('action kind with contentId is expandable', (tester) async {

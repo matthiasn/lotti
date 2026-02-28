@@ -350,6 +350,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentReportNone => 'Report zatím není k dispozici.';
 
   @override
+  String get agentReportSectionTitle => 'Agent Report';
+
+  @override
   String get agentRunningIndicator => 'Running';
 
   @override
@@ -519,7 +522,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateSaveNewVersion => 'Save as New Version';
+  String get agentTemplateSaveNewVersion => 'Save';
 
   @override
   String get agentTemplateSelectTitle => 'Select Template';
@@ -3983,6 +3986,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepTags => 'Tagy';
+
+  @override
+  String get taskAgentCancelTimerTooltip => 'Cancel';
 
   @override
   String get taskAgentChipLabel => 'Agent';

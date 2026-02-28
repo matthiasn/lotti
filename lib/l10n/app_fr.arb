@@ -167,6 +167,7 @@
   "agentReportHistoryEmpty": "Pas encore d'instantanés de rapport.",
   "agentReportHistoryError": "Une erreur est survenue lors du chargement de l'historique des rapports.",
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
+  "agentReportSectionTitle": "Rapport de l'agent",
   "agentRunningIndicator": "En cours",
   "agentSettingsSubtitle": "Modèles, instances et surveillance",
   "agentSettingsTitle": "Agents",
@@ -238,7 +239,7 @@
       }
     }
   },
-  "agentTemplateSaveNewVersion": "Enregistrer comme nouvelle version",
+  "agentTemplateSaveNewVersion": "Enregistrer",
   "agentTemplateSelectTitle": "Sélectionner un modèle",
   "agentTemplateSettingsSubtitle": "Gérer les personnalités et directives des agents",
   "agentTemplateSettingsTab": "Paramètres",
@@ -1623,6 +1624,7 @@
   "syncStepLabels": "Étiquettes",
   "syncStepMeasurables": "Mesurables",
   "syncStepTags": "Tags",
+  "taskAgentCancelTimerTooltip": "Annuler",
   "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Prochaine exécution auto dans {countdown}",
   "@taskAgentCountdownTooltip": {
@@ -1641,7 +1643,7 @@
       }
     }
   },
-  "taskAgentRunNowTooltip": "Exécuter maintenant",
+  "taskAgentRunNowTooltip": "Actualiser",
   "taskCategoryAllLabel": "tout",
   "taskCategoryLabel": "Catégorie :",
   "taskCategoryUnassignedLabel": "non attribué",

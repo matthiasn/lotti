@@ -2206,7 +2206,7 @@ final class TemplateTokenUsageRecordsProvider extends $FunctionalProvider<
 }
 
 String _$templateTokenUsageRecordsHash() =>
-    r'3768c240d51948d76c64d5ab19ef3c4319792465';
+    r'c6dcc9098d271f94adea512ee30854ff46e2c6aa';
 
 /// Raw token usage records for all instances of a template.
 ///
@@ -2350,7 +2350,7 @@ final class TemplateTokenUsageSummariesFamily extends $Family
 ///
 /// Groups token records by instance, then by model within each instance.
 /// Returns full per-model summaries so each instance can render a
-/// [TokenUsageTable] identical in structure to the aggregate view.
+/// `TokenUsageTable` identical in structure to the aggregate view.
 
 @ProviderFor(templateInstanceTokenBreakdown)
 final templateInstanceTokenBreakdownProvider =
@@ -2360,7 +2360,7 @@ final templateInstanceTokenBreakdownProvider =
 ///
 /// Groups token records by instance, then by model within each instance.
 /// Returns full per-model summaries so each instance can render a
-/// [TokenUsageTable] identical in structure to the aggregate view.
+/// `TokenUsageTable` identical in structure to the aggregate view.
 
 final class TemplateInstanceTokenBreakdownProvider extends $FunctionalProvider<
         AsyncValue<List<InstanceTokenBreakdown>>,
@@ -2373,7 +2373,7 @@ final class TemplateInstanceTokenBreakdownProvider extends $FunctionalProvider<
   ///
   /// Groups token records by instance, then by model within each instance.
   /// Returns full per-model summaries so each instance can render a
-  /// [TokenUsageTable] identical in structure to the aggregate view.
+  /// `TokenUsageTable` identical in structure to the aggregate view.
   TemplateInstanceTokenBreakdownProvider._(
       {required TemplateInstanceTokenBreakdownFamily super.from,
       required String super.argument})
@@ -2429,7 +2429,7 @@ String _$templateInstanceTokenBreakdownHash() =>
 ///
 /// Groups token records by instance, then by model within each instance.
 /// Returns full per-model summaries so each instance can render a
-/// [TokenUsageTable] identical in structure to the aggregate view.
+/// `TokenUsageTable` identical in structure to the aggregate view.
 
 final class TemplateInstanceTokenBreakdownFamily extends $Family
     with
@@ -2448,7 +2448,7 @@ final class TemplateInstanceTokenBreakdownFamily extends $Family
   ///
   /// Groups token records by instance, then by model within each instance.
   /// Returns full per-model summaries so each instance can render a
-  /// [TokenUsageTable] identical in structure to the aggregate view.
+  /// `TokenUsageTable` identical in structure to the aggregate view.
 
   TemplateInstanceTokenBreakdownProvider call(
     String templateId,

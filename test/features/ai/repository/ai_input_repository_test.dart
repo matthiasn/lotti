@@ -982,6 +982,110 @@ void main() {
         expect(namesById['l1'], 'Label 1');
         expect(namesById['l2'], 'Label 2');
       });
+
+      test('includes priority and dueDate in task JSON', () async {
+        // Arrange
+        const taskTitle = 'Task with priority and due date';
+        const statusId = 'status-prio';
+        final dueDate = DateTime(2025, 6, 15, 12);
+
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer((_) async =>
+                (const Duration(minutes: 20), <String, TimeRange>{}));
+
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.open(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            estimate: const Duration(minutes: 20),
+            priority: TaskPriority.p1High,
+            due: dueDate,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+        when(() => mockDb.getAllLabelDefinitions())
+            .thenAnswer((_) async => const []);
+
+        // Act
+        final jsonString = await repository.buildTaskDetailsJson(id: taskId);
+        expect(jsonString, isNotNull);
+        final data = jsonDecode(jsonString!) as Map<String, dynamic>;
+
+        // Assert priority is included
+        expect(data['priority'], 'P1');
+
+        // Assert dueDate is included
+        expect(data['dueDate'], isNotNull);
+        expect(data['dueDate'], contains('2025-06-15'));
+      });
+
+      test('omits dueDate when task has no due date', () async {
+        // Arrange
+        const taskTitle = 'Task without due date';
+        const statusId = 'status-nodue';
+
+        when(() => mockTaskProgressRepository.getTaskProgressData(id: taskId))
+            .thenAnswer((_) async =>
+                (const Duration(minutes: 15), <String, TimeRange>{}));
+
+        final task = JournalEntity.task(
+          meta: Metadata(
+            id: taskId,
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            createdAt: creationDate,
+            updatedAt: creationDate,
+          ),
+          data: TaskData(
+            title: taskTitle,
+            status: TaskStatus.open(
+              id: statusId,
+              createdAt: creationDate,
+              utcOffset: 0,
+            ),
+            statusHistory: const [],
+            dateFrom: creationDate,
+            dateTo: creationDate,
+            estimate: const Duration(minutes: 15),
+          ),
+        );
+
+        when(() => mockDb.journalEntityById(taskId))
+            .thenAnswer((_) async => task);
+        when(() => mockDb.getLinkedEntities(taskId))
+            .thenAnswer((_) async => []);
+        when(() => mockDb.getAllLabelDefinitions())
+            .thenAnswer((_) async => const []);
+
+        // Act
+        final jsonString = await repository.buildTaskDetailsJson(id: taskId);
+        expect(jsonString, isNotNull);
+        final data = jsonDecode(jsonString!) as Map<String, dynamic>;
+
+        // Assert default priority is P2
+        expect(data['priority'], 'P2');
+
+        // Assert dueDate is null (not present or explicitly null)
+        expect(data['dueDate'], isNull);
+      });
     });
   });
 }
