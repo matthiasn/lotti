@@ -31,6 +31,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -204,6 +205,11 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockEmbeddingsDb extends Mock implements EmbeddingsDb {}
 
+class MockOllamaEmbeddingRepository extends Mock
+    implements OllamaEmbeddingRepository {}
+
+class MockHttpClient extends Mock implements http.Client {}
+
 class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
@@ -354,7 +360,5 @@ class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 
 class MockDashScopeInferenceRepository extends Mock
     implements DashScopeInferenceRepository {}
-
-class MockHttpClient extends Mock implements http.Client {}
 
 class FakeBaseRequest extends Fake implements http.BaseRequest {}

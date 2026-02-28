@@ -566,6 +566,7 @@
   "configFlagEnableDailyOsDescription": "Zobrazit DailyOS v hlavní navigaci.",
   "configFlagEnableDashboardsPage": "Povolit stránku Dashboardů",
   "configFlagEnableDashboardsPageDescription": "Zobrazit stránku Přehledy v hlavní navigaci. Prohlížejte svá data a poznatky na přizpůsobitelných přehledech.",
+  "configFlagEnableEmbeddings": "Generovat vektory",
   "configFlagEnableEvents": "Povolit události",
   "configFlagEnableEventsDescription": "Zobrazit funkci Události pro vytváření, sledování a správu událostí ve vašem deníku.",
   "configFlagEnableHabitsPage": "Povolit stránku Návyků",

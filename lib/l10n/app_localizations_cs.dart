@@ -1598,6 +1598,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit stránku Přehledy v hlavní navigaci. Prohlížejte svá data a poznatky na přizpůsobitelných přehledech.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Generovat vektory';
+
+  @override
   String get configFlagEnableEvents => 'Povolit události';
 
   @override

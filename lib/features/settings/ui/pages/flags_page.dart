@@ -31,6 +31,7 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     enableEventsFlag,
     enableSessionRatingsFlag,
     enableAgentsFlag,
+    enableEmbeddingsFlag,
   ];
 
   // Helper to get icon for each flag
@@ -64,6 +65,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return Icons.star_rate_rounded;
       case enableAgentsFlag:
         return Icons.smart_toy_outlined;
+      case enableEmbeddingsFlag:
+        return Icons.hub_outlined;
       default:
         return Icons.settings;
     }
@@ -100,6 +103,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableSessionRatingsDescription;
       case enableAgentsFlag:
         return context.messages.configFlagEnableAgentsDescription;
+      case enableEmbeddingsFlag:
+        return context.messages.configFlagAttemptEmbeddingDescription;
       default:
         return flag.description;
     }
@@ -136,6 +141,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableSessionRatings;
       case enableAgentsFlag:
         return context.messages.configFlagEnableAgents;
+      case enableEmbeddingsFlag:
+        return context.messages.configFlagEnableEmbeddings;
       default:
         return flag.name;
     }

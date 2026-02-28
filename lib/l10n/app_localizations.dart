@@ -2928,6 +2928,12 @@ abstract class AppLocalizations {
   /// **'Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.'**
   String get configFlagEnableDashboardsPageDescription;
 
+  /// No description provided for @configFlagEnableEmbeddings.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Embeddings'**
+  String get configFlagEnableEmbeddings;
+
   /// No description provided for @configFlagEnableEvents.
   ///
   /// In en, this message translates to:

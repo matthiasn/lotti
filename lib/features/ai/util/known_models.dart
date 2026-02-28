@@ -318,6 +318,16 @@ const List<KnownModel> ollamaModels = [
         'Provides advanced reasoning capabilities.',
   ),
   KnownModel(
+    providerModelId: 'mxbai-embed-large',
+    name: 'mxbai-embed-large (Embeddings)',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Text embedding model with 1024 dimensions for semantic search. '
+        'Used for finding related entries and improving search results.',
+  ),
+  KnownModel(
     providerModelId: 'qwen3:8b',
     name: 'Qwen3 8B',
     inputModalities: [Modality.text],

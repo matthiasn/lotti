@@ -841,6 +841,7 @@
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
   "configFlagEnableDashboardsPageDescription": "Show the Dashboards page in the main navigation. View your data and insights in customizable dashboards.",
+  "configFlagEnableEmbeddings": "Generate Embeddings",
   "configFlagEnableEvents": "Enable Events",
   "configFlagEnableEventsDescription": "Show the Events feature to create, track, and manage events in your journal.",
   "configFlagEnableHabitsPage": "Enable Habits page",

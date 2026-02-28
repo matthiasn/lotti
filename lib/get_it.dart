@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
@@ -151,18 +153,6 @@ void safeLogForTesting(String message, {required bool isError}) =>
     _safeLog(message, isError: isError);
 
 Future<void> registerSingletons() async {
-  // EmbeddingsDb depends on the sqlite-vec native extension which may not be
-  // available on all platforms (e.g. CI runners without AVX).  Register lazily
-  // so a failure here doesn't prevent app startup.
-  // coverage:ignore-start
-  _registerLazyServiceSafely<EmbeddingsDb>(
-    () => initProductionEmbeddingsDb(
-      documentsPath: getIt<Directory>().path,
-    ),
-    'EmbeddingsDb',
-  );
-  // coverage:ignore-end
-
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<UserActivityService>(UserActivityService())
@@ -387,6 +377,43 @@ Future<void> registerSingletons() async {
     LabelAssignmentEventService.new,
     'LabelAssignmentEventService',
   );
+
+  // Embedding generation pipeline (Ollama-based, local).
+  // The entire pipeline depends on sqlite-vec which requires a native extension.
+  // If EmbeddingsDb fails to initialize (e.g. missing native lib on CI), the
+  // pipeline is non-essential and the app should still start.
+  // coverage:ignore-start
+  try {
+    final embeddingsDb = initProductionEmbeddingsDb(
+      documentsPath: getIt<Directory>().path,
+    );
+    getIt
+      ..registerSingleton<EmbeddingsDb>(
+        embeddingsDb,
+        dispose: (db) => db.close(),
+      )
+      ..registerSingleton<OllamaEmbeddingRepository>(
+        OllamaEmbeddingRepository(),
+        dispose: (repo) => repo.close(),
+      )
+      ..registerSingleton<EmbeddingService>(
+        EmbeddingService(
+          embeddingsDb: embeddingsDb,
+          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          updateNotifications: getIt<UpdateNotifications>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        ),
+        dispose: (svc) async => svc.stop(),
+      );
+    getIt<EmbeddingService>().start();
+  } catch (e) {
+    _safeLog(
+      'Embedding pipeline unavailable: $e',
+      isError: true,
+    );
+  }
+  // coverage:ignore-end
 
   // Automatically populate sequence log if empty (one-time migration)
   unawaited(_checkAndPopulateSequenceLog());

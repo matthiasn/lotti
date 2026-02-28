@@ -706,6 +706,7 @@
   "configFlagEnableDailyOsDescription": "Afișează DailyOS în navigarea principală.",
   "configFlagEnableDashboardsPage": "Activează pagina Tablouri de bord",
   "configFlagEnableDashboardsPageDescription": "Afișează pagina Tablouri de bord în navigarea principală. Vizualizați datele și informațiile dvs. în tablouri de bord personalizabile.",
+  "configFlagEnableEmbeddings": "Generare încorporări",
   "configFlagEnableEvents": "Activează evenimentele",
   "configFlagEnableEventsDescription": "Afișează funcția Evenimente pentru a crea, urmări și gestiona evenimente în jurnalul dvs.",
   "configFlagEnableHabitsPage": "Activează pagina Obiceiuri",

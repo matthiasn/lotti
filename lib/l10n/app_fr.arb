@@ -706,6 +706,7 @@
   "configFlagEnableDailyOsDescription": "Afficher DailyOS dans la navigation principale.",
   "configFlagEnableDashboardsPage": "Activer la page Tableaux de bord",
   "configFlagEnableDashboardsPageDescription": "Afficher la page Tableaux de bord dans la navigation principale. Affiche tes données et tes informations dans des tableaux de bord personnalisables.",
+  "configFlagEnableEmbeddings": "Générer des embeddings",
   "configFlagEnableEvents": "Activer les événements",
   "configFlagEnableEventsDescription": "Afficher la fonctionnalité Événements pour créer, suivre et gérer des événements dans ton journal.",
   "configFlagEnableHabitsPage": "Activer la page Habitudes",

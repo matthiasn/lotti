@@ -1611,6 +1611,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează pagina Tablouri de bord în navigarea principală. Vizualizați datele și informațiile dvs. în tablouri de bord personalizabile.';
 
   @override
+  String get configFlagEnableEmbeddings => 'Generare încorporări';
+
+  @override
   String get configFlagEnableEvents => 'Activează evenimentele';
 
   @override

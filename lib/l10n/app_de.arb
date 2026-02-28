@@ -706,6 +706,7 @@
   "configFlagEnableDailyOsDescription": "DailyOS in der Hauptnavigation anzeigen.",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",
   "configFlagEnableDashboardsPageDescription": "Zeigt die Dashboard-Seite in der Hauptnavigation an. Zeige deine Daten und Erkenntnisse in anpassbaren Dashboards an.",
+  "configFlagEnableEmbeddings": "Einbettungen generieren",
   "configFlagEnableEvents": "Ereignisse aktivieren",
   "configFlagEnableEventsDescription": "Ereignisfunktion anzeigen, um Ereignisse in deinem Journal zu erstellen, zu verfolgen und zu verwalten.",
   "configFlagEnableHabitsPage": "Seite Gewohnheiten aktivieren",
