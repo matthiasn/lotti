@@ -4138,6 +4138,44 @@ void main() {
       ).called(1);
     });
 
+    test('SyncAgentEntity skips enqueue when entity is null', () async {
+      const message = SyncMessage.agentEntity(
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      verifyNever(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      );
+      verify(
+        () => loggingService.captureEvent(
+          'enqueue.skip agentEntity is null',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
+    });
+
+    test('SyncAgentLink skips enqueue when link is null', () async {
+      const message = SyncMessage.agentLink(
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      verifyNever(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      );
+      verify(
+        () => loggingService.captureEvent(
+          'enqueue.skip agentLink is null',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
+    });
+
     test('SyncAgentLink merges with existing pending item', () async {
       final link = AgentLink.agentTask(
         id: 'link-abc',

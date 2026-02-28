@@ -44,6 +44,49 @@ void main() {
       expect(extractJsonPathFromEvent(ev), '/sub/a.json');
     });
 
+    test('extractJsonPathFromEvent returns jsonPath for agentEntity', () {
+      final ev = MockEvent();
+      final jsonPayload = <String, dynamic>{
+        'runtimeType': 'agentEntity',
+        'jsonPath': '/agent_entities/agent-1.json',
+      };
+      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+      when(() => ev.text).thenReturn(text);
+
+      expect(
+        extractJsonPathFromEvent(ev),
+        '/agent_entities/agent-1.json',
+      );
+    });
+
+    test('extractJsonPathFromEvent returns jsonPath for agentLink', () {
+      final ev = MockEvent();
+      final jsonPayload = <String, dynamic>{
+        'runtimeType': 'agentLink',
+        'jsonPath': '/agent_links/link-1.json',
+      };
+      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+      when(() => ev.text).thenReturn(text);
+
+      expect(
+        extractJsonPathFromEvent(ev),
+        '/agent_links/link-1.json',
+      );
+    });
+
+    test('extractJsonPathFromEvent returns null for unsupported runtimeType',
+        () {
+      final ev = MockEvent();
+      final jsonPayload = <String, dynamic>{
+        'runtimeType': 'entryLink',
+        'jsonPath': '/some/path.json',
+      };
+      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+      when(() => ev.text).thenReturn(text);
+
+      expect(extractJsonPathFromEvent(ev), isNull);
+    });
+
     test('isLikelySyncPayloadText detects valid base64 JSON with runtimeType',
         () {
       final valid = base64.encode(utf8.encode(json.encode(<String, dynamic>{

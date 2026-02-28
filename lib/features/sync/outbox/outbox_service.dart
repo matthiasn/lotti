@@ -26,6 +26,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 class OutboxService {
   OutboxService({
@@ -1038,53 +1039,16 @@ class OutboxService {
       );
       return false;
     }
-    final entityId = entity.id;
-    final relativePath = relativeAgentEntityPath(entityId);
-    final fullPath = '${_documentsDirectory.path}$relativePath';
-
-    // Save entity JSON to disk before enqueuing
-    await _saveJson(fullPath, json.encode(entity.toJson()));
-
-    // Build outbox message with jsonPath set (entity stays for now; sender
-    // will null it after uploading the file).
-    final enriched = msg.copyWith(jsonPath: relativePath);
-    final enrichedJson = json.encode(enriched.toJson());
-    final enrichedSize = utf8.encode(enrichedJson).length;
-
-    // Check for existing pending outbox item for merge/dedup
-    final existingItem = await _syncDatabase.findPendingByEntryId(entityId);
-
-    if (existingItem != null) {
-      await _syncDatabase.updateOutboxMessage(
-        itemId: existingItem.id,
-        newMessage: enrichedJson,
-        newSubject: 'agentEntity:$entityId',
-        payloadSize: enrichedSize,
-      );
-      _loggingService.captureEvent(
-        'enqueue MERGED type=SyncAgentEntity id=$entityId',
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage',
-      );
-      unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-      return true;
-    }
-
-    await _syncDatabase.addOutboxItem(
-      commonFields.copyWith(
-        subject: Value('agentEntity:$entityId'),
-        message: Value(enrichedJson),
-        outboxEntryId: Value(entityId),
-        payloadSize: Value(enrichedSize),
-      ),
+    return _enqueueAgentPayload(
+      id: entity.id,
+      payloadJson: json.encode(entity.toJson()),
+      relativePath: relativeAgentEntityPath(entity.id),
+      enrichedMessage:
+          msg.copyWith(jsonPath: relativeAgentEntityPath(entity.id)),
+      subjectPrefix: 'agentEntity',
+      typeName: 'SyncAgentEntity',
+      commonFields: commonFields,
     );
-    _loggingService.captureEvent(
-      'enqueue type=SyncAgentEntity '
-      'subject=agentEntity:$entityId',
-      domain: 'OUTBOX',
-      subDomain: 'enqueueMessage',
-    );
-    return false;
   }
 
   Future<bool> _enqueueAgentLink({
@@ -1100,30 +1064,52 @@ class OutboxService {
       );
       return false;
     }
-    final linkId = link.id;
-    final relativePath = relativeAgentLinkPath(linkId);
-    final fullPath = '${_documentsDirectory.path}$relativePath';
+    return _enqueueAgentPayload(
+      id: link.id,
+      payloadJson: json.encode(link.toJson()),
+      relativePath: relativeAgentLinkPath(link.id),
+      enrichedMessage: msg.copyWith(jsonPath: relativeAgentLinkPath(link.id)),
+      subjectPrefix: 'agentLink',
+      typeName: 'SyncAgentLink',
+      commonFields: commonFields,
+    );
+  }
 
-    // Save link JSON to disk before enqueuing
-    await _saveJson(fullPath, json.encode(link.toJson()));
+  /// Shared implementation for enqueuing agent entities and links.
+  /// Saves [payloadJson] to disk, builds an enriched outbox message from
+  /// [enrichedMessage], and either merges into an existing pending item or
+  /// creates a new one.
+  Future<bool> _enqueueAgentPayload({
+    required String id,
+    required String payloadJson,
+    required String relativePath,
+    required SyncMessage enrichedMessage,
+    required String subjectPrefix,
+    required String typeName,
+    required OutboxCompanion commonFields,
+  }) async {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
 
-    // Build outbox message with jsonPath set
-    final enriched = msg.copyWith(jsonPath: relativePath);
-    final enrichedJson = json.encode(enriched.toJson());
+    await _saveJson(fullPath, payloadJson);
+
+    final enrichedJson = json.encode(enrichedMessage.toJson());
     final enrichedSize = utf8.encode(enrichedJson).length;
+    final subject = '$subjectPrefix:$id';
 
-    // Check for existing pending outbox item for merge/dedup
-    final existingItem = await _syncDatabase.findPendingByEntryId(linkId);
+    final existingItem = await _syncDatabase.findPendingByEntryId(id);
 
     if (existingItem != null) {
       await _syncDatabase.updateOutboxMessage(
         itemId: existingItem.id,
         newMessage: enrichedJson,
-        newSubject: 'agentLink:$linkId',
+        newSubject: subject,
         payloadSize: enrichedSize,
       );
       _loggingService.captureEvent(
-        'enqueue MERGED type=SyncAgentLink id=$linkId',
+        'enqueue MERGED type=$typeName id=$id',
         domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       );
@@ -1133,15 +1119,14 @@ class OutboxService {
 
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
-        subject: Value('agentLink:$linkId'),
+        subject: Value(subject),
         message: Value(enrichedJson),
-        outboxEntryId: Value(linkId),
+        outboxEntryId: Value(id),
         payloadSize: Value(enrichedSize),
       ),
     );
     _loggingService.captureEvent(
-      'enqueue type=SyncAgentLink '
-      'subject=agentLink:$linkId',
+      'enqueue type=$typeName subject=$subject',
       domain: 'OUTBOX',
       subDomain: 'enqueueMessage',
     );

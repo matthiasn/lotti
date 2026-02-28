@@ -1053,6 +1053,12 @@ class SyncEventProcessor {
   /// directly. If only `jsonPath` is set, loads the entity from disk (the file
   /// was already downloaded by `AttachmentIngestor`). Returns null when
   /// neither is available.
+  ///
+  /// Path-validation errors from `resolveJsonCandidateFile` (e.g. path
+  /// traversal) are permanent — logged and skipped. File-read
+  /// [FileSystemException]s are rethrown so the pipeline retries (attachment
+  /// may not have arrived yet). Other exceptions (corrupt JSON, parse errors)
+  /// are logged and return null to skip permanently.
   Future<AgentDomainEntity?> _resolveAgentEntity(
     SyncAgentEntity msg,
   ) async {
@@ -1068,12 +1074,29 @@ class SyncEventProcessor {
       );
       return null;
     }
+    // Validate path first — throws FileSystemException for path traversal.
+    // This is a permanent error (malformed jsonPath), so catch and skip.
+    final File file;
     try {
-      final file = resolveJsonCandidateFile(jp);
+      file = resolveJsonCandidateFile(jp);
+    } on FileSystemException catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve.agentEntity.invalidPath',
+        stackTrace: st,
+      );
+      return null;
+    }
+    try {
       final jsonString = await file.readAsString();
       return AgentDomainEntity.fromJson(
         json.decode(jsonString) as Map<String, dynamic>,
       );
+    } on FileSystemException {
+      // Attachment file not yet available — rethrow so the pipeline retries
+      // and registers the pending descriptor path for catch-up.
+      rethrow;
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -1081,12 +1104,13 @@ class SyncEventProcessor {
         subDomain: 'resolve.agentEntity',
         stackTrace: st,
       );
-      rethrow;
+      return null;
     }
   }
 
   /// Resolves the [AgentLink] from a [SyncAgentLink] message.
   /// Same strategy as [_resolveAgentEntity]: inline first, then jsonPath.
+  /// Path-validation errors skip permanently; file-read errors retry.
   Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) async {
     if (msg.agentLink != null) {
       return msg.agentLink;
@@ -1100,12 +1124,25 @@ class SyncEventProcessor {
       );
       return null;
     }
+    final File file;
     try {
-      final file = resolveJsonCandidateFile(jp);
+      file = resolveJsonCandidateFile(jp);
+    } on FileSystemException catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve.agentLink.invalidPath',
+        stackTrace: st,
+      );
+      return null;
+    }
+    try {
       final jsonString = await file.readAsString();
       return AgentLink.fromJson(
         json.decode(jsonString) as Map<String, dynamic>,
       );
+    } on FileSystemException {
+      rethrow;
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -1113,7 +1150,7 @@ class SyncEventProcessor {
         subDomain: 'resolve.agentLink',
         stackTrace: st,
       );
-      rethrow;
+      return null;
     }
   }
 

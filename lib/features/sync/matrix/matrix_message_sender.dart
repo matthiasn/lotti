@@ -12,6 +12,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
@@ -146,24 +147,50 @@ class MatrixMessageSender {
         );
       }
       if (outboundMessage is SyncAgentEntity) {
-        final normalized = await _sendAgentEntityPayload(
-          room: room,
-          message: outboundMessage,
-        );
-        if (normalized == null) {
-          return false;
+        // Enrich legacy items that lack jsonPath but have inline entity
+        if (outboundMessage.jsonPath == null &&
+            outboundMessage.agentEntity != null) {
+          final entity = outboundMessage.agentEntity!;
+          final relativePath = relativeAgentEntityPath(entity.id);
+          await _savePayloadToDisk(
+            relativePath: relativePath,
+            jsonPayload: json.encode(entity.toJson()),
+          );
+          outboundMessage = outboundMessage.copyWith(jsonPath: relativePath);
         }
-        outboundMessage = normalized;
+        if (outboundMessage.jsonPath != null) {
+          final normalized = await _sendAgentEntityPayload(
+            room: room,
+            message: outboundMessage,
+          );
+          if (normalized == null) {
+            return false;
+          }
+          outboundMessage = normalized;
+        }
       }
       if (outboundMessage is SyncAgentLink) {
-        final normalized = await _sendAgentLinkPayload(
-          room: room,
-          message: outboundMessage,
-        );
-        if (normalized == null) {
-          return false;
+        // Enrich legacy items that lack jsonPath but have inline link
+        if (outboundMessage.jsonPath == null &&
+            outboundMessage.agentLink != null) {
+          final link = outboundMessage.agentLink!;
+          final relativePath = relativeAgentLinkPath(link.id);
+          await _savePayloadToDisk(
+            relativePath: relativePath,
+            jsonPayload: json.encode(link.toJson()),
+          );
+          outboundMessage = outboundMessage.copyWith(jsonPath: relativePath);
         }
-        outboundMessage = normalized;
+        if (outboundMessage.jsonPath != null) {
+          final normalized = await _sendAgentLinkPayload(
+            room: room,
+            message: outboundMessage,
+          );
+          if (normalized == null) {
+            return false;
+          }
+          outboundMessage = normalized;
+        }
       }
 
       final encodedMessage = json.encode(outboundMessage);
@@ -436,87 +463,62 @@ class MatrixMessageSender {
   }
 
   /// Uploads the agent entity JSON as a file attachment and returns a
-  /// descriptor-only [SyncAgentEntity] with `jsonPath` set and
-  /// `agentEntity` nulled. Returns null on failure.
+  /// descriptor-only [SyncAgentEntity] with `agentEntity` nulled.
+  /// Returns null on failure. Requires both `agentEntity` and `jsonPath`
+  /// to be set — callers must guard on `jsonPath != null` before calling.
   Future<SyncAgentEntity?> _sendAgentEntityPayload({
     required Room room,
     required SyncAgentEntity message,
   }) async {
-    final agentEntity = message.agentEntity;
-    if (agentEntity == null) {
+    if (message.agentEntity == null || message.jsonPath == null) {
       _loggingService.captureEvent(
-        'skipping agent entity send: no entity',
+        'skipping agent entity send: missing entity or jsonPath',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return null;
     }
-    final relativePath = message.jsonPath;
-    if (relativePath == null) {
-      _loggingService.captureEvent(
-        'skipping agent entity send: no jsonPath',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-      return null;
-    }
-    final relativeJoined = p.joinAll(
-      relativePath.split('/').where((part) => part.isNotEmpty),
-    );
-    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
-
-    late final Uint8List jsonBytes;
-    try {
-      jsonBytes = await File(fullPath).readAsBytes();
-    } catch (error, stackTrace) {
-      _loggingService.captureException(
-        error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.agentEntity',
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-
-    final sent = await _sendFile(
+    final uploaded = await _uploadAgentPayload(
       room: room,
-      fullPath: fullPath,
-      relativePath: relativePath,
-      bytes: jsonBytes,
+      relativePath: message.jsonPath!,
+      logLabel: 'agentEntity',
     );
-    if (!sent) {
-      return null;
-    }
-
-    // Return descriptor-only message (entity nulled, jsonPath set)
+    if (!uploaded) return null;
     return message.copyWith(agentEntity: null);
   }
 
   /// Uploads the agent link JSON as a file attachment and returns a
-  /// descriptor-only [SyncAgentLink] with `jsonPath` set and
-  /// `agentLink` nulled. Returns null on failure.
+  /// descriptor-only [SyncAgentLink] with `agentLink` nulled.
+  /// Returns null on failure. Requires both `agentLink` and `jsonPath`
+  /// to be set — callers must guard on `jsonPath != null` before calling.
   Future<SyncAgentLink?> _sendAgentLinkPayload({
     required Room room,
     required SyncAgentLink message,
   }) async {
-    final agentLink = message.agentLink;
-    if (agentLink == null) {
+    if (message.agentLink == null || message.jsonPath == null) {
       _loggingService.captureEvent(
-        'skipping agent link send: no link',
+        'skipping agent link send: missing link or jsonPath',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
       return null;
     }
-    final relativePath = message.jsonPath;
-    if (relativePath == null) {
-      _loggingService.captureEvent(
-        'skipping agent link send: no jsonPath',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-      return null;
-    }
+    final uploaded = await _uploadAgentPayload(
+      room: room,
+      relativePath: message.jsonPath!,
+      logLabel: 'agentLink',
+    );
+    if (!uploaded) return null;
+    return message.copyWith(agentLink: null);
+  }
+
+  /// Reads the JSON file at [relativePath] from disk and uploads it via
+  /// [_sendFile]. Returns true on success, false on failure.
+  Future<bool> _uploadAgentPayload({
+    required Room room,
+    required String relativePath,
+    required String logLabel,
+  }) async {
     final relativeJoined = p.joinAll(
       relativePath.split('/').where((part) => part.isNotEmpty),
     );
@@ -529,24 +531,34 @@ class MatrixMessageSender {
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.agentLink',
+        subDomain: 'sendMatrixMsg.$logLabel',
         stackTrace: stackTrace,
       );
-      return null;
+      return false;
     }
 
-    final sent = await _sendFile(
+    return _sendFile(
       room: room,
       fullPath: fullPath,
       relativePath: relativePath,
       bytes: jsonBytes,
     );
-    if (!sent) {
-      return null;
-    }
+  }
 
-    // Return descriptor-only message (link nulled, jsonPath set)
-    return message.copyWith(agentLink: null);
+  /// Writes [jsonPayload] to disk at [relativePath] under the documents
+  /// directory, creating parent directories as needed. Used to enrich legacy
+  /// outbox items that lack a `jsonPath`.
+  Future<void> _savePayloadToDisk({
+    required String relativePath,
+    required String jsonPayload,
+  }) async {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+    final file = File(fullPath);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(jsonPayload);
   }
 
   @visibleForTesting
@@ -555,6 +567,20 @@ class MatrixMessageSender {
     required SyncJournalEntity message,
   }) =>
       _sendJournalEntityPayload(room: room, message: message);
+
+  @visibleForTesting
+  Future<SyncAgentEntity?> sendAgentEntityPayloadForTesting({
+    required Room room,
+    required SyncAgentEntity message,
+  }) =>
+      _sendAgentEntityPayload(room: room, message: message);
+
+  @visibleForTesting
+  Future<SyncAgentLink?> sendAgentLinkPayloadForTesting({
+    required Room room,
+    required SyncAgentLink message,
+  }) =>
+      _sendAgentLinkPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {
