@@ -779,7 +779,7 @@ local transcription + cloud thinking).
 - **Unit tests**: `ProfileSeedingService` idempotency.
 - **Unit tests**: `TaskAgentService.createTaskAgent` — requires `profileId`,
   persists it into `AgentConfig.profileId`, sets `AgentConfig.modelId` from
-  template for backward compat.
+  `profile.thinkingModelId` for backward compatibility.
 - **Unit tests**: `TaskAgentService.updateAgentProfile` — updates config,
   persists, syncs.
 - **Widget tests**: `InferenceProfilePage`, `InferenceProfileForm`,

@@ -43,18 +43,19 @@ export 'package:lotti/features/agents/workflow/wake_result.dart';
 ///
 /// 1. Load agent identity, state, current report, and agentJournal observations.
 /// 2. Build task context from journal domain via [AiInputRepository].
-/// 3. Resolve an inference profile (or legacy modelId fallback) to a
+/// 3. Resolve the agent's template and active version.
+/// 4. Resolve an inference profile (or legacy modelId fallback) to a
 ///    thinking model/provider.
-/// 4. Assemble conversation context (system prompt + user message).
-/// 5. Create a [ConversationRepository] conversation with tool definitions.
-/// 6. Persist the user message as an [AgentMessageKind.user] entity for
+/// 5. Assemble conversation context (system prompt + user message).
+/// 6. Create a [ConversationRepository] conversation with tool definitions.
+/// 7. Persist the user message as an [AgentMessageKind.user] entity for
 ///    inspectability (non-fatal if it fails).
-/// 7. Invoke the LLM and execute tool calls via [AgentToolExecutor].
-/// 8. Persist the final assistant response as a thought message.
-/// 9. Extract and persist the updated report (from `update_report` tool call).
-/// 10. Persist new observation notes (agentJournal entries).
-/// 11. Persist updated agent state (revision, wake counter, failure count).
-/// 12. Clean up the in-memory conversation in a `finally` block.
+/// 8. Invoke the LLM and execute tool calls via [AgentToolExecutor].
+/// 9. Persist the final assistant response as a thought message.
+/// 10. Extract and persist the updated report (from `update_report` tool call).
+/// 11. Persist new observation notes (agentJournal entries).
+/// 12. Persist updated agent state (revision, wake counter, failure count).
+/// 13. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
