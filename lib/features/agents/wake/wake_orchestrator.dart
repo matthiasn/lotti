@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -140,6 +141,11 @@ class WakeOrchestrator {
   /// Timestamp when the current drain started, for stale-drain detection.
   DateTime? _drainStartedAt;
 
+  /// Generation counter for drain cancellation. Incremented when a stale
+  /// drain is force-reset so the old drain's loop can detect it was
+  /// superseded and bail out.
+  int _drainGeneration = 0;
+
   /// Maximum duration for a drain before it is considered stale and the
   /// guard is force-reset.
   static const _drainTimeout = Duration(minutes: 5);
@@ -159,12 +165,21 @@ class WakeOrchestrator {
   }
 
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    domainLogger?.error(
-      LogDomains.agentRuntime,
-      message,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentRuntime,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'WakeOrchestrator',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   // ── Subscription management ────────────────────────────────────────────────
@@ -524,9 +539,11 @@ class WakeOrchestrator {
           clock.now().difference(_drainStartedAt!) > _drainTimeout) {
         _log(
           'force-resetting stale drain lock '
-          '(started at $_drainStartedAt)',
+          '(started ${clock.now().difference(_drainStartedAt!).inSeconds}s ago)',
           subDomain: 'drain',
         );
+        // Increment generation so the old drain's loop bails out.
+        _drainGeneration++;
         _isDraining = false;
       } else {
         _drainRequested = true;
@@ -536,6 +553,7 @@ class WakeOrchestrator {
 
     _isDraining = true;
     _drainStartedAt = clock.now();
+    final myGeneration = _drainGeneration;
     _log(
       'drain started, queue.length=${queue.length}',
       subDomain: 'drain',
@@ -545,10 +563,18 @@ class WakeOrchestrator {
       do {
         _drainRequested = false;
         await _drain();
+        // Bail out if a newer drain superseded us via force-reset.
+        if (_drainGeneration != myGeneration) {
+          _log('drain superseded, bailing out', subDomain: 'drain');
+          return;
+        }
       } while (_drainRequested);
     } finally {
-      _isDraining = false;
-      _drainStartedAt = null;
+      // Only clear the guard if we are still the active drain generation.
+      if (_drainGeneration == myGeneration) {
+        _isDraining = false;
+        _drainStartedAt = null;
+      }
     }
   }
 
@@ -840,7 +866,15 @@ class _WakeThrottleCoordinator {
   }
 
   void _logError(String message, {Object? error}) {
-    domainLogger?.error(LogDomains.agentRuntime, message, error: error);
+    if (domainLogger != null) {
+      domainLogger!.error(LogDomains.agentRuntime, message, error: error);
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'WakeThrottleCoordinator',
+        error: error,
+      );
+    }
   }
 
   bool isThrottled(String agentId) {

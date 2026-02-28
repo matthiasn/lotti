@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -97,12 +98,21 @@ class TaskAgentWorkflow {
   }
 
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    domainLogger?.error(
-      LogDomains.agentWorkflow,
-      message,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentWorkflow,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'TaskAgentWorkflow',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Execute a full wake cycle for the given agent.

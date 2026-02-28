@@ -2992,5 +2992,124 @@ void main() {
         });
       });
     });
+
+    group('stale drain recovery (Fix B)', () {
+      test(
+          'force-resets stale drain and new drain supersedes old one '
+          'via generation counter', () {
+        fakeAsync((async) {
+          final stuckCompleter = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+
+          orchestrator
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              // First call hangs; subsequent ones complete immediately.
+              if (agentId == 'stuck-agent') return stuckCompleter.future;
+              return Future.value();
+            }
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-stuck',
+                agentId: 'stuck-agent',
+                matchEntityIds: {'entity-stuck'},
+              ),
+            )
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-ok',
+                agentId: 'ok-agent',
+                matchEntityIds: {'entity-ok'},
+              ),
+            );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Trigger the stuck agent — deferred drain starts after throttle.
+          emitAndDrain(async, controller, {'entity-stuck'});
+
+          // The executor is now awaiting the stuckCompleter.
+          expect(executedAgentIds, contains('stuck-agent'));
+
+          // Advance past the 5-minute drain timeout.
+          async
+            ..elapse(const Duration(minutes: 6))
+            ..flushMicrotasks();
+
+          // Now trigger ok-agent. processNext should detect the stale drain,
+          // force-reset it, and start a new drain for ok-agent.
+          emitAndDrain(async, controller, {'entity-ok'});
+
+          expect(executedAgentIds, contains('ok-agent'));
+
+          // Complete the stuck executor so the old drain can finish its
+          // finally block.
+          stuckCompleter.complete(null);
+          async.flushMicrotasks();
+
+          // The orchestrator should be in a clean state — not stuck.
+          // Verify by enqueuing another manual wake and seeing it execute.
+          executedAgentIds.clear();
+          orchestrator.enqueueManualWake(
+            agentId: 'ok-agent',
+            reason: 'test',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, contains('ok-agent'));
+
+          controller.close();
+        });
+      });
+
+      test('does not force-reset when drain is within timeout window', () {
+        fakeAsync((async) {
+          final stuckCompleter = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              if (agentId == 'stuck-agent') return stuckCompleter.future;
+              return Future.value();
+            }
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-stuck',
+                agentId: 'stuck-agent',
+                matchEntityIds: {'entity-stuck'},
+              ),
+            );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Trigger stuck agent.
+          emitAndDrain(async, controller, {'entity-stuck'});
+          expect(executionCount, 1);
+
+          // Advance only 2 minutes (within 5-minute timeout).
+          async.elapse(const Duration(minutes: 2));
+
+          // Enqueue a manual wake — should set _drainRequested, not
+          // force-reset.
+          orchestrator.enqueueManualWake(
+            agentId: 'stuck-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+
+          // No new execution should have happened (drain is still stuck,
+          // the manual wake is queued for when the drain loops back).
+          expect(executionCount, 1);
+
+          // Clean up.
+          stuckCompleter.complete(null);
+          async.flushMicrotasks();
+
+          controller.close();
+        });
+      });
+    });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -308,13 +310,23 @@ class TaskAgentService {
         // cooldown window survives app restarts and backgrounding.
         await _hydrateThrottleDeadline(agent.agentId);
       } catch (e, s) {
-        domainLogger?.error(
-          LogDomains.agentRuntime,
-          'failed to restore subscriptions '
-          'for ${DomainLogger.sanitizeId(agent.agentId)}',
-          error: e,
-          stackTrace: s,
-        );
+        final msg = 'failed to restore subscriptions '
+            'for ${DomainLogger.sanitizeId(agent.agentId)}';
+        if (domainLogger != null) {
+          domainLogger!.error(
+            LogDomains.agentRuntime,
+            msg,
+            error: e,
+            stackTrace: s,
+          );
+        } else {
+          developer.log(
+            '$msg: $e',
+            name: 'TaskAgentService',
+            error: e,
+            stackTrace: s,
+          );
+        }
       }
     }
 

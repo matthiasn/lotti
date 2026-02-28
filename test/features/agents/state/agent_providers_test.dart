@@ -22,6 +22,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
     show outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1749,6 +1751,9 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -1785,6 +1790,9 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
         ],
       );
       addTearDown(container.dispose);

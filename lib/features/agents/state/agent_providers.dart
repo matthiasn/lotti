@@ -64,24 +64,37 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
 }
 
 /// Domain logger for agent runtime / workflow structured logging.
+///
+/// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
+/// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
+/// without rebuilding the provider. This prevents a flag toggle from
+/// cascading into orchestrator/workflow/service rebuilds and unintentionally
+/// restarting the agent runtime.
 @Riverpod(keepAlive: true)
 DomainLogger domainLogger(Ref ref) {
   final loggingService = ref.watch(loggingServiceProvider);
   final logger = DomainLogger(loggingService: loggingService);
 
-  // Wire per-domain config flag watchers.
-  void watchFlag(String flagName, String domain) {
-    final enabled = ref.watch(configFlagProvider(flagName));
-    if (enabled.value ?? false) {
+  // Mutate enabledDomains in-place on flag changes — no provider rebuild.
+  void listenFlag(String flagName, String domain) {
+    ref.listen(configFlagProvider(flagName), (_, next) {
+      if (next.value ?? false) {
+        logger.enabledDomains.add(domain);
+      } else {
+        logger.enabledDomains.remove(domain);
+      }
+    });
+
+    // Seed the initial value synchronously from the current state.
+    final initial = ref.read(configFlagProvider(flagName));
+    if (initial.value ?? false) {
       logger.enabledDomains.add(domain);
-    } else {
-      logger.enabledDomains.remove(domain);
     }
   }
 
-  watchFlag(logAgentRuntimeFlag, LogDomains.agentRuntime);
-  watchFlag(logAgentWorkflowFlag, LogDomains.agentWorkflow);
-  watchFlag(logSyncFlag, LogDomains.sync);
+  listenFlag(logAgentRuntimeFlag, LogDomains.agentRuntime);
+  listenFlag(logAgentWorkflowFlag, LogDomains.agentWorkflow);
+  listenFlag(logSyncFlag, LogDomains.sync);
   return logger;
 }
 

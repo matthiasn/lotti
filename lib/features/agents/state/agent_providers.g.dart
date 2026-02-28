@@ -156,16 +156,34 @@ String _$maybeSyncEventProcessorHash() =>
     r'efc9ebdc91606182cd75a614389472b9a9cff8d7';
 
 /// Domain logger for agent runtime / workflow structured logging.
+///
+/// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+/// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
+/// without rebuilding the provider. This prevents a flag toggle from
+/// cascading into orchestrator/workflow/service rebuilds and unintentionally
+/// restarting the agent runtime.
 
 @ProviderFor(domainLogger)
 final domainLoggerProvider = DomainLoggerProvider._();
 
 /// Domain logger for agent runtime / workflow structured logging.
+///
+/// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+/// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
+/// without rebuilding the provider. This prevents a flag toggle from
+/// cascading into orchestrator/workflow/service rebuilds and unintentionally
+/// restarting the agent runtime.
 
 final class DomainLoggerProvider
     extends $FunctionalProvider<DomainLogger, DomainLogger, DomainLogger>
     with $Provider<DomainLogger> {
   /// Domain logger for agent runtime / workflow structured logging.
+  ///
+  /// Uses [ref.listen] (not [ref.watch]) for config flag changes so that
+  /// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
+  /// without rebuilding the provider. This prevents a flag toggle from
+  /// cascading into orchestrator/workflow/service rebuilds and unintentionally
+  /// restarting the agent runtime.
   DomainLoggerProvider._()
       : super(
           from: null,
@@ -199,7 +217,7 @@ final class DomainLoggerProvider
   }
 }
 
-String _$domainLoggerHash() => r'7d79669078a57a6db208eb7453ea5a5a35a55b43';
+String _$domainLoggerHash() => r'6949d0352b94c32e639d9ddf46aa260be65dcaeb';
 
 /// The agent database instance (lazy singleton).
 

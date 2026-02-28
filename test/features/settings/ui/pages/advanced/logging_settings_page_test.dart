@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,21 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+
+/// Finds both [Switch] and [CupertinoSwitch] widgets, since
+/// `Switch.adaptive` renders platform-specifically.
+Finder findSwitches() =>
+    find.byWidgetPredicate((w) => w is Switch || w is CupertinoSwitch);
+
+/// Extracts (value, onChanged != null) from a switch widget regardless of
+/// whether it rendered as [Switch] or [CupertinoSwitch].
+({bool value, bool enabled}) switchState(Widget w) {
+  if (w is Switch) return (value: w.value, enabled: w.onChanged != null);
+  if (w is CupertinoSwitch) {
+    return (value: w.value, enabled: w.onChanged != null);
+  }
+  throw ArgumentError('Not a switch widget: ${w.runtimeType}');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,6 +136,13 @@ void main() {
       );
     });
 
+    testWidgets('shows four switch toggles', (tester) async {
+      await pumpPage(tester, overrides: allEnabledOverrides());
+
+      // Global + 3 domain toggles = 4 switches
+      expect(findSwitches(), findsNWidgets(4));
+    });
+
     testWidgets('domain switches are disabled when global logging is off',
         (tester) async {
       final overrides = flagOverrides({
@@ -131,29 +154,20 @@ void main() {
 
       await pumpPage(tester, overrides: overrides);
 
-      // Find Switch widgets — Switch.adaptive renders platform-specific but
-      // the underlying Switch type is still findable in tests.
-      final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+      final switches = tester.widgetList(findSwitches()).toList();
+      expect(switches, hasLength(4));
 
-      if (switches.length == 4) {
-        // The global toggle (first) should still be enabled.
-        expect(switches[0].onChanged, isNotNull);
+      final states = switches.map(switchState).toList();
 
-        // Domain toggles (indices 1-3) should be disabled.
-        for (var i = 1; i < switches.length; i++) {
-          expect(
-            switches[i].onChanged,
-            isNull,
-            reason: 'Domain switch $i should be disabled when logging is off',
-          );
-        }
-      } else {
-        // On macOS, Switch.adaptive renders CupertinoSwitch — verify via text.
-        // The page should still render without error.
-        final context = tester.element(find.byType(LoggingSettingsPage));
+      // The global toggle (first) should still be enabled.
+      expect(states[0].enabled, isTrue);
+
+      // Domain toggles (indices 1-3) should be disabled.
+      for (var i = 1; i < states.length; i++) {
         expect(
-          find.text(context.messages.settingsLoggingGlobalToggle),
-          findsOneWidget,
+          states[i].enabled,
+          isFalse,
+          reason: 'Domain switch $i should be disabled when logging is off',
         );
       }
     });
@@ -164,42 +178,35 @@ void main() {
 
       await pumpPage(tester, overrides: allEnabledOverrides());
 
-      // Find any switch-like widget and tap the first one (global toggle).
-      final switchFinder = find.byType(Switch);
-      if (switchFinder.evaluate().isNotEmpty) {
-        await tester.tap(switchFinder.first);
-        await tester.pump();
-        verify(() => mockJournalDb.toggleConfigFlag(enableLoggingFlag))
-            .called(1);
-      }
+      await tester.tap(findSwitches().first);
+      await tester.pump();
+
+      verify(() => mockJournalDb.toggleConfigFlag(enableLoggingFlag)).called(1);
     });
 
-    testWidgets('tapping domain toggle calls correct toggleConfigFlag',
+    testWidgets('tapping domain toggles calls correct toggleConfigFlag',
         (tester) async {
       when(() => mockJournalDb.toggleConfigFlag(any()))
           .thenAnswer((_) async {});
 
       await pumpPage(tester, overrides: allEnabledOverrides());
 
-      final switches = find.byType(Switch);
-      if (switches.evaluate().length >= 4) {
-        // Tap agent runtime toggle (index 1).
-        await tester.tap(switches.at(1));
-        await tester.pump();
-        verify(() => mockJournalDb.toggleConfigFlag(logAgentRuntimeFlag))
-            .called(1);
+      // Tap agent runtime toggle (index 1).
+      await tester.tap(findSwitches().at(1));
+      await tester.pump();
+      verify(() => mockJournalDb.toggleConfigFlag(logAgentRuntimeFlag))
+          .called(1);
 
-        // Tap agent workflow toggle (index 2).
-        await tester.tap(switches.at(2));
-        await tester.pump();
-        verify(() => mockJournalDb.toggleConfigFlag(logAgentWorkflowFlag))
-            .called(1);
+      // Tap agent workflow toggle (index 2).
+      await tester.tap(findSwitches().at(2));
+      await tester.pump();
+      verify(() => mockJournalDb.toggleConfigFlag(logAgentWorkflowFlag))
+          .called(1);
 
-        // Tap sync toggle (index 3).
-        await tester.tap(switches.at(3));
-        await tester.pump();
-        verify(() => mockJournalDb.toggleConfigFlag(logSyncFlag)).called(1);
-      }
+      // Tap sync toggle (index 3).
+      await tester.tap(findSwitches().at(3));
+      await tester.pump();
+      verify(() => mockJournalDb.toggleConfigFlag(logSyncFlag)).called(1);
     });
 
     testWidgets('switch values reflect mixed flag state', (tester) async {
@@ -212,25 +219,19 @@ void main() {
 
       await pumpPage(tester, overrides: overrides);
 
-      final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+      final states =
+          tester.widgetList(findSwitches()).map(switchState).toList();
+      expect(states, hasLength(4));
 
-      if (switches.length == 4) {
-        expect(switches[0].value, isTrue, reason: 'Global should be on');
-        expect(switches[1].value, isTrue, reason: 'Agent runtime should be on');
-        expect(
-          switches[2].value,
-          isFalse,
-          reason: 'Agent workflow should be off',
-        );
-        expect(switches[3].value, isFalse, reason: 'Sync should be off');
-      }
+      expect(states[0].value, isTrue, reason: 'Global should be on');
+      expect(states[1].value, isTrue, reason: 'Agent runtime should be on');
+      expect(states[2].value, isFalse, reason: 'Agent workflow should be off');
+      expect(states[3].value, isFalse, reason: 'Sync should be off');
     });
 
     testWidgets('renders correct icons for each card', (tester) async {
       await pumpPage(tester, overrides: allEnabledOverrides());
 
-      // article_rounded appears twice (global toggle + view logs link) so
-      // check for at least one.
       expect(find.byIcon(Icons.article_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.memory_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.play_circle_outline_rounded), findsAtLeast(1));
