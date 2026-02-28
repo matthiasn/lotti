@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -12,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Task-agent-specific lifecycle management.
@@ -25,6 +24,7 @@ class TaskAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    this.domainLogger,
   });
 
   final AgentService agentService;
@@ -34,6 +34,9 @@ class TaskAgentService {
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+
+  /// Optional domain logger for structured, PII-safe logging.
+  final DomainLogger? domainLogger;
 
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.taskAgent;
@@ -151,9 +154,11 @@ class TaskAgentService {
       triggerTokens: {taskId},
     );
 
-    developer.log(
-      'Created task agent ${identity.agentId} for task $taskId',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'created task agent ${DomainLogger.sanitizeId(identity.agentId)} '
+      'for task ${DomainLogger.sanitizeId(taskId)}',
+      subDomain: 'lifecycle',
     );
 
     return identity;
@@ -177,9 +182,10 @@ class TaskAgentService {
   /// This enqueues a user-initiated wake job that will run the full context
   /// assembly and conversation cycle, regardless of whether anything changed.
   void triggerReanalysis(String agentId) {
-    developer.log(
-      'Manual re-analysis triggered for agent $agentId',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'manual reanalysis triggered for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'lifecycle',
     );
     orchestrator.enqueueManualWake(
       agentId: agentId,
@@ -192,9 +198,10 @@ class TaskAgentService {
   /// Clears the throttle deadline, cancels the deferred drain timer, and
   /// removes any queued subscription jobs — so no automatic wake will fire.
   void cancelScheduledWake(String agentId) {
-    developer.log(
-      'Scheduled wake cancelled for agent $agentId',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'lifecycle',
     );
     orchestrator.clearThrottle(agentId);
     orchestrator.queue.removeByAgent(agentId);
@@ -227,9 +234,11 @@ class TaskAgentService {
       _registerTaskSubscription(agentId, link.toId);
     }
     await _hydrateThrottleDeadline(agentId);
-    developer.log(
-      'Restored ${links.length} subscriptions for agent $agentId',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'restored ${links.length} subscriptions '
+      'for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'restore',
     );
   }
 
@@ -270,9 +279,10 @@ class TaskAgentService {
   /// Iterates all active agent identities, finds their `agent_task` links, and
   /// registers wake subscriptions for each.
   Future<void> restoreSubscriptions() async {
-    developer.log(
-      'Restoring task agent subscriptions...',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'restoring task agent subscriptions...',
+      subDomain: 'restore',
     );
 
     final activeAgents = await agentService.listAgents(
@@ -298,18 +308,20 @@ class TaskAgentService {
         // cooldown window survives app restarts and backgrounding.
         await _hydrateThrottleDeadline(agent.agentId);
       } catch (e, s) {
-        developer.log(
-          'Failed to restore subscriptions for agent ${agent.agentId}',
-          name: 'TaskAgentService',
+        domainLogger?.error(
+          LogDomains.agentRuntime,
+          'failed to restore subscriptions '
+          'for ${DomainLogger.sanitizeId(agent.agentId)}',
           error: e,
           stackTrace: s,
         );
       }
     }
 
-    developer.log(
-      'Restored $count task agent subscriptions',
-      name: 'TaskAgentService',
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'restored $count task agent subscriptions',
+      subDomain: 'restore',
     );
   }
 
@@ -324,10 +336,11 @@ class TaskAgentService {
       });
 
     if (sorted.length > 1) {
-      developer.log(
-        'Multiple task-agent links found for task ${sorted.first.toId}; '
-        'choosing latest link ${sorted.first.id} (${sorted.first.fromId})',
-        name: 'TaskAgentService',
+      domainLogger?.log(
+        LogDomains.agentRuntime,
+        'multiple task-agent links found; choosing latest '
+        '${DomainLogger.sanitizeId(sorted.first.id)}',
+        subDomain: 'resolve',
       );
     }
 

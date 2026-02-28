@@ -1429,6 +1429,17 @@
       }
     }
   },
+  "settingsLoggingAgentRuntime": "Ejecución del agente",
+  "settingsLoggingAgentRuntimeSubtitle": "Decisiones y despacho del orquestador de activación",
+  "settingsLoggingAgentWorkflow": "Flujo de trabajo del agente",
+  "settingsLoggingAgentWorkflowSubtitle": "Ejecución de conversaciones y llamadas de herramientas",
+  "settingsLoggingDomainsSubtitle": "Controla qué dominios escriben en el registro",
+  "settingsLoggingDomainsTitle": "Dominios de registro",
+  "settingsLoggingGlobalToggle": "Activar registro",
+  "settingsLoggingGlobalToggleSubtitle": "Interruptor principal para todo el registro",
+  "settingsLoggingSync": "Sincronización",
+  "settingsLoggingSyncSubtitle": "Operaciones de sincronización entre dispositivos",
+  "settingsLoggingViewLogsSubtitle": "Explorar y buscar todas las entradas del registro",
   "settingsLogsTitle": "Registros",
   "settingsMaintenanceTitle": "Mantenimiento",
   "settingsMatrixAccept": "Aceptar",

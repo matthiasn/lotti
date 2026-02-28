@@ -3544,6 +3544,45 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get settingsLoggingAgentRuntime => 'Exécution de l\'agent';
+
+  @override
+  String get settingsLoggingAgentRuntimeSubtitle =>
+      'Décisions et répartition de l\'orchestrateur de réveil';
+
+  @override
+  String get settingsLoggingAgentWorkflow => 'Flux de travail de l\'agent';
+
+  @override
+  String get settingsLoggingAgentWorkflowSubtitle =>
+      'Exécution des conversations et appels d\'outils';
+
+  @override
+  String get settingsLoggingDomainsSubtitle =>
+      'Contrôle quels domaines écrivent dans le journal';
+
+  @override
+  String get settingsLoggingDomainsTitle => 'Domaines de journalisation';
+
+  @override
+  String get settingsLoggingGlobalToggle => 'Activer la journalisation';
+
+  @override
+  String get settingsLoggingGlobalToggleSubtitle =>
+      'Interrupteur principal pour toute la journalisation';
+
+  @override
+  String get settingsLoggingSync => 'Synchronisation';
+
+  @override
+  String get settingsLoggingSyncSubtitle =>
+      'Opérations de synchronisation entre appareils';
+
+  @override
+  String get settingsLoggingViewLogsSubtitle =>
+      'Parcourir et rechercher toutes les entrées du journal';
+
+  @override
   String get settingsLogsTitle => 'Logs';
 
   @override

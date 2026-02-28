@@ -6288,6 +6288,72 @@ abstract class AppLocalizations {
   /// **'Used on {count, plural, =1{1 task} other{{count} tasks}}'**
   String settingsLabelsUsageCount(int count);
 
+  /// No description provided for @settingsLoggingAgentRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Runtime'**
+  String get settingsLoggingAgentRuntime;
+
+  /// No description provided for @settingsLoggingAgentRuntimeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake orchestrator decisions and dispatch'**
+  String get settingsLoggingAgentRuntimeSubtitle;
+
+  /// No description provided for @settingsLoggingAgentWorkflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Workflow'**
+  String get settingsLoggingAgentWorkflow;
+
+  /// No description provided for @settingsLoggingAgentWorkflowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation execution and tool calls'**
+  String get settingsLoggingAgentWorkflowSubtitle;
+
+  /// No description provided for @settingsLoggingDomainsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Control which domains write to the log'**
+  String get settingsLoggingDomainsSubtitle;
+
+  /// No description provided for @settingsLoggingDomainsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging Domains'**
+  String get settingsLoggingDomainsTitle;
+
+  /// No description provided for @settingsLoggingGlobalToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Logging'**
+  String get settingsLoggingGlobalToggle;
+
+  /// No description provided for @settingsLoggingGlobalToggleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Master switch for all logging'**
+  String get settingsLoggingGlobalToggleSubtitle;
+
+  /// No description provided for @settingsLoggingSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get settingsLoggingSync;
+
+  /// No description provided for @settingsLoggingSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-device sync operations'**
+  String get settingsLoggingSyncSubtitle;
+
+  /// No description provided for @settingsLoggingViewLogsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse and search all log entries'**
+  String get settingsLoggingViewLogsSubtitle;
+
   /// No description provided for @settingsLogsTitle.
   ///
   /// In en, this message translates to:

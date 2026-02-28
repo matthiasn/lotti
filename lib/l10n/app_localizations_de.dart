@@ -3492,6 +3492,45 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get settingsLoggingAgentRuntime => 'Agent-Laufzeit';
+
+  @override
+  String get settingsLoggingAgentRuntimeSubtitle =>
+      'Wake-Orchestrator-Entscheidungen und Verteilung';
+
+  @override
+  String get settingsLoggingAgentWorkflow => 'Agent-Workflow';
+
+  @override
+  String get settingsLoggingAgentWorkflowSubtitle =>
+      'Konversationsausführung und Werkzeugaufrufe';
+
+  @override
+  String get settingsLoggingDomainsSubtitle =>
+      'Steuere, welche Bereiche ins Protokoll schreiben';
+
+  @override
+  String get settingsLoggingDomainsTitle => 'Protokoll-Bereiche';
+
+  @override
+  String get settingsLoggingGlobalToggle => 'Protokollierung aktivieren';
+
+  @override
+  String get settingsLoggingGlobalToggleSubtitle =>
+      'Hauptschalter für alle Protokollierung';
+
+  @override
+  String get settingsLoggingSync => 'Synchronisation';
+
+  @override
+  String get settingsLoggingSyncSubtitle =>
+      'Geräteübergreifende Synchronisationsvorgänge';
+
+  @override
+  String get settingsLoggingViewLogsSubtitle =>
+      'Alle Protokolleinträge durchsuchen';
+
+  @override
   String get settingsLogsTitle => 'Protokolle';
 
   @override

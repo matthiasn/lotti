@@ -13,6 +13,7 @@ import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
@@ -78,6 +79,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/advanced',
         '/settings/logging',
         '/settings/advanced/logging/:logEntryId',
+        '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
@@ -365,7 +367,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AdvancedSettingsPage(),
         ),
 
-      if (pathContains('advanced/logging'))
+      if (pathContains('advanced/logging_domains'))
+        const BeamPage(
+          key: ValueKey('settings-logging-domains'),
+          child: LoggingSettingsPage(),
+        ),
+
+      if (pathContains('advanced/logging') &&
+          !pathContains('advanced/logging_domains'))
         const BeamPage(
           key: ValueKey('settings-logging'),
           child: LoggingPage(),
@@ -377,7 +386,9 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AboutPage(),
         ),
 
-      if (pathContains('advanced/logging') && pathContainsKey('logEntryId'))
+      if (pathContains('advanced/logging') &&
+          !pathContains('advanced/logging_domains') &&
+          pathContainsKey('logEntryId'))
         BeamPage(
           key: ValueKey(
             'settings-logging-${state.pathParameters['logEntryId']}',

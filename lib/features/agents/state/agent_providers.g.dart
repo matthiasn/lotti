@@ -155,6 +155,52 @@ final class MaybeSyncEventProcessorProvider extends $FunctionalProvider<
 String _$maybeSyncEventProcessorHash() =>
     r'efc9ebdc91606182cd75a614389472b9a9cff8d7';
 
+/// Domain logger for agent runtime / workflow structured logging.
+
+@ProviderFor(domainLogger)
+final domainLoggerProvider = DomainLoggerProvider._();
+
+/// Domain logger for agent runtime / workflow structured logging.
+
+final class DomainLoggerProvider
+    extends $FunctionalProvider<DomainLogger, DomainLogger, DomainLogger>
+    with $Provider<DomainLogger> {
+  /// Domain logger for agent runtime / workflow structured logging.
+  DomainLoggerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'domainLoggerProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$domainLoggerHash();
+
+  @$internal
+  @override
+  $ProviderElement<DomainLogger> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DomainLogger create(Ref ref) {
+    return domainLogger(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DomainLogger value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DomainLogger>(value),
+    );
+  }
+}
+
+String _$domainLoggerHash() => r'7d79669078a57a6db208eb7453ea5a5a35a55b43';
+
 /// The agent database instance (lazy singleton).
 
 @ProviderFor(agentDatabase)
@@ -647,7 +693,7 @@ final class WakeOrchestratorProvider extends $FunctionalProvider<
   }
 }
 
-String _$wakeOrchestratorHash() => r'9826d5c37cd39817365afd2221a593558d1a5ca0';
+String _$wakeOrchestratorHash() => r'3801177be9afe3afb6e43f935f556ba7f273200e';
 
 /// The high-level agent service.
 
@@ -3361,7 +3407,7 @@ final class TaskAgentWorkflowProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentWorkflowHash() => r'3b7eaf13a1a94f39d9ee177e5866eb67f2900c32';
+String _$taskAgentWorkflowHash() => r'e1f5c289dcf8d7e0fbefe6580a89770b88a9ce36';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

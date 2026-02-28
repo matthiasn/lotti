@@ -42,6 +42,8 @@ final Set<String> expectedActiveFlagNames = {
   privateFlag,
   enableTooltipFlag,
   enableAiStreamingFlag,
+  logAgentRuntimeFlag,
+  logAgentWorkflowFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -119,6 +121,21 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableAgentsFlag,
     description: 'Enable Agents?',
+    status: false,
+  ),
+  const ConfigFlag(
+    name: logAgentRuntimeFlag,
+    description: 'Log agent runtime (wake orchestrator)',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: logAgentWorkflowFlag,
+    description: 'Log agent workflow execution',
+    status: true,
+  ),
+  const ConfigFlag(
+    name: logSyncFlag,
+    description: 'Log sync operations',
     status: false,
   ),
 };

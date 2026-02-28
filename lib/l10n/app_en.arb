@@ -1564,6 +1564,17 @@
       }
     }
   },
+  "settingsLoggingAgentRuntime": "Agent Runtime",
+  "settingsLoggingAgentRuntimeSubtitle": "Wake orchestrator decisions and dispatch",
+  "settingsLoggingAgentWorkflow": "Agent Workflow",
+  "settingsLoggingAgentWorkflowSubtitle": "Conversation execution and tool calls",
+  "settingsLoggingDomainsSubtitle": "Control which domains write to the log",
+  "settingsLoggingDomainsTitle": "Logging Domains",
+  "settingsLoggingGlobalToggle": "Enable Logging",
+  "settingsLoggingGlobalToggleSubtitle": "Master switch for all logging",
+  "settingsLoggingSync": "Sync",
+  "settingsLoggingSyncSubtitle": "Cross-device sync operations",
+  "settingsLoggingViewLogsSubtitle": "Browse and search all log entries",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixAccept": "Accept",

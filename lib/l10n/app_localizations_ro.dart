@@ -3485,6 +3485,45 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get settingsLoggingAgentRuntime => 'Execuția agentului';
+
+  @override
+  String get settingsLoggingAgentRuntimeSubtitle =>
+      'Deciziile și distribuția orchestratorului de activare';
+
+  @override
+  String get settingsLoggingAgentWorkflow => 'Fluxul de lucru al agentului';
+
+  @override
+  String get settingsLoggingAgentWorkflowSubtitle =>
+      'Execuția conversațiilor și apelurile de instrumente';
+
+  @override
+  String get settingsLoggingDomainsSubtitle =>
+      'Controlați ce domenii scriu în jurnal';
+
+  @override
+  String get settingsLoggingDomainsTitle => 'Domenii de jurnalizare';
+
+  @override
+  String get settingsLoggingGlobalToggle => 'Activați jurnalizarea';
+
+  @override
+  String get settingsLoggingGlobalToggleSubtitle =>
+      'Comutatorul principal pentru toată jurnalizarea';
+
+  @override
+  String get settingsLoggingSync => 'Sincronizare';
+
+  @override
+  String get settingsLoggingSyncSubtitle =>
+      'Operațiuni de sincronizare între dispozitive';
+
+  @override
+  String get settingsLoggingViewLogsSubtitle =>
+      'Răsfoiți și căutați toate înregistrările din jurnal';
+
+  @override
   String get settingsLogsTitle => 'Logs';
 
   @override

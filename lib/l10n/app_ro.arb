@@ -1429,6 +1429,17 @@
       }
     }
   },
+  "settingsLoggingAgentRuntime": "Execuția agentului",
+  "settingsLoggingAgentRuntimeSubtitle": "Deciziile și distribuția orchestratorului de activare",
+  "settingsLoggingAgentWorkflow": "Fluxul de lucru al agentului",
+  "settingsLoggingAgentWorkflowSubtitle": "Execuția conversațiilor și apelurile de instrumente",
+  "settingsLoggingDomainsSubtitle": "Controlați ce domenii scriu în jurnal",
+  "settingsLoggingDomainsTitle": "Domenii de jurnalizare",
+  "settingsLoggingGlobalToggle": "Activați jurnalizarea",
+  "settingsLoggingGlobalToggleSubtitle": "Comutatorul principal pentru toată jurnalizarea",
+  "settingsLoggingSync": "Sincronizare",
+  "settingsLoggingSyncSubtitle": "Operațiuni de sincronizare între dispozitive",
+  "settingsLoggingViewLogsSubtitle": "Răsfoiți și căutați toate înregistrările din jurnal",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Mentenanță",
   "settingsMatrixAccept": "Acceptă",

@@ -27,8 +27,9 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, outboxServiceProvider;
+    show journalDbProvider, loggingServiceProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -60,6 +61,28 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
     return null;
   }
   return getIt<SyncEventProcessor>();
+}
+
+/// Domain logger for agent runtime / workflow structured logging.
+@Riverpod(keepAlive: true)
+DomainLogger domainLogger(Ref ref) {
+  final loggingService = ref.watch(loggingServiceProvider);
+  final logger = DomainLogger(loggingService: loggingService);
+
+  // Wire per-domain config flag watchers.
+  void watchFlag(String flagName, String domain) {
+    final enabled = ref.watch(configFlagProvider(flagName));
+    if (enabled.value ?? false) {
+      logger.enabledDomains.add(domain);
+    } else {
+      logger.enabledDomains.remove(domain);
+    }
+  }
+
+  watchFlag(logAgentRuntimeFlag, LogDomains.agentRuntime);
+  watchFlag(logAgentWorkflowFlag, LogDomains.agentWorkflow);
+  watchFlag(logSyncFlag, LogDomains.sync);
+  return logger;
 }
 
 /// The agent database instance (lazy singleton).
@@ -140,6 +163,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: onPersistedStateChanged,
   );
 }
@@ -693,6 +717,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     labelsRepository: ref.watch(labelsRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
