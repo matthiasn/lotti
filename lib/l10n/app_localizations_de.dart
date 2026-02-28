@@ -130,6 +130,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentConversationEmpty => 'Noch keine Konversationen.';
 
   @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount Tokens';
+  }
+
+  @override
   String agentConversationThreadHeader(String runKey) {
     return 'Wake $runKey';
   }
@@ -393,6 +398,41 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTabReports => 'Berichte';
+
+  @override
+  String get agentTabStats => 'Statistik';
+
+  @override
+  String get agentTokenUsageCachedTokens => 'Gecacht';
+
+  @override
+  String get agentTokenUsageEmpty => 'Noch kein Token-Verbrauch aufgezeichnet.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Fehler beim Laden des Token-Verbrauchs: $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Token-Verbrauch';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Eingabe';
+
+  @override
+  String get agentTokenUsageModel => 'Modell';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Ausgabe';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Denken';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Gesamt';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Aufwachvorgänge';
 
   @override
   String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';

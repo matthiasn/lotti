@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
@@ -712,6 +713,12 @@ void main() {
           ),
           templateForAgentProvider.overrideWith(
             (ref, agentId) async => null,
+          ),
+          agentTokenUsageRecordsProvider.overrideWith(
+            (ref, agentId) async => <AgentDomainEntity>[],
+          ),
+          agentTokenUsageSummariesProvider.overrideWith(
+            (ref, agentId) async => <AgentTokenUsageSummary>[],
           ),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),

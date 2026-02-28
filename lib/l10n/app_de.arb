@@ -45,6 +45,14 @@
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
   "agentConversationEmpty": "Noch keine Konversationen.",
+  "agentConversationTokenCount": "{tokenCount} Tokens",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
+        "type": "String"
+      }
+    }
+  },
   "agentConversationThreadHeader": "Wake {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
@@ -180,6 +188,24 @@
   "agentTabConversations": "Konversationen",
   "agentTabObservations": "Beobachtungen",
   "agentTabReports": "Berichte",
+  "agentTabStats": "Statistik",
+  "agentTokenUsageCachedTokens": "Gecacht",
+  "agentTokenUsageEmpty": "Noch kein Token-Verbrauch aufgezeichnet.",
+  "agentTokenUsageErrorLoading": "Fehler beim Laden des Token-Verbrauchs: {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Token-Verbrauch",
+  "agentTokenUsageInputTokens": "Eingabe",
+  "agentTokenUsageModel": "Modell",
+  "agentTokenUsageOutputTokens": "Ausgabe",
+  "agentTokenUsageThoughtsTokens": "Denken",
+  "agentTokenUsageTotalTokens": "Gesamt",
+  "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
   "agentTemplateAllProviders": "Alle Anbieter",
   "agentTemplateAssignedLabel": "Vorlage",

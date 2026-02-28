@@ -1789,6 +1789,350 @@ final class AgentRecentMessagesFamily extends $Family
   String toString() => r'agentRecentMessagesProvider';
 }
 
+/// Raw token usage records for an agent.
+///
+/// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+/// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+/// derive their state from this to avoid redundant database queries.
+
+@ProviderFor(agentTokenUsageRecords)
+final agentTokenUsageRecordsProvider = AgentTokenUsageRecordsFamily._();
+
+/// Raw token usage records for an agent.
+///
+/// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+/// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+/// derive their state from this to avoid redundant database queries.
+
+final class AgentTokenUsageRecordsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Raw token usage records for an agent.
+  ///
+  /// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+  /// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+  /// derive their state from this to avoid redundant database queries.
+  AgentTokenUsageRecordsProvider._(
+      {required AgentTokenUsageRecordsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentTokenUsageRecordsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentTokenUsageRecordsHash();
+
+  @override
+  String toString() {
+    return r'agentTokenUsageRecordsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentTokenUsageRecords(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentTokenUsageRecordsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentTokenUsageRecordsHash() =>
+    r'a5237fe55caa876b62247d67efede42d619c0e62';
+
+/// Raw token usage records for an agent.
+///
+/// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+/// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+/// derive their state from this to avoid redundant database queries.
+
+final class AgentTokenUsageRecordsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  AgentTokenUsageRecordsFamily._()
+      : super(
+          retry: null,
+          name: r'agentTokenUsageRecordsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Raw token usage records for an agent.
+  ///
+  /// Shared base provider that fetches `WakeTokenUsageEntity` records once;
+  /// both [agentTokenUsageSummariesProvider] and [tokenUsageForThreadProvider]
+  /// derive their state from this to avoid redundant database queries.
+
+  AgentTokenUsageRecordsProvider call(
+    String agentId,
+  ) =>
+      AgentTokenUsageRecordsProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentTokenUsageRecordsProvider';
+}
+
+/// Aggregated token usage summaries for an agent, grouped by model ID.
+///
+/// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+@ProviderFor(agentTokenUsageSummaries)
+final agentTokenUsageSummariesProvider = AgentTokenUsageSummariesFamily._();
+
+/// Aggregated token usage summaries for an agent, grouped by model ID.
+///
+/// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+final class AgentTokenUsageSummariesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentTokenUsageSummary>>,
+        List<AgentTokenUsageSummary>,
+        FutureOr<List<AgentTokenUsageSummary>>>
+    with
+        $FutureModifier<List<AgentTokenUsageSummary>>,
+        $FutureProvider<List<AgentTokenUsageSummary>> {
+  /// Aggregated token usage summaries for an agent, grouped by model ID.
+  ///
+  /// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+  /// per-model summaries sorted by total tokens descending.
+  AgentTokenUsageSummariesProvider._(
+      {required AgentTokenUsageSummariesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'agentTokenUsageSummariesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$agentTokenUsageSummariesHash();
+
+  @override
+  String toString() {
+    return r'agentTokenUsageSummariesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentTokenUsageSummary>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentTokenUsageSummary>> create(Ref ref) {
+    final argument = this.argument as String;
+    return agentTokenUsageSummaries(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AgentTokenUsageSummariesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$agentTokenUsageSummariesHash() =>
+    r'284d2fa2bfcb0443f1692a14c6562071f3d7a0d0';
+
+/// Aggregated token usage summaries for an agent, grouped by model ID.
+///
+/// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+final class AgentTokenUsageSummariesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<FutureOr<List<AgentTokenUsageSummary>>,
+            String> {
+  AgentTokenUsageSummariesFamily._()
+      : super(
+          retry: null,
+          name: r'agentTokenUsageSummariesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Aggregated token usage summaries for an agent, grouped by model ID.
+  ///
+  /// Derives from [agentTokenUsageRecordsProvider] and aggregates into
+  /// per-model summaries sorted by total tokens descending.
+
+  AgentTokenUsageSummariesProvider call(
+    String agentId,
+  ) =>
+      AgentTokenUsageSummariesProvider._(argument: agentId, from: this);
+
+  @override
+  String toString() => r'agentTokenUsageSummariesProvider';
+}
+
+/// Aggregated token usage summary for a specific thread.
+///
+/// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+/// and folds into a single [AgentTokenUsageSummary].
+/// Returns `null` if no records match.
+
+@ProviderFor(tokenUsageForThread)
+final tokenUsageForThreadProvider = TokenUsageForThreadFamily._();
+
+/// Aggregated token usage summary for a specific thread.
+///
+/// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+/// and folds into a single [AgentTokenUsageSummary].
+/// Returns `null` if no records match.
+
+final class TokenUsageForThreadProvider extends $FunctionalProvider<
+        AsyncValue<AgentTokenUsageSummary?>,
+        AgentTokenUsageSummary?,
+        FutureOr<AgentTokenUsageSummary?>>
+    with
+        $FutureModifier<AgentTokenUsageSummary?>,
+        $FutureProvider<AgentTokenUsageSummary?> {
+  /// Aggregated token usage summary for a specific thread.
+  ///
+  /// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+  /// and folds into a single [AgentTokenUsageSummary].
+  /// Returns `null` if no records match.
+  TokenUsageForThreadProvider._(
+      {required TokenUsageForThreadFamily super.from,
+      required (
+        String,
+        String,
+      )
+          super.argument})
+      : super(
+          retry: null,
+          name: r'tokenUsageForThreadProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$tokenUsageForThreadHash();
+
+  @override
+  String toString() {
+    return r'tokenUsageForThreadProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentTokenUsageSummary?> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentTokenUsageSummary?> create(Ref ref) {
+    final argument = this.argument as (
+      String,
+      String,
+    );
+    return tokenUsageForThread(
+      ref,
+      argument.$1,
+      argument.$2,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TokenUsageForThreadProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$tokenUsageForThreadHash() =>
+    r'fec033cc79833df4fe232a60a0de55574b0fa3a8';
+
+/// Aggregated token usage summary for a specific thread.
+///
+/// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+/// and folds into a single [AgentTokenUsageSummary].
+/// Returns `null` if no records match.
+
+final class TokenUsageForThreadFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+            FutureOr<AgentTokenUsageSummary?>,
+            (
+              String,
+              String,
+            )> {
+  TokenUsageForThreadFamily._()
+      : super(
+          retry: null,
+          name: r'tokenUsageForThreadProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Aggregated token usage summary for a specific thread.
+  ///
+  /// Derives from [agentTokenUsageRecordsProvider], filters by [threadId],
+  /// and folds into a single [AgentTokenUsageSummary].
+  /// Returns `null` if no records match.
+
+  TokenUsageForThreadProvider call(
+    String agentId,
+    String threadId,
+  ) =>
+      TokenUsageForThreadProvider._(argument: (
+        agentId,
+        threadId,
+      ), from: this);
+
+  @override
+  String toString() => r'tokenUsageForThreadProvider';
+}
+
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
 /// Returns the `text` field from the payload content map, or `null` if the

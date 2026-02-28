@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -136,6 +137,13 @@ class _ThreadTile extends ConsumerWidget {
       return slashIndex >= 0 ? modelId.substring(slashIndex + 1) : modelId;
     }).value;
 
+    // Per-thread token usage.
+    final locale = Localizations.localeOf(context).toString();
+    final tokenNumberFormat = NumberFormat.decimalPattern(locale);
+    final tokenUsageAsync =
+        ref.watch(tokenUsageForThreadProvider(agentId, threadId));
+    final tokenUsage = tokenUsageAsync.value;
+
     return ExpansionTile(
       initiallyExpanded: initiallyExpanded,
       tilePadding: const EdgeInsets.symmetric(
@@ -156,6 +164,10 @@ class _ThreadTile extends ConsumerWidget {
             toolCallCount,
             shortId,
           ),
+          if (tokenUsage != null)
+            context.messages.agentConversationTokenCount(
+              tokenNumberFormat.format(tokenUsage.totalTokens),
+            ),
           if (model != null) model,
         ].join(' · '),
         style: context.textTheme.labelSmall?.copyWith(

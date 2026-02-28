@@ -499,6 +499,21 @@ class AgentRepository {
     return rows.first;
   }
 
+  /// Fetch token usage records for [agentId], ordered most-recent first.
+  ///
+  /// Returns deserialized `WakeTokenUsageEntity` records from the
+  /// `agent_entities` table.
+  Future<List<WakeTokenUsageEntity>> getTokenUsageForAgent(
+    String agentId, {
+    int limit = 500,
+  }) async {
+    final rows = await _db.getTokenUsageByAgentId(agentId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<WakeTokenUsageEntity>()
+        .toList();
+  }
+
   /// Mark any wake runs still in `running` status as `abandoned`.
   ///
   /// Called on startup to clean up runs left behind by a hot restart or crash.
