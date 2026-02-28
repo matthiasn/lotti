@@ -292,6 +292,7 @@ void main() {
 
       // All three colors should be different
       expect(highColor, isNot(equals(lowColor)));
+      expect(highColor, isNot(equals(midColor)));
       expect(midColor, isNot(equals(lowColor)));
     });
   });

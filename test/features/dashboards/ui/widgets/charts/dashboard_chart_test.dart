@@ -21,7 +21,12 @@ void main() {
       expect(find.text('Chart Header'), findsOneWidget);
 
       final sizedBox = tester.widget<SizedBox>(
-        find.byType(SizedBox).first,
+        find
+            .descendant(
+              of: find.byType(DashboardChart),
+              matching: find.byType(SizedBox),
+            )
+            .first,
       );
       expect(sizedBox.height, 200);
     });

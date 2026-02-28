@@ -55,7 +55,16 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(SizedBox), findsWidgets);
+      // DashboardWidget returns SizedBox.shrink() when dashboard is null
+      expect(
+        find.descendant(
+          of: find.byType(DashboardWidget),
+          matching: find.byWidgetPredicate(
+            (w) => w is SizedBox && w.width == 0 && w.height == 0,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders dashboard description', (tester) async {

@@ -166,8 +166,8 @@ void main() {
       // Trigger unrelated notification
       updateController.add({'UNRELATED'});
 
-      // Give a microtask cycle for the stream event to be processed
-      await Future<void>.delayed(Duration.zero);
+      // Flush microtask queue for the stream event to be processed
+      await pumpEventQueue();
 
       // Should only have been called once (initial load) since UNRELATED
       // doesn't match surveyNotification
