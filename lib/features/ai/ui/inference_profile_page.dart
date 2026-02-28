@@ -84,6 +84,7 @@ class InferenceProfilePage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: context.messages.inferenceProfileCreateTitle,
         onPressed: () => _openProfileForm(context),
         child: const Icon(Icons.add),
       ),

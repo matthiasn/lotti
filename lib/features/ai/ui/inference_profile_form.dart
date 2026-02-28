@@ -29,6 +29,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   String? _transcriptionModelId;
   String? _imageGenerationModelId;
   bool _desktopOnly = false;
+  bool _isSaving = false;
 
   bool get _isEditing => widget.existingProfile != null;
 
@@ -66,7 +67,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         ),
         actions: [
           TextButton(
-            onPressed: _save,
+            onPressed: _isSaving ? null : _save,
             child: Text(context.messages.inferenceProfileSaveButton),
           ),
         ],
@@ -160,6 +161,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   }
 
   Future<void> _save() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (_thinkingModelId == null) {
@@ -171,29 +173,42 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       return;
     }
 
-    final now = DateTime.now();
-    final profile = AiConfig.inferenceProfile(
-      id: widget.existingProfile?.id ?? const Uuid().v4(),
-      name: _nameController.text.trim(),
-      thinkingModelId: _thinkingModelId!,
-      imageRecognitionModelId: _imageRecognitionModelId,
-      transcriptionModelId: _transcriptionModelId,
-      imageGenerationModelId: _imageGenerationModelId,
-      desktopOnly: _desktopOnly,
-      isDefault: widget.existingProfile?.isDefault ?? false,
-      description: _descriptionController.text.trim().isNotEmpty
-          ? _descriptionController.text.trim()
-          : null,
-      createdAt: widget.existingProfile?.createdAt ?? now,
-      updatedAt: now,
-    ) as AiConfigInferenceProfile;
+    setState(() => _isSaving = true);
+    try {
+      final now = DateTime.now();
+      final profile = AiConfig.inferenceProfile(
+        id: widget.existingProfile?.id ?? const Uuid().v4(),
+        name: _nameController.text.trim(),
+        thinkingModelId: _thinkingModelId!,
+        imageRecognitionModelId: _imageRecognitionModelId,
+        transcriptionModelId: _transcriptionModelId,
+        imageGenerationModelId: _imageGenerationModelId,
+        desktopOnly: _desktopOnly,
+        isDefault: widget.existingProfile?.isDefault ?? false,
+        description: _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
+            : null,
+        createdAt: widget.existingProfile?.createdAt ?? now,
+        updatedAt: now,
+      ) as AiConfigInferenceProfile;
 
-    await ref
-        .read(inferenceProfileControllerProvider.notifier)
-        .saveProfile(profile);
+      await ref
+          .read(inferenceProfileControllerProvider.notifier)
+          .saveProfile(profile);
 
-    if (mounted) {
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.messages.commonError)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 }

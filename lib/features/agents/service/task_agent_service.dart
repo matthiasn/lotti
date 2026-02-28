@@ -185,8 +185,8 @@ class TaskAgentService {
 
   /// Update the inference profile for an existing agent.
   ///
-  /// Resolves the profile to extract `thinkingModelId`, then updates
-  /// `config.profileId` and `config.modelId` on the agent identity entity.
+  /// Sets `config.profileId` on the agent identity entity. The actual model
+  /// resolution happens at inference time via the profile's slots.
   Future<void> updateAgentProfile({
     required String agentId,
     required String? profileId,

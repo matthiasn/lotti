@@ -21,6 +21,8 @@ class AgentCreationModal {
     required BuildContext context,
     required List<AgentTemplateEntity> templates,
   }) async {
+    if (templates.isEmpty) return null;
+
     // If only one template, skip page 1.
     final singleTemplate = templates.length == 1 ? templates.first : null;
 
@@ -83,19 +85,21 @@ class _TemplateSelectionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: templates.map((template) {
-        return ListTile(
-          leading: Icon(
-            Icons.smart_toy_outlined,
-            color: context.colorScheme.primary,
-          ),
-          title: Text(template.displayName),
-          subtitle: Text(template.modelId),
-          onTap: () => onTemplateSelected(template),
-        );
-      }).toList(),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: templates.map((template) {
+          return ListTile(
+            leading: Icon(
+              Icons.smart_toy_outlined,
+              color: context.colorScheme.primary,
+            ),
+            title: Text(template.displayName),
+            subtitle: Text(template.modelId),
+            onTap: () => onTemplateSelected(template),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -135,26 +139,28 @@ class _ProfileSelectionPage extends ConsumerWidget {
       );
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: filtered.map((profile) {
-        return ListTile(
-          leading: Icon(
-            Icons.tune,
-            color: context.colorScheme.primary,
-          ),
-          title: Text(profile.name),
-          subtitle: Text(profile.thinkingModelId),
-          trailing: profile.desktopOnly
-              ? Icon(
-                  Icons.desktop_windows_outlined,
-                  size: 16,
-                  color: context.colorScheme.onSurfaceVariant,
-                )
-              : null,
-          onTap: () => onProfileSelected(profile.id),
-        );
-      }).toList(),
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: filtered.map((profile) {
+          return ListTile(
+            leading: Icon(
+              Icons.tune,
+              color: context.colorScheme.primary,
+            ),
+            title: Text(profile.name),
+            subtitle: Text(profile.thinkingModelId),
+            trailing: profile.desktopOnly
+                ? Icon(
+                    Icons.desktop_windows_outlined,
+                    size: 16,
+                    color: context.colorScheme.onSurfaceVariant,
+                  )
+                : null,
+            onTap: () => onProfileSelected(profile.id),
+          );
+        }).toList(),
+      ),
     );
   }
 }

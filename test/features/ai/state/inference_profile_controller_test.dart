@@ -29,17 +29,16 @@ void main() {
   });
 
   ProviderContainer createContainer() {
-    container = ProviderContainer(
+    return container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
       ],
     );
-    return container;
   }
 
   group('InferenceProfileController', () {
     test('build returns stream from repository.watchProfiles', () async {
-      final profile = testInferenceProfile(id: 'p1', name: 'Test Profile');
+      final profile = testInferenceProfile(id: 'p1');
       final streamController =
           StreamController<List<AiConfigInferenceProfile>>();
 
@@ -81,8 +80,7 @@ void main() {
 
       when(() => mockRepository.watchProfiles())
           .thenAnswer((_) => streamController.stream);
-      when(() => mockRepository.saveConfig(any()))
-          .thenAnswer((_) async {});
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       final c = createContainer();
 

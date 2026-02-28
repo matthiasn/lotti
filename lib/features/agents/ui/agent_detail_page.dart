@@ -453,6 +453,7 @@ class _ProfileSection extends ConsumerWidget {
                 agentId: agentId,
                 profileId: newProfileId,
               );
+              if (!context.mounted) return;
               ref.invalidate(agentIdentityProvider(agentId));
             },
           ),

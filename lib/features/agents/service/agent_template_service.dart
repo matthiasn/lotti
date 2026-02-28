@@ -536,12 +536,14 @@ class AgentTemplateService {
       if (t.profileId == profileId) return true;
     }
 
-    // Check all template versions.
-    for (final t in templates) {
-      final versions = await getVersionHistory(t.id, limit: 1000000);
-      for (final v in versions) {
-        if (v.profileId == profileId) return true;
-      }
+    // Check all template versions in parallel.
+    final allVersions = await Future.wait(
+      templates.map((t) => getVersionHistory(t.id, limit: 1000000)),
+    );
+    if (allVersions.any(
+      (versions) => versions.any((v) => v.profileId == profileId),
+    )) {
+      return true;
     }
 
     // Check agent identity configs.

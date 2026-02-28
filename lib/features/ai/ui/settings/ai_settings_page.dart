@@ -463,6 +463,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
                 .toList();
 
         if (filteredProfiles.isEmpty) {
+          final emptyMessage = query.isNotEmpty
+              ? context.messages.multiSelectNoItemsFound
+              : context.messages.inferenceProfilesEmpty;
           return SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
@@ -477,7 +480,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    context.messages.inferenceProfilesEmpty,
+                    emptyMessage,
                     style: context.textTheme.bodyLarge?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
