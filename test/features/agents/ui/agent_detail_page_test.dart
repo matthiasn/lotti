@@ -10,7 +10,10 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -21,10 +24,23 @@ const String _testAgentId = kTestAgentId;
 void main() {
   late MockAgentService mockAgentService;
   late MockTaskAgentService mockTaskAgentService;
+  late MockNavService mockNavService;
 
   setUp(() {
     mockAgentService = MockAgentService();
     mockTaskAgentService = MockTaskAgentService();
+    mockNavService = MockNavService();
+    when(() => mockNavService.currentPath).thenReturn('/tasks');
+    when(() => mockNavService.beamBack()).thenReturn(null);
+    if (!getIt.isRegistered<NavService>()) {
+      getIt.registerSingleton<NavService>(mockNavService);
+    }
+  });
+
+  tearDown(() async {
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
   });
 
   /// Builds [AgentDetailPage] with provider overrides.
@@ -567,5 +583,76 @@ void main() {
         );
       },
     );
+  });
+
+  group('AgentDetailPage - back navigation', () {
+    testWidgets('back chevron calls Navigator.pop when not in settings path',
+        (tester) async {
+      // Default setUp already sets currentPath to '/tasks'.
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestIdentity()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      // Navigator.pop is called, not beamBack.
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron calls beamBack when in settings path',
+        (tester) async {
+      when(() => mockNavService.currentPath)
+          .thenReturn('/settings/agents/agent-1');
+
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestIdentity()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on error state scaffold', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          identityOverride: (ref, agentId) =>
+              Future<AgentDomainEntity?>.error(Exception('fail')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on null identity scaffold', (tester) async {
+      await tester.pumpWidget(buildDataSubject());
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verifyNever(() => mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on unexpected entity type scaffold',
+        (tester) async {
+      await tester.pumpWidget(
+        buildDataSubject(identity: makeTestState()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verifyNever(() => mockNavService.beamBack());
+    });
   });
 }

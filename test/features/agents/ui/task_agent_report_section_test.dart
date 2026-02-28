@@ -773,6 +773,120 @@ void main() {
             .called(1);
       });
     });
+
+    testWidgets(
+        'cancel prevents countdown re-seed until provider clears nextWakeAt',
+        (tester) async {
+      final now = DateTime(2024, 3, 15, 12);
+      await withClock(Clock.fixed(now), () async {
+        final agentEntity = makeTestIdentity();
+        final nextWakeAt = now.add(const Duration(seconds: 90));
+        final stateEntity = makeTestState(
+          agentId: agentEntity.agentId,
+          nextWakeAt: nextWakeAt,
+        );
+        final mockService = MockTaskAgentService();
+
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: 'task-1',
+            overrides: [
+              ...agentExistsOverrides(
+                agent: agentEntity,
+                agentState: stateEntity,
+              ),
+              taskAgentServiceProvider.overrideWithValue(mockService),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Countdown visible before cancel.
+        expect(find.text('1:30'), findsOneWidget);
+
+        // Cancel the countdown.
+        when(() => mockService.cancelScheduledWake(any())).thenReturn(null);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pump();
+
+        // Countdown gone, refresh button should appear instead.
+        expect(find.byIcon(Icons.close), findsNothing);
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      });
+    });
+
+    testWidgets(
+        'spinner shown and countdown hidden when agent transitions to running',
+        (tester) async {
+      final now = DateTime(2024, 3, 15, 12);
+      await withClock(Clock.fixed(now), () async {
+        final agentEntity = makeTestIdentity();
+        final nextWakeAt = now.add(const Duration(seconds: 90));
+        final stateEntity = makeTestState(
+          agentId: agentEntity.agentId,
+          nextWakeAt: nextWakeAt,
+        );
+
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: 'task-1',
+            overrides: agentExistsOverrides(
+              agent: agentEntity,
+              agentState: stateEntity,
+              isRunning: true,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Running spinner should be shown, countdown buttons hidden.
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+        expect(find.byIcon(Icons.close), findsNothing);
+      });
+    });
+
+    testWidgets('play-now button during countdown triggers reanalysis',
+        (tester) async {
+      final now = DateTime(2024, 3, 15, 12);
+      await withClock(Clock.fixed(now), () async {
+        final agentEntity = makeTestIdentity();
+        final nextWakeAt = now.add(const Duration(seconds: 90));
+        final stateEntity = makeTestState(
+          agentId: agentEntity.agentId,
+          nextWakeAt: nextWakeAt,
+        );
+        final mockService = MockTaskAgentService();
+
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: 'task-1',
+            overrides: [
+              ...agentExistsOverrides(
+                agent: agentEntity,
+                agentState: stateEntity,
+              ),
+              taskAgentServiceProvider.overrideWithValue(mockService),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Play button visible during countdown.
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+        when(() => mockService.triggerReanalysis(any())).thenReturn(null);
+        await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+        await tester.pump();
+
+        verify(() => mockService.triggerReanalysis(agentEntity.agentId))
+            .called(1);
+      });
+    });
   });
 
   group('TaskAgentReportSection - report content', () {

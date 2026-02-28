@@ -178,5 +178,202 @@ void main() {
       );
       expect(input.enabled, isFalse);
     });
+
+    testWidgets('shows waiting indicator when isWaiting is true',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.assistant(
+                text: 'Thinking...',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+            isWaiting: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Loading indicator with ellipsis should appear.
+      expect(find.text('...'), findsOneWidget);
+      // The waiting indicator in the message list (there may be more from
+      // the input widget).
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+    });
+
+    testWidgets('resolves session_completed token with version number',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'session_completed:3',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionCompleted(3)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('resolves session_error system token', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'session_error',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionError),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('resolves session_abandoned system token', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'session_abandoned',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionAbandoned),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('resolves proposal_rejected system token', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'proposal_rejected',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionProposalRejected),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows unrecognized system token as-is', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'unknown_token_xyz',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('unknown_token_xyz'), findsOneWidget);
+    });
+
+    testWidgets('surface message renders SizedBox.shrink when no processor',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.surface(
+                surfaceId: 'surf-1',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The surface message should render (no crash) but as SizedBox.shrink.
+      expect(find.byType(EvolutionChatBubble), findsNothing);
+    });
+
+    testWidgets('shows empty template name when template is not loaded',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          templateOverride: (ref, id) async => null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Template name area should be empty (not crash).
+      expect(find.text('Test Template'), findsNothing);
+    });
+
+    testWidgets('hides message input during loading state', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) => Completer<EvolutionChatData>().future,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // bottomNavigationBar uses whenOrNull which returns null during loading.
+      expect(find.byType(EvolutionMessageInput), findsNothing);
+    });
+
+    testWidgets('hides message input during error state', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) =>
+              Future<EvolutionChatData>.error(Exception('fail')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EvolutionMessageInput), findsNothing);
+    });
   });
 }

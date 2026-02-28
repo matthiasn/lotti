@@ -14,14 +14,18 @@ import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+late MockNavService _mockNavService;
 
 final _testDate = DateTime(2024, 3, 15);
 
@@ -87,6 +91,10 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
     mockTemplateService = MockAgentTemplateService();
+    _mockNavService = MockNavService();
+    when(() => _mockNavService.currentPath).thenReturn('/settings/agents');
+    when(() => _mockNavService.beamBack()).thenReturn(null);
+    getIt.registerSingleton<NavService>(_mockNavService);
   });
 
   tearDown(tearDownTestGetIt);
@@ -1317,6 +1325,129 @@ void main() {
         find.text(context.messages.commonError),
         findsOneWidget,
       );
+    });
+  });
+
+  group('AgentTemplateDetailPage - back navigation', () {
+    const templateId = 'tpl-nav-001';
+
+    testWidgets('back chevron calls beamBack when in settings path',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron calls Navigator.pop when not in settings path',
+        (tester) async {
+      when(() => _mockNavService.currentPath).thenReturn('/tasks');
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verifyNever(() => _mockNavService.beamBack());
+    });
+
+    testWidgets('back chevron works on create mode', (tester) async {
+      await tester.pumpWidget(buildCreateSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on error state', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-error'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) => throw Exception('provider failed'),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('back chevron works on not-found state', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: 'tpl-missing'),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
+    });
+
+    testWidgets('cancel button navigates back', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      await tester.tap(find.text(context.messages.cancelButton));
+      await tester.pump();
+
+      verify(() => _mockNavService.beamBack()).called(1);
     });
   });
 }

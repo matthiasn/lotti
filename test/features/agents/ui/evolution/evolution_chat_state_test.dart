@@ -554,6 +554,427 @@ void main() {
         ).called(1);
       });
     });
+
+    group('sendMessage - edge cases', () {
+      test('does nothing when isWaiting is already true', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        // Manually set waiting state.
+        final notifier = container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier);
+        final current =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        notifier.state = AsyncData(current.copyWith(isWaiting: true));
+
+        // sendMessage should be a no-op.
+        await withClock(testClock, () => notifier.sendMessage('test'));
+
+        verifyNever(
+          () => mockWorkflow.sendMessage(
+            sessionId: any(named: 'sessionId'),
+            userMessage: any(named: 'userMessage'),
+          ),
+        );
+      });
+
+      test('handles null response from workflow', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+        when(() => mockWorkflow.getSession(any())).thenReturn(null);
+        when(
+          () => mockWorkflow.sendMessage(
+            sessionId: 'session-1',
+            userMessage: 'test',
+          ),
+        ).thenAnswer((_) async => null);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .sendMessage('test'),
+        );
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+
+        // system + assistant(opening) + user (no assistant response)
+        expect(data.messages.length, 3);
+        expect(data.messages[2], isA<EvolutionUserMessage>());
+        expect(data.isWaiting, isFalse);
+      });
+
+      test('catches errors and clears waiting state', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+        when(
+          () => mockWorkflow.sendMessage(
+            sessionId: 'session-1',
+            userMessage: 'boom',
+          ),
+        ).thenThrow(Exception('network error'));
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .sendMessage('boom'),
+        );
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(data.isWaiting, isFalse);
+      });
+    });
+
+    group('approveProposal - edge cases', () {
+      test('returns false when no pending proposal', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        final result = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .approveProposal(),
+        );
+
+        expect(result, isFalse);
+      });
+
+      test('returns false when approveProposal returns null version', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Proposal.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(
+          const PendingProposal(
+            directives: 'new',
+            rationale: 'better',
+          ),
+        );
+        when(() => mockWorkflow.approveProposal(sessionId: 'session-1'))
+            .thenAnswer((_) async => null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        final result = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .approveProposal(),
+        );
+
+        expect(result, isFalse);
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(data.isWaiting, isFalse);
+      });
+
+      test('catches errors and returns false', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Proposal.');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(
+          const PendingProposal(
+            directives: 'new',
+            rationale: 'better',
+          ),
+        );
+        when(() => mockWorkflow.approveProposal(sessionId: 'session-1'))
+            .thenThrow(Exception('approve failed'));
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        final result = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .approveProposal(),
+        );
+
+        expect(result, isFalse);
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(data.isWaiting, isFalse);
+      });
+
+      test('returns false when sessionId is null', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => null);
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(null);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        final result = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .approveProposal(),
+        );
+
+        expect(result, isFalse);
+      });
+    });
+
+    group('endSession', () {
+      test('abandons session and adds system message', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => 'Hello!');
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(
+          ActiveEvolutionSession(
+            sessionId: 'session-1',
+            templateId: kTestTemplateId,
+            conversationId: 'conv-1',
+            strategy: EvolutionStrategy(),
+            modelId: 'model-1',
+          ),
+        );
+        when(() => mockWorkflow.getCurrentProposal(sessionId: 'session-1'))
+            .thenReturn(null);
+        when(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .thenAnswer((_) async {});
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .endSession(),
+        );
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+
+        expect(data.sessionId, isNull);
+        expect(data.processor, isNull);
+        expect(data.isWaiting, isFalse);
+        expect(
+          data.messages
+              .whereType<EvolutionSystemMessage>()
+              .any((m) => m.text == 'session_abandoned'),
+          isTrue,
+        );
+        verify(() => mockWorkflow.abandonSession(sessionId: 'session-1'))
+            .called(greaterThanOrEqualTo(1));
+      });
+
+      test('does nothing when sessionId is null', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => null);
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(null);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .endSession(),
+        );
+
+        // No additional messages beyond the error state messages.
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(
+          data.messages
+              .whereType<EvolutionSystemMessage>()
+              .where((m) => m.text == 'session_abandoned')
+              .isEmpty,
+          isTrue,
+        );
+      });
+    });
+
+    group('rejectProposal - edge cases', () {
+      test('does nothing when sessionId is null', () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => null);
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(null);
+
+        container = createContainer();
+        await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        withClock(testClock, () {
+          container
+              .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+              .rejectProposal();
+        });
+
+        final data =
+            container.read(evolutionChatStateProvider(kTestTemplateId)).value!;
+        expect(
+          data.messages
+              .whereType<EvolutionSystemMessage>()
+              .where((m) => m.text == 'proposal_rejected')
+              .isEmpty,
+          isTrue,
+        );
+      });
+    });
+
+    group('build - version data', () {
+      test('sets currentDirectives to null when version is not found',
+          () async {
+        when(() => mockWorkflow.startSession(templateId: kTestTemplateId))
+            .thenAnswer((_) async => null);
+        when(() => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId))
+            .thenReturn(null);
+
+        container = createContainer(
+          versionOverride: (ref, id) async => null,
+        );
+        final data = await withClock(
+          testClock,
+          () => container
+              .read(evolutionChatStateProvider(kTestTemplateId).future),
+        );
+
+        expect(data.currentDirectives, isNull);
+      });
+    });
   });
 
   group('EvolutionChatData', () {
