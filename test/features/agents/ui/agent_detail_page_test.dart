@@ -635,9 +635,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.pump();
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
 
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_left), findsNothing);
       verifyNever(() => mockNavService.beamBack());
     });
 
@@ -645,9 +648,12 @@ void main() {
       await tester.pumpWidget(buildDataSubject());
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.pump();
+      expect(find.byType(AgentDetailPage), findsOneWidget);
 
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentDetailPage), findsNothing);
       verifyNever(() => mockNavService.beamBack());
     });
 
@@ -658,9 +664,12 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.pump();
+      expect(find.byType(AgentDetailPage), findsOneWidget);
 
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentDetailPage), findsNothing);
       verifyNever(() => mockNavService.beamBack());
     });
   });
