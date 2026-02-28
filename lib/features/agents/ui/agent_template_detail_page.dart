@@ -8,29 +8,17 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
+import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
-
-/// Navigate back using Beamer if we're in the settings navigation stack,
-/// otherwise use Flutter's pop (e.g. when pushed from agent detail page).
-void _navigateBackTemplate(BuildContext context) {
-  final navService = getIt<NavService>();
-  if (navService.currentPath.startsWith('/settings/agents')) {
-    navService.beamBack();
-  } else {
-    Navigator.of(context).pop();
-  }
-}
 
 /// Detail page for creating or editing an agent template.
 ///
@@ -118,14 +106,7 @@ class _AgentTemplateDetailPageState
     if (templateAsync.hasError && template == null) {
       return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.chevron_left,
-              size: 30,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            onPressed: () => _navigateBackTemplate(context),
-          ),
+          leading: agentBackButton(context),
         ),
         body: Center(
           child: Text(
@@ -141,14 +122,7 @@ class _AgentTemplateDetailPageState
     if (template == null) {
       return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.chevron_left,
-              size: 30,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            onPressed: () => _navigateBackTemplate(context),
-          ),
+          leading: agentBackButton(context),
         ),
         body: Center(
           child: Text(context.messages.agentTemplateNotFound),
@@ -213,7 +187,7 @@ class _AgentTemplateDetailPageState
                     ),
               rightButtons: [
                 LottiSecondaryButton(
-                  onPressed: () => _navigateBackTemplate(context),
+                  onPressed: () => navigateBackFromAgent(context),
                   label: context.messages.cancelButton,
                 ),
                 LottiPrimaryButton(
@@ -232,14 +206,7 @@ class _AgentTemplateDetailPageState
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.chevron_left,
-              size: 30,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            onPressed: () => _navigateBackTemplate(context),
-          ),
+          leading: agentBackButton(context),
           title: Text(
             title,
             style: appBarTextStyleNewLarge.copyWith(
@@ -267,14 +234,7 @@ class _AgentTemplateDetailPageState
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         SliverAppBar(
-          leading: IconButton(
-            icon: Icon(
-              Icons.chevron_left,
-              size: 30,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            onPressed: () => _navigateBackTemplate(context),
-          ),
+          leading: agentBackButton(context),
           title: Text(
             title,
             style: appBarTextStyleNewLarge.copyWith(

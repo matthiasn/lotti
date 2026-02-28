@@ -434,8 +434,12 @@ void main() {
       // The running spinner should appear in the app bar.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // The tooltip with the running indicator label should be present.
-      expect(find.byType(Tooltip), findsOneWidget);
+      // The running indicator tooltip should be present (back button also has one).
+      final context = tester.element(find.byType(AgentDetailPage));
+      expect(
+        find.byTooltip(context.messages.agentRunningIndicator),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides running spinner when agent is not running',

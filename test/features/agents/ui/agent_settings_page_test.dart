@@ -278,6 +278,7 @@ void main() {
     testWidgets('tapping back chevron calls NavService.beamBack',
         (tester) async {
       final mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/settings/agents');
       when(mockNavService.beamBack).thenReturn(null);
       getIt.registerSingleton<NavService>(mockNavService);
       addTearDown(() => getIt.unregister<NavService>());
