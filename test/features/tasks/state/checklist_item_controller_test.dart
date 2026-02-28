@@ -303,11 +303,14 @@ void main() {
     });
 
     group('updateChecked provenance', () {
+      final fixedTime = DateTime(2026, 2, 28, 22, 30);
+
       test('stamps checkedBy: user and checkedAt on check', () async {
         final container = ProviderContainer(
           overrides: [
             checklistRepositoryProvider
                 .overrideWithValue(mockChecklistRepository),
+            clockProvider.overrideWithValue(() => fixedTime),
           ],
         );
         addTearDown(container.dispose);
@@ -333,7 +336,7 @@ void main() {
           updatedState.value?.data.checkedBy,
           CheckedBySource.user,
         );
-        expect(updatedState.value?.data.checkedAt, isNotNull);
+        expect(updatedState.value?.data.checkedAt, fixedTime);
 
         verify(
           () => mockChecklistRepository.updateChecklistItem(
@@ -360,7 +363,6 @@ void main() {
             isChecked: true,
             linkedChecklists: ['checklist-1'],
             checkedBy: CheckedBySource.agent,
-            checkedAt: null, // ignore: avoid_redundant_argument_values
           ),
         );
 
@@ -371,6 +373,7 @@ void main() {
           overrides: [
             checklistRepositoryProvider
                 .overrideWithValue(mockChecklistRepository),
+            clockProvider.overrideWithValue(() => fixedTime),
           ],
         );
         addTearDown(container.dispose);
@@ -404,7 +407,7 @@ void main() {
           updatedState.value?.data.checkedBy,
           CheckedBySource.user,
         );
-        expect(updatedState.value?.data.checkedAt, isNotNull);
+        expect(updatedState.value?.data.checkedAt, fixedTime);
       });
     });
 

@@ -6113,19 +6113,25 @@ Take into account the following task context:
   });
 
   group('Auto-check high confidence suggestions', () {
+    final autoCheckTime = DateTime(2026, 2, 28, 23);
+
     test('automatically checks items with high confidence', () async {
+      // Recreate with deterministic clock for checkedAt assertion
+      final ref = container.read(testRefProvider);
+      repository = UnifiedAiInferenceRepository(ref, clock: () => autoCheckTime)
+        ..autoChecklistServiceForTesting = mockAutoChecklistService;
       final taskEntity = Task(
         meta: _createMetadata(),
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2025),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
           checklistIds: ['checklist-1'],
         ),
       );
@@ -6230,7 +6236,11 @@ Take into account the following task context:
                       'checkedBy',
                       CheckedBySource.agent,
                     )
-                    .having((d) => d.checkedAt, 'checkedAt', isNotNull)),
+                    .having(
+                      (d) => d.checkedAt,
+                      'checkedAt',
+                      autoCheckTime,
+                    )),
             taskId: taskEntity.id,
           )).called(1);
     });

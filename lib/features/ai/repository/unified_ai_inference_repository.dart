@@ -71,7 +71,8 @@ class PreparedAudio {
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
 class UnifiedAiInferenceRepository {
-  UnifiedAiInferenceRepository(this.ref) {
+  UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now {
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
@@ -81,6 +82,10 @@ class UnifiedAiInferenceRepository {
   }
 
   final Ref ref;
+
+  /// Clock function for timestamps — injectable for testing.
+  final DateTime Function() _clock;
+
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
 
@@ -1499,7 +1504,7 @@ class UnifiedAiInferenceRepository {
                   data: checklistItem.data.copyWith(
                     isChecked: true,
                     checkedBy: CheckedBySource.agent,
-                    checkedAt: DateTime.now(),
+                    checkedAt: _clock(),
                   ),
                   taskId: currentTask.id,
                 );

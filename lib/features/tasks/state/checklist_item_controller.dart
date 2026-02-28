@@ -13,6 +13,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
+/// Clock provider for timestamps — override in tests for determinism.
+final clockProvider = Provider<DateTime Function()>((_) => DateTime.now);
+
 /// Record type for checklist item parameters.
 typedef ChecklistItemParams = ({String id, String? taskId});
 
@@ -98,7 +101,7 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
         data: data.copyWith(
           isChecked: checked,
           checkedBy: CheckedBySource.user,
-          checkedAt: DateTime.now(),
+          checkedAt: ref.read(clockProvider)(),
         ),
       );
       ref.read(checklistRepositoryProvider).updateChecklistItem(
