@@ -34,3 +34,4 @@ Each ADR should contain:
 - [`0004-task-agent-tool-execution-policy.md`](./0004-task-agent-tool-execution-policy.md)
 - [`0005-template-model-resolution-policy.md`](./0005-template-model-resolution-policy.md)
 - [`0006-change-set-deferred-tool-confirmation.md`](./0006-change-set-deferred-tool-confirmation.md)
+- [`0007-token-usage-wake-run-log-storage.md`](./0007-token-usage-wake-run-log-storage.md)

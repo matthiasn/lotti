@@ -45,14 +45,6 @@
   "agentControlsReanalyzeButton": "Réanalyser",
   "agentControlsResumeButton": "Reprendre",
   "agentConversationEmpty": "Pas encore de conversations.",
-  "agentConversationTokenCount": "{tokenCount} jetons",
-  "@agentConversationTokenCount": {
-    "placeholders": {
-      "tokenCount": {
-        "type": "String"
-      }
-    }
-  },
   "agentConversationThreadHeader": "Réveil {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
@@ -71,6 +63,14 @@
         "type": "int"
       },
       "shortId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationTokenCount": "{tokenCount} jetons",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
         "type": "String"
       }
     }
@@ -135,6 +135,7 @@
   "agentLifecycleActive": "Actif",
   "agentLifecycleCreated": "Créé",
   "agentLifecycleDestroyed": "Détruit",
+  "agentLifecycleDormant": "En sommeil",
   "agentLifecyclePaused": "En pause",
   "agentMessageKindAction": "Action",
   "agentMessageKindObservation": "Observation",
@@ -189,24 +190,8 @@
   "agentTabObservations": "Observations",
   "agentTabReports": "Rapports",
   "agentTabStats": "Stats",
-  "agentTokenUsageCachedTokens": "En cache",
-  "agentTokenUsageEmpty": "Aucune utilisation de tokens enregistrée.",
-  "agentTokenUsageErrorLoading": "Échec du chargement de l'utilisation des tokens : {error}",
-  "@agentTokenUsageErrorLoading": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "agentTokenUsageHeading": "Utilisation des tokens",
-  "agentTokenUsageInputTokens": "Entrée",
-  "agentTokenUsageModel": "Modèle",
-  "agentTokenUsageOutputTokens": "Sortie",
-  "agentTokenUsageThoughtsTokens": "Pensées",
-  "agentTokenUsageTotalTokens": "Total",
-  "agentTokenUsageWakeCount": "Réveils",
   "agentTemplateActiveInstancesTitle": "Instances actives",
+  "agentTemplateAggregateTokenUsageHeading": "Utilisation totale de tokens",
   "agentTemplateAllProviders": "Tous les fournisseurs",
   "agentTemplateAssignedLabel": "Modèle d'agent",
   "agentTemplateCreatedSuccess": "Modèle créé",
@@ -221,6 +206,7 @@
   "agentTemplateEvolveAction": "Évoluer avec l'IA",
   "agentTemplateEvolveApprove": "Approuver et enregistrer",
   "agentTemplateEvolveReject": "Rejeter",
+  "agentTemplateInstanceBreakdownHeading": "Détail par instance",
   "agentTemplateInstanceCount": "{count, plural, =0{Aucune instance} =1{1 instance} other{{count} instances}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -241,6 +227,8 @@
   "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
   "agentTemplateNotFound": "Modèle introuvable",
   "agentTemplateNoVersions": "Aucune version",
+  "agentTemplateReportsEmpty": "Pas encore de rapports.",
+  "agentTemplateReportsTab": "Rapports",
   "agentTemplateRollbackAction": "Revenir à cette version",
   "agentTemplateRollbackConfirm": "Revenir à la version {version} ? L'agent utilisera cette version lors de son prochain réveil.",
   "@agentTemplateRollbackConfirm": {
@@ -253,6 +241,8 @@
   "agentTemplateSaveNewVersion": "Enregistrer comme nouvelle version",
   "agentTemplateSelectTitle": "Sélectionner un modèle",
   "agentTemplateSettingsSubtitle": "Gérer les personnalités et directives des agents",
+  "agentTemplateSettingsTab": "Paramètres",
+  "agentTemplateStatsTab": "Statistiques",
   "agentTemplateStatusActive": "Actif",
   "agentTemplateStatusArchived": "Archivé",
   "agentTemplatesTitle": "Modèles d'agents",
@@ -268,6 +258,23 @@
   },
   "agentTemplateVersionSaved": "Nouvelle version enregistrée",
   "agentThreadReportLabel": "Rapport produit pendant ce cycle",
+  "agentTokenUsageCachedTokens": "En cache",
+  "agentTokenUsageEmpty": "Aucune utilisation de tokens enregistrée.",
+  "agentTokenUsageErrorLoading": "Échec du chargement de l'utilisation des tokens : {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Utilisation des tokens",
+  "agentTokenUsageInputTokens": "Entrée",
+  "agentTokenUsageModel": "Modèle",
+  "agentTokenUsageOutputTokens": "Sortie",
+  "agentTokenUsageThoughtsTokens": "Pensées",
+  "agentTokenUsageTotalTokens": "Total",
+  "agentTokenUsageWakeCount": "Réveils",
   "aiAssistantActionItemSuggestions": "Suggestions d'actions",
   "aiAssistantAnalyzeImage": "Analyser l'image",
   "aiAssistantSummarizeTask": "Résumer la tâche",

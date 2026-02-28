@@ -45,14 +45,6 @@
   "agentControlsReanalyzeButton": "Reanalizează",
   "agentControlsResumeButton": "Reia",
   "agentConversationEmpty": "Nicio conversație încă.",
-  "agentConversationTokenCount": "{tokenCount} jetoane",
-  "@agentConversationTokenCount": {
-    "placeholders": {
-      "tokenCount": {
-        "type": "String"
-      }
-    }
-  },
   "agentConversationThreadHeader": "Trezire {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
@@ -71,6 +63,14 @@
         "type": "int"
       },
       "shortId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationTokenCount": "{tokenCount} jetoane",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
         "type": "String"
       }
     }
@@ -135,6 +135,7 @@
   "agentLifecycleActive": "Activ",
   "agentLifecycleCreated": "Creat",
   "agentLifecycleDestroyed": "Distrus",
+  "agentLifecycleDormant": "Inactiv",
   "agentLifecyclePaused": "În pauză",
   "agentMessageKindAction": "Acțiune",
   "agentMessageKindObservation": "Observație",
@@ -189,24 +190,8 @@
   "agentTabObservations": "Observații",
   "agentTabReports": "Rapoarte",
   "agentTabStats": "Statistici",
-  "agentTokenUsageCachedTokens": "Din cache",
-  "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
-  "agentTokenUsageErrorLoading": "Eroare la încărcarea utilizării tokenilor: {error}",
-  "@agentTokenUsageErrorLoading": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "agentTokenUsageHeading": "Utilizarea tokenilor",
-  "agentTokenUsageInputTokens": "Intrare",
-  "agentTokenUsageModel": "Model",
-  "agentTokenUsageOutputTokens": "Ieșire",
-  "agentTokenUsageThoughtsTokens": "Gânduri",
-  "agentTokenUsageTotalTokens": "Total",
-  "agentTokenUsageWakeCount": "Treziri",
   "agentTemplateActiveInstancesTitle": "Instanțe active",
+  "agentTemplateAggregateTokenUsageHeading": "Utilizare totală de token-uri",
   "agentTemplateAllProviders": "Toți furnizorii",
   "agentTemplateAssignedLabel": "Șablon",
   "agentTemplateCreatedSuccess": "Șablon creat",
@@ -221,6 +206,7 @@
   "agentTemplateEvolveAction": "Evoluează cu IA",
   "agentTemplateEvolveApprove": "Aprobă și salvează",
   "agentTemplateEvolveReject": "Respinge",
+  "agentTemplateInstanceBreakdownHeading": "Detaliere pe instanță",
   "agentTemplateInstanceCount": "{count, plural, =0{Nicio instanță} =1{1 instanță} few{{count} instanțe} other{{count} de instanțe}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -241,6 +227,8 @@
   "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.",
   "agentTemplateNotFound": "Șablon negăsit",
   "agentTemplateNoVersions": "Nicio versiune",
+  "agentTemplateReportsEmpty": "Niciun raport încă.",
+  "agentTemplateReportsTab": "Rapoarte",
   "agentTemplateRollbackAction": "Revino la această versiune",
   "agentTemplateRollbackConfirm": "Revino la versiunea {version}? Agentul va folosi această versiune la următoarea trezire.",
   "@agentTemplateRollbackConfirm": {
@@ -253,6 +241,8 @@
   "agentTemplateSaveNewVersion": "Salvează ca versiune nouă",
   "agentTemplateSelectTitle": "Selectează un șablon",
   "agentTemplateSettingsSubtitle": "Gestionează personalitățile și directivele agenților",
+  "agentTemplateSettingsTab": "Setări",
+  "agentTemplateStatsTab": "Statistici",
   "agentTemplateStatusActive": "Activ",
   "agentTemplateStatusArchived": "Arhivat",
   "agentTemplatesTitle": "Șabloane agent",
@@ -268,6 +258,23 @@
   },
   "agentTemplateVersionSaved": "Versiune nouă salvată",
   "agentThreadReportLabel": "Raport generat în acest ciclu",
+  "agentTokenUsageCachedTokens": "Din cache",
+  "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
+  "agentTokenUsageErrorLoading": "Eroare la încărcarea utilizării tokenilor: {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Utilizarea tokenilor",
+  "agentTokenUsageInputTokens": "Intrare",
+  "agentTokenUsageModel": "Model",
+  "agentTokenUsageOutputTokens": "Ieșire",
+  "agentTokenUsageThoughtsTokens": "Gânduri",
+  "agentTokenUsageTotalTokens": "Total",
+  "agentTokenUsageWakeCount": "Treziri",
   "aiAssistantActionItemSuggestions": "Sugestii de acțiuni",
   "aiAssistantAnalyzeImage": "Analizează imaginea",
   "aiAssistantSummarizeTask": "Rezumă sarcina",

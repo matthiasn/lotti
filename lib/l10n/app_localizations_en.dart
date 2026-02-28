@@ -128,11 +128,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentConversationEmpty => 'No conversations yet.';
 
   @override
-  String agentConversationTokenCount(String tokenCount) {
-    return '$tokenCount tokens';
-  }
-
-  @override
   String agentConversationThreadHeader(String runKey) {
     return 'Wake $runKey';
   }
@@ -141,6 +136,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String agentConversationThreadSummary(
       int messageCount, int toolCallCount, String shortId) {
     return '$messageCount messages, $toolCallCount tool calls · $shortId';
+  }
+
+  @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount tokens';
   }
 
   @override
@@ -291,6 +291,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentLifecycleDestroyed => 'Destroyed';
 
   @override
+  String get agentLifecycleDormant => 'Dormant';
+
+  @override
   String get agentLifecyclePaused => 'Paused';
 
   @override
@@ -397,39 +400,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTabStats => 'Stats';
 
   @override
-  String get agentTokenUsageCachedTokens => 'Cached';
-
-  @override
-  String get agentTokenUsageEmpty => 'No token usage recorded yet.';
-
-  @override
-  String agentTokenUsageErrorLoading(String error) {
-    return 'Failed to load token usage: $error';
-  }
-
-  @override
-  String get agentTokenUsageHeading => 'Token Usage';
-
-  @override
-  String get agentTokenUsageInputTokens => 'Input';
-
-  @override
-  String get agentTokenUsageModel => 'Model';
-
-  @override
-  String get agentTokenUsageOutputTokens => 'Output';
-
-  @override
-  String get agentTokenUsageThoughtsTokens => 'Thoughts';
-
-  @override
-  String get agentTokenUsageTotalTokens => 'Total';
-
-  @override
-  String get agentTokenUsageWakeCount => 'Wakes';
-
-  @override
   String get agentTemplateActiveInstancesTitle => 'Active Instances';
+
+  @override
+  String get agentTemplateAggregateTokenUsageHeading => 'Aggregate Token Usage';
 
   @override
   String get agentTemplateAllProviders => 'All Providers';
@@ -475,6 +449,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTemplateEvolveReject => 'Reject';
+
+  @override
+  String get agentTemplateInstanceBreakdownHeading => 'Per-Instance Breakdown';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -527,6 +504,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateNoVersions => 'No versions';
 
   @override
+  String get agentTemplateReportsEmpty => 'No reports yet.';
+
+  @override
+  String get agentTemplateReportsTab => 'Reports';
+
+  @override
   String get agentTemplateRollbackAction => 'Roll Back to This Version';
 
   @override
@@ -543,6 +526,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Manage agent personalities and directives';
+
+  @override
+  String get agentTemplateSettingsTab => 'Settings';
+
+  @override
+  String get agentTemplateStatsTab => 'Stats';
 
   @override
   String get agentTemplateStatusActive => 'Active';
@@ -570,6 +559,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentThreadReportLabel => 'Report produced during this wake';
+
+  @override
+  String get agentTokenUsageCachedTokens => 'Cached';
+
+  @override
+  String get agentTokenUsageEmpty => 'No token usage recorded yet.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Failed to load token usage: $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Token Usage';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Input';
+
+  @override
+  String get agentTokenUsageModel => 'Model';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Output';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Thoughts';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Total';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Wakes';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Action Item Suggestions';

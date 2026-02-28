@@ -45,14 +45,6 @@
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
   "agentConversationEmpty": "Noch keine Konversationen.",
-  "agentConversationTokenCount": "{tokenCount} Tokens",
-  "@agentConversationTokenCount": {
-    "placeholders": {
-      "tokenCount": {
-        "type": "String"
-      }
-    }
-  },
   "agentConversationThreadHeader": "Wake {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
@@ -71,6 +63,14 @@
         "type": "int"
       },
       "shortId": {
+        "type": "String"
+      }
+    }
+  },
+  "agentConversationTokenCount": "{tokenCount} Tokens",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
         "type": "String"
       }
     }
@@ -135,6 +135,7 @@
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Erstellt",
   "agentLifecycleDestroyed": "Zerstört",
+  "agentLifecycleDormant": "Ruhend",
   "agentLifecyclePaused": "Pausiert",
   "agentMessageKindAction": "Aktion",
   "agentMessageKindObservation": "Beobachtung",
@@ -189,24 +190,8 @@
   "agentTabObservations": "Beobachtungen",
   "agentTabReports": "Berichte",
   "agentTabStats": "Statistik",
-  "agentTokenUsageCachedTokens": "Gecacht",
-  "agentTokenUsageEmpty": "Noch kein Token-Verbrauch aufgezeichnet.",
-  "agentTokenUsageErrorLoading": "Fehler beim Laden des Token-Verbrauchs: {error}",
-  "@agentTokenUsageErrorLoading": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "agentTokenUsageHeading": "Token-Verbrauch",
-  "agentTokenUsageInputTokens": "Eingabe",
-  "agentTokenUsageModel": "Modell",
-  "agentTokenUsageOutputTokens": "Ausgabe",
-  "agentTokenUsageThoughtsTokens": "Denken",
-  "agentTokenUsageTotalTokens": "Gesamt",
-  "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
+  "agentTemplateAggregateTokenUsageHeading": "Token-Verbrauch (gesamt)",
   "agentTemplateAllProviders": "Alle Anbieter",
   "agentTemplateAssignedLabel": "Vorlage",
   "agentTemplateCreatedSuccess": "Vorlage erstellt",
@@ -221,6 +206,7 @@
   "agentTemplateEvolveAction": "Mit KI weiterentwickeln",
   "agentTemplateEvolveApprove": "Genehmigen & Speichern",
   "agentTemplateEvolveReject": "Ablehnen",
+  "agentTemplateInstanceBreakdownHeading": "Aufschlüsselung nach Instanz",
   "agentTemplateInstanceCount": "{count, plural, =0{Keine Instanzen} =1{1 Instanz} other{{count} Instanzen}}",
   "@agentTemplateInstanceCount": {
     "placeholders": {
@@ -241,6 +227,8 @@
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
   "agentTemplateNotFound": "Vorlage nicht gefunden",
   "agentTemplateNoVersions": "Keine Versionen",
+  "agentTemplateReportsEmpty": "Noch keine Berichte.",
+  "agentTemplateReportsTab": "Berichte",
   "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
   "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",
   "@agentTemplateRollbackConfirm": {
@@ -253,6 +241,8 @@
   "agentTemplateSaveNewVersion": "Als neue Version speichern",
   "agentTemplateSelectTitle": "Vorlage auswählen",
   "agentTemplateSettingsSubtitle": "Agenten-Persönlichkeiten und Anweisungen verwalten",
+  "agentTemplateSettingsTab": "Einstellungen",
+  "agentTemplateStatsTab": "Statistiken",
   "agentTemplateStatusActive": "Aktiv",
   "agentTemplateStatusArchived": "Archiviert",
   "agentTemplatesTitle": "Agenten-Vorlagen",
@@ -268,6 +258,23 @@
   },
   "agentTemplateVersionSaved": "Neue Version gespeichert",
   "agentThreadReportLabel": "Bericht aus diesem Wake-Zyklus",
+  "agentTokenUsageCachedTokens": "Gecacht",
+  "agentTokenUsageEmpty": "Noch kein Token-Verbrauch aufgezeichnet.",
+  "agentTokenUsageErrorLoading": "Fehler beim Laden des Token-Verbrauchs: {error}",
+  "@agentTokenUsageErrorLoading": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTokenUsageHeading": "Token-Verbrauch",
+  "agentTokenUsageInputTokens": "Eingabe",
+  "agentTokenUsageModel": "Modell",
+  "agentTokenUsageOutputTokens": "Ausgabe",
+  "agentTokenUsageThoughtsTokens": "Denken",
+  "agentTokenUsageTotalTokens": "Gesamt",
+  "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "aiAssistantActionItemSuggestions": "Vorschläge für Aktionspunkte",
   "aiAssistantAnalyzeImage": "Bild analysieren",
   "aiAssistantSummarizeTask": "Aufgabe zusammenfassen",

@@ -412,6 +412,118 @@ Future<AgentTokenUsageSummary?> tokenUsageForThread(
   );
 }
 
+// ── Template-level aggregate token usage ──────────────────────────────────
+
+/// Raw token usage records for all instances of a template.
+///
+/// Uses a SQL JOIN via `template_assignment` links to fetch all
+/// [WakeTokenUsageEntity] records across every instance in a single query.
+@riverpod
+Future<List<AgentDomainEntity>> templateTokenUsageRecords(
+  Ref ref,
+  String templateId,
+) async {
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final repository = ref.watch(agentRepositoryProvider);
+  final records = await repository.getTokenUsageForTemplate(
+    templateId,
+  );
+  return records.cast<AgentDomainEntity>();
+}
+
+/// Aggregated token usage summaries for a template, grouped by model ID.
+///
+/// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+@riverpod
+Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
+  Ref ref,
+  String templateId,
+) async {
+  final entities =
+      await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
+  final records = entities.whereType<WakeTokenUsageEntity>();
+
+  final map = <String, AgentTokenUsageSummary>{};
+  for (final r in records) {
+    final existing = map[r.modelId];
+    map[r.modelId] = AgentTokenUsageSummary(
+      modelId: r.modelId,
+      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
+      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
+      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
+      cachedInputTokens:
+          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
+      wakeCount: (existing?.wakeCount ?? 0) + 1,
+    );
+  }
+
+  return map.values.toList()
+    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+}
+
+/// Per-instance token usage breakdown for a template.
+///
+/// Groups token records by instance, then by model within each instance.
+/// Returns full per-model summaries so each instance can render a
+/// `TokenUsageTable` identical in structure to the aggregate view.
+@riverpod
+Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
+  Ref ref,
+  String templateId,
+) async {
+  final entities =
+      await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
+  final records = entities.whereType<WakeTokenUsageEntity>();
+
+  // Group by agentId → modelId → AgentTokenUsageSummary
+  final byAgent = <String, Map<String, AgentTokenUsageSummary>>{};
+  for (final r in records) {
+    final modelMap = byAgent.putIfAbsent(r.agentId, () => {});
+    final existing = modelMap[r.modelId];
+    modelMap[r.modelId] = AgentTokenUsageSummary(
+      modelId: r.modelId,
+      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
+      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
+      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
+      cachedInputTokens:
+          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
+      wakeCount: (existing?.wakeCount ?? 0) + 1,
+    );
+  }
+
+  // Enrich with instance metadata
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final agents = await templateService.getAgentsForTemplate(templateId);
+
+  return agents.map((agent) {
+    final summaries = (byAgent[agent.agentId]?.values.toList() ?? [])
+      ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+    return InstanceTokenBreakdown(
+      agentId: agent.id,
+      displayName: agent.displayName,
+      lifecycle: agent.lifecycle,
+      summaries: summaries,
+    );
+  }).toList()
+    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+}
+
+/// Recent reports from all instances of a template, newest-first.
+@riverpod
+Future<List<AgentDomainEntity>> templateRecentReports(
+  Ref ref,
+  String templateId,
+) async {
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final repository = ref.watch(agentRepositoryProvider);
+  final reports = await repository.getRecentReportsByTemplate(
+    templateId,
+    limit: 20,
+  );
+  return reports.cast<AgentDomainEntity>();
+}
+
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
 /// Returns the `text` field from the payload content map, or `null` if the
@@ -696,7 +808,27 @@ void _wireWakeExecutor(
     }
 
     // Notify the update stream so all detail providers self-invalidate.
-    updateNotifications.notify({agentId, agentNotification});
+    // Include the templateId (if assigned) so template-level aggregate
+    // providers also refresh. Wrapped in try/catch so a lookup failure
+    // doesn't mark a successfully completed wake as failed.
+    String? templateId;
+    try {
+      final templateService = ref.read(agentTemplateServiceProvider);
+      final template = await templateService.getTemplateForAgent(agentId);
+      templateId = template?.id;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve template for wake notification: $error',
+        name: 'agentInitialization',
+        stackTrace: stackTrace,
+      );
+    }
+
+    updateNotifications.notify({
+      agentId,
+      if (templateId != null) templateId,
+      agentNotification,
+    });
 
     return result.mutatedEntries;
   };

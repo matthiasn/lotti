@@ -1043,6 +1043,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockTemplateService.getTemplateForAgent(any()))
+          .thenAnswer((_) async => null);
       when(() => mockRepository.abandonOrphanedWakeRuns())
           .thenAnswer((_) async => 0);
     });
@@ -1316,6 +1318,126 @@ void main() {
           'thread-2',
         );
 
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor includes templateId in notification when template exists',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+        final template = makeTestTemplate(
+          id: 'tpl-1',
+          agentId: 'tpl-1',
+        );
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
+            .thenAnswer((_) async => template);
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+
+        await capturedExecutor!(
+          kTestAgentId,
+          'run-key-tpl',
+          {'tok-c'},
+          'thread-tpl',
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'tpl-1', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor still notifies when getTemplateForAgent throws',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
+            .thenThrow(Exception('db connection lost'));
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+
+        final result = await capturedExecutor!(
+          kTestAgentId,
+          'run-key-err',
+          {'tok-d'},
+          'thread-err',
+        );
+
+        // Wake still succeeds — returns mutated entries
+        expect(result, mutated);
+
+        // Notification is still sent with just agentId (no templateId)
         final mockNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
@@ -2507,6 +2629,459 @@ void main() {
       expect(result.thoughtsTokens, 0);
       expect(result.cachedInputTokens, 0);
       expect(result.wakeCount, 1);
+    });
+  });
+
+  group('templateTokenUsageSummariesProvider', () {
+    ProviderContainer createTemplateTokenContainer({
+      required List<WakeTokenUsageEntity> records,
+    }) {
+      final repo = MockAgentRepository();
+      when(
+        () => repo.getTokenUsageForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => records);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repo),
+          agentUpdateStreamProvider
+              .overrideWith((ref, agentId) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('returns empty list when no records', () async {
+      final container = createTemplateTokenContainer(records: []);
+      final result = await container.read(
+        templateTokenUsageSummariesProvider(kTestTemplateId).future,
+      );
+      expect(result, isEmpty);
+    });
+
+    test('aggregates records across multiple instances by model', () async {
+      final now = DateTime(2025, 6, 15);
+      final container = createTemplateTokenContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-a',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+            thoughtsTokens: 20,
+            cachedInputTokens: 10,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u2',
+            agentId: 'agent-b',
+            runKey: 'run-2',
+            threadId: 't2',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 200,
+            outputTokens: 80,
+            thoughtsTokens: 30,
+            cachedInputTokens: 5,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u3',
+            agentId: 'agent-a',
+            runKey: 'run-3',
+            threadId: 't3',
+            modelId: 'claude-sonnet',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 500,
+            outputTokens: 100,
+          ),
+        ],
+      );
+
+      final result = await container.read(
+        templateTokenUsageSummariesProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+
+      // Sorted by totalTokens descending: claude-sonnet (600) > gemini (480)
+      expect(result[0].modelId, 'claude-sonnet');
+      expect(result[0].inputTokens, 500);
+      expect(result[0].outputTokens, 100);
+      expect(result[0].wakeCount, 1);
+
+      expect(result[1].modelId, 'gemini-2.5-pro');
+      expect(result[1].inputTokens, 300);
+      expect(result[1].outputTokens, 130);
+      expect(result[1].thoughtsTokens, 50);
+      expect(result[1].cachedInputTokens, 15);
+      expect(result[1].wakeCount, 2);
+    });
+
+    test('sorts by totalTokens descending', () async {
+      final now = DateTime(2025, 6, 15);
+      final container = createTemplateTokenContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-a',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'small-model',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 10,
+            outputTokens: 5,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u2',
+            agentId: 'agent-a',
+            runKey: 'run-2',
+            threadId: 't2',
+            modelId: 'big-model',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 1000,
+            outputTokens: 500,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u3',
+            agentId: 'agent-a',
+            runKey: 'run-3',
+            threadId: 't3',
+            modelId: 'medium-model',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+          ),
+        ],
+      );
+
+      final result = await container.read(
+        templateTokenUsageSummariesProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(3));
+      expect(result[0].modelId, 'big-model');
+      expect(result[1].modelId, 'medium-model');
+      expect(result[2].modelId, 'small-model');
+    });
+
+    test('handles null token fields', () async {
+      final now = DateTime(2025, 6, 15);
+      final container = createTemplateTokenContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-a',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'model-a',
+            createdAt: now,
+            vectorClock: null,
+            // All token fields null
+          ),
+        ],
+      );
+
+      final result = await container.read(
+        templateTokenUsageSummariesProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].inputTokens, 0);
+      expect(result[0].outputTokens, 0);
+      expect(result[0].thoughtsTokens, 0);
+      expect(result[0].cachedInputTokens, 0);
+      expect(result[0].wakeCount, 1);
+    });
+  });
+
+  group('templateInstanceTokenBreakdownProvider', () {
+    ProviderContainer createBreakdownContainer({
+      required List<WakeTokenUsageEntity> records,
+      required List<AgentIdentityEntity> agents,
+    }) {
+      final repo = MockAgentRepository();
+      when(
+        () => repo.getTokenUsageForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => records);
+
+      final templateService = MockAgentTemplateService();
+      when(() => templateService.getAgentsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => agents);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repo),
+          agentTemplateServiceProvider.overrideWithValue(templateService),
+          agentUpdateStreamProvider
+              .overrideWith((ref, agentId) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('returns empty list for template with no instances', () async {
+      final container = createBreakdownContainer(
+        records: [],
+        agents: [],
+      );
+
+      final result = await container.read(
+        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('groups records by instance and by model within each instance',
+        () async {
+      final now = DateTime(2025, 6, 15);
+      final agentA = makeTestIdentity(
+        id: 'agent-a',
+        agentId: 'agent-a',
+        displayName: 'Agent A',
+      );
+      final agentB = makeTestIdentity(
+        id: 'agent-b',
+        agentId: 'agent-b',
+        displayName: 'Agent B',
+      );
+
+      final container = createBreakdownContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-a',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u2',
+            agentId: 'agent-a',
+            runKey: 'run-2',
+            threadId: 't2',
+            modelId: 'claude-sonnet',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 200,
+            outputTokens: 100,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u3',
+            agentId: 'agent-b',
+            runKey: 'run-3',
+            threadId: 't3',
+            modelId: 'gemini-2.5-pro',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 50,
+            outputTokens: 25,
+          ),
+        ],
+        agents: [agentA, agentB],
+      );
+
+      final result = await container.read(
+        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+
+      // Agent A has more tokens (150+300=450) than Agent B (75)
+      expect(result[0].agentId, 'agent-a');
+      expect(result[0].displayName, 'Agent A');
+      expect(result[0].summaries, hasLength(2));
+      expect(result[0].totalTokens, 450);
+
+      expect(result[1].agentId, 'agent-b');
+      expect(result[1].displayName, 'Agent B');
+      expect(result[1].summaries, hasLength(1));
+      expect(result[1].totalTokens, 75);
+    });
+
+    test('sorts instances by totalTokens descending', () async {
+      final now = DateTime(2025, 6, 15);
+      final agentSmall = makeTestIdentity(
+        id: 'agent-small',
+        agentId: 'agent-small',
+        displayName: 'Small Agent',
+      );
+      final agentBig = makeTestIdentity(
+        id: 'agent-big',
+        agentId: 'agent-big',
+        displayName: 'Big Agent',
+      );
+
+      final container = createBreakdownContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-small',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'model-a',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 10,
+            outputTokens: 5,
+          ),
+          WakeTokenUsageEntity(
+            id: 'u2',
+            agentId: 'agent-big',
+            runKey: 'run-2',
+            threadId: 't2',
+            modelId: 'model-a',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 1000,
+            outputTokens: 500,
+          ),
+        ],
+        agents: [agentSmall, agentBig],
+      );
+
+      final result = await container.read(
+        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+      expect(result[0].agentId, 'agent-big');
+      expect(result[0].totalTokens, 1500);
+      expect(result[1].agentId, 'agent-small');
+      expect(result[1].totalTokens, 15);
+    });
+
+    test('includes instances with no token records (with empty summaries)',
+        () async {
+      final agentWithTokens = makeTestIdentity(
+        id: 'agent-with',
+        agentId: 'agent-with',
+        displayName: 'With Tokens',
+      );
+      final agentWithout = makeTestIdentity(
+        id: 'agent-without',
+        agentId: 'agent-without',
+        displayName: 'Without Tokens',
+      );
+      final now = DateTime(2025, 6, 15);
+
+      final container = createBreakdownContainer(
+        records: [
+          WakeTokenUsageEntity(
+            id: 'u1',
+            agentId: 'agent-with',
+            runKey: 'run-1',
+            threadId: 't1',
+            modelId: 'model-a',
+            createdAt: now,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+          ),
+        ],
+        agents: [agentWithTokens, agentWithout],
+      );
+
+      final result = await container.read(
+        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+
+      // Agent with tokens sorted first (150 > 0)
+      expect(result[0].agentId, 'agent-with');
+      expect(result[0].totalTokens, 150);
+      expect(result[0].summaries, hasLength(1));
+
+      expect(result[1].agentId, 'agent-without');
+      expect(result[1].totalTokens, 0);
+      expect(result[1].summaries, isEmpty);
+    });
+  });
+
+  group('templateRecentReportsProvider', () {
+    test('returns reports from repository', () async {
+      final report1 = makeTestReport(
+        id: 'report-1',
+        agentId: 'agent-a',
+        content: 'First report',
+      );
+      final report2 = makeTestReport(
+        id: 'report-2',
+        agentId: 'agent-b',
+        content: 'Second report',
+      );
+
+      final repo = MockAgentRepository();
+      when(
+        () => repo.getRecentReportsByTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [report1, report2]);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repo),
+          agentUpdateStreamProvider
+              .overrideWith((ref, agentId) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        templateRecentReportsProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+      expect((result[0] as AgentReportEntity).id, 'report-1');
+      expect((result[1] as AgentReportEntity).id, 'report-2');
+    });
+
+    test('returns empty list when no reports', () async {
+      final repo = MockAgentRepository();
+      when(
+        () => repo.getRecentReportsByTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repo),
+          agentUpdateStreamProvider
+              .overrideWith((ref, agentId) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        templateRecentReportsProvider(kTestTemplateId).future,
+      );
+
+      expect(result, isEmpty);
     });
   });
 }

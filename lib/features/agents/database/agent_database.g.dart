@@ -2638,6 +2638,20 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getTokenUsageByTemplateId(
+      String templateId, int limit) {
+    return customSelect(
+        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(templateId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+          agentLinks,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

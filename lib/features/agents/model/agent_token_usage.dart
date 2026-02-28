@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:meta/meta.dart';
 
 /// Aggregated token usage summary for a single model.
@@ -54,4 +56,52 @@ class AgentTokenUsageSummary {
       'AgentTokenUsageSummary(model: $modelId, in: $inputTokens, '
       'out: $outputTokens, thoughts: $thoughtsTokens, '
       'cached: $cachedInputTokens, wakes: $wakeCount)';
+}
+
+/// Per-instance token usage with full per-model breakdown.
+///
+/// Used by the template stats view to show each instance's contribution
+/// to the aggregate token expenditure, with the same per-model detail
+/// as the aggregate table.
+@immutable
+class InstanceTokenBreakdown {
+  const InstanceTokenBreakdown({
+    required this.agentId,
+    required this.displayName,
+    required this.lifecycle,
+    required this.summaries,
+  });
+
+  final String agentId;
+  final String displayName;
+  final AgentLifecycle lifecycle;
+  final List<AgentTokenUsageSummary> summaries;
+
+  /// Total tokens across all models.
+  int get totalTokens =>
+      summaries.fold<int>(0, (sum, s) => sum + s.totalTokens);
+
+  static const _listEquality = ListEquality<AgentTokenUsageSummary>();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InstanceTokenBreakdown &&
+          agentId == other.agentId &&
+          displayName == other.displayName &&
+          lifecycle == other.lifecycle &&
+          _listEquality.equals(summaries, other.summaries);
+
+  @override
+  int get hashCode => Object.hash(
+        agentId,
+        displayName,
+        lifecycle,
+        _listEquality.hash(summaries),
+      );
+
+  @override
+  String toString() =>
+      'InstanceTokenBreakdown(agent: $agentId, name: $displayName, '
+      'lifecycle: $lifecycle, totalTokens: $totalTokens)';
 }

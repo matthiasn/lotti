@@ -60,7 +60,7 @@ class AgentTokenUsageSection extends ConsumerWidget {
                   ),
                 );
               }
-              return _TokenUsageTable(summaries: summaries);
+              return TokenUsageTable(summaries: summaries);
             },
           ),
         ],
@@ -69,8 +69,12 @@ class AgentTokenUsageSection extends ConsumerWidget {
   }
 }
 
-class _TokenUsageTable extends StatelessWidget {
-  const _TokenUsageTable({required this.summaries});
+/// Reusable table displaying per-model token usage summaries.
+///
+/// Used by both [AgentTokenUsageSection] (per-instance) and
+/// `TemplateTokenUsageSection` (per-template aggregate).
+class TokenUsageTable extends StatelessWidget {
+  const TokenUsageTable({required this.summaries, super.key});
 
   final List<AgentTokenUsageSummary> summaries;
 

@@ -335,12 +335,6 @@ abstract class AppLocalizations {
   /// **'No conversations yet.'**
   String get agentConversationEmpty;
 
-  /// No description provided for @agentConversationTokenCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{tokenCount} tokens'**
-  String agentConversationTokenCount(String tokenCount);
-
   /// No description provided for @agentConversationThreadHeader.
   ///
   /// In en, this message translates to:
@@ -353,6 +347,12 @@ abstract class AppLocalizations {
   /// **'{messageCount} messages, {toolCallCount} tool calls · {shortId}'**
   String agentConversationThreadSummary(
       int messageCount, int toolCallCount, String shortId);
+
+  /// No description provided for @agentConversationTokenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokenCount} tokens'**
+  String agentConversationTokenCount(String tokenCount);
 
   /// No description provided for @agentDetailErrorLoading.
   ///
@@ -630,6 +630,12 @@ abstract class AppLocalizations {
   /// **'Destroyed'**
   String get agentLifecycleDestroyed;
 
+  /// No description provided for @agentLifecycleDormant.
+  ///
+  /// In en, this message translates to:
+  /// **'Dormant'**
+  String get agentLifecycleDormant;
+
   /// No description provided for @agentLifecyclePaused.
   ///
   /// In en, this message translates to:
@@ -828,71 +834,17 @@ abstract class AppLocalizations {
   /// **'Stats'**
   String get agentTabStats;
 
-  /// No description provided for @agentTokenUsageCachedTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Cached'**
-  String get agentTokenUsageCachedTokens;
-
-  /// No description provided for @agentTokenUsageEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No token usage recorded yet.'**
-  String get agentTokenUsageEmpty;
-
-  /// No description provided for @agentTokenUsageErrorLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load token usage: {error}'**
-  String agentTokenUsageErrorLoading(String error);
-
-  /// No description provided for @agentTokenUsageHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Token Usage'**
-  String get agentTokenUsageHeading;
-
-  /// No description provided for @agentTokenUsageInputTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Input'**
-  String get agentTokenUsageInputTokens;
-
-  /// No description provided for @agentTokenUsageModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Model'**
-  String get agentTokenUsageModel;
-
-  /// No description provided for @agentTokenUsageOutputTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Output'**
-  String get agentTokenUsageOutputTokens;
-
-  /// No description provided for @agentTokenUsageThoughtsTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Thoughts'**
-  String get agentTokenUsageThoughtsTokens;
-
-  /// No description provided for @agentTokenUsageTotalTokens.
-  ///
-  /// In en, this message translates to:
-  /// **'Total'**
-  String get agentTokenUsageTotalTokens;
-
-  /// No description provided for @agentTokenUsageWakeCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Wakes'**
-  String get agentTokenUsageWakeCount;
-
   /// Section title for the list of active agent instances using this template.
   ///
   /// In en, this message translates to:
   /// **'Active Instances'**
   String get agentTemplateActiveInstancesTitle;
+
+  /// Heading for the aggregate token usage section in agent template stats.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregate Token Usage'**
+  String get agentTemplateAggregateTokenUsageHeading;
 
   /// Filter option to show models from all AI providers.
   ///
@@ -978,6 +930,12 @@ abstract class AppLocalizations {
   /// **'Reject'**
   String get agentTemplateEvolveReject;
 
+  /// Heading for the per-instance breakdown section in agent template stats.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-Instance Breakdown'**
+  String get agentTemplateInstanceBreakdownHeading;
+
   /// No description provided for @agentTemplateInstanceCount.
   ///
   /// In en, this message translates to:
@@ -1056,6 +1014,18 @@ abstract class AppLocalizations {
   /// **'No versions'**
   String get agentTemplateNoVersions;
 
+  /// No description provided for @agentTemplateReportsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports yet.'**
+  String get agentTemplateReportsEmpty;
+
+  /// Tab label for the reports tab in agent template detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get agentTemplateReportsTab;
+
   /// Button label to roll back a template to a previous version.
   ///
   /// In en, this message translates to:
@@ -1085,6 +1055,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage agent personalities and directives'**
   String get agentTemplateSettingsSubtitle;
+
+  /// Tab label for the settings tab in agent template detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get agentTemplateSettingsTab;
+
+  /// Tab label for the stats tab in agent template detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats'**
+  String get agentTemplateStatsTab;
 
   /// Label for the active template status.
   ///
@@ -1133,6 +1115,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report produced during this wake'**
   String get agentThreadReportLabel;
+
+  /// No description provided for @agentTokenUsageCachedTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Cached'**
+  String get agentTokenUsageCachedTokens;
+
+  /// No description provided for @agentTokenUsageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No token usage recorded yet.'**
+  String get agentTokenUsageEmpty;
+
+  /// No description provided for @agentTokenUsageErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load token usage: {error}'**
+  String agentTokenUsageErrorLoading(String error);
+
+  /// No description provided for @agentTokenUsageHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Token Usage'**
+  String get agentTokenUsageHeading;
+
+  /// No description provided for @agentTokenUsageInputTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get agentTokenUsageInputTokens;
+
+  /// No description provided for @agentTokenUsageModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get agentTokenUsageModel;
+
+  /// No description provided for @agentTokenUsageOutputTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get agentTokenUsageOutputTokens;
+
+  /// No description provided for @agentTokenUsageThoughtsTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts'**
+  String get agentTokenUsageThoughtsTokens;
+
+  /// No description provided for @agentTokenUsageTotalTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get agentTokenUsageTotalTokens;
+
+  /// No description provided for @agentTokenUsageWakeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentTokenUsageWakeCount;
 
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///
