@@ -45,6 +45,14 @@
   "agentControlsReanalyzeButton": "Reanalizează",
   "agentControlsResumeButton": "Reia",
   "agentConversationEmpty": "Nicio conversație încă.",
+  "agentConversationTokenCount": "{tokenCount} jetoane",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
+        "type": "String"
+      }
+    }
+  },
   "agentConversationThreadHeader": "Trezire {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {

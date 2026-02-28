@@ -2251,7 +2251,8 @@ void main() {
       required List<WakeTokenUsageEntity> records,
     }) {
       final repo = MockAgentRepository();
-      when(() => repo.getTokenUsageForAgent(agentId))
+      when(() =>
+              repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')))
           .thenAnswer((_) async => records);
 
       final container = ProviderContainer(

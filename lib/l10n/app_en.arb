@@ -44,6 +44,14 @@
   "agentControlsReanalyzeButton": "Re-analyze",
   "agentControlsResumeButton": "Resume",
   "agentConversationEmpty": "No conversations yet.",
+  "agentConversationTokenCount": "{tokenCount} tokens",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
+        "type": "String"
+      }
+    }
+  },
   "agentConversationThreadHeader": "Wake {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {

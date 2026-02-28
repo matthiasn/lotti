@@ -125,7 +125,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentControlsResumeButton => 'Pokračovat';
 
   @override
-  String get agentConversationEmpty => 'No conversations yet.';
+  String get agentConversationEmpty => 'Zatím žádné konverzace.';
+
+  @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount tokenů';
+  }
 
   @override
   String agentConversationThreadHeader(String runKey) {
@@ -377,51 +382,52 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStateWakeCount => 'Počet probuzení';
 
   @override
-  String get agentTabActivity => 'Activity';
+  String get agentTabActivity => 'Aktivita';
 
   @override
-  String get agentTabConversations => 'Conversations';
+  String get agentTabConversations => 'Konverzace';
 
   @override
-  String get agentTabObservations => 'Observations';
+  String get agentTabObservations => 'Pozorování';
 
   @override
-  String get agentTabReports => 'Reports';
+  String get agentTabReports => 'Zprávy';
 
   @override
-  String get agentTabStats => 'Stats';
+  String get agentTabStats => 'Statistiky';
 
   @override
-  String get agentTokenUsageCachedTokens => 'Cached';
+  String get agentTokenUsageCachedTokens => 'Z mezipaměti';
 
   @override
-  String get agentTokenUsageEmpty => 'No token usage recorded yet.';
+  String get agentTokenUsageEmpty =>
+      'Zatím nebyla zaznamenána žádná spotřeba tokenů.';
 
   @override
   String agentTokenUsageErrorLoading(String error) {
-    return 'Failed to load token usage: $error';
+    return 'Nepodařilo se načíst spotřebu tokenů: $error';
   }
 
   @override
-  String get agentTokenUsageHeading => 'Token Usage';
+  String get agentTokenUsageHeading => 'Spotřeba tokenů';
 
   @override
-  String get agentTokenUsageInputTokens => 'Input';
+  String get agentTokenUsageInputTokens => 'Vstup';
 
   @override
   String get agentTokenUsageModel => 'Model';
 
   @override
-  String get agentTokenUsageOutputTokens => 'Output';
+  String get agentTokenUsageOutputTokens => 'Výstup';
 
   @override
-  String get agentTokenUsageThoughtsTokens => 'Thoughts';
+  String get agentTokenUsageThoughtsTokens => 'Úvahy';
 
   @override
-  String get agentTokenUsageTotalTokens => 'Total';
+  String get agentTokenUsageTotalTokens => 'Celkem';
 
   @override
-  String get agentTokenUsageWakeCount => 'Wakes';
+  String get agentTokenUsageWakeCount => 'Probuzení';
 
   @override
   String get agentTemplateActiveInstancesTitle => 'Active Instances';

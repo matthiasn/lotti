@@ -335,6 +335,12 @@ abstract class AppLocalizations {
   /// **'No conversations yet.'**
   String get agentConversationEmpty;
 
+  /// No description provided for @agentConversationTokenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokenCount} tokens'**
+  String agentConversationTokenCount(String tokenCount);
+
   /// No description provided for @agentConversationThreadHeader.
   ///
   /// In en, this message translates to:

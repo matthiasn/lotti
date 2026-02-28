@@ -162,7 +162,10 @@ class _ThreadTile extends ConsumerWidget {
             toolCallCount,
             shortId,
           ),
-          if (tokenUsage != null) _formatTokenCount(tokenUsage.totalTokens),
+          if (tokenUsage != null)
+            context.messages.agentConversationTokenCount(
+              _tokenNumberFormat.format(tokenUsage.totalTokens),
+            ),
           if (model != null) model,
         ].join(' · '),
         style: context.textTheme.labelSmall?.copyWith(
@@ -184,11 +187,6 @@ class _ThreadTile extends ConsumerWidget {
 }
 
 final _tokenNumberFormat = NumberFormat('#,###');
-
-/// Format a token count as a compact string (e.g., "1,500 tokens").
-String _formatTokenCount(int tokens) {
-  return '${_tokenNumberFormat.format(tokens)} tokens';
-}
 
 /// Format a [Duration] as a human-readable string (e.g., "2m 30s", "1h 5m").
 String _formatDuration(Duration d) {

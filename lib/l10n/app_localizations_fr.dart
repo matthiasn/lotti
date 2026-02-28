@@ -131,6 +131,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentConversationEmpty => 'Pas encore de conversations.';
 
   @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount jetons';
+  }
+
+  @override
   String agentConversationThreadHeader(String runKey) {
     return 'Réveil $runKey';
   }

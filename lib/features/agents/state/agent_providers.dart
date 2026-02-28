@@ -345,7 +345,7 @@ Future<List<AgentDomainEntity>> agentTokenUsageRecords(
 ) async {
   ref.watch(agentUpdateStreamProvider(agentId));
   final repository = ref.watch(agentRepositoryProvider);
-  final records = await repository.getTokenUsageForAgent(agentId);
+  final records = await repository.getTokenUsageForAgent(agentId, limit: 10000);
   return records.cast<AgentDomainEntity>();
 }
 

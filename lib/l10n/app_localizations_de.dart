@@ -130,6 +130,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentConversationEmpty => 'Noch keine Konversationen.';
 
   @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount Tokens';
+  }
+
+  @override
   String agentConversationThreadHeader(String runKey) {
     return 'Wake $runKey';
   }
@@ -427,7 +432,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTokenUsageTotalTokens => 'Gesamt';
 
   @override
-  String get agentTokenUsageWakeCount => 'Aufwachen';
+  String get agentTokenUsageWakeCount => 'Aufwachvorgänge';
 
   @override
   String get agentTemplateActiveInstancesTitle => 'Aktive Instanzen';

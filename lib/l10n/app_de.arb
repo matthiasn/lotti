@@ -45,6 +45,14 @@
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
   "agentConversationEmpty": "Noch keine Konversationen.",
+  "agentConversationTokenCount": "{tokenCount} Tokens",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
+        "type": "String"
+      }
+    }
+  },
   "agentConversationThreadHeader": "Wake {runKey}",
   "@agentConversationThreadHeader": {
     "placeholders": {
@@ -197,7 +205,7 @@
   "agentTokenUsageOutputTokens": "Ausgabe",
   "agentTokenUsageThoughtsTokens": "Denken",
   "agentTokenUsageTotalTokens": "Gesamt",
-  "agentTokenUsageWakeCount": "Aufwachen",
+  "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "agentTemplateActiveInstancesTitle": "Aktive Instanzen",
   "agentTemplateAllProviders": "Alle Anbieter",
   "agentTemplateAssignedLabel": "Vorlage",
