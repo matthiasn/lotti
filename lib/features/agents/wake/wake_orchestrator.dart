@@ -545,6 +545,7 @@ class WakeOrchestrator {
         // Increment generation so the old drain's loop bails out.
         _drainGeneration++;
         _isDraining = false;
+        _drainStartedAt = null;
       } else {
         _drainRequested = true;
         return;
@@ -562,7 +563,7 @@ class WakeOrchestrator {
       // Re-enter the drain loop when new work arrived while we were busy.
       do {
         _drainRequested = false;
-        await _drain();
+        await _drain(myGeneration);
         // Bail out if a newer drain superseded us via force-reset.
         if (_drainGeneration != myGeneration) {
           _log('drain superseded, bailing out', subDomain: 'drain');
@@ -579,11 +580,18 @@ class WakeOrchestrator {
   }
 
   /// Single pass: dequeue and execute all ready jobs.
-  Future<void> _drain() async {
+  ///
+  /// [generation] is the drain generation at the time this pass was started.
+  /// If a newer generation supersedes us (via stale-lock recovery), the loop
+  /// bails out early to avoid overlapping mutations.
+  Future<void> _drain(int generation) async {
     final deferred = <WakeJob>[];
 
     try {
       while (true) {
+        // Bail out if a newer drain superseded us.
+        if (_drainGeneration != generation) return;
+
         final job = queue.dequeue();
         if (job == null) break;
 
@@ -637,7 +645,7 @@ class WakeOrchestrator {
       // Clear run-key history only when the queue is fully drained (no
       // deferred jobs left). This prevents stale keys from blocking future
       // wakes while avoiding premature clearing that could allow duplicates.
-      if (queue.isEmpty) {
+      if (_drainGeneration == generation && queue.isEmpty) {
         _log('run-key history cleared (queue empty)', subDomain: 'drain');
         queue.clearHistory();
       }
