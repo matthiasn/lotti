@@ -7,10 +7,12 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../agents/test_utils.dart';
 
 void main() {
   group('AiSettingsPage', () {
@@ -78,6 +80,8 @@ void main() {
           .thenAnswer((_) => Stream.value([testConfigs[2]]));
       when(() => mockRepository.getConfigById('anthropic-provider'))
           .thenAnswer((_) async => testConfigs[0] as AiConfigInferenceProvider);
+      when(() => mockRepository.watchProfiles())
+          .thenAnswer((_) => Stream.value([]));
     });
 
     Widget createTestWidget() {
@@ -114,7 +118,7 @@ void main() {
       expect(find.text('Search AI configurations...'), findsOneWidget);
     });
 
-    testWidgets('should display tab bar with three tabs',
+    testWidgets('should display tab bar with four tabs',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -122,6 +126,7 @@ void main() {
       expect(find.text('Providers'), findsOneWidget);
       expect(find.text('Models'), findsOneWidget);
       expect(find.text('Prompts'), findsOneWidget);
+      expect(find.text('Profiles'), findsOneWidget);
     });
 
     testWidgets('should switch between tabs', (WidgetTester tester) async {
@@ -900,6 +905,176 @@ void main() {
         // Selection state should be maintained (delete FAB and check icon)
         expect(find.byIcon(Icons.delete_rounded), findsOneWidget);
         expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+    });
+
+    group('profiles tab', () {
+      testWidgets('should show profile cards when profiles exist',
+          (WidgetTester tester) async {
+        final profiles = [
+          testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
+          testInferenceProfile(id: 'p2', name: 'Local Ollama'),
+        ];
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => Stream.value(profiles));
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Gemini Flash'), findsOneWidget);
+        expect(find.text('Local Ollama'), findsOneWidget);
+        expect(find.byType(ProfileCard), findsNWidgets(2));
+      });
+
+      testWidgets('should show empty state when no profiles exist',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab (watchProfiles returns [] from setUp)
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('No inference profiles yet'), findsOneWidget);
+        expect(find.byIcon(Icons.tune), findsOneWidget);
+      });
+
+      testWidgets('should filter profiles by search query',
+          (WidgetTester tester) async {
+        final profiles = [
+          testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
+          testInferenceProfile(id: 'p2', name: 'Local Ollama'),
+        ];
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => Stream.value(profiles));
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        // Both visible initially
+        expect(find.text('Gemini Flash'), findsOneWidget);
+        expect(find.text('Local Ollama'), findsOneWidget);
+
+        // Search for "Gemini"
+        await tester.enterText(find.byType(TextField), 'Gemini');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Only Gemini should be visible
+        expect(find.text('Gemini Flash'), findsOneWidget);
+        expect(find.text('Local Ollama'), findsNothing);
+      });
+
+      testWidgets(
+          'should show no-items-found message when search has no results',
+          (WidgetTester tester) async {
+        final profiles = [
+          testInferenceProfile(id: 'p1', name: 'Gemini Flash'),
+        ];
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => Stream.value(profiles));
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        // Search for something that doesn't match
+        await tester.enterText(find.byType(TextField), 'zzzznonexistent');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Should show "No items found" (not "No inference profiles yet")
+        expect(find.text('No items found'), findsOneWidget);
+      });
+
+      testWidgets('should show Add Profile FAB on profiles tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Add Profile'), findsOneWidget);
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+      });
+
+      testWidgets('should show loading state for profiles',
+          (WidgetTester tester) async {
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => const Stream.empty());
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('should show error state for profiles',
+          (WidgetTester tester) async {
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => Stream.error('Profile error'));
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Profile error'), findsOneWidget);
+        expect(find.text('RETRY'), findsOneWidget);
+      });
+
+      testWidgets('should show desktop-only chip in profile card',
+          (WidgetTester tester) async {
+        final profiles = [
+          testInferenceProfile(
+            id: 'p1',
+            name: 'Local Profile',
+            desktopOnly: true,
+          ),
+        ];
+        when(() => mockRepository.watchProfiles())
+            .thenAnswer((_) => Stream.value(profiles));
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Desktop Only'), findsOneWidget);
+      });
+
+      testWidgets('should not show Select chip on Profiles tab',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to Profiles tab
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Select'), findsNothing);
       });
     });
   });

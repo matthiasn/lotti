@@ -1055,6 +1055,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsAddModelTooltip => 'Ajouter ce modèle à ton fournisseur';
 
   @override
+  String get aiSettingsAddProfileButton => 'Ajouter un profil';
+
+  @override
   String get aiSettingsAddPromptButton => 'Ajouter un prompt';
 
   @override
@@ -1140,6 +1143,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Modèles';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profils';
 
   @override
   String get aiSettingsTabPrompts => 'Prompts';
@@ -2488,6 +2494,60 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get images => 'Images';
+
+  @override
+  String get inferenceProfileCreateTitle => 'Créer un profil';
+
+  @override
+  String get inferenceProfileDeleteInUseMessage =>
+      'Ce profil est utilisé par des agents ou des modèles et ne peut pas être supprimé.';
+
+  @override
+  String get inferenceProfileDescriptionLabel => 'Description';
+
+  @override
+  String get inferenceProfileDesktopOnly => 'Bureau uniquement';
+
+  @override
+  String get inferenceProfileDesktopOnlyDescription =>
+      'Disponible uniquement sur les plateformes de bureau (ex. pour les modèles locaux)';
+
+  @override
+  String get inferenceProfileEditTitle => 'Modifier le profil';
+
+  @override
+  String get inferenceProfileImageGeneration => 'Génération d\'images';
+
+  @override
+  String get inferenceProfileImageRecognition => 'Reconnaissance d\'images';
+
+  @override
+  String get inferenceProfileNameLabel => 'Nom du profil';
+
+  @override
+  String get inferenceProfileNameRequired => 'Un nom de profil est requis';
+
+  @override
+  String get inferenceProfileSaveButton => 'Enregistrer';
+
+  @override
+  String get inferenceProfileSelectModel => 'Sélectionner un modèle…';
+
+  @override
+  String get inferenceProfilesEmpty => 'Aucun profil d\'inférence';
+
+  @override
+  String get inferenceProfilesTitle => 'Profils d\'inférence';
+
+  @override
+  String get inferenceProfileThinking => 'Réflexion';
+
+  @override
+  String get inferenceProfileThinkingRequired =>
+      'Un modèle de réflexion est requis';
+
+  @override
+  String get inferenceProfileTranscription => 'Transcription';
 
   @override
   String get inputDataTypeAudioFilesDescription =>

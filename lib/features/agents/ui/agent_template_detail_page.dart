@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -46,6 +47,7 @@ class _AgentTemplateDetailPageState
   late TextEditingController _nameController;
   late TextEditingController _directivesController;
   String? _selectedModelId;
+  String? _selectedProfileId;
   bool _didSeedControllers = false;
   String? _seededVersionId;
   bool _isSaving = false;
@@ -135,6 +137,7 @@ class _AgentTemplateDetailPageState
     if (!_didSeedControllers) {
       _nameController.text = template.displayName;
       _selectedModelId = template.modelId;
+      _selectedProfileId = template.profileId;
       if (activeVersion != null) {
         _directivesController.text = activeVersion.directives;
         _seededVersionId = activeVersion.id;
@@ -286,6 +289,11 @@ class _AgentTemplateDetailPageState
           onModelSelected: (id) => setState(() => _selectedModelId = id),
         ),
         const SizedBox(height: 16),
+        ProfileSelector(
+          selectedProfileId: _selectedProfileId,
+          onProfileSelected: (id) => setState(() => _selectedProfileId = id),
+        ),
+        const SizedBox(height: 16),
         LottiTextArea(
           controller: _directivesController,
           labelText: context.messages.agentTemplateDirectivesLabel,
@@ -311,6 +319,7 @@ class _AgentTemplateDetailPageState
           displayName: name,
           kind: AgentTemplateKind.taskAgent,
           modelId: modelId,
+          profileId: _selectedProfileId,
           directives: directives,
           authoredBy: 'user',
         );
@@ -323,11 +332,13 @@ class _AgentTemplateDetailPageState
         ref.invalidate(agentTemplatesProvider);
         Navigator.of(context).pop();
       } else {
-        // Persist template-level fields (name, model).
+        // Persist template-level fields (name, model, profile).
         await templateService.updateTemplate(
           templateId: widget.templateId!,
           displayName: name,
           modelId: modelId,
+          profileId: _selectedProfileId,
+          clearProfileId: _selectedProfileId == null,
         );
 
         // Create a new directive version.

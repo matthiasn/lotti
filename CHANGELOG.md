@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.888] - 2026-02-28
+### Added
+- Inference Profiles: named configuration bundles that group model assignments
+  per capability slot (thinking, image recognition, transcription, image
+  generation). Profiles replace direct model references on agent templates and
+  instances, enabling intent-based selection like "keep data local" or
+  "use EU infrastructure".
+- Profile management UI accessible from AI settings, with CRUD operations,
+  deletion guards, and six seeded default profiles.
+- Two-page agent creation modal (template + profile selection) replaces
+  the former single-step template picker.
+- Profile selector on both template detail and agent detail pages.
+
 ## [0.9.887] - 2026-02-28
 ### Added
 - Agent now learns from past user decisions: confirmed, rejected, and deferred
@@ -14,12 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agent no longer proposes redundant label assignments when a task already has
   3 or more labels. The available labels context is now omitted for fully-labeled
   tasks, preventing unnecessary change set proposals in the confirmation UI.
-
-## [0.9.886] - 2026-02-28
-### Changed
-- Hardened agent wake drain: generation-based bail-out prevents overlapping
-  drain loops during stale-lock recovery, and stack traces are now captured
-  in all error logging paths for better diagnostics.
 
 ## [0.9.885] - 2026-02-28
 ### Changed

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
@@ -97,6 +98,19 @@ class AiSettingsNavigationService {
     await Navigator.of(context).push(route);
   }
 
+  /// Navigates to create a new inference profile
+  ///
+  /// **Parameters:**
+  /// - [context]: BuildContext for navigation
+  ///
+  /// **Returns:** Future that completes when navigation finishes
+  Future<void> navigateToCreateProfile(BuildContext context) async {
+    final route = _createSlideRoute(
+      builder: (context) => const InferenceProfileForm(),
+    );
+    await Navigator.of(context).push(route);
+  }
+
   /// Creates the appropriate route with slide transition based on config type
   ///
   /// This method uses pattern matching on the sealed AiConfig class
@@ -126,9 +140,9 @@ class AiSettingsNavigationService {
             configId: config.id,
           ),
         ),
-      // Profiles are managed on a dedicated page, not via this navigation.
-      AiConfigInferenceProfile() =>
-        throw ArgumentError('Inference profiles are not edited via this route'),
+      AiConfigInferenceProfile() => _createSlideRoute(
+          builder: (context) => InferenceProfileForm(existingProfile: config),
+        ),
     };
   }
 

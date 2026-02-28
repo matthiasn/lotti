@@ -16,6 +16,9 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
+import 'package:lotti/features/ai/model/ai_config.dart'
+    show AiConfig, AiConfigInferenceProfile;
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -55,6 +58,18 @@ class _NullEntryController extends EntryController {
   @override
   Future<EntryState?> build({required String id}) async => null;
 }
+
+class _FakeInferenceProfileController extends InferenceProfileController {
+  _FakeInferenceProfileController(this._profiles);
+
+  final List<AiConfig> _profiles;
+
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(_profiles);
+}
+
+/// A test profile used to complete the agent creation modal flow.
+final AiConfigInferenceProfile _testProfile = testInferenceProfile();
 
 /// Helper to build a [TaskAgentReportSection] with commonly needed overrides.
 Widget _buildSubject({
@@ -276,6 +291,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       ).thenAnswer((_) async => identity);
@@ -295,6 +311,9 @@ void main() {
             ),
             taskAgentServiceProvider.overrideWithValue(mockService),
             agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([_testProfile]),
+            ),
           ],
         ),
       );
@@ -306,10 +325,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Single template auto-skips to profile page; select the profile.
+      await tester.tap(find.text(_testProfile.name));
+      await tester.pumpAndSettle();
+
       verify(
         () => mockService.createTaskAgent(
           taskId: task.meta.id,
           templateId: any(named: 'templateId'),
+          profileId: _testProfile.id,
           allowedCategoryIds: <String>{},
         ),
       ).called(1);
@@ -327,6 +351,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       ).thenThrow(Exception('creation failed'));
@@ -346,6 +371,9 @@ void main() {
             ),
             taskAgentServiceProvider.overrideWithValue(mockService),
             agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([_testProfile]),
+            ),
           ],
         ),
       );
@@ -355,6 +383,10 @@ void main() {
       await tester.tap(
         find.text(context.messages.taskAgentCreateChipLabel),
       );
+      await tester.pumpAndSettle();
+
+      // Select profile to trigger createTaskAgent which throws.
+      await tester.tap(find.text(_testProfile.name));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('creation failed'), findsOneWidget);
@@ -369,9 +401,8 @@ void main() {
         _buildSubject(
           taskId: task.meta.id,
           overrides: [
-            entryControllerProvider(id: task.meta.id).overrideWith(
-              _NullEntryController.new,
-            ),
+            entryControllerProvider(id: task.meta.id)
+                .overrideWith(_NullEntryController.new),
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
             ),
@@ -394,6 +425,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       );
@@ -438,6 +470,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       ).thenAnswer((_) async => identity);
@@ -457,6 +490,9 @@ void main() {
             ),
             taskAgentServiceProvider.overrideWithValue(mockService),
             agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([_testProfile]),
+            ),
           ],
         ),
       );
@@ -468,10 +504,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Select profile to complete the modal flow.
+      await tester.tap(find.text(_testProfile.name));
+      await tester.pumpAndSettle();
+
       verify(
         () => mockService.createTaskAgent(
           taskId: testTask.meta.id,
           templateId: any(named: 'templateId'),
+          profileId: _testProfile.id,
           allowedCategoryIds: {categoryId},
         ),
       ).called(1);
@@ -516,7 +557,7 @@ void main() {
       );
     });
 
-    testWidgets('shows template selection bottom sheet for multiple templates',
+    testWidgets('shows template selection modal for multiple templates',
         (tester) async {
       final task = testTask;
       final mockService = MockTaskAgentService();
@@ -540,6 +581,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       ).thenAnswer((_) async => identity);
@@ -559,6 +601,9 @@ void main() {
             ),
             taskAgentServiceProvider.overrideWithValue(mockService),
             agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([_testProfile]),
+            ),
           ],
         ),
       );
@@ -570,7 +615,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Bottom sheet should show both template names
+      // Modal page 0 should show both template names.
       expect(find.text('Laura'), findsOneWidget);
       expect(find.text('Tom'), findsOneWidget);
       expect(
@@ -578,14 +623,19 @@ void main() {
         findsOneWidget,
       );
 
-      // Select Laura
+      // Select Laura → moves to profile page.
       await tester.tap(find.text('Laura'));
+      await tester.pumpAndSettle();
+
+      // Select profile to complete the flow.
+      await tester.tap(find.text(_testProfile.name));
       await tester.pumpAndSettle();
 
       verify(
         () => mockService.createTaskAgent(
           taskId: task.meta.id,
           templateId: 'tpl-laura',
+          profileId: _testProfile.id,
           allowedCategoryIds: <String>{},
         ),
       ).called(1);
@@ -1113,8 +1163,8 @@ void main() {
       // Bottom sheet is shown
       expect(find.text('Laura'), findsOneWidget);
 
-      // Dismiss the bottom sheet by tapping the modal barrier
-      await tester.tap(find.byType(ModalBarrier).last);
+      // Dismiss the bottom sheet by tapping above it on the barrier
+      await tester.tapAt(const Offset(400, 10));
       await tester.pumpAndSettle();
 
       // createTaskAgent must NOT be called
@@ -1122,6 +1172,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       );
@@ -1167,6 +1218,7 @@ void main() {
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
           templateId: any(named: 'templateId'),
+          profileId: any(named: 'profileId'),
           allowedCategoryIds: any(named: 'allowedCategoryIds'),
         ),
       ).thenAnswer((_) async => identity);
@@ -1186,6 +1238,9 @@ void main() {
             ),
             taskAgentServiceProvider.overrideWithValue(mockService),
             agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([_testProfile]),
+            ),
           ],
         ),
       );
@@ -1203,11 +1258,17 @@ void main() {
       ).called(1);
       // Fell back to listTemplates
       verify(mockTemplateService.listTemplates).called(1);
+
+      // Select profile to complete the modal flow.
+      await tester.tap(find.text(_testProfile.name));
+      await tester.pumpAndSettle();
+
       // Created agent with the fallback template
       verify(
         () => mockService.createTaskAgent(
           taskId: testTask.meta.id,
           templateId: any(named: 'templateId'),
+          profileId: _testProfile.id,
           allowedCategoryIds: {categoryId},
         ),
       ).called(1);

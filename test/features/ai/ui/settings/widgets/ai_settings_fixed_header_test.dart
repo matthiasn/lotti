@@ -31,7 +31,7 @@ void main() {
     }) {
       return RiverpodWidgetTestBench(
         child: DefaultTabController(
-          length: 3,
+          length: AiSettingsTab.values.length,
           child: Builder(
             builder: (context) {
               tabController = DefaultTabController.of(context);
@@ -71,7 +71,7 @@ void main() {
       expect(find.byType(TabBar), findsOneWidget);
       // Tab labels are now localized - check for TabBar instead of specific text
       final tabBar = tester.widget<TabBar>(find.byType(TabBar));
-      expect(tabBar.tabs.length, 3);
+      expect(tabBar.tabs.length, AiSettingsTab.values.length);
     });
 
     testWidgets('search functionality works correctly',
@@ -101,7 +101,7 @@ void main() {
 
       // Find tab bar and tap on tabs by index since text is localized
       final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
-      expect(tabs.length, 3);
+      expect(tabs.length, AiSettingsTab.values.length);
 
       // Tap on second tab (Models)
       await tester.tap(find.byType(Tab).at(1));
@@ -203,7 +203,7 @@ void main() {
       final tabBar = tester.widget<TabBar>(find.byType(TabBar));
 
       expect(tabBar.indicatorSize, TabBarIndicatorSize.tab);
-      expect(tabBar.tabs.length, 3);
+      expect(tabBar.tabs.length, AiSettingsTab.values.length);
     });
 
     testWidgets('handles search input correctly', (WidgetTester tester) async {

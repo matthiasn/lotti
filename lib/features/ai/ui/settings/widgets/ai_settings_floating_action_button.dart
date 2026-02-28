@@ -124,6 +124,10 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
           Icons.edit_note_rounded,
           context.messages.aiSettingsAddPromptButton
         ),
+      AiSettingsTab.profiles => (
+          Icons.tune_rounded,
+          context.messages.aiSettingsAddProfileButton
+        ),
     };
   }
 

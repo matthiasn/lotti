@@ -1020,6 +1020,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddModelTooltip => 'Add this model to your provider';
 
   @override
+  String get aiSettingsAddProfileButton => 'Add Profile';
+
+  @override
   String get aiSettingsAddPromptButton => 'Add Prompt';
 
   @override
@@ -1102,6 +1105,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Models';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profiles';
 
   @override
   String get aiSettingsTabPrompts => 'Prompts';
@@ -2415,6 +2421,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get images => 'Images';
+
+  @override
+  String get inferenceProfileCreateTitle => 'Create Profile';
+
+  @override
+  String get inferenceProfileDeleteInUseMessage =>
+      'This profile is in use by agents or templates and cannot be deleted.';
+
+  @override
+  String get inferenceProfileDescriptionLabel => 'Description';
+
+  @override
+  String get inferenceProfileDesktopOnly => 'Desktop Only';
+
+  @override
+  String get inferenceProfileDesktopOnlyDescription =>
+      'Only available on desktop platforms (e.g. for local models)';
+
+  @override
+  String get inferenceProfileEditTitle => 'Edit Profile';
+
+  @override
+  String get inferenceProfileImageGeneration => 'Image Generation';
+
+  @override
+  String get inferenceProfileImageRecognition => 'Image Recognition';
+
+  @override
+  String get inferenceProfileNameLabel => 'Profile Name';
+
+  @override
+  String get inferenceProfileNameRequired => 'A profile name is required';
+
+  @override
+  String get inferenceProfileSaveButton => 'Save';
+
+  @override
+  String get inferenceProfileSelectModel => 'Select a model…';
+
+  @override
+  String get inferenceProfilesEmpty => 'No inference profiles yet';
+
+  @override
+  String get inferenceProfilesTitle => 'Inference Profiles';
+
+  @override
+  String get inferenceProfileThinking => 'Thinking';
+
+  @override
+  String get inferenceProfileThinkingRequired => 'A thinking model is required';
+
+  @override
+  String get inferenceProfileTranscription => 'Transcription';
 
   @override
   String get inputDataTypeAudioFilesDescription => 'Use audio files as input';

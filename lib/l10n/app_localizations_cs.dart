@@ -1028,6 +1028,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidat tento model ke svému poskytovateli';
 
   @override
+  String get aiSettingsAddProfileButton => 'Přidat profil';
+
+  @override
   String get aiSettingsAddPromptButton => 'Přidat prompt';
 
   @override
@@ -1113,6 +1116,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Modely';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profily';
 
   @override
   String get aiSettingsTabPrompts => 'Výzvy';
@@ -2428,6 +2434,59 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get images => 'Obrázky';
+
+  @override
+  String get inferenceProfileCreateTitle => 'Create Profile';
+
+  @override
+  String get inferenceProfileDeleteInUseMessage =>
+      'This profile is in use by agents or templates and cannot be deleted.';
+
+  @override
+  String get inferenceProfileDescriptionLabel => 'Description';
+
+  @override
+  String get inferenceProfileDesktopOnly => 'Desktop Only';
+
+  @override
+  String get inferenceProfileDesktopOnlyDescription =>
+      'Only available on desktop platforms (e.g. for local models)';
+
+  @override
+  String get inferenceProfileEditTitle => 'Edit Profile';
+
+  @override
+  String get inferenceProfileImageGeneration => 'Image Generation';
+
+  @override
+  String get inferenceProfileImageRecognition => 'Image Recognition';
+
+  @override
+  String get inferenceProfileNameLabel => 'Profile Name';
+
+  @override
+  String get inferenceProfileNameRequired => 'A profile name is required';
+
+  @override
+  String get inferenceProfileSaveButton => 'Save';
+
+  @override
+  String get inferenceProfileSelectModel => 'Select a model…';
+
+  @override
+  String get inferenceProfilesEmpty => 'No inference profiles yet';
+
+  @override
+  String get inferenceProfilesTitle => 'Inference Profiles';
+
+  @override
+  String get inferenceProfileThinking => 'Thinking';
+
+  @override
+  String get inferenceProfileThinkingRequired => 'A thinking model is required';
+
+  @override
+  String get inferenceProfileTranscription => 'Transcription';
 
   @override
   String get inputDataTypeAudioFilesDescription =>

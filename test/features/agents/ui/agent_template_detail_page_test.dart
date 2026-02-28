@@ -311,6 +311,8 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           modelId: any(named: 'modelId'),
+          profileId: any(named: 'profileId'),
+          clearProfileId: any(named: 'clearProfileId'),
         ),
       ).thenAnswer((_) async => makeTestTemplate(id: templateId));
       when(
@@ -337,6 +339,8 @@ void main() {
           templateId: templateId,
           displayName: 'Test Template',
           modelId: 'models/gemini-3-flash-preview',
+          profileId: any(named: 'profileId'),
+          clearProfileId: any(named: 'clearProfileId'),
         ),
       ).called(1);
       verify(
@@ -623,6 +627,8 @@ void main() {
           templateId: any(named: 'templateId'),
           displayName: any(named: 'displayName'),
           modelId: any(named: 'modelId'),
+          profileId: any(named: 'profileId'),
+          clearProfileId: any(named: 'clearProfileId'),
         ),
       ).thenThrow(Exception('save failed'));
 

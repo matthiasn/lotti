@@ -87,6 +87,24 @@ void main() {
           findsOneWidget);
     });
 
+    testWidgets('displays correct icon and label for profiles tab',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(createWidget(
+        activeTab: AiSettingsTab.profiles,
+      ));
+
+      await tester.pumpAndSettle(); // Wait for localization
+
+      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      // Check that FAB contains text (localized)
+      expect(
+          find.descendant(
+            of: find.byType(FloatingActionButton),
+            matching: find.byType(Text),
+          ),
+          findsOneWidget);
+    });
+
     testWidgets('calls onPressed when tapped', (WidgetTester tester) async {
       await tester.pumpWidget(createWidget(
         activeTab: AiSettingsTab.providers,

@@ -58,6 +58,7 @@ class TaskAgentService {
     required String taskId,
     required Set<String> allowedCategoryIds,
     String? templateId,
+    String? profileId,
     String? displayName,
   }) async {
     // Resolve template: use the provided ID or fall back to the first
@@ -98,7 +99,10 @@ class TaskAgentService {
       final identity = await agentService.createAgent(
         kind: _agentKind,
         displayName: displayName ?? 'Task Agent',
-        config: AgentConfig(modelId: templateEntity.modelId),
+        config: AgentConfig(
+          modelId: templateEntity.modelId,
+          profileId: profileId,
+        ),
         allowedCategoryIds: allowedCategoryIds,
       );
 
@@ -177,6 +181,33 @@ class TaskAgentService {
 
     final agentId = _selectPrimaryTaskLink(links).fromId;
     return agentService.getAgent(agentId);
+  }
+
+  /// Update the inference profile for an existing agent.
+  ///
+  /// Sets `config.profileId` on the agent identity entity. The actual model
+  /// resolution happens at inference time via the profile's slots.
+  Future<void> updateAgentProfile({
+    required String agentId,
+    required String? profileId,
+  }) async {
+    final now = clock.now();
+    final identity = await agentService.getAgent(agentId);
+    if (identity == null) {
+      throw StateError('Agent $agentId not found');
+    }
+    final updatedIdentity = identity.copyWith(
+      config: identity.config.copyWith(profileId: profileId),
+      updatedAt: now,
+    );
+    await syncService.upsertEntity(updatedIdentity);
+
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'updated profile for ${DomainLogger.sanitizeId(agentId)} '
+      'to ${profileId != null ? DomainLogger.sanitizeId(profileId) : 'none'}',
+      subDomain: 'lifecycle',
+    );
   }
 
   /// Trigger a manual re-analysis wake for [agentId].

@@ -57,11 +57,11 @@ void main() {
 
         // Check that we have the correct number of tabs
         final tabs = find.byType(Tab);
-        expect(tabs, findsNWidgets(3));
+        expect(tabs, findsNWidgets(AiSettingsTab.values.length));
 
         // Since the text is localized, we'll verify by checking tab structure
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
-        expect(tabBar.tabs.length, 3);
+        expect(tabBar.tabs.length, AiSettingsTab.values.length);
       });
 
       testWidgets('has correct number of tabs', (WidgetTester tester) async {
@@ -128,7 +128,13 @@ void main() {
 
         expect(tabChanges.last, AiSettingsTab.prompts);
 
-        expect(tabChanges, hasLength(3));
+        // Test Profiles tab (index 3)
+        await tester.tap(find.byType(Tab).at(3));
+        await tester.pump();
+
+        expect(tabChanges.last, AiSettingsTab.profiles);
+
+        expect(tabChanges, hasLength(4));
       });
 
       testWidgets('updates visual selection when tab changes',
@@ -292,7 +298,7 @@ void main() {
 
         // TabBar keyboard navigation may not work as expected in tests
         // but the key event should be handled without errors
-        expect(find.byType(Tab), findsNWidgets(3));
+        expect(find.byType(Tab), findsNWidgets(AiSettingsTab.values.length));
       });
     });
 
@@ -327,7 +333,7 @@ void main() {
         await tester.pump();
 
         // Tab change should still work internally
-        expect(find.byType(Tab), findsNWidgets(3));
+        expect(find.byType(Tab), findsNWidgets(AiSettingsTab.values.length));
       });
 
       testWidgets('handles rapid tab switching', (WidgetTester tester) async {
@@ -336,13 +342,15 @@ void main() {
         // Rapidly switch between tabs
         await tester.tap(find.byType(Tab).at(1)); // Models
         await tester.tap(find.byType(Tab).at(2)); // Prompts
+        await tester.tap(find.byType(Tab).at(3)); // Profiles
         await tester.tap(find.byType(Tab).at(0)); // Providers
         await tester.pump();
 
-        expect(tabChanges, hasLength(3));
+        expect(tabChanges, hasLength(4));
         expect(tabChanges, [
           AiSettingsTab.models,
           AiSettingsTab.prompts,
+          AiSettingsTab.profiles,
           AiSettingsTab.providers,
         ]);
       });
@@ -374,7 +382,7 @@ void main() {
         await tester.pumpWidget(createWidget());
 
         // Should still show all tabs
-        expect(find.byType(Tab), findsNWidgets(3));
+        expect(find.byType(Tab), findsNWidgets(AiSettingsTab.values.length));
 
         // Reset view
         addTearDown(tester.view.resetPhysicalSize);
@@ -534,6 +542,7 @@ void main() {
         expect(tabs[0].text, isNotNull); // providers
         expect(tabs[1].text, isNotNull); // models
         expect(tabs[2].text, isNotNull); // prompts
+        expect(tabs[3].text, isNotNull); // profiles
       });
     });
 
