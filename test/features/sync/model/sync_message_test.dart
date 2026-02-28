@@ -473,7 +473,8 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedLink = (decoded as SyncAgentLink).agentLink;
-      expect(decodedLink?.vectorClock, isNull);
+      expect(decodedLink, isNotNull);
+      expect(decodedLink!.vectorClock, isNull);
     });
   });
 
