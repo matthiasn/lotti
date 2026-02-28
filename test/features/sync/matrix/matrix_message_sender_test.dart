@@ -1602,10 +1602,9 @@ void main() {
       expect(extras.first['relativePath'], relativePath);
     });
 
-    test('returns null when entity is null', () async {
+    test('returns null when jsonPath is null', () async {
       const message = SyncMessage.agentEntity(
         status: SyncEntryStatus.update,
-        jsonPath: '/agent_entities/agent-1.json',
       );
 
       final result = await sender.sendAgentEntityPayloadForTesting(
@@ -1620,35 +1619,6 @@ void main() {
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
       );
-    });
-
-    test('returns null when jsonPath is null', () async {
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        kind: 'task_agent',
-        displayName: 'Test',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
-
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
-      );
-
-      final result = await sender.sendAgentEntityPayloadForTesting(
-        room: room,
-        message: message as SyncAgentEntity,
-      );
-
-      expect(result, isNull);
     });
 
     test('returns null when file read fails', () async {
@@ -1772,10 +1742,9 @@ void main() {
       expect(result.status, SyncEntryStatus.update);
     });
 
-    test('returns null when link is null', () async {
+    test('returns null when jsonPath is null', () async {
       const message = SyncMessage.agentLink(
         status: SyncEntryStatus.update,
-        jsonPath: '/agent_links/link-1.json',
       );
 
       final result = await sender.sendAgentLinkPayloadForTesting(
@@ -1784,6 +1753,12 @@ void main() {
       );
 
       expect(result, isNull);
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
     });
   });
 

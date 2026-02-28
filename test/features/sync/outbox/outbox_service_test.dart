@@ -4220,5 +4220,66 @@ void main() {
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
     });
+
+    test('SyncAgentEntity enqueues fallback when saveJson fails', () async {
+      final failingService = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        activityGate: createGate(),
+        ownsActivityGate: false,
+        saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+      );
+
+      final entity = AgentDomainEntity.agent(
+        id: 'fail-agent',
+        agentId: 'fail-agent',
+        kind: 'task_agent',
+        displayName: 'Fail',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      await failingService.enqueueMessage(message);
+
+      // Fallback item still enqueued
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'agentEntity:fail-agent');
+      expect(companion.outboxEntryId.value, 'fail-agent');
+
+      // Error was logged
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage.saveAgentPayload',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      await failingService.dispose();
+    });
   });
 }

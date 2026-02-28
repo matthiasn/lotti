@@ -464,15 +464,16 @@ class MatrixMessageSender {
 
   /// Uploads the agent entity JSON as a file attachment and returns a
   /// descriptor-only [SyncAgentEntity] with `agentEntity` nulled.
-  /// Returns null on failure. Requires both `agentEntity` and `jsonPath`
-  /// to be set — callers must guard on `jsonPath != null` before calling.
+  /// Returns null on failure. Callers must guard on `jsonPath != null`
+  /// before calling.
   Future<SyncAgentEntity?> _sendAgentEntityPayload({
     required Room room,
     required SyncAgentEntity message,
   }) async {
-    if (message.agentEntity == null || message.jsonPath == null) {
+    final jsonPath = message.jsonPath;
+    if (jsonPath == null) {
       _loggingService.captureEvent(
-        'skipping agent entity send: missing entity or jsonPath',
+        'skipping agent entity send: missing jsonPath',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
@@ -480,7 +481,7 @@ class MatrixMessageSender {
     }
     final uploaded = await _uploadAgentPayload(
       room: room,
-      relativePath: message.jsonPath!,
+      relativePath: jsonPath,
       logLabel: 'agentEntity',
     );
     if (!uploaded) return null;
@@ -489,15 +490,16 @@ class MatrixMessageSender {
 
   /// Uploads the agent link JSON as a file attachment and returns a
   /// descriptor-only [SyncAgentLink] with `agentLink` nulled.
-  /// Returns null on failure. Requires both `agentLink` and `jsonPath`
-  /// to be set — callers must guard on `jsonPath != null` before calling.
+  /// Returns null on failure. Callers must guard on `jsonPath != null`
+  /// before calling.
   Future<SyncAgentLink?> _sendAgentLinkPayload({
     required Room room,
     required SyncAgentLink message,
   }) async {
-    if (message.agentLink == null || message.jsonPath == null) {
+    final jsonPath = message.jsonPath;
+    if (jsonPath == null) {
       _loggingService.captureEvent(
-        'skipping agent link send: missing link or jsonPath',
+        'skipping agent link send: missing jsonPath',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
@@ -505,7 +507,7 @@ class MatrixMessageSender {
     }
     final uploaded = await _uploadAgentPayload(
       room: room,
-      relativePath: message.jsonPath!,
+      relativePath: jsonPath,
       logLabel: 'agentLink',
     );
     if (!uploaded) return null;

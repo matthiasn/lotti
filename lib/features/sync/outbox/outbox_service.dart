@@ -1092,12 +1092,30 @@ class OutboxService {
       relativePath.split('/').where((part) => part.isNotEmpty),
     );
     final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+    final subject = '$subjectPrefix:$id';
 
-    await _saveJson(fullPath, payloadJson);
+    try {
+      await _saveJson(fullPath, payloadJson);
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage.saveAgentPayload',
+        stackTrace: stackTrace,
+      );
+      // Fallback: enqueue with inline payload so the sender's legacy
+      // enrichment path can write the file and upload on retry.
+      await _syncDatabase.addOutboxItem(
+        commonFields.copyWith(
+          subject: Value(subject),
+          outboxEntryId: Value(id),
+        ),
+      );
+      return false;
+    }
 
     final enrichedJson = json.encode(enrichedMessage.toJson());
     final enrichedSize = utf8.encode(enrichedJson).length;
-    final subject = '$subjectPrefix:$id';
 
     final existingItem = await _syncDatabase.findPendingByEntryId(id);
 
