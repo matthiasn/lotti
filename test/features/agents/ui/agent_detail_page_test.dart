@@ -594,10 +594,15 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.pump();
+      // Verify we can find the page before tapping.
+      expect(find.byType(AgentDetailPage), findsOneWidget);
 
-      // Navigator.pop is called, not beamBack.
+      await tester.tap(find.byIcon(Icons.chevron_left));
+      await tester.pumpAndSettle();
+
+      // Navigator.pop removes the page from the tree.
+      expect(find.byType(AgentDetailPage), findsNothing);
+      // beamBack must NOT have been called — only Navigator.pop.
       verifyNever(() => mockNavService.beamBack());
     });
 

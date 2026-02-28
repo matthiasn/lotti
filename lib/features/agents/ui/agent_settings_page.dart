@@ -27,6 +27,7 @@ class AgentSettingsPage extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
             icon: Icon(
               Icons.chevron_left,
               size: 30,
