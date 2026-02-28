@@ -87,10 +87,12 @@ class ChecklistCompletionFunctions {
         function: FunctionObject(
           name: updateChecklistItems,
           description:
-              'Update one or more existing checklist items. Use to mark items as '
-              'done/undone or to correct titles (e.g., fix transcription errors '
-              'like "mac OS" → "macOS"). Each update requires the item ID and at '
-              'least one field to change.',
+              'Update one or more existing checklist items. Use to mark items '
+              'as done/undone or to correct titles (e.g., fix transcription '
+              'errors like "mac OS" → "macOS"). When an item was last toggled '
+              'by the user, you must provide a reason citing evidence from '
+              "AFTER the user's action to change its checked state. Title "
+              'updates are always allowed.',
           parameters: {
             'type': 'object',
             'properties': {
@@ -108,9 +110,10 @@ class ChecklistCompletionFunctions {
                     'isChecked': {
                       'type': 'boolean',
                       'description':
-                          'New checked status. Set true when user indicates '
-                              'completion, false to uncheck if user explicitly says '
-                              'to uncheck.',
+                          'New checked status. For items last set by the user, '
+                              'you must also provide a reason citing post-dated '
+                              'evidence. Without a reason, isChecked changes on '
+                              'user-set items will be rejected.',
                     },
                     'title': {
                       'type': 'string',
@@ -119,6 +122,14 @@ class ChecklistCompletionFunctions {
                       'description':
                           'Updated title text. Use to fix transcription errors '
                               'or clarify wording.',
+                    },
+                    'reason': {
+                      'type': 'string',
+                      'description':
+                          'Required when changing isChecked on a user-set '
+                              'item. Must cite specific evidence (e.g. a '
+                              'recording or note) that postdates the '
+                              "user's last toggle.",
                     },
                   },
                   'required': ['id'],

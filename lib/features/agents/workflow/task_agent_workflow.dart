@@ -680,6 +680,19 @@ and never shown to the user. They persist as your memory across wakes.
 - **Labels**: If the task has fewer than 3 labels, assign relevant labels from
   the available list. Order by confidence (highest first), omit low confidence,
   cap at 3 per call. Never propose suppressed labels.
+- **Checklist sovereignty**: Checklist items track who last toggled them
+  (user or agent) and when (checkedAt). Rules:
+  - If YOU (the agent) last set the item, you can freely change it.
+  - If the USER last set the item, you must NOT change its checked state
+    UNLESS you have clear evidence from journal entries, recordings, or
+    notes that are timestamped AFTER the user's checkedAt time.
+  - Absence of evidence is NOT grounds for unchecking. The user may have
+    completed the task outside the app.
+  - When overriding a user-set item, you MUST provide a "reason" field in
+    the tool call explaining what post-dated evidence justifies the change.
+    Without a reason, the system will reject the isChecked change.
+  - Title updates (fixing typos, transcription errors) are always allowed
+    regardless of who last toggled the item.
 
 ## Important
 

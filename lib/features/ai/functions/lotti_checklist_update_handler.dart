@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -16,12 +17,17 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Marking items as checked/unchecked
 /// - Updating item titles (e.g., fixing transcription errors)
 /// - Combined updates (both status and title in one call)
+///
+/// Enforces user sovereignty: when a checklist item was last toggled by the
+/// user, the agent must provide a `reason` citing post-dated evidence to
+/// change its checked state. Title updates are always allowed.
 class LottiChecklistUpdateHandler extends FunctionHandler {
   LottiChecklistUpdateHandler({
     required this.task,
     required this.checklistRepository,
     this.onTaskUpdated,
-  });
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   /// The task whose checklist items are being updated.
   ///
@@ -32,6 +38,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   Task task;
   final ChecklistRepository checklistRepository;
   final void Function(Task)? onTaskUpdated;
+
+  /// Clock function for timestamps — injectable for testing.
+  final DateTime Function() _clock;
 
   final List<UpdatedItemDetail> _updatedItems = [];
   final List<SkippedItemDetail> _skippedItems = [];
@@ -125,6 +134,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
 
         final isChecked = item['isChecked'];
         final title = item['title'];
+        final reason = item['reason'];
 
         // Must have at least one update field
         if (isChecked == null && title == null) {
@@ -140,6 +150,14 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           return _createErrorResult(
             call,
             'Item at index $i has invalid isChecked value. Must be a boolean.',
+          );
+        }
+
+        // Validate reason type if present
+        if (reason != null && reason is! String) {
+          return _createErrorResult(
+            call,
+            'Item at index $i has invalid reason value. Must be a string.',
           );
         }
 
@@ -171,10 +189,13 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
           }
         }
 
+        final reasonStr = reason is String ? reason.trim() : null;
+
         validatedItems.add({
           'id': id.trim(),
           if (isChecked != null) 'isChecked': isChecked,
           if (normalizedTitle != null) 'title': normalizedTitle,
+          if (reasonStr != null && reasonStr.isNotEmpty) 'reason': reasonStr,
         });
       }
 
@@ -235,6 +256,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final id = item['id'] as String;
       final newIsChecked = item['isChecked'] as bool?;
       final newTitle = item['title'] as String?;
+      final reason = item['reason'] as String?;
 
       final entity = entityMap[id];
 
@@ -265,10 +287,58 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         continue;
       }
 
-      // Apply updates
+      // --- User sovereignty guard ---
+      // When the user last toggled isChecked, the agent needs a reason
+      // citing post-dated evidence to override it.
+      if (isCheckedChanged &&
+          entity.data.checkedBy == CheckedBySource.user &&
+          (reason == null || reason.trim().isEmpty)) {
+        final checkedAtStr =
+            entity.data.checkedAt?.toIso8601String() ?? 'unknown';
+        _skip(
+          id,
+          'User set this item at $checkedAtStr. Provide a reason '
+          'citing evidence from after that time to override.',
+        );
+
+        // Still allow a title update if requested
+        if (titleChanged) {
+          final titleOnlyData = entity.data.copyWith(title: newTitle);
+          final success = await checklistRepository.updateChecklistItem(
+            checklistItemId: id,
+            data: titleOnlyData,
+            taskId: task.id,
+          );
+          if (success) {
+            successCount++;
+            _updatedItems.add(UpdatedItemDetail(
+              id: id,
+              title: newTitle,
+              isChecked: currentIsChecked,
+              changes: ['title'],
+            ));
+          }
+        }
+        continue;
+      }
+
+      // Log override reason for audit when overriding a user-set item
+      if (isCheckedChanged &&
+          entity.data.checkedBy == CheckedBySource.user &&
+          reason != null) {
+        developer.log(
+          'Overriding user-set item $id. Reason: $reason',
+          name: 'LottiChecklistUpdateHandler',
+        );
+      }
+
+      // Apply updates with provenance stamping
       final updatedData = entity.data.copyWith(
         isChecked: newIsChecked ?? currentIsChecked,
         title: newTitle ?? currentTitle,
+        checkedBy:
+            isCheckedChanged ? CheckedBySource.agent : entity.data.checkedBy,
+        checkedAt: isCheckedChanged ? _clock() : entity.data.checkedAt,
       );
 
       final success = await checklistRepository.updateChecklistItem(
@@ -348,6 +418,7 @@ Required format:
 Each item must have:
 - "id" (required): The checklist item ID
 - At least one of "isChecked" (boolean) or "title" (string)
+- "reason" (string): Required when changing isChecked on an item the user last toggled
 
 Please retry with the correct format.''';
   }

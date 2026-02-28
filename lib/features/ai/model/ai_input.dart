@@ -29,6 +29,8 @@ abstract class AiActionItem with _$AiActionItem {
     String? id,
     DateTime? deadline,
     DateTime? completionDate,
+    String? checkedBy,
+    DateTime? checkedAt,
   }) = _AiActionItem;
 
   factory AiActionItem.fromJson(Map<String, dynamic> json) =>

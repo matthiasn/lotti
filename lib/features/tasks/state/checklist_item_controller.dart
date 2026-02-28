@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
@@ -96,6 +97,8 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
       final updated = current.copyWith(
         data: data.copyWith(
           isChecked: checked,
+          checkedBy: CheckedBySource.user,
+          checkedAt: DateTime.now(),
         ),
       );
       ref.read(checklistRepositoryProvider).updateChecklistItem(
