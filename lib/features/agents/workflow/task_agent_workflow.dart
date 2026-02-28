@@ -283,6 +283,14 @@ class TaskAgentWorkflow {
         taskId: taskId,
         threadId: threadId,
         runKey: runKey,
+        domainLogger: domainLogger,
+        checklistItemTitleResolver: (itemId) async {
+          final entity = await journalDb.journalEntityById(itemId);
+          if (entity is ChecklistItem) {
+            return entity.data.title;
+          }
+          return null;
+        },
       );
 
       final strategy = TaskAgentStrategy(
