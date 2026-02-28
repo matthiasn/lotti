@@ -45,7 +45,7 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
     return null;
   }
 
-  if (provider.apiKey.isEmpty &&
+  if (provider.apiKey.trim().isEmpty &&
       ProviderConfig.requiresApiKey(provider.inferenceProviderType)) {
     developer.log(
       'Provider $providerId has no API key configured',

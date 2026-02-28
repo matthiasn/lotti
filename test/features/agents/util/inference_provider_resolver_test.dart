@@ -75,6 +75,18 @@ void main() {
       expect(provider, isNull);
     });
 
+    test('returns null when cloud provider has whitespace-only API key',
+        () async {
+      stubResolution(apiKey: '   ');
+
+      final provider = await resolveInferenceProvider(
+        modelId: 'models/gemini-3-flash-preview',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(provider, isNull);
+    });
+
     test('returns provider for local provider with empty API key', () async {
       when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
         (_) async => [

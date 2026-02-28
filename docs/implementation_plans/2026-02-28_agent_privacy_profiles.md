@@ -224,7 +224,7 @@ sequenceDiagram
 
 ### 4.2 Resolution Logic (Pseudocode)
 
-```
+```text
 resolveModelsForWake(agentIdentity, templateCtx):
   // Agent-level override (set during creation) takes priority,
   // then version snapshot, then template default.
@@ -320,7 +320,7 @@ No data migration is performed on existing templates or agents. Instead:
    and `AgentConfig`. When `null`, the existing `modelId` field is used as-is.
 
 2. **Resolution order** (agent-level override takes highest precedence):
-   ```
+   ```text
    agent.config.profileId → version.profileId → template.profileId → version.modelId → template.modelId
    ```
 

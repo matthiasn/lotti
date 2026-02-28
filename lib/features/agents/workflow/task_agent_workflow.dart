@@ -43,7 +43,8 @@ export 'package:lotti/features/agents/workflow/wake_result.dart';
 ///
 /// 1. Load agent identity, state, current report, and agentJournal observations.
 /// 2. Build task context from journal domain via [AiInputRepository].
-/// 3. Resolve a Gemini inference provider from the AI config database.
+/// 3. Resolve an inference profile (or legacy modelId fallback) to a
+///    thinking model/provider.
 /// 4. Assemble conversation context (system prompt + user message).
 /// 5. Create a [ConversationRepository] conversation with tool definitions.
 /// 6. Persist the user message as an [AgentMessageKind.user] entity for
