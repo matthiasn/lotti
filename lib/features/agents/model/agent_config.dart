@@ -12,6 +12,9 @@ abstract class AgentConfig with _$AgentConfig {
 
     /// Model identifier to use for inference.
     @Default('models/gemini-3-flash-preview') String modelId,
+
+    /// Inference profile ID — takes precedence over [modelId] when set.
+    String? profileId,
   }) = _AgentConfig;
 
   factory AgentConfig.fromJson(Map<String, dynamic> json) =>

@@ -20,6 +20,9 @@ mixin _$AgentConfig {
   /// Model identifier to use for inference.
   String get modelId;
 
+  /// Inference profile ID — takes precedence over [modelId] when set.
+  String? get profileId;
+
   /// Create a copy of AgentConfig
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,16 +40,19 @@ mixin _$AgentConfig {
             other is AgentConfig &&
             (identical(other.maxTurnsPerWake, maxTurnsPerWake) ||
                 other.maxTurnsPerWake == maxTurnsPerWake) &&
-            (identical(other.modelId, modelId) || other.modelId == modelId));
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            (identical(other.profileId, profileId) ||
+                other.profileId == profileId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, maxTurnsPerWake, modelId);
+  int get hashCode =>
+      Object.hash(runtimeType, maxTurnsPerWake, modelId, profileId);
 
   @override
   String toString() {
-    return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId)';
+    return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId)';
   }
 }
 
@@ -56,7 +62,7 @@ abstract mixin class $AgentConfigCopyWith<$Res> {
           AgentConfig value, $Res Function(AgentConfig) _then) =
       _$AgentConfigCopyWithImpl;
   @useResult
-  $Res call({int maxTurnsPerWake, String modelId});
+  $Res call({int maxTurnsPerWake, String modelId, String? profileId});
 }
 
 /// @nodoc
@@ -73,6 +79,7 @@ class _$AgentConfigCopyWithImpl<$Res> implements $AgentConfigCopyWith<$Res> {
   $Res call({
     Object? maxTurnsPerWake = null,
     Object? modelId = null,
+    Object? profileId = freezed,
   }) {
     return _then(_self.copyWith(
       maxTurnsPerWake: null == maxTurnsPerWake
@@ -83,6 +90,10 @@ class _$AgentConfigCopyWithImpl<$Res> implements $AgentConfigCopyWith<$Res> {
           ? _self.modelId
           : modelId // ignore: cast_nullable_to_non_nullable
               as String,
+      profileId: freezed == profileId
+          ? _self.profileId
+          : profileId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -180,13 +191,14 @@ extension AgentConfigPatterns on AgentConfig {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(int maxTurnsPerWake, String modelId)? $default, {
+    TResult Function(int maxTurnsPerWake, String modelId, String? profileId)?
+        $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _AgentConfig() when $default != null:
-        return $default(_that.maxTurnsPerWake, _that.modelId);
+        return $default(_that.maxTurnsPerWake, _that.modelId, _that.profileId);
       case _:
         return orElse();
     }
@@ -207,12 +219,13 @@ extension AgentConfigPatterns on AgentConfig {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(int maxTurnsPerWake, String modelId) $default,
+    TResult Function(int maxTurnsPerWake, String modelId, String? profileId)
+        $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AgentConfig():
-        return $default(_that.maxTurnsPerWake, _that.modelId);
+        return $default(_that.maxTurnsPerWake, _that.modelId, _that.profileId);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -232,12 +245,13 @@ extension AgentConfigPatterns on AgentConfig {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(int maxTurnsPerWake, String modelId)? $default,
+    TResult? Function(int maxTurnsPerWake, String modelId, String? profileId)?
+        $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AgentConfig() when $default != null:
-        return $default(_that.maxTurnsPerWake, _that.modelId);
+        return $default(_that.maxTurnsPerWake, _that.modelId, _that.profileId);
       case _:
         return null;
     }
@@ -249,7 +263,8 @@ extension AgentConfigPatterns on AgentConfig {
 class _AgentConfig implements AgentConfig {
   const _AgentConfig(
       {this.maxTurnsPerWake = 5,
-      this.modelId = 'models/gemini-3-flash-preview'});
+      this.modelId = 'models/gemini-3-flash-preview',
+      this.profileId});
   factory _AgentConfig.fromJson(Map<String, dynamic> json) =>
       _$AgentConfigFromJson(json);
 
@@ -262,6 +277,10 @@ class _AgentConfig implements AgentConfig {
   @override
   @JsonKey()
   final String modelId;
+
+  /// Inference profile ID — takes precedence over [modelId] when set.
+  @override
+  final String? profileId;
 
   /// Create a copy of AgentConfig
   /// with the given fields replaced by the non-null parameter values.
@@ -285,16 +304,19 @@ class _AgentConfig implements AgentConfig {
             other is _AgentConfig &&
             (identical(other.maxTurnsPerWake, maxTurnsPerWake) ||
                 other.maxTurnsPerWake == maxTurnsPerWake) &&
-            (identical(other.modelId, modelId) || other.modelId == modelId));
+            (identical(other.modelId, modelId) || other.modelId == modelId) &&
+            (identical(other.profileId, profileId) ||
+                other.profileId == profileId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, maxTurnsPerWake, modelId);
+  int get hashCode =>
+      Object.hash(runtimeType, maxTurnsPerWake, modelId, profileId);
 
   @override
   String toString() {
-    return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId)';
+    return 'AgentConfig(maxTurnsPerWake: $maxTurnsPerWake, modelId: $modelId, profileId: $profileId)';
   }
 }
 
@@ -306,7 +328,7 @@ abstract mixin class _$AgentConfigCopyWith<$Res>
       __$AgentConfigCopyWithImpl;
   @override
   @useResult
-  $Res call({int maxTurnsPerWake, String modelId});
+  $Res call({int maxTurnsPerWake, String modelId, String? profileId});
 }
 
 /// @nodoc
@@ -323,6 +345,7 @@ class __$AgentConfigCopyWithImpl<$Res> implements _$AgentConfigCopyWith<$Res> {
   $Res call({
     Object? maxTurnsPerWake = null,
     Object? modelId = null,
+    Object? profileId = freezed,
   }) {
     return _then(_AgentConfig(
       maxTurnsPerWake: null == maxTurnsPerWake
@@ -333,6 +356,10 @@ class __$AgentConfigCopyWithImpl<$Res> implements _$AgentConfigCopyWith<$Res> {
           ? _self.modelId
           : modelId // ignore: cast_nullable_to_non_nullable
               as String,
+      profileId: freezed == profileId
+          ? _self.profileId
+          : profileId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }

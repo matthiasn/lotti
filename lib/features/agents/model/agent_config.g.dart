@@ -9,12 +9,14 @@ part of 'agent_config.dart';
 _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
       maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 5,
       modelId: json['modelId'] as String? ?? 'models/gemini-3-flash-preview',
+      profileId: json['profileId'] as String?,
     );
 
 Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
     <String, dynamic>{
       'maxTurnsPerWake': instance.maxTurnsPerWake,
       'modelId': instance.modelId,
+      'profileId': instance.profileId,
     };
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(

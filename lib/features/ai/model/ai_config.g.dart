@@ -174,3 +174,39 @@ const _$AiResponseTypeEnumMap = {
   AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
   AiResponseType.imageGeneration: 'ImageGeneration',
 };
+
+AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
+        Map<String, dynamic> json) =>
+    AiConfigInferenceProfile(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      thinkingModelId: json['thinkingModelId'] as String,
+      imageRecognitionModelId: json['imageRecognitionModelId'] as String?,
+      transcriptionModelId: json['transcriptionModelId'] as String?,
+      imageGenerationModelId: json['imageGenerationModelId'] as String?,
+      isDefault: json['isDefault'] as bool? ?? false,
+      desktopOnly: json['desktopOnly'] as bool? ?? false,
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      description: json['description'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AiConfigInferenceProfileToJson(
+        AiConfigInferenceProfile instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'thinkingModelId': instance.thinkingModelId,
+      'imageRecognitionModelId': instance.imageRecognitionModelId,
+      'transcriptionModelId': instance.transcriptionModelId,
+      'imageGenerationModelId': instance.imageGenerationModelId,
+      'isDefault': instance.isDefault,
+      'desktopOnly': instance.desktopOnly,
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'description': instance.description,
+      'runtimeType': instance.$type,
+    };

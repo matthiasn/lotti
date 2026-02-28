@@ -117,6 +117,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    String? profileId,
     DateTime? deletedAt,
   }) = AgentTemplateEntity;
 
@@ -137,6 +138,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
     /// The model ID configured on the template when this version was created.
     String? modelId,
+
+    /// The profile ID configured on the template when this version was created.
+    String? profileId,
     DateTime? deletedAt,
   }) = AgentTemplateVersionEntity;
 

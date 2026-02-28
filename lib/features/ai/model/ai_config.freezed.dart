@@ -19,6 +19,8 @@ AiConfig _$AiConfigFromJson(Map<String, dynamic> json) {
       return AiConfigModel.fromJson(json);
     case 'prompt':
       return AiConfigPrompt.fromJson(json);
+    case 'inferenceProfile':
+      return AiConfigInferenceProfile.fromJson(json);
 
     default:
       throw CheckedFromJsonException(json, 'runtimeType', 'AiConfig',
@@ -140,6 +142,7 @@ extension AiConfigPatterns on AiConfig {
     TResult Function(AiConfigInferenceProvider value)? inferenceProvider,
     TResult Function(AiConfigModel value)? model,
     TResult Function(AiConfigPrompt value)? prompt,
+    TResult Function(AiConfigInferenceProfile value)? inferenceProfile,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -150,6 +153,8 @@ extension AiConfigPatterns on AiConfig {
         return model(_that);
       case AiConfigPrompt() when prompt != null:
         return prompt(_that);
+      case AiConfigInferenceProfile() when inferenceProfile != null:
+        return inferenceProfile(_that);
       case _:
         return orElse();
     }
@@ -174,6 +179,7 @@ extension AiConfigPatterns on AiConfig {
         inferenceProvider,
     required TResult Function(AiConfigModel value) model,
     required TResult Function(AiConfigPrompt value) prompt,
+    required TResult Function(AiConfigInferenceProfile value) inferenceProfile,
   }) {
     final _that = this;
     switch (_that) {
@@ -183,6 +189,8 @@ extension AiConfigPatterns on AiConfig {
         return model(_that);
       case AiConfigPrompt():
         return prompt(_that);
+      case AiConfigInferenceProfile():
+        return inferenceProfile(_that);
     }
   }
 
@@ -203,6 +211,7 @@ extension AiConfigPatterns on AiConfig {
     TResult? Function(AiConfigInferenceProvider value)? inferenceProvider,
     TResult? Function(AiConfigModel value)? model,
     TResult? Function(AiConfigPrompt value)? prompt,
+    TResult? Function(AiConfigInferenceProfile value)? inferenceProfile,
   }) {
     final _that = this;
     switch (_that) {
@@ -212,6 +221,8 @@ extension AiConfigPatterns on AiConfig {
         return model(_that);
       case AiConfigPrompt() when prompt != null:
         return prompt(_that);
+      case AiConfigInferenceProfile() when inferenceProfile != null:
+        return inferenceProfile(_that);
       case _:
         return null;
     }
@@ -275,6 +286,19 @@ extension AiConfigPatterns on AiConfig {
             bool trackPreconfigured,
             String? preconfiguredPromptId)?
         prompt,
+    TResult Function(
+            String id,
+            String name,
+            DateTime createdAt,
+            String thinkingModelId,
+            String? imageRecognitionModelId,
+            String? transcriptionModelId,
+            String? imageGenerationModelId,
+            bool isDefault,
+            bool desktopOnly,
+            DateTime? updatedAt,
+            String? description)?
+        inferenceProfile,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -323,6 +347,19 @@ extension AiConfigPatterns on AiConfig {
             _that.archived,
             _that.trackPreconfigured,
             _that.preconfiguredPromptId);
+      case AiConfigInferenceProfile() when inferenceProfile != null:
+        return inferenceProfile(
+            _that.id,
+            _that.name,
+            _that.createdAt,
+            _that.thinkingModelId,
+            _that.imageRecognitionModelId,
+            _that.transcriptionModelId,
+            _that.imageGenerationModelId,
+            _that.isDefault,
+            _that.desktopOnly,
+            _that.updatedAt,
+            _that.description);
       case _:
         return orElse();
     }
@@ -387,6 +424,19 @@ extension AiConfigPatterns on AiConfig {
             bool trackPreconfigured,
             String? preconfiguredPromptId)
         prompt,
+    required TResult Function(
+            String id,
+            String name,
+            DateTime createdAt,
+            String thinkingModelId,
+            String? imageRecognitionModelId,
+            String? transcriptionModelId,
+            String? imageGenerationModelId,
+            bool isDefault,
+            bool desktopOnly,
+            DateTime? updatedAt,
+            String? description)
+        inferenceProfile,
   }) {
     final _that = this;
     switch (_that) {
@@ -434,6 +484,19 @@ extension AiConfigPatterns on AiConfig {
             _that.archived,
             _that.trackPreconfigured,
             _that.preconfiguredPromptId);
+      case AiConfigInferenceProfile():
+        return inferenceProfile(
+            _that.id,
+            _that.name,
+            _that.createdAt,
+            _that.thinkingModelId,
+            _that.imageRecognitionModelId,
+            _that.transcriptionModelId,
+            _that.imageGenerationModelId,
+            _that.isDefault,
+            _that.desktopOnly,
+            _that.updatedAt,
+            _that.description);
     }
   }
 
@@ -495,6 +558,19 @@ extension AiConfigPatterns on AiConfig {
             bool trackPreconfigured,
             String? preconfiguredPromptId)?
         prompt,
+    TResult? Function(
+            String id,
+            String name,
+            DateTime createdAt,
+            String thinkingModelId,
+            String? imageRecognitionModelId,
+            String? transcriptionModelId,
+            String? imageGenerationModelId,
+            bool isDefault,
+            bool desktopOnly,
+            DateTime? updatedAt,
+            String? description)?
+        inferenceProfile,
   }) {
     final _that = this;
     switch (_that) {
@@ -542,6 +618,19 @@ extension AiConfigPatterns on AiConfig {
             _that.archived,
             _that.trackPreconfigured,
             _that.preconfiguredPromptId);
+      case AiConfigInferenceProfile() when inferenceProfile != null:
+        return inferenceProfile(
+            _that.id,
+            _that.name,
+            _that.createdAt,
+            _that.thinkingModelId,
+            _that.imageRecognitionModelId,
+            _that.transcriptionModelId,
+            _that.imageGenerationModelId,
+            _that.isDefault,
+            _that.desktopOnly,
+            _that.updatedAt,
+            _that.description);
       case _:
         return null;
     }
@@ -1215,6 +1304,217 @@ class _$AiConfigPromptCopyWithImpl<$Res>
       preconfiguredPromptId: freezed == preconfiguredPromptId
           ? _self.preconfiguredPromptId
           : preconfiguredPromptId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class AiConfigInferenceProfile implements AiConfig {
+  const AiConfigInferenceProfile(
+      {required this.id,
+      required this.name,
+      required this.createdAt,
+      required this.thinkingModelId,
+      this.imageRecognitionModelId,
+      this.transcriptionModelId,
+      this.imageGenerationModelId,
+      this.isDefault = false,
+      this.desktopOnly = false,
+      this.updatedAt,
+      this.description,
+      final String? $type})
+      : $type = $type ?? 'inferenceProfile';
+  factory AiConfigInferenceProfile.fromJson(Map<String, dynamic> json) =>
+      _$AiConfigInferenceProfileFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final DateTime createdAt;
+
+  /// providerModelId string for agentic thinking (tool calling, reasoning).
+  final String thinkingModelId;
+
+  /// providerModelId string for image recognition / vision tasks.
+  final String? imageRecognitionModelId;
+
+  /// providerModelId string for audio transcription.
+  final String? transcriptionModelId;
+
+  /// providerModelId string for image generation.
+  final String? imageGenerationModelId;
+
+  /// Whether this is a system-seeded default (non-deletable).
+  @JsonKey()
+  final bool isDefault;
+
+  /// Whether this profile requires a desktop environment (e.g. Ollama).
+  @JsonKey()
+  final bool desktopOnly;
+  @override
+  final DateTime? updatedAt;
+  @override
+  final String? description;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $AiConfigInferenceProfileCopyWith<AiConfigInferenceProfile> get copyWith =>
+      _$AiConfigInferenceProfileCopyWithImpl<AiConfigInferenceProfile>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$AiConfigInferenceProfileToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AiConfigInferenceProfile &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.name, name) || other.name == name) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.thinkingModelId, thinkingModelId) ||
+                other.thinkingModelId == thinkingModelId) &&
+            (identical(
+                    other.imageRecognitionModelId, imageRecognitionModelId) ||
+                other.imageRecognitionModelId == imageRecognitionModelId) &&
+            (identical(other.transcriptionModelId, transcriptionModelId) ||
+                other.transcriptionModelId == transcriptionModelId) &&
+            (identical(other.imageGenerationModelId, imageGenerationModelId) ||
+                other.imageGenerationModelId == imageGenerationModelId) &&
+            (identical(other.isDefault, isDefault) ||
+                other.isDefault == isDefault) &&
+            (identical(other.desktopOnly, desktopOnly) ||
+                other.desktopOnly == desktopOnly) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.description, description) ||
+                other.description == description));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      createdAt,
+      thinkingModelId,
+      imageRecognitionModelId,
+      transcriptionModelId,
+      imageGenerationModelId,
+      isDefault,
+      desktopOnly,
+      updatedAt,
+      description);
+}
+
+/// @nodoc
+abstract mixin class $AiConfigInferenceProfileCopyWith<$Res>
+    implements $AiConfigCopyWith<$Res> {
+  factory $AiConfigInferenceProfileCopyWith(AiConfigInferenceProfile value,
+          $Res Function(AiConfigInferenceProfile) _then) =
+      _$AiConfigInferenceProfileCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String name,
+      DateTime createdAt,
+      String thinkingModelId,
+      String? imageRecognitionModelId,
+      String? transcriptionModelId,
+      String? imageGenerationModelId,
+      bool isDefault,
+      bool desktopOnly,
+      DateTime? updatedAt,
+      String? description});
+}
+
+/// @nodoc
+class _$AiConfigInferenceProfileCopyWithImpl<$Res>
+    implements $AiConfigInferenceProfileCopyWith<$Res> {
+  _$AiConfigInferenceProfileCopyWithImpl(this._self, this._then);
+
+  final AiConfigInferenceProfile _self;
+  final $Res Function(AiConfigInferenceProfile) _then;
+
+  /// Create a copy of AiConfig
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? createdAt = null,
+    Object? thinkingModelId = null,
+    Object? imageRecognitionModelId = freezed,
+    Object? transcriptionModelId = freezed,
+    Object? imageGenerationModelId = freezed,
+    Object? isDefault = null,
+    Object? desktopOnly = null,
+    Object? updatedAt = freezed,
+    Object? description = freezed,
+  }) {
+    return _then(AiConfigInferenceProfile(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _self.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      thinkingModelId: null == thinkingModelId
+          ? _self.thinkingModelId
+          : thinkingModelId // ignore: cast_nullable_to_non_nullable
+              as String,
+      imageRecognitionModelId: freezed == imageRecognitionModelId
+          ? _self.imageRecognitionModelId
+          : imageRecognitionModelId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      transcriptionModelId: freezed == transcriptionModelId
+          ? _self.transcriptionModelId
+          : transcriptionModelId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      imageGenerationModelId: freezed == imageGenerationModelId
+          ? _self.imageGenerationModelId
+          : imageGenerationModelId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isDefault: null == isDefault
+          ? _self.isDefault
+          : isDefault // ignore: cast_nullable_to_non_nullable
+              as bool,
+      desktopOnly: null == desktopOnly
+          ? _self.desktopOnly
+          : desktopOnly // ignore: cast_nullable_to_non_nullable
+              as bool,
+      updatedAt: freezed == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      description: freezed == description
+          ? _self.description
+          : description // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }

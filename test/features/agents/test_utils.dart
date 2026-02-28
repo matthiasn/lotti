@@ -172,6 +172,7 @@ AgentTemplateEntity makeTestTemplate({
   AgentTemplateKind kind = AgentTemplateKind.taskAgent,
   String modelId = 'models/gemini-3-flash-preview',
   Set<String> categoryIds = const {},
+  String? profileId,
   DateTime? createdAt,
   DateTime? updatedAt,
   VectorClock? vectorClock,
@@ -183,6 +184,7 @@ AgentTemplateEntity makeTestTemplate({
     kind: kind,
     modelId: modelId,
     categoryIds: categoryIds,
+    profileId: profileId,
     createdAt: createdAt ?? kAgentTestDate,
     updatedAt: updatedAt ?? kAgentTestDate,
     vectorClock: vectorClock,
@@ -197,6 +199,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
   String directives = 'You are a helpful agent.',
   String authoredBy = 'user',
   String? modelId,
+  String? profileId,
   DateTime? createdAt,
   VectorClock? vectorClock,
 }) {
@@ -208,6 +211,7 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
     directives: directives,
     authoredBy: authoredBy,
     modelId: modelId,
+    profileId: profileId,
     createdAt: createdAt ?? kAgentTestDate,
     vectorClock: vectorClock,
   ) as AgentTemplateVersionEntity;
@@ -498,6 +502,46 @@ AiConfigInferenceProvider testInferenceProvider({
     apiKey: apiKey,
     createdAt: DateTime(2024),
   ) as AiConfigInferenceProvider;
+}
+
+/// Creates a test [AiConfigInferenceProvider] for a local provider (no API key
+/// required).
+AiConfigInferenceProvider testLocalInferenceProvider({
+  String id = 'provider-local',
+  String apiKey = '',
+}) {
+  return AiConfig.inferenceProvider(
+    id: id,
+    baseUrl: 'http://localhost:11434',
+    name: 'Ollama',
+    inferenceProviderType: InferenceProviderType.ollama,
+    apiKey: apiKey,
+    createdAt: DateTime(2024),
+  ) as AiConfigInferenceProvider;
+}
+
+/// Creates a test [AiConfigInferenceProfile].
+AiConfigInferenceProfile testInferenceProfile({
+  String id = 'profile-001',
+  String name = 'Test Profile',
+  String thinkingModelId = 'models/gemini-3-flash-preview',
+  String? imageRecognitionModelId,
+  String? transcriptionModelId,
+  String? imageGenerationModelId,
+  bool isDefault = false,
+  bool desktopOnly = false,
+}) {
+  return AiConfig.inferenceProfile(
+    id: id,
+    name: name,
+    thinkingModelId: thinkingModelId,
+    imageRecognitionModelId: imageRecognitionModelId,
+    transcriptionModelId: transcriptionModelId,
+    imageGenerationModelId: imageGenerationModelId,
+    isDefault: isDefault,
+    desktopOnly: desktopOnly,
+    createdAt: DateTime(2024),
+  ) as AiConfigInferenceProfile;
 }
 
 /// Creates a test [AiConfigModel] for use in provider resolution tests.

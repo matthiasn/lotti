@@ -155,6 +155,19 @@ class AiConfigRepository {
         );
   }
 
+  /// Returns all inference profiles.
+  Future<List<AiConfigInferenceProfile>> getProfiles() async {
+    final configs = await getConfigsByType(AiConfigType.inferenceProfile);
+    return configs.whereType<AiConfigInferenceProfile>().toList();
+  }
+
+  /// Streams all inference profiles.
+  Stream<List<AiConfigInferenceProfile>> watchProfiles() {
+    return watchConfigsByType(AiConfigType.inferenceProfile).map(
+      (configs) => configs.whereType<AiConfigInferenceProfile>().toList(),
+    );
+  }
+
   /// Helper method to decode JSON
   Map<String, dynamic> _jsonDecode(String serialized) {
     final map = Map<String, dynamic>.from(

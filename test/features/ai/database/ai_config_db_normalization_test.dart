@@ -63,6 +63,24 @@ void main() {
           pUnknown!.inferenceProviderType, InferenceProviderType.genericOpenAi);
     });
 
+    test('inferenceProfile type is persisted and retrieved correctly',
+        () async {
+      final profile = AiConfig.inferenceProfile(
+        id: 'profile-1',
+        name: 'Gemini Flash',
+        thinkingModelId: 'models/gemini-3-flash-preview',
+        createdAt: DateTime(2024),
+      );
+
+      await db.saveConfig(profile);
+
+      final retrieved = await db.getConfigById('profile-1');
+      expect(retrieved, isA<AiConfigInferenceProfile>());
+      final p = retrieved! as AiConfigInferenceProfile;
+      expect(p.name, 'Gemini Flash');
+      expect(p.thinkingModelId, 'models/gemini-3-flash-preview');
+    });
+
     test('valid string values remain unchanged', () async {
       await insertSerialized(id: 'p-ollama', rawType: 'ollama');
 

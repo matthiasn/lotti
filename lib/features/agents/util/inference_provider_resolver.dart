@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 
@@ -44,7 +45,8 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
     return null;
   }
 
-  if (provider.apiKey.isEmpty) {
+  if (provider.apiKey.trim().isEmpty &&
+      ProviderConfig.requiresApiKey(provider.inferenceProviderType)) {
     developer.log(
       'Provider $providerId has no API key configured',
       name: logTag,

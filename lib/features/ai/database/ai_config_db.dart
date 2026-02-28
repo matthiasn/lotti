@@ -35,6 +35,7 @@ class AiConfigDb extends _$AiConfigDb {
         inferenceProvider: (_) => 'inferenceProvider',
         model: (_) => 'model',
         prompt: (_) => 'prompt',
+        inferenceProfile: (_) => 'inferenceProfile',
       ),
       name: config.name,
       serialized: jsonEncode(config.toJson()),

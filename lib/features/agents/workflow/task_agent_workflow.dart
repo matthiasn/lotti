@@ -15,7 +15,6 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
-import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -43,17 +43,19 @@ export 'package:lotti/features/agents/workflow/wake_result.dart';
 ///
 /// 1. Load agent identity, state, current report, and agentJournal observations.
 /// 2. Build task context from journal domain via [AiInputRepository].
-/// 3. Resolve a Gemini inference provider from the AI config database.
-/// 4. Assemble conversation context (system prompt + user message).
-/// 5. Create a [ConversationRepository] conversation with tool definitions.
-/// 6. Persist the user message as an [AgentMessageKind.user] entity for
+/// 3. Resolve the agent's template and active version.
+/// 4. Resolve an inference profile (or legacy modelId fallback) to a
+///    thinking model/provider.
+/// 5. Assemble conversation context (system prompt + user message).
+/// 6. Create a [ConversationRepository] conversation with tool definitions.
+/// 7. Persist the user message as an [AgentMessageKind.user] entity for
 ///    inspectability (non-fatal if it fails).
-/// 7. Invoke the LLM and execute tool calls via [AgentToolExecutor].
-/// 8. Persist the final assistant response as a thought message.
-/// 9. Extract and persist the updated report (from `update_report` tool call).
-/// 10. Persist new observation notes (agentJournal entries).
-/// 11. Persist updated agent state (revision, wake counter, failure count).
-/// 12. Clean up the in-memory conversation in a `finally` block.
+/// 8. Invoke the LLM and execute tool calls via [AgentToolExecutor].
+/// 9. Persist the final assistant response as a thought message.
+/// 10. Extract and persist the updated report (from `update_report` tool call).
+/// 11. Persist new observation notes (agentJournal entries).
+/// 12. Persist updated agent state (revision, wake counter, failure count).
+/// 13. Clean up the in-memory conversation in a `finally` block.
 class TaskAgentWorkflow {
   TaskAgentWorkflow({
     required this.agentRepository,
@@ -193,23 +195,29 @@ class TaskAgentWorkflow {
       subDomain: 'execute',
     );
 
-    // 4. Resolve a Gemini inference provider from the template version.
-    final modelId = templateCtx.version.modelId ?? templateCtx.template.modelId;
-    final provider = await resolveInferenceProvider(
-      modelId: modelId,
+    // 4. Resolve inference profile (or legacy modelId) → provider.
+    final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
-      logTag: 'TaskAgentWorkflow',
     );
-    if (provider == null) {
+    final resolvedProfile = await profileResolver.resolve(
+      agentConfig: agentIdentity.config,
+      template: templateCtx.template,
+      version: templateCtx.version,
+    );
+    if (resolvedProfile == null) {
+      final modelId =
+          templateCtx.version.modelId ?? templateCtx.template.modelId;
       _log(
         'no provider configured for model $modelId — aborting wake',
         subDomain: 'execute',
       );
       return const WakeResult(
         success: false,
-        error: 'No Gemini provider configured',
+        error: 'No inference provider configured',
       );
     }
+    final modelId = resolvedProfile.thinkingModelId;
+    final provider = resolvedProfile.thinkingProvider;
 
     // 5. Assemble conversation context.
     final systemPrompt = _buildSystemPrompt(templateCtx);
