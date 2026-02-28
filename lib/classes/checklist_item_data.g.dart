@@ -15,9 +15,10 @@ _ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
           .toList(),
       isArchived: json['isArchived'] as bool? ?? false,
       id: json['id'] as String?,
-      checkedBy:
-          $enumDecodeNullable(_$CheckedBySourceEnumMap, json['checkedBy']) ??
-              CheckedBySource.user,
+      checkedBy: $enumDecodeNullable(
+              _$CheckedBySourceEnumMap, json['checkedBy'],
+              unknownValue: CheckedBySource.user) ??
+          CheckedBySource.user,
       checkedAt: json['checkedAt'] == null
           ? null
           : DateTime.parse(json['checkedAt'] as String),

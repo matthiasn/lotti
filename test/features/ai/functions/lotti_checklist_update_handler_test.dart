@@ -1384,6 +1384,106 @@ void main() {
         expect(captured.checkedBy, CheckedBySource.user);
         expect(captured.checkedAt, DateTime(2026, 2, 28, 22));
       });
+
+      test('rejects short reason on user-set item', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Task item',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false, 'reason': 'not done'}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('Reason too short'),
+        );
+        expect(
+          handler.skippedItems[0].reason,
+          contains('minimum ${LottiChecklistUpdateHandler.minReasonLength}'),
+        );
+      });
+
+      test('rejects short reason but still applies title update', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'mac OS setup',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {
+                'id': 'item-1',
+                'isChecked': false,
+                'title': 'macOS setup',
+                'reason': 'short',
+              }
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        // Title update succeeds, isChecked blocked
+        expect(count, 1);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('Reason too short'),
+        );
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        expect(captured.title, 'macOS setup');
+        // isChecked should remain unchanged (user's value)
+        expect(captured.isChecked, true);
+      });
     });
 
     group('getRetryPrompt', () {

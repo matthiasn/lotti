@@ -20,7 +20,9 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     required List<String> linkedChecklists,
     @Default(false) bool isArchived,
     String? id,
-    @Default(CheckedBySource.user) CheckedBySource checkedBy,
+    @Default(CheckedBySource.user)
+    @JsonKey(unknownEnumValue: CheckedBySource.user)
+    CheckedBySource checkedBy,
     DateTime? checkedAt,
   }) = _ChecklistItemData;
 

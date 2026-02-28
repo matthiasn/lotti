@@ -19,6 +19,7 @@ mixin _$ChecklistItemData {
   List<String> get linkedChecklists;
   bool get isArchived;
   String? get id;
+  @JsonKey(unknownEnumValue: CheckedBySource.user)
   CheckedBySource get checkedBy;
   DateTime? get checkedAt;
 
@@ -82,6 +83,7 @@ abstract mixin class $ChecklistItemDataCopyWith<$Res> {
       List<String> linkedChecklists,
       bool isArchived,
       String? id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
       CheckedBySource checkedBy,
       DateTime? checkedAt});
 }
@@ -239,6 +241,7 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
             List<String> linkedChecklists,
             bool isArchived,
             String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
             CheckedBySource checkedBy,
             DateTime? checkedAt)?
         $default, {
@@ -275,6 +278,7 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
             List<String> linkedChecklists,
             bool isArchived,
             String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
             CheckedBySource checkedBy,
             DateTime? checkedAt)
         $default,
@@ -309,6 +313,7 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
             List<String> linkedChecklists,
             bool isArchived,
             String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
             CheckedBySource checkedBy,
             DateTime? checkedAt)?
         $default,
@@ -333,6 +338,7 @@ class _ChecklistItemData implements ChecklistItemData {
       required final List<String> linkedChecklists,
       this.isArchived = false,
       this.id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
       this.checkedBy = CheckedBySource.user,
       this.checkedAt})
       : _linkedChecklists = linkedChecklists;
@@ -358,7 +364,7 @@ class _ChecklistItemData implements ChecklistItemData {
   @override
   final String? id;
   @override
-  @JsonKey()
+  @JsonKey(unknownEnumValue: CheckedBySource.user)
   final CheckedBySource checkedBy;
   @override
   final DateTime? checkedAt;
@@ -429,6 +435,7 @@ abstract mixin class _$ChecklistItemDataCopyWith<$Res>
       List<String> linkedChecklists,
       bool isArchived,
       String? id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
       CheckedBySource checkedBy,
       DateTime? checkedAt});
 }

@@ -42,12 +42,48 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   /// Clock function for timestamps — injectable for testing.
   final DateTime Function() _clock;
 
+  /// Minimum length for a sovereignty override reason.
+  /// Short reasons like "ok" or "done" are too vague to justify overriding
+  /// a user-set checklist state. A substantive reason must cite specific
+  /// evidence (e.g., "User said 'not done' in 22:30 recording").
+  static const minReasonLength = 20;
+
   final List<UpdatedItemDetail> _updatedItems = [];
   final List<SkippedItemDetail> _skippedItems = [];
 
   /// Helper to record a skipped item with a reason.
   void _skip(String id, String reason) {
     _skippedItems.add(SkippedItemDetail(id: id, reason: reason));
+  }
+
+  /// When the sovereignty guard blocks an isChecked change, still apply a
+  /// title update if one was requested and the title actually changed.
+  /// Returns `true` if a title update was successfully applied.
+  Future<bool> _applyTitleOnlyIfChanged({
+    required String id,
+    required ChecklistItem entity,
+    required String? newTitle,
+    required bool titleChanged,
+    required bool currentIsChecked,
+  }) async {
+    if (!titleChanged) return false;
+
+    final titleOnlyData = entity.data.copyWith(title: newTitle!);
+    final success = await checklistRepository.updateChecklistItem(
+      checklistItemId: id,
+      data: titleOnlyData,
+      taskId: task.id,
+    );
+    if (success) {
+      _updatedItems.add(UpdatedItemDetail(
+        id: id,
+        title: newTitle,
+        isChecked: currentIsChecked,
+        changes: ['title'],
+      ));
+      return true;
+    }
+    return false;
   }
 
   static const int maxBatchSize = 20;
@@ -288,46 +324,56 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       }
 
       // --- User sovereignty guard ---
-      // When the user last toggled isChecked, the agent needs a reason
-      // citing post-dated evidence to override it.
-      if (isCheckedChanged &&
-          entity.data.checkedBy == CheckedBySource.user &&
-          (reason == null || reason.trim().isEmpty)) {
+      // When the user last toggled isChecked, the agent needs a substantive
+      // reason citing post-dated evidence to override it. We enforce a
+      // minimum length to prevent trivial/hallucinated justifications.
+      if (isCheckedChanged && entity.data.checkedBy == CheckedBySource.user) {
         final checkedAtStr =
             entity.data.checkedAt?.toIso8601String() ?? 'unknown';
-        _skip(
-          id,
-          'User set this item at $checkedAtStr. Provide a reason '
-          'citing evidence from after that time to override.',
-        );
+        final trimmedReason = reason?.trim() ?? '';
 
-        // Still allow a title update if requested
-        if (titleChanged) {
-          final titleOnlyData = entity.data.copyWith(title: newTitle);
-          final success = await checklistRepository.updateChecklistItem(
-            checklistItemId: id,
-            data: titleOnlyData,
-            taskId: task.id,
+        if (trimmedReason.isEmpty) {
+          _skip(
+            id,
+            'User set this item at $checkedAtStr. Provide a reason '
+            '(>= $minReasonLength chars) citing evidence from after '
+            'that time to override.',
           );
-          if (success) {
+          if (await _applyTitleOnlyIfChanged(
+            id: id,
+            entity: entity,
+            newTitle: newTitle,
+            titleChanged: titleChanged,
+            currentIsChecked: currentIsChecked,
+          )) {
             successCount++;
-            _updatedItems.add(UpdatedItemDetail(
-              id: id,
-              title: newTitle,
-              isChecked: currentIsChecked,
-              changes: ['title'],
-            ));
           }
+          continue;
         }
-        continue;
-      }
 
-      // Log override reason for audit when overriding a user-set item
-      if (isCheckedChanged &&
-          entity.data.checkedBy == CheckedBySource.user &&
-          reason != null) {
+        if (trimmedReason.length < minReasonLength) {
+          _skip(
+            id,
+            'Reason too short (${trimmedReason.length} chars, '
+            'minimum $minReasonLength). Provide a substantive reason '
+            'citing specific evidence from after $checkedAtStr.',
+          );
+          if (await _applyTitleOnlyIfChanged(
+            id: id,
+            entity: entity,
+            newTitle: newTitle,
+            titleChanged: titleChanged,
+            currentIsChecked: currentIsChecked,
+          )) {
+            successCount++;
+          }
+          continue;
+        }
+
+        // Log override reason for audit
         developer.log(
-          'Overriding user-set item $id. Reason: $reason',
+          'Overriding user-set item $id (set at $checkedAtStr). '
+          'Reason: $trimmedReason',
           name: 'LottiChecklistUpdateHandler',
         );
       }
@@ -418,7 +464,7 @@ Required format:
 Each item must have:
 - "id" (required): The checklist item ID
 - At least one of "isChecked" (boolean) or "title" (string)
-- "reason" (string): Required when changing isChecked on an item the user last toggled
+- "reason" (string, >= $minReasonLength chars): Required when changing isChecked on an item the user last toggled. Must cite specific post-dated evidence
 
 Please retry with the correct format.''';
   }

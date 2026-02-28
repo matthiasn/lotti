@@ -1,7 +1,7 @@
 # Checklist User Sovereignty: Prevent Agent from Reverting User-Checked Items
 
 **Date:** 2026-02-28
-**Status:** Draft
+**Status:** Implemented
 **Priority:** P1
 **Estimated effort:** ~2 hours
 
@@ -649,3 +649,32 @@ Verify that `ChecklistItemData.fromJson` / `.toJson` correctly handles:
 - Hard-blocking the agent entirely (we chose the softer evidence-based approach).
 - Changes to the `suggest_checklist_completion` flow (it only suggests,
   doesn't directly modify state).
+
+---
+
+## Post-Implementation Hardening (2026-02-28)
+
+After the initial implementation, the following hardening measures were added:
+
+### 1. Minimum reason length enforcement
+The sovereignty guard now requires reasons to be at least 20 characters
+(`minReasonLength`). This prevents trivial/hallucinated justifications like
+"ok" or "done" from bypassing the guard. The agent must provide a
+substantive reason citing specific evidence.
+
+### 2. Safe enum deserialization
+`CheckedBySource` now uses `@JsonKey(unknownEnumValue: CheckedBySource.user)`
+so that unknown persisted values (from future versions or data corruption)
+safely default to `user` instead of throwing an `ArgumentError` during
+deserialization. This is the correct conservative fallback — unknown
+provenance is treated as user-owned.
+
+### 3. Injectable clocks
+Both `UnifiedAiInferenceRepository` and `ChecklistItemController` now use
+injectable clock functions instead of `DateTime.now()`, enabling deterministic
+timestamp assertions in tests.
+
+### 4. Auto-check sovereignty guard
+The auto-check path in `UnifiedAiInferenceRepository` now respects the
+sovereignty guard: items with `checkedBy: user` are never auto-checked,
+since auto-check has no reason to provide.

@@ -91,5 +91,18 @@ void main() {
       expect(CheckedBySource.values, contains(CheckedBySource.user));
       expect(CheckedBySource.values, contains(CheckedBySource.agent));
     });
+
+    test('deserializes unknown checkedBy value as user', () {
+      final json = <String, dynamic>{
+        'title': 'Future item',
+        'isChecked': false,
+        'linkedChecklists': <String>[],
+        'checkedBy': 'some_future_value',
+      };
+
+      final data = ChecklistItemData.fromJson(json);
+
+      expect(data.checkedBy, CheckedBySource.user);
+    });
   });
 }

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.883] - 2026-02-28
+### Added
+- Checklist user sovereignty: track who last toggled each checklist item
+  (user or agent) and prevent the AI agent from overriding user-set states
+  without a substantive reason citing post-dated evidence.
+
 ## [0.9.882] - 2026-02-28
 ### Added
 - Aggregate token usage tracking per template with tabbed detail page
