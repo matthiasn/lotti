@@ -46,6 +46,10 @@ _AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) =>
       completionDate: json['completionDate'] == null
           ? null
           : DateTime.parse(json['completionDate'] as String),
+      checkedBy: json['checkedBy'] as String?,
+      checkedAt: json['checkedAt'] == null
+          ? null
+          : DateTime.parse(json['checkedAt'] as String),
     );
 
 Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
@@ -56,6 +60,8 @@ Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
       'id': instance.id,
       'deadline': instance.deadline?.toIso8601String(),
       'completionDate': instance.completionDate?.toIso8601String(),
+      'checkedBy': instance.checkedBy,
+      'checkedAt': instance.checkedAt?.toIso8601String(),
     };
 
 _AiInputLogEntryObject _$AiInputLogEntryObjectFromJson(

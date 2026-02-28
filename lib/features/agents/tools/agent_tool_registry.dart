@@ -161,7 +161,10 @@ class AgentToolRegistry {
       name: 'update_checklist_items',
       description:
           'Update existing checklist items. Each item needs its id and at '
-          'least one of isChecked or title.',
+          'least one of isChecked or title. When an item was last toggled by '
+          'the user, you must provide a reason citing evidence from AFTER the '
+          "user's action to change its checked state. Title updates are "
+          'always allowed.',
       parameters: {
         'type': 'object',
         'properties': {
@@ -176,13 +179,23 @@ class AgentToolRegistry {
                 },
                 'isChecked': {
                   'type': 'boolean',
-                  'description': 'Whether the item is checked.',
+                  'description':
+                      'Whether the item is checked. For items last set by '
+                          'the user, you must also provide a reason citing '
+                          'post-dated evidence.',
                 },
                 'title': {
                   'type': 'string',
                   'description':
                       'New title for the item (e.g. fix a transcription '
                           'error). Max 400 characters.',
+                },
+                'reason': {
+                  'type': 'string',
+                  'description':
+                      'Required when changing isChecked on a user-set item. '
+                          'Must cite specific evidence (e.g. a recording or '
+                          "note) that postdates the user's last toggle.",
                 },
               },
               'required': ['id'],

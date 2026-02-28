@@ -302,6 +302,115 @@ void main() {
       });
     });
 
+    group('updateChecked provenance', () {
+      final fixedTime = DateTime(2026, 2, 28, 22, 30);
+
+      test('stamps checkedBy: user and checkedAt on check', () async {
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+            clockProvider.overrideWithValue(() => fixedTime),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
+              .future,
+        );
+
+        final notifier = container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1'))
+              .notifier,
+        );
+
+        // ignore: cascade_invocations
+        notifier.updateChecked(checked: true);
+
+        final updatedState = container.read(
+          checklistItemControllerProvider((id: 'item-1', taskId: 'task-1')),
+        );
+        expect(updatedState.value?.data.isChecked, isTrue);
+        expect(
+          updatedState.value?.data.checkedBy,
+          CheckedBySource.user,
+        );
+        expect(updatedState.value?.data.checkedAt, fixedTime);
+
+        verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(named: 'data'),
+            taskId: 'task-1',
+          ),
+        ).called(1);
+      });
+
+      test('stamps checkedBy: user and checkedAt on uncheck', () async {
+        // Create an item that is already checked
+        final checkedItem = ChecklistItem(
+          meta: Metadata(
+            id: 'item-checked',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            dateFrom: DateTime(2025),
+            dateTo: DateTime(2025),
+            categoryId: 'category-1',
+          ),
+          data: const ChecklistItemData(
+            title: 'Checked Item',
+            isChecked: true,
+            linkedChecklists: ['checklist-1'],
+            checkedBy: CheckedBySource.agent,
+          ),
+        );
+
+        when(() => mockDb.journalEntityById('item-checked'))
+            .thenAnswer((_) async => checkedItem);
+
+        final container = ProviderContainer(
+          overrides: [
+            checklistRepositoryProvider
+                .overrideWithValue(mockChecklistRepository),
+            clockProvider.overrideWithValue(() => fixedTime),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )).future,
+        );
+
+        final notifier = container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )).notifier,
+        );
+
+        // ignore: cascade_invocations
+        notifier.updateChecked(checked: false);
+
+        final updatedState = container.read(
+          checklistItemControllerProvider((
+            id: 'item-checked',
+            taskId: 'task-1',
+          )),
+        );
+        expect(updatedState.value?.data.isChecked, isFalse);
+        // Provenance flips from agent to user
+        expect(
+          updatedState.value?.data.checkedBy,
+          CheckedBySource.user,
+        );
+        expect(updatedState.value?.data.checkedAt, fixedTime);
+      });
+    });
+
     group('archive and unarchive', () {
       test('archive sets isArchived to true and keeps isChecked unchanged',
           () async {

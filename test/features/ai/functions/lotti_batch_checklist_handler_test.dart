@@ -371,6 +371,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String? ?? '';
           return ChecklistItem(
@@ -396,6 +397,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String? ?? '';
           return ChecklistItem(
@@ -421,6 +423,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String? ?? '';
           return ChecklistItem(
@@ -497,6 +500,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: false,
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String;
           final itemId = _uuid.v4();
@@ -528,6 +532,7 @@ void main() {
               title: 'cheese',
               isChecked: false,
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).called(1);
 
         verify(() => mockChecklistRepository.addItemToChecklist(
@@ -535,6 +540,7 @@ void main() {
               title: 'tomatoes',
               isChecked: false,
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).called(1);
 
         verify(() => mockChecklistRepository.addItemToChecklist(
@@ -542,6 +548,7 @@ void main() {
               title: 'pepperoni',
               isChecked: false,
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).called(1);
         // Lightweight integration check for tool response
         final toolResponse = handler.createToolResponse(result);
@@ -581,6 +588,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String;
           final checked = invocation.namedArguments[#isChecked] as bool;
@@ -660,6 +668,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String? ?? '';
           return ChecklistItem(
@@ -904,6 +913,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           final title = invocation.namedArguments[#title] as String? ?? '';
           return ChecklistItem(
@@ -933,6 +943,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).called(1);
 
         // Also ensure the update callback fired with a Task
@@ -1101,6 +1112,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           callIndex++;
           if (callIndex == 1) {
@@ -1199,6 +1211,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             )).thenAnswer((invocation) async {
           callIndex++;
           if (callIndex == 1) {

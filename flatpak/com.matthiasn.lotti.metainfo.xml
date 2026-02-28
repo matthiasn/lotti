@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.883" date="2026-02-28">
+      <description>
+          <p>Checklist user sovereignty: track who last toggled each checklist item (user or agent) and prevent the AI agent from overriding user-set states without a substantive reason citing post-dated evidence.</p>
+      </description>
+    </release>
     <release version="0.9.882" date="2026-02-28">
       <description>
           <p>Aggregate token usage tracking per template with tabbed detail page (Settings / Stats / Reports) showing per-model summaries across all instances and per-instance breakdowns with lifecycle badges.</p>

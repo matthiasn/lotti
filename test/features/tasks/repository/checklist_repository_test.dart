@@ -569,6 +569,47 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('passes checkedBy and checkedAt to created item', () async {
+      const checklistId = 'checklist-id';
+      const title = 'Agent Item';
+      const categoryId = 'category-id';
+      final checkedAt = DateTime(2025, 6, 15);
+
+      final metadata = Metadata(
+        id: 'agent-item-id',
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
+        categoryId: categoryId,
+        dateFrom: DateTime(2025),
+        dateTo: DateTime(2025),
+      );
+
+      when(() => mockPersistenceLogic.createMetadata())
+          .thenAnswer((_) async => metadata);
+      when(() => mockPersistenceLogic.createDbEntity(any()))
+          .thenAnswer((_) async => true);
+
+      final result = await repository.createChecklistItem(
+        checklistId: checklistId,
+        title: title,
+        isChecked: false,
+        categoryId: categoryId,
+        checkedBy: CheckedBySource.agent,
+        checkedAt: checkedAt,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.data.checkedBy, CheckedBySource.agent);
+      expect(result.data.checkedAt, checkedAt);
+
+      // Verify the entity persisted has the correct provenance
+      final captured = verify(
+        () => mockPersistenceLogic.createDbEntity(captureAny()),
+      ).captured.single as ChecklistItem;
+      expect(captured.data.checkedBy, CheckedBySource.agent);
+      expect(captured.data.checkedAt, checkedAt);
+    });
   });
 
   group('updateChecklist', () {

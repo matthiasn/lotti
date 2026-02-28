@@ -208,6 +208,7 @@ Do NOT recreate the items that were already successful.''';
               title: item['title'] as String,
               isChecked: (item['isChecked'] as bool?) ?? false,
               linkedChecklists: [],
+              checkedBy: CheckedBySource.agent,
             )
         ];
 
@@ -263,6 +264,7 @@ Do NOT recreate the items that were already successful.''';
             title: title,
             isChecked: isChecked,
             categoryId: currentTask.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
           );
 
           if (newItem != null) {

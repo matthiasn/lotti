@@ -141,6 +141,8 @@ class AiInputRepository {
             completed: item.isChecked,
             isArchived: item.isArchived,
             id: item.id,
+            checkedBy: item.checkedBy.name,
+            checkedAt: item.checkedAt,
           ),
         )
         .toList();

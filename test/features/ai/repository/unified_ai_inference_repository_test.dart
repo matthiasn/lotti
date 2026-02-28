@@ -5904,6 +5904,7 @@ Take into account the following task context:
             title: 'New checklist item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
           )).thenAnswer((_) async => newChecklistItem);
 
       // Create stream with add_multiple_checklist_items tool call
@@ -5940,12 +5941,13 @@ Take into account the following task context:
         onStatusChange: (_) {},
       );
 
-      // Verify item was created using atomic method
+      // Verify item was created using atomic method with agent provenance
       verify(() => mockChecklistRepo.addItemToChecklist(
             checklistId: existingChecklistId,
             title: 'New checklist item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
           )).called(1);
     });
 
@@ -6023,13 +6025,14 @@ Take into account the following task context:
             title: any(named: 'title'),
             isChecked: false,
             categoryId: any(named: 'categoryId'),
+            checkedBy: CheckedBySource.agent,
           )).thenAnswer((_) async => ChecklistItem(
-            meta: _createMetadata(
-                id: 'item-${DateTime.now().millisecondsSinceEpoch}'),
+            meta: _createMetadata(id: 'item-new'),
             data: const ChecklistItemData(
               title: 'Test Item',
               isChecked: false,
               linkedChecklists: [newChecklistId],
+              checkedBy: CheckedBySource.agent,
             ),
           ));
 
@@ -6096,6 +6099,7 @@ Take into account the following task context:
             title: 'Second item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
           )).called(1);
 
       verify(() => mockChecklistRepo.addItemToChecklist(
@@ -6103,24 +6107,31 @@ Take into account the following task context:
             title: 'Third item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
           )).called(1);
     });
   });
 
   group('Auto-check high confidence suggestions', () {
+    final autoCheckTime = DateTime(2026, 2, 28, 23);
+
     test('automatically checks items with high confidence', () async {
+      // Recreate with deterministic clock for checkedAt assertion
+      final ref = container.read(testRefProvider);
+      repository = UnifiedAiInferenceRepository(ref, clock: () => autoCheckTime)
+        ..autoChecklistServiceForTesting = mockAutoChecklistService;
       final taskEntity = Task(
         meta: _createMetadata(),
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2025),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
           checklistIds: ['checklist-1'],
         ),
       );
@@ -6131,6 +6142,8 @@ Take into account the following task context:
           title: 'Test item',
           isChecked: false,
           linkedChecklists: ['checklist-1'],
+          // Agent-owned so auto-check is allowed by sovereignty guard
+          checkedBy: CheckedBySource.agent,
         ),
       );
 
@@ -6211,16 +6224,23 @@ Take into account the following task context:
         onStatusChange: (_) {},
       );
 
-      // Verify the item was updated to be checked
+      // Verify the item was updated to be checked with agent provenance
       verify(() => mockChecklistRepo.updateChecklistItem(
             checklistItemId: 'item-1',
             data: any(
                 named: 'data',
-                that: isA<ChecklistItemData>().having(
-                  (data) => data.isChecked,
-                  'isChecked',
-                  true,
-                )),
+                that: isA<ChecklistItemData>()
+                    .having((d) => d.isChecked, 'isChecked', true)
+                    .having(
+                      (d) => d.checkedBy,
+                      'checkedBy',
+                      CheckedBySource.agent,
+                    )
+                    .having(
+                      (d) => d.checkedAt,
+                      'checkedAt',
+                      autoCheckTime,
+                    )),
             taskId: taskEntity.id,
           )).called(1);
     });
@@ -6413,6 +6433,109 @@ Take into account the following task context:
       );
 
       // Verify no update was made since item was already checked
+      verifyNever(() => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ));
+    });
+
+    test('does not auto-check user-owned items (sovereignty guard)', () async {
+      final taskEntity = Task(
+        meta: _createMetadata(),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2025),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+          checklistIds: ['checklist-1'],
+        ),
+      );
+
+      // User-owned unchecked item — sovereignty guard should block auto-check
+      final userOwnedItem = ChecklistItem(
+        meta: _createMetadata(id: 'item-user'),
+        data: const ChecklistItemData(
+          title: 'User unchecked item',
+          isChecked: false,
+          linkedChecklists: ['checklist-1'],
+          checkedBy: CheckedBySource.user,
+        ),
+      );
+
+      final promptConfig = _createPrompt(
+        id: 'prompt-1',
+        name: 'Task Summary',
+        requiredInputData: [InputDataType.task],
+      );
+
+      final model = _createModel(
+        id: 'model-1',
+        inferenceProviderId: 'provider-1',
+        providerModelId: 'gpt-4',
+      ).copyWith(supportsFunctionCalling: true);
+
+      final provider = _createProvider(
+        id: 'provider-1',
+        inferenceProviderType: InferenceProviderType.openRouter,
+      );
+
+      when(() => mockAiInputRepo.getEntity(taskEntity.id))
+          .thenAnswer((_) async => taskEntity);
+      when(() => mockAiConfigRepo.getConfigById('model-1'))
+          .thenAnswer((_) async => model);
+      when(() => mockAiConfigRepo.getConfigById('provider-1'))
+          .thenAnswer((_) async => provider);
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
+          .thenAnswer((_) async => '{"task": "details"}');
+
+      when(() => mockJournalRepo.getJournalEntityById('item-user'))
+          .thenAnswer((_) async => userOwnedItem);
+
+      final streamController =
+          StreamController<CreateChatCompletionStreamResponse>()
+            ..add(_createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'suggest_checklist_completion',
+                arguments:
+                    '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
+              ),
+            ]))
+            ..add(_createStreamChunk('Task analysis complete'))
+            ..close();
+
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          provider: any(named: 'provider'),
+          tools: any(named: 'tools'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+
+      testChecklistCompletionService.capturedSuggestions.clear();
+      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
+          .thenAnswer((_) async => '{"title": "Test Task"}');
+
+      await repository!.runInference(
+        entityId: taskEntity.id,
+        promptConfig: promptConfig,
+        onProgress: (_) {},
+        onStatusChange: (_) {},
+      );
+
+      // Verify NO update was made — sovereignty guard blocks user-owned items
       verifyNever(() => mockChecklistRepo.updateChecklistItem(
             checklistItemId: any(named: 'checklistItemId'),
             data: any(named: 'data'),
@@ -6755,13 +6878,15 @@ Take into account the following task context:
 }
 
 // Helper methods to create test objects
+final _fixedDate = DateTime(2025);
+
 Metadata _createMetadata({String? id, String? categoryId}) {
   return Metadata(
     id: id ?? 'test-id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: _fixedDate,
+    updatedAt: _fixedDate,
+    dateFrom: _fixedDate,
+    dateTo: _fixedDate,
     categoryId: categoryId,
   );
 }

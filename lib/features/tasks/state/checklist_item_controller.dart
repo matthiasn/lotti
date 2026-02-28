@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
@@ -11,6 +12,9 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
+
+/// Clock provider for timestamps — override in tests for determinism.
+final clockProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
 /// Record type for checklist item parameters.
 typedef ChecklistItemParams = ({String id, String? taskId});
@@ -96,6 +100,8 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
       final updated = current.copyWith(
         data: data.copyWith(
           isChecked: checked,
+          checkedBy: CheckedBySource.user,
+          checkedAt: ref.read(clockProvider)(),
         ),
       );
       ref.read(checklistRepositoryProvider).updateChecklistItem(

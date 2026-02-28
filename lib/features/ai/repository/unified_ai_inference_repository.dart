@@ -71,7 +71,8 @@ class PreparedAudio {
 /// This replaces the specialized controllers and provides a generic way
 /// to run any configured AI prompt
 class UnifiedAiInferenceRepository {
-  UnifiedAiInferenceRepository(this.ref) {
+  UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now {
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
@@ -81,6 +82,10 @@ class UnifiedAiInferenceRepository {
   }
 
   final Ref ref;
+
+  /// Clock function for timestamps — injectable for testing.
+  final DateTime Function() _clock;
+
   late final PromptBuilderHelper promptBuilderHelper;
   AutoChecklistService? _autoChecklistService;
 
@@ -1184,6 +1189,7 @@ class UnifiedAiInferenceRepository {
                     title: item.title,
                     isChecked: item.isChecked,
                     linkedChecklists: [],
+                    checkedBy: CheckedBySource.agent,
                   ),
                 ],
                 title: 'TODOs',
@@ -1235,6 +1241,7 @@ class UnifiedAiInferenceRepository {
                 title: item.title,
                 isChecked: item.isChecked,
                 categoryId: currentTask.meta.categoryId,
+                checkedBy: CheckedBySource.agent,
               );
 
               if (newItem != null) {
@@ -1476,21 +1483,34 @@ class UnifiedAiInferenceRepository {
                 .getJournalEntityById(suggestion.checklistItemId);
 
             if (checklistItem is ChecklistItem) {
-              if (!checklistItem.data.isChecked) {
-                // Update the item to be checked
+              if (checklistItem.data.isChecked) {
+                developer.log(
+                  'Skipping auto-check for item ${suggestion.checklistItemId} - already checked',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              } else if (checklistItem.data.checkedBy == CheckedBySource.user) {
+                // User sovereignty: do not auto-check items the user
+                // explicitly unchecked. The agent tool path requires a
+                // reason; auto-check has no reason to provide, so skip.
+                developer.log(
+                  'Skipping auto-check for item ${suggestion.checklistItemId} '
+                  '- user-owned (sovereignty guard)',
+                  name: 'UnifiedAiInferenceRepository',
+                );
+              } else {
+                // Safe to auto-check: item is unchecked and agent-owned
                 await checklistRepository.updateChecklistItem(
                   checklistItemId: suggestion.checklistItemId,
-                  data: checklistItem.data.copyWith(isChecked: true),
+                  data: checklistItem.data.copyWith(
+                    isChecked: true,
+                    checkedBy: CheckedBySource.agent,
+                    checkedAt: _clock(),
+                  ),
                   taskId: currentTask.id,
                 );
 
                 developer.log(
                   'Successfully auto-checked item ${suggestion.checklistItemId}',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-              } else {
-                developer.log(
-                  'Skipping auto-check for item ${suggestion.checklistItemId} - already checked',
                   name: 'UnifiedAiInferenceRepository',
                 );
               }

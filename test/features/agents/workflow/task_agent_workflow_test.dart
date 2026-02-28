@@ -2398,6 +2398,7 @@ void main() {
               title: any(named: 'title'),
               isChecked: any(named: 'isChecked'),
               categoryId: any(named: 'categoryId'),
+              checkedBy: any(named: 'checkedBy'),
             ),
           ).thenAnswer((_) async {
             return ChecklistItem(
@@ -2459,6 +2460,7 @@ void main() {
               title: 'Buy milk',
               isChecked: false,
               categoryId: 'cat-001',
+              checkedBy: CheckedBySource.agent,
             ),
           ).called(1);
         });

@@ -545,6 +545,8 @@ mixin _$AiActionItem {
   String? get id;
   DateTime? get deadline;
   DateTime? get completionDate;
+  String? get checkedBy;
+  DateTime? get checkedAt;
 
   /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
@@ -571,17 +573,21 @@ mixin _$AiActionItem {
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
             (identical(other.completionDate, completionDate) ||
-                other.completionDate == completionDate));
+                other.completionDate == completionDate) &&
+            (identical(other.checkedBy, checkedBy) ||
+                other.checkedBy == checkedBy) &&
+            (identical(other.checkedAt, checkedAt) ||
+                other.checkedAt == checkedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, title, completed, isArchived, id, deadline, completionDate);
+  int get hashCode => Object.hash(runtimeType, title, completed, isArchived, id,
+      deadline, completionDate, checkedBy, checkedAt);
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt)';
   }
 }
 
@@ -597,7 +603,9 @@ abstract mixin class $AiActionItemCopyWith<$Res> {
       bool isArchived,
       String? id,
       DateTime? deadline,
-      DateTime? completionDate});
+      DateTime? completionDate,
+      String? checkedBy,
+      DateTime? checkedAt});
 }
 
 /// @nodoc
@@ -618,6 +626,8 @@ class _$AiActionItemCopyWithImpl<$Res> implements $AiActionItemCopyWith<$Res> {
     Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
+    Object? checkedBy = freezed,
+    Object? checkedAt = freezed,
   }) {
     return _then(_self.copyWith(
       title: null == title
@@ -643,6 +653,14 @@ class _$AiActionItemCopyWithImpl<$Res> implements $AiActionItemCopyWith<$Res> {
       completionDate: freezed == completionDate
           ? _self.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      checkedBy: freezed == checkedBy
+          ? _self.checkedBy
+          : checkedBy // ignore: cast_nullable_to_non_nullable
+              as String?,
+      checkedAt: freezed == checkedAt
+          ? _self.checkedAt
+          : checkedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
     ));
   }
@@ -741,16 +759,30 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String title, bool completed, bool isArchived, String? id,
-            DateTime? deadline, DateTime? completionDate)?
+    TResult Function(
+            String title,
+            bool completed,
+            bool isArchived,
+            String? id,
+            DateTime? deadline,
+            DateTime? completionDate,
+            String? checkedBy,
+            DateTime? checkedAt)?
         $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _AiActionItem() when $default != null:
-        return $default(_that.title, _that.completed, _that.isArchived,
-            _that.id, _that.deadline, _that.completionDate);
+        return $default(
+            _that.title,
+            _that.completed,
+            _that.isArchived,
+            _that.id,
+            _that.deadline,
+            _that.completionDate,
+            _that.checkedBy,
+            _that.checkedAt);
       case _:
         return orElse();
     }
@@ -771,15 +803,29 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String title, bool completed, bool isArchived, String? id,
-            DateTime? deadline, DateTime? completionDate)
+    TResult Function(
+            String title,
+            bool completed,
+            bool isArchived,
+            String? id,
+            DateTime? deadline,
+            DateTime? completionDate,
+            String? checkedBy,
+            DateTime? checkedAt)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AiActionItem():
-        return $default(_that.title, _that.completed, _that.isArchived,
-            _that.id, _that.deadline, _that.completionDate);
+        return $default(
+            _that.title,
+            _that.completed,
+            _that.isArchived,
+            _that.id,
+            _that.deadline,
+            _that.completionDate,
+            _that.checkedBy,
+            _that.checkedAt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -799,15 +845,29 @@ extension AiActionItemPatterns on AiActionItem {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String title, bool completed, bool isArchived, String? id,
-            DateTime? deadline, DateTime? completionDate)?
+    TResult? Function(
+            String title,
+            bool completed,
+            bool isArchived,
+            String? id,
+            DateTime? deadline,
+            DateTime? completionDate,
+            String? checkedBy,
+            DateTime? checkedAt)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AiActionItem() when $default != null:
-        return $default(_that.title, _that.completed, _that.isArchived,
-            _that.id, _that.deadline, _that.completionDate);
+        return $default(
+            _that.title,
+            _that.completed,
+            _that.isArchived,
+            _that.id,
+            _that.deadline,
+            _that.completionDate,
+            _that.checkedBy,
+            _that.checkedAt);
       case _:
         return null;
     }
@@ -823,7 +883,9 @@ class _AiActionItem implements AiActionItem {
       this.isArchived = false,
       this.id,
       this.deadline,
-      this.completionDate});
+      this.completionDate,
+      this.checkedBy,
+      this.checkedAt});
   factory _AiActionItem.fromJson(Map<String, dynamic> json) =>
       _$AiActionItemFromJson(json);
 
@@ -840,6 +902,10 @@ class _AiActionItem implements AiActionItem {
   final DateTime? deadline;
   @override
   final DateTime? completionDate;
+  @override
+  final String? checkedBy;
+  @override
+  final DateTime? checkedAt;
 
   /// Create a copy of AiActionItem
   /// with the given fields replaced by the non-null parameter values.
@@ -870,17 +936,21 @@ class _AiActionItem implements AiActionItem {
             (identical(other.deadline, deadline) ||
                 other.deadline == deadline) &&
             (identical(other.completionDate, completionDate) ||
-                other.completionDate == completionDate));
+                other.completionDate == completionDate) &&
+            (identical(other.checkedBy, checkedBy) ||
+                other.checkedBy == checkedBy) &&
+            (identical(other.checkedAt, checkedAt) ||
+                other.checkedAt == checkedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, title, completed, isArchived, id, deadline, completionDate);
+  int get hashCode => Object.hash(runtimeType, title, completed, isArchived, id,
+      deadline, completionDate, checkedBy, checkedAt);
 
   @override
   String toString() {
-    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate)';
+    return 'AiActionItem(title: $title, completed: $completed, isArchived: $isArchived, id: $id, deadline: $deadline, completionDate: $completionDate, checkedBy: $checkedBy, checkedAt: $checkedAt)';
   }
 }
 
@@ -898,7 +968,9 @@ abstract mixin class _$AiActionItemCopyWith<$Res>
       bool isArchived,
       String? id,
       DateTime? deadline,
-      DateTime? completionDate});
+      DateTime? completionDate,
+      String? checkedBy,
+      DateTime? checkedAt});
 }
 
 /// @nodoc
@@ -920,6 +992,8 @@ class __$AiActionItemCopyWithImpl<$Res>
     Object? id = freezed,
     Object? deadline = freezed,
     Object? completionDate = freezed,
+    Object? checkedBy = freezed,
+    Object? checkedAt = freezed,
   }) {
     return _then(_AiActionItem(
       title: null == title
@@ -945,6 +1019,14 @@ class __$AiActionItemCopyWithImpl<$Res>
       completionDate: freezed == completionDate
           ? _self.completionDate
           : completionDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      checkedBy: freezed == checkedBy
+          ? _self.checkedBy
+          : checkedBy // ignore: cast_nullable_to_non_nullable
+              as String?,
+      checkedAt: freezed == checkedAt
+          ? _self.checkedAt
+          : checkedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
     ));
   }

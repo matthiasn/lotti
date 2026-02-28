@@ -57,6 +57,8 @@ class TestDataFactory {
     String? title,
     bool isChecked = false,
     List<String>? linkedChecklists,
+    CheckedBySource checkedBy = CheckedBySource.user,
+    DateTime? checkedAt,
   }) {
     final itemId = id ?? _uuid.v4();
     return ChecklistItem(
@@ -72,6 +74,8 @@ class TestDataFactory {
         title: title ?? 'Test Item',
         isChecked: isChecked,
         linkedChecklists: linkedChecklists ?? ['checklist-1'],
+        checkedBy: checkedBy,
+        checkedAt: checkedAt,
       ),
     );
   }
@@ -443,6 +447,7 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Buy groceries',
+          checkedBy: CheckedBySource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -627,6 +632,7 @@ void main() {
         final validItem = TestDataFactory.createChecklistItem(
           id: 'valid-item',
           title: 'Valid',
+          checkedBy: CheckedBySource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -721,6 +727,7 @@ void main() {
 
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
+          checkedBy: CheckedBySource.agent,
         );
 
         final refreshedTask = TestDataFactory.createTask(
@@ -857,6 +864,7 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Original',
+          checkedBy: CheckedBySource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -912,6 +920,572 @@ void main() {
       });
     });
 
+    group('processFunctionCall — reason field', () {
+      test('should pass through valid reason string', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: jsonEncode({
+            'items': [
+              {
+                'id': 'item-1',
+                'isChecked': false,
+                'reason': 'User said "not done" in 22:30 recording',
+              }
+            ],
+          }),
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, true);
+        final items =
+            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        expect(items[0]['reason'], 'User said "not done" in 22:30 recording');
+      });
+
+      test('should strip whitespace-only reason', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: jsonEncode({
+            'items': [
+              {'id': 'item-1', 'isChecked': true, 'reason': '   '}
+            ],
+          }),
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, true);
+        final items =
+            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        expect(items[0].containsKey('reason'), false);
+      });
+
+      test('should reject invalid reason type', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: jsonEncode({
+            'items': [
+              {'id': 'item-1', 'isChecked': true, 'reason': 123}
+            ],
+          }),
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, false);
+        expect(result.error, contains('invalid reason value'));
+      });
+
+      test('should omit null reason from validated items', () {
+        final toolCall = TestDataFactory.createToolCall(
+          arguments: jsonEncode({
+            'items': [
+              {'id': 'item-1', 'isChecked': true}
+            ],
+          }),
+        );
+
+        final result = handler.processFunctionCall(toolCall);
+
+        expect(result.success, true);
+        final items =
+            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        expect(items[0].containsKey('reason'), false);
+      });
+    });
+
+    group('sovereignty guard', () {
+      /// Helper to set up mocks for a single checklist item entity.
+      void stubSingleItem(ChecklistItem item) {
+        final mockSelectable = MockSelectable<JournalDbEntity>();
+        when(() => mockJournalDb.entriesForIds([item.id]))
+            .thenReturn(mockSelectable);
+        when(mockSelectable.get).thenAnswer(
+          (_) async => [_createDbEntity(item)],
+        );
+        when(() => mockJournalDb.journalEntityById(testTask.id))
+            .thenAnswer((_) async => testTask);
+        when(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: item.id,
+            data: any(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).thenAnswer((_) async => true);
+      }
+
+      test('blocks isChecked change on user-set item without reason', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Write tests',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('User set this item at'),
+        );
+        expect(
+          handler.skippedItems[0].reason,
+          contains('Provide a reason'),
+        );
+
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      });
+
+      test('blocks user-unchecked item from being checked without reason',
+          () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Not done yet',
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('User set this item'),
+        );
+      });
+
+      test('allows override of user-set item when reason is provided',
+          () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Deploy to prod',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        final clockTime = DateTime(2026, 2, 28, 22, 35);
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => clockTime,
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {
+                'id': 'item-1',
+                'isChecked': false,
+                'reason': 'User said "deploy failed" in 22:30 recording',
+              }
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 1);
+        expect(handler.skippedItems, isEmpty);
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        expect(captured.isChecked, false);
+        expect(captured.checkedBy, CheckedBySource.agent);
+        expect(captured.checkedAt, clockTime);
+      });
+
+      test('freely updates agent-set item without reason', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Auto-detected task',
+          isChecked: true,
+          checkedBy: CheckedBySource.agent,
+          checkedAt: DateTime(2026, 2, 28, 21),
+        );
+        stubSingleItem(item);
+
+        final clockTime = DateTime(2026, 2, 28, 22, 35);
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => clockTime,
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 1);
+        expect(handler.skippedItems, isEmpty);
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        expect(captured.isChecked, false);
+        expect(captured.checkedBy, CheckedBySource.agent);
+        expect(captured.checkedAt, clockTime);
+      });
+
+      test('allows title update but blocks isChecked on user-set item',
+          () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'mac OS setup',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {
+                'id': 'item-1',
+                'isChecked': false,
+                'title': 'macOS setup',
+              }
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        // Title update succeeds, isChecked skipped
+        expect(count, 1);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('User set this item'),
+        );
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        expect(captured.title, 'macOS setup');
+        // isChecked should remain unchanged (user's value)
+        expect(captured.isChecked, true);
+        // checkedBy should remain user since isChecked wasn't changed
+        expect(captured.checkedBy, CheckedBySource.user);
+      });
+
+      test('treats legacy item (default checkedBy) as user-set', () async {
+        // Legacy items deserialize with checkedBy = user (the default)
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Old item',
+          isChecked: true,
+          // checkedBy defaults to user, checkedAt defaults to null
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('User set this item at unknown'),
+        );
+      });
+
+      test('treats empty reason as missing', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Task item',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false, 'reason': '   '}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('User set this item'),
+        );
+      });
+
+      test('preserves user provenance on title-only update', () async {
+        // Title-only updates should NOT change checkedBy/checkedAt
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'mac OS',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'title': 'macOS'}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 1);
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        // Provenance should be preserved (no isChecked change)
+        expect(captured.checkedBy, CheckedBySource.user);
+        expect(captured.checkedAt, DateTime(2026, 2, 28, 22));
+      });
+
+      test('rejects short reason on user-set item', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'Task item',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {'id': 'item-1', 'isChecked': false, 'reason': 'not done'}
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        expect(count, 0);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('Reason too short'),
+        );
+        expect(
+          handler.skippedItems[0].reason,
+          contains('minimum ${LottiChecklistUpdateHandler.minReasonLength}'),
+        );
+      });
+
+      test('rejects short reason but still applies title update', () async {
+        final item = TestDataFactory.createChecklistItem(
+          id: 'item-1',
+          title: 'mac OS setup',
+          isChecked: true,
+          checkedBy:
+              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+          checkedAt: DateTime(2026, 2, 28, 22),
+        );
+        stubSingleItem(item);
+
+        handler = LottiChecklistUpdateHandler(
+          task: testTask,
+          checklistRepository: mockChecklistRepository,
+          clock: () => DateTime(2026, 2, 28, 22, 35),
+        );
+
+        final result = FunctionCallResult(
+          success: true,
+          functionName: 'update_checklist_items',
+          arguments: '',
+          data: {
+            'items': [
+              {
+                'id': 'item-1',
+                'isChecked': false,
+                'title': 'macOS setup',
+                'reason': 'short',
+              }
+            ],
+            'taskId': testTask.id,
+          },
+        );
+
+        final count = await handler.executeUpdates(result);
+
+        // Title update succeeds, isChecked blocked
+        expect(count, 1);
+        expect(handler.skippedItems.length, 1);
+        expect(
+          handler.skippedItems[0].reason,
+          contains('Reason too short'),
+        );
+
+        final captured = verify(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: captureAny(named: 'data'),
+            taskId: testTask.id,
+          ),
+        ).captured.single as ChecklistItemData;
+
+        expect(captured.title, 'macOS setup');
+        // isChecked should remain unchanged (user's value)
+        expect(captured.isChecked, true);
+      });
+    });
+
     group('getRetryPrompt', () {
       test('should include error summary and format instructions', () {
         final failedItems = [
@@ -961,6 +1535,9 @@ JournalDbEntity _createDbEntity(ChecklistItem item) {
         'title': item.data.title,
         'isChecked': item.data.isChecked,
         'linkedChecklists': item.data.linkedChecklists,
+        'checkedBy': item.data.checkedBy.name,
+        if (item.data.checkedAt != null)
+          'checkedAt': item.data.checkedAt!.toIso8601String(),
       },
     }),
     schemaVersion: 1,

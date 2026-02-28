@@ -19,6 +19,9 @@ mixin _$ChecklistItemData {
   List<String> get linkedChecklists;
   bool get isArchived;
   String? get id;
+  @JsonKey(unknownEnumValue: CheckedBySource.user)
+  CheckedBySource get checkedBy;
+  DateTime? get checkedAt;
 
   /// Create a copy of ChecklistItemData
   /// with the given fields replaced by the non-null parameter values.
@@ -43,17 +46,28 @@ mixin _$ChecklistItemData {
                 .equals(other.linkedChecklists, linkedChecklists) &&
             (identical(other.isArchived, isArchived) ||
                 other.isArchived == isArchived) &&
-            (identical(other.id, id) || other.id == id));
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.checkedBy, checkedBy) ||
+                other.checkedBy == checkedBy) &&
+            (identical(other.checkedAt, checkedAt) ||
+                other.checkedAt == checkedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, title, isChecked,
-      const DeepCollectionEquality().hash(linkedChecklists), isArchived, id);
+  int get hashCode => Object.hash(
+      runtimeType,
+      title,
+      isChecked,
+      const DeepCollectionEquality().hash(linkedChecklists),
+      isArchived,
+      id,
+      checkedBy,
+      checkedAt);
 
   @override
   String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id)';
+    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
   }
 }
 
@@ -68,7 +82,10 @@ abstract mixin class $ChecklistItemDataCopyWith<$Res> {
       bool isChecked,
       List<String> linkedChecklists,
       bool isArchived,
-      String? id});
+      String? id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
+      CheckedBySource checkedBy,
+      DateTime? checkedAt});
 }
 
 /// @nodoc
@@ -89,6 +106,8 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
     Object? linkedChecklists = null,
     Object? isArchived = null,
     Object? id = freezed,
+    Object? checkedBy = null,
+    Object? checkedAt = freezed,
   }) {
     return _then(_self.copyWith(
       title: null == title
@@ -111,6 +130,14 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String?,
+      checkedBy: null == checkedBy
+          ? _self.checkedBy
+          : checkedBy // ignore: cast_nullable_to_non_nullable
+              as CheckedBySource,
+      checkedAt: freezed == checkedAt
+          ? _self.checkedAt
+          : checkedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -208,8 +235,15 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String title, bool isChecked,
-            List<String> linkedChecklists, bool isArchived, String? id)?
+    TResult Function(
+            String title,
+            bool isChecked,
+            List<String> linkedChecklists,
+            bool isArchived,
+            String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
+            CheckedBySource checkedBy,
+            DateTime? checkedAt)?
         $default, {
     required TResult orElse(),
   }) {
@@ -217,7 +251,7 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
     switch (_that) {
       case _ChecklistItemData() when $default != null:
         return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id);
+            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
       case _:
         return orElse();
     }
@@ -238,15 +272,22 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String title, bool isChecked,
-            List<String> linkedChecklists, bool isArchived, String? id)
+    TResult Function(
+            String title,
+            bool isChecked,
+            List<String> linkedChecklists,
+            bool isArchived,
+            String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
+            CheckedBySource checkedBy,
+            DateTime? checkedAt)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ChecklistItemData():
         return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id);
+            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -266,15 +307,22 @@ extension ChecklistItemDataPatterns on ChecklistItemData {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String title, bool isChecked,
-            List<String> linkedChecklists, bool isArchived, String? id)?
+    TResult? Function(
+            String title,
+            bool isChecked,
+            List<String> linkedChecklists,
+            bool isArchived,
+            String? id,
+            @JsonKey(unknownEnumValue: CheckedBySource.user)
+            CheckedBySource checkedBy,
+            DateTime? checkedAt)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _ChecklistItemData() when $default != null:
         return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id);
+            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
       case _:
         return null;
     }
@@ -289,7 +337,10 @@ class _ChecklistItemData implements ChecklistItemData {
       required this.isChecked,
       required final List<String> linkedChecklists,
       this.isArchived = false,
-      this.id})
+      this.id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
+      this.checkedBy = CheckedBySource.user,
+      this.checkedAt})
       : _linkedChecklists = linkedChecklists;
   factory _ChecklistItemData.fromJson(Map<String, dynamic> json) =>
       _$ChecklistItemDataFromJson(json);
@@ -312,6 +363,11 @@ class _ChecklistItemData implements ChecklistItemData {
   final bool isArchived;
   @override
   final String? id;
+  @override
+  @JsonKey(unknownEnumValue: CheckedBySource.user)
+  final CheckedBySource checkedBy;
+  @override
+  final DateTime? checkedAt;
 
   /// Create a copy of ChecklistItemData
   /// with the given fields replaced by the non-null parameter values.
@@ -340,17 +396,28 @@ class _ChecklistItemData implements ChecklistItemData {
                 .equals(other._linkedChecklists, _linkedChecklists) &&
             (identical(other.isArchived, isArchived) ||
                 other.isArchived == isArchived) &&
-            (identical(other.id, id) || other.id == id));
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.checkedBy, checkedBy) ||
+                other.checkedBy == checkedBy) &&
+            (identical(other.checkedAt, checkedAt) ||
+                other.checkedAt == checkedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, title, isChecked,
-      const DeepCollectionEquality().hash(_linkedChecklists), isArchived, id);
+  int get hashCode => Object.hash(
+      runtimeType,
+      title,
+      isChecked,
+      const DeepCollectionEquality().hash(_linkedChecklists),
+      isArchived,
+      id,
+      checkedBy,
+      checkedAt);
 
   @override
   String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id)';
+    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
   }
 }
 
@@ -367,7 +434,10 @@ abstract mixin class _$ChecklistItemDataCopyWith<$Res>
       bool isChecked,
       List<String> linkedChecklists,
       bool isArchived,
-      String? id});
+      String? id,
+      @JsonKey(unknownEnumValue: CheckedBySource.user)
+      CheckedBySource checkedBy,
+      DateTime? checkedAt});
 }
 
 /// @nodoc
@@ -388,6 +458,8 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
     Object? linkedChecklists = null,
     Object? isArchived = null,
     Object? id = freezed,
+    Object? checkedBy = null,
+    Object? checkedAt = freezed,
   }) {
     return _then(_ChecklistItemData(
       title: null == title
@@ -410,6 +482,14 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable
               as String?,
+      checkedBy: null == checkedBy
+          ? _self.checkedBy
+          : checkedBy // ignore: cast_nullable_to_non_nullable
+              as CheckedBySource,
+      checkedAt: freezed == checkedAt
+          ? _self.checkedAt
+          : checkedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
