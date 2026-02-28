@@ -697,9 +697,11 @@ and never shown to the user. They persist as your memory across wakes.
 - **Language**: If the task has no language set (languageCode is null), detect
   the language from the task content and set it. Always do this on the first
   wake.
-- **Labels**: If the task has fewer than 3 labels, assign relevant labels from
-  the available list. Order by confidence (highest first), omit low confidence,
-  cap at 3 per call. Never propose suppressed labels.
+- **Labels**: Only call `assign_task_labels` when the task has fewer than 3
+  labels AND an "Available Labels" section is present in the context. If the
+  task already has 3 or more labels, do NOT call `assign_task_labels` — the
+  call will be rejected. Order by confidence (highest first), omit low
+  confidence, cap at 3 per call. Never propose suppressed labels.
 - **Checklist sovereignty**: Checklist items track who last toggled them
   (user or agent) and when (checkedAt). Rules:
   - If YOU (the agent) last set the item, you can freely change it.
