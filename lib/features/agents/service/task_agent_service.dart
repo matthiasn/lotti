@@ -189,14 +189,15 @@ class TaskAgentService {
 
   /// Cancel a scheduled wake for [agentId].
   ///
-  /// Clears the throttle deadline and cancels the deferred drain timer,
-  /// so the countdown disappears and no automatic wake will fire.
+  /// Clears the throttle deadline, cancels the deferred drain timer, and
+  /// removes any queued subscription jobs — so no automatic wake will fire.
   void cancelScheduledWake(String agentId) {
     developer.log(
       'Scheduled wake cancelled for agent $agentId',
       name: 'TaskAgentService',
     );
     orchestrator.clearThrottle(agentId);
+    orchestrator.queue.removeByAgent(agentId);
   }
 
   /// Register a wake subscription for a task agent.
