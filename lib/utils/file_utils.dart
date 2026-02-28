@@ -142,6 +142,18 @@ Future<Directory> findDocumentsDirectory() async {
   }
 }
 
+/// Returns the relative path (from the documents directory) for an agent
+/// entity JSON file. Uses `agent_entities/<id>.json`.
+String relativeAgentEntityPath(String entityId) {
+  return '/agent_entities/$entityId.json';
+}
+
+/// Returns the relative path (from the documents directory) for an agent
+/// link JSON file. Uses `agent_links/<id>.json`.
+String relativeAgentLinkPath(String linkId) {
+  return '/agent_links/$linkId.json';
+}
+
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {
   final jsonString = await File(
     join(getDocumentsDirectory().path, jsonPath),

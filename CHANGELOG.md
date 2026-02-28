@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.885] - 2026-02-28
+### Changed
+- Agent sync now uses file-attachment pattern (same as journal entities),
+  preventing failures when agent payloads exceed Matrix's 60KB text event
+  limit. Existing inline messages remain backward-compatible.
+
 ## [0.9.884] - 2026-02-28
 ### Changed
 - Agent settings navigation now uses Beamer-native back navigation,

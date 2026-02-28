@@ -1048,6 +1048,75 @@ class SyncEventProcessor {
     return null;
   }
 
+  /// Resolves the [AgentDomainEntity] from a [SyncAgentEntity] message.
+  /// If the entity is present inline (legacy/backward compat), returns it
+  /// directly. If only `jsonPath` is set, loads the entity from disk (the file
+  /// was already downloaded by `AttachmentIngestor`). Returns null when
+  /// neither is available.
+  Future<AgentDomainEntity?> _resolveAgentEntity(
+    SyncAgentEntity msg,
+  ) async {
+    if (msg.agentEntity != null) {
+      return msg.agentEntity;
+    }
+    final jp = msg.jsonPath;
+    if (jp == null) {
+      _loggingService.captureEvent(
+        'agentEntity.skipped no entity and no jsonPath',
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve',
+      );
+      return null;
+    }
+    try {
+      final file = resolveJsonCandidateFile(jp);
+      final jsonString = await file.readAsString();
+      return AgentDomainEntity.fromJson(
+        json.decode(jsonString) as Map<String, dynamic>,
+      );
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve.agentEntity',
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  /// Resolves the [AgentLink] from a [SyncAgentLink] message.
+  /// Same strategy as [_resolveAgentEntity]: inline first, then jsonPath.
+  Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) async {
+    if (msg.agentLink != null) {
+      return msg.agentLink;
+    }
+    final jp = msg.jsonPath;
+    if (jp == null) {
+      _loggingService.captureEvent(
+        'agentLink.skipped no link and no jsonPath',
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve',
+      );
+      return null;
+    }
+    try {
+      final file = resolveJsonCandidateFile(jp);
+      final jsonString = await file.readAsString();
+      return AgentLink.fromJson(
+        json.decode(jsonString) as Map<String, dynamic>,
+      );
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve.agentLink',
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
   Future<SyncApplyDiagnostics?> _handleMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -1218,33 +1287,37 @@ class SyncEventProcessor {
       // run serially and each update overwrites prior state — so
       // concurrent conflicting edits don't arise in practice.
       // Maintenance sync serves as catch-up for missed messages.
-      case SyncAgentEntity(:final agentEntity):
+      case final SyncAgentEntity msg:
+        final resolvedEntity = await _resolveAgentEntity(msg);
+        if (resolvedEntity == null) {
+          return null;
+        }
         if (agentRepository != null) {
-          await agentRepository!.upsertEntity(agentEntity);
+          await agentRepository!.upsertEntity(resolvedEntity);
           // Remove wake subscriptions when an agent is paused or destroyed
           // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
           // locally.
           if (wakeOrchestrator != null &&
-              agentEntity is AgentIdentityEntity &&
-              agentEntity.lifecycle != AgentLifecycle.active) {
-            wakeOrchestrator!.removeSubscriptions(agentEntity.agentId);
+              resolvedEntity is AgentIdentityEntity &&
+              resolvedEntity.lifecycle != AgentLifecycle.active) {
+            wakeOrchestrator!.removeSubscriptions(resolvedEntity.agentId);
           }
           // Restore wake subscriptions when an agent is resumed remotely —
           // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
           // locally after AgentService.resumeAgent.
           if (wakeOrchestrator != null &&
-              agentEntity is AgentIdentityEntity &&
-              agentEntity.lifecycle == AgentLifecycle.active &&
-              agentEntity.kind == 'task_agent') {
+              resolvedEntity is AgentIdentityEntity &&
+              resolvedEntity.lifecycle == AgentLifecycle.active &&
+              resolvedEntity.kind == 'task_agent') {
             final links = await agentRepository!.getLinksFrom(
-              agentEntity.agentId,
+              resolvedEntity.agentId,
               type: 'agent_task',
             );
             for (final link in links) {
               wakeOrchestrator!.addSubscription(
                 AgentSubscription(
-                  id: '${agentEntity.agentId}_task_${link.toId}',
-                  agentId: agentEntity.agentId,
+                  id: '${resolvedEntity.agentId}_task_${link.toId}',
+                  agentId: resolvedEntity.agentId,
                   matchEntityIds: {link.toId},
                 ),
               );
@@ -1252,18 +1325,18 @@ class SyncEventProcessor {
           }
           _updateNotifications.notify(
             {
-              agentEntity.agentId,
+              resolvedEntity.agentId,
               // Include templateId so template-level aggregate providers
               // refresh when token usage or reports arrive from other devices.
-              if (agentEntity is WakeTokenUsageEntity &&
-                  agentEntity.templateId != null)
-                agentEntity.templateId!,
+              if (resolvedEntity is WakeTokenUsageEntity &&
+                  resolvedEntity.templateId != null)
+                resolvedEntity.templateId!,
               agentNotification,
             },
             fromSync: true,
           );
           _loggingService.captureEvent(
-            'apply agentEntity id=${agentEntity.id}',
+            'apply agentEntity id=${resolvedEntity.id}',
             domain: 'AGENT_SYNC',
             subDomain: 'apply',
           );
@@ -1275,9 +1348,13 @@ class SyncEventProcessor {
           );
         }
         return null;
-      case SyncAgentLink(:final agentLink):
+      case final SyncAgentLink msg:
+        final resolvedLink = await _resolveAgentLink(msg);
+        if (resolvedLink == null) {
+          return null;
+        }
         if (agentRepository != null) {
-          await agentRepository!.upsertLink(agentLink);
+          await agentRepository!.upsertLink(resolvedLink);
           // Restore wake subscription when an agent_task link arrives for an
           // active task_agent. This handles the case where the link arrives
           // after the identity — the SyncAgentEntity handler queries existing
@@ -1285,27 +1362,27 @@ class SyncEventProcessor {
           // addSubscription is idempotent (replaces by ID), so both handlers
           // firing for the same agent is harmless.
           if (wakeOrchestrator != null &&
-              agentLink is AgentTaskLink &&
-              agentLink.deletedAt == null) {
-            final agent = await agentRepository!.getEntity(agentLink.fromId);
+              resolvedLink is AgentTaskLink &&
+              resolvedLink.deletedAt == null) {
+            final agent = await agentRepository!.getEntity(resolvedLink.fromId);
             if (agent is AgentIdentityEntity &&
                 agent.lifecycle == AgentLifecycle.active &&
                 agent.kind == 'task_agent') {
               wakeOrchestrator!.addSubscription(
                 AgentSubscription(
-                  id: '${agentLink.fromId}_task_${agentLink.toId}',
-                  agentId: agentLink.fromId,
-                  matchEntityIds: {agentLink.toId},
+                  id: '${resolvedLink.fromId}_task_${resolvedLink.toId}',
+                  agentId: resolvedLink.fromId,
+                  matchEntityIds: {resolvedLink.toId},
                 ),
               );
             }
           }
           _updateNotifications.notify(
-            {agentLink.fromId, agentLink.toId, agentNotification},
+            {resolvedLink.fromId, resolvedLink.toId, agentNotification},
             fromSync: true,
           );
           _loggingService.captureEvent(
-            'apply agentLink id=${agentLink.id}',
+            'apply agentLink id=${resolvedLink.id}',
             domain: 'AGENT_SYNC',
             subDomain: 'apply',
           );

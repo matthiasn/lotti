@@ -204,9 +204,12 @@ const _$SyncSequencePayloadTypeEnumMap = {
 
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
     SyncAgentEntity(
-      agentEntity: AgentDomainEntity.fromJson(
-          json['agentEntity'] as Map<String, dynamic>),
+      agentEntity: json['agentEntity'] == null
+          ? null
+          : AgentDomainEntity.fromJson(
+              json['agentEntity'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      jsonPath: json['jsonPath'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -214,13 +217,17 @@ Map<String, dynamic> _$SyncAgentEntityToJson(SyncAgentEntity instance) =>
     <String, dynamic>{
       'agentEntity': instance.agentEntity,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'jsonPath': instance.jsonPath,
       'runtimeType': instance.$type,
     };
 
 SyncAgentLink _$SyncAgentLinkFromJson(Map<String, dynamic> json) =>
     SyncAgentLink(
-      agentLink: AgentLink.fromJson(json['agentLink'] as Map<String, dynamic>),
+      agentLink: json['agentLink'] == null
+          ? null
+          : AgentLink.fromJson(json['agentLink'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      jsonPath: json['jsonPath'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -228,5 +235,6 @@ Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
     <String, dynamic>{
       'agentLink': instance.agentLink,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'jsonPath': instance.jsonPath,
       'runtimeType': instance.$type,
     };

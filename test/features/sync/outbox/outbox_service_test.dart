@@ -3981,7 +3981,8 @@ void main() {
       expect(themingMsg.darkThemeName, 'Dark');
     });
 
-    test('SyncAgentEntity enqueues with correct subject', () async {
+    test('SyncAgentEntity enqueues with correct subject and saves JSON',
+        () async {
       final entity = AgentDomainEntity.agent(
         id: 'agent-xyz',
         agentId: 'agent-xyz',
@@ -4011,6 +4012,18 @@ void main() {
 
       final companion = captured.first as OutboxCompanion;
       expect(companion.subject.value, 'agentEntity:agent-xyz');
+      expect(companion.outboxEntryId.value, 'agent-xyz');
+
+      // Verify JSON was saved to disk
+      final expectedPath =
+          '${documentsDirectory.path}/agent_entities/agent-xyz.json';
+      expect(File(expectedPath).existsSync(), isTrue);
+
+      // Verify the enriched message has jsonPath set
+      final storedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      ) as SyncAgentEntity;
+      expect(storedMessage.jsonPath, '/agent_entities/agent-xyz.json');
 
       verify(
         () => loggingService.captureEvent(
@@ -4024,7 +4037,59 @@ void main() {
       ).called(1);
     });
 
-    test('SyncAgentLink enqueues with correct subject', () async {
+    test('SyncAgentEntity merges with existing pending item', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-xyz',
+        agentId: 'agent-xyz',
+        kind: 'task_agent',
+        displayName: 'Updated',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('agent-xyz'))
+          .thenAnswer((_) async => OutboxItem(
+                id: 42,
+                message: json.encode(message.toJson()),
+                status: OutboxStatus.pending.index,
+                retries: 0,
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                subject: 'agentEntity:agent-xyz',
+              ));
+      when(() => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+          )).thenAnswer((_) async => 1);
+
+      await service.enqueueMessage(message);
+
+      verify(() => syncDatabase.updateOutboxMessage(
+            itemId: 42,
+            newMessage: any(named: 'newMessage'),
+            newSubject: 'agentEntity:agent-xyz',
+            payloadSize: any(named: 'payloadSize'),
+          )).called(1);
+      verifyNever(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      );
+    });
+
+    test('SyncAgentLink enqueues with correct subject and saves JSON',
+        () async {
       final link = AgentLink.agentTask(
         id: 'link-abc',
         fromId: 'agent-1',
@@ -4048,6 +4113,18 @@ void main() {
 
       final companion = captured.first as OutboxCompanion;
       expect(companion.subject.value, 'agentLink:link-abc');
+      expect(companion.outboxEntryId.value, 'link-abc');
+
+      // Verify JSON was saved to disk
+      final expectedPath =
+          '${documentsDirectory.path}/agent_links/link-abc.json';
+      expect(File(expectedPath).existsSync(), isTrue);
+
+      // Verify the enriched message has jsonPath set
+      final storedMessage = SyncMessage.fromJson(
+        json.decode(companion.message.value) as Map<String, dynamic>,
+      ) as SyncAgentLink;
+      expect(storedMessage.jsonPath, '/agent_links/link-abc.json');
 
       verify(
         () => loggingService.captureEvent(
@@ -4059,6 +4136,51 @@ void main() {
           subDomain: 'enqueueMessage',
         ),
       ).called(1);
+    });
+
+    test('SyncAgentLink merges with existing pending item', () async {
+      final link = AgentLink.agentTask(
+        id: 'link-abc',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      when(() => syncDatabase.findPendingByEntryId('link-abc'))
+          .thenAnswer((_) async => OutboxItem(
+                id: 43,
+                message: json.encode(message.toJson()),
+                status: OutboxStatus.pending.index,
+                retries: 0,
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                subject: 'agentLink:link-abc',
+              ));
+      when(() => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+          )).thenAnswer((_) async => 1);
+
+      await service.enqueueMessage(message);
+
+      verify(() => syncDatabase.updateOutboxMessage(
+            itemId: 43,
+            newMessage: any(named: 'newMessage'),
+            newSubject: 'agentLink:link-abc',
+            payloadSize: any(named: 'payloadSize'),
+          )).called(1);
+      verifyNever(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      );
     });
   });
 }

@@ -145,6 +145,26 @@ class MatrixMessageSender {
           coveredVectorClocks: covered,
         );
       }
+      if (outboundMessage is SyncAgentEntity) {
+        final normalized = await _sendAgentEntityPayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (normalized == null) {
+          return false;
+        }
+        outboundMessage = normalized;
+      }
+      if (outboundMessage is SyncAgentLink) {
+        final normalized = await _sendAgentLinkPayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (normalized == null) {
+          return false;
+        }
+        outboundMessage = normalized;
+      }
 
       final encodedMessage = json.encode(outboundMessage);
       final eventId = await room.sendTextEvent(
@@ -413,6 +433,120 @@ class MatrixMessageSender {
     }
 
     return outbound;
+  }
+
+  /// Uploads the agent entity JSON as a file attachment and returns a
+  /// descriptor-only [SyncAgentEntity] with `jsonPath` set and
+  /// `agentEntity` nulled. Returns null on failure.
+  Future<SyncAgentEntity?> _sendAgentEntityPayload({
+    required Room room,
+    required SyncAgentEntity message,
+  }) async {
+    final agentEntity = message.agentEntity;
+    if (agentEntity == null) {
+      _loggingService.captureEvent(
+        'skipping agent entity send: no entity',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+    final relativePath = message.jsonPath;
+    if (relativePath == null) {
+      _loggingService.captureEvent(
+        'skipping agent entity send: no jsonPath',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+
+    late final Uint8List jsonBytes;
+    try {
+      jsonBytes = await File(fullPath).readAsBytes();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.agentEntity',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    final sent = await _sendFile(
+      room: room,
+      fullPath: fullPath,
+      relativePath: relativePath,
+      bytes: jsonBytes,
+    );
+    if (!sent) {
+      return null;
+    }
+
+    // Return descriptor-only message (entity nulled, jsonPath set)
+    return message.copyWith(agentEntity: null);
+  }
+
+  /// Uploads the agent link JSON as a file attachment and returns a
+  /// descriptor-only [SyncAgentLink] with `jsonPath` set and
+  /// `agentLink` nulled. Returns null on failure.
+  Future<SyncAgentLink?> _sendAgentLinkPayload({
+    required Room room,
+    required SyncAgentLink message,
+  }) async {
+    final agentLink = message.agentLink;
+    if (agentLink == null) {
+      _loggingService.captureEvent(
+        'skipping agent link send: no link',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+    final relativePath = message.jsonPath;
+    if (relativePath == null) {
+      _loggingService.captureEvent(
+        'skipping agent link send: no jsonPath',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+
+    late final Uint8List jsonBytes;
+    try {
+      jsonBytes = await File(fullPath).readAsBytes();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.agentLink',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    final sent = await _sendFile(
+      room: room,
+      fullPath: fullPath,
+      relativePath: relativePath,
+      bytes: jsonBytes,
+    );
+    if (!sent) {
+      return null;
+    }
+
+    // Return descriptor-only message (link nulled, jsonPath set)
+    return message.copyWith(agentLink: null);
   }
 
   @visibleForTesting
