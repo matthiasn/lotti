@@ -12,8 +12,6 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/agents/ui/agent_token_usage_section.dart'
-    show TokenUsageTable;
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -468,7 +466,7 @@ Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
 ///
 /// Groups token records by instance, then by model within each instance.
 /// Returns full per-model summaries so each instance can render a
-/// [TokenUsageTable] identical in structure to the aggregate view.
+/// `TokenUsageTable` identical in structure to the aggregate view.
 @riverpod
 Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
   Ref ref,
@@ -810,7 +808,15 @@ void _wireWakeExecutor(
     }
 
     // Notify the update stream so all detail providers self-invalidate.
-    updateNotifications.notify({agentId, agentNotification});
+    // Include the templateId (if assigned) so template-level aggregate
+    // providers also refresh.
+    final templateService = ref.read(agentTemplateServiceProvider);
+    final template = await templateService.getTemplateForAgent(agentId);
+    updateNotifications.notify({
+      agentId,
+      if (template != null) template.id,
+      agentNotification,
+    });
 
     return result.mutatedEntries;
   };

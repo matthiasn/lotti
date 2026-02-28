@@ -1043,6 +1043,8 @@ void main() {
       when(() => mockTaskAgentService.restoreSubscriptions())
           .thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
+      when(() => mockTemplateService.getTemplateForAgent(any()))
+          .thenAnswer((_) async => null);
       when(() => mockRepository.abandonOrphanedWakeRuns())
           .thenAnswer((_) async => 0);
     });

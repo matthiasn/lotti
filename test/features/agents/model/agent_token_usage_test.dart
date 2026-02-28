@@ -117,7 +117,7 @@ void main() {
       expect(breakdown.totalTokens, 0);
     });
 
-    test('equality and hashCode', () {
+    test('equality and hashCode with const lists', () {
       const a = InstanceTokenBreakdown(
         agentId: 'agent-1',
         displayName: 'Agent One',
@@ -152,6 +152,34 @@ void main() {
       expect(a, b);
       expect(a.hashCode, b.hashCode);
       expect(a, isNot(c));
+    });
+
+    test('equality and hashCode with non-const lists', () {
+      // Verifies element-wise comparison works for runtime-constructed lists
+      // (non-const lists have different identity, so identity-based ==
+      // would fail here).
+      const summary = AgentTokenUsageSummary(
+        modelId: 'gemini-2.5-pro',
+        inputTokens: 100,
+        outputTokens: 50,
+      );
+      // Use List.of to create distinct runtime list instances — if equality
+      // were identity-based these would not compare equal.
+      final a = InstanceTokenBreakdown(
+        agentId: 'agent-1',
+        displayName: 'Agent One',
+        lifecycle: AgentLifecycle.active,
+        summaries: List.of([summary]),
+      );
+      final b = InstanceTokenBreakdown(
+        agentId: 'agent-1',
+        displayName: 'Agent One',
+        lifecycle: AgentLifecycle.active,
+        summaries: List.of([summary]),
+      );
+
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
     });
 
     test('toString includes relevant fields', () {

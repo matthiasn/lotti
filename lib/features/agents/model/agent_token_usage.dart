@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:meta/meta.dart';
 
@@ -80,6 +81,8 @@ class InstanceTokenBreakdown {
   int get totalTokens =>
       summaries.fold<int>(0, (sum, s) => sum + s.totalTokens);
 
+  static const _listEquality = ListEquality<AgentTokenUsageSummary>();
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -87,10 +90,15 @@ class InstanceTokenBreakdown {
           agentId == other.agentId &&
           displayName == other.displayName &&
           lifecycle == other.lifecycle &&
-          summaries == other.summaries;
+          _listEquality.equals(summaries, other.summaries);
 
   @override
-  int get hashCode => Object.hash(agentId, displayName, lifecycle, summaries);
+  int get hashCode => Object.hash(
+        agentId,
+        displayName,
+        lifecycle,
+        _listEquality.hash(summaries),
+      );
 
   @override
   String toString() =>

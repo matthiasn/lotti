@@ -138,7 +138,10 @@ class _InstanceBreakdownSection extends StatelessWidget {
             return Column(
               children: [
                 for (final breakdown in breakdowns)
-                  _InstanceExpansionTile(breakdown: breakdown),
+                  _InstanceExpansionTile(
+                    key: ValueKey(breakdown.agentId),
+                    breakdown: breakdown,
+                  ),
               ],
             );
           },
@@ -149,7 +152,7 @@ class _InstanceBreakdownSection extends StatelessWidget {
 }
 
 class _InstanceExpansionTile extends StatelessWidget {
-  const _InstanceExpansionTile({required this.breakdown});
+  const _InstanceExpansionTile({required this.breakdown, super.key});
 
   final InstanceTokenBreakdown breakdown;
 

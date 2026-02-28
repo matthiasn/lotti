@@ -1251,7 +1251,15 @@ class SyncEventProcessor {
             }
           }
           _updateNotifications.notify(
-            {agentEntity.agentId, agentNotification},
+            {
+              agentEntity.agentId,
+              // Include templateId so template-level aggregate providers
+              // refresh when token usage or reports arrive from other devices.
+              if (agentEntity is WakeTokenUsageEntity &&
+                  agentEntity.templateId != null)
+                agentEntity.templateId!,
+              agentNotification,
+            },
             fromSync: true,
           );
           _loggingService.captureEvent(
