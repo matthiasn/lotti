@@ -11,7 +11,7 @@ The system is enabled only when `enableAgents` is true.
 
 - Journal domain (`db.sqlite`): source-of-truth task/checklist/time data.
 - Agent domain (`agent.sqlite`): agent identities, state, messages, reports, template versions, wake runs.
-- Inference path: template-selected model (`models/gemini-3-flash-preview` default), resolved via AI config.
+- Inference path: profile-based or template-selected model, resolved via `ProfileResolver` (agent config → template version → template → legacy `modelId` fallback).
 
 ### Task Context Assembly (Current)
 
@@ -217,7 +217,27 @@ sequenceDiagram
 - `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.
 - `state/`: Riverpod DI + read models + initialization wiring + change set providers.
-- `ui/`: settings/templates/instances/detail/evolution screens + change set confirmation card (`ChangeSetSummaryCard`).
+- `ui/`: settings/templates/instances/detail/evolution screens, profile selector, agent creation modal.
+
+## Inference Profiles
+
+Inference Profiles bundle model assignments per capability slot into named configurations:
+
+- **Thinking** (required): the primary LLM for reasoning and tool calls.
+- **Image Recognition** (optional): model for analysing images.
+- **Transcription** (optional): model for speech-to-text.
+- **Image Generation** (optional): model for generating images.
+
+Profiles live as `AiConfig.inferenceProfile` variants in the AI config repository and are resolved
+at wake time via `ProfileResolver` with the following precedence:
+
+1. `agentConfig.profileId` (per-instance override)
+2. `templateVersion.profileId` (snapshotted at version creation)
+3. `template.profileId` (template-level default)
+4. Legacy `modelId` fallback (backward compatibility)
+
+Six default profiles are seeded on startup (Gemini Flash, Gemini Pro, OpenAI, Mistral EU, Alibaba, Local).
+The `desktopOnly` flag on a profile hides it from mobile device selection.
 
 ## Architecture Decision Records
 

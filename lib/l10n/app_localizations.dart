@@ -4416,6 +4416,108 @@ abstract class AppLocalizations {
   /// **'Images'**
   String get images;
 
+  /// No description provided for @inferenceProfileCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Profile'**
+  String get inferenceProfileCreateTitle;
+
+  /// No description provided for @inferenceProfileDeleteInUseMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile is in use by agents or templates and cannot be deleted.'**
+  String get inferenceProfileDeleteInUseMessage;
+
+  /// No description provided for @inferenceProfileDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get inferenceProfileDescriptionLabel;
+
+  /// No description provided for @inferenceProfileDesktopOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop Only'**
+  String get inferenceProfileDesktopOnly;
+
+  /// No description provided for @inferenceProfileDesktopOnlyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only available on desktop platforms (e.g. for local models)'**
+  String get inferenceProfileDesktopOnlyDescription;
+
+  /// No description provided for @inferenceProfileEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get inferenceProfileEditTitle;
+
+  /// No description provided for @inferenceProfileImageGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Generation'**
+  String get inferenceProfileImageGeneration;
+
+  /// No description provided for @inferenceProfileImageRecognition.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Recognition'**
+  String get inferenceProfileImageRecognition;
+
+  /// No description provided for @inferenceProfileNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Name'**
+  String get inferenceProfileNameLabel;
+
+  /// No description provided for @inferenceProfileNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A profile name is required'**
+  String get inferenceProfileNameRequired;
+
+  /// No description provided for @inferenceProfileSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get inferenceProfileSaveButton;
+
+  /// No description provided for @inferenceProfileSelectModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a model…'**
+  String get inferenceProfileSelectModel;
+
+  /// No description provided for @inferenceProfilesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No inference profiles yet'**
+  String get inferenceProfilesEmpty;
+
+  /// No description provided for @inferenceProfilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference Profiles'**
+  String get inferenceProfilesTitle;
+
+  /// No description provided for @inferenceProfileThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get inferenceProfileThinking;
+
+  /// No description provided for @inferenceProfileThinkingRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A thinking model is required'**
+  String get inferenceProfileThinkingRequired;
+
+  /// No description provided for @inferenceProfileTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription'**
+  String get inferenceProfileTranscription;
+
   /// No description provided for @inputDataTypeAudioFilesDescription.
   ///
   /// In en, this message translates to:

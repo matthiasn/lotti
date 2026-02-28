@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:beamer/beamer.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -244,6 +245,13 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           SettingsPageHeader(
             title: context.messages.aiSettingsPageTitle,
             showBackButton: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.tune),
+                tooltip: context.messages.inferenceProfilesTitle,
+                onPressed: () => context.beamToNamed('/settings/ai/profiles'),
+              ),
+            ],
           ),
 
           // Fixed header with search, tabs and filters

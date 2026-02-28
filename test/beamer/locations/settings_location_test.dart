@@ -7,6 +7,7 @@ import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
@@ -71,6 +72,7 @@ void main() {
       expect(location.pathPatterns, [
         '/settings',
         '/settings/ai',
+        '/settings/ai/profiles',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
         '/settings/sync/backfill',
@@ -202,6 +204,20 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AiSettingsPage>());
+    });
+
+    test('buildPages builds InferenceProfilePage', () {
+      final routeInformation =
+          RouteInformation(uri: Uri.parse('/settings/ai/profiles'));
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<InferenceProfilePage>());
     });
 
     test('buildPages builds SyncSettingsPage', () {

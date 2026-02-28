@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1273,6 +1274,94 @@ void main() {
       final count = await service.countChangesSince(kTestTemplateId, null);
 
       expect(count, 0);
+    });
+  });
+
+  group('profileInUse', () {
+    const profileId = 'profile-abc';
+
+    void stubNoTemplates() {
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => <AgentTemplateEntity>[]);
+      when(() => mockRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => <AgentIdentityEntity>[]);
+    }
+
+    test('returns true when a template references the profile', () async {
+      when(() => mockRepo.getAllTemplates()).thenAnswer(
+        (_) async => [makeTestTemplate(profileId: profileId)],
+      );
+
+      final result = await service.profileInUse(profileId);
+
+      expect(result, isTrue);
+    });
+
+    test('returns true when a template version references the profile',
+        () async {
+      final template = makeTestTemplate();
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => <AgentIdentityEntity>[]);
+
+      // Template itself doesn't reference the profile, but a version does.
+      final version = makeTestTemplateVersion(profileId: profileId);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          template.id,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [version]);
+
+      final result = await service.profileInUse(profileId);
+
+      expect(result, isTrue);
+    });
+
+    test('returns true when an agent config references the profile', () async {
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => <AgentTemplateEntity>[]);
+
+      final agent = makeTestIdentity(
+        config: const AgentConfig(profileId: profileId),
+      );
+      when(() => mockRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => [agent]);
+
+      final result = await service.profileInUse(profileId);
+
+      expect(result, isTrue);
+    });
+
+    test('returns false when profile is not referenced anywhere', () async {
+      stubNoTemplates();
+
+      final result = await service.profileInUse(profileId);
+
+      expect(result, isFalse);
+    });
+
+    test('returns false when templates and agents use a different profile',
+        () async {
+      final template = makeTestTemplate(profileId: 'other-profile');
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getAllAgentIdentities())
+          .thenAnswer((_) async => <AgentIdentityEntity>[]);
+      // Stub version history lookup for the template.
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          template.id,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <AgentDomainEntity>[]);
+
+      final result = await service.profileInUse(profileId);
+
+      expect(result, isFalse);
     });
   });
 }

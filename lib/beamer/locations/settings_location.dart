@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
     as new_categories;
@@ -46,6 +47,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
   List<String> get pathPatterns => [
         '/settings',
         '/settings/ai',
+        '/settings/ai/profiles',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
         '/settings/sync/backfill',
@@ -101,11 +103,21 @@ class SettingsLocation extends BeamLocation<BeamState> {
       ),
 
       // AI Settings
-      if (path.startsWith('/settings/ai') && !pathContains('advanced'))
+      if (path.startsWith('/settings/ai') &&
+          !pathContains('advanced') &&
+          !pathContains('profiles'))
         const BeamPage(
           key: ValueKey('settings-ai'),
           title: 'AI Settings',
           child: AiSettingsPage(),
+        ),
+
+      // Inference Profiles
+      if (path == '/settings/ai/profiles')
+        const BeamPage(
+          key: ValueKey('settings-ai-profiles'),
+          title: 'Inference Profiles',
+          child: InferenceProfilePage(),
         ),
 
       // Sync Settings (exact matches for robustness)

@@ -9,6 +9,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -359,21 +360,19 @@ class _TaskAgentReportSectionState
         return;
       }
 
-      // Single template → auto-assign. Multiple → show selection sheet.
-      AgentTemplateEntity? selectedTemplate;
-      if (templates.length == 1) {
-        selectedTemplate = templates.first;
-      } else {
-        if (!context.mounted) return;
-        selectedTemplate =
-            await _showTemplateSelectionSheet(context, templates);
-      }
+      if (!context.mounted) return;
 
-      if (selectedTemplate == null) return;
+      final result = await AgentCreationModal.show(
+        context: context,
+        templates: templates,
+      );
+
+      if (result == null) return;
 
       await service.createTaskAgent(
         taskId: widget.taskId,
-        templateId: selectedTemplate.id,
+        templateId: result.templateId,
+        profileId: result.profileId,
         allowedCategoryIds: allowedCategoryIds,
       );
       if (context.mounted) {
@@ -396,57 +395,6 @@ class _TaskAgentReportSectionState
         );
       }
     }
-  }
-
-  Future<AgentTemplateEntity?> _showTemplateSelectionSheet(
-    BuildContext context,
-    List<AgentTemplateEntity> templates,
-  ) async {
-    return showModalBottomSheet<AgentTemplateEntity>(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(sheetContext).size.height * 0.6,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    sheetContext.messages.agentTemplateSelectTitle,
-                    style: Theme.of(sheetContext).textTheme.titleMedium,
-                  ),
-                ),
-                const Divider(height: 1),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: templates
-                        .map(
-                          (template) => ListTile(
-                            leading: Icon(
-                              Icons.smart_toy_outlined,
-                              color: Theme.of(sheetContext).colorScheme.primary,
-                            ),
-                            title: Text(template.displayName),
-                            subtitle: Text(template.modelId),
-                            onTap: () =>
-                                Navigator.of(sheetContext).pop(template),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 }
 

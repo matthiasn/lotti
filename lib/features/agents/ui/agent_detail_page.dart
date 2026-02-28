@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
@@ -10,6 +11,9 @@ import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
+import 'package:lotti/features/agents/ui/profile_selector.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -238,6 +242,8 @@ class _StatsTab extends StatelessWidget {
         const Divider(indent: 16, endIndent: 16),
         _TemplateSection(agentId: agentId),
         const Divider(indent: 16, endIndent: 16),
+        _ProfileSection(agentId: agentId),
+        const Divider(indent: 16, endIndent: 16),
         AgentControls(agentId: agentId, lifecycle: lifecycle),
         const Divider(indent: 16, endIndent: 16),
         _AgentStateSection(stateAsync: stateAsync),
@@ -397,6 +403,68 @@ class _TemplateSection extends ConsumerWidget {
               fontStyle: FontStyle.italic,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows and allows changing the inference profile for this agent.
+class _ProfileSection extends ConsumerWidget {
+  const _ProfileSection({required this.agentId});
+
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final identityAsync = ref.watch(agentIdentityProvider(agentId));
+    final identity = identityAsync.value?.mapOrNull(agent: (e) => e);
+    final profileId = identity?.config.profileId;
+
+    // Resolve profile name.
+    final profilesAsync = ref.watch(inferenceProfileControllerProvider);
+    final profileName = profilesAsync.value
+        ?.whereType<AiConfigInferenceProfile>()
+        .where((p) => p.id == profileId)
+        .firstOrNull
+        ?.name;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPadding,
+        vertical: AppTheme.spacingSmall,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.inferenceProfilesTitle,
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingSmall),
+          ProfileSelector(
+            selectedProfileId: profileId,
+            onProfileSelected: (newProfileId) async {
+              if (newProfileId == null || identity == null) return;
+              final service = ref.read(taskAgentServiceProvider);
+              await service.updateAgentProfile(
+                agentId: agentId,
+                profileId: newProfileId,
+              );
+              ref.invalidate(agentIdentityProvider(agentId));
+            },
+          ),
+          if (profileName != null) ...[
+            const SizedBox(height: AppTheme.spacingXSmall),
+            Text(
+              profileName,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -56,6 +56,7 @@ class AgentTemplateService {
     required String authoredBy,
     Set<String> categoryIds = const {},
     String? templateId,
+    String? profileId,
   }) async {
     final tplId = templateId ?? _uuid.v4();
     final versionId = _uuid.v4();
@@ -68,6 +69,7 @@ class AgentTemplateService {
       displayName: displayName,
       kind: kind,
       modelId: modelId,
+      profileId: profileId,
       categoryIds: categoryIds,
       createdAt: now,
       updatedAt: now,
@@ -84,6 +86,7 @@ class AgentTemplateService {
       createdAt: now,
       vectorClock: null,
       modelId: modelId,
+      profileId: profileId,
     );
 
     final head = AgentDomainEntity.agentTemplateHead(
@@ -116,6 +119,7 @@ class AgentTemplateService {
     required String templateId,
     String? displayName,
     String? modelId,
+    String? profileId,
   }) async {
     final now = clock.now();
 
@@ -126,24 +130,27 @@ class AgentTemplateService {
       }
 
       final modelChanged = modelId != null && modelId != template.modelId;
+      final profileChanged =
+          profileId != null && profileId != template.profileId;
 
       final updated = template.copyWith(
         displayName: displayName ?? template.displayName,
         modelId: modelId ?? template.modelId,
+        profileId: profileId ?? template.profileId,
         updatedAt: now,
       );
       await syncService.upsertEntity(updated);
 
-      // When the model changes, create a new version so the change is
-      // recorded in the version history.
-      if (modelChanged) {
+      // When the model or profile changes, create a new version so the change
+      // is recorded in the version history.
+      if (modelChanged || profileChanged) {
         final activeVersion =
             await repository.getActiveTemplateVersion(templateId);
         if (activeVersion != null) {
           await createVersion(
             templateId: templateId,
             directives: activeVersion.directives,
-            authoredBy: 'system:model_change',
+            authoredBy: 'system:config_change',
           );
         }
       }
@@ -193,7 +200,8 @@ class AgentTemplateService {
       final nextVersion =
           await repository.getNextTemplateVersionNumber(templateId);
 
-      // Create the new version, recording the template's configured model ID.
+      // Create the new version, recording the template's configured model ID
+      // and profile ID.
       final newVersion = AgentDomainEntity.agentTemplateVersion(
         id: newVersionId,
         agentId: templateId,
@@ -204,6 +212,7 @@ class AgentTemplateService {
         createdAt: now,
         vectorClock: null,
         modelId: template.modelId,
+        profileId: template.profileId,
       ) as AgentTemplateVersionEntity;
       await syncService.upsertEntity(newVersion);
 
@@ -513,6 +522,33 @@ class AgentTemplateService {
   /// Count entities changed since [since] for all instances of [templateId].
   Future<int> countChangesSince(String templateId, DateTime? since) {
     return repository.countChangedSinceForTemplate(templateId, since);
+  }
+
+  /// Checks whether any templates, template versions, or agent configs
+  /// reference the given [profileId].
+  ///
+  /// Returns `true` if the profile is in use and should not be deleted.
+  Future<bool> profileInUse(String profileId) async {
+    final templates = await repository.getAllTemplates();
+    for (final t in templates) {
+      if (t.profileId == profileId) return true;
+    }
+
+    // Check all template versions.
+    for (final t in templates) {
+      final versions = await getVersionHistory(t.id, limit: 1000000);
+      for (final v in versions) {
+        if (v.profileId == profileId) return true;
+      }
+    }
+
+    // Check agent identity configs.
+    final agents = await repository.getAllAgentIdentities();
+    for (final agent in agents) {
+      if (agent.config.profileId == profileId) return true;
+    }
+
+    return false;
   }
 
   /// Idempotent seed of default templates (Laura and Tom).

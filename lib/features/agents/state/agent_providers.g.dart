@@ -3494,4 +3494,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'6862ec5250c33264b3484077afa361c470ca9ba0';
+    r'20cdf7f8c12e9a1a4122ac69fba5d07ec23316f9';

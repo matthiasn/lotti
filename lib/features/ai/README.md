@@ -7,20 +7,22 @@ This module provides a comprehensive AI integration system for generating task s
 The AI feature consists of several key components:
 
 1. **Configuration Management**: Store and manage API keys, prompts, and model configurations
-2. **Prompt Creation**: Build structured prompts for different AI tasks
-3. **Inference Execution**: Run AI inference through various providers (OpenAI, Anthropic, Google, etc.)
-4. **Response Processing**: Parse and display AI-generated responses
-5. **UI Components**: Settings pages, response displays, and configuration management
-6. **Conversation Support**: Multi-turn interactions with context preservation
-7. **Automatic Setup**: Model pre-population and intelligent defaults
-8. **Error Recovery**: Comprehensive error handling and user-friendly messages
+2. **Inference Profiles**: Named bundles of model assignments per capability slot (thinking, image recognition, transcription, image generation) for agent templates and instances
+3. **Prompt Creation**: Build structured prompts for different AI tasks
+4. **Inference Execution**: Run AI inference through various providers (OpenAI, Anthropic, Google, etc.)
+5. **Response Processing**: Parse and display AI-generated responses
+6. **UI Components**: Settings pages, response displays, and configuration management
+7. **Conversation Support**: Multi-turn interactions with context preservation
+8. **Automatic Setup**: Model pre-population and intelligent defaults
+9. **Error Recovery**: Comprehensive error handling and user-friendly messages
 
 ## Architecture
 
 ### Core Components
 
 #### Models (`model/`)
-- **`ai_config.dart`**: Union type for different configuration types (API keys, prompts, models)
+- **`ai_config.dart`**: Union type for different configuration types (API keys, prompts, models, inference profiles)
+- **`resolved_profile.dart`**: Immutable data class for a fully resolved inference profile with provider references
 - **`ai_input.dart`**: Data structures for task input (task details, action items, log entries)
 - **`cloud_inference_config.dart`**: Configuration for cloud inference providers
 - **`inference_error.dart`**: Error types and handling for AI operations

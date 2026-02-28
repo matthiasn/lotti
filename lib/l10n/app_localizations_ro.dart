@@ -2454,6 +2454,60 @@ class AppLocalizationsRo extends AppLocalizations {
   String get images => 'Imagini';
 
   @override
+  String get inferenceProfileCreateTitle => 'Creați un profil';
+
+  @override
+  String get inferenceProfileDeleteInUseMessage =>
+      'Acest profil este utilizat de agenți sau șabloane și nu poate fi șters.';
+
+  @override
+  String get inferenceProfileDescriptionLabel => 'Descriere';
+
+  @override
+  String get inferenceProfileDesktopOnly => 'Doar desktop';
+
+  @override
+  String get inferenceProfileDesktopOnlyDescription =>
+      'Disponibil doar pe platformele desktop (ex. pentru modele locale)';
+
+  @override
+  String get inferenceProfileEditTitle => 'Editați profilul';
+
+  @override
+  String get inferenceProfileImageGeneration => 'Generare de imagini';
+
+  @override
+  String get inferenceProfileImageRecognition => 'Recunoaștere de imagini';
+
+  @override
+  String get inferenceProfileNameLabel => 'Numele profilului';
+
+  @override
+  String get inferenceProfileNameRequired => 'Este necesar un nume de profil';
+
+  @override
+  String get inferenceProfileSaveButton => 'Salvați';
+
+  @override
+  String get inferenceProfileSelectModel => 'Selectați un model…';
+
+  @override
+  String get inferenceProfilesEmpty => 'Niciun profil de inferență';
+
+  @override
+  String get inferenceProfilesTitle => 'Profile de inferență';
+
+  @override
+  String get inferenceProfileThinking => 'Gândire';
+
+  @override
+  String get inferenceProfileThinkingRequired =>
+      'Este necesar un model de gândire';
+
+  @override
+  String get inferenceProfileTranscription => 'Transcriere';
+
+  @override
   String get inputDataTypeAudioFilesDescription =>
       'Folosește fișiere audio ca intrare';
 
