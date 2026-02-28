@@ -138,6 +138,8 @@ class _ThreadTile extends ConsumerWidget {
     }).value;
 
     // Per-thread token usage.
+    final locale = Localizations.localeOf(context).toString();
+    final tokenNumberFormat = NumberFormat.decimalPattern(locale);
     final tokenUsageAsync =
         ref.watch(tokenUsageForThreadProvider(agentId, threadId));
     final tokenUsage = tokenUsageAsync.value;
@@ -164,7 +166,7 @@ class _ThreadTile extends ConsumerWidget {
           ),
           if (tokenUsage != null)
             context.messages.agentConversationTokenCount(
-              _tokenNumberFormat.format(tokenUsage.totalTokens),
+              tokenNumberFormat.format(tokenUsage.totalTokens),
             ),
           if (model != null) model,
         ].join(' · '),
@@ -185,8 +187,6 @@ class _ThreadTile extends ConsumerWidget {
     );
   }
 }
-
-final _tokenNumberFormat = NumberFormat('#,###');
 
 /// Format a [Duration] as a human-readable string (e.g., "2m 30s", "1h 5m").
 String _formatDuration(Duration d) {

@@ -74,10 +74,10 @@ class _TokenUsageTable extends StatelessWidget {
 
   final List<AgentTokenUsageSummary> summaries;
 
-  static final _numberFormat = NumberFormat('#,###');
-
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final numberFormat = NumberFormat.decimalPattern(locale);
     final messages = context.messages;
     final headerStyle = context.textTheme.bodySmall?.copyWith(
       color: context.colorScheme.onSurfaceVariant,
@@ -128,11 +128,10 @@ class _TokenUsageTable extends StatelessWidget {
           TableRow(
             children: [
               _cell(_shortModelName(summary.modelId), modelStyle),
-              _cell(_numberFormat.format(summary.inputTokens), valueStyle),
-              _cell(_numberFormat.format(summary.outputTokens), valueStyle),
-              _cell(_numberFormat.format(summary.thoughtsTokens), valueStyle),
-              _cell(
-                  _numberFormat.format(summary.cachedInputTokens), valueStyle),
+              _cell(numberFormat.format(summary.inputTokens), valueStyle),
+              _cell(numberFormat.format(summary.outputTokens), valueStyle),
+              _cell(numberFormat.format(summary.thoughtsTokens), valueStyle),
+              _cell(numberFormat.format(summary.cachedInputTokens), valueStyle),
               _cell(summary.wakeCount.toString(), valueStyle),
             ],
           ),
@@ -146,11 +145,10 @@ class _TokenUsageTable extends StatelessWidget {
             ),
             children: [
               _cell(messages.agentTokenUsageTotalTokens, headerStyle),
-              _cell(_numberFormat.format(grandTotal.inputTokens), valueStyle),
-              _cell(_numberFormat.format(grandTotal.outputTokens), valueStyle),
-              _cell(
-                  _numberFormat.format(grandTotal.thoughtsTokens), valueStyle),
-              _cell(_numberFormat.format(grandTotal.cachedInputTokens),
+              _cell(numberFormat.format(grandTotal.inputTokens), valueStyle),
+              _cell(numberFormat.format(grandTotal.outputTokens), valueStyle),
+              _cell(numberFormat.format(grandTotal.thoughtsTokens), valueStyle),
+              _cell(numberFormat.format(grandTotal.cachedInputTokens),
                   valueStyle),
               _cell(grandTotal.wakeCount.toString(), valueStyle),
             ],
