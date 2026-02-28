@@ -43,6 +43,10 @@ class _TaskAgentReportSectionState
   Timer? _countdownTimer;
   int _countdownSeconds = 0;
 
+  /// Guards against re-seeding the countdown after a manual cancel.
+  /// Reset when the provider propagates the cleared `nextWakeAt`.
+  bool _cancelledManually = false;
+
   @override
   void dispose() {
     _countdownTimer?.cancel();
@@ -178,8 +182,12 @@ class _TaskAgentReportSectionState
       );
       final newRemaining = _computeRemainingSeconds(newNextWake);
       if (newRemaining > 0) {
-        _startCountdown(newRemaining);
+        if (!_cancelledManually) {
+          _startCountdown(newRemaining);
+        }
       } else {
+        // Provider caught up with the cancel — safe to allow future seeds.
+        _cancelledManually = false;
         _stopCountdown();
       }
     });
@@ -187,9 +195,11 @@ class _TaskAgentReportSectionState
     // Seed the timer on first build if a countdown is active.
     if (isRunning) {
       _scheduleStopCountdown();
-    } else if (_countdownTimer == null && remainingSeconds > 0) {
+    } else if (_countdownTimer == null &&
+        remainingSeconds > 0 &&
+        !_cancelledManually) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _startCountdown(remainingSeconds);
+        if (mounted && !_cancelledManually) _startCountdown(remainingSeconds);
       });
     }
 
@@ -306,6 +316,7 @@ class _TaskAgentReportSectionState
                   ref
                       .read(taskAgentServiceProvider)
                       .cancelScheduledWake(agentId);
+                  _cancelledManually = true;
                   _stopCountdown();
                   setState(() {});
                 },

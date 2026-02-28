@@ -21,6 +21,17 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
+/// Navigate back using Beamer if we're in the settings navigation stack,
+/// otherwise use Flutter's pop (e.g. when pushed from agent detail page).
+void _navigateBackTemplate(BuildContext context) {
+  final navService = getIt<NavService>();
+  if (navService.currentPath.startsWith('/settings/agents')) {
+    navService.beamBack();
+  } else {
+    Navigator.of(context).pop();
+  }
+}
+
 /// Detail page for creating or editing an agent template.
 ///
 /// - **Create mode** (`templateId == null`): empty form, save creates template.
@@ -113,7 +124,7 @@ class _AgentTemplateDetailPageState
               size: 30,
               color: Theme.of(context).colorScheme.outline,
             ),
-            onPressed: () => getIt<NavService>().beamBack(),
+            onPressed: () => _navigateBackTemplate(context),
           ),
         ),
         body: Center(
@@ -136,7 +147,7 @@ class _AgentTemplateDetailPageState
               size: 30,
               color: Theme.of(context).colorScheme.outline,
             ),
-            onPressed: () => getIt<NavService>().beamBack(),
+            onPressed: () => _navigateBackTemplate(context),
           ),
         ),
         body: Center(
@@ -202,7 +213,7 @@ class _AgentTemplateDetailPageState
                     ),
               rightButtons: [
                 LottiSecondaryButton(
-                  onPressed: () => getIt<NavService>().beamBack(),
+                  onPressed: () => _navigateBackTemplate(context),
                   label: context.messages.cancelButton,
                 ),
                 LottiPrimaryButton(
@@ -227,7 +238,7 @@ class _AgentTemplateDetailPageState
               size: 30,
               color: Theme.of(context).colorScheme.outline,
             ),
-            onPressed: () => getIt<NavService>().beamBack(),
+            onPressed: () => _navigateBackTemplate(context),
           ),
           title: Text(
             title,
@@ -262,7 +273,7 @@ class _AgentTemplateDetailPageState
               size: 30,
               color: Theme.of(context).colorScheme.outline,
             ),
-            onPressed: () => getIt<NavService>().beamBack(),
+            onPressed: () => _navigateBackTemplate(context),
           ),
           title: Text(
             title,
