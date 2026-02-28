@@ -78,6 +78,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/theming',
         '/settings/advanced',
         '/settings/logging',
+        '/settings/advanced/logging',
         '/settings/advanced/logging/:logEntryId',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',

@@ -20,10 +20,9 @@ agent runtime with it, then use the logs to identify and fix the P0 bug.
 Create a lightweight `DomainLogger` that wraps the existing `LoggingService` with:
 
 - **Domain constants**: `agentRuntime`, `agentWorkflow`, `sync`, `ai`, `general`
-- **PII scrubbing**: A `sanitize(String raw)` helper that:
-  - Replaces UUIDs with `[id:first6chars]` (preserves correlation without full IDs)
-  - Strips content/message bodies, replaces with `[content: N chars]`
-  - Keeps counts, status enums, durations, timestamps
+- **PII scrubbing**: dedicated static helpers:
+  - `sanitizeId(String id)` → `[id:first6chars]` (preserves correlation without full IDs)
+  - `sanitizeContent(String content)` → `[content: N chars]`
 - **Domain-specific file sink**: Appends to `{documents_dir}/logs/{domain}-YYYY-MM-DD.log`
   alongside the existing general log file
 - **Dual-sink**: Continues writing to `LoggingDb` (domain field already exists and is indexed)
