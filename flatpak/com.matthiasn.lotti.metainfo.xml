@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.887" date="2026-02-28">
       <description>
-          <p>Agent no longer proposes redundant label assignments when a task already has 3 or more labels, preventing unnecessary change set proposals in the confirmation UI.</p>
+          <p>Agent now learns from past user decisions: confirmed, rejected, and deferred proposals are fed back into the wake context, so the agent avoids repeating rejected suggestions and builds on confirmed preferences. Also fixed redundant label assignment proposals for tasks that already have 3 or more labels.</p>
       </description>
     </release>
     <release version="0.9.886" date="2026-02-28">

@@ -226,6 +226,13 @@ void main() {
     when(
       () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
     ).thenAnswer((_) async => <AgentLink>[]);
+    when(
+      () => mockAgentRepository.getRecentDecisions(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
     when(() => mockAiInputRepository.buildLinkedFromContext(any()))
         .thenAnswer((_) async => <AiLinkedTaskContext>[]);
     when(() => mockAiInputRepository.buildLinkedToContext(any()))
@@ -1591,6 +1598,133 @@ void main() {
 
         expect(message, isNotNull);
         expect(message, contains('(no content)'));
+      });
+
+      group('decision history', () {
+        ChangeDecisionEntity makeDecision({
+          required String toolName,
+          required ChangeDecisionVerdict verdict,
+          String? rejectionReason,
+        }) {
+          return AgentDomainEntity.changeDecision(
+            id: 'dec-${toolName.hashCode}',
+            agentId: agentId,
+            changeSetId: 'cs-1',
+            itemIndex: 0,
+            toolName: toolName,
+            verdict: verdict,
+            createdAt: DateTime(2024, 6, 15),
+            vectorClock: null,
+            taskId: taskId,
+            rejectionReason: rejectionReason,
+          ) as ChangeDecisionEntity;
+        }
+
+        test('includes decision history when decisions exist', () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeDecision(
+                  toolName: 'set_task_title',
+                  verdict: ChangeDecisionVerdict.confirmed,
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, contains('## Recent User Decisions'));
+          expect(message, contains('set_task_title'));
+          expect(message, contains('confirmed'));
+        });
+
+        test('omits decision history when no decisions exist', () async {
+          // Default stub returns empty list.
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Recent User Decisions')));
+        });
+
+        test('displays rejection reason when present', () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeDecision(
+                  toolName: 'update_task_estimate',
+                  verdict: ChangeDecisionVerdict.rejected,
+                  rejectionReason: 'I know better',
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, contains('I know better'));
+          expect(message, contains('rejected'));
+          expect(message, contains('\u2717')); // ✗
+        });
+
+        test('formats mixed verdicts correctly', () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeDecision(
+                  toolName: 'set_task_title',
+                  verdict: ChangeDecisionVerdict.confirmed,
+                ),
+                makeDecision(
+                  toolName: 'update_task_estimate',
+                  verdict: ChangeDecisionVerdict.rejected,
+                  rejectionReason: 'Too high',
+                ),
+                makeDecision(
+                  toolName: 'assign_task_labels',
+                  verdict: ChangeDecisionVerdict.deferred,
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          // Confirmed
+          expect(message, contains('\u2713 set_task_title'));
+          // Rejected with reason
+          expect(message, contains('\u2717 update_task_estimate'));
+          expect(message, contains('Too high'));
+          // Deferred
+          expect(message, contains('\u23f8 assign_task_labels'));
+          expect(message, contains('deferred'));
+        });
+
+        test('error in getRecentDecisions does not crash the wake', () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('DB error'));
+
+          final message = await executeAndCaptureMessage();
+
+          // Should still get a valid message, just without decision history.
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Recent User Decisions')));
+          expect(message, contains('Current Task Context'));
+        });
       });
 
       test('caps observations to 20 most recent', () async {
