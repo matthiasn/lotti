@@ -49,8 +49,8 @@ class ProfileSeedingService {
     }
   }
 
-  static final List<AiConfigInferenceProfile> _defaultProfiles = [
-    AiConfig.inferenceProfile(
+  static final _defaultProfiles = <AiConfigInferenceProfile>[
+    AiConfigInferenceProfile(
       id: profileGeminiFlashId,
       name: 'Gemini Flash',
       thinkingModelId: 'models/gemini-3-flash-preview',
@@ -59,8 +59,8 @@ class ProfileSeedingService {
       imageGenerationModelId: 'models/gemini-3-pro-image-preview',
       isDefault: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
-    AiConfig.inferenceProfile(
+    ),
+    AiConfigInferenceProfile(
       id: profileGeminiProId,
       name: 'Gemini Pro',
       thinkingModelId: 'models/gemini-3.1-pro-preview',
@@ -69,8 +69,8 @@ class ProfileSeedingService {
       imageGenerationModelId: 'models/gemini-3-pro-image-preview',
       isDefault: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
-    AiConfig.inferenceProfile(
+    ),
+    AiConfigInferenceProfile(
       id: profileOpenAiId,
       name: 'OpenAI',
       thinkingModelId: 'gpt-5.2',
@@ -79,8 +79,8 @@ class ProfileSeedingService {
       imageGenerationModelId: 'gpt-image-1.5',
       isDefault: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
-    AiConfig.inferenceProfile(
+    ),
+    AiConfigInferenceProfile(
       id: profileMistralEuId,
       name: 'Mistral (EU)',
       thinkingModelId: 'magistral-medium-2509',
@@ -88,8 +88,8 @@ class ProfileSeedingService {
       transcriptionModelId: 'voxtral-mini-latest',
       isDefault: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
-    AiConfig.inferenceProfile(
+    ),
+    AiConfigInferenceProfile(
       id: profileAlibabaId,
       name: 'Alibaba',
       thinkingModelId: 'qwen3-max',
@@ -98,8 +98,8 @@ class ProfileSeedingService {
       imageGenerationModelId: 'wan2.6-image',
       isDefault: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
-    AiConfig.inferenceProfile(
+    ),
+    AiConfigInferenceProfile(
       id: profileLocalId,
       name: 'Local (Ollama)',
       thinkingModelId: 'qwen3:8b',
@@ -107,6 +107,6 @@ class ProfileSeedingService {
       isDefault: true,
       desktopOnly: true,
       createdAt: DateTime(2026),
-    ) as AiConfigInferenceProfile,
+    ),
   ];
 }
