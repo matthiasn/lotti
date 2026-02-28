@@ -1163,8 +1163,8 @@ void main() {
       // Bottom sheet is shown
       expect(find.text('Laura'), findsOneWidget);
 
-      // Dismiss the bottom sheet by tapping the modal barrier
-      await tester.tap(find.byType(ModalBarrier).last);
+      // Dismiss the bottom sheet by tapping above it on the barrier
+      await tester.tapAt(const Offset(400, 10));
       await tester.pumpAndSettle();
 
       // createTaskAgent must NOT be called

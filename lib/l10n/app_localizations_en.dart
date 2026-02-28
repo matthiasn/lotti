@@ -1020,6 +1020,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddModelTooltip => 'Add this model to your provider';
 
   @override
+  String get aiSettingsAddProfileButton => 'Add Profile';
+
+  @override
   String get aiSettingsAddPromptButton => 'Add Prompt';
 
   @override
@@ -1102,6 +1105,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Models';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profiles';
 
   @override
   String get aiSettingsTabPrompts => 'Prompts';

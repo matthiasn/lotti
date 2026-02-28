@@ -1036,6 +1036,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă acest model la furnizorul tău';
 
   @override
+  String get aiSettingsAddProfileButton => 'Adaugă profil';
+
+  @override
   String get aiSettingsAddPromptButton => 'Adaugă prompt';
 
   @override
@@ -1119,6 +1122,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Modele';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profile';
 
   @override
   String get aiSettingsTabPrompts => 'Prompturi';

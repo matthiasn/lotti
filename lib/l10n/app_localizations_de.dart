@@ -1039,6 +1039,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Modell zu deinem Anbieter hinzufügen';
 
   @override
+  String get aiSettingsAddProfileButton => 'Profil hinzufügen';
+
+  @override
   String get aiSettingsAddPromptButton => 'Prompt hinzufügen';
 
   @override
@@ -1123,6 +1126,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Modelle';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profile';
 
   @override
   String get aiSettingsTabPrompts => 'Prompts';

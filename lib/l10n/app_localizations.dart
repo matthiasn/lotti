@@ -1932,6 +1932,12 @@ abstract class AppLocalizations {
   /// **'Add this model to your provider'**
   String get aiSettingsAddModelTooltip;
 
+  /// No description provided for @aiSettingsAddProfileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Profile'**
+  String get aiSettingsAddProfileButton;
+
   /// No description provided for @aiSettingsAddPromptButton.
   ///
   /// In en, this message translates to:
@@ -2075,6 +2081,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Models'**
   String get aiSettingsTabModels;
+
+  /// No description provided for @aiSettingsTabProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles'**
+  String get aiSettingsTabProfiles;
 
   /// No description provided for @aiSettingsTabPrompts.
   ///

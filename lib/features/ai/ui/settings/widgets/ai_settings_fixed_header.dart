@@ -112,7 +112,7 @@ class AiSettingsFixedHeader extends StatelessWidget {
   }
 
   Widget _buildFilterSection() {
-    // Filters are shown on Models and Prompts tabs
+    // Filters are shown on Models and Prompts tabs only
     if (filterState.activeTab == AiSettingsTab.models ||
         filterState.activeTab == AiSettingsTab.prompts) {
       return Padding(

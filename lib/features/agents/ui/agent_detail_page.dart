@@ -447,7 +447,7 @@ class _ProfileSection extends ConsumerWidget {
           ProfileSelector(
             selectedProfileId: profileId,
             onProfileSelected: (newProfileId) async {
-              if (newProfileId == null || identity == null) return;
+              if (identity == null) return;
               final service = ref.read(taskAgentServiceProvider);
               await service.updateAgentProfile(
                 agentId: agentId,

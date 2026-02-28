@@ -189,7 +189,7 @@ class TaskAgentService {
   /// `config.profileId` and `config.modelId` on the agent identity entity.
   Future<void> updateAgentProfile({
     required String agentId,
-    required String profileId,
+    required String? profileId,
   }) async {
     final now = clock.now();
     final identity = await agentService.getAgent(agentId);
@@ -205,7 +205,7 @@ class TaskAgentService {
     domainLogger?.log(
       LogDomains.agentRuntime,
       'updated profile for ${DomainLogger.sanitizeId(agentId)} '
-      'to ${DomainLogger.sanitizeId(profileId)}',
+      'to ${profileId != null ? DomainLogger.sanitizeId(profileId) : 'none'}',
       subDomain: 'lifecycle',
     );
   }

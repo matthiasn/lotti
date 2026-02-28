@@ -120,6 +120,7 @@ class AgentTemplateService {
     String? displayName,
     String? modelId,
     String? profileId,
+    bool clearProfileId = false,
   }) async {
     final now = clock.now();
 
@@ -130,13 +131,14 @@ class AgentTemplateService {
       }
 
       final modelChanged = modelId != null && modelId != template.modelId;
-      final profileChanged =
-          profileId != null && profileId != template.profileId;
+      final effectiveProfileId =
+          clearProfileId ? null : (profileId ?? template.profileId);
+      final profileChanged = effectiveProfileId != template.profileId;
 
       final updated = template.copyWith(
         displayName: displayName ?? template.displayName,
         modelId: modelId ?? template.modelId,
-        profileId: profileId ?? template.profileId,
+        profileId: effectiveProfileId,
         updatedAt: now,
       );
       await syncService.upsertEntity(updated);

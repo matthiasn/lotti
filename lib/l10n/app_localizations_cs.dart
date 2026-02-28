@@ -1028,6 +1028,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidat tento model ke svému poskytovateli';
 
   @override
+  String get aiSettingsAddProfileButton => 'Přidat profil';
+
+  @override
   String get aiSettingsAddPromptButton => 'Přidat prompt';
 
   @override
@@ -1113,6 +1116,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsTabModels => 'Modely';
+
+  @override
+  String get aiSettingsTabProfiles => 'Profily';
 
   @override
   String get aiSettingsTabPrompts => 'Výzvy';

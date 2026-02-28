@@ -38,7 +38,7 @@ final class InferenceProfileControllerProvider extends $StreamNotifierProvider<
 }
 
 String _$inferenceProfileControllerHash() =>
-    r'58359df29c2d72bc6167b8fecf2d24820edefa53';
+    r'34611306f9f61d6e395b486a4765ccf8f4c8e518';
 
 /// Streams all inference profiles for the profile management UI.
 

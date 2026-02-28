@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:beamer/beamer.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_fixed_header.d
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -167,6 +168,8 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         await _navigationService.navigateToCreateModel(context);
       case AiSettingsTab.prompts:
         await _navigationService.navigateToCreatePrompt(context);
+      case AiSettingsTab.profiles:
+        await _navigationService.navigateToCreateProfile(context);
     }
   }
 
@@ -245,13 +248,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           SettingsPageHeader(
             title: context.messages.aiSettingsPageTitle,
             showBackButton: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.tune),
-                tooltip: context.messages.inferenceProfilesTitle,
-                onPressed: () => context.beamToNamed('/settings/ai/profiles'),
-              ),
-            ],
           ),
 
           // Fixed header with search, tabs and filters
@@ -291,6 +287,8 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return [_buildModelsSliver()];
       case AiSettingsTab.prompts:
         return [_buildPromptsSliver()];
+      case AiSettingsTab.profiles:
+        return [_buildProfilesSliver()];
     }
   }
 
@@ -443,6 +441,76 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
               configType: AiConfigType.prompt,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the profiles sliver
+  Widget _buildProfilesSliver() {
+    final profilesAsync = ref.watch(inferenceProfileControllerProvider);
+
+    return profilesAsync.when(
+      data: (configs) {
+        final profiles = configs.whereType<AiConfigInferenceProfile>().toList();
+
+        // Apply search filter
+        final query = _filterState.searchQuery;
+        final filteredProfiles = query.isEmpty
+            ? profiles
+            : profiles
+                .where((p) => p.name.toLowerCase().contains(query))
+                .toList();
+
+        if (filteredProfiles.isEmpty) {
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.tune,
+                    size: 48,
+                    color: context.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.messages.inferenceProfilesEmpty,
+                    style: context.textTheme.bodyLarge?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList.separated(
+            itemCount: filteredProfiles.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final profile = filteredProfiles[index];
+              return ProfileCard(
+                profile: profile,
+                onTap: () => _handleConfigTap(profile),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const SliverFillRemaining(
+        child: ConfigLoadingState(),
+      ),
+      error: (error, _) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: ConfigErrorState(
+          error: error,
+          onRetry: () => ref.invalidate(inferenceProfileControllerProvider),
         ),
       ),
     );

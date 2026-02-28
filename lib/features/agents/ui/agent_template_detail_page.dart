@@ -338,6 +338,7 @@ class _AgentTemplateDetailPageState
           displayName: name,
           modelId: modelId,
           profileId: _selectedProfileId,
+          clearProfileId: _selectedProfileId == null,
         );
 
         // Create a new directive version.

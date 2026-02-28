@@ -60,7 +60,8 @@ abstract class AiSettingsFilterState with _$AiSettingsFilterState {
 enum AiSettingsTab {
   providers,
   models,
-  prompts;
+  prompts,
+  profiles;
 
   /// Human-readable display name for the tab
   String get displayName {
@@ -71,6 +72,8 @@ enum AiSettingsTab {
         return 'Models';
       case AiSettingsTab.prompts:
         return 'Prompts';
+      case AiSettingsTab.profiles:
+        return 'Profiles';
     }
   }
 }
@@ -91,6 +94,7 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
   bool get hasActiveFilters {
     switch (activeTab) {
       case AiSettingsTab.providers:
+      case AiSettingsTab.profiles:
         return false;
       case AiSettingsTab.models:
         return hasModelFilters;
@@ -116,6 +120,7 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
   AiSettingsFilterState resetCurrentTabFilters() {
     switch (activeTab) {
       case AiSettingsTab.providers:
+      case AiSettingsTab.profiles:
         return this;
       case AiSettingsTab.models:
         return resetModelFilters();
@@ -171,6 +176,8 @@ extension AiSettingsTabX on AiSettingsTab {
         return context.messages.aiSettingsTabModels;
       case AiSettingsTab.prompts:
         return context.messages.aiSettingsTabPrompts;
+      case AiSettingsTab.profiles:
+        return context.messages.aiSettingsTabProfiles;
     }
   }
 }
