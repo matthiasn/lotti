@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -25,6 +26,14 @@ class AgentSettingsPage extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            onPressed: () => getIt<NavService>().beamBack(),
+          ),
           title: Text(
             context.messages.agentSettingsTitle,
             style: appBarTextStyleNewLarge.copyWith(

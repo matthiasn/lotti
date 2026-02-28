@@ -11,7 +11,9 @@ import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -104,7 +106,16 @@ class _AgentTemplateDetailPageState
 
     if (templateAsync.hasError && template == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            onPressed: () => getIt<NavService>().beamBack(),
+          ),
+        ),
         body: Center(
           child: Text(
             context.messages.commonError,
@@ -118,7 +129,16 @@ class _AgentTemplateDetailPageState
 
     if (template == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            onPressed: () => getIt<NavService>().beamBack(),
+          ),
+        ),
         body: Center(
           child: Text(context.messages.agentTemplateNotFound),
         ),
@@ -201,6 +221,14 @@ class _AgentTemplateDetailPageState
     return CustomScrollView(
       slivers: [
         SliverAppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            onPressed: () => getIt<NavService>().beamBack(),
+          ),
           title: Text(
             title,
             style: appBarTextStyleNewLarge.copyWith(
@@ -228,6 +256,14 @@ class _AgentTemplateDetailPageState
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         SliverAppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.chevron_left,
+              size: 30,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            onPressed: () => getIt<NavService>().beamBack(),
+          ),
           title: Text(
             title,
             style: appBarTextStyleNewLarge.copyWith(

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.884] - 2026-02-28
+### Changed
+- Agent settings navigation now uses Beamer-native back navigation,
+  fixing double-back-press and bottom-transition bugs in the
+  Settings > Agents flow.
+- Agent report section on task detail: refresh icon replaces play icon
+  when idle, play-now + countdown pill + cancel button during countdown,
+  stable robot icon on the left with no layout jumps.
+- Responsive token usage table: vertical card layout on narrow screens
+  (<600 px), standard table on wide screens.
+- Template detail page hides bottom bar on non-editable tabs (Stats,
+  Reports).
+- Shortened "Save as New Version" button labels across all locales to
+  prevent truncation on narrow screens.
+- Agent report section positioned above legacy AI summary in task form.
+
 ## [0.9.883] - 2026-02-28
 ### Added
 - Checklist user sovereignty: track who last toggled each checklist item
