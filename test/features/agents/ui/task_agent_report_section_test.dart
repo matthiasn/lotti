@@ -1061,4 +1061,156 @@ void main() {
       expect(find.byType(AgentDetailPage), findsOneWidget);
     });
   });
+
+  group('TaskAgentReportSection - template selection edge cases', () {
+    testWidgets(
+        'dismissing bottom sheet without selecting does not create agent',
+        (tester) async {
+      final task = testTask;
+      final mockService = MockTaskAgentService();
+      final mockTemplateService = MockAgentTemplateService();
+
+      final laura = makeTestTemplate(
+        id: 'tpl-laura',
+        agentId: 'tpl-laura',
+        displayName: 'Laura',
+      );
+      final tom = makeTestTemplate(
+        id: 'tpl-tom',
+        agentId: 'tpl-tom',
+        displayName: 'Tom',
+      );
+
+      when(mockTemplateService.listTemplates)
+          .thenAnswer((_) async => [laura, tom]);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          taskId: task.meta.id,
+          overrides: [
+            entryControllerProvider(id: task.meta.id).overrideWith(
+              () => _TestEntryController(task),
+            ),
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
+            ),
+            taskAgentProvider.overrideWith(
+              (ref, taskId) async => null,
+            ),
+            taskAgentServiceProvider.overrideWithValue(mockService),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TaskAgentReportSection));
+      await tester.tap(
+        find.text(context.messages.taskAgentCreateChipLabel),
+      );
+      await tester.pumpAndSettle();
+
+      // Bottom sheet is shown
+      expect(find.text('Laura'), findsOneWidget);
+
+      // Dismiss the bottom sheet by tapping the barrier
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+
+      // createTaskAgent must NOT be called
+      verifyNever(
+        () => mockService.createTaskAgent(
+          taskId: any(named: 'taskId'),
+          templateId: any(named: 'templateId'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      );
+    });
+
+    testWidgets('falls back to listTemplates when category templates are empty',
+        (tester) async {
+      const categoryId = 'cat-123';
+      final taskWithCategory = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status_id',
+            createdAt: DateTime(2022, 7, 7, 11),
+            utcOffset: 60,
+          ),
+          title: 'Task with category',
+          statusHistory: [],
+          dateTo: DateTime(2022, 7, 7, 9),
+          dateFrom: DateTime(2022, 7, 7, 9),
+        ),
+        meta: Metadata(
+          id: testTask.meta.id,
+          createdAt: DateTime(2022, 7, 7, 9),
+          dateFrom: DateTime(2022, 7, 7, 9),
+          dateTo: DateTime(2022, 7, 7, 11),
+          updatedAt: DateTime(2022, 7, 7, 11),
+          categoryId: categoryId,
+        ),
+        entryText: const EntryText(plainText: 'task text'),
+      );
+
+      final mockService = MockTaskAgentService();
+      final mockTemplateService = MockAgentTemplateService();
+      final identity = makeTestIdentity();
+
+      // Category-specific returns empty → falls back to listTemplates
+      when(
+        () => mockTemplateService.listTemplatesForCategory(categoryId),
+      ).thenAnswer((_) async => []);
+      when(mockTemplateService.listTemplates)
+          .thenAnswer((_) async => [makeTestTemplate()]);
+      when(
+        () => mockService.createTaskAgent(
+          taskId: any(named: 'taskId'),
+          templateId: any(named: 'templateId'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      ).thenAnswer((_) async => identity);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          taskId: testTask.meta.id,
+          overrides: [
+            entryControllerProvider(id: testTask.meta.id).overrideWith(
+              () => _TestEntryController(taskWithCategory),
+            ),
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
+            ),
+            taskAgentProvider.overrideWith(
+              (ref, taskId) async => null,
+            ),
+            taskAgentServiceProvider.overrideWithValue(mockService),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TaskAgentReportSection));
+      await tester.tap(
+        find.text(context.messages.taskAgentCreateChipLabel),
+      );
+      await tester.pumpAndSettle();
+
+      // listTemplatesForCategory was called first
+      verify(
+        () => mockTemplateService.listTemplatesForCategory(categoryId),
+      ).called(1);
+      // Fell back to listTemplates
+      verify(mockTemplateService.listTemplates).called(1);
+      // Created agent with the fallback template
+      verify(
+        () => mockService.createTaskAgent(
+          taskId: testTask.meta.id,
+          templateId: any(named: 'templateId'),
+          allowedCategoryIds: {categoryId},
+        ),
+      ).called(1);
+    });
+  });
 }
