@@ -91,9 +91,9 @@ flowchart TD
 
 ## Solution Overview
 
-**Approach: Query by `templateId` on `WakeTokenUsageEntity` records**
+**Approach: JOIN through `agent_links` to collect per-template token records**
 
-Since every `WakeTokenUsageEntity` already stores `templateId`, we can aggregate directly without joining through `agent_links`. This is the most efficient path — a single indexed query on the `agent_entities` table.
+A SQL JOIN through `agent_links` (`template_assignment` type) collects all `WakeTokenUsageEntity` records across every instance assigned to a template in a single query. This leverages the existing link infrastructure and avoids relying on the optional `templateId` field on the entity itself.
 
 The template detail page will be enhanced with a tabbed layout (similar to the instance detail page) to show aggregate stats alongside the existing form.
 
