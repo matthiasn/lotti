@@ -227,6 +227,7 @@
   "agentTemplateNoTemplates": "No hay plantillas disponibles. Crea una en Configuración primero.",
   "agentTemplateNotFound": "Plantilla no encontrada",
   "agentTemplateNoVersions": "Sin versiones",
+  "agentTemplateReportsEmpty": "Aún no hay informes.",
   "agentTemplateReportsTab": "Informes",
   "agentTemplateRollbackAction": "Revertir a esta versión",
   "agentTemplateRollbackConfirm": "¿Revertir a la versión {version}? El agente usará esta versión en su próximo despertar.",

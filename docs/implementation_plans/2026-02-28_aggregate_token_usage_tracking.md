@@ -104,7 +104,7 @@ flowchart LR
     DB[(agent_entities<br/>+ agent_links<br/>tables)] -->|JOIN query:<br/>template_assignment links<br/>+ wakeTokenUsage type| Repo[AgentRepository<br/>getTokenUsageForTemplate]
     Repo -->|all WakeTokenUsageEntity<br/>across instances| TRecords[templateTokenUsage<br/>RecordsProvider<br/>─────────<br/>per template]
     TRecords -->|group by modelId| TSummaries[templateTokenUsage<br/>SummariesProvider<br/>─────────<br/>List of AgentTokenUsageSummary]
-    TRecords -->|group by agentId<br/>+ enrich metadata| TBreakdown[templateInstance<br/>TokenBreakdownProvider<br/>─────────<br/>List of InstanceTokenSummary]
+    TRecords -->|group by agentId<br/>+ enrich metadata| TBreakdown[templateInstance<br/>TokenBreakdownProvider<br/>─────────<br/>List of InstanceTokenBreakdown]
     TSummaries --> UI1[TemplateTokenUsageSection<br/>aggregate table on Stats tab]
     TBreakdown --> UI2[Instance Breakdown List<br/>per-instance totals on Stats tab]
 ```
@@ -299,7 +299,7 @@ Transform the template detail page from a flat form into a tabbed layout:
 
 The stats tab contents:
 
-```
+```text
 ┌──────────────────────────────────────────────┐
 │ Aggregate Token Usage                        │
 │ ┌──────────────────────────────────────────┐ │
@@ -409,7 +409,7 @@ class InstanceTokenBreakdown {
 
 Add to all `.arb` files:
 
-```
+```json
 "agentTemplateStatsTab": "Stats",
 "agentTemplateSettingsTab": "Settings",
 "agentTemplateReportsTab": "Reports",

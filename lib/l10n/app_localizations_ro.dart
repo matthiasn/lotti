@@ -512,6 +512,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateNoVersions => 'Nicio versiune';
 
   @override
+  String get agentTemplateReportsEmpty => 'Niciun raport încă.';
+
+  @override
   String get agentTemplateReportsTab => 'Rapoarte';
 
   @override

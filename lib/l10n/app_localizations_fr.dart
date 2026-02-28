@@ -513,6 +513,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateNoVersions => 'Aucune version';
 
   @override
+  String get agentTemplateReportsEmpty => 'Pas encore de rapports.';
+
+  @override
   String get agentTemplateReportsTab => 'Rapports';
 
   @override

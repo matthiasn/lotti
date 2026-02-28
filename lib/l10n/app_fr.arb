@@ -227,6 +227,7 @@
   "agentTemplateNoTemplates": "Aucun modèle disponible. Crée-en un dans les Paramètres d'abord.",
   "agentTemplateNotFound": "Modèle introuvable",
   "agentTemplateNoVersions": "Aucune version",
+  "agentTemplateReportsEmpty": "Pas encore de rapports.",
   "agentTemplateReportsTab": "Rapports",
   "agentTemplateRollbackAction": "Revenir à cette version",
   "agentTemplateRollbackConfirm": "Revenir à la version {version} ? L'agent utilisera cette version lors de son prochain réveil.",

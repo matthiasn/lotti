@@ -227,6 +227,7 @@
   "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.",
   "agentTemplateNotFound": "Șablon negăsit",
   "agentTemplateNoVersions": "Nicio versiune",
+  "agentTemplateReportsEmpty": "Niciun raport încă.",
   "agentTemplateReportsTab": "Rapoarte",
   "agentTemplateRollbackAction": "Revino la această versiune",
   "agentTemplateRollbackConfirm": "Revino la versiunea {version}? Agentul va folosi această versiune la următoarea trezire.",

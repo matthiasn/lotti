@@ -949,6 +949,67 @@ void main() {
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
 
+    test('processes wakeTokenUsage entity with templateId in notification',
+        () async {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-1',
+        agentId: 'agent-1',
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        modelId: 'models/gemini-2.5-pro',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        templateId: 'tpl-1',
+        inputTokens: 100,
+        outputTokens: 50,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'tpl-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
+    test('processes wakeTokenUsage entity without templateId', () async {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-2',
+        agentId: 'agent-1',
+        runKey: 'run-2',
+        threadId: 'thread-2',
+        modelId: 'models/gemini-2.5-pro',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        inputTokens: 200,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     test('processes agent link (basic)', () async {
       final link = AgentLink.basic(
         id: 'link-1',

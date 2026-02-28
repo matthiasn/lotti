@@ -1024,7 +1024,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(context.messages.agentTokenUsageEmpty),
+        find.text(context.messages.agentTemplateReportsEmpty),
         findsOneWidget,
       );
     });
@@ -1097,6 +1097,75 @@ void main() {
 
       // Cards are rendered
       expect(find.byType(Card), findsNWidgets(2));
+    });
+
+    testWidgets('Reports tab skips non-AgentReportEntity items',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final report = makeTestReport(
+        id: 'r1',
+        agentId: 'agent-a',
+        content: 'Valid report.',
+        createdAt: DateTime(2025, 6, 15, 10, 30),
+      );
+      // A non-report entity mixed in (e.g. an agent message)
+      final nonReport = makeTestMessage(
+        id: 'msg-1',
+        agentId: 'agent-a',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[report, nonReport],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      // Valid report is shown
+      expect(find.text('Valid report.'), findsOneWidget);
+      // Only one Card for the valid report (non-report item renders as
+      // SizedBox.shrink, not a Card)
+      expect(find.byType(Card), findsOneWidget);
     });
 
     testWidgets('Reports tab shows loading indicator', (tester) async {

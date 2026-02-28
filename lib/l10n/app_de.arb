@@ -227,6 +227,7 @@
   "agentTemplateNoTemplates": "Keine Vorlagen verfügbar. Erstelle zuerst eine in den Einstellungen.",
   "agentTemplateNotFound": "Vorlage nicht gefunden",
   "agentTemplateNoVersions": "Keine Versionen",
+  "agentTemplateReportsEmpty": "Noch keine Berichte.",
   "agentTemplateReportsTab": "Berichte",
   "agentTemplateRollbackAction": "Auf diese Version zurücksetzen",
   "agentTemplateRollbackConfirm": "Auf Version {version} zurücksetzen? Der Agent wird diese Version beim nächsten Wake verwenden.",

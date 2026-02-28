@@ -1014,6 +1014,12 @@ abstract class AppLocalizations {
   /// **'No versions'**
   String get agentTemplateNoVersions;
 
+  /// No description provided for @agentTemplateReportsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports yet.'**
+  String get agentTemplateReportsEmpty;
+
   /// Tab label for the reports tab in agent template detail.
   ///
   /// In en, this message translates to:

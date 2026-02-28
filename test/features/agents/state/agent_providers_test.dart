@@ -1388,6 +1388,66 @@ void main() {
       },
     );
 
+    test(
+      'wakeExecutor still notifies when getTemplateForAgent throws',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
+            .thenThrow(Exception('db connection lost'));
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+
+        final result = await capturedExecutor!(
+          kTestAgentId,
+          'run-key-err',
+          {'tok-d'},
+          'thread-err',
+        );
+
+        // Wake still succeeds — returns mutated entries
+        expect(result, mutated);
+
+        // Notification is still sent with just agentId (no templateId)
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
     test('wires repository and orchestrator into SyncEventProcessor', () async {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);

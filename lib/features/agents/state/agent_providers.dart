@@ -809,12 +809,24 @@ void _wireWakeExecutor(
 
     // Notify the update stream so all detail providers self-invalidate.
     // Include the templateId (if assigned) so template-level aggregate
-    // providers also refresh.
-    final templateService = ref.read(agentTemplateServiceProvider);
-    final template = await templateService.getTemplateForAgent(agentId);
+    // providers also refresh. Wrapped in try/catch so a lookup failure
+    // doesn't mark a successfully completed wake as failed.
+    String? templateId;
+    try {
+      final templateService = ref.read(agentTemplateServiceProvider);
+      final template = await templateService.getTemplateForAgent(agentId);
+      templateId = template?.id;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve template for wake notification: $error',
+        name: 'agentInitialization',
+        stackTrace: stackTrace,
+      );
+    }
+
     updateNotifications.notify({
       agentId,
-      if (template != null) template.id,
+      if (templateId != null) templateId,
       agentNotification,
     });
 

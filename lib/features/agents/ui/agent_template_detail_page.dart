@@ -627,7 +627,7 @@ class _ReportsTabContent extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                context.messages.agentTokenUsageEmpty,
+                context.messages.agentTemplateReportsEmpty,
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,
                 ),

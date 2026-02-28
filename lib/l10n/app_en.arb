@@ -320,6 +320,7 @@
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
   },
+  "agentTemplateReportsEmpty": "No reports yet.",
   "agentTemplateReportsTab": "Reports",
   "@agentTemplateReportsTab": {
     "description": "Tab label for the reports tab in agent template detail."
