@@ -1909,8 +1909,7 @@ void main() {
         ).called(1);
       });
 
-      test(
-          'add_multiple_checklist_items with non-array items is deferred',
+      test('add_multiple_checklist_items with non-array items is deferred',
           () async {
         final result = await executeWithToolCallOnRealTask(
           'add_multiple_checklist_items',
@@ -1928,8 +1927,7 @@ void main() {
         ).called(1);
       });
 
-      test('update_checklist_items with non-array items is deferred',
-          () async {
+      test('update_checklist_items with non-array items is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
           'update_checklist_items',
           '{"items":"not an array"}',
@@ -1981,8 +1979,7 @@ void main() {
         ).called(1);
       });
 
-      test(
-          'add_multiple_checklist_items with string items reports skipped',
+      test('add_multiple_checklist_items with string items reports skipped',
           () async {
         // String items are skipped by the ChangeSetBuilder's batch
         // exploder (they are not Map<String, dynamic>).
@@ -2213,8 +2210,7 @@ void main() {
           ).called(1);
         });
 
-        test('update_task_due_date with invalid format is deferred',
-            () async {
+        test('update_task_due_date with invalid format is deferred', () async {
           // Invalid args are still deferred — validation happens at
           // confirmation time via TaskToolDispatcher.
           final result = await executeWithToolCallOnRealTask(
