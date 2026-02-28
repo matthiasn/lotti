@@ -470,7 +470,14 @@ class MatrixMessageSender {
       );
     }
 
-    if (enrichedPath == null) return message;
+    if (enrichedPath == null) {
+      _loggingService.captureEvent(
+        'skipping $logLabel send: missing payload and jsonPath',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
 
     final uploaded = await _uploadAgentPayload(
       room: room,

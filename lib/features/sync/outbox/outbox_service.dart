@@ -1091,8 +1091,18 @@ class OutboxService {
     final relativeJoined = p.joinAll(
       relativePath.split('/').where((part) => part.isNotEmpty),
     );
-    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+    final docsRoot = p.normalize(_documentsDirectory.path);
+    final fullPath = p.normalize(p.join(docsRoot, relativeJoined));
     final subject = '$subjectPrefix:$id';
+
+    if (!p.isWithin(docsRoot, fullPath)) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid agent payload path: $relativePath',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
 
     try {
       await _saveJson(fullPath, payloadJson);

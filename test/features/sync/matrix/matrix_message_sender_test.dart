@@ -1603,7 +1603,7 @@ void main() {
       expect(extras.first['relativePath'], relativePath);
     });
 
-    test('returns entity unchanged when no jsonPath and no inline', () async {
+    test('returns null when entity has no jsonPath and no inline', () async {
       const message = SyncMessage.agentEntity(
         status: SyncEntryStatus.update,
       );
@@ -1613,7 +1613,7 @@ void main() {
         message: message,
       );
 
-      expect(result, same(message));
+      expect(result, isNull);
       verifyNever(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1742,7 +1742,7 @@ void main() {
       expect(linkResult.status, SyncEntryStatus.update);
     });
 
-    test('returns link unchanged when no jsonPath and no inline', () async {
+    test('returns null when link has no jsonPath and no inline', () async {
       const message = SyncMessage.agentLink(
         status: SyncEntryStatus.update,
       );
@@ -1752,7 +1752,7 @@ void main() {
         message: message,
       );
 
-      expect(result, same(message));
+      expect(result, isNull);
       verifyNever(
         () => room.sendFileEvent(
           any<MatrixFile>(),
