@@ -137,13 +137,15 @@ sealed class SyncMessage with _$SyncMessage {
   }) = SyncBackfillResponse;
 
   const factory SyncMessage.agentEntity({
-    required AgentDomainEntity agentEntity,
     required SyncEntryStatus status,
+    AgentDomainEntity? agentEntity,
+    String? jsonPath,
   }) = SyncAgentEntity;
 
   const factory SyncMessage.agentLink({
-    required AgentLink agentLink,
     required SyncEntryStatus status,
+    AgentLink? agentLink,
+    String? jsonPath,
   }) = SyncAgentLink;
 
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>

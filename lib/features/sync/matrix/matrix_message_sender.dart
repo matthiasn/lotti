@@ -12,6 +12,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
@@ -145,6 +146,12 @@ class MatrixMessageSender {
           coveredVectorClocks: covered,
         );
       }
+      final agentResult = await _enrichAndUploadAgentPayload(
+        room: room,
+        message: outboundMessage,
+      );
+      if (agentResult == null) return false;
+      outboundMessage = agentResult;
 
       final encodedMessage = json.encode(outboundMessage);
       final eventId = await room.sendTextEvent(
@@ -415,12 +422,141 @@ class MatrixMessageSender {
     return outbound;
   }
 
+  /// Enriches and uploads agent payload (entity or link).
+  ///
+  /// For legacy items (inline payload but no jsonPath), saves the payload to
+  /// disk first. Then uploads the file and returns a descriptor-only message.
+  /// Returns the original [message] unchanged for non-agent types.
+  /// Returns null on upload failure.
+  Future<SyncMessage?> _enrichAndUploadAgentPayload({
+    required Room room,
+    required SyncMessage message,
+  }) async {
+    final String? inlineJson;
+    final String? jsonPath;
+    final String Function(String id)? pathBuilder;
+    final String logLabel;
+
+    switch (message) {
+      case final SyncAgentEntity msg:
+        inlineJson = msg.agentEntity != null
+            ? json.encode(msg.agentEntity!.toJson())
+            : null;
+        jsonPath = msg.jsonPath;
+        pathBuilder = relativeAgentEntityPath;
+        logLabel = 'agentEntity';
+      case final SyncAgentLink msg:
+        inlineJson =
+            msg.agentLink != null ? json.encode(msg.agentLink!.toJson()) : null;
+        jsonPath = msg.jsonPath;
+        pathBuilder = relativeAgentLinkPath;
+        logLabel = 'agentLink';
+      default:
+        return message;
+    }
+
+    var enrichedPath = jsonPath;
+    // Enrich legacy items that lack jsonPath but have inline payload
+    if (enrichedPath == null && inlineJson != null) {
+      final id = switch (message) {
+        final SyncAgentEntity m => m.agentEntity!.id,
+        final SyncAgentLink m => m.agentLink!.id,
+        _ => throw StateError('unreachable'),
+      };
+      enrichedPath = pathBuilder(id);
+      await _savePayloadToDisk(
+        relativePath: enrichedPath,
+        jsonPayload: inlineJson,
+      );
+    }
+
+    if (enrichedPath == null) {
+      _loggingService.captureEvent(
+        'skipping $logLabel send: missing payload and jsonPath',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+
+    final uploaded = await _uploadAgentPayload(
+      room: room,
+      relativePath: enrichedPath,
+      logLabel: logLabel,
+    );
+    if (!uploaded) return null;
+
+    return switch (message) {
+      final SyncAgentEntity m =>
+        m.copyWith(jsonPath: enrichedPath, agentEntity: null),
+      final SyncAgentLink m =>
+        m.copyWith(jsonPath: enrichedPath, agentLink: null),
+      _ => throw StateError('unreachable'),
+    };
+  }
+
+  /// Reads the JSON file at [relativePath] from disk and uploads it via
+  /// [_sendFile]. Returns true on success, false on failure.
+  Future<bool> _uploadAgentPayload({
+    required Room room,
+    required String relativePath,
+    required String logLabel,
+  }) async {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+
+    late final Uint8List jsonBytes;
+    try {
+      jsonBytes = await File(fullPath).readAsBytes();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.$logLabel',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+
+    return _sendFile(
+      room: room,
+      fullPath: fullPath,
+      relativePath: relativePath,
+      bytes: jsonBytes,
+    );
+  }
+
+  /// Writes [jsonPayload] to disk at [relativePath] under the documents
+  /// directory, creating parent directories as needed. Used to enrich legacy
+  /// outbox items that lack a `jsonPath`.
+  Future<void> _savePayloadToDisk({
+    required String relativePath,
+    required String jsonPayload,
+  }) async {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final fullPath = p.join(_documentsDirectory.path, relativeJoined);
+    final file = File(fullPath);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(jsonPayload);
+  }
+
   @visibleForTesting
   Future<SyncJournalEntity?> sendJournalEntityPayloadForTesting({
     required Room room,
     required SyncJournalEntity message,
   }) =>
       _sendJournalEntityPayload(room: room, message: message);
+
+  @visibleForTesting
+  Future<SyncMessage?> enrichAndUploadAgentPayloadForTesting({
+    required Room room,
+    required SyncMessage message,
+  }) =>
+      _enrichAndUploadAgentPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

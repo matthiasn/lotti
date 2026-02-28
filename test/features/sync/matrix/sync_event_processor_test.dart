@@ -1575,6 +1575,243 @@ void main() {
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
     });
+
+    group('descriptor-only resolution (jsonPath)', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync(
+          'agent_resolve_test',
+        );
+        if (getIt.isRegistered<Directory>()) {
+          getIt.unregister<Directory>();
+        }
+        getIt.registerSingleton<Directory>(tempDir);
+      });
+
+      tearDown(() async {
+        await getIt.reset();
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('resolves agent entity from jsonPath on disk', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-disk',
+          agentId: 'agent-disk',
+          kind: 'task_agent',
+          displayName: 'Disk Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        const relativePath = '/agent_entities/agent-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(entity.toJson()));
+
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      });
+
+      test('resolves agent link from jsonPath on disk', () async {
+        final link = AgentLink.basic(
+          id: 'link-disk',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        const relativePath = '/agent_links/link-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(link.toJson()));
+
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      });
+
+      test('skips agent entity with no entity and no jsonPath', () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<Object>(that: contains('no payload and no jsonPath')),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve',
+          ),
+        ).called(1);
+      });
+
+      test('skips agent link with no link and no jsonPath', () async {
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<Object>(that: contains('no payload and no jsonPath')),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve',
+          ),
+        ).called(1);
+      });
+
+      test('skips agent entity with path-traversal jsonPath', () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: '../../../etc/passwd',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentEntity.invalidPath',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('skips agent link with path-traversal jsonPath', () async {
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: '../../../etc/passwd',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentLink.invalidPath',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('rethrows FileSystemException for missing agent entity file',
+          () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: '/agent_entities/missing.json',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await expectLater(
+          () => processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<FileSystemException>()),
+        );
+      });
+
+      test('rethrows FileSystemException for missing agent link file',
+          () async {
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: '/agent_links/missing.json',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await expectLater(
+          () => processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<FileSystemException>()),
+        );
+      });
+
+      test('skips agent entity with corrupt JSON file', () async {
+        const relativePath = '/agent_entities/corrupt.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync('not valid json {{{');
+
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentEntity',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('skips agent link with corrupt JSON file', () async {
+        const relativePath = '/agent_links/corrupt.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync('not valid json {{{');
+
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentLink',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
   });
 
   test('logs exceptions for invalid base64 payloads', () async {

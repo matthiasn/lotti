@@ -118,7 +118,7 @@ void main() {
       final decodedMsg = decoded as SyncAgentEntity;
       expect(decodedMsg.status, SyncEntryStatus.update);
 
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentIdentityEntity>());
       final identity = decodedEntity as AgentIdentityEntity;
       expect(identity.id, 'agent-1');
@@ -153,7 +153,7 @@ void main() {
       final decodedMsg = decoded as SyncAgentEntity;
       expect(decodedMsg.status, SyncEntryStatus.initial);
 
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentStateEntity>());
       final state = decodedEntity as AgentStateEntity;
       expect(state.revision, 5);
@@ -182,7 +182,7 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentMessageEntity>());
       final message = decodedEntity as AgentMessageEntity;
       expect(message.threadId, 'thread-1');
@@ -209,7 +209,7 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentMessagePayloadEntity>());
       final payload = decodedEntity as AgentMessagePayloadEntity;
       expect(payload.content['text'], 'hello world');
@@ -237,7 +237,7 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentReportEntity>());
       final report = decodedEntity as AgentReportEntity;
       expect(report.scope, 'current');
@@ -265,7 +265,7 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedMsg = decoded as SyncAgentEntity;
-      final decodedEntity = decodedMsg.agentEntity;
+      final decodedEntity = decodedMsg.agentEntity!;
       expect(decodedEntity, isA<AgentReportHeadEntity>());
       final head = decodedEntity as AgentReportHeadEntity;
       expect(head.scope, 'current');
@@ -298,7 +298,7 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedMsg = decoded as SyncAgentEntity;
-      final identity = decodedMsg.agentEntity as AgentIdentityEntity;
+      final identity = decodedMsg.agentEntity! as AgentIdentityEntity;
       expect(identity.vectorClock, isNull);
     });
   });
@@ -330,7 +330,7 @@ void main() {
       final decodedMsg = decoded as SyncAgentLink;
       expect(decodedMsg.status, SyncEntryStatus.update);
 
-      final decodedLink = decodedMsg.agentLink;
+      final decodedLink = decodedMsg.agentLink!;
       expect(decodedLink, isA<BasicAgentLink>());
       expect(decodedLink.id, 'link-1');
       expect(decodedLink.fromId, 'agent-1');
@@ -357,7 +357,7 @@ void main() {
       final decoded =
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
+      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentStateLink>());
     });
 
@@ -380,7 +380,7 @@ void main() {
       final decoded =
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
+      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePrevLink>());
     });
 
@@ -403,7 +403,7 @@ void main() {
       final decoded =
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
+      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<MessagePayloadLink>());
     });
 
@@ -426,7 +426,7 @@ void main() {
       final decoded =
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
+      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<ToolEffectLink>());
     });
 
@@ -449,7 +449,7 @@ void main() {
       final decoded =
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
-      final decodedLink = (decoded as SyncAgentLink).agentLink;
+      final decodedLink = (decoded as SyncAgentLink).agentLink!;
       expect(decodedLink, isA<AgentTaskLink>());
     });
 
@@ -473,7 +473,100 @@ void main() {
           SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>);
 
       final decodedLink = (decoded as SyncAgentLink).agentLink;
-      expect(decodedLink.vectorClock, isNull);
+      expect(decodedLink, isNotNull);
+      expect(decodedLink!.vectorClock, isNull);
+    });
+  });
+
+  group('SyncAgentEntity descriptor-only (jsonPath)', () {
+    test('round-trips descriptor-only message with jsonPath', () {
+      const msg = SyncMessage.agentEntity(
+        status: SyncEntryStatus.update,
+        jsonPath: '/agent_entities/agent-1.json',
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded =
+          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+
+      expect(decoded, isA<SyncAgentEntity>());
+      final decodedMsg = decoded as SyncAgentEntity;
+      expect(decodedMsg.agentEntity, isNull);
+      expect(decodedMsg.jsonPath, '/agent_entities/agent-1.json');
+      expect(decodedMsg.status, SyncEntryStatus.update);
+    });
+
+    test('backward compat: inline entity with null jsonPath', () {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final msg = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded =
+          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+
+      final decodedMsg = decoded as SyncAgentEntity;
+      expect(decodedMsg.agentEntity, isNotNull);
+      expect(decodedMsg.jsonPath, isNull);
+    });
+  });
+
+  group('SyncAgentLink descriptor-only (jsonPath)', () {
+    test('round-trips descriptor-only message with jsonPath', () {
+      const msg = SyncMessage.agentLink(
+        status: SyncEntryStatus.update,
+        jsonPath: '/agent_links/link-1.json',
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded =
+          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+
+      expect(decoded, isA<SyncAgentLink>());
+      final decodedMsg = decoded as SyncAgentLink;
+      expect(decodedMsg.agentLink, isNull);
+      expect(decodedMsg.jsonPath, '/agent_links/link-1.json');
+      expect(decodedMsg.status, SyncEntryStatus.update);
+    });
+
+    test('backward compat: inline link with null jsonPath', () {
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final msg = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded =
+          SyncMessage.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+
+      final decodedMsg = decoded as SyncAgentLink;
+      expect(decodedMsg.agentLink, isNotNull);
+      expect(decodedMsg.jsonPath, isNull);
     });
   });
 }

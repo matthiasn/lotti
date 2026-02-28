@@ -26,6 +26,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 class OutboxService {
   OutboxService({
@@ -1028,24 +1029,137 @@ class OutboxService {
   Future<bool> _enqueueAgentEntity({
     required SyncAgentEntity msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'agentEntity:${msg.agentEntity.id}',
-        logMessage: 'enqueue type=SyncAgentEntity '
-            'subject=agentEntity:${msg.agentEntity.id}',
+  }) async {
+    final entity = msg.agentEntity;
+    if (entity == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip agentEntity is null',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
       );
+      return false;
+    }
+    return _enqueueAgentPayload(
+      id: entity.id,
+      payloadJson: json.encode(entity.toJson()),
+      relativePath: relativeAgentEntityPath(entity.id),
+      enrichedMessage:
+          msg.copyWith(jsonPath: relativeAgentEntityPath(entity.id)),
+      subjectPrefix: 'agentEntity',
+      typeName: 'SyncAgentEntity',
+      commonFields: commonFields,
+    );
+  }
 
   Future<bool> _enqueueAgentLink({
     required SyncAgentLink msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'agentLink:${msg.agentLink.id}',
-        logMessage: 'enqueue type=SyncAgentLink '
-            'subject=agentLink:${msg.agentLink.id}',
+  }) async {
+    final link = msg.agentLink;
+    if (link == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip agentLink is null',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
       );
+      return false;
+    }
+    return _enqueueAgentPayload(
+      id: link.id,
+      payloadJson: json.encode(link.toJson()),
+      relativePath: relativeAgentLinkPath(link.id),
+      enrichedMessage: msg.copyWith(jsonPath: relativeAgentLinkPath(link.id)),
+      subjectPrefix: 'agentLink',
+      typeName: 'SyncAgentLink',
+      commonFields: commonFields,
+    );
+  }
+
+  /// Shared implementation for enqueuing agent entities and links.
+  /// Saves [payloadJson] to disk, builds an enriched outbox message from
+  /// [enrichedMessage], and either merges into an existing pending item or
+  /// creates a new one.
+  Future<bool> _enqueueAgentPayload({
+    required String id,
+    required String payloadJson,
+    required String relativePath,
+    required SyncMessage enrichedMessage,
+    required String subjectPrefix,
+    required String typeName,
+    required OutboxCompanion commonFields,
+  }) async {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final docsRoot = p.normalize(_documentsDirectory.path);
+    final fullPath = p.normalize(p.join(docsRoot, relativeJoined));
+    final subject = '$subjectPrefix:$id';
+
+    if (!p.isWithin(docsRoot, fullPath)) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid agent payload path: $relativePath',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    try {
+      await _saveJson(fullPath, payloadJson);
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage.saveAgentPayload',
+        stackTrace: stackTrace,
+      );
+      // Fallback: enqueue with inline payload so the sender's legacy
+      // enrichment path can write the file and upload on retry.
+      await _syncDatabase.addOutboxItem(
+        commonFields.copyWith(
+          subject: Value(subject),
+          outboxEntryId: Value(id),
+        ),
+      );
+      return false;
+    }
+
+    final enrichedJson = json.encode(enrichedMessage.toJson());
+    final enrichedSize = utf8.encode(enrichedJson).length;
+
+    final existingItem = await _syncDatabase.findPendingByEntryId(id);
+
+    if (existingItem != null) {
+      await _syncDatabase.updateOutboxMessage(
+        itemId: existingItem.id,
+        newMessage: enrichedJson,
+        newSubject: subject,
+        payloadSize: enrichedSize,
+      );
+      _loggingService.captureEvent(
+        'enqueue MERGED type=$typeName id=$id',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
+      return true;
+    }
+
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value(subject),
+        message: Value(enrichedJson),
+        outboxEntryId: Value(id),
+        payloadSize: Value(enrichedSize),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=$typeName subject=$subject',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+    return false;
+  }
 
   Future<void> dispose() async {
     _isDisposed = true;

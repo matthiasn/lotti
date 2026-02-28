@@ -1106,7 +1106,7 @@ void main() {
       expect(captured.length, 1);
       final msg = captured.first as SyncMessage;
       expect(
-        msg.mapOrNull(agentEntity: (m) => m.agentEntity.id),
+        msg.mapOrNull(agentEntity: (m) => m.agentEntity!.id),
         'agent-1',
       );
     });
@@ -1147,7 +1147,7 @@ void main() {
       expect(captured.length, 1);
       final msg = captured.first as SyncMessage;
       expect(
-        msg.mapOrNull(agentLink: (m) => m.agentLink.id),
+        msg.mapOrNull(agentLink: (m) => m.agentLink!.id),
         'link-1',
       );
     });

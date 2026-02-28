@@ -9,6 +9,10 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -1541,6 +1545,441 @@ void main() {
       );
 
       expect(result, isNull);
+    });
+  });
+
+  group('enrichAndUploadAgentPayloadForTesting', () {
+    test('uploads entity file and returns descriptor-only message', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      const relativePath = '/agent_entities/agent-1.json';
+      File('${documentsDirectory.path}$relativePath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+        jsonPath: relativePath,
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isA<SyncAgentEntity>());
+      final entityResult = result! as SyncAgentEntity;
+      expect(entityResult.agentEntity, isNull);
+      expect(entityResult.jsonPath, relativePath);
+      expect(entityResult.status, SyncEntryStatus.update);
+
+      final extras = verify(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: captureAny(named: 'extraContent'),
+        ),
+      ).captured.cast<Map<String, dynamic>>();
+      expect(extras.first['relativePath'], relativePath);
+    });
+
+    test('returns null when entity has no jsonPath and no inline', () async {
+      const message = SyncMessage.agentEntity(
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isNull);
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
+    });
+
+    test('returns null when entity file read fails', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-missing',
+        agentId: 'agent-missing',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+        jsonPath: '/agent_entities/agent-missing.json',
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isNull);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.agentEntity',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('returns null when entity file upload fails', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-fail',
+        agentId: 'agent-fail',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      const relativePath = '/agent_entities/agent-fail.json';
+      File('${documentsDirectory.path}$relativePath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+        jsonPath: relativePath,
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('uploads link file and returns descriptor-only message', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      const relativePath = '/agent_links/link-1.json';
+      File('${documentsDirectory.path}$relativePath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(link.toJson()));
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+        jsonPath: relativePath,
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isA<SyncAgentLink>());
+      final linkResult = result! as SyncAgentLink;
+      expect(linkResult.agentLink, isNull);
+      expect(linkResult.jsonPath, relativePath);
+      expect(linkResult.status, SyncEntryStatus.update);
+    });
+
+    test('returns null when link has no jsonPath and no inline', () async {
+      const message = SyncMessage.agentLink(
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isNull);
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
+    });
+
+    test('passes through non-agent messages unchanged', () async {
+      const message = SyncMessage.aiConfigDelete(id: 'abc');
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, same(message));
+    });
+  });
+
+  group('legacy agent messages without jsonPath', () {
+    test('enriches legacy SyncAgentEntity with jsonPath and uploads', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
+
+      final entity = AgentDomainEntity.agent(
+        id: 'legacy-agent',
+        agentId: 'legacy-agent',
+        kind: 'task_agent',
+        displayName: 'Legacy',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      // Legacy message: has inline entity but no jsonPath
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
+
+      expect(result, isTrue);
+
+      // File was uploaded
+      verify(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).called(1);
+
+      // Text event was sent as descriptor-only (agentEntity nulled)
+      final decoded = json.decode(
+        utf8.decode(base64.decode(capturedPayload)),
+      ) as Map<String, dynamic>;
+      expect(decoded['agentEntity'], isNull);
+      expect(decoded['jsonPath'], '/agent_entities/legacy-agent.json');
+    });
+
+    test('returns false when agent entity upload fails', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final entity = AgentDomainEntity.agent(
+        id: 'fail-agent',
+        agentId: 'fail-agent',
+        kind: 'task_agent',
+        displayName: 'Fail',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
+
+      expect(result, isFalse);
+      verifyNever(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      );
+    });
+
+    test('returns false when agent link upload fails', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final link = AgentLink.basic(
+        id: 'fail-link',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
+
+      expect(result, isFalse);
+      verifyNever(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      );
+    });
+
+    test('enriches legacy SyncAgentLink with jsonPath and uploads', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => 'file-id');
+
+      var capturedPayload = '';
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.first as String;
+        return 'text-id';
+      });
+
+      final link = AgentLink.basic(
+        id: 'legacy-link',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      // Legacy message: has inline link but no jsonPath
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, __) {},
+      );
+
+      expect(result, isTrue);
+
+      verify(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).called(1);
+
+      final decoded = json.decode(
+        utf8.decode(base64.decode(capturedPayload)),
+      ) as Map<String, dynamic>;
+      expect(decoded['agentLink'], isNull);
+      expect(decoded['jsonPath'], '/agent_links/legacy-link.json');
     });
   });
 }
