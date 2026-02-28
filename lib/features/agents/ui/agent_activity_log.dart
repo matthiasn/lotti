@@ -383,14 +383,17 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
         horizontal: AppTheme.cardPaddingHalf,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        borderRadius: BorderRadius.circular(AppTheme.spacingSmall),
       ),
       child: InkWell(
         onTap:
             isExpandable ? () => setState(() => _expanded = !_expanded) : null,
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        borderRadius: BorderRadius.circular(AppTheme.spacingSmall),
         child: Padding(
-          padding: const EdgeInsets.all(AppTheme.cardPaddingCompact),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingSmall + 2,
+            vertical: AppTheme.spacingSmall,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -417,15 +420,12 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
               if (toolName != null && toolName.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingXSmall),
-                  child: Chip(
-                    label: Text(
-                      toolName,
-                      style: monoTabularStyle(
-                        fontSize: fontSizeSmall,
-                      ),
+                  child: Text(
+                    toolName,
+                    style: monoTabularStyle(
+                      fontSize: fontSizeSmall,
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               if (_expanded && contentId != null)

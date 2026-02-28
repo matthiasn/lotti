@@ -560,7 +560,7 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('includes assigned labels section', () async {
+      test('omits assigned labels (now inline in task context JSON)', () async {
         final taskWithLabels = task.copyWith(
           meta: task.meta.copyWith(labelIds: ['label-1']),
         );
@@ -574,9 +574,14 @@ void main() {
           journalDb: mockDb,
         );
 
-        expect(result, contains('## Assigned Labels'));
-        expect(result, contains('label-1'));
-        expect(result, contains('Urgent'));
+        // Assigned labels are now part of the Current Task Context JSON,
+        // so they should not appear as a separate section.
+        expect(result, isNot(contains('## Assigned Labels')));
+        // Available labels section should still be present for unassigned
+        // labels.
+        expect(result, contains('## Available Labels'));
+        expect(result, contains('label-2'));
+        expect(result, contains('Backlog'));
       });
 
       test('includes suppressed labels section', () async {

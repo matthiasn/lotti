@@ -16,11 +16,13 @@ T _$identity<T>(T value) => value;
 mixin _$AiInputTaskObject {
   String get title;
   String get status;
+  String get priority;
   String get estimatedDuration;
   String get timeSpent;
   DateTime get creationDate;
   List<AiActionItem> get actionItems;
   List<AiInputLogEntryObject> get logEntries;
+  DateTime? get dueDate;
   String? get languageCode;
 
   /// Create a copy of AiInputTaskObject
@@ -41,6 +43,8 @@ mixin _$AiInputTaskObject {
             other is AiInputTaskObject &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority) &&
             (identical(other.estimatedDuration, estimatedDuration) ||
                 other.estimatedDuration == estimatedDuration) &&
             (identical(other.timeSpent, timeSpent) ||
@@ -51,6 +55,7 @@ mixin _$AiInputTaskObject {
                 .equals(other.actionItems, actionItems) &&
             const DeepCollectionEquality()
                 .equals(other.logEntries, logEntries) &&
+            (identical(other.dueDate, dueDate) || other.dueDate == dueDate) &&
             (identical(other.languageCode, languageCode) ||
                 other.languageCode == languageCode));
   }
@@ -61,16 +66,18 @@ mixin _$AiInputTaskObject {
       runtimeType,
       title,
       status,
+      priority,
       estimatedDuration,
       timeSpent,
       creationDate,
       const DeepCollectionEquality().hash(actionItems),
       const DeepCollectionEquality().hash(logEntries),
+      dueDate,
       languageCode);
 
   @override
   String toString() {
-    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
+    return 'AiInputTaskObject(title: $title, status: $status, priority: $priority, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, dueDate: $dueDate, languageCode: $languageCode)';
   }
 }
 
@@ -83,11 +90,13 @@ abstract mixin class $AiInputTaskObjectCopyWith<$Res> {
   $Res call(
       {String title,
       String status,
+      String priority,
       String estimatedDuration,
       String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries,
+      DateTime? dueDate,
       String? languageCode});
 }
 
@@ -106,11 +115,13 @@ class _$AiInputTaskObjectCopyWithImpl<$Res>
   $Res call({
     Object? title = null,
     Object? status = null,
+    Object? priority = null,
     Object? estimatedDuration = null,
     Object? timeSpent = null,
     Object? creationDate = null,
     Object? actionItems = null,
     Object? logEntries = null,
+    Object? dueDate = freezed,
     Object? languageCode = freezed,
   }) {
     return _then(_self.copyWith(
@@ -121,6 +132,10 @@ class _$AiInputTaskObjectCopyWithImpl<$Res>
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
               as String,
       estimatedDuration: null == estimatedDuration
           ? _self.estimatedDuration
@@ -142,6 +157,10 @@ class _$AiInputTaskObjectCopyWithImpl<$Res>
           ? _self.logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
               as List<AiInputLogEntryObject>,
+      dueDate: freezed == dueDate
+          ? _self.dueDate
+          : dueDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       languageCode: freezed == languageCode
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable
@@ -246,11 +265,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
     TResult Function(
             String title,
             String status,
+            String priority,
             String estimatedDuration,
             String timeSpent,
             DateTime creationDate,
             List<AiActionItem> actionItems,
             List<AiInputLogEntryObject> logEntries,
+            DateTime? dueDate,
             String? languageCode)?
         $default, {
     required TResult orElse(),
@@ -261,11 +282,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
         return $default(
             _that.title,
             _that.status,
+            _that.priority,
             _that.estimatedDuration,
             _that.timeSpent,
             _that.creationDate,
             _that.actionItems,
             _that.logEntries,
+            _that.dueDate,
             _that.languageCode);
       case _:
         return orElse();
@@ -290,11 +313,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
     TResult Function(
             String title,
             String status,
+            String priority,
             String estimatedDuration,
             String timeSpent,
             DateTime creationDate,
             List<AiActionItem> actionItems,
             List<AiInputLogEntryObject> logEntries,
+            DateTime? dueDate,
             String? languageCode)
         $default,
   ) {
@@ -304,11 +329,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
         return $default(
             _that.title,
             _that.status,
+            _that.priority,
             _that.estimatedDuration,
             _that.timeSpent,
             _that.creationDate,
             _that.actionItems,
             _that.logEntries,
+            _that.dueDate,
             _that.languageCode);
       case _:
         throw StateError('Unexpected subclass');
@@ -332,11 +359,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
     TResult? Function(
             String title,
             String status,
+            String priority,
             String estimatedDuration,
             String timeSpent,
             DateTime creationDate,
             List<AiActionItem> actionItems,
             List<AiInputLogEntryObject> logEntries,
+            DateTime? dueDate,
             String? languageCode)?
         $default,
   ) {
@@ -346,11 +375,13 @@ extension AiInputTaskObjectPatterns on AiInputTaskObject {
         return $default(
             _that.title,
             _that.status,
+            _that.priority,
             _that.estimatedDuration,
             _that.timeSpent,
             _that.creationDate,
             _that.actionItems,
             _that.logEntries,
+            _that.dueDate,
             _that.languageCode);
       case _:
         return null;
@@ -364,11 +395,13 @@ class _AiInputTaskObject implements AiInputTaskObject {
   const _AiInputTaskObject(
       {required this.title,
       required this.status,
+      required this.priority,
       required this.estimatedDuration,
       required this.timeSpent,
       required this.creationDate,
       required final List<AiActionItem> actionItems,
       required final List<AiInputLogEntryObject> logEntries,
+      this.dueDate,
       this.languageCode})
       : _actionItems = actionItems,
         _logEntries = logEntries;
@@ -379,6 +412,8 @@ class _AiInputTaskObject implements AiInputTaskObject {
   final String title;
   @override
   final String status;
+  @override
+  final String priority;
   @override
   final String estimatedDuration;
   @override
@@ -401,6 +436,8 @@ class _AiInputTaskObject implements AiInputTaskObject {
     return EqualUnmodifiableListView(_logEntries);
   }
 
+  @override
+  final DateTime? dueDate;
   @override
   final String? languageCode;
 
@@ -426,6 +463,8 @@ class _AiInputTaskObject implements AiInputTaskObject {
             other is _AiInputTaskObject &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority) &&
             (identical(other.estimatedDuration, estimatedDuration) ||
                 other.estimatedDuration == estimatedDuration) &&
             (identical(other.timeSpent, timeSpent) ||
@@ -436,6 +475,7 @@ class _AiInputTaskObject implements AiInputTaskObject {
                 .equals(other._actionItems, _actionItems) &&
             const DeepCollectionEquality()
                 .equals(other._logEntries, _logEntries) &&
+            (identical(other.dueDate, dueDate) || other.dueDate == dueDate) &&
             (identical(other.languageCode, languageCode) ||
                 other.languageCode == languageCode));
   }
@@ -446,16 +486,18 @@ class _AiInputTaskObject implements AiInputTaskObject {
       runtimeType,
       title,
       status,
+      priority,
       estimatedDuration,
       timeSpent,
       creationDate,
       const DeepCollectionEquality().hash(_actionItems),
       const DeepCollectionEquality().hash(_logEntries),
+      dueDate,
       languageCode);
 
   @override
   String toString() {
-    return 'AiInputTaskObject(title: $title, status: $status, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, languageCode: $languageCode)';
+    return 'AiInputTaskObject(title: $title, status: $status, priority: $priority, estimatedDuration: $estimatedDuration, timeSpent: $timeSpent, creationDate: $creationDate, actionItems: $actionItems, logEntries: $logEntries, dueDate: $dueDate, languageCode: $languageCode)';
   }
 }
 
@@ -470,11 +512,13 @@ abstract mixin class _$AiInputTaskObjectCopyWith<$Res>
   $Res call(
       {String title,
       String status,
+      String priority,
       String estimatedDuration,
       String timeSpent,
       DateTime creationDate,
       List<AiActionItem> actionItems,
       List<AiInputLogEntryObject> logEntries,
+      DateTime? dueDate,
       String? languageCode});
 }
 
@@ -493,11 +537,13 @@ class __$AiInputTaskObjectCopyWithImpl<$Res>
   $Res call({
     Object? title = null,
     Object? status = null,
+    Object? priority = null,
     Object? estimatedDuration = null,
     Object? timeSpent = null,
     Object? creationDate = null,
     Object? actionItems = null,
     Object? logEntries = null,
+    Object? dueDate = freezed,
     Object? languageCode = freezed,
   }) {
     return _then(_AiInputTaskObject(
@@ -508,6 +554,10 @@ class __$AiInputTaskObjectCopyWithImpl<$Res>
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      priority: null == priority
+          ? _self.priority
+          : priority // ignore: cast_nullable_to_non_nullable
               as String,
       estimatedDuration: null == estimatedDuration
           ? _self.estimatedDuration
@@ -529,6 +579,10 @@ class __$AiInputTaskObjectCopyWithImpl<$Res>
           ? _self._logEntries
           : logEntries // ignore: cast_nullable_to_non_nullable
               as List<AiInputLogEntryObject>,
+      dueDate: freezed == dueDate
+          ? _self.dueDate
+          : dueDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       languageCode: freezed == languageCode
           ? _self.languageCode
           : languageCode // ignore: cast_nullable_to_non_nullable

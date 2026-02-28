@@ -10,11 +10,13 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -461,8 +463,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -492,8 +494,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -644,8 +646,8 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Tap delete button
-      await tester.tap(find.text(context.messages.deleteButton).first);
+      // Tap delete icon button
+      await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
       // Confirm in dialog
@@ -985,6 +987,40 @@ void main() {
       );
     });
 
+    testWidgets('bottom bar hidden on Stats and Reports tabs', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Bottom bar visible on Settings tab
+      expect(find.byType(FormBottomBar), findsOneWidget);
+      expect(
+        find.text(context.messages.agentTemplateSaveNewVersion),
+        findsOneWidget,
+      );
+
+      // Switch to Stats tab — bottom bar should disappear
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsNothing);
+
+      // Switch to Reports tab — bottom bar should still be hidden
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsNothing);
+
+      // Switch back to Settings tab — bottom bar should reappear
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
+      await tester.pumpAndSettle();
+      expect(find.byType(FormBottomBar), findsOneWidget);
+    });
+
     testWidgets('Stats tab shows token usage section', (tester) async {
       when(() => mockTemplateService.getAgentsForTemplate(any()))
           .thenAnswer((_) async => []);
@@ -1091,12 +1127,13 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
       await tester.pumpAndSettle();
 
-      // Report content visible
-      expect(find.text('Weekly summary: all good.'), findsOneWidget);
-      expect(find.text('Task progress update.'), findsOneWidget);
+      // Report content visible (rendered via GptMarkdown inside
+      // AgentReportSection)
+      expect(find.textContaining('Weekly summary'), findsOneWidget);
+      expect(find.textContaining('Task progress'), findsOneWidget);
 
-      // Cards are rendered
-      expect(find.byType(Card), findsNWidgets(2));
+      // Each report renders inside a ModernBaseCard
+      expect(find.byType(AgentReportSection), findsNWidgets(2));
     });
 
     testWidgets('Reports tab skips non-AgentReportEntity items',
@@ -1161,11 +1198,12 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
       await tester.pumpAndSettle();
 
-      // Valid report is shown
-      expect(find.text('Valid report.'), findsOneWidget);
-      // Only one Card for the valid report (non-report item renders as
-      // SizedBox.shrink, not a Card)
-      expect(find.byType(Card), findsOneWidget);
+      // Valid report is shown (rendered via GptMarkdown inside
+      // AgentReportSection)
+      expect(find.textContaining('Valid report'), findsOneWidget);
+      // Only one AgentReportSection for the valid report (non-report item
+      // renders as SizedBox.shrink)
+      expect(find.byType(AgentReportSection), findsOneWidget);
     });
 
     testWidgets('Reports tab shows loading indicator', (tester) async {

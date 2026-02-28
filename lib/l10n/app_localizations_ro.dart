@@ -355,6 +355,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentReportNone => 'Niciun raport disponibil încă.';
 
   @override
+  String get agentReportSectionTitle => 'Raportul agentului';
+
+  @override
   String get agentRunningIndicator => 'În execuție';
 
   @override
@@ -526,7 +529,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateSaveNewVersion => 'Salvează ca versiune nouă';
+  String get agentTemplateSaveNewVersion => 'Salvează';
 
   @override
   String get agentTemplateSelectTitle => 'Selectează un șablon';
@@ -4017,6 +4020,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepTags => 'Etichete';
 
   @override
+  String get taskAgentCancelTimerTooltip => 'Anulează';
+
+  @override
   String get taskAgentChipLabel => 'Agent';
 
   @override
@@ -4033,7 +4039,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Rulează acum';
+  String get taskAgentRunNowTooltip => 'Reîmprospătează';
 
   @override
   String get taskCategoryAllLabel => 'toate';

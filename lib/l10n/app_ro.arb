@@ -167,6 +167,7 @@
   "agentReportHistoryEmpty": "Nu există încă instantanee ale raportului.",
   "agentReportHistoryError": "A apărut o eroare la încărcarea istoricului rapoartelor.",
   "agentReportNone": "Niciun raport disponibil încă.",
+  "agentReportSectionTitle": "Raportul agentului",
   "agentRunningIndicator": "În execuție",
   "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
   "agentSettingsTitle": "Agenți",
@@ -238,7 +239,7 @@
       }
     }
   },
-  "agentTemplateSaveNewVersion": "Salvează ca versiune nouă",
+  "agentTemplateSaveNewVersion": "Salvează",
   "agentTemplateSelectTitle": "Selectează un șablon",
   "agentTemplateSettingsSubtitle": "Gestionează personalitățile și directivele agenților",
   "agentTemplateSettingsTab": "Setări",
@@ -1623,6 +1624,7 @@
   "syncStepLabels": "Etichete",
   "syncStepMeasurables": "Măsurabile",
   "syncStepTags": "Etichete",
+  "taskAgentCancelTimerTooltip": "Anulează",
   "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Următoarea rulare automată în {countdown}",
   "@taskAgentCountdownTooltip": {
@@ -1641,7 +1643,7 @@
       }
     }
   },
-  "taskAgentRunNowTooltip": "Rulează acum",
+  "taskAgentRunNowTooltip": "Reîmprospătează",
   "taskCategoryAllLabel": "toate",
   "taskCategoryLabel": "Categorie:",
   "taskCategoryUnassignedLabel": "neeatribuit",

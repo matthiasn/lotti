@@ -177,17 +177,14 @@ class AgentTemplateService {
         throw StateError('Template $templateId not found');
       }
 
-      // Archive the current active version.
+      // Archive ALL non-head versions to ensure no stale active statuses.
       final currentHead = await repository.getTemplateHead(templateId);
-      if (currentHead != null) {
-        final currentVersion =
-            await repository.getEntity(currentHead.versionId);
-        final archived = currentVersion?.mapOrNull(
-          agentTemplateVersion: (v) => v.copyWith(
+      final allVersions = await getVersionHistory(templateId);
+      for (final version in allVersions) {
+        if (version.status != AgentTemplateVersionStatus.archived) {
+          final archived = version.copyWith(
             status: AgentTemplateVersionStatus.archived,
-          ),
-        );
-        if (archived != null) {
+          );
           await syncService.upsertEntity(archived);
         }
       }
@@ -370,14 +367,16 @@ class AgentTemplateService {
         );
       }
 
-      // Archive the currently active version.
-      final currentVersionEntity = await repository.getEntity(head.versionId);
-      if (currentVersionEntity is AgentTemplateVersionEntity) {
-        await syncService.upsertEntity(
-          currentVersionEntity.copyWith(
-            status: AgentTemplateVersionStatus.archived,
-          ),
-        );
+      // Archive ALL versions to ensure no stale active statuses.
+      final allVersions = await getVersionHistory(templateId);
+      for (final version in allVersions) {
+        if (version.status != AgentTemplateVersionStatus.archived) {
+          await syncService.upsertEntity(
+            version.copyWith(
+              status: AgentTemplateVersionStatus.archived,
+            ),
+          );
+        }
       }
 
       // Reactivate the target version.

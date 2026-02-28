@@ -350,6 +350,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentReportNone => 'No report available yet.';
 
   @override
+  String get agentReportSectionTitle => 'Agent Report';
+
+  @override
   String get agentRunningIndicator => 'Running';
 
   @override
@@ -518,7 +521,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get agentTemplateSaveNewVersion => 'Save as New Version';
+  String get agentTemplateSaveNewVersion => 'Save';
 
   @override
   String get agentTemplateSelectTitle => 'Select Template';
@@ -3949,6 +3952,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncStepTags => 'Tags';
 
   @override
+  String get taskAgentCancelTimerTooltip => 'Cancel';
+
+  @override
   String get taskAgentChipLabel => 'Agent';
 
   @override
@@ -3965,7 +3971,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get taskAgentRunNowTooltip => 'Run now';
+  String get taskAgentRunNowTooltip => 'Refresh';
 
   @override
   String get taskCategoryAllLabel => 'all';

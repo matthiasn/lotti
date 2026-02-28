@@ -303,7 +303,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: CreateHabitPage(),
         ),
 
-      // Agents
+      // Agents — landing page is always in the stack for sub-routes
+      if (pathContains('agents'))
+        const BeamPage(
+          key: ValueKey('settings-agents'),
+          child: AgentSettingsPage(),
+        ),
+
       if (pathContains('agents/templates/create'))
         const BeamPage(
           key: ValueKey('settings-agents-templates-create'),
@@ -329,11 +335,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: AgentDetailPage(
             agentId: state.pathParameters['agentId']!,
           ),
-        )
-      else if (pathContains('agents'))
-        const BeamPage(
-          key: ValueKey('settings-agents'),
-          child: AgentSettingsPage(),
         ),
 
       // Flags

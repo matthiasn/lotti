@@ -78,10 +78,17 @@ class AgentConversationLog extends ConsumerWidget {
     // most-recent-first, so keep that ordering here.
     final orderedKeys = threads.keys.toList();
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: orderedKeys.length,
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        thickness: 1,
+        indent: AppTheme.cardPadding,
+        endIndent: AppTheme.cardPadding,
+        color: context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+      ),
       itemBuilder: (context, index) {
         final threadId = orderedKeys[index];
         final messages = threads[threadId]!;

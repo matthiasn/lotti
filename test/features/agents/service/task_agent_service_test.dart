@@ -364,6 +364,16 @@ void main() {
       });
     });
 
+    group('cancelScheduledWake', () {
+      test('clears throttle on the orchestrator', () {
+        when(() => mockOrchestrator.clearThrottle(any())).thenReturn(null);
+
+        service.cancelScheduledWake('agent-1');
+
+        verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+      });
+    });
+
     group('restoreSubscriptionsForAgent', () {
       test('registers subscriptions for a single agent', () async {
         final link1 = AgentLink.agentTask(

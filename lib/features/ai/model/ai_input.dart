@@ -8,11 +8,13 @@ abstract class AiInputTaskObject with _$AiInputTaskObject {
   const factory AiInputTaskObject({
     required String title,
     required String status,
+    required String priority,
     required String estimatedDuration,
     required String timeSpent,
     required DateTime creationDate,
     required List<AiActionItem> actionItems,
     required List<AiInputLogEntryObject> logEntries,
+    DateTime? dueDate,
     String? languageCode,
   }) = _AiInputTaskObject;
 

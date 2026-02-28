@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -51,6 +52,8 @@ class _AgentTemplateDetailPageState
 
   static const _tabCount = 3;
 
+  int _currentTabIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -59,12 +62,20 @@ class _AgentTemplateDetailPageState
     if (widget.isCreateMode) {
       _selectedModelId = 'models/gemini-3-flash-preview';
     } else {
-      _tabController = TabController(length: _tabCount, vsync: this);
+      _tabController = TabController(length: _tabCount, vsync: this)
+        ..addListener(_onTabChanged);
+    }
+  }
+
+  void _onTabChanged() {
+    if (_tabController != null && _tabController!.index != _currentTabIndex) {
+      setState(() => _currentTabIndex = _tabController!.index);
     }
   }
 
   @override
   void dispose() {
+    _tabController?.removeListener(_onTabChanged);
     _nameController.dispose();
     _directivesController.dispose();
     _tabController?.dispose();
@@ -149,33 +160,40 @@ class _AgentTemplateDetailPageState
         _nameController.text.trim().isNotEmpty &&
         (_selectedModelId?.isNotEmpty ?? false);
 
+    final showBottomBar = widget.isCreateMode || _currentTabIndex == 0;
+
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
       body: widget.isCreateMode
           ? _buildCreateBody(context, title: title)
           : _buildEditBody(context, title: title),
-      bottomNavigationBar: FormBottomBar(
-        leftButton: widget.isCreateMode
-            ? null
-            : LottiTertiaryButton(
-                onPressed: _isSaving ? null : () => _handleDelete(context),
-                icon: Icons.delete_outline,
-                label: context.messages.deleteButton,
-                isDestructive: true,
-              ),
-        rightButtons: [
-          LottiSecondaryButton(
-            onPressed: () => Navigator.of(context).pop(),
-            label: context.messages.cancelButton,
-          ),
-          LottiPrimaryButton(
-            onPressed: saveEnabled ? () => _handleSave(context) : null,
-            label: widget.isCreateMode
-                ? context.messages.createButton
-                : context.messages.agentTemplateSaveNewVersion,
-          ),
-        ],
-      ),
+      bottomNavigationBar: showBottomBar
+          ? FormBottomBar(
+              leftButton: widget.isCreateMode
+                  ? null
+                  : IconButton(
+                      onPressed:
+                          _isSaving ? null : () => _handleDelete(context),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: context.colorScheme.error,
+                      ),
+                      tooltip: context.messages.deleteButton,
+                    ),
+              rightButtons: [
+                LottiSecondaryButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  label: context.messages.cancelButton,
+                ),
+                LottiPrimaryButton(
+                  onPressed: saveEnabled ? () => _handleSave(context) : null,
+                  label: widget.isCreateMode
+                      ? context.messages.createButton
+                      : context.messages.agentTemplateSaveNewVersion,
+                ),
+              ],
+            )
+          : null,
     );
   }
 
@@ -394,6 +412,9 @@ class _AgentTemplateDetailPageState
 }
 
 /// Expandable section showing version history for a template.
+///
+/// Derives the "active" badge from the head pointer rather than from
+/// each version's persisted status field, which can become stale.
 class _VersionHistorySection extends ConsumerWidget {
   const _VersionHistorySection({required this.templateId});
 
@@ -402,6 +423,10 @@ class _VersionHistorySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(templateVersionHistoryProvider(templateId));
+    final activeVersionAsync =
+        ref.watch(activeTemplateVersionProvider(templateId));
+    final activeVersionId =
+        activeVersionAsync.value?.mapOrNull(agentTemplateVersion: (v) => v.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,6 +450,7 @@ class _VersionHistorySection extends ConsumerWidget {
                 return _VersionTile(
                   version: version,
                   templateId: templateId,
+                  isActive: version.id == activeVersionId,
                 );
               }).toList(),
             );
@@ -441,16 +467,17 @@ class _VersionTile extends ConsumerWidget {
   const _VersionTile({
     required this.version,
     required this.templateId,
+    required this.isActive,
   });
 
   final AgentTemplateVersionEntity version;
   final String templateId;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isActive = version.status == AgentTemplateVersionStatus.active;
-
     return Card(
+      color: context.colorScheme.surfaceContainerHigh,
       margin: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
       child: ListTile(
         title: Text(
@@ -643,29 +670,23 @@ class _ReportsTabContent extends ConsumerWidget {
             if (report is! AgentReportEntity) {
               return const SizedBox.shrink();
             }
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      formatAgentDateTime(report.createdAt),
-                      style: context.textTheme.labelSmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    formatAgentDateTime(report.createdAt),
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      report.content,
-                      style: context.textTheme.bodySmall,
-                      maxLines: 6,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: AgentReportSection(content: report.content),
+                ),
+              ],
             );
           },
         );
