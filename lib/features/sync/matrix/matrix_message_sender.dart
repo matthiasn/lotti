@@ -146,52 +146,12 @@ class MatrixMessageSender {
           coveredVectorClocks: covered,
         );
       }
-      if (outboundMessage is SyncAgentEntity) {
-        // Enrich legacy items that lack jsonPath but have inline entity
-        if (outboundMessage.jsonPath == null &&
-            outboundMessage.agentEntity != null) {
-          final entity = outboundMessage.agentEntity!;
-          final relativePath = relativeAgentEntityPath(entity.id);
-          await _savePayloadToDisk(
-            relativePath: relativePath,
-            jsonPayload: json.encode(entity.toJson()),
-          );
-          outboundMessage = outboundMessage.copyWith(jsonPath: relativePath);
-        }
-        if (outboundMessage.jsonPath != null) {
-          final normalized = await _sendAgentEntityPayload(
-            room: room,
-            message: outboundMessage,
-          );
-          if (normalized == null) {
-            return false;
-          }
-          outboundMessage = normalized;
-        }
-      }
-      if (outboundMessage is SyncAgentLink) {
-        // Enrich legacy items that lack jsonPath but have inline link
-        if (outboundMessage.jsonPath == null &&
-            outboundMessage.agentLink != null) {
-          final link = outboundMessage.agentLink!;
-          final relativePath = relativeAgentLinkPath(link.id);
-          await _savePayloadToDisk(
-            relativePath: relativePath,
-            jsonPayload: json.encode(link.toJson()),
-          );
-          outboundMessage = outboundMessage.copyWith(jsonPath: relativePath);
-        }
-        if (outboundMessage.jsonPath != null) {
-          final normalized = await _sendAgentLinkPayload(
-            room: room,
-            message: outboundMessage,
-          );
-          if (normalized == null) {
-            return false;
-          }
-          outboundMessage = normalized;
-        }
-      }
+      final agentResult = await _enrichAndUploadAgentPayload(
+        room: room,
+        message: outboundMessage,
+      );
+      if (agentResult == null) return false;
+      outboundMessage = agentResult;
 
       final encodedMessage = json.encode(outboundMessage);
       final eventId = await room.sendTextEvent(
@@ -462,56 +422,70 @@ class MatrixMessageSender {
     return outbound;
   }
 
-  /// Uploads the agent entity JSON as a file attachment and returns a
-  /// descriptor-only [SyncAgentEntity] with `agentEntity` nulled.
-  /// Returns null on failure. Callers must guard on `jsonPath != null`
-  /// before calling.
-  Future<SyncAgentEntity?> _sendAgentEntityPayload({
+  /// Enriches and uploads agent payload (entity or link).
+  ///
+  /// For legacy items (inline payload but no jsonPath), saves the payload to
+  /// disk first. Then uploads the file and returns a descriptor-only message.
+  /// Returns the original [message] unchanged for non-agent types.
+  /// Returns null on upload failure.
+  Future<SyncMessage?> _enrichAndUploadAgentPayload({
     required Room room,
-    required SyncAgentEntity message,
+    required SyncMessage message,
   }) async {
-    final jsonPath = message.jsonPath;
-    if (jsonPath == null) {
-      _loggingService.captureEvent(
-        'skipping agent entity send: missing jsonPath',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-      return null;
-    }
-    final uploaded = await _uploadAgentPayload(
-      room: room,
-      relativePath: jsonPath,
-      logLabel: 'agentEntity',
-    );
-    if (!uploaded) return null;
-    return message.copyWith(agentEntity: null);
-  }
+    final String? inlineJson;
+    final String? jsonPath;
+    final String Function(String id)? pathBuilder;
+    final String logLabel;
 
-  /// Uploads the agent link JSON as a file attachment and returns a
-  /// descriptor-only [SyncAgentLink] with `agentLink` nulled.
-  /// Returns null on failure. Callers must guard on `jsonPath != null`
-  /// before calling.
-  Future<SyncAgentLink?> _sendAgentLinkPayload({
-    required Room room,
-    required SyncAgentLink message,
-  }) async {
-    final jsonPath = message.jsonPath;
-    if (jsonPath == null) {
-      _loggingService.captureEvent(
-        'skipping agent link send: missing jsonPath',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-      return null;
+    switch (message) {
+      case final SyncAgentEntity msg:
+        inlineJson = msg.agentEntity != null
+            ? json.encode(msg.agentEntity!.toJson())
+            : null;
+        jsonPath = msg.jsonPath;
+        pathBuilder = relativeAgentEntityPath;
+        logLabel = 'agentEntity';
+      case final SyncAgentLink msg:
+        inlineJson =
+            msg.agentLink != null ? json.encode(msg.agentLink!.toJson()) : null;
+        jsonPath = msg.jsonPath;
+        pathBuilder = relativeAgentLinkPath;
+        logLabel = 'agentLink';
+      default:
+        return message;
     }
+
+    var enrichedPath = jsonPath;
+    // Enrich legacy items that lack jsonPath but have inline payload
+    if (enrichedPath == null && inlineJson != null) {
+      final id = switch (message) {
+        final SyncAgentEntity m => m.agentEntity!.id,
+        final SyncAgentLink m => m.agentLink!.id,
+        _ => throw StateError('unreachable'),
+      };
+      enrichedPath = pathBuilder(id);
+      await _savePayloadToDisk(
+        relativePath: enrichedPath,
+        jsonPayload: inlineJson,
+      );
+    }
+
+    if (enrichedPath == null) return message;
+
     final uploaded = await _uploadAgentPayload(
       room: room,
-      relativePath: jsonPath,
-      logLabel: 'agentLink',
+      relativePath: enrichedPath,
+      logLabel: logLabel,
     );
     if (!uploaded) return null;
-    return message.copyWith(agentLink: null);
+
+    return switch (message) {
+      final SyncAgentEntity m =>
+        m.copyWith(jsonPath: enrichedPath, agentEntity: null),
+      final SyncAgentLink m =>
+        m.copyWith(jsonPath: enrichedPath, agentLink: null),
+      _ => throw StateError('unreachable'),
+    };
   }
 
   /// Reads the JSON file at [relativePath] from disk and uploads it via
@@ -571,18 +545,11 @@ class MatrixMessageSender {
       _sendJournalEntityPayload(room: room, message: message);
 
   @visibleForTesting
-  Future<SyncAgentEntity?> sendAgentEntityPayloadForTesting({
+  Future<SyncMessage?> enrichAndUploadAgentPayloadForTesting({
     required Room room,
-    required SyncAgentEntity message,
+    required SyncMessage message,
   }) =>
-      _sendAgentEntityPayload(room: room, message: message);
-
-  @visibleForTesting
-  Future<SyncAgentLink?> sendAgentLinkPayloadForTesting({
-    required Room room,
-    required SyncAgentLink message,
-  }) =>
-      _sendAgentLinkPayload(room: room, message: message);
+      _enrichAndUploadAgentPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

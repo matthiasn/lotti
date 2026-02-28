@@ -1048,27 +1048,25 @@ class SyncEventProcessor {
     return null;
   }
 
-  /// Resolves the [AgentDomainEntity] from a [SyncAgentEntity] message.
-  /// If the entity is present inline (legacy/backward compat), returns it
-  /// directly. If only `jsonPath` is set, loads the entity from disk (the file
-  /// was already downloaded by `AttachmentIngestor`). Returns null when
-  /// neither is available.
+  /// Resolves an agent payload from a sync message: inline first, then
+  /// jsonPath from disk.
   ///
-  /// Path-validation errors from `resolveJsonCandidateFile` (e.g. path
+  /// Path-validation errors from [resolveJsonCandidateFile] (e.g. path
   /// traversal) are permanent — logged and skipped. File-read
   /// [FileSystemException]s are rethrown so the pipeline retries (attachment
   /// may not have arrived yet). Other exceptions (corrupt JSON, parse errors)
   /// are logged and return null to skip permanently.
-  Future<AgentDomainEntity?> _resolveAgentEntity(
-    SyncAgentEntity msg,
-  ) async {
-    if (msg.agentEntity != null) {
-      return msg.agentEntity;
-    }
-    final jp = msg.jsonPath;
+  Future<T?> _resolveAgentPayload<T>({
+    required T? inline,
+    required String? jsonPath,
+    required T Function(Map<String, dynamic>) fromJson,
+    required String typeName,
+  }) async {
+    if (inline != null) return inline;
+    final jp = jsonPath;
     if (jp == null) {
       _loggingService.captureEvent(
-        'agentEntity.skipped no entity and no jsonPath',
+        '$typeName.skipped no payload and no jsonPath',
         domain: 'AGENT_SYNC',
         subDomain: 'resolve',
       );
@@ -1083,16 +1081,14 @@ class SyncEventProcessor {
       _loggingService.captureException(
         e,
         domain: 'AGENT_SYNC',
-        subDomain: 'resolve.agentEntity.invalidPath',
+        subDomain: 'resolve.$typeName.invalidPath',
         stackTrace: st,
       );
       return null;
     }
     try {
       final jsonString = await file.readAsString();
-      return AgentDomainEntity.fromJson(
-        json.decode(jsonString) as Map<String, dynamic>,
-      );
+      return fromJson(json.decode(jsonString) as Map<String, dynamic>);
     } on FileSystemException {
       // Attachment file not yet available — rethrow so the pipeline retries
       // and registers the pending descriptor path for catch-up.
@@ -1101,58 +1097,30 @@ class SyncEventProcessor {
       _loggingService.captureException(
         e,
         domain: 'AGENT_SYNC',
-        subDomain: 'resolve.agentEntity',
+        subDomain: 'resolve.$typeName',
         stackTrace: st,
       );
       return null;
     }
   }
 
-  /// Resolves the [AgentLink] from a [SyncAgentLink] message.
-  /// Same strategy as [_resolveAgentEntity]: inline first, then jsonPath.
-  /// Path-validation errors skip permanently; file-read errors retry.
-  Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) async {
-    if (msg.agentLink != null) {
-      return msg.agentLink;
-    }
-    final jp = msg.jsonPath;
-    if (jp == null) {
-      _loggingService.captureEvent(
-        'agentLink.skipped no link and no jsonPath',
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve',
+  Future<AgentDomainEntity?> _resolveAgentEntity(
+    SyncAgentEntity msg,
+  ) =>
+      _resolveAgentPayload(
+        inline: msg.agentEntity,
+        jsonPath: msg.jsonPath,
+        fromJson: AgentDomainEntity.fromJson,
+        typeName: 'agentEntity',
       );
-      return null;
-    }
-    final File file;
-    try {
-      file = resolveJsonCandidateFile(jp);
-    } on FileSystemException catch (e, st) {
-      _loggingService.captureException(
-        e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve.agentLink.invalidPath',
-        stackTrace: st,
+
+  Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) =>
+      _resolveAgentPayload(
+        inline: msg.agentLink,
+        jsonPath: msg.jsonPath,
+        fromJson: AgentLink.fromJson,
+        typeName: 'agentLink',
       );
-      return null;
-    }
-    try {
-      final jsonString = await file.readAsString();
-      return AgentLink.fromJson(
-        json.decode(jsonString) as Map<String, dynamic>,
-      );
-    } on FileSystemException {
-      rethrow;
-    } catch (e, st) {
-      _loggingService.captureException(
-        e,
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve.agentLink',
-        stackTrace: st,
-      );
-      return null;
-    }
-  }
 
   Future<SyncApplyDiagnostics?> _handleMessage({
     required Event event,

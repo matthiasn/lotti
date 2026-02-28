@@ -1548,8 +1548,8 @@ void main() {
     });
   });
 
-  group('sendAgentEntityPayloadForTesting', () {
-    test('uploads file and returns descriptor-only message', () async {
+  group('enrichAndUploadAgentPayloadForTesting', () {
+    test('uploads entity file and returns descriptor-only message', () async {
       when(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1581,17 +1581,18 @@ void main() {
         agentEntity: entity,
         status: SyncEntryStatus.update,
         jsonPath: relativePath,
-      ) as SyncAgentEntity;
+      );
 
-      final result = await sender.sendAgentEntityPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
         message: message,
       );
 
-      expect(result, isNotNull);
-      expect(result!.agentEntity, isNull);
-      expect(result.jsonPath, relativePath);
-      expect(result.status, SyncEntryStatus.update);
+      expect(result, isA<SyncAgentEntity>());
+      final entityResult = result! as SyncAgentEntity;
+      expect(entityResult.agentEntity, isNull);
+      expect(entityResult.jsonPath, relativePath);
+      expect(entityResult.status, SyncEntryStatus.update);
 
       final extras = verify(
         () => room.sendFileEvent(
@@ -1602,17 +1603,17 @@ void main() {
       expect(extras.first['relativePath'], relativePath);
     });
 
-    test('returns null when jsonPath is null', () async {
+    test('returns entity unchanged when no jsonPath and no inline', () async {
       const message = SyncMessage.agentEntity(
         status: SyncEntryStatus.update,
       );
 
-      final result = await sender.sendAgentEntityPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
-        message: message as SyncAgentEntity,
+        message: message,
       );
 
-      expect(result, isNull);
+      expect(result, same(message));
       verifyNever(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1621,7 +1622,7 @@ void main() {
       );
     });
 
-    test('returns null when file read fails', () async {
+    test('returns null when entity file read fails', () async {
       final entity = AgentDomainEntity.agent(
         id: 'agent-missing',
         agentId: 'agent-missing',
@@ -1641,9 +1642,9 @@ void main() {
         agentEntity: entity,
         status: SyncEntryStatus.update,
         jsonPath: '/agent_entities/agent-missing.json',
-      ) as SyncAgentEntity;
+      );
 
-      final result = await sender.sendAgentEntityPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
         message: message,
       );
@@ -1659,7 +1660,7 @@ void main() {
       ).called(1);
     });
 
-    test('returns null when file upload fails', () async {
+    test('returns null when entity file upload fails', () async {
       when(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1691,19 +1692,17 @@ void main() {
         agentEntity: entity,
         status: SyncEntryStatus.update,
         jsonPath: relativePath,
-      ) as SyncAgentEntity;
+      );
 
-      final result = await sender.sendAgentEntityPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
         message: message,
       );
 
       expect(result, isNull);
     });
-  });
 
-  group('sendAgentLinkPayloadForTesting', () {
-    test('uploads file and returns descriptor-only message', () async {
+    test('uploads link file and returns descriptor-only message', () async {
       when(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1729,36 +1728,48 @@ void main() {
         agentLink: link,
         status: SyncEntryStatus.update,
         jsonPath: relativePath,
-      ) as SyncAgentLink;
+      );
 
-      final result = await sender.sendAgentLinkPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
         message: message,
       );
 
-      expect(result, isNotNull);
-      expect(result!.agentLink, isNull);
-      expect(result.jsonPath, relativePath);
-      expect(result.status, SyncEntryStatus.update);
+      expect(result, isA<SyncAgentLink>());
+      final linkResult = result! as SyncAgentLink;
+      expect(linkResult.agentLink, isNull);
+      expect(linkResult.jsonPath, relativePath);
+      expect(linkResult.status, SyncEntryStatus.update);
     });
 
-    test('returns null when jsonPath is null', () async {
+    test('returns link unchanged when no jsonPath and no inline', () async {
       const message = SyncMessage.agentLink(
         status: SyncEntryStatus.update,
       );
 
-      final result = await sender.sendAgentLinkPayloadForTesting(
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
         room: room,
-        message: message as SyncAgentLink,
+        message: message,
       );
 
-      expect(result, isNull);
+      expect(result, same(message));
       verifyNever(
         () => room.sendFileEvent(
           any<MatrixFile>(),
           extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
         ),
       );
+    });
+
+    test('passes through non-agent messages unchanged', () async {
+      const message = SyncMessage.aiConfigDelete(id: 'abc');
+
+      final result = await sender.enrichAndUploadAgentPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, same(message));
     });
   });
 

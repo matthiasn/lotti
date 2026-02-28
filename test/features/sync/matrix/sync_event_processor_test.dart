@@ -1667,7 +1667,7 @@ void main() {
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
           () => loggingService.captureEvent(
-            any<Object>(that: contains('no entity and no jsonPath')),
+            any<Object>(that: contains('no payload and no jsonPath')),
             domain: 'AGENT_SYNC',
             subDomain: 'resolve',
           ),
@@ -1685,7 +1685,7 @@ void main() {
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
           () => loggingService.captureEvent(
-            any<Object>(that: contains('no link and no jsonPath')),
+            any<Object>(that: contains('no payload and no jsonPath')),
             domain: 'AGENT_SYNC',
             subDomain: 'resolve',
           ),
