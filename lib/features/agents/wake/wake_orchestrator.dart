@@ -771,11 +771,12 @@ class WakeOrchestrator {
         completedAt: completedAt,
         errorMessage: errorMessage,
       );
-    } catch (e) {
+    } catch (e, s) {
       _logError(
         'failed to update wake run status '
         'for ${DomainLogger.sanitizeId(runKey)} to $status',
         error: e,
+        stackTrace: s,
       );
     }
   }
@@ -865,14 +866,20 @@ class _WakeThrottleCoordinator {
     domainLogger?.log(LogDomains.agentRuntime, message, subDomain: subDomain);
   }
 
-  void _logError(String message, {Object? error}) {
+  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
     if (domainLogger != null) {
-      domainLogger!.error(LogDomains.agentRuntime, message, error: error);
+      domainLogger!.error(
+        LogDomains.agentRuntime,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
     } else {
       developer.log(
         '$message${error != null ? ': $error' : ''}',
         name: 'WakeThrottleCoordinator',
         error: error,
+        stackTrace: stackTrace,
       );
     }
   }
@@ -913,11 +920,12 @@ class _WakeThrottleCoordinator {
         );
         onPersistedStateChanged?.call(agentId);
       }
-    } catch (e) {
+    } catch (e, s) {
       _logError(
         'failed to persist throttle deadline '
         'for ${DomainLogger.sanitizeId(agentId)}',
         error: e,
+        stackTrace: s,
       );
     }
   }
@@ -964,11 +972,12 @@ class _WakeThrottleCoordinator {
         );
         onPersistedStateChanged?.call(agentId);
       }
-    } catch (e) {
+    } catch (e, s) {
       _logError(
         'failed to clear persisted throttle '
         'for ${DomainLogger.sanitizeId(agentId)}',
         error: e,
+        stackTrace: s,
       );
     }
   }

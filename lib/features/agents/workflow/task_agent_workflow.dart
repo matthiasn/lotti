@@ -477,8 +477,12 @@ class TaskAgentWorkflow {
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),
         );
-      } catch (stateError) {
-        _logError('failed to update failure count', error: stateError);
+      } catch (stateError, s) {
+        _logError(
+          'failed to update failure count',
+          error: stateError,
+          stackTrace: s,
+        );
       }
 
       return WakeResult(success: false, error: e.toString());
@@ -790,8 +794,12 @@ and never shown to the user. They persist as your memory across wakes.
           buffer.write(correctionContext);
         }
       }
-    } catch (e) {
-      _logError('failed to build label/correction context', error: e);
+    } catch (e, s) {
+      _logError(
+        'failed to build label/correction context',
+        error: e,
+        stackTrace: s,
+      );
       // Non-fatal: continue without context.
     }
 
@@ -926,8 +934,12 @@ and never shown to the user. They persist as your memory across wakes.
         );
       }
       return null;
-    } catch (e) {
-      _logError('failed to resolve linked task-agent report', error: e);
+    } catch (e, s) {
+      _logError(
+        'failed to resolve linked task-agent report',
+        error: e,
+        stackTrace: s,
+      );
       return null;
     }
   }

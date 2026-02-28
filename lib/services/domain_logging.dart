@@ -28,8 +28,8 @@ class DomainLogger {
 
   /// Set of currently enabled domain names.
   ///
-  /// Managed externally (e.g. via config flag watchers). When empty, all
-  /// domains are treated as disabled and [log] / [error] are no-ops.
+  /// Managed externally (e.g. via config flag watchers). When empty, [log]
+  /// is disabled for all domains, while [error] still logs.
   final Set<String> enabledDomains = {};
 
   /// Log a domain-specific message at the given [level].

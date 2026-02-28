@@ -44,7 +44,7 @@ class DomainLogger {
 
 Add domain-specific logging flags to `lib/utils/consts.dart`:
 
-```
+```dart
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';
 const logSyncFlag = 'log_sync';
@@ -210,6 +210,7 @@ appears in the domain log files.
 ## Part 4: File Listing
 
 ### New Files
+
 | File | Purpose |
 |------|---------|
 | `lib/services/domain_logging.dart` | DomainLogger class with PII scrubbing |
@@ -218,6 +219,7 @@ appears in the domain log files.
 | `test/features/settings/ui/pages/advanced/logging_settings_page_test.dart` | Widget tests |
 
 ### Modified Files
+
 | File | Change |
 |------|--------|
 | `lib/utils/consts.dart` | Add domain logging flag constants |

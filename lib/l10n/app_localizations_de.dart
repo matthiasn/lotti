@@ -3517,7 +3517,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsLoggingGlobalToggleSubtitle =>
-      'Hauptschalter für alle Protokollierung';
+      'Hauptschalter für die gesamte Protokollierung';
 
   @override
   String get settingsLoggingSync => 'Synchronisation';
