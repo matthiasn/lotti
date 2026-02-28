@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/workout_chart_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -89,17 +90,30 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(
-        workoutChartDataControllerProvider(
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ).future,
+      final provider = workoutChartDataControllerProvider(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      // Initial load
+      await container.read(provider.future);
+
+      // Listen for the refresh to complete
+      final refreshed = Completer<List<JournalEntity>>();
+      container.listen<AsyncValue<List<JournalEntity>>>(
+        provider,
+        (_, next) {
+          if (next is AsyncData<List<JournalEntity>> &&
+              !refreshed.isCompleted) {
+            refreshed.complete(next.value);
+          }
+        },
       );
 
       updateController.add({workoutNotification});
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      // Wait for the refresh to complete
+      await refreshed.future;
 
       verify(
         () => mocks.journalDb.getWorkouts(

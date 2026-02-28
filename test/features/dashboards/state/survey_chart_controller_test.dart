@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_chart_controller.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -100,19 +101,32 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(
-        surveyChartDataControllerProvider(
-          surveyType: surveyType,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ).future,
+      final provider = surveyChartDataControllerProvider(
+        surveyType: surveyType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      // Initial load
+      await container.read(provider.future);
+
+      // Listen for the refresh to complete
+      final refreshed = Completer<List<JournalEntity>>();
+      container.listen<AsyncValue<List<JournalEntity>>>(
+        provider,
+        (_, next) {
+          if (next is AsyncData<List<JournalEntity>> &&
+              !refreshed.isCompleted) {
+            refreshed.complete(next.value);
+          }
+        },
       );
 
       // Trigger survey notification
       updateController.add({surveyNotification});
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      // Wait for the refresh to complete
+      await refreshed.future;
 
       verify(
         () => mocks.journalDb.getSurveyCompletionsByType(
@@ -141,21 +155,22 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      await container.read(
-        surveyChartDataControllerProvider(
-          surveyType: surveyType,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        ).future,
+      final provider = surveyChartDataControllerProvider(
+        surveyType: surveyType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
       );
+
+      await container.read(provider.future);
 
       // Trigger unrelated notification
       updateController.add({'UNRELATED'});
 
-      await Future<void>.delayed(Duration.zero);
+      // Give a microtask cycle for the stream event to be processed
       await Future<void>.delayed(Duration.zero);
 
-      // Should only have been called once (initial load)
+      // Should only have been called once (initial load) since UNRELATED
+      // doesn't match surveyNotification
       verify(
         () => mocks.journalDb.getSurveyCompletionsByType(
           type: surveyType,

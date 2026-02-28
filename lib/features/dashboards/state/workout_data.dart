@@ -51,14 +51,6 @@ List<Observation> aggregateWorkoutDailySum(
     );
   }
 
-  for (final entity in entities) {
-    final dayString = entity.meta.dateFrom.ymd;
-    final n = sumsByDay[dayString] ?? 0;
-    if (entity is QuantitativeEntry) {
-      sumsByDay[dayString] = n + entity.data.value;
-    }
-  }
-
   final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
     final day = DateTime.parse(dayString);

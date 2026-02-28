@@ -145,12 +145,12 @@ void main() {
       }
     });
 
-    test('includes QuantitativeEntry values in sum', () {
+    test('ignores unrelated QuantitativeEntry values', () {
       final entities = [
         makeQuantitativeEntry(
           dateFrom: DateTime(2024, 3, 12),
           value: 100,
-          dataType: 'some_type',
+          dataType: 'some_unrelated_type',
         ),
       ];
 
@@ -164,7 +164,8 @@ void main() {
       final march12 = result.firstWhere(
         (o) => o.dateTime == DateTime(2024, 3, 12),
       );
-      expect(march12.value, 100);
+      // Unrelated QuantitativeEntry values should not be included
+      expect(march12.value, 0);
     });
 
     test('sums multiple workouts on the same day', () {
