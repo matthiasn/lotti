@@ -332,32 +332,19 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
             entity.data.checkedAt?.toIso8601String() ?? 'unknown';
         final trimmedReason = reason?.trim() ?? '';
 
+        String? skipReason;
         if (trimmedReason.isEmpty) {
-          _skip(
-            id,
-            'User set this item at $checkedAtStr. Provide a reason '
-            '(>= $minReasonLength chars) citing evidence from after '
-            'that time to override.',
-          );
-          if (await _applyTitleOnlyIfChanged(
-            id: id,
-            entity: entity,
-            newTitle: newTitle,
-            titleChanged: titleChanged,
-            currentIsChecked: currentIsChecked,
-          )) {
-            successCount++;
-          }
-          continue;
+          skipReason = 'User set this item at $checkedAtStr. Provide a reason '
+              '(>= $minReasonLength chars) citing evidence from after '
+              'that time to override.';
+        } else if (trimmedReason.length < minReasonLength) {
+          skipReason = 'Reason too short (${trimmedReason.length} chars, '
+              'minimum $minReasonLength). Provide a substantive reason '
+              'citing specific evidence from after $checkedAtStr.';
         }
 
-        if (trimmedReason.length < minReasonLength) {
-          _skip(
-            id,
-            'Reason too short (${trimmedReason.length} chars, '
-            'minimum $minReasonLength). Provide a substantive reason '
-            'citing specific evidence from after $checkedAtStr.',
-          );
+        if (skipReason != null) {
+          _skip(id, skipReason);
           if (await _applyTitleOnlyIfChanged(
             id: id,
             entity: entity,
