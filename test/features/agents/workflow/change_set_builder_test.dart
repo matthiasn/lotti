@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockAgentSyncService extends Mock implements AgentSyncService {}
 
 void main() {
@@ -232,6 +234,56 @@ void main() {
       expect(
         resolverBuilder.items.first.humanSummary,
         'Check off item 12345678…',
+      );
+    });
+
+    test('logs error via DomainLogger when resolver throws', () async {
+      final mockLogger = MockDomainLogger();
+      when(() => mockLogger.enabledDomains).thenReturn({'agent_workflow'});
+      when(
+        () => mockLogger.error(
+          any(),
+          any(),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        domainLogger: mockLogger,
+        checklistItemTitleResolver: (_) async =>
+            throw Exception('connection lost'),
+      );
+
+      await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-err', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // Verify logger was called with the error.
+      verify(
+        () => mockLogger.error(
+          'agent_workflow',
+          any(that: contains('failed to resolve checklist item title')),
+          error: any(named: 'error'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // Should still produce a fallback summary.
+      expect(resolverBuilder.items, hasLength(1));
+      expect(
+        resolverBuilder.items.first.humanSummary,
+        'Check off item item-err',
       );
     });
 

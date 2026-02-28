@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -2454,6 +2455,39 @@ void main() {
               ),
             ),
           ).called(1);
+        });
+
+        test('update_checklist_items resolves title from DB for ID-only items',
+            () async {
+          // Stub journalEntityById to return a ChecklistItem for the
+          // referenced item ID so the resolver closure is exercised.
+          final checklistItem = JournalEntity.checklistItem(
+            meta: Metadata(
+              id: 'cl-item-1',
+              createdAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+            ),
+            data: const ChecklistItemData(
+              title: 'Buy groceries',
+              isChecked: false,
+              linkedChecklists: [],
+            ),
+          );
+
+          when(() => mockJournalDb.journalEntityById('cl-item-1'))
+              .thenAnswer((_) async => checklistItem);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_checklist_items',
+            '{"items":[{"id":"cl-item-1","isChecked":true}]}',
+          );
+
+          expect(result.success, isTrue);
+
+          // Verify the resolver looked up the checklist item.
+          verify(() => mockJournalDb.journalEntityById('cl-item-1')).called(1);
         });
       });
 

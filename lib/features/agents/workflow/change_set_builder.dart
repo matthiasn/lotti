@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Resolves a checklist item's title from its ID.
@@ -35,6 +36,7 @@ class ChangeSetBuilder {
     required this.threadId,
     required this.runKey,
     this.checklistItemTitleResolver,
+    this.domainLogger,
   });
 
   /// The agent instance ID.
@@ -53,6 +55,9 @@ class ChangeSetBuilder {
   /// looks up the current title of checklist items that the LLM references
   /// by ID only (without including the title in the tool args).
   final ChecklistItemTitleResolver? checklistItemTitleResolver;
+
+  /// Optional domain logger for structured, PII-safe logging.
+  final DomainLogger? domainLogger;
 
   final List<ChangeItem> _items = [];
   static const _uuid = Uuid();
@@ -233,7 +238,14 @@ class ChangeSetBuilder {
     if (resolver == null) return null;
     try {
       return await resolver(itemId);
-    } catch (_) {
+    } catch (e, s) {
+      domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'failed to resolve checklist item title for '
+        '${DomainLogger.sanitizeId(itemId)}',
+        error: e,
+        stackTrace: s,
+      );
       return null;
     }
   }
