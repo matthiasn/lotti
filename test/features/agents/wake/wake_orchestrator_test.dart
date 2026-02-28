@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -3109,6 +3110,71 @@ void main() {
 
           controller.close();
         });
+      });
+    });
+  });
+
+  group('domain logging integration', () {
+    test('_logError delegates to domainLogger when present', () {
+      fakeAsync((async) {
+        final mockDomainLogger = MockDomainLogger();
+        when(
+          () => mockDomainLogger.error(
+            any(),
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
+
+        final loggedRepo = MockAgentRepository();
+        final loggedQueue = WakeQueue();
+        final loggedRunner = WakeRunner();
+
+        when(
+          () => loggedRepo.insertWakeRun(entry: any(named: 'entry')),
+        ).thenAnswer((_) async => throw Exception('DB fail'));
+        when(
+          () => loggedRepo.updateWakeRunStatus(
+            any(),
+            any(),
+            completedAt: any(named: 'completedAt'),
+            errorMessage: any(named: 'errorMessage'),
+          ),
+        ).thenAnswer((_) async {});
+        when(() => loggedRepo.getAgentState(any()))
+            .thenAnswer((_) async => null);
+
+        final loggedOrchestrator = WakeOrchestrator(
+          repository: loggedRepo,
+          queue: loggedQueue,
+          runner: loggedRunner,
+          domainLogger: mockDomainLogger,
+        );
+
+        loggedQueue.enqueue(
+          WakeJob(
+            runKey: 'rk-err',
+            agentId: 'agent-err',
+            reason: 'manual',
+            triggerTokens: {'tok'},
+            createdAt: DateTime(2024, 3, 15),
+          ),
+        );
+
+        loggedOrchestrator.processNext();
+        async.flushMicrotasks();
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomains.agentRuntime,
+            any(that: contains('insertWakeRun failed')),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        loggedOrchestrator.stop();
       });
     });
   });

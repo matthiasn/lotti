@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -253,6 +254,8 @@ void main() {
       labelsRepository: mockLabelsRepository,
       syncService: mockSyncService,
       templateService: mockTemplateService,
+      domainLogger: DomainLogger(loggingService: LoggingService())
+        ..enabledDomains.add(LogDomains.agentWorkflow),
     );
   });
 
