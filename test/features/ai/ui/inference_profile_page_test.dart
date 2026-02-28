@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 
 import '../../../widget_test_utils.dart';
@@ -20,15 +21,25 @@ void main() {
     profileStreamController.close();
   });
 
-  Widget buildSubject({List<AiConfig>? initialData}) {
+  Widget buildSubject({
+    List<AiConfig>? initialData,
+    bool throwError = false,
+  }) {
     return makeTestableWidgetNoScroll(
       const InferenceProfilePage(),
       overrides: [
         inferenceProfileControllerProvider.overrideWith(() {
           return _FakeInferenceProfileController()
             ..streamController = profileStreamController
-            ..initialData = initialData;
+            ..initialData = initialData
+            ..shouldThrow = throwError;
         }),
+        // Needed for InferenceProfileForm when navigated to.
+        aiConfigByTypeControllerProvider(configType: AiConfigType.model)
+            .overrideWith(_FakeConfigController.new),
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.inferenceProvider,
+        ).overrideWith(_FakeConfigController.new),
       ],
     );
   }
@@ -143,18 +154,74 @@ void main() {
       profileStreamController.add([]);
       await tester.pumpAndSettle();
     });
+
+    testWidgets('shows error state when stream errors', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(throwError: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Error'), findsOneWidget);
+    });
+
+    testWidgets('FAB navigates to create form', (tester) async {
+      await tester.pumpWidget(buildSubject(initialData: []));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Should navigate to InferenceProfileForm (create mode).
+      expect(find.text('Create Profile'), findsOneWidget);
+    });
+
+    testWidgets('tapping profile card navigates to edit form', (tester) async {
+      final profiles = <AiConfig>[
+        testInferenceProfile(id: 'p1'),
+      ];
+
+      await tester.pumpWidget(buildSubject(initialData: profiles));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Profile'));
+      await tester.pumpAndSettle();
+
+      // Should navigate to InferenceProfileForm (edit mode).
+      expect(find.text('Edit Profile'), findsOneWidget);
+    });
+
+    testWidgets('FAB has localized tooltip', (tester) async {
+      await tester.pumpWidget(buildSubject(initialData: []));
+      await tester.pumpAndSettle();
+
+      final fab = tester.widget<FloatingActionButton>(
+        find.byType(FloatingActionButton),
+      );
+      expect(fab.tooltip, 'Create Profile');
+    });
   });
 }
 
 class _FakeInferenceProfileController extends InferenceProfileController {
   StreamController<List<AiConfig>>? streamController;
   List<AiConfig>? initialData;
+  bool shouldThrow = false;
 
   @override
   Stream<List<AiConfig>> build() {
+    if (shouldThrow) {
+      return Stream.error(Exception('test error'));
+    }
     if (initialData != null) {
       return Stream.value(initialData!);
     }
     return streamController!.stream;
+  }
+}
+
+class _FakeConfigController extends AiConfigByTypeController {
+  @override
+  Stream<List<AiConfig>> build({required AiConfigType configType}) {
+    return Stream.value([]);
   }
 }

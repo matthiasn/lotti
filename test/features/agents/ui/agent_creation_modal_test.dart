@@ -233,4 +233,74 @@ void main() {
     expect(find.text('Test Prof'), findsOneWidget);
     expect(find.text('gemini-2.5-pro'), findsOneWidget);
   });
+
+  testWidgets('returns null when templates list is empty', (tester) async {
+    final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+
+    await tester.pumpWidget(
+      _buildSubject(
+        profiles: [testInferenceProfile()],
+        resultNotifier: resultNotifier,
+        templateCount: 0,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    // Modal should not open; result stays null.
+    expect(resultNotifier.value, isNull);
+    // No modal title visible.
+    final context = tester.element(find.byType(ElevatedButton));
+    expect(
+      find.text(context.messages.agentTemplateSelectTitle),
+      findsNothing,
+    );
+  });
+
+  testWidgets('back button on profile page returns to template page',
+      (tester) async {
+    final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+    final profile = testInferenceProfile(name: 'Pro X');
+
+    await tester.pumpWidget(
+      _buildSubject(
+        profiles: [profile],
+        resultNotifier: resultNotifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(ElevatedButton));
+
+    // Page 0: template selection.
+    expect(
+      find.text(context.messages.agentTemplateSelectTitle),
+      findsOneWidget,
+    );
+
+    // Select template to go to profile page.
+    await tester.tap(find.text('Template 0'));
+    await tester.pumpAndSettle();
+
+    // Page 1: profile selection.
+    expect(
+      find.text(context.messages.inferenceProfilesTitle),
+      findsOneWidget,
+    );
+
+    // Tap back button to return to template page.
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+
+    // Back on template selection.
+    expect(
+      find.text(context.messages.agentTemplateSelectTitle),
+      findsOneWidget,
+    );
+  });
 }

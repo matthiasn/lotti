@@ -858,5 +858,62 @@ void main() {
         );
       });
     });
+
+    group('updateAgentProfile', () {
+      test('updates agent config with new profileId', () async {
+        final identity = makeIdentity();
+        when(() => mockAgentService.getAgent('agent-1'))
+            .thenAnswer((_) async => identity);
+
+        await service.updateAgentProfile(
+          agentId: 'agent-1',
+          profileId: 'new-profile-id',
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final updated = captured.first as AgentIdentityEntity;
+        expect(updated.config.profileId, 'new-profile-id');
+      });
+
+      test('clears profileId when null is provided', () async {
+        final identity = makeIdentity().copyWith(
+          config: const AgentConfig(profileId: 'old-profile'),
+        );
+        when(() => mockAgentService.getAgent('agent-1'))
+            .thenAnswer((_) async => identity);
+
+        await service.updateAgentProfile(
+          agentId: 'agent-1',
+          profileId: null,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final updated = captured.first as AgentIdentityEntity;
+        expect(updated.config.profileId, isNull);
+      });
+
+      test('throws StateError when agent not found', () async {
+        when(() => mockAgentService.getAgent('ghost'))
+            .thenAnswer((_) async => null);
+
+        expect(
+          () => service.updateAgentProfile(
+            agentId: 'ghost',
+            profileId: 'prof-1',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('ghost'),
+            ),
+          ),
+        );
+      });
+    });
   });
 }
