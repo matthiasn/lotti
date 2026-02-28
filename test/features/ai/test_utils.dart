@@ -126,6 +126,31 @@ class AiTestDataFactory {
     ) as AiConfigPrompt;
   }
 
+  static AiConfigInferenceProfile createTestProfile({
+    String id = 'test-profile',
+    String name = 'Test Profile',
+    String? description = 'Test profile description',
+    String thinkingModelId = 'models/gemini-3-flash-preview',
+    String? imageRecognitionModelId,
+    String? transcriptionModelId,
+    String? imageGenerationModelId,
+    bool isDefault = false,
+    bool desktopOnly = false,
+  }) {
+    return AiConfigInferenceProfile(
+      id: id,
+      name: name,
+      description: description,
+      thinkingModelId: thinkingModelId,
+      imageRecognitionModelId: imageRecognitionModelId,
+      transcriptionModelId: transcriptionModelId,
+      imageGenerationModelId: imageGenerationModelId,
+      isDefault: isDefault,
+      desktopOnly: desktopOnly,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
   static List<AiConfig> createMixedTestConfigs() {
     return [
       createTestProvider(

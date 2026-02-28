@@ -250,6 +250,58 @@ void main() {
       );
     });
 
+    test('getProfiles returns only inference profiles', () async {
+      // Arrange — save a profile and a provider
+      final profile = AiConfig.inferenceProfile(
+        id: 'profile-id',
+        name: 'Test Profile',
+        thinkingModelId: 'models/gemini-3-flash-preview',
+        createdAt: DateTime(2024),
+      );
+      final provider = AiConfig.inferenceProvider(
+        id: 'provider-id',
+        baseUrl: 'https://api.example.com',
+        apiKey: 'test-key',
+        name: 'Provider',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+
+      await repository.saveConfig(profile);
+      await repository.saveConfig(provider);
+
+      // Act
+      final profiles = await repository.getProfiles();
+
+      // Assert
+      expect(profiles, hasLength(1));
+      expect(profiles.first.id, 'profile-id');
+      expect(profiles.first.thinkingModelId, 'models/gemini-3-flash-preview');
+    });
+
+    test('watchProfiles streams only inference profiles', () async {
+      // Arrange
+      final profile = AiConfig.inferenceProfile(
+        id: 'profile-id',
+        name: 'Test Profile',
+        thinkingModelId: 'models/gemini-3-flash-preview',
+        createdAt: DateTime(2024),
+      );
+
+      await repository.saveConfig(profile);
+
+      // Act & Assert
+      expect(
+        repository.watchProfiles(),
+        emits(
+          predicate<List<AiConfigInferenceProfile>>(
+            (profiles) =>
+                profiles.length == 1 && profiles.first.id == 'profile-id',
+          ),
+        ),
+      );
+    });
+
     test('watchConfigsByType returns configs of the specified type', () async {
       // Arrange
       final apiConfig = AiConfig.inferenceProvider(

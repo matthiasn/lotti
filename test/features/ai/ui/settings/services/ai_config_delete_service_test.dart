@@ -222,6 +222,81 @@ void main() {
       });
     });
 
+    group('deleteConfig() - Profile Deletion', () {
+      testWidgets('should successfully delete profile',
+          (WidgetTester tester) async {
+        // Arrange
+        final testProfile = AiTestDataFactory.createTestProfile(
+          id: 'test-profile-id',
+          description: 'A test profile for deletion',
+        );
+
+        when(() => mockRepository.deleteConfig(testProfile.id))
+            .thenAnswer((_) async {});
+
+        bool? result;
+
+        await tester.pumpWidget(createTestWidget(
+          child: const Text('Delete Profile'),
+          onPressed: (context, ref) async {
+            result = await deleteService.deleteConfig(
+              context: context,
+              ref: ref,
+              config: testProfile,
+            );
+          },
+        ));
+
+        // Act
+        await tester.tap(find.text('Delete Profile'));
+        await tester.pumpAndSettle();
+
+        // Confirm deletion
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        // Assert
+        expect(result, isTrue);
+        verify(() => mockRepository.deleteConfig(testProfile.id)).called(1);
+        expect(find.text('Profile deleted successfully'), findsOneWidget);
+        expect(find.text('Undo'), findsOneWidget);
+      });
+
+      testWidgets(
+          'should display profile confirmation dialog with correct elements',
+          (WidgetTester tester) async {
+        final testProfile = AiTestDataFactory.createTestProfile(
+          id: 'test-profile-id',
+          description: 'A test profile for deletion',
+        );
+
+        await tester.pumpWidget(createTestWidget(
+          child: const Text('Delete Profile'),
+          onPressed: (context, ref) async {
+            await deleteService.deleteConfig(
+              context: context,
+              ref: ref,
+              config: testProfile,
+            );
+          },
+        ));
+
+        await tester.tap(find.text('Delete Profile'));
+        await tester.pumpAndSettle();
+
+        // Check dialog structure
+        expect(find.text('Delete Profile'), findsNWidgets(2));
+        expect(find.text(testProfile.name), findsOneWidget);
+        expect(find.byIcon(Icons.tune), findsOneWidget); // Profile icon
+        expect(
+          find.text(
+            'This will permanently delete the inference profile.',
+          ),
+          findsOneWidget,
+        );
+      });
+    });
+
     group('Error Handling', () {
       testWidgets('should handle repository errors gracefully',
           (WidgetTester tester) async {

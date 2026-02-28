@@ -52,7 +52,6 @@ class ProviderConfig {
   /// These providers run locally and don't require authentication.
   /// They are suitable for privacy-focused applications.
   static const Set<InferenceProviderType> noApiKeyRequired = {
-    InferenceProviderType.genericOpenAi,
     InferenceProviderType.ollama,
     InferenceProviderType.voxtral,
     InferenceProviderType.whisper,

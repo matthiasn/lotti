@@ -116,6 +116,26 @@ void main() {
       });
     });
 
+    group('Unsupported Config Types', () {
+      testWidgets('should throw ArgumentError for inference profile config',
+          (WidgetTester tester) async {
+        final testProfile = AiTestDataFactory.createTestProfile(
+          id: 'test-profile-id',
+          description: 'A test profile for navigation testing',
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(Scaffold));
+
+        expect(
+          () => service.navigateToConfigEdit(context, testProfile),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+    });
+
     group('Route Creation Logic', () {
       testWidgets('should handle route creation for different config types',
           (WidgetTester tester) async {
