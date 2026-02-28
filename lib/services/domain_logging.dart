@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:lotti/utils/platform.dart';
 
 /// Domain constants for structured logging.
 ///
@@ -18,13 +23,16 @@ abstract final class LogDomains {
 /// Provides:
 /// - PII-safe sanitization helpers for entity IDs and content bodies.
 /// - Per-domain enabled check (reads from [enabledDomains]).
-/// - Delegates to [LoggingService] for the actual dual-sink (DB + file)
-///   persistence.
+/// - Delegates to [LoggingService] for the DB + general-file dual-sink.
+/// - Writes an additional **per-domain log file** at
+///   `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` so each domain's
+///   telemetry can be reviewed in isolation.
 class DomainLogger {
   DomainLogger({required LoggingService loggingService})
       : _loggingService = loggingService;
 
   final LoggingService _loggingService;
+  static final _dateFmt = DateFormat('yyyy-MM-dd');
 
   /// Set of currently enabled domain names.
   ///
@@ -48,6 +56,12 @@ class DomainLogger {
       subDomain: subDomain,
       level: level,
     );
+    _appendToDomainFile(
+      domain: domain,
+      level: level.name.toUpperCase(),
+      subDomain: subDomain,
+      message: message,
+    );
   }
 
   /// Log an error with optional exception and stack trace.
@@ -61,12 +75,59 @@ class DomainLogger {
     StackTrace? stackTrace,
     String? subDomain,
   }) {
+    final fullMessage = '$message${error != null ? ': $error' : ''}';
     _loggingService.captureException(
-      '$message${error != null ? ': $error' : ''}',
+      fullMessage,
       domain: domain,
       subDomain: subDomain,
       stackTrace: stackTrace,
     );
+    _appendToDomainFile(
+      domain: domain,
+      level: 'ERROR',
+      subDomain: subDomain,
+      message: fullMessage,
+      stackTrace: stackTrace,
+    );
+  }
+
+  // ── Per-domain file sink ────────────────────────────────────────────────
+
+  /// Appends a formatted line to `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`.
+  ///
+  /// Best-effort: file-sink errors are swallowed so logging never interferes
+  /// with app flows. Skipped entirely in test environments.
+  void _appendToDomainFile({
+    required String domain,
+    required String level,
+    required String message,
+    String? subDomain,
+    StackTrace? stackTrace,
+  }) {
+    if (isTestEnv) return;
+    try {
+      final dir = getDocumentsDirectory();
+      final logDir = Directory('${dir.path}/logs');
+      if (!logDir.existsSync()) {
+        logDir.createSync(recursive: true);
+      }
+      final date = _dateFmt.format(DateTime.now());
+      final file = File('${logDir.path}/$domain-$date.log');
+      final ts = DateTime.now().toIso8601String();
+      final sd = (subDomain == null || subDomain.isEmpty) ? '' : ' $subDomain';
+      final line = '$ts [$level]$sd: $message';
+      final buffer = StringBuffer(line)..writeln();
+      if (stackTrace != null) {
+        buffer.writeln(stackTrace);
+      }
+      file.writeAsStringSync(
+        buffer.toString(),
+        mode: FileMode.append,
+        flush: true,
+      );
+    } catch (_) {
+      // Swallow file-sink errors.
+    }
   }
 
   // ── PII scrubbing helpers ───────────────────────────────────────────────
