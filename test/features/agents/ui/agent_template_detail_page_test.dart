@@ -959,5 +959,257 @@ void main() {
       );
       expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
     });
+
+    testWidgets('shows three tabs in edit mode', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      expect(
+        find.text(context.messages.agentTemplateSettingsTab),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentTemplateStatsTab),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentTemplateReportsTab),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Stats tab shows token usage section', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Stats tab
+      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.pumpAndSettle();
+
+      // Should show the aggregate heading from TemplateTokenUsageSection
+      expect(
+        find.text(context.messages.agentTemplateAggregateTokenUsageHeading),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Reports tab shows empty state when no reports',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(templateId: templateId),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentTokenUsageEmpty),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Reports tab shows report cards with content', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      final report1 = makeTestReport(
+        id: 'r1',
+        agentId: 'agent-a',
+        content: 'Weekly summary: all good.',
+        createdAt: DateTime(2025, 6, 15, 10, 30),
+      );
+      final report2 = makeTestReport(
+        id: 'r2',
+        agentId: 'agent-b',
+        content: 'Task progress update.',
+        createdAt: DateTime(2025, 6, 14, 8),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[report1, report2],
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      // Report content visible
+      expect(find.text('Weekly summary: all good.'), findsOneWidget);
+      expect(find.text('Task progress update.'), findsOneWidget);
+
+      // Cards are rendered
+      expect(find.byType(Card), findsNWidgets(2));
+    });
+
+    testWidgets('Reports tab shows loading indicator', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider.overrideWith(
+              (ref, id) => Completer<List<AgentDomainEntity>>().future,
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      // Use pump with duration (not pumpAndSettle) so we can navigate
+      // while keeping the reports provider in loading state.
+      await tester.pump(const Duration(seconds: 1));
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+    });
+
+    testWidgets('Reports tab shows error state', (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentTemplateProvider.overrideWith(
+              (ref, id) async => makeTestTemplate(
+                id: templateId,
+                agentId: templateId,
+              ),
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, id) async => makeTestTemplateVersion(
+                agentId: templateId,
+              ),
+            ),
+            templateVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[
+                makeTestTemplateVersion(agentId: templateId),
+              ],
+            ),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            templateTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => <AgentTokenUsageSummary>[],
+            ),
+            templateInstanceTokenBreakdownProvider.overrideWith(
+              (ref, id) async => <InstanceTokenBreakdown>[],
+            ),
+            templateRecentReportsProvider(templateId).overrideWithValue(
+              AsyncValue<List<AgentDomainEntity>>.error(
+                Exception('reports fetch failed'),
+                StackTrace.current,
+              ),
+            ),
+            ..._aiConfigOverrides(),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+
+      // Navigate to Reports tab
+      await tester.tap(find.text(context.messages.agentTemplateReportsTab));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.commonError),
+        findsOneWidget,
+      );
+    });
   });
 }

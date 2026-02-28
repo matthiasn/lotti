@@ -382,5 +382,49 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('shows created lifecycle badge', (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          breakdownOverride: (ref, id) async => [
+            const InstanceTokenBreakdown(
+              agentId: 'agent-1',
+              displayName: 'New-Agent',
+              lifecycle: AgentLifecycle.created,
+              summaries: [],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(TemplateTokenUsageSection));
+      expect(
+        find.text(context.messages.agentLifecycleCreated),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows destroyed lifecycle badge', (tester) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          breakdownOverride: (ref, id) async => [
+            const InstanceTokenBreakdown(
+              agentId: 'agent-1',
+              displayName: 'Dead-Agent',
+              lifecycle: AgentLifecycle.destroyed,
+              summaries: [],
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(TemplateTokenUsageSection));
+      expect(
+        find.text(context.messages.agentLifecycleDestroyed),
+        findsOneWidget,
+      );
+    });
   });
 }

@@ -1328,6 +1328,66 @@ void main() {
       },
     );
 
+    test(
+      'wakeExecutor includes templateId in notification when template exists',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+        final template = makeTestTemplate(
+          id: 'tpl-1',
+          agentId: 'tpl-1',
+        );
+
+        when(() => mockService.getAgent(kTestAgentId))
+            .thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(() => mockTemplateService.getTemplateForAgent(kTestAgentId))
+            .thenAnswer((_) async => template);
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, __) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+
+        await capturedExecutor!(
+          kTestAgentId,
+          'run-key-tpl',
+          {'tok-c'},
+          'thread-tpl',
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, 'tpl-1', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
     test('wires repository and orchestrator into SyncEventProcessor', () async {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);

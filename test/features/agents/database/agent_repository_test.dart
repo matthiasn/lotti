@@ -1846,4 +1846,229 @@ void main() {
       expect(links, isEmpty);
     });
   });
+
+  group('getTokenUsageForTemplate', () {
+    const templateId = 'tpl-001';
+    const agentA = 'agent-A';
+    const agentB = 'agent-B';
+
+    Future<void> seedTemplateWithInstances() async {
+      // Template entity
+      await repo.upsertEntity(
+        AgentDomainEntity.agentTemplate(
+          id: templateId,
+          agentId: templateId,
+          displayName: 'Test Template',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'models/gemini-2.5-pro',
+          categoryIds: const {},
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      // Two instances
+      await repo.upsertEntity(
+        makeAgent(id: agentA, agentId: agentA),
+      );
+      await repo.upsertEntity(
+        makeAgent(id: agentB, agentId: agentB),
+      );
+      // Template assignment links
+      await repo.upsertLink(model.AgentLink.templateAssignment(
+        id: 'link-ta-A',
+        fromId: templateId,
+        toId: agentA,
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      ));
+      await repo.upsertLink(model.AgentLink.templateAssignment(
+        id: 'link-ta-B',
+        fromId: templateId,
+        toId: agentB,
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      ));
+    }
+
+    test('returns token usage from all instances via JOIN', () async {
+      await seedTemplateWithInstances();
+
+      // Token usage for agent A
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'u1',
+          agentId: agentA,
+          runKey: 'run-1',
+          threadId: 't1',
+          modelId: 'gemini-2.5-pro',
+          createdAt: testDate,
+          vectorClock: null,
+          inputTokens: 100,
+          outputTokens: 50,
+        ),
+      );
+      // Token usage for agent B
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'u2',
+          agentId: agentB,
+          runKey: 'run-2',
+          threadId: 't2',
+          modelId: 'claude-sonnet',
+          createdAt: testDate,
+          vectorClock: null,
+          inputTokens: 200,
+          outputTokens: 80,
+        ),
+      );
+
+      final results = await repo.getTokenUsageForTemplate(templateId);
+
+      expect(results, hasLength(2));
+      expect(results.map((r) => r.agentId), containsAll([agentA, agentB]));
+    });
+
+    test('returns empty list when no instances have token usage', () async {
+      await seedTemplateWithInstances();
+
+      final results = await repo.getTokenUsageForTemplate(templateId);
+
+      expect(results, isEmpty);
+    });
+
+    test('excludes deleted token usage entities', () async {
+      await seedTemplateWithInstances();
+
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'u1',
+          agentId: agentA,
+          runKey: 'run-1',
+          threadId: 't1',
+          modelId: 'gemini',
+          createdAt: testDate,
+          vectorClock: null,
+          inputTokens: 100,
+          deletedAt: testDate,
+        ),
+      );
+
+      final results = await repo.getTokenUsageForTemplate(templateId);
+
+      expect(results, isEmpty);
+    });
+
+    test('respects limit parameter', () async {
+      await seedTemplateWithInstances();
+
+      for (var i = 0; i < 5; i++) {
+        await repo.upsertEntity(
+          AgentDomainEntity.wakeTokenUsage(
+            id: 'u$i',
+            agentId: agentA,
+            runKey: 'run-$i',
+            threadId: 't$i',
+            modelId: 'gemini',
+            createdAt: testDate.add(Duration(minutes: i)),
+            vectorClock: null,
+            inputTokens: 10,
+          ),
+        );
+      }
+
+      final results = await repo.getTokenUsageForTemplate(
+        templateId,
+        limit: 3,
+      );
+
+      expect(results, hasLength(3));
+    });
+  });
+
+  group('getRecentReportsByTemplate', () {
+    const templateId = 'tpl-001';
+    const agentA = 'agent-A';
+
+    Future<void> seedTemplateWithInstance() async {
+      await repo.upsertEntity(
+        AgentDomainEntity.agentTemplate(
+          id: templateId,
+          agentId: templateId,
+          displayName: 'Test Template',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'models/gemini-2.5-pro',
+          categoryIds: const {},
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertEntity(
+        makeAgent(id: agentA, agentId: agentA),
+      );
+      await repo.upsertLink(model.AgentLink.templateAssignment(
+        id: 'link-ta-A',
+        fromId: templateId,
+        toId: agentA,
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      ));
+    }
+
+    test('returns reports from template instances', () async {
+      await seedTemplateWithInstance();
+
+      await repo.upsertEntity(
+        AgentDomainEntity.agentReport(
+          id: 'r1',
+          agentId: agentA,
+          scope: 'current',
+          content: 'Test report content.',
+          createdAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      final results = await repo.getRecentReportsByTemplate(templateId);
+
+      expect(results, hasLength(1));
+      expect(results.first.content, 'Test report content.');
+    });
+
+    test('returns empty list when no reports exist', () async {
+      await seedTemplateWithInstance();
+
+      final results = await repo.getRecentReportsByTemplate(templateId);
+
+      expect(results, isEmpty);
+    });
+
+    test('respects limit parameter', () async {
+      await seedTemplateWithInstance();
+
+      for (var i = 0; i < 5; i++) {
+        await repo.upsertEntity(
+          AgentDomainEntity.agentReport(
+            id: 'r$i',
+            agentId: agentA,
+            scope: 'current',
+            content: 'Report $i',
+            createdAt: testDate.add(Duration(minutes: i)),
+            vectorClock: null,
+          ),
+        );
+      }
+
+      final results = await repo.getRecentReportsByTemplate(
+        templateId,
+        limit: 2,
+      );
+
+      expect(results, hasLength(2));
+    });
+  });
 }
