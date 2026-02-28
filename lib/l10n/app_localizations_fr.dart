@@ -131,11 +131,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentConversationEmpty => 'Pas encore de conversations.';
 
   @override
-  String agentConversationTokenCount(String tokenCount) {
-    return '$tokenCount jetons';
-  }
-
-  @override
   String agentConversationThreadHeader(String runKey) {
     return 'Réveil $runKey';
   }
@@ -144,6 +139,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String agentConversationThreadSummary(
       int messageCount, int toolCallCount, String shortId) {
     return '$messageCount messages, $toolCallCount appels d\'outils · $shortId';
+  }
+
+  @override
+  String agentConversationTokenCount(String tokenCount) {
+    return '$tokenCount jetons';
   }
 
   @override
@@ -297,6 +297,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentLifecycleDestroyed => 'Détruit';
 
   @override
+  String get agentLifecycleDormant => 'En sommeil';
+
+  @override
   String get agentLifecyclePaused => 'En pause';
 
   @override
@@ -404,40 +407,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTabStats => 'Stats';
 
   @override
-  String get agentTokenUsageCachedTokens => 'En cache';
-
-  @override
-  String get agentTokenUsageEmpty =>
-      'Aucune utilisation de tokens enregistrée.';
-
-  @override
-  String agentTokenUsageErrorLoading(String error) {
-    return 'Échec du chargement de l\'utilisation des tokens : $error';
-  }
-
-  @override
-  String get agentTokenUsageHeading => 'Utilisation des tokens';
-
-  @override
-  String get agentTokenUsageInputTokens => 'Entrée';
-
-  @override
-  String get agentTokenUsageModel => 'Modèle';
-
-  @override
-  String get agentTokenUsageOutputTokens => 'Sortie';
-
-  @override
-  String get agentTokenUsageThoughtsTokens => 'Pensées';
-
-  @override
-  String get agentTokenUsageTotalTokens => 'Total';
-
-  @override
-  String get agentTokenUsageWakeCount => 'Réveils';
-
-  @override
   String get agentTemplateActiveInstancesTitle => 'Instances actives';
+
+  @override
+  String get agentTemplateAggregateTokenUsageHeading =>
+      'Utilisation totale de tokens';
 
   @override
   String get agentTemplateAllProviders => 'Tous les fournisseurs';
@@ -484,6 +458,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentTemplateEvolveReject => 'Rejeter';
+
+  @override
+  String get agentTemplateInstanceBreakdownHeading => 'Détail par instance';
 
   @override
   String agentTemplateInstanceCount(int count) {
@@ -536,6 +513,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateNoVersions => 'Aucune version';
 
   @override
+  String get agentTemplateReportsTab => 'Rapports';
+
+  @override
   String get agentTemplateRollbackAction => 'Revenir à cette version';
 
   @override
@@ -553,6 +533,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get agentTemplateSettingsSubtitle =>
       'Gérer les personnalités et directives des agents';
+
+  @override
+  String get agentTemplateSettingsTab => 'Paramètres';
+
+  @override
+  String get agentTemplateStatsTab => 'Statistiques';
 
   @override
   String get agentTemplateStatusActive => 'Actif';
@@ -580,6 +566,39 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentThreadReportLabel => 'Rapport produit pendant ce cycle';
+
+  @override
+  String get agentTokenUsageCachedTokens => 'En cache';
+
+  @override
+  String get agentTokenUsageEmpty =>
+      'Aucune utilisation de tokens enregistrée.';
+
+  @override
+  String agentTokenUsageErrorLoading(String error) {
+    return 'Échec du chargement de l\'utilisation des tokens : $error';
+  }
+
+  @override
+  String get agentTokenUsageHeading => 'Utilisation des tokens';
+
+  @override
+  String get agentTokenUsageInputTokens => 'Entrée';
+
+  @override
+  String get agentTokenUsageModel => 'Modèle';
+
+  @override
+  String get agentTokenUsageOutputTokens => 'Sortie';
+
+  @override
+  String get agentTokenUsageThoughtsTokens => 'Pensées';
+
+  @override
+  String get agentTokenUsageTotalTokens => 'Total';
+
+  @override
+  String get agentTokenUsageWakeCount => 'Réveils';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Suggestions d\'actions';

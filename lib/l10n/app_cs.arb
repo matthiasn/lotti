@@ -26,15 +26,6 @@
   "addToDictionarySuccess": "Výraz byl přidán do slovníku",
   "addToDictionaryTooLong": "Výraz je příliš dlouhý (max. 50 znaků)",
   "agentActivityLogHeading": "Protokol aktivity",
-  "agentConversationEmpty": "Zatím žádné konverzace.",
-  "agentConversationTokenCount": "{tokenCount} tokenů",
-  "@agentConversationTokenCount": {
-    "placeholders": {
-      "tokenCount": {
-        "type": "String"
-      }
-    }
-  },
   "agentControlsActionError": "Akce se nezdařila: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -53,6 +44,15 @@
   "agentControlsPauseButton": "Pozastavit",
   "agentControlsReanalyzeButton": "Znovu analyzovat",
   "agentControlsResumeButton": "Pokračovat",
+  "agentConversationEmpty": "Zatím žádné konverzace.",
+  "agentConversationTokenCount": "{tokenCount} tokenů",
+  "@agentConversationTokenCount": {
+    "placeholders": {
+      "tokenCount": {
+        "type": "String"
+      }
+    }
+  },
   "agentDetailErrorLoading": "Chyba při načítání agenta: {error}",
   "@agentDetailErrorLoading": {
     "placeholders": {
@@ -66,6 +66,7 @@
   "agentLifecycleActive": "Aktivní",
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",
+  "agentLifecycleDormant": "Neaktivní",
   "agentLifecyclePaused": "Pozastaven",
   "agentMessageKindAction": "Akce",
   "agentMessageKindObservation": "Pozorování",
@@ -113,6 +114,11 @@
   "agentTabObservations": "Pozorování",
   "agentTabReports": "Zprávy",
   "agentTabStats": "Statistiky",
+  "agentTemplateAggregateTokenUsageHeading": "Celkové využití tokenů",
+  "agentTemplateInstanceBreakdownHeading": "Rozpis podle instancí",
+  "agentTemplateReportsTab": "Reporty",
+  "agentTemplateSettingsTab": "Nastavení",
+  "agentTemplateStatsTab": "Statistiky",
   "agentTokenUsageCachedTokens": "Z mezipaměti",
   "agentTokenUsageEmpty": "Zatím nebyla zaznamenána žádná spotřeba tokenů.",
   "agentTokenUsageErrorLoading": "Nepodařilo se načíst spotřebu tokenů: {error}",

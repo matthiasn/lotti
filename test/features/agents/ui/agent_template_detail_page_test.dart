@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
@@ -58,6 +59,19 @@ List<Override> _aiConfigOverrides({
         configType: AiConfigType.model,
       ).overrideWithBuild(
         (ref, notifier) => Stream.value(models),
+      ),
+    ];
+
+/// Common overrides for template stats/reports providers (empty data).
+List<Override> _templateStatsOverrides() => [
+      templateTokenUsageSummariesProvider.overrideWith(
+        (ref, id) async => <AgentTokenUsageSummary>[],
+      ),
+      templateInstanceTokenBreakdownProvider.overrideWith(
+        (ref, id) async => <InstanceTokenBreakdown>[],
+      ),
+      templateRecentReportsProvider.overrideWith(
+        (ref, id) async => <AgentDomainEntity>[],
       ),
     ];
 
@@ -122,6 +136,7 @@ void main() {
         agentTemplatesProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
+        ..._templateStatsOverrides(),
         ..._aiConfigOverrides(),
         ...extraOverrides,
       ],
@@ -715,6 +730,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
+            ..._templateStatsOverrides(),
             ..._aiConfigOverrides(),
           ],
         ),
@@ -763,6 +779,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
+            ..._templateStatsOverrides(),
             ..._aiConfigOverrides(),
           ],
         ),
@@ -811,6 +828,7 @@ void main() {
             agentTemplatesProvider.overrideWith(
               (ref) async => <AgentDomainEntity>[],
             ),
+            ..._templateStatsOverrides(),
             ..._aiConfigOverrides(),
           ],
         ),
@@ -829,42 +847,6 @@ void main() {
 
       // The error state shows commonError text
       expect(find.text(context.messages.commonError), findsOneWidget);
-    });
-
-    testWidgets('shows active instances section when agents exist',
-        (tester) async {
-      final testAgent = makeTestIdentity(
-        id: 'agent-for-tpl',
-        agentId: 'agent-for-tpl',
-        displayName: 'Agent From Template',
-      );
-
-      when(() => mockTemplateService.getAgentsForTemplate(any()))
-          .thenAnswer((_) async => [testAgent]);
-
-      await tester.pumpWidget(
-        buildEditSubject(templateId: templateId),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentTemplateDetailPage));
-
-      // Scroll to active instances section
-      await tester.scrollUntilVisible(
-        find.text(context.messages.agentTemplateActiveInstancesTitle),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text(context.messages.agentTemplateActiveInstancesTitle),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.agentTemplateInstanceCount(1)),
-        findsOneWidget,
-      );
     });
 
     testWidgets('reseeds directives when active version changes',
@@ -901,6 +883,15 @@ void main() {
         ),
         agentTemplatesProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
+        ),
+        templateTokenUsageSummariesProvider.overrideWith(
+          (ref, id) async => <AgentTokenUsageSummary>[],
+        ),
+        templateInstanceTokenBreakdownProvider.overrideWith(
+          (ref, id) async => <InstanceTokenBreakdown>[],
+        ),
+        templateRecentReportsProvider.overrideWith(
+          (ref, id) async => <AgentDomainEntity>[],
         ),
         ..._aiConfigOverrides(),
       ];

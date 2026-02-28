@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-28
 **Feature:** Template-level aggregate token usage statistics and introspection view
-**Status:** Planned
+**Status:** Implemented (v0.9.882)
 
 ## Problem Statement
 
@@ -472,6 +472,58 @@ stateDiagram-v2
     note right of active: Token usage recorded<br/>on every wake cycle
     note right of destroyed: Instances still visible<br/>in breakdown (historical)
 ```
+
+## Implementation Outcome
+
+**Completed:** 2026-02-28 | **Version:** 0.9.882
+
+### What Was Built
+
+All planned steps were implemented as designed, with minor deviations noted below.
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `agent_database.drift` | Added `getTokenUsageByTemplateId` named query (SQL JOIN) |
+| `agent_repository.dart` | Added `getTokenUsageForTemplate()` method |
+| `agent_providers.dart` | Added 4 providers: `templateTokenUsageRecords`, `templateTokenUsageSummaries`, `templateInstanceTokenBreakdown`, `templateRecentReports` |
+| `agent_token_usage.dart` | Added `InstanceTokenBreakdown` data class with equality, hashCode, toString |
+| `agent_token_usage_section.dart` | Extracted `_TokenUsageTable` → public `TokenUsageTable` |
+| `template_token_usage_section.dart` | **New** — `TemplateTokenUsageSection` with aggregate table + expansion tiles |
+| `agent_template_detail_page.dart` | Refactored to `NestedScrollView` + `TabBar` (Settings/Stats/Reports) |
+| `app_en.arb` + 5 locale files | Added 5 l10n keys |
+| `agent_providers_test.dart` | Added 10 provider tests (summaries, breakdown, reports) |
+| `agent_token_usage_test.dart` | Added 4 tests for `InstanceTokenBreakdown` |
+| `template_token_usage_section_test.dart` | **New** — 13 widget tests |
+| `agent_template_detail_page_test.dart` | Updated for tabbed layout, removed obsolete active instances test |
+
+### Deviations from Plan
+
+1. **`_ActiveInstancesSection` removed** — The per-instance breakdown in the Stats tab fully supersedes the old instance count display. Instance metadata (name, lifecycle badge) is shown directly in the breakdown expansion tiles, making a separate section redundant.
+
+2. **`templateRecentReportsProvider` added** — Not in the original plan steps but needed for the Reports tab. Uses the existing `getRecentReportsByTemplate` repository method.
+
+3. **`NestedScrollView` for edit mode only** — Create mode retains a flat `CustomScrollView` since tabs are irrelevant for a new template. The `TabController` is only instantiated in edit mode.
+
+4. **Localization key naming** — Used `agentTemplateAggregateTokenUsageHeading` (more descriptive) instead of the planned `agentTemplateTokenUsageHeading`.
+
+### Test Coverage
+
+- **1359 agent tests passing** (full test suite)
+- **Provider tests:** Empty state, multi-instance aggregation, sort order, null token fields, instance grouping, instances with no records, reports
+- **Widget tests:** Loading/empty/error states, formatted token counts, grand total row, expansion tile rendering, lifecycle badges, expand-to-show-table, error propagation
+- **Detail page tests:** All 21 existing tests updated and passing with new provider overrides
+
+### Architectural Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| SQL JOIN over N+1 queries | Consistent with existing `getRecentReportsByTemplate` pattern; single query for all instances |
+| No schema migration | Named queries in `.drift` don't require version bumps |
+| Shared `TokenUsageTable` widget | DRY — same table renders per-instance, per-template aggregate, and inside expansion tiles |
+| `NestedScrollView` + `TabBar` | Standard Flutter pattern for pinned app bar with tabs; `TabBarView` children are lazy |
+| `InstanceTokenBreakdown` as plain class (not Freezed) | Follows existing `AgentTokenUsageSummary` pattern; simple enough to not warrant codegen |
 
 ## Future Work (Out of Scope)
 

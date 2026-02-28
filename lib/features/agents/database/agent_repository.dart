@@ -514,6 +514,21 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch token usage records for all instances of [templateId].
+  ///
+  /// Uses a SQL JOIN via `template_assignment` links — same pattern as
+  /// [getRecentReportsByTemplate].
+  Future<List<WakeTokenUsageEntity>> getTokenUsageForTemplate(
+    String templateId, {
+    int limit = 10000,
+  }) async {
+    final rows = await _db.getTokenUsageByTemplateId(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<WakeTokenUsageEntity>()
+        .toList();
+  }
+
   /// Mark any wake runs still in `running` status as `abandoned`.
   ///
   /// Called on startup to clean up runs left behind by a hot restart or crash.

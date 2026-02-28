@@ -63,6 +63,7 @@ const factory AgentDomainEntity.wakeTokenUsage({
 ## Consequences
 
 - Token usage is synced across devices like all other agent entities.
-- Aggregation queries fetch entities by type and group in Dart (not raw SQL `GROUP BY`). At current volumes (tens of wakes per day) this is adequate.
+- Per-instance aggregation queries fetch entities by type and group in Dart (not raw SQL `GROUP BY`). At current volumes (tens of wakes per day) this is adequate.
+- Per-template aggregation uses a SQL JOIN through `agent_links` (`template_assignment` type) to collect token records across all instances in a single query (added in v0.9.882).
 - The `wake_run_log` table remains unchanged — no schema migration needed.
 - Future monetary cost calculation can be done by mapping `modelId` to a cost-per-token lookup.

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -38,13 +39,17 @@ class AgentTemplateDetailPage extends ConsumerStatefulWidget {
 }
 
 class _AgentTemplateDetailPageState
-    extends ConsumerState<AgentTemplateDetailPage> {
+    extends ConsumerState<AgentTemplateDetailPage>
+    with TickerProviderStateMixin {
   late TextEditingController _nameController;
   late TextEditingController _directivesController;
   String? _selectedModelId;
   bool _didSeedControllers = false;
   String? _seededVersionId;
   bool _isSaving = false;
+  TabController? _tabController;
+
+  static const _tabCount = 3;
 
   @override
   void initState() {
@@ -53,6 +58,8 @@ class _AgentTemplateDetailPageState
     _directivesController = TextEditingController();
     if (widget.isCreateMode) {
       _selectedModelId = 'models/gemini-3-flash-preview';
+    } else {
+      _tabController = TabController(length: _tabCount, vsync: this);
     }
   }
 
@@ -60,6 +67,7 @@ class _AgentTemplateDetailPageState
   void dispose() {
     _nameController.dispose();
     _directivesController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -143,46 +151,9 @@ class _AgentTemplateDetailPageState
 
     return Scaffold(
       backgroundColor: context.colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            title: Text(
-              title,
-              style: appBarTextStyleNewLarge.copyWith(
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            pinned: true,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildFormFields(context),
-                if (!widget.isCreateMode && widget.templateId != null) ...[
-                  const SizedBox(height: 24),
-                  _VersionHistorySection(templateId: widget.templateId!),
-                  const SizedBox(height: 24),
-                  _ActiveInstancesSection(templateId: widget.templateId!),
-                  const SizedBox(height: 24),
-                  LottiSecondaryButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => EvolutionChatPage(
-                          templateId: widget.templateId!,
-                        ),
-                      ),
-                    ),
-                    label: context.messages.agentTemplateEvolveAction,
-                    icon: Icons.auto_awesome,
-                  ),
-                ],
-                const SizedBox(height: 80),
-              ]),
-            ),
-          ),
-        ],
-      ),
+      body: widget.isCreateMode
+          ? _buildCreateBody(context, title: title)
+          : _buildEditBody(context, title: title),
       bottomNavigationBar: FormBottomBar(
         leftButton: widget.isCreateMode
             ? null
@@ -203,6 +174,71 @@ class _AgentTemplateDetailPageState
                 ? context.messages.createButton
                 : context.messages.agentTemplateSaveNewVersion,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreateBody(BuildContext context, {required String title}) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          title: Text(
+            title,
+            style: appBarTextStyleNewLarge.copyWith(
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+          pinned: true,
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildFormFields(context),
+              const SizedBox(height: 80),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditBody(BuildContext context, {required String title}) {
+    final templateId = widget.templateId!;
+
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverAppBar(
+          title: Text(
+            title,
+            style: appBarTextStyleNewLarge.copyWith(
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+          pinned: true,
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(text: context.messages.agentTemplateSettingsTab),
+              Tab(text: context.messages.agentTemplateStatsTab),
+              Tab(text: context.messages.agentTemplateReportsTab),
+            ],
+          ),
+        ),
+      ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Settings tab
+          _SettingsTabContent(
+            formFields: _buildFormFields(context),
+            templateId: templateId,
+          ),
+          // Stats tab
+          _StatsTabContent(templateId: templateId),
+          // Reports tab
+          _ReportsTabContent(templateId: templateId),
         ],
       ),
     );
@@ -508,39 +544,130 @@ class _VersionTile extends ConsumerWidget {
   }
 }
 
-/// Section showing agents that use this template.
-class _ActiveInstancesSection extends ConsumerWidget {
-  const _ActiveInstancesSection({required this.templateId});
+/// Settings tab content — form fields, version history, evolve button.
+class _SettingsTabContent extends StatelessWidget {
+  const _SettingsTabContent({
+    required this.formFields,
+    required this.templateId,
+  });
+
+  final Widget formFields;
+  final String templateId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        formFields,
+        const SizedBox(height: 24),
+        _VersionHistorySection(templateId: templateId),
+        const SizedBox(height: 24),
+        LottiSecondaryButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => EvolutionChatPage(
+                templateId: templateId,
+              ),
+            ),
+          ),
+          label: context.messages.agentTemplateEvolveAction,
+          icon: Icons.auto_awesome,
+        ),
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+/// Stats tab content — aggregate token usage and per-instance breakdown.
+class _StatsTabContent extends StatelessWidget {
+  const _StatsTabContent({required this.templateId});
+
+  final String templateId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        TemplateTokenUsageSection(templateId: templateId),
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+/// Reports tab content — recent reports from all instances.
+class _ReportsTabContent extends ConsumerWidget {
+  const _ReportsTabContent({required this.templateId});
 
   final String templateId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // We use FutureBuilder directly since there's no dedicated provider
-    // for this reverse lookup.
-    final templateService = ref.watch(agentTemplateServiceProvider);
+    final reportsAsync = ref.watch(templateRecentReportsProvider(templateId));
 
-    return FutureBuilder<List<AgentIdentityEntity>>(
-      future: templateService.getAgentsForTemplate(templateId),
-      builder: (context, snapshot) {
-        final agents = snapshot.data ?? [];
-        if (agents.isEmpty) return const SizedBox.shrink();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.messages.agentTemplateActiveInstancesTitle,
-              style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+    return reportsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            context.messages.commonError,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: context.colorScheme.error,
+            ),
+          ),
+        ),
+      ),
+      data: (reports) {
+        if (reports.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                context.messages.agentTokenUsageEmpty,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-            const SizedBox(height: AppTheme.spacingSmall),
-            Text(
-              context.messages.agentTemplateInstanceCount(agents.length),
-              style: context.textTheme.bodySmall,
-            ),
-          ],
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: reports.length,
+          itemBuilder: (context, index) {
+            final report = reports[index];
+            if (report is! AgentReportEntity) {
+              return const SizedBox.shrink();
+            }
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatAgentDateTime(report.createdAt),
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      report.content,
+                      style: context.textTheme.bodySmall,
+                      maxLines: 6,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );

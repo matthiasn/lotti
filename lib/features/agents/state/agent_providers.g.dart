@@ -1865,7 +1865,7 @@ final class AgentTokenUsageRecordsProvider extends $FunctionalProvider<
 }
 
 String _$agentTokenUsageRecordsHash() =>
-    r'a5237fe55caa876b62247d67efede42d619c0e62';
+    r'97cb53f775d436d32ee05d210e6ccbe49f73ff92';
 
 /// Raw token usage records for an agent.
 ///
@@ -2131,6 +2131,422 @@ final class TokenUsageForThreadFamily extends $Family
 
   @override
   String toString() => r'tokenUsageForThreadProvider';
+}
+
+/// Raw token usage records for all instances of a template.
+///
+/// Uses a SQL JOIN via `template_assignment` links to fetch all
+/// [WakeTokenUsageEntity] records across every instance in a single query.
+
+@ProviderFor(templateTokenUsageRecords)
+final templateTokenUsageRecordsProvider = TemplateTokenUsageRecordsFamily._();
+
+/// Raw token usage records for all instances of a template.
+///
+/// Uses a SQL JOIN via `template_assignment` links to fetch all
+/// [WakeTokenUsageEntity] records across every instance in a single query.
+
+final class TemplateTokenUsageRecordsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Raw token usage records for all instances of a template.
+  ///
+  /// Uses a SQL JOIN via `template_assignment` links to fetch all
+  /// [WakeTokenUsageEntity] records across every instance in a single query.
+  TemplateTokenUsageRecordsProvider._(
+      {required TemplateTokenUsageRecordsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateTokenUsageRecordsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateTokenUsageRecordsHash();
+
+  @override
+  String toString() {
+    return r'templateTokenUsageRecordsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateTokenUsageRecords(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateTokenUsageRecordsProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateTokenUsageRecordsHash() =>
+    r'3768c240d51948d76c64d5ab19ef3c4319792465';
+
+/// Raw token usage records for all instances of a template.
+///
+/// Uses a SQL JOIN via `template_assignment` links to fetch all
+/// [WakeTokenUsageEntity] records across every instance in a single query.
+
+final class TemplateTokenUsageRecordsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  TemplateTokenUsageRecordsFamily._()
+      : super(
+          retry: null,
+          name: r'templateTokenUsageRecordsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Raw token usage records for all instances of a template.
+  ///
+  /// Uses a SQL JOIN via `template_assignment` links to fetch all
+  /// [WakeTokenUsageEntity] records across every instance in a single query.
+
+  TemplateTokenUsageRecordsProvider call(
+    String templateId,
+  ) =>
+      TemplateTokenUsageRecordsProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateTokenUsageRecordsProvider';
+}
+
+/// Aggregated token usage summaries for a template, grouped by model ID.
+///
+/// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+@ProviderFor(templateTokenUsageSummaries)
+final templateTokenUsageSummariesProvider =
+    TemplateTokenUsageSummariesFamily._();
+
+/// Aggregated token usage summaries for a template, grouped by model ID.
+///
+/// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+final class TemplateTokenUsageSummariesProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentTokenUsageSummary>>,
+        List<AgentTokenUsageSummary>,
+        FutureOr<List<AgentTokenUsageSummary>>>
+    with
+        $FutureModifier<List<AgentTokenUsageSummary>>,
+        $FutureProvider<List<AgentTokenUsageSummary>> {
+  /// Aggregated token usage summaries for a template, grouped by model ID.
+  ///
+  /// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+  /// per-model summaries sorted by total tokens descending.
+  TemplateTokenUsageSummariesProvider._(
+      {required TemplateTokenUsageSummariesFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateTokenUsageSummariesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateTokenUsageSummariesHash();
+
+  @override
+  String toString() {
+    return r'templateTokenUsageSummariesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentTokenUsageSummary>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentTokenUsageSummary>> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateTokenUsageSummaries(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateTokenUsageSummariesProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateTokenUsageSummariesHash() =>
+    r'24b6b78eb833518516af237d7b9c9cf823e1e9cf';
+
+/// Aggregated token usage summaries for a template, grouped by model ID.
+///
+/// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+/// per-model summaries sorted by total tokens descending.
+
+final class TemplateTokenUsageSummariesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<FutureOr<List<AgentTokenUsageSummary>>,
+            String> {
+  TemplateTokenUsageSummariesFamily._()
+      : super(
+          retry: null,
+          name: r'templateTokenUsageSummariesProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Aggregated token usage summaries for a template, grouped by model ID.
+  ///
+  /// Derives from [templateTokenUsageRecordsProvider] and aggregates into
+  /// per-model summaries sorted by total tokens descending.
+
+  TemplateTokenUsageSummariesProvider call(
+    String templateId,
+  ) =>
+      TemplateTokenUsageSummariesProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateTokenUsageSummariesProvider';
+}
+
+/// Per-instance token usage breakdown for a template.
+///
+/// Groups token records by instance, then by model within each instance.
+/// Returns full per-model summaries so each instance can render a
+/// [TokenUsageTable] identical in structure to the aggregate view.
+
+@ProviderFor(templateInstanceTokenBreakdown)
+final templateInstanceTokenBreakdownProvider =
+    TemplateInstanceTokenBreakdownFamily._();
+
+/// Per-instance token usage breakdown for a template.
+///
+/// Groups token records by instance, then by model within each instance.
+/// Returns full per-model summaries so each instance can render a
+/// [TokenUsageTable] identical in structure to the aggregate view.
+
+final class TemplateInstanceTokenBreakdownProvider extends $FunctionalProvider<
+        AsyncValue<List<InstanceTokenBreakdown>>,
+        List<InstanceTokenBreakdown>,
+        FutureOr<List<InstanceTokenBreakdown>>>
+    with
+        $FutureModifier<List<InstanceTokenBreakdown>>,
+        $FutureProvider<List<InstanceTokenBreakdown>> {
+  /// Per-instance token usage breakdown for a template.
+  ///
+  /// Groups token records by instance, then by model within each instance.
+  /// Returns full per-model summaries so each instance can render a
+  /// [TokenUsageTable] identical in structure to the aggregate view.
+  TemplateInstanceTokenBreakdownProvider._(
+      {required TemplateInstanceTokenBreakdownFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateInstanceTokenBreakdownProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateInstanceTokenBreakdownHash();
+
+  @override
+  String toString() {
+    return r'templateInstanceTokenBreakdownProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<InstanceTokenBreakdown>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<InstanceTokenBreakdown>> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateInstanceTokenBreakdown(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateInstanceTokenBreakdownProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateInstanceTokenBreakdownHash() =>
+    r'9bd869a9fab342adfa5dbb14bc6d12fd14e48250';
+
+/// Per-instance token usage breakdown for a template.
+///
+/// Groups token records by instance, then by model within each instance.
+/// Returns full per-model summaries so each instance can render a
+/// [TokenUsageTable] identical in structure to the aggregate view.
+
+final class TemplateInstanceTokenBreakdownFamily extends $Family
+    with
+        $FunctionalFamilyOverride<FutureOr<List<InstanceTokenBreakdown>>,
+            String> {
+  TemplateInstanceTokenBreakdownFamily._()
+      : super(
+          retry: null,
+          name: r'templateInstanceTokenBreakdownProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Per-instance token usage breakdown for a template.
+  ///
+  /// Groups token records by instance, then by model within each instance.
+  /// Returns full per-model summaries so each instance can render a
+  /// [TokenUsageTable] identical in structure to the aggregate view.
+
+  TemplateInstanceTokenBreakdownProvider call(
+    String templateId,
+  ) =>
+      TemplateInstanceTokenBreakdownProvider._(
+          argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateInstanceTokenBreakdownProvider';
+}
+
+/// Recent reports from all instances of a template, newest-first.
+
+@ProviderFor(templateRecentReports)
+final templateRecentReportsProvider = TemplateRecentReportsFamily._();
+
+/// Recent reports from all instances of a template, newest-first.
+
+final class TemplateRecentReportsProvider extends $FunctionalProvider<
+        AsyncValue<List<AgentDomainEntity>>,
+        List<AgentDomainEntity>,
+        FutureOr<List<AgentDomainEntity>>>
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// Recent reports from all instances of a template, newest-first.
+  TemplateRecentReportsProvider._(
+      {required TemplateRecentReportsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'templateRecentReportsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$templateRecentReportsHash();
+
+  @override
+  String toString() {
+    return r'templateRecentReportsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return templateRecentReports(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TemplateRecentReportsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$templateRecentReportsHash() =>
+    r'f535575fd5cb3d47a105258226b9ca7c0a1c8c45';
+
+/// Recent reports from all instances of a template, newest-first.
+
+final class TemplateRecentReportsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  TemplateRecentReportsFamily._()
+      : super(
+          retry: null,
+          name: r'templateRecentReportsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Recent reports from all instances of a template, newest-first.
+
+  TemplateRecentReportsProvider call(
+    String templateId,
+  ) =>
+      TemplateRecentReportsProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'templateRecentReportsProvider';
 }
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
