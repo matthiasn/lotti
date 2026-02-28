@@ -89,18 +89,17 @@ class _TokenUsageTable extends StatelessWidget {
     final modelStyle = context.textTheme.bodySmall;
 
     // Compute grand totals.
-    var totalInput = 0;
-    var totalOutput = 0;
-    var totalThoughts = 0;
-    var totalCached = 0;
-    var totalWakes = 0;
-    for (final s in summaries) {
-      totalInput += s.inputTokens;
-      totalOutput += s.outputTokens;
-      totalThoughts += s.thoughtsTokens;
-      totalCached += s.cachedInputTokens;
-      totalWakes += s.wakeCount;
-    }
+    final grandTotal = summaries.fold<AgentTokenUsageSummary>(
+      const AgentTokenUsageSummary(modelId: ''),
+      (acc, s) => AgentTokenUsageSummary(
+        modelId: '',
+        inputTokens: acc.inputTokens + s.inputTokens,
+        outputTokens: acc.outputTokens + s.outputTokens,
+        thoughtsTokens: acc.thoughtsTokens + s.thoughtsTokens,
+        cachedInputTokens: acc.cachedInputTokens + s.cachedInputTokens,
+        wakeCount: acc.wakeCount + s.wakeCount,
+      ),
+    );
 
     return Table(
       columnWidths: const {
@@ -147,11 +146,13 @@ class _TokenUsageTable extends StatelessWidget {
             ),
             children: [
               _cell(messages.agentTokenUsageTotalTokens, headerStyle),
-              _cell(_numberFormat.format(totalInput), valueStyle),
-              _cell(_numberFormat.format(totalOutput), valueStyle),
-              _cell(_numberFormat.format(totalThoughts), valueStyle),
-              _cell(_numberFormat.format(totalCached), valueStyle),
-              _cell(totalWakes.toString(), valueStyle),
+              _cell(_numberFormat.format(grandTotal.inputTokens), valueStyle),
+              _cell(_numberFormat.format(grandTotal.outputTokens), valueStyle),
+              _cell(
+                  _numberFormat.format(grandTotal.thoughtsTokens), valueStyle),
+              _cell(_numberFormat.format(grandTotal.cachedInputTokens),
+                  valueStyle),
+              _cell(grandTotal.wakeCount.toString(), valueStyle),
             ],
           ),
       ],
