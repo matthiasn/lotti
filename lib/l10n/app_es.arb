@@ -623,6 +623,21 @@
   "categoryPromptFilterAll": "Todos",
   "categorySearchPlaceholder": "Buscar categorías...",
   "celebrationTapToContinue": "Toca para continuar",
+  "changeSetCardTitle": "Cambios propuestos",
+  "changeSetConfirmAll": "Confirmar todos",
+  "changeSetConfirmError": "No se pudo aplicar el cambio",
+  "changeSetItemConfirmed": "Cambio aplicado",
+  "changeSetItemRejected": "Cambio rechazado",
+  "changeSetPendingCount": "{count, plural, one{1 pendiente} other{{count} pendientes}}",
+  "@changeSetPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeSetSwipeConfirm": "Confirmar",
+  "changeSetSwipeReject": "Rechazar",
   "chatInputCancelRealtime": "Cancelar (Esc)",
   "chatInputCancelRecording": "Cancelar grabación (Esc)",
   "chatInputConfigureModel": "Configurar modelo",

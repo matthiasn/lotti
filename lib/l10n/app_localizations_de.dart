@@ -1400,6 +1400,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get celebrationTapToContinue => 'Tippen zum Fortfahren';
 
   @override
+  String get changeSetCardTitle => 'Vorgeschlagene Änderungen';
+
+  @override
+  String get changeSetConfirmAll => 'Alle bestätigen';
+
+  @override
+  String get changeSetConfirmError => 'Änderung konnte nicht angewendet werden';
+
+  @override
+  String get changeSetItemConfirmed => 'Änderung angewendet';
+
+  @override
+  String get changeSetItemRejected => 'Änderung abgelehnt';
+
+  @override
+  String changeSetPendingCount(int count) {
+    return '$count ausstehend';
+  }
+
+  @override
+  String get changeSetSwipeConfirm => 'Bestätigen';
+
+  @override
+  String get changeSetSwipeReject => 'Ablehnen';
+
+  @override
   String get chatInputCancelRealtime => 'Abbrechen (Esc)';
 
   @override

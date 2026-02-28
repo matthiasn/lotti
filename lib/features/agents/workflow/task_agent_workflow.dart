@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -213,6 +214,7 @@ class TaskAgentWorkflow {
     // 5. Assemble conversation context.
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
+      agentId: agentId,
       lastReport: lastReport,
       journalObservations: journalObservations,
       taskDetailsJson: taskDetailsJson,
@@ -276,6 +278,13 @@ class TaskAgentWorkflow {
         labelsRepository: labelsRepository,
       );
 
+      final changeSetBuilder = ChangeSetBuilder(
+        agentId: agentId,
+        taskId: taskId,
+        threadId: threadId,
+        runKey: runKey,
+      );
+
       final strategy = TaskAgentStrategy(
         executor: executor,
         syncService: syncService,
@@ -283,6 +292,7 @@ class TaskAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         taskId: taskId,
+        changeSetBuilder: changeSetBuilder,
         resolveCategoryId: (entityId) async {
           final entity = await journalDb.journalEntityById(entityId);
           return entity?.categoryId;
@@ -443,6 +453,9 @@ class TaskAgentWorkflow {
           );
         }
 
+        // 10b. Persist deferred change set (if any items were accumulated).
+        await changeSetBuilder.build(syncService);
+
         // 11. Persist state.
         await syncService.upsertEntity(
           state.copyWith(
@@ -455,10 +468,12 @@ class TaskAgentWorkflow {
         );
       });
 
-      _log(
-        'wake completed: ${observations.length} observations, '
-        '${executor.mutatedEntries.length} mutations',
-        subDomain: 'execute',
+      developer.log(
+        'Wake completed for agent $agentId: '
+        '${observations.length} observations, '
+        '${executor.mutatedEntries.length} mutations, '
+        '${changeSetBuilder.items.length} deferred changes',
+        name: 'TaskAgentWorkflow',
       );
 
       return WakeResult(
@@ -654,6 +669,10 @@ and never shown to the user. They persist as your memory across wakes.
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
+- **Learn from past decisions**: Review the "Recent User Decisions" section
+  in the task context. If the user rejected a proposal, do not repeat the
+  same or a similar suggestion unless circumstances have clearly changed.
+  Confirmed proposals indicate the user's preferences — build on them.
 - **Observations**: Record private notes worth remembering for future wakes.
   Good observations include:
   - Why you transitioned a status (e.g., "Set BLOCKED because user mentioned
@@ -683,9 +702,11 @@ and never shown to the user. They persist as your memory across wakes.
 - **Language**: If the task has no language set (languageCode is null), detect
   the language from the task content and set it. Always do this on the first
   wake.
-- **Labels**: If the task has fewer than 3 labels, assign relevant labels from
-  the available list. Order by confidence (highest first), omit low confidence,
-  cap at 3 per call. Never propose suppressed labels.
+- **Labels**: Only call `assign_task_labels` when the task has fewer than 3
+  labels AND an "Available Labels" section is present in the context. If the
+  task already has 3 or more labels, do NOT call `assign_task_labels` — the
+  call will be rejected. Order by confidence (highest first), omit low
+  confidence, cap at 3 per call. Never propose suppressed labels.
 - **Checklist sovereignty**: Checklist items track who last toggled them
   (user or agent) and when (checkedAt). Rules:
   - If YOU (the agent) last set the item, you can freely change it.
@@ -709,6 +730,7 @@ and never shown to the user. They persist as your memory across wakes.
 
   /// Builds the user message for a wake cycle.
   Future<String> _buildUserMessage({
+    required String agentId,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> journalObservations,
     required String taskDetailsJson,
@@ -803,6 +825,25 @@ and never shown to the user. They persist as your memory across wakes.
       // Non-fatal: continue without context.
     }
 
+    // Decision history — feed back user confirmations/rejections so the
+    // agent learns from past proposals.
+    try {
+      final decisions = await agentRepository.getRecentDecisions(
+        agentId,
+        taskId: taskId,
+      );
+      if (decisions.isNotEmpty) {
+        buffer.writeln(_formatDecisionHistory(decisions));
+      }
+    } catch (e, s) {
+      _logError(
+        'failed to build decision history context',
+        error: e,
+        stackTrace: s,
+      );
+      // Non-fatal: continue without decision history.
+    }
+
     if (triggerTokens.isNotEmpty) {
       buffer
         ..writeln('## Changed Since Last Wake')
@@ -818,6 +859,37 @@ and never shown to the user. They persist as your memory across wakes.
       'Add observations if warranted.',
     );
 
+    return buffer.toString();
+  }
+
+  /// Formats a list of [ChangeDecisionEntity] into a markdown section for the
+  /// agent's user message context.
+  ///
+  /// Uses `✓` for confirmed, `✗` for rejected, and `⏸` for deferred verdicts.
+  /// Appends the rejection reason when present.
+  String _formatDecisionHistory(List<ChangeDecisionEntity> decisions) {
+    final buffer = StringBuffer()
+      ..writeln('## Recent User Decisions')
+      ..writeln()
+      ..writeln(
+        'The following shows how the user responded to your recent proposals. '
+        'Learn from rejections — do not repeat rejected patterns.',
+      )
+      ..writeln();
+
+    for (final d in decisions) {
+      final icon = switch (d.verdict) {
+        ChangeDecisionVerdict.confirmed => '\u2713',
+        ChangeDecisionVerdict.rejected => '\u2717',
+        ChangeDecisionVerdict.deferred => '\u23f8',
+      };
+      final verdictLabel = d.verdict.name;
+      final reason =
+          d.rejectionReason != null ? ': "${d.rejectionReason}"' : '';
+      buffer.writeln('- $icon ${d.toolName} — $verdictLabel$reason');
+    }
+
+    buffer.writeln();
     return buffer.toString();
   }
 

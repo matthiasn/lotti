@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.887] - 2026-02-28
+### Added
+- Agent now learns from past user decisions: confirmed, rejected, and deferred
+  proposals are fed back into the agent's wake context so it avoids repeating
+  rejected suggestions and builds on confirmed preferences.
+
+### Fixed
+- Agent no longer proposes redundant label assignments when a task already has
+  3 or more labels. The available labels context is now omitted for fully-labeled
+  tasks, preventing unnecessary change set proposals in the confirmation UI.
+
 ## [0.9.886] - 2026-02-28
 ### Changed
 - Hardened agent wake drain: generation-based bail-out prevents overlapping

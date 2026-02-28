@@ -604,11 +604,11 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)?
         backfillResponse,
-    TResult Function(AgentDomainEntity? agentEntity, SyncEntryStatus status,
+    TResult Function(SyncEntryStatus status, AgentDomainEntity? agentEntity,
             String? jsonPath)?
         agentEntity,
     TResult Function(
-            AgentLink? agentLink, SyncEntryStatus status, String? jsonPath)?
+            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)?
         agentLink,
     required TResult orElse(),
   }) {
@@ -649,9 +649,9 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.agentEntity, _that.status, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
       case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.agentLink, _that.status, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
       case _:
         return orElse();
     }
@@ -707,11 +707,11 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)
         backfillResponse,
-    required TResult Function(AgentDomainEntity? agentEntity,
-            SyncEntryStatus status, String? jsonPath)
+    required TResult Function(SyncEntryStatus status,
+            AgentDomainEntity? agentEntity, String? jsonPath)
         agentEntity,
     required TResult Function(
-            AgentLink? agentLink, SyncEntryStatus status, String? jsonPath)
+            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)
         agentLink,
   }) {
     final _that = this;
@@ -751,9 +751,9 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity():
-        return agentEntity(_that.agentEntity, _that.status, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
       case SyncAgentLink():
-        return agentLink(_that.agentLink, _that.status, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
     }
   }
 
@@ -803,11 +803,11 @@ extension SyncMessagePatterns on SyncMessage {
             SyncSequencePayloadType? payloadType,
             String? payloadId)?
         backfillResponse,
-    TResult? Function(AgentDomainEntity? agentEntity, SyncEntryStatus status,
+    TResult? Function(SyncEntryStatus status, AgentDomainEntity? agentEntity,
             String? jsonPath)?
         agentEntity,
     TResult? Function(
-            AgentLink? agentLink, SyncEntryStatus status, String? jsonPath)?
+            SyncEntryStatus status, AgentLink? agentLink, String? jsonPath)?
         agentLink,
   }) {
     final _that = this;
@@ -847,9 +847,9 @@ extension SyncMessagePatterns on SyncMessage {
             _that.payloadType,
             _that.payloadId);
       case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.agentEntity, _that.status, _that.jsonPath);
+        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath);
       case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.agentLink, _that.status, _that.jsonPath);
+        return agentLink(_that.status, _that.agentLink, _that.jsonPath);
       case _:
         return null;
     }
@@ -1949,16 +1949,16 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
 @JsonSerializable()
 class SyncAgentEntity implements SyncMessage {
   const SyncAgentEntity(
-      {this.agentEntity,
-      required this.status,
+      {required this.status,
+      this.agentEntity,
       this.jsonPath,
       final String? $type})
       : $type = $type ?? 'agentEntity';
   factory SyncAgentEntity.fromJson(Map<String, dynamic> json) =>
       _$SyncAgentEntityFromJson(json);
 
-  final AgentDomainEntity? agentEntity;
   final SyncEntryStatus status;
+  final AgentDomainEntity? agentEntity;
   final String? jsonPath;
 
   @JsonKey(name: 'runtimeType')
@@ -1983,20 +1983,20 @@ class SyncAgentEntity implements SyncMessage {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is SyncAgentEntity &&
+            (identical(other.status, status) || other.status == status) &&
             (identical(other.agentEntity, agentEntity) ||
                 other.agentEntity == agentEntity) &&
-            (identical(other.status, status) || other.status == status) &&
             (identical(other.jsonPath, jsonPath) ||
                 other.jsonPath == jsonPath));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, agentEntity, status, jsonPath);
+  int get hashCode => Object.hash(runtimeType, status, agentEntity, jsonPath);
 
   @override
   String toString() {
-    return 'SyncMessage.agentEntity(agentEntity: $agentEntity, status: $status, jsonPath: $jsonPath)';
+    return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath)';
   }
 }
 
@@ -2008,8 +2008,8 @@ abstract mixin class $SyncAgentEntityCopyWith<$Res>
       _$SyncAgentEntityCopyWithImpl;
   @useResult
   $Res call(
-      {AgentDomainEntity? agentEntity,
-      SyncEntryStatus status,
+      {SyncEntryStatus status,
+      AgentDomainEntity? agentEntity,
       String? jsonPath});
 
   $AgentDomainEntityCopyWith<$Res>? get agentEntity;
@@ -2027,19 +2027,19 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   $Res call({
-    Object? agentEntity = freezed,
     Object? status = null,
+    Object? agentEntity = freezed,
     Object? jsonPath = freezed,
   }) {
     return _then(SyncAgentEntity(
-      agentEntity: freezed == agentEntity
-          ? _self.agentEntity
-          : agentEntity // ignore: cast_nullable_to_non_nullable
-              as AgentDomainEntity?,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
+      agentEntity: freezed == agentEntity
+          ? _self.agentEntity
+          : agentEntity // ignore: cast_nullable_to_non_nullable
+              as AgentDomainEntity?,
       jsonPath: freezed == jsonPath
           ? _self.jsonPath
           : jsonPath // ignore: cast_nullable_to_non_nullable
@@ -2066,16 +2066,16 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
 @JsonSerializable()
 class SyncAgentLink implements SyncMessage {
   const SyncAgentLink(
-      {this.agentLink,
-      required this.status,
+      {required this.status,
+      this.agentLink,
       this.jsonPath,
       final String? $type})
       : $type = $type ?? 'agentLink';
   factory SyncAgentLink.fromJson(Map<String, dynamic> json) =>
       _$SyncAgentLinkFromJson(json);
 
-  final AgentLink? agentLink;
   final SyncEntryStatus status;
+  final AgentLink? agentLink;
   final String? jsonPath;
 
   @JsonKey(name: 'runtimeType')
@@ -2100,20 +2100,20 @@ class SyncAgentLink implements SyncMessage {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is SyncAgentLink &&
+            (identical(other.status, status) || other.status == status) &&
             (identical(other.agentLink, agentLink) ||
                 other.agentLink == agentLink) &&
-            (identical(other.status, status) || other.status == status) &&
             (identical(other.jsonPath, jsonPath) ||
                 other.jsonPath == jsonPath));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, agentLink, status, jsonPath);
+  int get hashCode => Object.hash(runtimeType, status, agentLink, jsonPath);
 
   @override
   String toString() {
-    return 'SyncMessage.agentLink(agentLink: $agentLink, status: $status, jsonPath: $jsonPath)';
+    return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath)';
   }
 }
 
@@ -2124,7 +2124,7 @@ abstract mixin class $SyncAgentLinkCopyWith<$Res>
           SyncAgentLink value, $Res Function(SyncAgentLink) _then) =
       _$SyncAgentLinkCopyWithImpl;
   @useResult
-  $Res call({AgentLink? agentLink, SyncEntryStatus status, String? jsonPath});
+  $Res call({SyncEntryStatus status, AgentLink? agentLink, String? jsonPath});
 
   $AgentLinkCopyWith<$Res>? get agentLink;
 }
@@ -2141,19 +2141,19 @@ class _$SyncAgentLinkCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   $Res call({
-    Object? agentLink = freezed,
     Object? status = null,
+    Object? agentLink = freezed,
     Object? jsonPath = freezed,
   }) {
     return _then(SyncAgentLink(
-      agentLink: freezed == agentLink
-          ? _self.agentLink
-          : agentLink // ignore: cast_nullable_to_non_nullable
-              as AgentLink?,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
               as SyncEntryStatus,
+      agentLink: freezed == agentLink
+          ? _self.agentLink
+          : agentLink // ignore: cast_nullable_to_non_nullable
+              as AgentLink?,
       jsonPath: freezed == jsonPath
           ? _self.jsonPath
           : jsonPath // ignore: cast_nullable_to_non_nullable

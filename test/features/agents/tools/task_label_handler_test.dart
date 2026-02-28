@@ -684,6 +684,48 @@ void main() {
         expect(result, isNot(contains('## Available Labels')));
       });
 
+      test('omits available labels section when task has 3+ labels', () async {
+        final taskWith3Labels = task.copyWith(
+          meta: task.meta.copyWith(
+            labelIds: ['label-1', 'label-2', 'label-3'],
+          ),
+        );
+
+        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+          (_) async => [
+            testLabelDefinition1,
+            testLabelDefinition2,
+            LabelDefinition(
+              id: 'label-3',
+              name: 'Third',
+              color: '#00FF00',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+            LabelDefinition(
+              id: 'label-4',
+              name: 'Fourth',
+              color: '#FF0000',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final result = await TaskLabelHandler.buildLabelContext(
+          task: taskWith3Labels,
+          journalDb: mockDb,
+        );
+
+        // Should not contain available labels section since task already
+        // has 3 labels — prevents the LLM from proposing redundant
+        // assignments.
+        expect(result, isNot(contains('## Available Labels')));
+        expect(result, isNot(contains('label-4')));
+      });
+
       test('excludes assigned and suppressed from available', () async {
         final taskWithLabelsAndSuppressed = task.copyWith(
           meta: task.meta.copyWith(labelIds: ['label-1']),

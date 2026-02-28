@@ -43,9 +43,17 @@ flowchart LR
   EXEC --> TOOLS["Task Tool Handlers"]
   TOOLS --> JOURNAL["Journal Repository/DB"]
 
-  WF --> SYNC["AgentSyncService"]
+  STRAT --> CSB["ChangeSetBuilder"]
+  CSB --> SYNC["AgentSyncService"]
   SYNC --> AGENTDB["AgentRepository -> agent.sqlite"]
   SYNC --> OUTBOX["Sync Outbox"]
+
+  WF --> SYNC
+
+  CSUI["ChangeSetSummaryCard"] --> CSSVC["ConfirmationService"]
+  CSSVC --> DISP["TaskToolDispatcher"]
+  DISP --> TOOLS
+  CSSVC --> SYNC
 
   TEMPLATEUI["Template UI"] --> EVO["TemplateEvolutionWorkflow"]
   EVO --> MODEL
@@ -68,11 +76,34 @@ flowchart TD
   H --> I["TaskAgentWorkflow.execute(...)"]
   I --> J["ConversationRepository.sendMessage(...)"]
   J --> K["TaskAgentStrategy.processToolCalls(...)"]
-  K --> L["AgentToolExecutor.execute(...)"]
-  L --> M["Task handlers + Journal writes"]
-  I --> N["persist report/messages/state via AgentSyncService"]
-  N --> O["WakeOrchestrator marks wake_run status"]
-  O --> P["Persisted throttle update -> UpdateNotifications.notify(fromSync: true)"]
+  K --> L{"Tool deferred?"}
+  L -->|No| M["AgentToolExecutor.execute(...)"]
+  M --> N["Task handlers + Journal writes"]
+  L -->|Yes| O["ChangeSetBuilder.addItem(...)"]
+  O --> P["Respond: 'Proposal queued'"]
+  I --> Q["ChangeSetBuilder.build() → persist ChangeSetEntity"]
+  I --> R["persist report/messages/state via AgentSyncService"]
+  R --> S["WakeOrchestrator marks wake_run status"]
+  S --> T["Persisted throttle update -> UpdateNotifications.notify(fromSync: true)"]
+```
+
+### 1b) Change Set Confirmation (User -> Tool Dispatch)
+
+```mermaid
+flowchart TD
+  A["ChangeSetSummaryCard"] --> B{"Confirm or Reject?"}
+  B -->|Confirm| C["ConfirmationService.confirmItem()"]
+  C --> D["Re-read fresh ChangeSetEntity"]
+  D --> E["TaskToolDispatcher.dispatch()"]
+  E --> F["Task handler executes + Journal write"]
+  F --> G["Persist ChangeDecisionEntity"]
+  G --> H["Update item status → confirmed"]
+  B -->|Reject| I["ConfirmationService.rejectItem()"]
+  I --> J["Persist ChangeDecisionEntity"]
+  J --> K["Update item status → rejected"]
+  H --> L["UpdateNotifications.notify()"]
+  K --> L
+  L --> M["Provider rebuild → UI refreshes"]
 ```
 
 ### 2) Manual Reanalysis (Agent Detail -> Immediate Run)
@@ -89,7 +120,7 @@ flowchart TD
 
 ## Sequence Diagrams
 
-### A) Task Edit -> Orchestrated AI Run
+### A) Task Edit -> Orchestrated AI Run (with deferred tool confirmation)
 
 ```mermaid
 sequenceDiagram
@@ -100,8 +131,7 @@ sequenceDiagram
   participant W as TaskAgentWorkflow
   participant C as ConversationRepository
   participant M as Model Provider
-  participant X as AgentToolExecutor
-  participant J as Journal Repository
+  participant CSB as ChangeSetBuilder
   participant ADB as Agent Repository
 
   U->>T: Edit task/checklist
@@ -114,13 +144,41 @@ sequenceDiagram
   W->>C: sendMessage(system+context+tools)
   C->>M: LLM request
   M-->>C: tool calls / final assistant content
-  C->>X: Execute tool call
-  X->>J: Persist task mutation(s)
-  X-->>W: Tool execution result + mutated entity ids
+  C->>CSB: Deferred tool → addItem(toolName, args)
+  CSB-->>C: "Proposal queued for user review."
+  Note over W,CSB: End of wake
+  W->>CSB: build(syncService)
+  CSB->>ADB: Persist ChangeSetEntity (pending)
   W->>ADB: Persist thought/report/observations/state
-  W-->>O: WakeResult (success or throw on failure)
+  W-->>O: WakeResult
   O->>ADB: Update wake_run status
-  O->>N: notify({agentId, AGENT_CHANGED}, fromSync: true) on nextWakeAt writes
+  O->>N: notify({agentId}, fromSync: true)
+```
+
+### A2) User Confirms Change Set
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant Card as ChangeSetSummaryCard
+  participant Svc as ConfirmationService
+  participant Disp as TaskToolDispatcher
+  participant J as Journal Repository
+  participant ADB as Agent Repository
+  participant N as UpdateNotifications
+
+  U->>Card: Tap "Confirm all" or per-item ✓
+  Card->>Svc: confirmItem(changeSet, index)
+  Svc->>ADB: Re-read fresh ChangeSetEntity
+  Svc->>Disp: dispatch(toolName, args, taskId)
+  Disp->>J: Execute handler (persist mutation)
+  J-->>Disp: ToolExecutionResult
+  Disp-->>Svc: success
+  Svc->>ADB: Persist ChangeDecisionEntity
+  Svc->>ADB: Update item status → confirmed
+  Svc-->>Card: result
+  Card->>N: notify({agentId})
+  N-->>Card: Provider rebuild → UI refreshes
 ```
 
 ### B) Template Evolution Chat (UI -> LLM -> Versioning)
@@ -154,12 +212,12 @@ sequenceDiagram
 ## Module Responsibilities
 
 - `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
-- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`).
+- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), tool dispatch extraction (`TaskToolDispatcher`).
 - `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
-- `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics.
-- `sync/`: transaction-aware outbox buffering for agent entity/link writes.
-- `state/`: Riverpod DI + read models + initialization wiring.
-- `ui/`: settings/templates/instances/detail/evolution screens.
+- `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
+- `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.
+- `state/`: Riverpod DI + read models + initialization wiring + change set providers.
+- `ui/`: settings/templates/instances/detail/evolution screens + change set confirmation card (`ChangeSetSummaryCard`).
 
 ## Architecture Decision Records
 

@@ -758,6 +758,21 @@
   "categoryPromptFilterAll": "All",
   "categorySearchPlaceholder": "Search categories...",
   "celebrationTapToContinue": "Tap to continue",
+  "changeSetCardTitle": "Proposed changes",
+  "changeSetConfirmAll": "Confirm all",
+  "changeSetConfirmError": "Failed to apply change",
+  "changeSetItemConfirmed": "Change applied",
+  "changeSetItemRejected": "Change rejected",
+  "changeSetPendingCount": "{count} pending",
+  "@changeSetPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeSetSwipeConfirm": "Confirm",
+  "changeSetSwipeReject": "Reject",
   "chatInputCancelRealtime": "Cancel (Esc)",
   "chatInputCancelRecording": "Cancel recording (Esc)",
   "chatInputConfigureModel": "Configure model",

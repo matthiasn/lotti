@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.887" date="2026-02-28">
+      <description>
+          <p>Agent now learns from past user decisions: confirmed, rejected, and deferred proposals are fed back into the wake context, so the agent avoids repeating rejected suggestions and builds on confirmed preferences. Also fixed redundant label assignment proposals for tasks that already have 3 or more labels.</p>
+      </description>
+    </release>
     <release version="0.9.886" date="2026-02-28">
       <description>
           <p>Hardened agent wake drain: generation-based bail-out prevents overlapping drain loops during stale-lock recovery, and stack traces are now captured in all error logging paths for better diagnostics.</p>

@@ -180,20 +180,25 @@ class TaskLabelHandler {
       }
     }
 
-    // Build available labels list (in scope, not assigned, not suppressed).
+    // Skip available labels when the task already has 3+ labels — the handler
+    // would reject the call anyway, and omitting the section prevents the LLM
+    // from proposing redundant label assignments.
     final availableLabels = <Map<String, String>>[];
-    for (final def in activeDefs) {
-      if (existingIds.contains(def.id)) continue;
-      if (suppressedIds.contains(def.id)) continue;
+    if (existingIds.length < 3) {
+      // Build available labels list (in scope, not assigned, not suppressed).
+      for (final def in activeDefs) {
+        if (existingIds.contains(def.id)) continue;
+        if (suppressedIds.contains(def.id)) continue;
 
-      // Check category scope.
-      final cats = def.applicableCategoryIds;
-      final isGlobal = cats == null || cats.isEmpty;
-      final inCategory =
-          categoryId != null && (cats?.contains(categoryId) ?? false);
-      if (!isGlobal && !inCategory) continue;
+        // Check category scope.
+        final cats = def.applicableCategoryIds;
+        final isGlobal = cats == null || cats.isEmpty;
+        final inCategory =
+            categoryId != null && (cats?.contains(categoryId) ?? false);
+        if (!isGlobal && !inCategory) continue;
 
-      availableLabels.add({'id': def.id, 'name': def.name});
+        availableLabels.add({'id': def.id, 'name': def.name});
+      }
     }
 
     if (availableLabels.isEmpty && suppressedLabels.isEmpty) {

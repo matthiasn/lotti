@@ -2532,6 +2532,54 @@ abstract class AppLocalizations {
   /// **'Tap to continue'**
   String get celebrationTapToContinue;
 
+  /// No description provided for @changeSetCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed changes'**
+  String get changeSetCardTitle;
+
+  /// No description provided for @changeSetConfirmAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm all'**
+  String get changeSetConfirmAll;
+
+  /// No description provided for @changeSetConfirmError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to apply change'**
+  String get changeSetConfirmError;
+
+  /// No description provided for @changeSetItemConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Change applied'**
+  String get changeSetItemConfirmed;
+
+  /// No description provided for @changeSetItemRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Change rejected'**
+  String get changeSetItemRejected;
+
+  /// No description provided for @changeSetPendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending'**
+  String changeSetPendingCount(int count);
+
+  /// No description provided for @changeSetSwipeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get changeSetSwipeConfirm;
+
+  /// No description provided for @changeSetSwipeReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get changeSetSwipeReject;
+
   /// No description provided for @chatInputCancelRealtime.
   ///
   /// In en, this message translates to:

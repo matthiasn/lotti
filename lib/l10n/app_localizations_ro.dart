@@ -1393,6 +1393,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get celebrationTapToContinue => 'Atingeți pentru a continua';
 
   @override
+  String get changeSetCardTitle => 'Modificări propuse';
+
+  @override
+  String get changeSetConfirmAll => 'Confirmați toate';
+
+  @override
+  String get changeSetConfirmError => 'Modificarea nu a putut fi aplicată';
+
+  @override
+  String get changeSetItemConfirmed => 'Modificare aplicată';
+
+  @override
+  String get changeSetItemRejected => 'Modificare respinsă';
+
+  @override
+  String changeSetPendingCount(int count) {
+    return '$count în așteptare';
+  }
+
+  @override
+  String get changeSetSwipeConfirm => 'Confirmați';
+
+  @override
+  String get changeSetSwipeReject => 'Respingeți';
+
+  @override
   String get chatInputCancelRealtime => 'Anulează (Esc)';
 
   @override

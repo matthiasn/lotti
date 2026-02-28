@@ -18,11 +18,13 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
@@ -299,6 +301,8 @@ class MockTaskAgentService extends Mock implements TaskAgentService {}
 
 class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 
+class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
+
 class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
@@ -341,6 +345,9 @@ class MockLabelAssignmentProcessor extends Mock
 
 class MockTemplateEvolutionWorkflow extends Mock
     implements TemplateEvolutionWorkflow {}
+
+class MockChangeSetConfirmationService extends Mock
+    implements ChangeSetConfirmationService {}
 
 // --- Additional Fake classes ---
 
