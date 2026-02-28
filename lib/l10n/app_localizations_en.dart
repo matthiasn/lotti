@@ -3428,6 +3428,44 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get settingsLoggingAgentRuntime => 'Agent Runtime';
+
+  @override
+  String get settingsLoggingAgentRuntimeSubtitle =>
+      'Wake orchestrator decisions and dispatch';
+
+  @override
+  String get settingsLoggingAgentWorkflow => 'Agent Workflow';
+
+  @override
+  String get settingsLoggingAgentWorkflowSubtitle =>
+      'Conversation execution and tool calls';
+
+  @override
+  String get settingsLoggingDomainsSubtitle =>
+      'Control which domains write to the log';
+
+  @override
+  String get settingsLoggingDomainsTitle => 'Logging Domains';
+
+  @override
+  String get settingsLoggingGlobalToggle => 'Enable Logging';
+
+  @override
+  String get settingsLoggingGlobalToggleSubtitle =>
+      'Master switch for all logging';
+
+  @override
+  String get settingsLoggingSync => 'Sync';
+
+  @override
+  String get settingsLoggingSyncSubtitle => 'Cross-device sync operations';
+
+  @override
+  String get settingsLoggingViewLogsSubtitle =>
+      'Browse and search all log entries';
+
+  @override
   String get settingsLogsTitle => 'Logs';
 
   @override

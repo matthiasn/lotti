@@ -53,7 +53,7 @@ final class TaskAgentServiceProvider extends $FunctionalProvider<
   }
 }
 
-String _$taskAgentServiceHash() => r'116d3e8c09ae3f50db6ad730aa54712739aee7be';
+String _$taskAgentServiceHash() => r'ca5323c2e1aee849830805dc8466ba5e09a238a2';
 
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///

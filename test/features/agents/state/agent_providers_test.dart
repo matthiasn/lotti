@@ -20,8 +20,10 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show outboxServiceProvider;
+    show loggingServiceProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -119,6 +121,88 @@ void main() {
         container.read(maybeSyncEventProcessorProvider),
         same(mockProcessor),
       );
+    });
+  });
+
+  group('domainLoggerProvider', () {
+    test('creates DomainLogger and seeds initial flags', () async {
+      final container = ProviderContainer(
+        overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          configFlagProvider(logAgentRuntimeFlag)
+              .overrideWith((ref) => Stream.value(true)),
+          configFlagProvider(logAgentWorkflowFlag)
+              .overrideWith((ref) => Stream.value(false)),
+          configFlagProvider(logSyncFlag)
+              .overrideWith((ref) => Stream.value(true)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Read + listen to ensure the provider stays alive and processes
+      // stream events from configFlagProvider.
+      final sub = container.listen(domainLoggerProvider, (_, __) {});
+      addTearDown(sub.close);
+      final logger = container.read(domainLoggerProvider);
+      expect(logger, isA<DomainLogger>());
+
+      // Let the config flag streams emit so ref.listen fires.
+      await Future<void>.delayed(Duration.zero);
+      await container.pump();
+
+      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
+      expect(logger.enabledDomains, isNot(contains(LogDomains.agentWorkflow)));
+      expect(logger.enabledDomains, contains(LogDomains.sync));
+    });
+
+    test('updates enabledDomains when config flags change', () async {
+      final runtimeController = StreamController<bool>.broadcast();
+      final workflowController = StreamController<bool>.broadcast();
+      final syncController = StreamController<bool>.broadcast();
+      addTearDown(runtimeController.close);
+      addTearDown(workflowController.close);
+      addTearDown(syncController.close);
+
+      final container = ProviderContainer(
+        overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          configFlagProvider(logAgentRuntimeFlag)
+              .overrideWith((ref) => runtimeController.stream),
+          configFlagProvider(logAgentWorkflowFlag)
+              .overrideWith((ref) => workflowController.stream),
+          configFlagProvider(logSyncFlag)
+              .overrideWith((ref) => syncController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(domainLoggerProvider, (_, __) {});
+      addTearDown(sub.close);
+      final logger = container.read(domainLoggerProvider);
+
+      // Initially empty because streams haven't emitted yet.
+      expect(logger.enabledDomains, isEmpty);
+
+      // Emit: agent_runtime=true, agent_workflow=true, sync=false.
+      runtimeController.add(true);
+      workflowController.add(true);
+      syncController.add(false);
+      await Future<void>.delayed(Duration.zero);
+      await container.pump();
+
+      expect(logger.enabledDomains, contains(LogDomains.agentRuntime));
+      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
+      expect(logger.enabledDomains, isNot(contains(LogDomains.sync)));
+
+      // Toggle: agent_runtime off, sync on.
+      runtimeController.add(false);
+      syncController.add(true);
+      await Future<void>.delayed(Duration.zero);
+      await container.pump();
+
+      expect(logger.enabledDomains, isNot(contains(LogDomains.agentRuntime)));
+      expect(logger.enabledDomains, contains(LogDomains.agentWorkflow));
+      expect(logger.enabledDomains, contains(LogDomains.sync));
     });
   });
 
@@ -1749,6 +1833,9 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -1785,6 +1872,9 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeQueueProvider.overrideWithValue(queue),
           wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
         ],
       );
       addTearDown(container.dispose);

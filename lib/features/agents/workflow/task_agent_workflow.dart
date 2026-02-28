@@ -29,6 +29,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -65,6 +66,7 @@ class TaskAgentWorkflow {
     required this.labelsRepository,
     required this.syncService,
     required this.templateService,
+    this.domainLogger,
   });
 
   final AgentRepository agentRepository;
@@ -82,7 +84,36 @@ class TaskAgentWorkflow {
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
 
+  /// Optional domain logger for structured, PII-safe logging.
+  final DomainLogger? domainLogger;
+
   static const _uuid = Uuid();
+
+  void _log(String message, {String? subDomain}) {
+    domainLogger?.log(
+      LogDomains.agentWorkflow,
+      message,
+      subDomain: subDomain,
+    );
+  }
+
+  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentWorkflow,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'TaskAgentWorkflow',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   /// Execute a full wake cycle for the given agent.
   ///
@@ -101,30 +132,29 @@ class TaskAgentWorkflow {
   }) async {
     final agentId = agentIdentity.id;
 
-    developer.log(
-      'Starting wake for agent $agentId (runKey: $runKey, '
-      'triggers: ${triggerTokens.length})',
-      name: 'TaskAgentWorkflow',
+    _log(
+      'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
+      'triggers=${triggerTokens.length}',
+      subDomain: 'execute',
     );
 
     // 1. Load current state + both memory types.
     final state = await agentRepository.getAgentState(agentId);
     if (state == null) {
-      developer.log(
-        'No agent state found for $agentId — aborting wake',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
 
     final taskId = state.slots.activeTaskId;
     if (taskId == null) {
-      developer.log(
-        'No active task ID in agent state for $agentId — aborting wake',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('no active task ID — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No active task ID');
     }
+
+    _log(
+      'state resolved, taskId=${DomainLogger.sanitizeId(taskId)}',
+      subDomain: 'execute',
+    );
 
     final lastReport = await agentRepository.getLatestReport(
       agentId,
@@ -141,25 +171,26 @@ class TaskAgentWorkflow {
     final linkedTasksJson = await _buildLinkedTasksContextJson(taskId);
 
     if (taskDetailsJson == null) {
-      developer.log(
-        'Task $taskId not found in journal — aborting wake',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
 
     // 3. Resolve the agent's template and active version.
     final templateCtx = await _resolveTemplate(agentId);
     if (templateCtx == null) {
-      developer.log(
-        'No template assigned to agent $agentId — aborting wake',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('no template assigned — aborting wake', subDomain: 'execute');
       return const WakeResult(
         success: false,
         error: 'No template assigned to agent',
       );
     }
+
+    _log(
+      'template=${DomainLogger.sanitizeId(templateCtx.template.id)}, '
+      'version=${DomainLogger.sanitizeId(templateCtx.version.id)}, '
+      'model=${templateCtx.version.modelId ?? templateCtx.template.modelId}',
+      subDomain: 'execute',
+    );
 
     // 4. Resolve a Gemini inference provider from the template version.
     final modelId = templateCtx.version.modelId ?? templateCtx.template.modelId;
@@ -169,9 +200,9 @@ class TaskAgentWorkflow {
       logTag: 'TaskAgentWorkflow',
     );
     if (provider == null) {
-      developer.log(
-        'No Gemini provider configured for model $modelId — aborting wake',
-        name: 'TaskAgentWorkflow',
+      _log(
+        'no provider configured for model $modelId — aborting wake',
+        subDomain: 'execute',
       );
       return const WakeResult(
         success: false,
@@ -225,11 +256,7 @@ class TaskAgentWorkflow {
         ),
       );
     } catch (e) {
-      developer.log(
-        'Failed to persist user message for agent $agentId',
-        name: 'TaskAgentWorkflow',
-        error: e,
-      );
+      _logError('failed to persist user message', error: e);
       // Non-fatal: continue with execution even if audit fails.
     }
 
@@ -281,10 +308,7 @@ class TaskAgentWorkflow {
           templateCtx.version.id,
         );
       } catch (e) {
-        developer.log(
-          'Failed to record template provenance for run $runKey: $e',
-          name: 'TaskAgentWorkflow',
-        );
+        _logError('failed to record template provenance', error: e);
         // Non-fatal: the wake can proceed without provenance tracking.
       }
 
@@ -321,11 +345,9 @@ class TaskAgentWorkflow {
       // report, observations) are successfully written.
       final reportContent = strategy.extractReportContent();
       if (reportContent.isEmpty) {
-        developer.log(
-          'Agent $agentId did not publish a report during this wake '
-          '(runKey: $runKey). This violates the "must call update_report" '
-          'contract.',
-          name: 'TaskAgentWorkflow',
+        _log(
+          'no report published (violates update_report contract)',
+          subDomain: 'execute',
         );
       }
 
@@ -433,11 +455,10 @@ class TaskAgentWorkflow {
         );
       });
 
-      developer.log(
-        'Wake completed for agent $agentId: '
-        '${observations.length} observations, '
+      _log(
+        'wake completed: ${observations.length} observations, '
         '${executor.mutatedEntries.length} mutations',
-        name: 'TaskAgentWorkflow',
+        subDomain: 'execute',
       );
 
       return WakeResult(
@@ -445,12 +466,7 @@ class TaskAgentWorkflow {
         mutatedEntries: executor.mutatedEntries,
       );
     } catch (e, s) {
-      developer.log(
-        'Wake failed for agent $agentId',
-        name: 'TaskAgentWorkflow',
-        error: e,
-        stackTrace: s,
-      );
+      _logError('wake failed', error: e, stackTrace: s);
 
       // Update failure count in state.
       try {
@@ -461,11 +477,11 @@ class TaskAgentWorkflow {
             consecutiveFailureCount: state.consecutiveFailureCount + 1,
           ),
         );
-      } catch (stateError) {
-        developer.log(
-          'Failed to update failure count for agent $agentId',
-          name: 'TaskAgentWorkflow',
+      } catch (stateError, s) {
+        _logError(
+          'failed to update failure count',
           error: stateError,
+          stackTrace: s,
         );
       }
 
@@ -511,11 +527,7 @@ class TaskAgentWorkflow {
         ),
       );
     } catch (e, s) {
-      developer.log(
-        'Failed to persist token usage for agent $agentId: $e',
-        name: 'TaskAgentWorkflow',
-        stackTrace: s,
-      );
+      _logError('failed to persist token usage', error: e, stackTrace: s);
     }
   }
 
@@ -526,19 +538,13 @@ class TaskAgentWorkflow {
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
     final template = await templateService.getTemplateForAgent(agentId);
     if (template == null) {
-      developer.log(
-        'No template assigned to agent $agentId',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('no template assigned', subDomain: 'resolve');
       return null;
     }
 
     final version = await templateService.getActiveVersion(template.id);
     if (version == null) {
-      developer.log(
-        'No active version for template ${template.id}',
-        name: 'TaskAgentWorkflow',
-      );
+      _log('no active version for template', subDomain: 'resolve');
       return null;
     }
 
@@ -788,10 +794,11 @@ and never shown to the user. They persist as your memory across wakes.
           buffer.write(correctionContext);
         }
       }
-    } catch (e) {
-      developer.log(
-        'Failed to build label/correction context: $e',
-        name: 'TaskAgentWorkflow',
+    } catch (e, s) {
+      _logError(
+        'failed to build label/correction context',
+        error: e,
+        stackTrace: s,
       );
       // Non-fatal: continue without context.
     }
@@ -880,9 +887,8 @@ and never shown to the user. They persist as your memory across wakes.
         'linked_to': linkedToRows,
       });
     } catch (e, stackTrace) {
-      developer.log(
-        'Failed to build linked tasks context for task $taskId: $e',
-        name: 'TaskAgentWorkflow',
+      _logError(
+        'failed to build linked tasks context',
         error: e,
         stackTrace: stackTrace,
       );
@@ -928,10 +934,11 @@ and never shown to the user. They persist as your memory across wakes.
         );
       }
       return null;
-    } catch (e) {
-      developer.log(
-        'Failed to resolve linked task-agent report for task $linkedTaskId: $e',
-        name: 'TaskAgentWorkflow',
+    } catch (e, s) {
+      _logError(
+        'failed to resolve linked task-agent report',
+        error: e,
+        stackTrace: s,
       );
       return null;
     }

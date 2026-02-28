@@ -1429,6 +1429,17 @@
       }
     }
   },
+  "settingsLoggingAgentRuntime": "Agent-Laufzeit",
+  "settingsLoggingAgentRuntimeSubtitle": "Wake-Orchestrator-Entscheidungen und Verteilung",
+  "settingsLoggingAgentWorkflow": "Agent-Workflow",
+  "settingsLoggingAgentWorkflowSubtitle": "Konversationsausführung und Werkzeugaufrufe",
+  "settingsLoggingDomainsSubtitle": "Steuere, welche Bereiche ins Protokoll schreiben",
+  "settingsLoggingDomainsTitle": "Protokoll-Bereiche",
+  "settingsLoggingGlobalToggle": "Protokollierung aktivieren",
+  "settingsLoggingGlobalToggleSubtitle": "Hauptschalter für die gesamte Protokollierung",
+  "settingsLoggingSync": "Synchronisation",
+  "settingsLoggingSyncSubtitle": "Geräteübergreifende Synchronisationsvorgänge",
+  "settingsLoggingViewLogsSubtitle": "Alle Protokolleinträge durchsuchen",
   "settingsLogsTitle": "Protokolle",
   "settingsMaintenanceTitle": "Wartung",
   "settingsMatrixAccept": "Akzeptieren",

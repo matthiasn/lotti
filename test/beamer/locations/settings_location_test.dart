@@ -15,6 +15,7 @@ import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
@@ -102,7 +103,9 @@ void main() {
         '/settings/theming',
         '/settings/advanced',
         '/settings/logging',
+        '/settings/advanced/logging',
         '/settings/advanced/logging/:logEntryId',
+        '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
@@ -632,6 +635,22 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
       expect(pages[2].child, isA<SyncStatsPage>());
+    });
+
+    test('buildPages builds LoggingSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/logging_domains'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[2].child, isA<LoggingSettingsPage>());
     });
 
     test('buildPages builds LoggingPage', () {

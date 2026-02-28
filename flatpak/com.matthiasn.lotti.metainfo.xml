@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.886" date="2026-02-28">
+      <description>
+          <p>Hardened agent wake drain: generation-based bail-out prevents overlapping drain loops during stale-lock recovery, and stack traces are now captured in all error logging paths for better diagnostics.</p>
+      </description>
+    </release>
     <release version="0.9.885" date="2026-02-28">
       <description>
           <p>Agent sync now uses file-attachment pattern (same as journal entities), preventing failures when agent payloads exceed Matrix's 60KB text event limit. Existing inline messages remain backward-compatible.</p>
@@ -38,7 +43,7 @@
     </release>
     <release version="0.9.884" date="2026-02-28">
       <description>
-          <p>Agent UI refinements: Beamer-native back navigation in Settings &gt; Agents flow, responsive token usage table, improved agent report controls with countdown timer and cancel button, and tab-specific bottom bar visibility on template detail page.</p>
+          <p>Domain-specific logging with PII-safe sanitization and per-domain toggles in Settings &gt; Advanced &gt; Logging Domains. Defensive fixes for agent wake orchestrator reliability. Agent UI refinements: Beamer-native back navigation, responsive token usage table, improved report controls with countdown timer.</p>
       </description>
     </release>
     <release version="0.9.883" date="2026-02-28">

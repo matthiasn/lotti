@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -70,6 +72,8 @@ void main() {
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
+      domainLogger: DomainLogger(loggingService: LoggingService())
+        ..enabledDomains.add(LogDomains.agentRuntime),
     );
   });
 
@@ -610,6 +614,36 @@ void main() {
 
         verifyNever(
             () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+    });
+
+    group('null domainLogger fallback', () {
+      test(
+          'restoreSubscriptions logs to developer.log when domainLogger is null',
+          () async {
+        // Create a service without domainLogger to exercise the else branch.
+        final nullLoggerService = TaskAgentService(
+          agentService: mockAgentService,
+          repository: mockRepository,
+          orchestrator: mockOrchestrator,
+          syncService: mockSyncService,
+        );
+
+        final failingAgent = makeIdentity(agentId: 'ta-fail');
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [failingAgent]);
+        when(
+          () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
+        ).thenThrow(Exception('DB error'));
+
+        // Should not throw — error is caught and logged via developer.log.
+        await nullLoggerService.restoreSubscriptions();
+
+        // Verify no subscription was registered (agent errored out).
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
     });

@@ -52,6 +52,7 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -211,6 +212,8 @@ class MockTimeService extends Mock implements TimeService {}
 class MockLoggingDb extends Mock implements LoggingDb {}
 
 class MockLoggingService extends Mock implements LoggingService {}
+
+class MockDomainLogger extends Mock implements DomainLogger {}
 
 class MockEditorDb extends Mock implements EditorDb {}
 

@@ -22,6 +22,13 @@ class AdvancedSettingsPage extends ConsumerWidget {
             icon: Icons.article_rounded,
             onTap: () => context.beamToNamed('/settings/advanced/logging'),
           ),
+          AdaptiveSettingsCard(
+            title: context.messages.settingsLoggingDomainsTitle,
+            subtitle: context.messages.settingsLoggingDomainsSubtitle,
+            icon: Icons.tune_rounded,
+            onTap: () =>
+                context.beamToNamed('/settings/advanced/logging_domains'),
+          ),
           if (isMobile)
             AdaptiveSettingsCard(
               title: context.messages.settingsHealthImportTitle,

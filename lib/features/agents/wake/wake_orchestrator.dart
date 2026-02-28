@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// A registered interest that wakes [agentId] when tokens arrive matching
 /// [matchEntityIds].
@@ -68,6 +69,7 @@ class WakeOrchestrator {
     required this.repository,
     required this.queue,
     required this.runner,
+    this.domainLogger,
     this.wakeExecutor,
     this.onPersistedStateChanged,
   }) {
@@ -76,12 +78,16 @@ class WakeOrchestrator {
       throttleWindow: throttleWindow,
       onPersistedStateChanged: onPersistedStateChanged,
       onDrainRequested: processNext,
+      domainLogger: domainLogger,
     );
   }
 
   final AgentRepository repository;
   final WakeQueue queue;
   final WakeRunner runner;
+
+  /// Optional domain logger for structured, PII-safe logging.
+  final DomainLogger? domainLogger;
 
   /// Optional callback that performs the actual agent execution during
   /// [processNext]. When set, the orchestrator delegates to this function
@@ -132,6 +138,18 @@ class WakeOrchestrator {
   /// Set when a drain is requested while one is already in progress.
   bool _drainRequested = false;
 
+  /// Timestamp when the current drain started, for stale-drain detection.
+  DateTime? _drainStartedAt;
+
+  /// Generation counter for drain cancellation. Incremented when a stale
+  /// drain is force-reset so the old drain's loop can detect it was
+  /// superseded and bail out.
+  int _drainGeneration = 0;
+
+  /// Maximum duration for a drain before it is considered stale and the
+  /// guard is force-reset.
+  static const _drainTimeout = Duration(minutes: 5);
+
   /// Safety-net periodic timer that catches any scenario where a deferred
   /// drain timer fails to fire (macOS App Nap, race conditions, etc.).
   Timer? _safetyNetTimer;
@@ -141,6 +159,28 @@ class WakeOrchestrator {
   static const safetyNetInterval = Duration(seconds: 60);
 
   StreamSubscription<Set<String>>? _notificationSub;
+
+  void _log(String message, {String? subDomain}) {
+    domainLogger?.log(LogDomains.agentRuntime, message, subDomain: subDomain);
+  }
+
+  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentRuntime,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'WakeOrchestrator',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   // ── Subscription management ────────────────────────────────────────────────
 
@@ -271,10 +311,7 @@ class WakeOrchestrator {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = Timer.periodic(safetyNetInterval, (_) {
       if (!queue.isEmpty && !_isDraining) {
-        developer.log(
-          'Safety-net drain: queue has ${queue.length} pending jobs',
-          name: 'WakeOrchestrator',
-        );
+        _log('safety-net drain: queue=${queue.length}');
         unawaited(processNext());
       }
     });
@@ -324,10 +361,9 @@ class WakeOrchestrator {
 
   void _onBatch(Set<String> tokens) {
     if (_subscriptions.isEmpty) {
-      developer.log(
-        'Batch received ${tokens.length} token(s) but NO subscriptions '
-        'registered — notifications will be ignored',
-        name: 'WakeOrchestrator',
+      _log(
+        'batch: ${tokens.length} token(s), 0 subscriptions — ignoring',
+        subDomain: 'onBatch',
       );
       return;
     }
@@ -336,17 +372,19 @@ class WakeOrchestrator {
       final matched = tokens.intersection(sub.matchEntityIds);
       if (matched.isEmpty) continue;
 
-      developer.log(
-        'Batch matched ${matched.length} token(s) for agent ${sub.agentId} '
-        '(sub: ${sub.id}): $matched',
-        name: 'WakeOrchestrator',
+      _log(
+        'matched ${matched.length} token(s) for '
+        '${DomainLogger.sanitizeId(sub.agentId)} '
+        '(sub: ${DomainLogger.sanitizeId(sub.id)})',
+        subDomain: 'onBatch',
       );
 
       // 2. Apply post-execution self-notification suppression.
       if (_isSuppressed(sub.agentId, matched)) {
-        developer.log(
-          'Suppressed self-notification for ${sub.agentId}',
-          name: 'WakeOrchestrator',
+        _log(
+          'suppressed self-notification for '
+          '${DomainLogger.sanitizeId(sub.agentId)}',
+          subDomain: 'suppression',
         );
         continue;
       }
@@ -382,10 +420,10 @@ class WakeOrchestrator {
             ),
           );
         }
-        developer.log(
-          'Agent ${sub.agentId} executing — '
+        _log(
+          '${DomainLogger.sanitizeId(sub.agentId)} executing — '
           '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'}',
-          name: 'WakeOrchestrator',
+          subDomain: 'running',
         );
         continue;
       }
@@ -396,10 +434,10 @@ class WakeOrchestrator {
       if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
         final merged = queue.mergeTokens(sub.agentId, matched);
-        developer.log(
-          'Agent ${sub.agentId} throttled until $deadline — '
+        _log(
+          '${DomainLogger.sanitizeId(sub.agentId)} throttled until $deadline — '
           '${merged ? 'merged tokens' : 'enqueuing for deferred drain'}',
-          name: 'WakeOrchestrator',
+          subDomain: 'throttle',
         );
         if (merged) continue;
         // Fall through to enqueue a new job for the deferred drain.
@@ -444,10 +482,10 @@ class WakeOrchestrator {
       // countdown timer.
       unawaited(_setThrottleDeadline(sub.agentId));
 
-      developer.log(
-        'Deferred wake for ${sub.agentId}: '
+      _log(
+        'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
         'drain scheduled in ${throttleWindow.inSeconds}s',
-        name: 'WakeOrchestrator',
+        subDomain: 'defer',
       );
     }
   }
@@ -491,30 +529,69 @@ class WakeOrchestrator {
   ///
   /// When the queue becomes empty after processing, the seen-run-key history
   /// is cleared so that future notification batches can create new run keys.
+  ///
+  /// Fix B: If a drain has been in progress for longer than [_drainTimeout],
+  /// force-reset the guard to recover from a stuck drain.
   Future<void> processNext() async {
     if (_isDraining) {
-      _drainRequested = true;
-      return;
+      // Fix B: force-reset stale drain lock after timeout.
+      if (_drainStartedAt != null &&
+          clock.now().difference(_drainStartedAt!) > _drainTimeout) {
+        _log(
+          'force-resetting stale drain lock '
+          '(started ${clock.now().difference(_drainStartedAt!).inSeconds}s ago)',
+          subDomain: 'drain',
+        );
+        // Increment generation so the old drain's loop bails out.
+        _drainGeneration++;
+        _isDraining = false;
+        _drainStartedAt = null;
+      } else {
+        _drainRequested = true;
+        return;
+      }
     }
 
     _isDraining = true;
+    _drainStartedAt = clock.now();
+    final myGeneration = _drainGeneration;
+    _log(
+      'drain started, queue.length=${queue.length}',
+      subDomain: 'drain',
+    );
     try {
       // Re-enter the drain loop when new work arrived while we were busy.
       do {
         _drainRequested = false;
-        await _drain();
+        await _drain(myGeneration);
+        // Bail out if a newer drain superseded us via force-reset.
+        if (_drainGeneration != myGeneration) {
+          _log('drain superseded, bailing out', subDomain: 'drain');
+          return;
+        }
       } while (_drainRequested);
     } finally {
-      _isDraining = false;
+      // Only clear the guard if we are still the active drain generation.
+      if (_drainGeneration == myGeneration) {
+        _isDraining = false;
+        _drainStartedAt = null;
+      }
     }
   }
 
   /// Single pass: dequeue and execute all ready jobs.
-  Future<void> _drain() async {
+  ///
+  /// [generation] is the drain generation at the time this pass was started.
+  /// If a newer generation supersedes us (via stale-lock recovery), the loop
+  /// bails out early to avoid overlapping mutations.
+  Future<void> _drain(int generation) async {
     final deferred = <WakeJob>[];
 
     try {
       while (true) {
+        // Bail out if a newer drain superseded us.
+        if (_drainGeneration != generation) return;
+
         final job = queue.dequeue();
         if (job == null) break;
 
@@ -530,11 +607,17 @@ class WakeOrchestrator {
         // or recordMutatedEntities was set.
         if (job.reason == WakeReason.subscription.name) {
           // Self-notification: drop the job entirely.
-          if (_isSuppressed(job.agentId, job.triggerTokens) ||
-              _isPreRegisteredSuppressed(
-                job.agentId,
-                job.triggerTokens,
-              )) {
+          final suppressed = _isSuppressed(job.agentId, job.triggerTokens);
+          final preRegSuppressed = _isPreRegisteredSuppressed(
+            job.agentId,
+            job.triggerTokens,
+          );
+          if (suppressed || preRegSuppressed) {
+            _log(
+              'drain re-check: suppressed=${suppressed || preRegSuppressed} '
+              'for ${DomainLogger.sanitizeId(job.agentId)}',
+              subDomain: 'drain',
+            );
             runner.release(job.agentId);
             continue;
           }
@@ -542,6 +625,11 @@ class WakeOrchestrator {
           // Throttled: defer the job so the deferred drain timer can pick
           // it up after the throttle window expires.
           if (_isThrottled(job.agentId)) {
+            _log(
+              'drain re-check: throttled=true '
+              'for ${DomainLogger.sanitizeId(job.agentId)}',
+              subDomain: 'drain',
+            );
             runner.release(job.agentId);
             deferred.add(job);
             continue;
@@ -557,7 +645,8 @@ class WakeOrchestrator {
       // Clear run-key history only when the queue is fully drained (no
       // deferred jobs left). This prevents stale keys from blocking future
       // wakes while avoiding premature clearing that could allow duplicates.
-      if (queue.isEmpty) {
+      if (_drainGeneration == generation && queue.isEmpty) {
+        _log('run-key history cleared (queue empty)', subDomain: 'drain');
         queue.clearHistory();
       }
     }
@@ -569,6 +658,12 @@ class WakeOrchestrator {
   /// not abort the drain loop and starve other queued jobs.
   Future<void> _executeJob(WakeJob job) async {
     final threadId = job.runKey;
+
+    _log(
+      'executing runKey=${DomainLogger.sanitizeId(job.runKey)}, '
+      'agent=${DomainLogger.sanitizeId(job.agentId)}',
+      subDomain: 'execute',
+    );
 
     try {
       final entry = WakeRunLogData(
@@ -582,22 +677,21 @@ class WakeOrchestrator {
         startedAt: clock.now(),
       );
 
+      // Fix C: Log insertWakeRun failures at ERROR level.
       try {
         await repository.insertWakeRun(entry: entry);
-      } catch (e) {
-        developer.log(
-          'Failed to persist wake run ${job.runKey}: $e',
-          name: 'WakeOrchestrator',
+      } catch (e, s) {
+        _logError(
+          'insertWakeRun failed for ${DomainLogger.sanitizeId(job.runKey)}',
+          error: e,
+          stackTrace: s,
         );
         return;
       }
 
       final executor = wakeExecutor;
       if (executor == null) {
-        developer.log(
-          'No wakeExecutor set — marking run ${job.runKey} as failed',
-          name: 'WakeOrchestrator',
-        );
+        _logError('no wakeExecutor set — marking run as failed');
         await _safeUpdateStatus(
           job.runKey,
           WakeRunStatus.failed.name,
@@ -606,6 +700,7 @@ class WakeOrchestrator {
         return;
       }
 
+      final startTime = clock.now();
       try {
         // Pre-register suppression data BEFORE executing, using the agent's
         // subscribed entity IDs as a conservative over-approximation.  This
@@ -632,6 +727,13 @@ class WakeOrchestrator {
           _suppression.clearConfirmed(job.agentId);
         }
 
+        final elapsed = clock.now().difference(startTime);
+        _log(
+          'wake completed in ${elapsed.inMilliseconds}ms '
+          'for ${DomainLogger.sanitizeId(job.agentId)}',
+          subDomain: 'execute',
+        );
+
         await _safeUpdateStatus(
           job.runKey,
           WakeRunStatus.completed.name,
@@ -645,9 +747,11 @@ class WakeOrchestrator {
         }
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);
-        developer.log(
-          'Wake executor failed for run ${job.runKey}: $e',
-          name: 'WakeOrchestrator',
+        final elapsed = clock.now().difference(startTime);
+        _logError(
+          'wake failed in ${elapsed.inMilliseconds}ms '
+          'for ${DomainLogger.sanitizeId(job.runKey)}',
+          error: e,
         );
         await _safeUpdateStatus(
           job.runKey,
@@ -675,10 +779,12 @@ class WakeOrchestrator {
         completedAt: completedAt,
         errorMessage: errorMessage,
       );
-    } catch (e) {
-      developer.log(
-        'Failed to update wake run status for $runKey to $status: $e',
-        name: 'WakeOrchestrator',
+    } catch (e, s) {
+      _logError(
+        'failed to update wake run status '
+        'for ${DomainLogger.sanitizeId(runKey)} to $status',
+        error: e,
+        stackTrace: s,
       );
     }
   }
@@ -752,15 +858,39 @@ class _WakeThrottleCoordinator {
     required this.onDrainRequested,
     required this.throttleWindow,
     this.onPersistedStateChanged,
+    this.domainLogger,
   });
 
   final AgentRepository repository;
   final Future<void> Function() onDrainRequested;
   final void Function(String agentId)? onPersistedStateChanged;
   final Duration throttleWindow;
+  final DomainLogger? domainLogger;
 
   final _throttleDeadlines = <String, DateTime>{};
   final _deferredDrainTimers = <String, Timer>{};
+
+  void _log(String message, {String? subDomain}) {
+    domainLogger?.log(LogDomains.agentRuntime, message, subDomain: subDomain);
+  }
+
+  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentRuntime,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        '$message${error != null ? ': $error' : ''}',
+        name: 'WakeThrottleCoordinator',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   bool isThrottled(String agentId) {
     final deadline = _throttleDeadlines[agentId];
@@ -772,10 +902,21 @@ class _WakeThrottleCoordinator {
 
   DateTime? deadlineFor(String agentId) => _throttleDeadlines[agentId];
 
+  /// Fix A: Schedule the deferred drain timer BEFORE persisting to DB.
+  ///
+  /// Previously, `_scheduleDeferredDrain` was called after the async DB write.
+  /// If the DB write failed or hung, the timer was never scheduled and the
+  /// queued job would sit until the safety net (60s) fired. Now the timer
+  /// is scheduled first (synchronous), then the DB write is best-effort.
   Future<void> setDeadline(String agentId) async {
     final deadline = clock.now().add(throttleWindow);
     _throttleDeadlines[agentId] = deadline;
 
+    // Schedule the deferred drain FIRST (synchronous) so the timer is always
+    // created regardless of whether the DB write succeeds.
+    _scheduleDeferredDrain(agentId, deadline);
+
+    // Then persist (best-effort, non-blocking).
     // Write directly to repository (bypassing AgentSyncService) because
     // throttle state is per-device and should NOT be synced to other devices.
     // Each device maintains its own wake cooldown window independently.
@@ -787,14 +928,14 @@ class _WakeThrottleCoordinator {
         );
         onPersistedStateChanged?.call(agentId);
       }
-    } catch (e) {
-      developer.log(
-        'Failed to persist throttle deadline for $agentId: $e',
-        name: 'WakeOrchestrator',
+    } catch (e, s) {
+      _logError(
+        'failed to persist throttle deadline '
+        'for ${DomainLogger.sanitizeId(agentId)}',
+        error: e,
+        stackTrace: s,
       );
     }
-
-    _scheduleDeferredDrain(agentId, deadline);
   }
 
   void setDeadlineFromHydration(String agentId, DateTime deadline) {
@@ -807,6 +948,10 @@ class _WakeThrottleCoordinator {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
     _deferredDrainTimers.remove(agentId);
+    _log(
+      'throttle cleared for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'throttle',
+    );
     unawaited(_clearPersistedThrottle(agentId));
   }
 
@@ -835,10 +980,12 @@ class _WakeThrottleCoordinator {
         );
         onPersistedStateChanged?.call(agentId);
       }
-    } catch (e) {
-      developer.log(
-        'Failed to clear persisted throttle for $agentId: $e',
-        name: 'WakeOrchestrator',
+    } catch (e, s) {
+      _logError(
+        'failed to clear persisted throttle '
+        'for ${DomainLogger.sanitizeId(agentId)}',
+        error: e,
+        stackTrace: s,
       );
     }
   }
@@ -853,14 +1000,16 @@ class _WakeThrottleCoordinator {
       scheduleMicrotask(() => unawaited(onDrainRequested()));
       return;
     }
-    developer.log(
-      'Scheduling deferred drain for $agentId in ${remaining.inSeconds}s',
-      name: 'WakeOrchestrator',
+    _log(
+      'deferred drain scheduled in ${remaining.inSeconds}s '
+      'for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'timer',
     );
     _deferredDrainTimers[agentId] = Timer(remaining, () {
-      developer.log(
-        'Deferred drain timer fired for $agentId — draining queue',
-        name: 'WakeOrchestrator',
+      _log(
+        'deferred drain timer fired '
+        'for ${DomainLogger.sanitizeId(agentId)}',
+        subDomain: 'timer',
       );
       _deferredDrainTimers.remove(agentId);
       _throttleDeadlines.remove(agentId);

@@ -115,5 +115,29 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: logAgentRuntimeFlag,
+      description: 'Log agent runtime (wake orchestrator)',
+      status: true,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: logAgentWorkflowFlag,
+      description: 'Log agent workflow execution',
+      status: true,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: logSyncFlag,
+      description: 'Log sync operations',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }

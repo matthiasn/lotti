@@ -1429,6 +1429,17 @@
       }
     }
   },
+  "settingsLoggingAgentRuntime": "Exécution de l'agent",
+  "settingsLoggingAgentRuntimeSubtitle": "Décisions et répartition de l'orchestrateur de réveil",
+  "settingsLoggingAgentWorkflow": "Flux de travail de l'agent",
+  "settingsLoggingAgentWorkflowSubtitle": "Exécution des conversations et appels d'outils",
+  "settingsLoggingDomainsSubtitle": "Contrôle quels domaines écrivent dans le journal",
+  "settingsLoggingDomainsTitle": "Domaines de journalisation",
+  "settingsLoggingGlobalToggle": "Activer la journalisation",
+  "settingsLoggingGlobalToggleSubtitle": "Interrupteur principal pour toute la journalisation",
+  "settingsLoggingSync": "Synchronisation",
+  "settingsLoggingSyncSubtitle": "Opérations de synchronisation entre appareils",
+  "settingsLoggingViewLogsSubtitle": "Parcourir et rechercher toutes les entrées du journal",
   "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixAccept": "Accepter",

@@ -27,8 +27,9 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show journalDbProvider, outboxServiceProvider;
+    show journalDbProvider, loggingServiceProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -60,6 +61,41 @@ SyncEventProcessor? maybeSyncEventProcessor(Ref ref) {
     return null;
   }
   return getIt<SyncEventProcessor>();
+}
+
+/// Domain logger for agent runtime / workflow structured logging.
+///
+/// Uses `ref.listen` (not `ref.watch`) for config flag changes so that
+/// toggling a logging domain mutates [DomainLogger.enabledDomains] in-place
+/// without rebuilding the provider. This prevents a flag toggle from
+/// cascading into orchestrator/workflow/service rebuilds and unintentionally
+/// restarting the agent runtime.
+@Riverpod(keepAlive: true)
+DomainLogger domainLogger(Ref ref) {
+  final loggingService = ref.watch(loggingServiceProvider);
+  final logger = DomainLogger(loggingService: loggingService);
+
+  // Mutate enabledDomains in-place on flag changes — no provider rebuild.
+  void listenFlag(String flagName, String domain) {
+    ref.listen(configFlagProvider(flagName), (_, next) {
+      if (next.value ?? false) {
+        logger.enabledDomains.add(domain);
+      } else {
+        logger.enabledDomains.remove(domain);
+      }
+    });
+
+    // Seed the initial value synchronously from the current state.
+    final initial = ref.read(configFlagProvider(flagName));
+    if (initial.value ?? false) {
+      logger.enabledDomains.add(domain);
+    }
+  }
+
+  listenFlag(logAgentRuntimeFlag, LogDomains.agentRuntime);
+  listenFlag(logAgentWorkflowFlag, LogDomains.agentWorkflow);
+  listenFlag(logSyncFlag, LogDomains.sync);
+  return logger;
 }
 
 /// The agent database instance (lazy singleton).
@@ -140,6 +176,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     repository: ref.watch(agentRepositoryProvider),
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: onPersistedStateChanged,
   );
 }
@@ -693,6 +730,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     labelsRepository: ref.watch(labelsRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 

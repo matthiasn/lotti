@@ -53,6 +53,14 @@ void main() {
       // Verify advanced-only cards are present
       expect(find.text(context.messages.settingsLogsTitle), findsOneWidget);
       expect(
+        find.text(context.messages.settingsLoggingDomainsTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.settingsLoggingDomainsSubtitle),
+        findsOneWidget,
+      );
+      expect(
           find.text(context.messages.settingsMaintenanceTitle), findsOneWidget);
       expect(find.text(context.messages.settingsAboutTitle), findsOneWidget);
 

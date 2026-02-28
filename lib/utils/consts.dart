@@ -15,4 +15,8 @@ const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
 const enableAgentsFlag = 'enable_agents';
 
+const logAgentRuntimeFlag = 'log_agent_runtime';
+const logAgentWorkflowFlag = 'log_agent_workflow';
+const logSyncFlag = 'log_sync';
+
 const kDefaultScrollAlignment = 0.3;

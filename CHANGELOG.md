@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.886] - 2026-02-28
+### Changed
+- Hardened agent wake drain: generation-based bail-out prevents overlapping
+  drain loops during stale-lock recovery, and stack traces are now captured
+  in all error logging paths for better diagnostics.
+
 ## [0.9.885] - 2026-02-28
 ### Changed
 - Agent sync now uses file-attachment pattern (same as journal entities),
@@ -11,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   limit. Existing inline messages remain backward-compatible.
 
 ## [0.9.884] - 2026-02-28
+### Added
+- Domain-specific logging infrastructure with PII-safe sanitization
+  and per-domain toggles (agent runtime, agent workflow, sync) in
+  Settings > Advanced > Logging Domains.
+- Defensive fixes for agent wake orchestrator: synchronous timer
+  scheduling before async DB write, drain timeout guard to prevent
+  stuck locks, and error-level logging for wake run insert failures.
+
 ### Changed
 - Agent settings navigation now uses Beamer-native back navigation,
   fixing double-back-press and bottom-transition bugs in the

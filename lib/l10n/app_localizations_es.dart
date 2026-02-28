@@ -3536,6 +3536,45 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get settingsLoggingAgentRuntime => 'Ejecución del agente';
+
+  @override
+  String get settingsLoggingAgentRuntimeSubtitle =>
+      'Decisiones y despacho del orquestador de activación';
+
+  @override
+  String get settingsLoggingAgentWorkflow => 'Flujo de trabajo del agente';
+
+  @override
+  String get settingsLoggingAgentWorkflowSubtitle =>
+      'Ejecución de conversaciones y llamadas de herramientas';
+
+  @override
+  String get settingsLoggingDomainsSubtitle =>
+      'Controla qué dominios escriben en el registro';
+
+  @override
+  String get settingsLoggingDomainsTitle => 'Dominios de registro';
+
+  @override
+  String get settingsLoggingGlobalToggle => 'Activar registro';
+
+  @override
+  String get settingsLoggingGlobalToggleSubtitle =>
+      'Interruptor principal para todo el registro';
+
+  @override
+  String get settingsLoggingSync => 'Sincronización';
+
+  @override
+  String get settingsLoggingSyncSubtitle =>
+      'Operaciones de sincronización entre dispositivos';
+
+  @override
+  String get settingsLoggingViewLogsSubtitle =>
+      'Explorar y buscar todas las entradas del registro';
+
+  @override
   String get settingsLogsTitle => 'Registros';
 
   @override
