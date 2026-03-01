@@ -364,5 +364,27 @@ void main() {
       verify(() => mockImproverService.scheduleNextRitual(kTestAgentId))
           .called(1);
     });
+
+    test('returns failure when scheduleNextRitual also throws', () async {
+      stubHappyPath();
+      when(
+        () => mockEvolutionWorkflow.startSession(
+          templateId: any(named: 'templateId'),
+          contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
+        ),
+      ).thenThrow(Exception('LLM error'));
+      when(() => mockImproverService.scheduleNextRitual(any()))
+          .thenThrow(Exception('Schedule also failed'));
+
+      final result = await workflow.execute(
+        agentIdentity: makeImproverIdentity(),
+        runKey: 'run-001',
+        threadId: 'thread-001',
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Ritual workflow failed'));
+    });
   });
 }
