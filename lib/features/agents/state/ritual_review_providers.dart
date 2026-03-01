@@ -9,14 +9,15 @@ part 'ritual_review_providers.g.dart';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 @riverpod
 Future<AgentDomainEntity?> pendingRitualReview(
   Ref ref,
   String templateId,
 ) async {
-  ref.watch(agentUpdateStreamProvider(templateId));
-  final service = ref.watch(agentTemplateServiceProvider);
-  final sessions = await service.getEvolutionSessions(templateId);
+  final sessions =
+      await ref.watch(evolutionSessionsProvider(templateId).future);
   final typed = sessions.whereType<EvolutionSessionEntity>();
   for (final session in typed) {
     if (session.status == EvolutionSessionStatus.active) {
@@ -43,19 +44,11 @@ Future<ClassifiedFeedback?> ritualFeedback(
 
 /// Count of templates with active evolution sessions (for badges).
 ///
-/// Uses the single-query [allEvolutionSessionsProvider] to avoid N+1.
+/// Derived from [templatesPendingReviewProvider] to avoid duplicate logic.
 @riverpod
 Future<int> pendingRitualCount(Ref ref) async {
-  ref.watch(agentUpdateStreamProvider(agentNotification));
-  final sessions = await ref.watch(allEvolutionSessionsProvider.future);
-  final activeTemplateIds = <String>{};
-  for (final session in sessions) {
-    if (session is EvolutionSessionEntity &&
-        session.status == EvolutionSessionStatus.active) {
-      activeTemplateIds.add(session.templateId);
-    }
-  }
-  return activeTemplateIds.length;
+  final pending = await ref.watch(templatesPendingReviewProvider.future);
+  return pending.length;
 }
 
 /// List of template IDs with pending rituals.

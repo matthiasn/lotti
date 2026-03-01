@@ -694,7 +694,10 @@ final sessionProgressItem = CatalogItem(
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Session $sessionNumber of $totalSessions',
+                    context.messages.agentEvolutionSessionProgress(
+                      sessionNumber,
+                      totalSessions,
+                    ),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
@@ -706,7 +709,10 @@ final sessionProgressItem = CatalogItem(
             Wrap(
               spacing: 8,
               children: [
-                _metricChip('Feedback', '$feedbackCount'),
+                _metricChip(
+                  context.messages.agentEvolutionTimelineFeedbackLabel,
+                  '$feedbackCount',
+                ),
                 if (positiveCount > 0) _metricChip('+', '$positiveCount'),
                 if (negativeCount > 0) _metricChip('-', '$negativeCount'),
               ],

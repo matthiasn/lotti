@@ -4639,4 +4639,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version vorgeschlagen';
+
+  @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Sitzung $sessionNumber von $totalSessions';
+  }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/feedback_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Renders a single [ClassifiedFeedbackItem] with a sentiment-colored leading
 /// indicator, category badge, source label, and expandable detail text.
@@ -23,7 +23,7 @@ class _FeedbackItemTileState extends State<FeedbackItemTile> {
 
   @override
   Widget build(BuildContext context) {
-    final sentimentColor = _sentimentColor(widget.item.sentiment);
+    final sentimentColor = feedbackSentimentColor(widget.item.sentiment);
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
@@ -110,14 +110,6 @@ class _FeedbackItemTileState extends State<FeedbackItemTile> {
   }
 }
 
-Color _sentimentColor(FeedbackSentiment sentiment) {
-  return switch (sentiment) {
-    FeedbackSentiment.negative => GameyColors.primaryRed,
-    FeedbackSentiment.positive => GameyColors.primaryGreen,
-    FeedbackSentiment.neutral => GameyColors.primaryOrange,
-  };
-}
-
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.category});
 
@@ -125,7 +117,7 @@ class _CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _categoryColor(category);
+    final color = feedbackCategoryColor(category);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -135,7 +127,7 @@ class _CategoryBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
-        _categoryLabel(context, category),
+        feedbackCategoryLabel(context, category),
         style: TextStyle(
           color: color,
           fontSize: 10,
@@ -143,30 +135,5 @@ class _CategoryBadge extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _categoryColor(FeedbackCategory category) {
-    return switch (category) {
-      FeedbackCategory.accuracy => GameyColors.primaryBlue,
-      FeedbackCategory.communication => GameyColors.aiCyan,
-      FeedbackCategory.prioritization => GameyColors.primaryPurple,
-      FeedbackCategory.tooling => GameyColors.primaryOrange,
-      FeedbackCategory.timeliness => GameyColors.taskYellow,
-      FeedbackCategory.general => GameyColors.silverReward,
-    };
-  }
-
-  String _categoryLabel(BuildContext context, FeedbackCategory category) {
-    final messages = context.messages;
-    return switch (category) {
-      FeedbackCategory.accuracy => messages.agentFeedbackCategoryAccuracy,
-      FeedbackCategory.communication =>
-        messages.agentFeedbackCategoryCommunication,
-      FeedbackCategory.prioritization =>
-        messages.agentFeedbackCategoryPrioritization,
-      FeedbackCategory.tooling => messages.agentFeedbackCategoryTooling,
-      FeedbackCategory.timeliness => messages.agentFeedbackCategoryTimeliness,
-      FeedbackCategory.general => messages.agentFeedbackCategoryGeneral,
-    };
   }
 }

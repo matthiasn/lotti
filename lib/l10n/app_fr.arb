@@ -1874,5 +1874,17 @@
   "unlinkTaskTitle": "Délier la tâche",
   "viewMenuTitle": "Affichage",
   "whatsNewDoneButton": "Terminé",
-  "whatsNewSkipButton": "Ignorer"
+  "whatsNewSkipButton": "Ignorer",
+  "agentEvolutionVersionProposed": "Version proposée",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} sur {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
-import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart'
-    show WhatsNewIndicator;
 import 'package:lotti/themes/gamey/colors.dart';
 
 /// A pulsing dot indicator that shows when there are pending ritual reviews.
 ///
-/// Follows the [WhatsNewIndicator] pattern with lazy animation initialization.
+/// Follows the `WhatsNewIndicator` pattern with lazy animation initialization.
 /// Uses [GameyColors.primaryPurple] to distinguish from the What's New
 /// indicator which uses `colorScheme.primary`.
 class RitualPendingIndicator extends ConsumerStatefulWidget {
@@ -53,10 +51,12 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
     return countAsync.when(
       data: (count) {
         if (count == 0) {
+          if (_isAnimationInitialized) _controller.stop();
           return const SizedBox.shrink();
         }
 
         _ensureAnimationInitialized();
+        if (!_controller.isAnimating) _controller.repeat(reverse: true);
 
         return AnimatedBuilder(
           animation: _animation,

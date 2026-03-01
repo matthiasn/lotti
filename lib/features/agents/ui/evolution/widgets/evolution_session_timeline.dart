@@ -144,7 +144,7 @@ class _TimelineNode extends StatelessWidget {
                       session.proposedVersionId != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Version proposed',
+                      context.messages.agentEvolutionVersionProposed,
                       style: TextStyle(
                         color: GameyColors.primaryGreen.withValues(alpha: 0.7),
                         fontSize: 12,
@@ -173,14 +173,14 @@ class _TimelineNode extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color _statusColor(EvolutionSessionStatus status) {
-    return switch (status) {
-      EvolutionSessionStatus.completed => GameyColors.primaryGreen,
-      EvolutionSessionStatus.abandoned => GameyColors.primaryRed,
-      EvolutionSessionStatus.active => GameyColors.primaryBlue,
-    };
-  }
+Color _statusColor(EvolutionSessionStatus status) {
+  return switch (status) {
+    EvolutionSessionStatus.completed => GameyColors.primaryGreen,
+    EvolutionSessionStatus.abandoned => GameyColors.primaryRed,
+    EvolutionSessionStatus.active => GameyColors.primaryBlue,
+  };
 }
 
 class _StatusBadge extends StatelessWidget {
@@ -190,11 +190,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (status) {
-      EvolutionSessionStatus.completed => GameyColors.primaryGreen,
-      EvolutionSessionStatus.abandoned => GameyColors.primaryRed,
-      EvolutionSessionStatus.active => GameyColors.primaryBlue,
-    };
+    final color = _statusColor(status);
 
     final label = switch (status) {
       EvolutionSessionStatus.completed =>

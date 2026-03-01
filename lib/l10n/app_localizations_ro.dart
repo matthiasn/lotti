@@ -4634,4 +4634,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Versiune propusă';
+
+  @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Sesiunea $sessionNumber din $totalSessions';
+  }
 }

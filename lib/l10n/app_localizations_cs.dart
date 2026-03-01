@@ -4599,4 +4599,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version proposed';
+
+  @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Session $sessionNumber of $totalSessions';
+  }
 }
