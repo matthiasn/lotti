@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -153,9 +154,19 @@ class ChangeSetBuilder {
 
   /// Build and persist the [ChangeSetEntity].
   ///
-  /// Returns `null` if no items have been accumulated.
-  Future<ChangeSetEntity?> build(AgentSyncService syncService) async {
+  /// Items that already appear in [existingPendingItems] (matched by
+  /// `toolName` + `args`) are silently dropped to avoid showing the user
+  /// duplicate proposals across consecutive agent wakes.
+  ///
+  /// Returns `null` if no items remain after deduplication.
+  Future<ChangeSetEntity?> build(
+    AgentSyncService syncService, {
+    List<ChangeItem> existingPendingItems = const [],
+  }) async {
     if (!hasItems) return null;
+
+    final deduped = _deduplicateItems(_items, existingPendingItems);
+    if (deduped.isEmpty) return null;
 
     final entity = AgentDomainEntity.changeSet(
       id: _uuid.v4(),
@@ -164,13 +175,33 @@ class ChangeSetBuilder {
       threadId: threadId,
       runKey: runKey,
       status: ChangeSetStatus.pending,
-      items: List.unmodifiable(_items),
+      items: List.unmodifiable(deduped),
       createdAt: clock.now(),
       vectorClock: null,
     ) as ChangeSetEntity;
 
     await syncService.upsertEntity(entity);
     return entity;
+  }
+
+  static const _deepEquals = DeepCollectionEquality();
+
+  /// Returns items from [proposed] that do not already exist in [existing],
+  /// comparing on `toolName` and `args` only (ignoring `humanSummary`).
+  static List<ChangeItem> _deduplicateItems(
+    List<ChangeItem> proposed,
+    List<ChangeItem> existing,
+  ) {
+    if (existing.isEmpty) return proposed;
+    return proposed
+        .where(
+          (item) => !existing.any(
+            (e) =>
+                e.toolName == item.toolName &&
+                _deepEquals.equals(e.args, item.args),
+          ),
+        )
+        .toList();
   }
 
   /// Convert batch tool name to a singular form for individual items.

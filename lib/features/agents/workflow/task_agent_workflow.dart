@@ -470,7 +470,22 @@ class TaskAgentWorkflow {
         }
 
         // 10b. Persist deferred change set (if any items were accumulated).
-        await changeSetBuilder.build(syncService);
+        // Collect pending items from existing change sets to avoid duplicates.
+        final pendingSets = await agentRepository.getPendingChangeSets(
+          agentId,
+          taskId: taskId,
+        );
+        final existingPendingItems = pendingSets
+            .expand(
+              (cs) => cs.items.where(
+                (i) => i.status == ChangeItemStatus.pending,
+              ),
+            )
+            .toList();
+        await changeSetBuilder.build(
+          syncService,
+          existingPendingItems: existingPendingItems,
+        );
 
         // 11. Persist state.
         await syncService.upsertEntity(

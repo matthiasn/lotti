@@ -234,6 +234,13 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
+    when(
+      () => mockAgentRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <ChangeSetEntity>[]);
     when(() => mockAiInputRepository.buildLinkedFromContext(any()))
         .thenAnswer((_) async => <AiLinkedTaskContext>[]);
     when(() => mockAiInputRepository.buildLinkedToContext(any()))

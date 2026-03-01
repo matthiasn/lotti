@@ -239,13 +239,19 @@ class AttachmentIngestor {
       }
 
       final file = File(resolved);
+      // Agent entities/links use the entity ID in the path and can be
+      // legitimately updated (e.g. ChangeSetEntity status changes from
+      // 'pending' to 'resolved'). Always re-download to avoid stale reads.
+      final isAgentPayload = relativePath.contains('/agent_entities/') ||
+          relativePath.contains('/agent_links/');
+
       // Fast-path dedupe: if the file already exists and is non-empty,
       // skip re-downloading to avoid repeated writes and log spam.
       // Note: We don't validate the file's vector clock here because
       // SmartJournalEntityLoader.load() will do that validation and
       // re-download via DescriptorDownloader if the local file is stale.
       // ignore: avoid_slow_async_io
-      if (await file.exists()) {
+      if (!isAgentPayload && await file.exists()) {
         try {
           final len = await file.length();
           if (len > 0) {

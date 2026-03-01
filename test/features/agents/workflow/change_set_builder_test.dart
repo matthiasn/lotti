@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:mocktail/mocktail.dart';
@@ -403,6 +404,131 @@ void main() {
       expect(result!.items, hasLength(2));
       expect(result.items[0].toolName, 'add_checklist_item');
       expect(result.items[1].toolName, 'add_checklist_item');
+    });
+
+    test('drops items that already exist in pending change sets', () async {
+      builder
+        ..addItem(
+          toolName: 'set_task_title',
+          args: {'title': 'Fix bug'},
+          humanSummary: 'Set title to "Fix bug"',
+        )
+        ..addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+
+      final existingPending = [
+        const ChangeItem(
+          toolName: 'set_task_title',
+          args: {'title': 'Fix bug'},
+          humanSummary: 'Different summary, same change',
+        ),
+      ];
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingItems: existingPending,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(1));
+      expect(result.items.first.toolName, 'update_task_estimate');
+    });
+
+    test('returns null when all items are duplicates', () async {
+      builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title',
+      );
+
+      final existingPending = [
+        const ChangeItem(
+          toolName: 'set_task_title',
+          args: {'title': 'Fix bug'},
+          humanSummary: 'Already proposed',
+        ),
+      ];
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingItems: existingPending,
+      );
+
+      expect(result, isNull);
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test('keeps items when args differ from existing pending', () async {
+      builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+
+      final existingPending = [
+        const ChangeItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 60},
+          humanSummary: 'Set estimate to 1 hour',
+        ),
+      ];
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingItems: existingPending,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(1));
+      expect(result.items.first.args['minutes'], 120);
+    });
+
+    test('dedupes with deep map equality in args', () async {
+      builder.addItem(
+        toolName: 'add_checklist_item',
+        args: {
+          'title': 'Design mockup',
+          'metadata': {'priority': 'high'},
+        },
+        humanSummary: 'Add checklist item',
+      );
+
+      final existingPending = [
+        const ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {
+            'title': 'Design mockup',
+            'metadata': {'priority': 'high'},
+          },
+          humanSummary: 'Already proposed',
+        ),
+      ];
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingItems: existingPending,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('does not dedupe when existing items list is empty', () async {
+      builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title',
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingItems: [],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(1));
     });
   });
 }

@@ -403,6 +403,163 @@ void main() {
           )).called(1);
     });
 
+    test('overwrites stale agent entity file instead of deduping', () async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final tmp = Directory.systemTemp.createTempSync('ingestor_agent');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+
+      // Pre-create the stale agent entity file
+      final staleFile = File('${tmp.path}/agent_entities/change-set-123.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"status":"pending"}');
+
+      final resolvedContent =
+          Uint8List.fromList(utf8.encode('{"status":"resolved"}'));
+      final matrixFile = MockMatrixFile();
+      when(() => matrixFile.bytes).thenReturn(resolvedContent);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('e_agent');
+      when(() => ev.content).thenReturn({
+        'relativePath': '/agent_entities/change-set-123.json',
+        'msgtype': 'm.file',
+      });
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.senderId).thenReturn('@other:u');
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => matrixFile);
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent('/agent_entities/change-set-123.json'))
+          .thenReturn(false);
+
+      final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+      final result = await ingestor.process(
+        event: ev,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+      );
+
+      expect(result, isTrue); // File was re-downloaded
+      expect(staleFile.readAsStringSync(), '{"status":"resolved"}');
+
+      // Verify download WAS called despite file existing
+      verify(ev.downloadAndDecryptAttachment).called(1);
+    });
+
+    test('overwrites stale agent link file instead of deduping', () async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final tmp = Directory.systemTemp.createTempSync('ingestor_agent_link');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+
+      // Pre-create the stale agent link file
+      File('${tmp.path}/agent_links/link-456.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"old":"data"}');
+
+      final newContent = Uint8List.fromList(utf8.encode('{"new":"data"}'));
+      final matrixFile = MockMatrixFile();
+      when(() => matrixFile.bytes).thenReturn(newContent);
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('e_agent_link');
+      when(() => ev.content).thenReturn({
+        'relativePath': '/agent_links/link-456.json',
+        'msgtype': 'm.file',
+      });
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.senderId).thenReturn('@other:u');
+      when(ev.downloadAndDecryptAttachment).thenAnswer((_) async => matrixFile);
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent('/agent_links/link-456.json'))
+          .thenReturn(false);
+
+      final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+      final result = await ingestor.process(
+        event: ev,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+      );
+
+      expect(result, isTrue);
+      final writtenFile = File('${tmp.path}/agent_links/link-456.json');
+      expect(writtenFile.readAsStringSync(), '{"new":"data"}');
+    });
+
+    test('still dedupes non-agent files when they exist', () async {
+      final logging = MockLoggingService();
+      when(() => logging.captureEvent(any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
+      when(() => logging.captureException(any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+
+      final tmp = Directory.systemTemp.createTempSync('ingestor_journal');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+
+      // Pre-create a journal entity file
+      final existingFile = File('${tmp.path}/journal_entities/entry-789.json')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('{"original":"content"}');
+
+      final ev = MockEvent();
+      when(() => ev.eventId).thenReturn('e_journal');
+      when(() => ev.content).thenReturn({
+        'relativePath': '/journal_entities/entry-789.json',
+        'msgtype': 'm.file',
+      });
+      when(() => ev.attachmentMimetype).thenReturn('application/json');
+      when(() => ev.senderId).thenReturn('@other:u');
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent('/journal_entities/entry-789.json'))
+          .thenReturn(false);
+
+      final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+      final result = await ingestor.process(
+        event: ev,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+      );
+
+      expect(result, isFalse); // Deduped — no re-download
+      expect(
+        existingFile.readAsStringSync(),
+        '{"original":"content"}',
+      );
+      verifyNever(ev.downloadAndDecryptAttachment);
+    });
+
     test('blocks path traversal attempts', () async {
       final logging = MockLoggingService();
       when(() => logging.captureEvent(any<String>(),
