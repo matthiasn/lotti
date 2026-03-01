@@ -123,6 +123,8 @@ getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN a
 
 getEvolutionSessionsByTemplate: SELECT * FROM agent_entities WHERE agent_id = :templateId AND type = 'evolutionSession' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
+getAllEvolutionSessions: SELECT es.** FROM agent_entities es INNER JOIN agent_entities tpl ON tpl.id = es.agent_id AND tpl.type = 'agentTemplate' AND tpl.deleted_at IS NULL WHERE es.type = 'evolutionSession' AND es.deleted_at IS NULL ORDER BY es.updated_at DESC;
+
 getEvolutionNotesByTemplate: SELECT * FROM agent_entities WHERE agent_id = :templateId AND type = 'evolutionNote' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 countEntitiesChangedSinceForTemplate: SELECT COUNT(*) AS cnt FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.updated_at > :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;

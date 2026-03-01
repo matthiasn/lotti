@@ -593,9 +593,11 @@ class TemplateEvolutionWorkflow {
   }
 
   /// Fire an update notification so UI providers watching this template
-  /// refresh. No-op when [updateNotifications] is not set.
+  /// refresh. Includes [agentNotification] so global providers (e.g.
+  /// `allEvolutionSessionsProvider`) also invalidate.
+  /// No-op when [updateNotifications] is not set.
   void _notifyUpdate(String templateId) {
-    updateNotifications?.notify({templateId});
+    updateNotifications?.notify({templateId, agentNotification});
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible

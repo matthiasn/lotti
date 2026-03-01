@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -370,7 +371,7 @@ void main() {
       });
     });
 
-    group('toToolExecutionResult', () {
+    group('fromHandlerResult conversion', () {
       test('maps successful write with entityId', () {
         final statusResult = TaskStatusResult(
           success: true,
@@ -379,8 +380,11 @@ void main() {
           didWrite: true,
         );
 
-        final toolResult = TaskStatusHandler.toToolExecutionResult(
-          statusResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: statusResult.success,
+          message: statusResult.message,
+          didWrite: statusResult.didWrite,
+          error: statusResult.error,
           entityId: 'ent-123',
         );
 
@@ -397,8 +401,11 @@ void main() {
           updatedTask: task,
         );
 
-        final toolResult = TaskStatusHandler.toToolExecutionResult(
-          statusResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: statusResult.success,
+          message: statusResult.message,
+          didWrite: statusResult.didWrite,
+          error: statusResult.error,
           entityId: 'ent-123',
         );
 
@@ -413,8 +420,12 @@ void main() {
           error: 'Cannot set status to "DONE".',
         );
 
-        final toolResult =
-            TaskStatusHandler.toToolExecutionResult(statusResult);
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: statusResult.success,
+          message: statusResult.message,
+          didWrite: statusResult.didWrite,
+          error: statusResult.error,
+        );
 
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('DONE'));

@@ -3,7 +3,6 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -182,19 +181,6 @@ class TaskStatusHandler {
         error: e.toString(),
       );
     }
-  }
-
-  /// Converts a [TaskStatusResult] to a [ToolExecutionResult].
-  static ToolExecutionResult toToolExecutionResult(
-    TaskStatusResult result, {
-    String? entityId,
-  }) {
-    return ToolExecutionResult(
-      success: result.success,
-      output: result.message,
-      mutatedEntityId: result.didWrite ? entityId : null,
-      errorMessage: result.error,
-    );
   }
 
   /// Builds a [TaskStatus] from a validated status string.

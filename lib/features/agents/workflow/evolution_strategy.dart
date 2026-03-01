@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -92,9 +93,9 @@ class EvolutionStrategy extends ConversationStrategy {
       }
 
       switch (name) {
-        case 'propose_directives':
+        case EvolutionToolNames.proposeDirectives:
           _handleProposeDirectives(args, call.id, manager);
-        case 'record_evolution_note':
+        case EvolutionToolNames.recordEvolutionNote:
           _handleRecordNote(args, call.id, manager);
         default:
           manager.addToolResponse(

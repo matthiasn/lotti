@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -280,11 +281,11 @@ class _TaskAgentCard extends ConsumerWidget {
           spacing: AppTheme.spacingSmall,
           runSpacing: AppTheme.spacingXSmall,
           children: [
-            _Badge(
+            AgentBadge(
               label: context.messages.agentInstancesKindTaskAgent,
               color: context.colorScheme.primary,
             ),
-            _LifecycleBadge(lifecycle: agent.lifecycle),
+            AgentLifecycleBadge(lifecycle: agent.lifecycle),
             if (templateName != null)
               Text(
                 templateName,
@@ -354,11 +355,11 @@ class _EvolutionSessionCard extends StatelessWidget {
           spacing: AppTheme.spacingSmall,
           runSpacing: AppTheme.spacingXSmall,
           children: [
-            _Badge(
+            AgentBadge(
               label: context.messages.agentInstancesKindEvolution,
               color: context.colorScheme.tertiary,
             ),
-            _Badge(
+            AgentBadge(
               label: _evolutionStatusLabel(context, session.status),
               color: _evolutionStatusColor(context, session.status),
             ),
@@ -401,64 +402,5 @@ class _EvolutionSessionCard extends StatelessWidget {
       EvolutionSessionStatus.completed => context.colorScheme.tertiary,
       EvolutionSessionStatus.abandoned => context.colorScheme.outline,
     };
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingSmall,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _LifecycleBadge extends StatelessWidget {
-  const _LifecycleBadge({required this.lifecycle});
-
-  final AgentLifecycle lifecycle;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (lifecycle) {
-      AgentLifecycle.created => (
-          context.messages.agentLifecycleCreated,
-          context.colorScheme.outline,
-        ),
-      AgentLifecycle.active => (
-          context.messages.agentLifecycleActive,
-          context.colorScheme.primary,
-        ),
-      AgentLifecycle.dormant => (
-          context.messages.agentLifecyclePaused,
-          context.colorScheme.outline,
-        ),
-      AgentLifecycle.destroyed => (
-          context.messages.agentLifecycleDestroyed,
-          context.colorScheme.error,
-        ),
-    };
-
-    return _Badge(label: label, color: color);
   }
 }

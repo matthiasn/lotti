@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 
 /// Computes resolution time-series data from [TaskResolutionEntry] entries.
@@ -18,7 +19,7 @@ TaskResolutionTimeSeries computeResolutionTimeSeries(
   // Group by resolved date (truncated to midnight).
   final byDay = <DateTime, List<TaskResolutionEntry>>{};
   for (final entry in resolved) {
-    final day = _truncateToDay(entry.resolvedAt!);
+    final day = truncateToDay(entry.resolvedAt!);
     byDay.putIfAbsent(day, () => []).add(entry);
   }
 
@@ -66,5 +67,3 @@ DailyResolutionBucket _bucketFromEntries(
     averageMttr: avgMttr,
   );
 }
-
-DateTime _truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:mocktail/mocktail.dart';
@@ -448,7 +449,7 @@ void main() {
       });
     });
 
-    group('toToolExecutionResult', () {
+    group('fromHandlerResult conversion', () {
       test('maps successful write with entityId', () {
         const labelResult = TaskLabelResult(
           success: true,
@@ -457,8 +458,11 @@ void main() {
           didWrite: true,
         );
 
-        final toolResult = TaskLabelHandler.toToolExecutionResult(
-          labelResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: labelResult.success,
+          message: labelResult.message,
+          didWrite: labelResult.didWrite,
+          error: labelResult.error,
           entityId: 'ent-123',
         );
 
@@ -474,8 +478,11 @@ void main() {
           message: 'No labels assigned',
         );
 
-        final toolResult = TaskLabelHandler.toToolExecutionResult(
-          labelResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: labelResult.success,
+          message: labelResult.message,
+          didWrite: labelResult.didWrite,
+          error: labelResult.error,
           entityId: 'ent-123',
         );
 
@@ -490,7 +497,12 @@ void main() {
           error: 'DB error',
         );
 
-        final toolResult = TaskLabelHandler.toToolExecutionResult(labelResult);
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: labelResult.success,
+          message: labelResult.message,
+          didWrite: labelResult.didWrite,
+          error: labelResult.error,
+        );
 
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, 'DB error');

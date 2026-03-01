@@ -21,6 +21,34 @@ class AgentToolDefinition {
   final Map<String, dynamic> parameters;
 }
 
+/// Tool name constants used by the task agent.
+///
+/// Centralizes magic strings so that the tool registry, dispatcher, deferred
+/// tool set, and change-set builder all reference the same values.
+abstract final class TaskAgentToolNames {
+  static const setTaskTitle = 'set_task_title';
+  static const updateTaskEstimate = 'update_task_estimate';
+  static const updateTaskDueDate = 'update_task_due_date';
+  static const updateTaskPriority = 'update_task_priority';
+  static const addMultipleChecklistItems = 'add_multiple_checklist_items';
+  static const updateChecklistItems = 'update_checklist_items';
+  static const updateReport = 'update_report';
+  static const recordObservations = 'record_observations';
+  static const assignTaskLabels = 'assign_task_labels';
+  static const setTaskLanguage = 'set_task_language';
+  static const setTaskStatus = 'set_task_status';
+
+  // Legacy single-item aliases (dispatched to batch handlers).
+  static const addChecklistItem = 'add_checklist_item';
+  static const updateChecklistItem = 'update_checklist_item';
+}
+
+/// Tool name constants used by the evolution agent.
+abstract final class EvolutionToolNames {
+  static const proposeDirectives = 'propose_directives';
+  static const recordEvolutionNote = 'record_evolution_note';
+}
+
 /// Registry of tool definitions available to agents.
 ///
 /// Each supported agent kind exposes a static list of [AgentToolDefinition]s
@@ -33,14 +61,14 @@ class AgentToolRegistry {
   /// When the strategy encounters one of these tools, it adds the proposed
   /// change to a `ChangeSetBuilder` instead of executing immediately.
   static const deferredTools = <String>{
-    'assign_task_labels',
-    'set_task_title',
-    'update_task_estimate',
-    'update_task_due_date',
-    'update_task_priority',
-    'set_task_status',
-    'add_multiple_checklist_items',
-    'update_checklist_items',
+    TaskAgentToolNames.assignTaskLabels,
+    TaskAgentToolNames.setTaskTitle,
+    TaskAgentToolNames.updateTaskEstimate,
+    TaskAgentToolNames.updateTaskDueDate,
+    TaskAgentToolNames.updateTaskPriority,
+    TaskAgentToolNames.setTaskStatus,
+    TaskAgentToolNames.addMultipleChecklistItems,
+    TaskAgentToolNames.updateChecklistItems,
   };
 
   /// Batch tools that should be exploded into individual change item entries.
@@ -49,14 +77,14 @@ class AgentToolRegistry {
   /// items. The builder splits the array so each element becomes a separate
   /// confirmable change item.
   static const explodedBatchTools = <String, String>{
-    'add_multiple_checklist_items': 'items',
-    'update_checklist_items': 'items',
+    TaskAgentToolNames.addMultipleChecklistItems: 'items',
+    TaskAgentToolNames.updateChecklistItems: 'items',
   };
 
   /// All tools available to the Task Agent.
   static const taskAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
-      name: 'set_task_title',
+      name: TaskAgentToolNames.setTaskTitle,
       description: 'Set the title of the task. Only use when the task has no '
           'title yet. Do not change an existing title unless the user '
           'explicitly asks for it.',
@@ -73,7 +101,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'update_task_estimate',
+      name: TaskAgentToolNames.updateTaskEstimate,
       description: 'Set the time estimate for completing the task. '
           'Only set or update the estimate when the user explicitly asks '
           'for it, or when no estimate exists and you have high confidence.',
@@ -91,7 +119,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'update_task_due_date',
+      name: TaskAgentToolNames.updateTaskDueDate,
       description: 'Update the due date for the task. '
           'Only call when you want to CHANGE the due date to a different value. '
           'Do NOT call if the task already has the correct due date — check the '
@@ -109,7 +137,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'update_task_priority',
+      name: TaskAgentToolNames.updateTaskPriority,
       description: 'Update the priority of the task. '
           'Only call when you want to CHANGE the priority to a different value. '
           'Do NOT call if the task already has the correct priority — check the '
@@ -127,7 +155,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'add_multiple_checklist_items',
+      name: TaskAgentToolNames.addMultipleChecklistItems,
       description: 'Add multiple checklist items to the task.',
       parameters: {
         'type': 'object',
@@ -158,7 +186,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'update_checklist_items',
+      name: TaskAgentToolNames.updateChecklistItems,
       description:
           'Update existing checklist items. Each item needs its id and at '
           'least one of isChecked or title. When an item was last toggled by '
@@ -209,7 +237,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'update_report',
+      name: TaskAgentToolNames.updateReport,
       description:
           'Publish the updated task report. You MUST call this tool exactly '
           'once at the end of every wake with the full updated report as '
@@ -231,7 +259,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'record_observations',
+      name: TaskAgentToolNames.recordObservations,
       description:
           'Record private observations for future wakes. Use this to note '
           'patterns, insights, failure notes, or anything worth remembering.',
@@ -249,7 +277,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'assign_task_labels',
+      name: TaskAgentToolNames.assignTaskLabels,
       description: 'Add one or more labels to the task. Only use labels from '
           'the available labels list provided in the context. Do not propose '
           'labels listed as suppressed. Cap to 3 labels per call. If the task '
@@ -285,7 +313,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'set_task_language',
+      name: TaskAgentToolNames.setTaskLanguage,
       description: 'Set the detected language for the task. '
           'Only set when the task has no language yet (languageCode is null). '
           'Detect based on the task content (title, transcripts, notes).',
@@ -307,7 +335,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'set_task_status',
+      name: TaskAgentToolNames.setTaskStatus,
       description: 'Transition the task to a new status. '
           'Only call when you want to CHANGE the status to a DIFFERENT value. '
           'Do NOT call if the task is already at the target status — check the '
@@ -339,7 +367,7 @@ class AgentToolRegistry {
   /// Tools available to the evolution agent during 1-on-1 sessions.
   static const evolutionAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
-      name: 'propose_directives',
+      name: EvolutionToolNames.proposeDirectives,
       description: 'Formally propose a new version of the template directives. '
           'Include the COMPLETE rewritten directives text (not a diff) and a '
           'brief rationale explaining what changed and why.',
@@ -362,7 +390,7 @@ class AgentToolRegistry {
       },
     ),
     AgentToolDefinition(
-      name: 'record_evolution_note',
+      name: EvolutionToolNames.recordEvolutionNote,
       description:
           'Record a private evolution note for your own future reference. '
           'Use this to capture patterns, hypotheses, decisions, or recurring '

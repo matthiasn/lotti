@@ -895,11 +895,17 @@ final class AllAgentInstancesProvider extends $FunctionalProvider<
 String _$allAgentInstancesHash() => r'2def9e6a157e7a074a0e8144ec20ebcee741d8b2';
 
 /// List all evolution sessions across all templates.
+///
+/// Uses a single DB query instead of N per-template lookups.
+/// Reactively rebuilds when any agent data changes.
 
 @ProviderFor(allEvolutionSessions)
 final allEvolutionSessionsProvider = AllEvolutionSessionsProvider._();
 
 /// List all evolution sessions across all templates.
+///
+/// Uses a single DB query instead of N per-template lookups.
+/// Reactively rebuilds when any agent data changes.
 
 final class AllEvolutionSessionsProvider extends $FunctionalProvider<
         AsyncValue<List<AgentDomainEntity>>,
@@ -909,6 +915,9 @@ final class AllEvolutionSessionsProvider extends $FunctionalProvider<
         $FutureModifier<List<AgentDomainEntity>>,
         $FutureProvider<List<AgentDomainEntity>> {
   /// List all evolution sessions across all templates.
+  ///
+  /// Uses a single DB query instead of N per-template lookups.
+  /// Reactively rebuilds when any agent data changes.
   AllEvolutionSessionsProvider._()
       : super(
           from: null,
@@ -936,7 +945,7 @@ final class AllEvolutionSessionsProvider extends $FunctionalProvider<
 }
 
 String _$allEvolutionSessionsHash() =>
-    r'0a3f06037fe006a0a71cf78ac78493d0c0e91c31';
+    r'153c4d3836856ce6a7a3d1a0a1492066e1cc5468';
 
 /// Fetch a single agent template by [templateId].
 ///
@@ -2036,7 +2045,7 @@ final class AgentTokenUsageSummariesProvider extends $FunctionalProvider<
 }
 
 String _$agentTokenUsageSummariesHash() =>
-    r'284d2fa2bfcb0443f1692a14c6562071f3d7a0d0';
+    r'3c91c42608b49bb9311bc6758f5f4197afdcd885';
 
 /// Aggregated token usage summaries for an agent, grouped by model ID.
 ///
@@ -2376,7 +2385,7 @@ final class TemplateTokenUsageSummariesProvider extends $FunctionalProvider<
 }
 
 String _$templateTokenUsageSummariesHash() =>
-    r'24b6b78eb833518516af237d7b9c9cf823e1e9cf';
+    r'f84acc15ce346437caec4a59586f16bba3304e40';
 
 /// Aggregated token usage summaries for a template, grouped by model ID.
 ///
@@ -2487,7 +2496,7 @@ final class TemplateInstanceTokenBreakdownProvider extends $FunctionalProvider<
 }
 
 String _$templateInstanceTokenBreakdownHash() =>
-    r'9bd869a9fab342adfa5dbb14bc6d12fd14e48250';
+    r'22407659983ba4e3f018d52fafe8a188ead2a5a3';
 
 /// Per-instance token usage breakdown for a template.
 ///
@@ -3494,4 +3503,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'20cdf7f8c12e9a1a4122ac69fba5d07ec23316f9';
+    r'7ee0cebad04538fdc030a9582eab76f92d25f7c4';

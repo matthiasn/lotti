@@ -497,6 +497,124 @@ void main() {
       });
     });
 
+    group('getAllEvolutionSessions', () {
+      test('returns sessions from multiple templates', () async {
+        // Create two templates
+        await repo.upsertEntity(
+          makeTestTemplate(id: 'tpl-A', agentId: 'tpl-A'),
+        );
+        await repo.upsertEntity(
+          makeTestTemplate(id: 'tpl-B', agentId: 'tpl-B'),
+        );
+
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-A1',
+          agentId: 'tpl-A',
+          templateId: 'tpl-A',
+          createdAt: DateTime(2026, 2, 18),
+          updatedAt: DateTime(2026, 2, 18),
+        ));
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-B1',
+          agentId: 'tpl-B',
+          templateId: 'tpl-B',
+          sessionNumber: 2,
+          createdAt: DateTime(2026, 2, 20),
+          updatedAt: DateTime(2026, 2, 20),
+        ));
+
+        final sessions = await repo.getAllEvolutionSessions();
+
+        expect(sessions, hasLength(2));
+        // Newest updated_at first
+        expect(sessions[0].id, 'session-B1');
+        expect(sessions[1].id, 'session-A1');
+      });
+
+      test('excludes sessions whose parent template is soft-deleted', () async {
+        // Create two templates
+        await repo.upsertEntity(
+          makeTestTemplate(id: 'tpl-alive', agentId: 'tpl-alive'),
+        );
+        await repo.upsertEntity(
+          makeTestTemplate(id: 'tpl-dead', agentId: 'tpl-dead'),
+        );
+
+        // Create sessions for both
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-alive',
+          agentId: 'tpl-alive',
+          templateId: 'tpl-alive',
+        ));
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-orphan',
+          agentId: 'tpl-dead',
+          templateId: 'tpl-dead',
+          sessionNumber: 2,
+        ));
+
+        // Soft-delete the second template
+        await (db.update(db.agentEntities)
+              ..where((t) => t.id.equals('tpl-dead')))
+            .write(
+          AgentEntitiesCompanion(
+            deletedAt: Value(DateTime(2026, 2, 21)),
+          ),
+        );
+
+        final sessions = await repo.getAllEvolutionSessions();
+
+        expect(sessions, hasLength(1));
+        expect(sessions.first.id, 'session-alive');
+      });
+
+      test('excludes soft-deleted sessions even when template is alive',
+          () async {
+        await repo.upsertEntity(
+          makeTestTemplate(id: 'tpl-1', agentId: 'tpl-1'),
+        );
+
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-ok',
+          agentId: 'tpl-1',
+          templateId: 'tpl-1',
+        ));
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'session-gone',
+          agentId: 'tpl-1',
+          templateId: 'tpl-1',
+          sessionNumber: 2,
+        ));
+
+        // Soft-delete one session
+        await (db.update(db.agentEntities)
+              ..where((t) => t.id.equals('session-gone')))
+            .write(
+          AgentEntitiesCompanion(
+            deletedAt: Value(DateTime(2026, 2, 21)),
+          ),
+        );
+
+        final sessions = await repo.getAllEvolutionSessions();
+
+        expect(sessions, hasLength(1));
+        expect(sessions.first.id, 'session-ok');
+      });
+
+      test('returns empty when no templates exist', () async {
+        // Insert a session with no matching template
+        await repo.upsertEntity(makeTestEvolutionSession(
+          id: 'orphan-session',
+          agentId: 'nonexistent-template',
+          templateId: 'nonexistent-template',
+        ));
+
+        final sessions = await repo.getAllEvolutionSessions();
+
+        expect(sessions, isEmpty);
+      });
+    });
+
     group('getEvolutionNotes', () {
       test('returns notes for a template newest-first', () async {
         await repo.upsertEntity(makeTestEvolutionNote(

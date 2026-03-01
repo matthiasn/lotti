@@ -25,6 +25,30 @@ class ToolExecutionResult {
     this.denialReason,
   });
 
+  /// Converts a task tool handler result into a [ToolExecutionResult].
+  ///
+  /// All task tool result types share the same `success`, `message`,
+  /// `didWrite`, and `error` fields. This factory provides a single
+  /// conversion point used by the dispatcher.
+  factory ToolExecutionResult.fromHandlerResult({
+    required bool success,
+    required String message,
+    required bool didWrite,
+    String? error,
+    String? entityId,
+  }) {
+    assert(
+      !didWrite || (entityId != null && entityId.isNotEmpty),
+      'entityId must be provided when didWrite is true',
+    );
+    return ToolExecutionResult(
+      success: success,
+      output: message,
+      mutatedEntityId: didWrite ? entityId : null,
+      errorMessage: error,
+    );
+  }
+
   /// Whether the tool call completed successfully.
   final bool success;
 

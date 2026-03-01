@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -194,7 +195,7 @@ void main() {
       });
     });
 
-    group('toToolExecutionResult', () {
+    group('fromHandlerResult conversion', () {
       test('maps successful write with entityId', () {
         final langResult = TaskLanguageResult(
           success: true,
@@ -203,8 +204,11 @@ void main() {
           didWrite: true,
         );
 
-        final toolResult = TaskLanguageHandler.toToolExecutionResult(
-          langResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: langResult.success,
+          message: langResult.message,
+          didWrite: langResult.didWrite,
+          error: langResult.error,
           entityId: 'ent-123',
         );
 
@@ -221,8 +225,11 @@ void main() {
           updatedTask: task,
         );
 
-        final toolResult = TaskLanguageHandler.toToolExecutionResult(
-          langResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: langResult.success,
+          message: langResult.message,
+          didWrite: langResult.didWrite,
+          error: langResult.error,
           entityId: 'ent-123',
         );
 
@@ -237,8 +244,12 @@ void main() {
           error: 'Unsupported language code: "xx".',
         );
 
-        final toolResult =
-            TaskLanguageHandler.toToolExecutionResult(langResult);
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: langResult.success,
+          message: langResult.message,
+          didWrite: langResult.didWrite,
+          error: langResult.error,
+        );
 
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('xx'));

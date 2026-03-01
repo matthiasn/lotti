@@ -3,7 +3,6 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 
@@ -134,19 +133,6 @@ class TaskLabelHandler {
         error: e.toString(),
       );
     }
-  }
-
-  /// Converts a [TaskLabelResult] to a [ToolExecutionResult].
-  static ToolExecutionResult toToolExecutionResult(
-    TaskLabelResult result, {
-    String? entityId,
-  }) {
-    return ToolExecutionResult(
-      success: result.success,
-      output: result.message,
-      mutatedEntityId: result.didWrite ? entityId : null,
-      errorMessage: result.error,
-    );
   }
 
   /// Builds the label context sections for injection into the user message.

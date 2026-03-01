@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1875,7 +1876,9 @@ void main() {
 
       await workflow.startSession(templateId: kTestTemplateId);
 
-      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+      verify(
+        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+      ).called(1);
     });
 
     test('approveProposal fires notification on success', () async {
@@ -1931,7 +1934,9 @@ void main() {
 
       await workflow.approveProposal(sessionId: 'session-1');
 
-      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+      verify(
+        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+      ).called(1);
     });
 
     test('abandonSession fires notification', () async {
@@ -1958,7 +1963,9 @@ void main() {
 
       await workflow.abandonSession(sessionId: 'session-1');
 
-      verify(() => mockNotifications.notify({kTestTemplateId})).called(1);
+      verify(
+        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+      ).called(1);
     });
 
     test('no notification when updateNotifications is not set', () async {

@@ -2089,18 +2089,7 @@ void main() {
   });
 
   group('allEvolutionSessionsProvider', () {
-    late MockAgentTemplateService mockTemplateService;
-
-    setUp(() {
-      mockTemplateService = MockAgentTemplateService();
-    });
-
     test('aggregates sessions across templates sorted by updatedAt', () async {
-      final tpl1 = makeTestTemplate(id: 'tpl-1', agentId: 'tpl-1');
-      final tpl2 = makeTestTemplate(id: 'tpl-2', agentId: 'tpl-2');
-      when(() => mockTemplateService.listTemplates())
-          .thenAnswer((_) async => [tpl1, tpl2]);
-
       final session1 = makeTestEvolutionSession(
         id: 's1',
         agentId: 'tpl-1',
@@ -2111,15 +2100,11 @@ void main() {
         agentId: 'tpl-2',
         updatedAt: DateTime(2024, 3, 15, 12),
       );
-      when(() => mockTemplateService.getEvolutionSessions('tpl-1'))
-          .thenAnswer((_) async => [session1]);
-      when(() => mockTemplateService.getEvolutionSessions('tpl-2'))
-          .thenAnswer((_) async => [session2]);
+      when(() => mockRepository.getAllEvolutionSessions())
+          .thenAnswer((_) async => [session2, session1]);
 
       final container = ProviderContainer(
         overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
         ],
       );
@@ -2128,19 +2113,17 @@ void main() {
       final result = await container.read(allEvolutionSessionsProvider.future);
 
       expect(result, hasLength(2));
-      // Most recent first
+      // Most recent first (returned pre-sorted by the query)
       expect((result[0] as EvolutionSessionEntity).id, 's2');
       expect((result[1] as EvolutionSessionEntity).id, 's1');
     });
 
-    test('returns empty when no templates exist', () async {
-      when(() => mockTemplateService.listTemplates())
+    test('returns empty when no sessions exist', () async {
+      when(() => mockRepository.getAllEvolutionSessions())
           .thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
           agentRepositoryProvider.overrideWithValue(mockRepository),
         ],
       );
@@ -3129,6 +3112,39 @@ void main() {
       expect(result[1].agentId, 'agent-without');
       expect(result[1].totalTokens, 0);
       expect(result[1].summaries, isEmpty);
+    });
+
+    test('returns all instances with empty summaries when no records exist',
+        () async {
+      final agentA = makeTestIdentity(
+        id: 'agent-a',
+        agentId: 'agent-a',
+        displayName: 'Agent A',
+      );
+      final agentB = makeTestIdentity(
+        id: 'agent-b',
+        agentId: 'agent-b',
+        displayName: 'Agent B',
+      );
+
+      final container = createBreakdownContainer(
+        records: [],
+        agents: [agentA, agentB],
+      );
+
+      final result = await container.read(
+        templateInstanceTokenBreakdownProvider(kTestTemplateId).future,
+      );
+
+      expect(result, hasLength(2));
+      expect(
+        result.map((r) => r.agentId),
+        containsAll(<String>['agent-a', 'agent-b']),
+      );
+      for (final breakdown in result) {
+        expect(breakdown.totalTokens, 0);
+        expect(breakdown.summaries, isEmpty);
+      }
     });
   });
 

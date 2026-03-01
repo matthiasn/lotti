@@ -107,10 +107,11 @@ class TaskAgentStrategy extends ConversationStrategy {
   static const _uuid = Uuid();
 
   /// Tool name for the report publishing tool.
-  static const reportToolName = 'update_report';
+  static const String reportToolName = TaskAgentToolNames.updateReport;
 
   /// Tool name for the observation recording tool.
-  static const observationToolName = 'record_observations';
+  static const String observationToolName =
+      TaskAgentToolNames.recordObservations;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -381,13 +382,17 @@ class TaskAgentStrategy extends ConversationStrategy {
     Map<String, dynamic> args,
   ) {
     return switch (toolName) {
-      'set_task_title' => 'Set title to "${args['title'] ?? ''}"',
-      'update_task_estimate' =>
+      TaskAgentToolNames.setTaskTitle =>
+        'Set title to "${args['title'] ?? ''}"',
+      TaskAgentToolNames.updateTaskEstimate =>
         'Set estimate to ${args['minutes'] ?? '?'} minutes',
-      'update_task_due_date' => 'Set due date to ${args['dueDate'] ?? '?'}',
-      'update_task_priority' => 'Set priority to ${args['priority'] ?? '?'}',
-      'set_task_status' => 'Set status to ${args['status'] ?? '?'}',
-      'assign_task_labels' => () {
+      TaskAgentToolNames.updateTaskDueDate =>
+        'Set due date to ${args['dueDate'] ?? '?'}',
+      TaskAgentToolNames.updateTaskPriority =>
+        'Set priority to ${args['priority'] ?? '?'}',
+      TaskAgentToolNames.setTaskStatus =>
+        'Set status to ${args['status'] ?? '?'}',
+      TaskAgentToolNames.assignTaskLabels => () {
           final labels = args['labels'];
           final count = labels is List ? labels.length : 0;
           return 'Assign $count label(s)';
@@ -399,8 +404,8 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Generate a human-readable prefix for batch tool explosion summaries.
   static String _humanToolPrefix(String toolName) {
     return switch (toolName) {
-      'add_multiple_checklist_items' => 'Checklist',
-      'update_checklist_items' => 'Checklist update',
+      TaskAgentToolNames.addMultipleChecklistItems => 'Checklist',
+      TaskAgentToolNames.updateChecklistItems => 'Checklist update',
       _ => toolName,
     };
   }
