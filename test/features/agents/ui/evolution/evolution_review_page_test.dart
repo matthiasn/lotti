@@ -193,6 +193,53 @@ void main() {
       );
     });
 
+    testWidgets(
+        'renders SizedBox.shrink when pending session provider has error',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: (ref, id) =>
+              Future<AgentDomainEntity?>.error(Exception('fail')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      // Unlike the feedback error which shows commonError, the pending
+      // error branch renders SizedBox.shrink — no error text should appear.
+      expect(find.text(context.messages.commonError), findsNothing);
+      expect(
+        find.text(context.messages.agentRitualReviewNoProposal),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+        'does not show feedbackSummary box when session has null feedbackSummary',
+        (tester) async {
+      // makeTestEvolutionSession defaults feedbackSummary to null.
+      final session = makeTestEvolutionSession();
+
+      await tester.pumpWidget(
+        buildSubject(pendingOverride: (ref, id) async => session),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      // The "Start Conversation" button should still be present.
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+      // No summary container should be rendered — verify no
+      // DecoratedBox with the summary style appears in the proposal section.
+      // Since feedbackSummary is null, the conditional Container is skipped.
+      expect(
+        find.text('Agent performed well in most areas.'),
+        findsNothing,
+      );
+    });
+
     testWidgets('shows EvolutionSessionTimeline widget', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();

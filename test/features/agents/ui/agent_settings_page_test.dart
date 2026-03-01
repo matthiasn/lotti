@@ -4,10 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/gamey/colors.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -294,6 +296,74 @@ void main() {
 
       await tester.tap(find.text('Nav Template'));
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
+    });
+
+    testWidgets('shows pending dot when template has pending ritual review',
+        (tester) async {
+      final template = makeTestTemplate(
+        id: 'tpl-pending',
+        agentId: 'tpl-pending',
+        displayName: 'Pending Template',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          templates: [template],
+          extraOverrides: [
+            templatesPendingReviewProvider.overrideWith(
+              (ref) async => {'tpl-pending'},
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the pending dot: a Container with circle shape and purple color
+      final pendingDot = find.byWidgetPredicate((widget) {
+        if (widget is Container) {
+          final decoration = widget.decoration;
+          if (decoration is BoxDecoration) {
+            return decoration.shape == BoxShape.circle &&
+                decoration.color == GameyColors.primaryPurple;
+          }
+        }
+        return false;
+      });
+      expect(pendingDot, findsOneWidget);
+    });
+
+    testWidgets('does not show pending dot when template has no pending review',
+        (tester) async {
+      final template = makeTestTemplate(
+        id: 'tpl-clean',
+        agentId: 'tpl-clean',
+        displayName: 'Clean Template',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          templates: [template],
+          extraOverrides: [
+            templatesPendingReviewProvider.overrideWith(
+              (ref) async => <String>{},
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify no pending dot is rendered
+      final pendingDot = find.byWidgetPredicate((widget) {
+        if (widget is Container) {
+          final decoration = widget.decoration;
+          if (decoration is BoxDecoration) {
+            return decoration.shape == BoxShape.circle &&
+                decoration.color == GameyColors.primaryPurple;
+          }
+        }
+        return false;
+      });
+      expect(pendingDot, findsNothing);
     });
 
     testWidgets('tapping back chevron calls NavService.beamBack',
