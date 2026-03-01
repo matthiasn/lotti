@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.890] - 2026-03-01
+### Added
+- Meta-improver agent: recursive self-improvement layer that evaluates and
+  improves the template-improver agents themselves. The meta-improver runs
+  monthly rituals focused on improver effectiveness, directive churn stability,
+  proposal acceptance rates, and session outcome trends.
+- Seeded meta-improver template with meta-level directives for evaluating the
+  improvement process rather than task-level performance.
+- Evolution session feedback extraction: the feedback pipeline now includes
+  signals from evolution session outcomes (ratings, completion, abandonment)
+  and directive churn detection for improver templates.
+- Recursion depth policy enforcement: improver agent creation validates against
+  the maximum recursion depth (capped at 2 per ADR 0012).
+
 ## [0.9.889] - 2026-03-01
 ### Fixed
 - Agent no longer proposes redundant changes that match the current state.
