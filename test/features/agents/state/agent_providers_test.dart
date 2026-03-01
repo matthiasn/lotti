@@ -10,11 +10,15 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
+import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -1118,6 +1122,7 @@ void main() {
     late MockTaskAgentService mockTaskAgentService;
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
+    late MockScheduledWakeManager mockScheduledWakeManager;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -1127,6 +1132,7 @@ void main() {
       mockTaskAgentService = MockTaskAgentService();
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockScheduledWakeManager = MockScheduledWakeManager();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -1137,6 +1143,8 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepository.abandonOrphanedWakeRuns())
           .thenAnswer((_) async => 0);
+      when(() => mockScheduledWakeManager.start()).thenReturn(null);
+      when(() => mockScheduledWakeManager.stop()).thenReturn(null);
       // Profile seeding stubs.
       when(() => mockAiConfigRepo.getConfigById(any()))
           .thenAnswer((_) async => null);
@@ -1158,6 +1166,8 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          scheduledWakeManagerProvider
+              .overrideWithValue(mockScheduledWakeManager),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
               flagName == enableAgentsFlag && enableAgents,
@@ -1200,6 +1210,20 @@ void main() {
       verify(() => mockOrchestrator.start(any())).called(1);
       verify(() => mockTemplateService.seedDefaults()).called(1);
       verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
+    });
+
+    test('starts scheduled wake manager when enabled', () async {
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, __) {},
+      );
+      addTearDown(sub.close);
+
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockScheduledWakeManager.start()).called(1);
     });
 
     test('sets wakeExecutor on orchestrator when enabled', () async {
@@ -2065,6 +2089,78 @@ void main() {
       final service = container.read(agentTemplateServiceProvider);
       expect(service, isA<AgentTemplateService>());
       expect(service.repository, same(mockRepo));
+    });
+  });
+
+  group('scheduledWakeManagerProvider', () {
+    test('creates ScheduledWakeManager instance', () {
+      final mockRepo = MockAgentRepository();
+      final mockOrchestrator = MockWakeOrchestrator();
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final manager = container.read(scheduledWakeManagerProvider);
+      expect(manager, isA<ScheduledWakeManager>());
+    });
+  });
+
+  group('feedbackExtractionServiceProvider', () {
+    test('creates FeedbackExtractionService instance', () {
+      final mockRepo = MockAgentRepository();
+      final mockSync = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSync),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(feedbackExtractionServiceProvider);
+      expect(service, isA<FeedbackExtractionService>());
+    });
+  });
+
+  group('improverAgentServiceProvider', () {
+    test('creates ImproverAgentService instance', () {
+      final mockImproverService = MockImproverAgentService();
+
+      final container = ProviderContainer(
+        overrides: [
+          improverAgentServiceProvider.overrideWithValue(mockImproverService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(improverAgentServiceProvider);
+      expect(service, isA<ImproverAgentService>());
+      expect(service, same(mockImproverService));
+    });
+  });
+
+  group('improverAgentWorkflowProvider', () {
+    test('creates ImproverAgentWorkflow instance', () {
+      final mockWorkflow = MockImproverAgentWorkflow();
+
+      final container = ProviderContainer(
+        overrides: [
+          improverAgentWorkflowProvider.overrideWithValue(mockWorkflow),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final workflow = container.read(improverAgentWorkflowProvider);
+      expect(workflow, isA<ImproverAgentWorkflow>());
+      expect(workflow, same(mockWorkflow));
     });
   });
 
