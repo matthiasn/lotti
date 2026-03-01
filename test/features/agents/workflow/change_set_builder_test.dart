@@ -800,6 +800,33 @@ void main() {
       );
     });
 
+    test('keeps malformed update with only id (no isChecked, no title)',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Some item', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-x'}, // No isChecked, no title — malformed
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // Malformed proposals are kept defensively.
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
     test('does not filter add_checklist_item (only updates)', () async {
       final resolverBuilder = ChangeSetBuilder(
         agentId: 'agent-001',

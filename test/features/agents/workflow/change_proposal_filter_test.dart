@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -262,6 +267,105 @@ void main() {
         );
         expect(result, isNull);
       });
+    });
+  });
+
+  group('ChangeProposalFilter.resolveTaskMetadata', () {
+    late MockJournalDb mockDb;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+    });
+
+    test('builds snapshot from a Task entity', () async {
+      final task = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2026, 3),
+            utcOffset: 60,
+          ),
+          title: 'Fix login bug',
+          statusHistory: [],
+          dateTo: DateTime(2026, 3),
+          dateFrom: DateTime(2026, 3),
+          estimate: const Duration(hours: 2),
+          due: DateTime(2026, 3, 15),
+          priority: TaskPriority.p1High,
+        ),
+        meta: testTask.meta,
+        entryText: testTask.entryText,
+      );
+      when(() => mockDb.journalEntityById('task-1'))
+          .thenAnswer((_) async => task);
+
+      final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
+        mockDb,
+        'task-1',
+      );
+
+      expect(snapshot, isNotNull);
+      expect(snapshot!.title, 'Fix login bug');
+      expect(snapshot.status, 'OPEN');
+      expect(snapshot.priority, 'P1');
+      expect(snapshot.estimateMinutes, 120);
+      expect(snapshot.dueDate, '2026-03-15');
+    });
+
+    test('returns null for non-Task entity', () async {
+      when(() => mockDb.journalEntityById('entry-1'))
+          .thenAnswer((_) async => testTextEntry);
+
+      final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
+        mockDb,
+        'entry-1',
+      );
+
+      expect(snapshot, isNull);
+    });
+
+    test('returns null when entity is not found', () async {
+      when(() => mockDb.journalEntityById('missing'))
+          .thenAnswer((_) async => null);
+
+      final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
+        mockDb,
+        'missing',
+      );
+
+      expect(snapshot, isNull);
+    });
+
+    test('handles task with null optional fields', () async {
+      final task = Task(
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-2',
+            createdAt: DateTime(2026, 3),
+            utcOffset: 60,
+          ),
+          title: 'Minimal task',
+          statusHistory: [],
+          dateTo: DateTime(2026, 3),
+          dateFrom: DateTime(2026, 3),
+        ),
+        meta: testTask.meta,
+        entryText: testTask.entryText,
+      );
+      when(() => mockDb.journalEntityById('task-2'))
+          .thenAnswer((_) async => task);
+
+      final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
+        mockDb,
+        'task-2',
+      );
+
+      expect(snapshot, isNotNull);
+      expect(snapshot!.title, 'Minimal task');
+      expect(snapshot.status, 'IN PROGRESS');
+      expect(snapshot.priority, 'P2'); // default
+      expect(snapshot.estimateMinutes, isNull);
+      expect(snapshot.dueDate, isNull);
     });
   });
 }
