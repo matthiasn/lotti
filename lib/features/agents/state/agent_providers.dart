@@ -680,6 +680,7 @@ Future<TemplatePerformanceMetrics> templatePerformanceMetrics(
 /// [AgentSyncService]) alongside the legacy single-turn dependencies.
 @Riverpod(keepAlive: true)
 TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
+  final improverService = ref.watch(improverAgentServiceProvider);
   return TemplateEvolutionWorkflow(
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
@@ -687,6 +688,15 @@ TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     updateNotifications: ref.watch(updateNotificationsProvider),
+    onSessionCompleted: (templateId, sessionId) async {
+      // Resolve the improver agent for this template and schedule its next
+      // ritual. Best-effort: a lookup failure here must not break the
+      // approval flow (the callback is already wrapped in try/catch).
+      final improver = await improverService.getImproverForTemplate(templateId);
+      if (improver != null) {
+        await improverService.scheduleNextRitual(improver.agentId);
+      }
+    },
   );
 }
 

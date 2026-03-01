@@ -24,6 +24,9 @@ class _TestConversationRepository extends ConversationRepository {
   final String? assistantResponse;
   final List<String> deletedIds = [];
 
+  /// Captured system message from the last [createConversation] call.
+  String? lastSystemMessage;
+
   /// Optional delegate to control sendMessage behavior (e.g., throwing).
   Future<InferenceUsage?> Function()? sendMessageDelegate;
 
@@ -38,6 +41,7 @@ class _TestConversationRepository extends ConversationRepository {
     String? systemMessage,
     int maxTurns = 20,
   }) {
+    lastSystemMessage = systemMessage;
     if (createConversationDelegate != null) {
       return createConversationDelegate!();
     }
@@ -2010,15 +2014,7 @@ void main() {
 
       final convRepo = _TestConversationRepository(
         assistantResponse: 'Response',
-      )
-        // Track the system message passed to createConversation by replacing
-        // the delegate.
-        ..createConversationDelegate = () {
-          // We can't easily capture createConversation params through
-          // _TestConversationRepository, so we verify indirectly by checking
-          // that the session was created successfully with the override.
-          return 'test-conv-id';
-        };
+      );
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: convRepo,
@@ -2042,6 +2038,12 @@ void main() {
       // Session was created successfully with the override context.
       expect(response, isNotNull);
       expect(workflow.activeSessions, hasLength(1));
+
+      // Verify the override system prompt was passed to createConversation.
+      expect(
+        convRepo.lastSystemMessage,
+        'Ritual-specific system prompt',
+      );
     });
   });
 

@@ -126,11 +126,7 @@ again. The conversation should always be driving toward an approved proposal.
       )
       ..writeln();
 
-    // Partition by sentiment in a single pass.
-    final bySentiment = <FeedbackSentiment, List<ClassifiedFeedbackItem>>{};
-    for (final item in items) {
-      bySentiment.putIfAbsent(item.sentiment, () => []).add(item);
-    }
+    final bySentiment = items.groupListsBy((i) => i.sentiment);
 
     // Negative first, then positive, then neutral.
     _writeSentimentGroup(

@@ -193,31 +193,33 @@ class TemplateEvolutionWorkflow {
       final int sessionNumber;
 
       if (contextOverride != null && sessionNumberOverride != null) {
-        // Use the caller-provided context and session number (e.g., from the
-        // ritual workflow). No need to gather evolution data.
+        // Fast path: use caller-provided context and session number.
         ctx = contextOverride;
         sessionNumber = sessionNumberOverride;
+      } else if (contextOverride != null) {
+        // Optimized path: context is provided but session number is not.
+        // Fetch only sessions instead of full gatherEvolutionData.
+        final sessions = await svc.getEvolutionSessions(templateId);
+        sessionNumber = sessions.fold(
+                0, (max, s) => s.sessionNumber > max ? s.sessionNumber : max) +
+            1;
+        ctx = contextOverride;
       } else {
-        // Gather all evolution data in parallel.
+        // Full path: gather all data to build context and session number.
         final data = await svc.gatherEvolutionData(templateId);
         sessionNumber = sessionNumberOverride ?? data.nextSessionNumber;
 
-        if (contextOverride != null) {
-          ctx = contextOverride;
-        } else {
-          // Build the LLM context from gathered data.
-          ctx = ctxBuilder.build(
-            template: template,
-            currentVersion: currentVersion,
-            recentVersions: data.recentVersions,
-            instanceReports: data.instanceReports,
-            instanceObservations: data.instanceObservations,
-            pastNotes: data.pastNotes,
-            metrics: data.metrics,
-            changesSinceLastSession: data.changesSinceLastSession,
-            observationPayloads: data.observationPayloads,
-          );
-        }
+        ctx = ctxBuilder.build(
+          template: template,
+          currentVersion: currentVersion,
+          recentVersions: data.recentVersions,
+          instanceReports: data.instanceReports,
+          instanceObservations: data.instanceObservations,
+          pastNotes: data.pastNotes,
+          metrics: data.metrics,
+          changesSinceLastSession: data.changesSinceLastSession,
+          observationPayloads: data.observationPayloads,
+        );
       }
 
       // Create the session entity, conversation, and send initial message.
@@ -396,7 +398,18 @@ class TemplateEvolutionWorkflow {
       _notifyUpdate(active.templateId);
 
       // Invoke the post-approval callback (e.g., schedule next ritual).
-      onSessionCompleted?.call(active.templateId, sessionId);
+      // Wrapped in try/catch so a callback failure does not convert a
+      // successful approval into a null return.
+      try {
+        onSessionCompleted?.call(active.templateId, sessionId);
+      } catch (e, s) {
+        developer.log(
+          'onSessionCompleted failed for $sessionId',
+          name: _logTag,
+          error: e,
+          stackTrace: s,
+        );
+      }
 
       developer.log(
         'Approved proposal for session $sessionId → version ${newVersion.id}',
