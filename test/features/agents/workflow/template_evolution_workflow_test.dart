@@ -111,25 +111,8 @@ void main() {
         .thenAnswer((_) async => makeTestTemplate());
     when(() => templateService.getActiveVersion(any()))
         .thenAnswer((_) async => makeTestTemplateVersion());
-    when(() => templateService.computeMetrics(any()))
-        .thenAnswer((_) async => makeTestMetrics());
-    when(() => templateService.getVersionHistory(any(),
-            limit: any(named: 'limit')))
-        .thenAnswer((_) async => [makeTestTemplateVersion()]);
-    when(() => templateService.getRecentInstanceReports(any()))
-        .thenAnswer((_) async => []);
-    when(() => templateService.getRecentInstanceObservations(any()))
-        .thenAnswer((_) async => []);
-    when(
-      () => templateService.getRecentEvolutionNotes(
-        any(),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
-    when(() => templateService.getEvolutionSessions(any()))
-        .thenAnswer((_) async => []);
-    when(() => templateService.countChangesSince(any(), any()))
-        .thenAnswer((_) async => 0);
+    when(() => templateService.gatherEvolutionData(any()))
+        .thenAnswer((_) async => makeTestEvolutionDataBundle());
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
   }
 
@@ -192,14 +175,17 @@ void main() {
 
     test('computes session number from existing sessions', () async {
       stubFullContext();
-      when(() => mockTemplateService.getEvolutionSessions(any()))
-          .thenAnswer((_) async => [
-                makeTestEvolutionSession(sessionNumber: 3),
-                makeTestEvolutionSession(
-                  id: 'evo-session-002',
-                  sessionNumber: 2,
-                ),
-              ]);
+      when(() => mockTemplateService.gatherEvolutionData(any())).thenAnswer(
+        (_) async => makeTestEvolutionDataBundle(
+          sessions: [
+            makeTestEvolutionSession(sessionNumber: 3),
+            makeTestEvolutionSession(
+              id: 'evo-session-002',
+              sessionNumber: 2,
+            ),
+          ],
+        ),
+      );
       final workflow = buildSessionWorkflow();
 
       await workflow.startSession(templateId: kTestTemplateId);
@@ -1663,7 +1649,7 @@ void main() {
     );
   });
 
-  group('startSession note limit contract', () {
+  group('startSession data gathering', () {
     late MockAgentTemplateService mockTemplateService;
     late MockAgentSyncService mockSyncService;
     late MockAgentRepository mockRepository;
@@ -1675,7 +1661,7 @@ void main() {
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
     });
 
-    test('passes bounded limit to getRecentEvolutionNotes', () async {
+    test('calls gatherEvolutionData for the template', () async {
       stubFullSessionContext(
         templateService: mockTemplateService,
         syncService: mockSyncService,
@@ -1693,15 +1679,8 @@ void main() {
 
       await workflow.startSession(templateId: kTestTemplateId);
 
-      // Verify a bounded limit was passed (not the default 50).
-      final captured = verify(
-        () => mockTemplateService.getRecentEvolutionNotes(
-          any(),
-          limit: captureAny(named: 'limit'),
-        ),
-      ).captured;
-      final limit = captured.first as int;
-      expect(limit, 30);
+      verify(() => mockTemplateService.gatherEvolutionData(kTestTemplateId))
+          .called(1);
     });
   });
 
@@ -1717,15 +1696,15 @@ void main() {
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
     });
 
-    test('returns null when computeMetrics throws', () async {
+    test('returns null when gatherEvolutionData throws', () async {
       stubFullSessionContext(
         templateService: mockTemplateService,
         syncService: mockSyncService,
       );
       // Stub getEntity for abandonSession cleanup path.
       when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
-      // Override one data-fetch to throw.
-      when(() => mockTemplateService.computeMetrics(any()))
+      // Override gatherEvolutionData to throw.
+      when(() => mockTemplateService.gatherEvolutionData(any()))
           .thenThrow(StateError('DB error'));
 
       final workflow = TemplateEvolutionWorkflow(
@@ -1739,29 +1718,6 @@ void main() {
       );
 
       // Should return null, not throw.
-      final result = await workflow.startSession(templateId: kTestTemplateId);
-      expect(result, isNull);
-    });
-
-    test('returns null when getRecentInstanceReports throws', () async {
-      stubFullSessionContext(
-        templateService: mockTemplateService,
-        syncService: mockSyncService,
-      );
-      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
-      when(() => mockTemplateService.getRecentInstanceReports(any()))
-          .thenThrow(StateError('DB error'));
-
-      final workflow = TemplateEvolutionWorkflow(
-        conversationRepository: _TestConversationRepository(
-          assistantResponse: 'Hello',
-        ),
-        aiConfigRepository: mockAiConfig,
-        cloudInferenceRepository: mockCloudInference,
-        templateService: mockTemplateService,
-        syncService: mockSyncService,
-      );
-
       final result = await workflow.startSession(templateId: kTestTemplateId);
       expect(result, isNull);
     });
@@ -2004,7 +1960,7 @@ void main() {
       when(() => mockTemplateService.repository).thenReturn(mockRepository);
     });
 
-    test('skips internal context building when contextOverride is provided',
+    test('uses contextOverride instead of building context internally',
         () async {
       stubProviderResolution();
       when(() => mockTemplateService.getTemplate(any()))
@@ -2012,8 +1968,6 @@ void main() {
       when(() => mockTemplateService.getActiveVersion(any()))
           .thenAnswer((_) async => makeTestTemplateVersion());
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
-      when(() => mockTemplateService.getEvolutionSessions(any()))
-          .thenAnswer((_) async => []);
 
       final convRepo = _TestConversationRepository(
         assistantResponse: 'Ritual response',
@@ -2035,34 +1989,15 @@ void main() {
       final response = await workflow.startSession(
         templateId: kTestTemplateId,
         contextOverride: overrideContext,
+        sessionNumberOverride: 5,
       );
 
       expect(response, 'Ritual response');
       expect(workflow.activeSessions, hasLength(1));
 
-      // Should NOT have called internal context building methods.
-      verifyNever(() => mockTemplateService.computeMetrics(any()));
-      verifyNever(
-        () => mockTemplateService.getVersionHistory(
-          any(),
-          limit: any(named: 'limit'),
-        ),
-      );
-      verifyNever(
-        () => mockTemplateService.getRecentInstanceReports(any()),
-      );
-      verifyNever(
-        () => mockTemplateService.getRecentInstanceObservations(any()),
-      );
-      verifyNever(
-        () => mockTemplateService.getRecentEvolutionNotes(
-          any(),
-          limit: any(named: 'limit'),
-        ),
-      );
-      verifyNever(
-        () => mockTemplateService.countChangesSince(any(), any()),
-      );
+      // When both contextOverride and sessionNumberOverride are provided,
+      // gatherEvolutionData should NOT be called.
+      verifyNever(() => mockTemplateService.gatherEvolutionData(any()));
     });
 
     test('uses override system prompt for conversation', () async {
@@ -2072,8 +2007,6 @@ void main() {
       when(() => mockTemplateService.getActiveVersion(any()))
           .thenAnswer((_) async => makeTestTemplateVersion());
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
-      when(() => mockTemplateService.getEvolutionSessions(any()))
-          .thenAnswer((_) async => []);
 
       final convRepo = _TestConversationRepository(
         assistantResponse: 'Response',
@@ -2103,6 +2036,7 @@ void main() {
       final response = await workflow.startSession(
         templateId: kTestTemplateId,
         contextOverride: overrideContext,
+        sessionNumberOverride: 1,
       );
 
       // Session was created successfully with the override context.

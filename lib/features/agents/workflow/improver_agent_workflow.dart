@@ -118,8 +118,11 @@ class ImproverAgentWorkflow {
 
     // 6. Build ritual context and start evolution session.
     try {
-      final currentVersion =
-          await templateService.getActiveVersion(targetTemplateId);
+      // Parallelize: active version and evolution data are independent.
+      final (currentVersion, data) = await (
+        templateService.getActiveVersion(targetTemplateId),
+        templateService.gatherEvolutionData(targetTemplateId),
+      ).wait;
       if (currentVersion == null) {
         return WakeResult(
           success: false,
@@ -128,64 +131,27 @@ class ImproverAgentWorkflow {
       }
 
       final contextBuilder = RitualContextBuilder();
-      final metrics = await templateService.computeMetrics(targetTemplateId);
-      final recentVersions = await templateService.getVersionHistory(
-        targetTemplateId,
-        limit: 5,
-      );
-      final reports =
-          await templateService.getRecentInstanceReports(targetTemplateId);
-      final observations =
-          await templateService.getRecentInstanceObservations(targetTemplateId);
-      final notes = await templateService.getRecentEvolutionNotes(
-        targetTemplateId,
-        limit: 30,
-      );
-      final sessions =
-          await templateService.getEvolutionSessions(targetTemplateId);
-      final sessionNumber = sessions.isNotEmpty
-          ? sessions
-                  .map((s) => s.sessionNumber)
-                  .reduce((a, b) => a > b ? a : b) +
-              1
-          : 1;
-
-      // Pre-fetch observation payloads.
-      final payloadIds =
-          observations.map((obs) => obs.contentEntryId).whereType<String>();
-      final payloadEntities =
-          await Future.wait(payloadIds.map(repository.getEntity));
-      final observationPayloads = <String, AgentMessagePayloadEntity>{
-        for (final entity
-            in payloadEntities.whereType<AgentMessagePayloadEntity>())
-          entity.id: entity,
-      };
-
-      final lastSessionDate =
-          sessions.isNotEmpty ? sessions.first.createdAt : null;
-      final changesSince = await templateService.countChangesSince(
-        targetTemplateId,
-        lastSessionDate,
-      );
 
       final ritualContext = contextBuilder.buildRitualContext(
         template: targetTemplate,
         currentVersion: currentVersion,
-        recentVersions: recentVersions,
-        instanceReports: reports,
-        instanceObservations: observations,
-        pastNotes: notes,
-        metrics: metrics,
-        changesSinceLastSession: changesSince,
+        recentVersions: data.recentVersions,
+        instanceReports: data.instanceReports,
+        instanceObservations: data.instanceObservations,
+        pastNotes: data.pastNotes,
+        metrics: data.metrics,
+        changesSinceLastSession: data.changesSinceLastSession,
         classifiedFeedback: feedback,
-        sessionNumber: sessionNumber,
-        observationPayloads: observationPayloads,
+        sessionNumber: data.nextSessionNumber,
+        observationPayloads: data.observationPayloads,
       );
 
       // Start evolution session with the ritual context override.
+      // Pass sessionNumber to avoid a redundant gatherEvolutionData call.
       final response = await evolutionWorkflow.startSession(
         templateId: targetTemplateId,
         contextOverride: ritualContext,
+        sessionNumberOverride: data.nextSessionNumber,
       );
 
       if (response == null) {
@@ -199,15 +165,12 @@ class ImproverAgentWorkflow {
 
       // 7. Update improver state watermarks.
       final now = clock.now();
-      final latestState = await repository.getAgentState(agentId);
-      if (latestState != null) {
-        final updatedState = latestState.copyWith(
-          slots: latestState.slots.copyWith(lastFeedbackScanAt: now),
-          wakeCounter: latestState.wakeCounter + 1,
-          updatedAt: now,
-        );
-        await syncService.upsertEntity(updatedState);
-      }
+      final updatedState = state.copyWith(
+        slots: state.slots.copyWith(lastFeedbackScanAt: now),
+        wakeCounter: state.wakeCounter + 1,
+        updatedAt: now,
+      );
+      await syncService.upsertEntity(updatedState);
 
       developer.log(
         'Started ritual session for template $targetTemplateId',

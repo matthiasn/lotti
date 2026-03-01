@@ -32,3 +32,15 @@ abstract final class AgentEntityTypes {
 abstract final class AgentReportScopes {
   static const current = 'current';
 }
+
+abstract final class AgentAuthors {
+  static const evolutionAgent = 'evolution_agent';
+}
+
+/// Format a [DateTime] as YYYY-MM-DD. Returns `null` for a `null` input.
+String? formatIsoDate(DateTime? date) {
+  if (date == null) return null;
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}

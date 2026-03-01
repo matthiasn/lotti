@@ -97,42 +97,14 @@ void main() {
     when(() => mockTemplateService.getActiveVersion(targetTemplateId))
         .thenAnswer((_) async => makeTestTemplateVersion());
 
-    when(() => mockTemplateService.computeMetrics(targetTemplateId))
-        .thenAnswer((_) async => makeTestMetrics());
-
-    when(
-      () => mockTemplateService.getVersionHistory(
-        targetTemplateId,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => [makeTestTemplateVersion()]);
-
-    when(
-      () => mockTemplateService.getRecentInstanceReports(targetTemplateId),
-    ).thenAnswer((_) async => []);
-
-    when(
-      () => mockTemplateService.getRecentInstanceObservations(targetTemplateId),
-    ).thenAnswer((_) async => []);
-
-    when(
-      () => mockTemplateService.getRecentEvolutionNotes(
-        targetTemplateId,
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
-
-    when(() => mockTemplateService.getEvolutionSessions(targetTemplateId))
-        .thenAnswer((_) async => []);
-
-    when(
-      () => mockTemplateService.countChangesSince(targetTemplateId, any()),
-    ).thenAnswer((_) async => 0);
+    when(() => mockTemplateService.gatherEvolutionData(targetTemplateId))
+        .thenAnswer((_) async => makeTestEvolutionDataBundle());
 
     when(
       () => mockEvolutionWorkflow.startSession(
         templateId: any(named: 'templateId'),
         contextOverride: any(named: 'contextOverride'),
+        sessionNumberOverride: any(named: 'sessionNumberOverride'),
       ),
     ).thenAnswer((_) async => 'LLM response');
 
@@ -166,6 +138,7 @@ void main() {
         () => mockEvolutionWorkflow.startSession(
           templateId: targetTemplateId,
           contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
         ),
       ).called(1);
 
@@ -195,6 +168,7 @@ void main() {
         () => mockEvolutionWorkflow.startSession(
           templateId: any(named: 'templateId'),
           contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
         ),
       );
 
@@ -261,6 +235,7 @@ void main() {
         () => mockEvolutionWorkflow.startSession(
           templateId: any(named: 'templateId'),
           contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -372,6 +347,7 @@ void main() {
         () => mockEvolutionWorkflow.startSession(
           templateId: any(named: 'templateId'),
           contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
         ),
       ).thenThrow(Exception('LLM error'));
 

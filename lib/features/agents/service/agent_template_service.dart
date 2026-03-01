@@ -25,6 +25,38 @@ class TemplateInUseException implements Exception {
       '$activeCount active instance(s)';
 }
 
+/// Bundled result of [AgentTemplateService.gatherEvolutionData].
+///
+/// Contains all data needed to build an evolution session context, fetched
+/// in parallel for efficiency.
+class EvolutionDataBundle {
+  const EvolutionDataBundle({
+    required this.metrics,
+    required this.recentVersions,
+    required this.instanceReports,
+    required this.instanceObservations,
+    required this.pastNotes,
+    required this.sessions,
+    required this.observationPayloads,
+    required this.changesSinceLastSession,
+  });
+
+  final TemplatePerformanceMetrics metrics;
+  final List<AgentTemplateVersionEntity> recentVersions;
+  final List<AgentReportEntity> instanceReports;
+  final List<AgentMessageEntity> instanceObservations;
+  final List<EvolutionNoteEntity> pastNotes;
+  final List<EvolutionSessionEntity> sessions;
+  final Map<String, AgentMessagePayloadEntity> observationPayloads;
+  final int changesSinceLastSession;
+
+  /// Compute the next session number from the existing sessions.
+  int get nextSessionNumber =>
+      sessions.fold(
+          0, (max, s) => s.sessionNumber > max ? s.sessionNumber : max) +
+      1;
+}
+
 /// Well-known template IDs for seeded defaults.
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
@@ -525,6 +557,59 @@ class AgentTemplateService {
   /// Count entities changed since [since] for all instances of [templateId].
   Future<int> countChangesSince(String templateId, DateTime? since) {
     return repository.countChangedSinceForTemplate(templateId, since);
+  }
+
+  /// Gather all data needed for an evolution session context in parallel.
+  ///
+  /// This fetches metrics, version history, instance reports/observations,
+  /// evolution notes, sessions, observation payloads, and change counts in
+  /// as few sequential round-trips as possible.
+  Future<EvolutionDataBundle> gatherEvolutionData(String templateId) async {
+    // First batch: all independent queries in parallel.
+    final results = await (
+      computeMetrics(templateId),
+      getVersionHistory(templateId, limit: 5),
+      getRecentInstanceReports(templateId),
+      getRecentInstanceObservations(templateId),
+      getRecentEvolutionNotes(templateId, limit: 30),
+      getEvolutionSessions(templateId),
+    ).wait;
+
+    final metrics = results.$1;
+    final recentVersions = results.$2;
+    final reports = results.$3;
+    final observations = results.$4;
+    final notes = results.$5;
+    final sessions = results.$6;
+
+    // Second batch: depends on first batch results.
+    final payloadIds =
+        observations.map((obs) => obs.contentEntryId).whereType<String>();
+    final payloadEntitiesFuture =
+        Future.wait(payloadIds.map(repository.getEntity));
+
+    final lastSessionDate =
+        sessions.isNotEmpty ? sessions.first.createdAt : null;
+    final changesSinceFuture = countChangesSince(templateId, lastSessionDate);
+
+    final batchResults = await (payloadEntitiesFuture, changesSinceFuture).wait;
+
+    final observationPayloads = <String, AgentMessagePayloadEntity>{
+      for (final entity
+          in batchResults.$1.whereType<AgentMessagePayloadEntity>())
+        entity.id: entity,
+    };
+
+    return EvolutionDataBundle(
+      metrics: metrics,
+      recentVersions: recentVersions,
+      instanceReports: reports,
+      instanceObservations: observations,
+      pastNotes: notes,
+      sessions: sessions,
+      observationPayloads: observationPayloads,
+      changesSinceLastSession: batchResults.$2,
+    );
   }
 
   /// Checks whether any templates, template versions, or agent configs

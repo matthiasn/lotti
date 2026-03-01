@@ -1,5 +1,5 @@
-import 'dart:math';
-
+import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
@@ -46,9 +46,11 @@ class RitualContextBuilder extends EvolutionContextBuilder {
 
     // Extend the user message with ritual-specific sections.
     final buf = StringBuffer(baseContext.initialUserMessage)..writeln();
+    final cappedItems =
+        classifiedFeedback.items.take(maxFeedbackItems).toList();
 
-    _writeFeedbackSummary(buf, classifiedFeedback);
-    _writeFeedbackByCategory(buf, classifiedFeedback);
+    _writeFeedbackSummary(buf, classifiedFeedback, cappedItems);
+    _writeFeedbackByCategory(buf, cappedItems);
     _writeSessionContinuity(buf, sessionNumber);
 
     return EvolutionContext(
@@ -57,7 +59,7 @@ class RitualContextBuilder extends EvolutionContextBuilder {
     );
   }
 
-  String _buildRitualSystemPrompt() {
+  static String _buildRitualSystemPrompt() {
     return '''
 You are an improver agent — a prompt engineering specialist conducting a
 one-on-one ritual with the user to improve an agent template's directives.
@@ -102,9 +104,11 @@ again. The conversation should always be driving toward an approved proposal.
 - Record evolution notes to build institutional memory across sessions.''';
   }
 
-  void _writeFeedbackSummary(StringBuffer buf, ClassifiedFeedback feedback) {
-    final items = feedback.items.take(maxFeedbackItems).toList();
-
+  void _writeFeedbackSummary(
+    StringBuffer buf,
+    ClassifiedFeedback feedback,
+    List<ClassifiedFeedbackItem> items,
+  ) {
     buf.writeln('## Classified Feedback Summary');
 
     if (items.isEmpty) {
@@ -116,63 +120,67 @@ again. The conversation should always be driving toward an approved proposal.
 
     buf
       ..writeln(
-        'Window: ${_formatDate(feedback.windowStart)} → '
-        '${_formatDate(feedback.windowEnd)} '
+        'Window: ${formatIsoDate(feedback.windowStart)} → '
+        '${formatIsoDate(feedback.windowEnd)} '
         '(${items.length} items)',
       )
       ..writeln();
 
+    // Partition by sentiment in a single pass.
+    final bySentiment = <FeedbackSentiment, List<ClassifiedFeedbackItem>>{};
+    for (final item in items) {
+      bySentiment.putIfAbsent(item.sentiment, () => []).add(item);
+    }
+
     // Negative first, then positive, then neutral.
-    final negative =
-        items.where((i) => i.sentiment == FeedbackSentiment.negative).toList();
-    final positive =
-        items.where((i) => i.sentiment == FeedbackSentiment.positive).toList();
-    final neutral =
-        items.where((i) => i.sentiment == FeedbackSentiment.neutral).toList();
-
-    if (negative.isNotEmpty) {
-      buf.writeln('### Negative Signals (${negative.length})');
-      for (final item in negative) {
-        buf.writeln('- [${item.source}] ${_truncate(item.detail, 200)}');
-      }
-      buf.writeln();
-    }
-
-    if (positive.isNotEmpty) {
-      buf.writeln('### Positive Signals (${positive.length})');
-      for (final item in positive) {
-        buf.writeln('- [${item.source}] ${_truncate(item.detail, 200)}');
-      }
-      buf.writeln();
-    }
-
-    if (neutral.isNotEmpty) {
-      buf.writeln('### Neutral Signals (${neutral.length})');
-      for (final item in neutral) {
-        buf.writeln('- [${item.source}] ${_truncate(item.detail, 200)}');
-      }
-      buf.writeln();
-    }
+    _writeSentimentGroup(
+      buf,
+      'Negative Signals',
+      bySentiment[FeedbackSentiment.negative],
+    );
+    _writeSentimentGroup(
+      buf,
+      'Positive Signals',
+      bySentiment[FeedbackSentiment.positive],
+    );
+    _writeSentimentGroup(
+      buf,
+      'Neutral Signals',
+      bySentiment[FeedbackSentiment.neutral],
+    );
   }
 
-  void _writeFeedbackByCategory(
+  static void _writeSentimentGroup(
     StringBuffer buf,
-    ClassifiedFeedback feedback,
+    String label,
+    List<ClassifiedFeedbackItem>? items,
   ) {
-    final items = feedback.items.take(maxFeedbackItems).toList();
+    if (items == null || items.isEmpty) return;
+    buf.writeln('### $label (${items.length})');
+    for (final item in items) {
+      buf.writeln(
+        '- [${item.source}] '
+        '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
+      );
+    }
+    buf.writeln();
+  }
+
+  static void _writeFeedbackByCategory(
+    StringBuffer buf,
+    List<ClassifiedFeedbackItem> items,
+  ) {
     if (items.isEmpty) return;
 
-    final byCategory = <FeedbackCategory, List<ClassifiedFeedbackItem>>{};
-    for (final item in items) {
-      byCategory.putIfAbsent(item.category, () => []).add(item);
-    }
+    final byCategory = items.groupListsBy((i) => i.category);
 
     buf.writeln('## Feedback by Category');
     for (final entry in byCategory.entries) {
       buf.writeln('### ${entry.key.name} (${entry.value.length})');
       for (final item in entry.value) {
         buf.writeln(
-          '- ${item.sentiment.name}: ${_truncate(item.detail, 200)}',
+          '- ${item.sentiment.name}: '
+          '${EvolutionContextBuilder.truncateText(item.detail, 200)}',
         );
       }
       buf.writeln();
@@ -187,16 +195,5 @@ again. The conversation should always be driving toward an approved proposal.
         '- Sessions completed so far: ${sessionNumber - 1}',
       )
       ..writeln();
-  }
-
-  static String _formatDate(DateTime dt) =>
-      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
-      '${dt.day.toString().padLeft(2, '0')}';
-
-  /// Truncate [text] to [maxLength] characters, appending "…" if truncated.
-  static String _truncate(String text, int maxLength) {
-    final singleLine = text.replaceAll('\n', ' ').trim();
-    if (singleLine.length <= maxLength) return singleLine;
-    return '${singleLine.substring(0, min(maxLength, singleLine.length))}…';
   }
 }

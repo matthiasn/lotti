@@ -5,6 +5,7 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -131,6 +132,7 @@ class TemplateEvolutionWorkflow {
   Future<String?> startSession({
     required String templateId,
     EvolutionContext? contextOverride,
+    int? sessionNumberOverride,
   }) async {
     final svc = templateService;
     final sync = syncService;
@@ -190,66 +192,32 @@ class TemplateEvolutionWorkflow {
       final EvolutionContext ctx;
       final int sessionNumber;
 
-      if (contextOverride != null) {
-        // Use the caller-provided context (e.g., from the ritual workflow).
+      if (contextOverride != null && sessionNumberOverride != null) {
+        // Use the caller-provided context and session number (e.g., from the
+        // ritual workflow). No need to gather evolution data.
         ctx = contextOverride;
-        final sessions = await svc.getEvolutionSessions(templateId);
-        sessionNumber = sessions.isNotEmpty
-            ? sessions
-                    .map((s) => s.sessionNumber)
-                    .reduce((a, b) => a > b ? a : b) +
-                1
-            : 1;
+        sessionNumber = sessionNumberOverride;
       } else {
-        // Gather evolution context data.
-        final metrics = await svc.computeMetrics(templateId);
-        final recentVersions =
-            await svc.getVersionHistory(templateId, limit: 5);
-        final reports = await svc.getRecentInstanceReports(templateId);
-        final observations =
-            await svc.getRecentInstanceObservations(templateId);
-        final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
-        final sessions = await svc.getEvolutionSessions(templateId);
+        // Gather all evolution data in parallel.
+        final data = await svc.gatherEvolutionData(templateId);
+        sessionNumber = sessionNumberOverride ?? data.nextSessionNumber;
 
-        // Pre-fetch payload content for observations so the builder can
-        // include the actual observation text (AgentMessageEntity only stores
-        // a ref). Parallelise lookups to avoid sequential DB round-trips.
-        final payloadIds =
-            observations.map((obs) => obs.contentEntryId).whereType<String>();
-        final payloadEntities =
-            await Future.wait(payloadIds.map(svc.repository.getEntity));
-        final observationPayloads = <String, AgentMessagePayloadEntity>{
-          for (final entity
-              in payloadEntities.whereType<AgentMessagePayloadEntity>())
-            entity.id: entity,
-        };
-
-        // Determine delta since last session.
-        final lastSessionDate =
-            sessions.isNotEmpty ? sessions.first.createdAt : null;
-        final changesSince =
-            await svc.countChangesSince(templateId, lastSessionDate);
-
-        // Build the LLM context.
-        ctx = ctxBuilder.build(
-          template: template,
-          currentVersion: currentVersion,
-          recentVersions: recentVersions,
-          instanceReports: reports,
-          instanceObservations: observations,
-          pastNotes: notes,
-          metrics: metrics,
-          changesSinceLastSession: changesSince,
-          observationPayloads: observationPayloads,
-        );
-
-        // Determine session number.
-        sessionNumber = sessions.isNotEmpty
-            ? sessions
-                    .map((s) => s.sessionNumber)
-                    .reduce((a, b) => a > b ? a : b) +
-                1
-            : 1;
+        if (contextOverride != null) {
+          ctx = contextOverride;
+        } else {
+          // Build the LLM context from gathered data.
+          ctx = ctxBuilder.build(
+            template: template,
+            currentVersion: currentVersion,
+            recentVersions: data.recentVersions,
+            instanceReports: data.instanceReports,
+            instanceObservations: data.instanceObservations,
+            pastNotes: data.pastNotes,
+            metrics: data.metrics,
+            changesSinceLastSession: data.changesSinceLastSession,
+            observationPayloads: data.observationPayloads,
+          );
+        }
       }
 
       // Create the session entity, conversation, and send initial message.
@@ -578,7 +546,7 @@ class TemplateEvolutionWorkflow {
       return await svc.createVersion(
         templateId: templateId,
         directives: directives,
-        authoredBy: 'evolution_agent',
+        authoredBy: AgentAuthors.evolutionAgent,
       );
     } catch (e) {
       // Check if the version was actually created despite the error
@@ -586,7 +554,7 @@ class TemplateEvolutionWorkflow {
       final activeVersion = await svc.getActiveVersion(templateId);
       if (activeVersion != null &&
           activeVersion.directives == directives &&
-          activeVersion.authoredBy == 'evolution_agent') {
+          activeVersion.authoredBy == AgentAuthors.evolutionAgent) {
         developer.log(
           'createVersion threw but version was persisted, recovering',
           name: _logTag,

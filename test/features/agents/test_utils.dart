@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -610,5 +611,29 @@ ClassifiedFeedback makeTestClassifiedFeedback({
     windowEnd: windowEnd ?? kAgentTestDate.add(const Duration(days: 7)),
     totalObservationsScanned: totalObservationsScanned,
     totalDecisionsScanned: totalDecisionsScanned,
+  );
+}
+
+// ── Evolution data bundle factory ───────────────────────────────────────────
+
+EvolutionDataBundle makeTestEvolutionDataBundle({
+  TemplatePerformanceMetrics? metrics,
+  List<AgentTemplateVersionEntity>? recentVersions,
+  List<AgentReportEntity>? instanceReports,
+  List<AgentMessageEntity>? instanceObservations,
+  List<EvolutionNoteEntity>? pastNotes,
+  List<EvolutionSessionEntity>? sessions,
+  Map<String, AgentMessagePayloadEntity>? observationPayloads,
+  int changesSinceLastSession = 0,
+}) {
+  return EvolutionDataBundle(
+    metrics: metrics ?? makeTestMetrics(),
+    recentVersions: recentVersions ?? [makeTestTemplateVersion()],
+    instanceReports: instanceReports ?? [],
+    instanceObservations: instanceObservations ?? [],
+    pastNotes: pastNotes ?? [],
+    sessions: sessions ?? [],
+    observationPayloads: observationPayloads ?? {},
+    changesSinceLastSession: changesSinceLastSession,
   );
 }
