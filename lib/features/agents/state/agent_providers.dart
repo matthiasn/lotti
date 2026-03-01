@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -180,6 +181,17 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: onPersistedStateChanged,
   );
+}
+
+/// The scheduled wake manager for time-based agent wakes.
+@Riverpod(keepAlive: true)
+ScheduledWakeManager scheduledWakeManager(Ref ref) {
+  final manager = ScheduledWakeManager(
+    repository: ref.watch(agentRepositoryProvider),
+    orchestrator: ref.watch(wakeOrchestratorProvider),
+  );
+  ref.onDispose(manager.stop);
+  return manager;
 }
 
 /// The high-level agent service.
@@ -757,6 +769,9 @@ Future<void> agentInitialization(Ref ref) async {
 
   // 3. Start the orchestrator on the local update stream.
   await orchestrator.start(updateNotifications.localUpdateStream);
+
+  // 3.5. Start the scheduled wake manager.
+  ref.watch(scheduledWakeManagerProvider).start();
 
   // 4. Wire the sync event processor for cross-device agent data.
   _wireSyncEventProcessor(

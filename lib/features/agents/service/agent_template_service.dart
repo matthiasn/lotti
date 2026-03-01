@@ -28,6 +28,7 @@ class TemplateInUseException implements Exception {
 /// Well-known template IDs for seeded defaults.
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
+const improverTemplateId = 'template-improver-001';
 
 /// High-level service for agent template management.
 ///
@@ -563,8 +564,9 @@ class AgentTemplateService {
   Future<void> seedDefaults() async {
     final laura = await getTemplate(lauraTemplateId);
     final tom = await getTemplate(tomTemplateId);
+    final improver = await getTemplate(improverTemplateId);
 
-    if (laura != null && tom != null) {
+    if (laura != null && tom != null && improver != null) {
       developer.log(
         'Default templates already seeded, skipping',
         name: 'AgentTemplateService',
@@ -598,8 +600,22 @@ class AgentTemplateService {
       );
     }
 
+    if (improver == null) {
+      await createTemplate(
+        templateId: improverTemplateId,
+        displayName: 'Template Improver',
+        kind: AgentTemplateKind.templateImprover,
+        modelId: 'models/gemini-3-flash-preview',
+        directives: 'You are a template improvement agent. You analyze '
+            'feedback from agent instances, identify patterns in user '
+            'decisions, and propose directive improvements during weekly '
+            'one-on-one rituals.',
+        authoredBy: 'system',
+      );
+    }
+
     developer.log(
-      'Seeded default templates (Laura, Tom)',
+      'Seeded default templates (Laura, Tom, Template Improver)',
       name: 'AgentTemplateService',
     );
   }
