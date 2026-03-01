@@ -4700,4 +4700,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version proposée';
+
+  @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Session $sessionNumber sur $totalSessions';
+  }
 }

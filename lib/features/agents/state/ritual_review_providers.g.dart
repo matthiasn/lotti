@@ -10,12 +10,16 @@ part of 'ritual_review_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
 @ProviderFor(pendingRitualReview)
 final pendingRitualReviewProvider = PendingRitualReviewFamily._();
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
 final class PendingRitualReviewProvider extends $FunctionalProvider<
         AsyncValue<AgentDomainEntity?>,
@@ -26,6 +30,8 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
         $FutureProvider<AgentDomainEntity?> {
   /// Returns the most recent active [EvolutionSessionEntity] for a template,
   /// or `null` if there is no active session pending review.
+  ///
+  /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
   PendingRitualReviewProvider._(
       {required PendingRitualReviewFamily super.from,
       required String super.argument})
@@ -74,10 +80,12 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
 }
 
 String _$pendingRitualReviewHash() =>
-    r'11052e3bca9e543937ca5ebbc9925199d8a4e109';
+    r'46a223a6fe523b4df646eb4cebe12603de9eb998';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.
+///
+/// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
 final class PendingRitualReviewFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
@@ -92,6 +100,8 @@ final class PendingRitualReviewFamily extends $Family
 
   /// Returns the most recent active [EvolutionSessionEntity] for a template,
   /// or `null` if there is no active session pending review.
+  ///
+  /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
   PendingRitualReviewProvider call(
     String templateId,
@@ -170,7 +180,7 @@ final class RitualFeedbackProvider extends $FunctionalProvider<
   }
 }
 
-String _$ritualFeedbackHash() => r'369634fcae8f0187162159be9056f6817fa723f5';
+String _$ritualFeedbackHash() => r'd3e42e53d99d0f7d6534e2b8f620bfc37122ed69';
 
 /// Extracts classified feedback for a template's review window.
 ///
@@ -200,62 +210,17 @@ final class RitualFeedbackFamily extends $Family
   String toString() => r'ritualFeedbackProvider';
 }
 
-/// Count of templates with active evolution sessions (for badges).
-///
-/// Uses the single-query [allEvolutionSessionsProvider] to avoid N+1.
-
-@ProviderFor(pendingRitualCount)
-final pendingRitualCountProvider = PendingRitualCountProvider._();
-
-/// Count of templates with active evolution sessions (for badges).
-///
-/// Uses the single-query [allEvolutionSessionsProvider] to avoid N+1.
-
-final class PendingRitualCountProvider
-    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
-    with $FutureModifier<int>, $FutureProvider<int> {
-  /// Count of templates with active evolution sessions (for badges).
-  ///
-  /// Uses the single-query [allEvolutionSessionsProvider] to avoid N+1.
-  PendingRitualCountProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'pendingRitualCountProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
-
-  @override
-  String debugGetCreateSourceHash() => _$pendingRitualCountHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<int> create(Ref ref) {
-    return pendingRitualCount(ref);
-  }
-}
-
-String _$pendingRitualCountHash() =>
-    r'4874b13c2cf17461a8d53499283f7b9c942b622d';
-
-/// List of template IDs with pending rituals.
+/// Set of template IDs with pending rituals.
 
 @ProviderFor(templatesPendingReview)
 final templatesPendingReviewProvider = TemplatesPendingReviewProvider._();
 
-/// List of template IDs with pending rituals.
+/// Set of template IDs with pending rituals.
 
 final class TemplatesPendingReviewProvider extends $FunctionalProvider<
         AsyncValue<Set<String>>, Set<String>, FutureOr<Set<String>>>
     with $FutureModifier<Set<String>>, $FutureProvider<Set<String>> {
-  /// List of template IDs with pending rituals.
+  /// Set of template IDs with pending rituals.
   TemplatesPendingReviewProvider._()
       : super(
           from: null,

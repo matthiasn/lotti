@@ -143,9 +143,11 @@ class _TemplateListTile extends ConsumerWidget {
         ref.watch(activeTemplateVersionProvider(template.id));
     final versionNumber = activeVersionAsync.value
         ?.mapOrNull(agentTemplateVersion: (v) => v.version);
-    final pendingTemplates =
-        ref.watch(templatesPendingReviewProvider).value ?? {};
-    final hasPending = pendingTemplates.contains(template.id);
+    final hasPending = ref.watch(
+      templatesPendingReviewProvider.select(
+        (async) => async.value?.contains(template.id) ?? false,
+      ),
+    );
 
     return ModernBaseCard(
       onTap: () => beamToNamed('/settings/agents/templates/${template.id}'),

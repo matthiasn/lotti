@@ -9,6 +9,10 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  /// Creates a set of fake template IDs with the given size.
+  Set<String> templateIds(int count) =>
+      {for (var i = 0; i < count; i++) 'template-$i'};
+
   Widget buildSubject({
     required int count,
     Widget child = const Text('child-widget'),
@@ -16,7 +20,8 @@ void main() {
     return makeTestableWidgetWithScaffold(
       RitualPendingBadge(child: child),
       overrides: [
-        pendingRitualCountProvider.overrideWith((ref) async => count),
+        templatesPendingReviewProvider
+            .overrideWith((ref) async => templateIds(count)),
       ],
     );
   }

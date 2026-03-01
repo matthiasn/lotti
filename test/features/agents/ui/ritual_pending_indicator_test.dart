@@ -9,11 +9,16 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  /// Creates a set of fake template IDs with the given size.
+  Set<String> templateIds(int count) =>
+      {for (var i = 0; i < count; i++) 'template-$i'};
+
   Widget buildSubject({required int count}) {
     return makeTestableWidgetWithScaffold(
       const RitualPendingIndicator(),
       overrides: [
-        pendingRitualCountProvider.overrideWith((ref) async => count),
+        templatesPendingReviewProvider
+            .overrideWith((ref) async => templateIds(count)),
       ],
     );
   }
@@ -42,9 +47,9 @@ void main() {
           const RitualPendingIndicator(),
           overrides: [
             // A Completer future that never completes keeps loading state.
-            pendingRitualCountProvider.overrideWith(
-              (ref) => Future<int>.error(Exception('never'))
-                  .catchError((_) => 0)
+            templatesPendingReviewProvider.overrideWith(
+              (ref) => Future<Set<String>>.error(Exception('never'))
+                  .catchError((_) => <String>{})
                   .then((_) => throw UnimplementedError()),
             ),
           ],

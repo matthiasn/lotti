@@ -1,13 +1,15 @@
+// Nullable fields are intentional: the AnimationController is only created
+// when count > 0. Using `late` would trigger creation during dispose() for
+// the count == 0 case, crashing with a deactivated widget ancestor lookup.
+// ignore_for_file: use_late_for_private_fields_and_variables
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
-import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart'
-    show WhatsNewIndicator;
 import 'package:lotti/themes/gamey/colors.dart';
 
 /// A pulsing dot indicator that shows when there are pending ritual reviews.
 ///
-/// Follows the [WhatsNewIndicator] pattern with lazy animation initialization.
 /// Uses [GameyColors.primaryPurple] to distinguish from the What's New
 /// indicator which uses `colorScheme.primary`.
 class RitualPendingIndicator extends ConsumerStatefulWidget {
@@ -20,71 +22,72 @@ class RitualPendingIndicator extends ConsumerStatefulWidget {
 
 class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  bool _isAnimationInitialized = false;
+  // Nullable: the controller is only created when count > 0. Using `late`
+  // would trigger creation during dispose() for the count == 0 case,
+  // crashing with a deactivated widget ancestor lookup.
+  AnimationController? _controller;
+  Animation<double>? _animation;
 
   void _ensureAnimationInitialized() {
-    if (_isAnimationInitialized) return;
-    _isAnimationInitialized = true;
+    if (_controller != null) return;
 
-    _controller = AnimationController(
+    final controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
 
+    _controller = controller;
     _animation = Tween<double>(begin: 0.4, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    if (_isAnimationInitialized) {
-      _controller.dispose();
-    }
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final countAsync = ref.watch(pendingRitualCountProvider);
+    final count = ref.watch(
+      templatesPendingReviewProvider
+          .select((async) => async.value?.length ?? 0),
+    );
 
-    return countAsync.when(
-      data: (count) {
-        if (count == 0) {
-          return const SizedBox.shrink();
-        }
+    if (count == 0) {
+      _controller?.stop();
+      return const SizedBox.shrink();
+    }
 
-        _ensureAnimationInitialized();
+    _ensureAnimationInitialized();
+    final controller = _controller!;
+    if (!controller.isAnimating) controller.repeat(reverse: true);
+    final animation = _animation!;
 
-        return AnimatedBuilder(
-          animation: _animation,
-          builder: (context, child) {
-            return Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        return Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: GameyColors.primaryPurple.withAlpha(
+              (animation.value * 255).toInt(),
+            ),
+            boxShadow: [
+              BoxShadow(
                 color: GameyColors.primaryPurple.withAlpha(
-                  (_animation.value * 255).toInt(),
+                  (animation.value * 128).toInt(),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: GameyColors.primaryPurple.withAlpha(
-                      (_animation.value * 128).toInt(),
-                    ),
-                    blurRadius: 6,
-                    spreadRadius: 1,
-                  ),
-                ],
+                blurRadius: 6,
+                spreadRadius: 1,
               ),
-            );
-          },
+            ],
+          ),
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

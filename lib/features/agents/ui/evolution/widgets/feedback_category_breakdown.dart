@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/feedback_helpers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 
 /// Groups feedback items by [FeedbackCategory] using
@@ -67,13 +67,13 @@ class _CategoryGroupState extends State<_CategoryGroup> {
             child: Row(
               children: [
                 Icon(
-                  _categoryIcon(widget.category),
+                  feedbackCategoryIcon(widget.category),
                   size: 18,
                   color: GameyColors.aiCyan,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _categoryLabel(context, widget.category),
+                  feedbackCategoryLabel(context, widget.category),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -113,30 +113,5 @@ class _CategoryGroupState extends State<_CategoryGroup> {
         ],
       ),
     );
-  }
-
-  IconData _categoryIcon(FeedbackCategory category) {
-    return switch (category) {
-      FeedbackCategory.accuracy => Icons.verified_outlined,
-      FeedbackCategory.communication => Icons.chat_outlined,
-      FeedbackCategory.prioritization => Icons.sort_outlined,
-      FeedbackCategory.tooling => Icons.build_outlined,
-      FeedbackCategory.timeliness => Icons.schedule_outlined,
-      FeedbackCategory.general => Icons.info_outlined,
-    };
-  }
-
-  String _categoryLabel(BuildContext context, FeedbackCategory category) {
-    final messages = context.messages;
-    return switch (category) {
-      FeedbackCategory.accuracy => messages.agentFeedbackCategoryAccuracy,
-      FeedbackCategory.communication =>
-        messages.agentFeedbackCategoryCommunication,
-      FeedbackCategory.prioritization =>
-        messages.agentFeedbackCategoryPrioritization,
-      FeedbackCategory.tooling => messages.agentFeedbackCategoryTooling,
-      FeedbackCategory.timeliness => messages.agentFeedbackCategoryTimeliness,
-      FeedbackCategory.general => messages.agentFeedbackCategoryGeneral,
-    };
   }
 }

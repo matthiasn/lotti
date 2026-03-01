@@ -1874,5 +1874,17 @@
   "unlinkTaskTitle": "Verknüpfung aufheben",
   "viewMenuTitle": "Ansicht",
   "whatsNewDoneButton": "Fertig",
-  "whatsNewSkipButton": "Überspringen"
+  "whatsNewSkipButton": "Überspringen",
+  "agentEvolutionVersionProposed": "Version vorgeschlagen",
+  "agentEvolutionSessionProgress": "Sitzung {sessionNumber} von {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -49,63 +49,6 @@ void main() {
     });
   });
 
-  group('pendingRitualCountProvider', () {
-    test('counts distinct templates with active sessions', () async {
-      final session1 = makeTestEvolutionSession(
-        id: 'evo-1',
-        templateId: 'template-A',
-      );
-      final session2 = makeTestEvolutionSession(
-        id: 'evo-2',
-        templateId: 'template-B',
-      );
-      final session3 = makeTestEvolutionSession(
-        id: 'evo-3',
-        templateId: 'template-A',
-        status: EvolutionSessionStatus.completed,
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          allEvolutionSessionsProvider.overrideWith(
-            (ref) async =>
-                [session1, session2, session3].cast<AgentDomainEntity>(),
-          ),
-          pendingRitualCountProvider.overrideWith(
-            (ref) async {
-              final sessions = [session1, session2, session3];
-              final activeTemplateIds = <String>{};
-              for (final session in sessions) {
-                if (session.status == EvolutionSessionStatus.active) {
-                  activeTemplateIds.add(session.templateId);
-                }
-              }
-              return activeTemplateIds.length;
-            },
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final count = await container.read(pendingRitualCountProvider.future);
-      expect(count, 2);
-    });
-
-    test('returns zero when no active sessions', () async {
-      final container = ProviderContainer(
-        overrides: [
-          pendingRitualCountProvider.overrideWith(
-            (ref) async => 0,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final count = await container.read(pendingRitualCountProvider.future);
-      expect(count, 0);
-    });
-  });
-
   group('templatesPendingReviewProvider', () {
     test('returns set of template IDs with active sessions', () async {
       final container = ProviderContainer(
@@ -120,6 +63,39 @@ void main() {
       final result =
           await container.read(templatesPendingReviewProvider.future);
       expect(result, {'template-A'});
+    });
+
+    test('returns distinct template IDs for multiple active sessions',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          templatesPendingReviewProvider.overrideWith(
+            (ref) async => {'template-A', 'template-B'},
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result =
+          await container.read(templatesPendingReviewProvider.future);
+      expect(result, hasLength(2));
+      expect(result, contains('template-A'));
+      expect(result, contains('template-B'));
+    });
+
+    test('returns empty set when no active sessions', () async {
+      final container = ProviderContainer(
+        overrides: [
+          templatesPendingReviewProvider.overrideWith(
+            (ref) async => <String>{},
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result =
+          await container.read(templatesPendingReviewProvider.future);
+      expect(result, isEmpty);
     });
   });
 

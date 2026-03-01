@@ -4562,6 +4562,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version proposed';
+
+  @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Session $sessionNumber of $totalSessions';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
