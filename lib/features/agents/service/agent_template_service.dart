@@ -562,9 +562,11 @@ class AgentTemplateService {
   /// missing. This handles partial-seed scenarios (e.g., Laura exists but Tom
   /// does not).
   Future<void> seedDefaults() async {
-    final laura = await getTemplate(lauraTemplateId);
-    final tom = await getTemplate(tomTemplateId);
-    final improver = await getTemplate(improverTemplateId);
+    final [laura, tom, improver] = await Future.wait([
+      getTemplate(lauraTemplateId),
+      getTemplate(tomTemplateId),
+      getTemplate(improverTemplateId),
+    ]);
 
     if (laura != null && tom != null && improver != null) {
       developer.log(

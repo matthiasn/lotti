@@ -220,6 +220,22 @@ void main() {
         });
       });
 
+      test('throws ArgumentError when recursionDepth is negative', () {
+        expect(
+          () => service.createImproverAgent(
+            targetTemplateId: targetTemplateId,
+            recursionDepth: -1,
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('must be >= 0'),
+            ),
+          ),
+        );
+      });
+
       test('throws StateError when target template not found', () async {
         when(() => mockTemplateService.getTemplate(targetTemplateId))
             .thenAnswer((_) async => null);
@@ -420,6 +436,46 @@ void main() {
         expect(result!.agentId, identity.agentId);
       });
 
+      test('skips stale links and returns first valid agent', () async {
+        final identity = makeIdentity();
+
+        when(
+          () => mockRepository.getLinksTo(
+            targetTemplateId,
+            type: AgentLinkTypes.improverTarget,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.improverTarget(
+              id: 'stale-link',
+              fromId: 'missing-agent',
+              toId: targetTemplateId,
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+            AgentLink.improverTarget(
+              id: 'valid-link',
+              fromId: identity.agentId,
+              toId: targetTemplateId,
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        when(() => mockAgentService.getAgent('missing-agent'))
+            .thenAnswer((_) async => null);
+        when(() => mockAgentService.getAgent(identity.agentId))
+            .thenAnswer((_) async => identity);
+
+        final result = await service.getImproverForTemplate(targetTemplateId);
+
+        expect(result, isNotNull);
+        expect(result!.agentId, identity.agentId);
+      });
+
       test('returns null when no improver link exists', () async {
         when(
           () => mockRepository.getLinksTo(
@@ -475,6 +531,71 @@ void main() {
           final state = makeState(
             slots: const AgentSlots(
               activeTemplateId: 'target-template-001',
+              totalSessionsCompleted: 0,
+            ),
+          );
+
+          when(() => mockRepository.getAgentState(agentId))
+              .thenAnswer((_) async => state);
+
+          await service.scheduleNextRitual(agentId);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final updatedState = captured.first as AgentStateEntity;
+          expect(
+            updatedState.scheduledWakeAt,
+            testDate.add(
+              const Duration(
+                days: ImproverSlotDefaults.defaultFeedbackWindowDays,
+              ),
+            ),
+          );
+        });
+      });
+
+      test('falls back to default when feedbackWindowDays is zero', () async {
+        await withClock(Clock.fixed(testDate), () async {
+          const agentId = 'improver-agent-1';
+          final state = makeState(
+            slots: const AgentSlots(
+              activeTemplateId: 'target-template-001',
+              feedbackWindowDays: 0,
+              totalSessionsCompleted: 0,
+            ),
+          );
+
+          when(() => mockRepository.getAgentState(agentId))
+              .thenAnswer((_) async => state);
+
+          await service.scheduleNextRitual(agentId);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final updatedState = captured.first as AgentStateEntity;
+          expect(
+            updatedState.scheduledWakeAt,
+            testDate.add(
+              const Duration(
+                days: ImproverSlotDefaults.defaultFeedbackWindowDays,
+              ),
+            ),
+          );
+        });
+      });
+
+      test('falls back to default when feedbackWindowDays is negative',
+          () async {
+        await withClock(Clock.fixed(testDate), () async {
+          const agentId = 'improver-agent-1';
+          final state = makeState(
+            slots: const AgentSlots(
+              activeTemplateId: 'target-template-001',
+              feedbackWindowDays: -5,
               totalSessionsCompleted: 0,
             ),
           );

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
@@ -57,11 +58,6 @@ extension ClassifiedFeedbackX on ClassifiedFeedback {
       items.where((i) => i.sentiment == FeedbackSentiment.negative).toList();
 
   /// Group items by category.
-  Map<FeedbackCategory, List<ClassifiedFeedbackItem>> get byCategory {
-    final result = <FeedbackCategory, List<ClassifiedFeedbackItem>>{};
-    for (final item in items) {
-      result.putIfAbsent(item.category, () => []).add(item);
-    }
-    return result;
-  }
+  Map<FeedbackCategory, List<ClassifiedFeedbackItem>> get byCategory =>
+      items.groupListsBy((i) => i.category);
 }

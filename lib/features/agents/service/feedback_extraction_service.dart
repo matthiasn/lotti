@@ -1,9 +1,18 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+
+/// Well-known feedback source identifiers.
+abstract final class FeedbackSources {
+  static const decision = 'decision';
+  static const observation = 'observation';
+  static const metric = 'metric';
+  static const rating = 'rating';
+}
 
 /// Extracts and classifies feedback from agent observations and decisions.
 ///
@@ -29,8 +38,11 @@ class FeedbackExtractionService {
     required DateTime since,
     DateTime? until,
   }) async {
-    final effectiveUntil = until ?? DateTime.now();
+    final effectiveUntil = until ?? clock.now();
     final items = <ClassifiedFeedbackItem>[];
+
+    bool inWindow(DateTime dt) =>
+        !dt.isBefore(since) && !dt.isAfter(effectiveUntil);
 
     // 1. Classify decisions
     final agents = await templateService.getAgentsForTemplate(templateId);
@@ -40,11 +52,7 @@ class FeedbackExtractionService {
         agent.agentId,
         limit: 100,
       );
-      final windowDecisions = decisions.where(
-        (d) =>
-            !d.createdAt.isBefore(since) &&
-            !d.createdAt.isAfter(effectiveUntil),
-      );
+      final windowDecisions = decisions.where((d) => inWindow(d.createdAt));
       totalDecisionsScanned += windowDecisions.length;
 
       for (final decision in windowDecisions) {
@@ -52,15 +60,20 @@ class FeedbackExtractionService {
       }
     }
 
+    // 2–4: Observations, reports, and wake runs are independent — fetch
+    // them concurrently.
+    final results = await Future.wait([
+      templateService.getRecentInstanceObservations(templateId, limit: 100),
+      templateService.getRecentInstanceReports(templateId, limit: 50),
+      agentRepository.getWakeRunsForTemplate(templateId, limit: 200),
+    ]);
+
+    final observations = results[0] as List<AgentMessageEntity>;
+    final reports = results[1] as List<AgentReportEntity>;
+    final wakeRuns = results[2] as List<WakeRunLogData>;
+
     // 2. Classify observations (heuristic)
-    final observations = await templateService.getRecentInstanceObservations(
-      templateId,
-      limit: 100,
-    );
-    final windowObservations = observations.where(
-      (o) =>
-          !o.createdAt.isBefore(since) && !o.createdAt.isAfter(effectiveUntil),
-    );
+    final windowObservations = observations.where((o) => inWindow(o.createdAt));
 
     for (final observation in windowObservations) {
       final classified = _classifyObservation(observation);
@@ -70,14 +83,7 @@ class FeedbackExtractionService {
     }
 
     // 3. Classify reports by confidence
-    final reports = await templateService.getRecentInstanceReports(
-      templateId,
-      limit: 50,
-    );
-    final windowReports = reports.where(
-      (r) =>
-          !r.createdAt.isBefore(since) && !r.createdAt.isAfter(effectiveUntil),
-    );
+    final windowReports = reports.where((r) => inWindow(r.createdAt));
     for (final report in windowReports) {
       final classified = _classifyReport(report);
       if (classified != null) {
@@ -86,14 +92,7 @@ class FeedbackExtractionService {
     }
 
     // 4. Classify wake run ratings
-    final wakeRuns = await agentRepository.getWakeRunsForTemplate(
-      templateId,
-      limit: 200,
-    );
-    final windowRuns = wakeRuns.where(
-      (r) =>
-          !r.createdAt.isBefore(since) && !r.createdAt.isAfter(effectiveUntil),
-    );
+    final windowRuns = wakeRuns.where((r) => inWindow(r.createdAt));
     for (final run in windowRuns) {
       final classified = _classifyWakeRunRating(run);
       if (classified != null) {
@@ -121,7 +120,7 @@ class FeedbackExtractionService {
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
       category: FeedbackCategory.accuracy,
-      source: 'decision',
+      source: FeedbackSources.decision,
       detail: '${decision.verdict.name} change: ${decision.toolName}',
       agentId: decision.agentId,
       sourceEntityId: decision.id,
@@ -144,7 +143,7 @@ class FeedbackExtractionService {
     return ClassifiedFeedbackItem(
       sentiment: FeedbackSentiment.neutral,
       category: FeedbackCategory.general,
-      source: 'observation',
+      source: FeedbackSources.observation,
       detail: 'Observation recorded',
       agentId: observation.agentId,
       sourceEntityId: observation.id,
@@ -165,7 +164,7 @@ class FeedbackExtractionService {
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
       category: FeedbackCategory.accuracy,
-      source: 'metric',
+      source: FeedbackSources.metric,
       detail: 'Report confidence: ${confidence.toStringAsFixed(2)}',
       agentId: report.agentId,
       sourceEntityId: report.id,
@@ -187,7 +186,7 @@ class FeedbackExtractionService {
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
       category: FeedbackCategory.general,
-      source: 'rating',
+      source: FeedbackSources.rating,
       detail: 'Wake run rated ${rating.toStringAsFixed(1)}',
       agentId: wakeRun.agentId,
       confidence: 1,

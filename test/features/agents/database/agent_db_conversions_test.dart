@@ -451,6 +451,54 @@ void main() {
     });
   });
 
+  group('AgentDbConversions — improverTarget link', () {
+    test('toLinkCompanion handles improverTarget link correctly', () {
+      final link = model.AgentLink.improverTarget(
+        id: 'link-it-001',
+        fromId: 'improver-agent-001',
+        toId: 'tpl-target-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      expect(companion.id, const Value('link-it-001'));
+      expect(companion.fromId, const Value('improver-agent-001'));
+      expect(companion.toId, const Value('tpl-target-001'));
+      expect(companion.type, const Value('improver_target'));
+    });
+
+    test('fromLinkRow roundtrips improverTarget link', () {
+      final link = model.AgentLink.improverTarget(
+        id: 'link-it-002',
+        fromId: 'improver-agent-001',
+        toId: 'tpl-target-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-it-002',
+        fromId: 'improver-agent-001',
+        toId: 'tpl-target-001',
+        type: 'improver_target',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+      expect(result, isA<model.ImproverTargetLink>());
+      expect(result.fromId, 'improver-agent-001');
+      expect(result.toId, 'tpl-target-001');
+    });
+  });
+
   group('AgentDbConversions — wakeTokenUsage entity roundtrip', () {
     test('toEntityCompanion produces correct companion', () {
       final entity = AgentDomainEntity.wakeTokenUsage(

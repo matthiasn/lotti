@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -55,6 +56,7 @@ void main() {
 
   /// Stubs agents + decisions for decision classification tests.
   void stubDecisions(List<ChangeDecisionEntity> decisions) {
+    stubEmptyData();
     final agent = makeTestIdentity();
     when(() => mockTemplateService.getAgentsForTemplate(any()))
         .thenAnswer((_) async => [agent]);
@@ -64,24 +66,6 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => decisions);
-    when(
-      () => mockTemplateService.getRecentInstanceObservations(
-        any(),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => <AgentMessageEntity>[]);
-    when(
-      () => mockTemplateService.getRecentInstanceReports(
-        any(),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => <AgentReportEntity>[]);
-    when(
-      () => mockRepo.getWakeRunsForTemplate(
-        any(),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer((_) async => []);
   }
 
   group('extract', () {
@@ -101,6 +85,21 @@ void main() {
       expect(result.windowEnd, windowEnd);
     });
 
+    test('uses clock.now() when until is not provided', () async {
+      final now = DateTime(2024, 3, 20, 12, 30);
+      stubEmptyData();
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => service.extract(
+          templateId: kTestTemplateId,
+          since: windowStart,
+        ),
+      );
+
+      expect(result.windowEnd, now);
+    });
+
     test('classifies confirmed decisions as positive', () async {
       final decision = makeTestChangeDecision(
         createdAt: DateTime(2024, 3, 15),
@@ -116,7 +115,7 @@ void main() {
       expect(result.items, hasLength(1));
       expect(result.items.first.sentiment, FeedbackSentiment.positive);
       expect(result.items.first.category, FeedbackCategory.accuracy);
-      expect(result.items.first.source, 'decision');
+      expect(result.items.first.source, FeedbackSources.decision);
       expect(result.items.first.confidence, 1.0);
       expect(result.totalDecisionsScanned, 1);
     });
@@ -180,7 +179,7 @@ void main() {
 
       expect(result.items, hasLength(1));
       expect(result.items.first.sentiment, FeedbackSentiment.positive);
-      expect(result.items.first.source, 'metric');
+      expect(result.items.first.source, FeedbackSources.metric);
       expect(result.items.first.confidence, 0.9);
     });
 
@@ -301,7 +300,7 @@ void main() {
 
       expect(result.items, hasLength(1));
       expect(result.items.first.sentiment, FeedbackSentiment.neutral);
-      expect(result.items.first.source, 'observation');
+      expect(result.items.first.source, FeedbackSources.observation);
       expect(result.items.first.category, FeedbackCategory.general);
       expect(result.totalObservationsScanned, 1);
     });
@@ -327,7 +326,7 @@ void main() {
 
       expect(result.items, hasLength(1));
       expect(result.items.first.sentiment, FeedbackSentiment.positive);
-      expect(result.items.first.source, 'rating');
+      expect(result.items.first.source, FeedbackSources.rating);
       expect(result.items.first.detail, contains('5.0'));
     });
 
