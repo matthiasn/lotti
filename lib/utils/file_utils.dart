@@ -142,6 +142,16 @@ Future<Directory> findDocumentsDirectory() async {
   }
 }
 
+/// Normalizes a relative path into a canonical attachment index key.
+///
+/// Coerces backslashes to forward slashes, strips leading separators,
+/// and ensures a single leading '/'.
+String normalizeAttachmentIndexKey(String rawPath) {
+  final normalized = rawPath.replaceAll(r'\', '/');
+  final trimmed = normalized.replaceFirst(RegExp('^/+'), '');
+  return '/$trimmed';
+}
+
 /// Path segment for agent entity files.
 const agentEntitiesSegment = '/agent_entities/';
 

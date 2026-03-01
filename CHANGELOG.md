@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   statuses, and titles are now filtered at proposal time instead of cluttering
   the confirmation UI. The agent receives corrective feedback so it adjusts its
   reasoning.
+- Cross-device sync of confirmed/rejected change sets now works reliably.
+  Agent entity payloads are fetched from the attachment descriptor before
+  falling back to disk, preventing stale reads when the file download hasn't
+  completed. Agent links are kept inline in text events for immediate
+  availability.
 
 ## [0.9.888] - 2026-02-28
 ### Added

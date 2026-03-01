@@ -244,6 +244,7 @@ Future<void> registerSingletons() async {
       attachmentIndex: attachmentIndex,
       loggingService: loggingService,
     ),
+    attachmentIndex: attachmentIndex,
     sequenceLogService: syncSequenceLogService,
     // backfillResponseHandler will be injected later to avoid circular dependency
   );

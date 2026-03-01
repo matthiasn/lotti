@@ -1549,7 +1549,7 @@ void main() {
   });
 
   group('enrichAndUploadAgentPayloadForTesting', () {
-    test('uploads entity file and returns descriptor-only message', () async {
+    test('uploads entity file and strips inline payload', () async {
       when(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1702,7 +1702,7 @@ void main() {
       expect(result, isNull);
     });
 
-    test('uploads link file and returns descriptor-only message', () async {
+    test('uploads link file and preserves inline payload', () async {
       when(
         () => room.sendFileEvent(
           any<MatrixFile>(),
@@ -1737,7 +1737,7 @@ void main() {
 
       expect(result, isA<SyncAgentLink>());
       final linkResult = result! as SyncAgentLink;
-      expect(linkResult.agentLink, isNull);
+      expect(linkResult.agentLink, isNotNull);
       expect(linkResult.jsonPath, relativePath);
       expect(linkResult.status, SyncEntryStatus.update);
     });
@@ -1832,7 +1832,7 @@ void main() {
         ),
       ).called(1);
 
-      // Text event was sent as descriptor-only (agentEntity nulled)
+      // Text event strips inline entity (file-only for large payloads)
       final decoded = json.decode(
         utf8.decode(base64.decode(capturedPayload)),
       ) as Map<String, dynamic>;
@@ -1978,7 +1978,7 @@ void main() {
       final decoded = json.decode(
         utf8.decode(base64.decode(capturedPayload)),
       ) as Map<String, dynamic>;
-      expect(decoded['agentLink'], isNull);
+      expect(decoded['agentLink'], isNotNull);
       expect(decoded['jsonPath'], '/agent_links/legacy-link.json');
     });
   });

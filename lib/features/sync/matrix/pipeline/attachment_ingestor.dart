@@ -199,10 +199,8 @@ class AttachmentIngestor {
     }
   }
 
-  String _normalizeKey(String relativePath) {
-    final trimmed = relativePath.replaceFirst(RegExp(r'^[\\/]+'), '');
-    return '/${trimmed.replaceAll(r'\\', '/')}';
-  }
+  String _normalizeKey(String relativePath) =>
+      normalizeAttachmentIndexKey(relativePath);
 
   /// Downloads and saves an attachment.
   ///

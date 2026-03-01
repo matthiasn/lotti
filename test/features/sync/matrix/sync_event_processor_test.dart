@@ -1786,6 +1786,231 @@ void main() {
         ).called(1);
       });
 
+      group('descriptor-based resolution (AttachmentIndex)', () {
+        late AttachmentIndex attachmentIndex;
+        late SyncEventProcessor processorWithIndex;
+        late MockEvent descriptorEvent;
+
+        setUp(() {
+          attachmentIndex = AttachmentIndex(logging: loggingService);
+          processorWithIndex = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            attachmentIndex: attachmentIndex,
+          );
+          processorWithIndex.agentRepository = mockAgentRepo;
+
+          descriptorEvent = MockEvent();
+          when(() => descriptorEvent.eventId).thenReturn('desc-event-id');
+          when(() => descriptorEvent.attachmentMimetype)
+              .thenReturn('application/json');
+          when(() => descriptorEvent.content).thenReturn({
+            'relativePath': '/agent_entities/agent-desc.json',
+          });
+        });
+
+        test('fetches agent entity from descriptor when file is missing',
+            () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-desc',
+            agentId: 'agent-desc',
+            kind: 'task_agent',
+            displayName: 'Descriptor Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          final bytes = Uint8List.fromList(
+            utf8.encode(jsonEncode(entity.toJson())),
+          );
+          when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(bytes: bytes, name: 'e.json'));
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+          verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
+        });
+
+        test('fetches agent link from descriptor when file is missing',
+            () async {
+          final link = AgentLink.basic(
+            id: 'link-desc',
+            fromId: 'agent-1',
+            toId: 'state-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          final bytes = Uint8List.fromList(
+            utf8.encode(jsonEncode(link.toJson())),
+          );
+
+          final linkDescriptorEvent = MockEvent();
+          when(() => linkDescriptorEvent.eventId)
+              .thenReturn('link-desc-event-id');
+          when(() => linkDescriptorEvent.attachmentMimetype)
+              .thenReturn('application/json');
+          when(() => linkDescriptorEvent.content).thenReturn({
+            'relativePath': '/agent_links/link-desc.json',
+          });
+          when(linkDescriptorEvent.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(bytes: bytes, name: 'l.json'));
+
+          attachmentIndex.record(linkDescriptorEvent);
+
+          const message = SyncMessage.agentLink(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_links/link-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          verify(linkDescriptorEvent.downloadAndDecryptAttachment).called(1);
+        });
+
+        test('throws when descriptor download fails (no stale fallback)',
+            () async {
+          when(descriptorEvent.downloadAndDecryptAttachment)
+              .thenThrow(Exception('download failed'));
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await expectLater(
+            () => processorWithIndex.process(
+              event: event,
+              journalDb: journalDb,
+            ),
+            throwsA(isA<FileSystemException>()),
+          );
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        });
+
+        test('throws when descriptor returns empty bytes', () async {
+          when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(bytes: Uint8List(0), name: 'e.json'),
+          );
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await expectLater(
+            () => processorWithIndex.process(
+              event: event,
+              journalDb: journalDb,
+            ),
+            throwsA(isA<FileSystemException>()),
+          );
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        });
+
+        test('falls back to disk when no descriptor in index', () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-disk-fb',
+            agentId: 'agent-disk-fb',
+            kind: 'task_agent',
+            displayName: 'Disk Fallback',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          const relativePath = '/agent_entities/agent-disk-fb.json';
+          final normalized = stripLeadingSlashes(relativePath);
+          final file = File(path.join(tempDir.path, normalized));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(jsonEncode(entity.toJson()));
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: relativePath,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        });
+
+        test('skips agent entity with corrupt descriptor JSON', () async {
+          final bytes = Uint8List.fromList(utf8.encode('not valid json'));
+          when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(bytes: bytes, name: 'e.json'));
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          // Descriptor fetched successfully but JSON parse fails →
+          // permanent skip (returns null), not a retry.
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'AGENT_SYNC',
+              subDomain: 'resolve.agentEntity.parseFetched',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
       test('skips agent link with corrupt JSON file', () async {
         const relativePath = '/agent_links/corrupt.json';
         final normalized = stripLeadingSlashes(relativePath);
