@@ -44,7 +44,7 @@ throttle deadline could be mistaken for a scheduled ritual, and vice versa.
 | Field | Owner | Purpose |
 |-------|-------|---------|
 | `nextWakeAt` | `WakeOrchestrator` | Subscription throttle deadline — "earliest this agent may wake from a subscription trigger." Cleared after the throttle expires. |
-| `scheduledWakeAt` | `ScheduledWakeManager` | Ritual schedule — "when this agent's next scheduled ritual should fire." Updated after each ritual to `lastRitualAt + interval`. |
+| `scheduledWakeAt` | `ScheduledWakeManager` | Ritual schedule — "when this agent's next scheduled ritual should fire." Updated after each ritual to `lastOneOnOneAt + interval`. |
 
 Both fields coexist on the same `AgentStateEntity`. Task agents (which have no scheduled
 rituals) will have `scheduledWakeAt = null`. Improver agents will have both fields
@@ -73,7 +73,7 @@ flowchart TD
     WO --> EXEC
 
     subgraph "Post-Ritual"
-        UPDATE["Update AgentStateEntity\nscheduledWakeAt = lastRitual + interval"]
+        UPDATE["Update AgentStateEntity\nscheduledWakeAt = lastOneOnOneAt + interval"]
     end
 
     EXEC --> UPDATE

@@ -74,45 +74,41 @@ governed by a template that can be improved by a meta-improver.
 | **No scheduled wakes** — only subscription-based + manual | Cannot trigger weekly ritual automatically | Medium |
 | **No improver agent identity** — evolution is a workflow, not a persistent agent | No durable state, no agent-level reports, no sleep/wake cycle | Medium |
 | **No feedback classification** — observations are untyped free text | Cannot distinguish praise from complaints from corrections | Medium |
-| **No cross-agent observation aggregation** — evolution sees metrics + capped reports | Cannot systematically extract patterns across all instances | Low |
+| **No cross-agent observation aggregation** — evolution sees metrics + capped reports | Cannot systematically extract patterns across instances | Low |
 | **No ritual protocol** — evolution session is ad-hoc, not a structured ceremony | No pre-ritual data gathering, no post-ritual follow-up tracking | Medium |
 | **No recursive depth control** — no meta-improver concept | Cannot improve the improver's own template | Low |
 | **No notification/reminder** — user isn't prompted when ritual is due | Weekly cadence not enforced | Low |
 
 ### 2.3 Architecture gap visualization
 
+#### Current state
+
 ```mermaid
 flowchart TB
-    subgraph "Current State"
-        direction TB
-        U1["User"] -->|"manual trigger"| EW["TemplateEvolutionWorkflow"]
-        EW -->|"reads"| ECB["EvolutionContextBuilder"]
-        ECB -->|"queries"| AR["Agent Reports"]
-        ECB -->|"queries"| AO["Agent Observations"]
-        ECB -->|"queries"| PM["Performance Metrics"]
-        EW -->|"proposes"| TV["New Template Version"]
-    end
+    U1["User"] -->|"manual trigger"| EW["TemplateEvolutionWorkflow"]
+    EW -->|"reads"| ECB["EvolutionContextBuilder"]
+    ECB -->|"queries"| AR["Agent Reports"]
+    ECB -->|"queries"| AO["Agent Observations"]
+    ECB -->|"queries"| PM["Performance Metrics"]
+    EW -->|"proposes"| TV["New Template Version"]
+```
 
-    subgraph "Target State"
-        direction TB
-        SCHED["Scheduled Wake\n(weekly cron)"] -->|"triggers"| IA["Improver Agent\n(persistent identity)"]
-        IA -->|"pre-ritual"| FP["Feedback Pipeline\n(classify + aggregate)"]
-        FP -->|"reads"| AR2["Agent Reports"]
-        FP -->|"reads"| AO2["Agent Observations"]
-        FP -->|"reads"| DH["Decision History"]
-        FP -->|"reads"| UR["User Ratings"]
-        IA -->|"conducts"| RITUAL["One-on-One Ritual\n(structured ceremony)"]
-        RITUAL -->|"produces"| TV2["New Template Version"]
-        RITUAL -->|"records"| EN["Evolution Notes\n(institutional memory)"]
-        RITUAL -->|"updates"| IS["Improver State\n(persistent)"]
-        META["Meta-Improver"] -.->|"improves"| IA
-    end
+#### Target state
 
-    style SCHED fill:#f9f,stroke:#333,stroke-width:2px
-    style IA fill:#bbf,stroke:#333,stroke-width:2px
-    style FP fill:#fbb,stroke:#333,stroke-width:2px
-    style RITUAL fill:#bfb,stroke:#333,stroke-width:2px
-    style META fill:#ff9,stroke:#333,stroke-width:2px
+```mermaid
+flowchart TB
+    SCHED["Scheduled Wake\n(weekly cron)"] -->|"triggers"| IA["Improver Agent\n(persistent identity)"]
+    USER["User"] -->|"manual trigger"| IA
+    IA -->|"pre-ritual"| FP["Feedback Pipeline\n(classify + aggregate)"]
+    FP -->|"reads"| AR2["Agent Reports"]
+    FP -->|"reads"| AO2["Agent Observations"]
+    FP -->|"reads"| DH["Decision History"]
+    FP -->|"reads"| UR["User Ratings"]
+    IA -->|"conducts"| RITUAL["One-on-One Ritual\n(structured ceremony)"]
+    RITUAL -->|"produces"| TV2["New Template Version"]
+    RITUAL -->|"records"| EN["Evolution Notes\n(institutional memory)"]
+    RITUAL -->|"updates"| IS["Improver State\n(persistent)"]
+    META["Meta-Improver"] -.->|"improves"| IA
 ```
 
 ---
@@ -150,7 +146,6 @@ flowchart TD
         T1["Task 1"]
         T2["Task 2"]
         TN["Task N"]
-        JE["Journal Entries\n(user observations, venting)"]
     end
 
     subgraph "Wake Infrastructure"
@@ -185,17 +180,14 @@ flowchart TD
     FB -->|"classified from"| TA2
     FB -->|"classified from"| TAN
 
-    %% Improver reads user journal
-    IT -->|"scans for feedback"| JE
-
     %% Improver produces evolution
     IT -->|"creates"| ES
     IT -->|"records"| EN
     IT -->|"proposes"| TV
 
-    style IT fill:#bbf,stroke:#333,stroke-width:2px
-    style SW fill:#f9f,stroke:#333,stroke-width:2px
-    style FB fill:#fbb,stroke:#333,stroke-width:2px
+    style IT fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+    style SW fill:#f9f,stroke:#333,stroke-width:2px,color:#000
+    style FB fill:#fbb,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### 3.2 Interaction sequence — complete one-on-one cycle
@@ -207,7 +199,6 @@ sequenceDiagram
     participant IA as ImproverAgent
     participant FP as FeedbackPipeline
     participant DB as AgentRepository
-    participant JDB as JournalDb
     participant LLM as InferenceProvider
     participant User as User (async)
 
@@ -223,7 +214,7 @@ sequenceDiagram
     FP->>DB: getMessagesByKind(observation) for each agent
     FP->>DB: getRecentDecisions() for each agent
     FP->>DB: getLatestReport() for each agent
-    FP->>JDB: queryTaggedEntries(feedbackTags, dateRange)
+    FP->>DB: getWakeRunsByTemplate(user_rating only)
     FP-->>IA: ClassifiedFeedback(positive, negative, corrections, patterns)
 
     Note over IA: Phase 2 — Ritual execution
@@ -264,8 +255,9 @@ The improver agent is not a special case — it is a standard `AgentIdentityEnti
 `kind: 'templateImprover'` that follows the same wake/sleep lifecycle as task agents.
 The key differences are:
 
-1. **Wake trigger**: scheduled (cron-like) instead of subscription-based.
-2. **Scope**: operates on a template and all its instances, not a single journal task.
+1. **Wake trigger**: scheduled (cron-like) or manual, instead of subscription-based.
+2. **Scope**: operates on a template and its instances (incrementally — fetches
+   observations since `lastFeedbackScanAt`, not a full rescan every time).
 3. **Tools**: evolution-focused (propose_directives, record_note, classify_feedback)
    instead of task-focused (set_title, set_status, etc.).
 
@@ -296,6 +288,8 @@ classDiagram
         +DateTime? lastFeedbackScanAt
         +int feedbackWindowDays
         +int totalSessionsCompleted
+        +int recursionDepth
+        +int ritualContextTokenBudget
     }
 
     class ImproverReport {
@@ -318,6 +312,8 @@ classDiagram
 | `lastFeedbackScanAt` | `DateTime?` | Delta cutoff for incremental feedback extraction |
 | `feedbackWindowDays` | `int` | How far back to look for feedback (default: 7) |
 | `totalSessionsCompleted` | `int` | Lifetime counter for institutional memory continuity |
+| `recursionDepth` | `int` | Self-improvement depth level (0 = task agent, 1 = template improver, 2 = meta-improver). See ADR 0012 for depth policy. |
+| `ritualContextTokenBudget` | `int` | Token budget for the ritual prompt context window (default: 10,000). Increase for improvers with many instances or verbose feedback. |
 
 ### 4.3 Persistence & searchability
 
@@ -408,12 +404,11 @@ flowchart LR
     AO --> FP["Feedback\nPipeline"]
     CD --> FP
     AR --> FP
-    JE --> FP
     WR --> FP
 
     FP --> CF["ClassifiedFeedback"]
 
-    style FP fill:#fbb,stroke:#333,stroke-width:2px
+    style FP fill:#fbb,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### 5.2 Feedback classification model
@@ -452,7 +447,7 @@ quadrantChart
 
 ### 5.3 Extraction algorithm
 
-```
+```text
 function extractFeedback(templateId, sinceDate):
     agents = getAgentsByTemplate(templateId)
     feedback = []
@@ -500,20 +495,17 @@ function extractFeedback(templateId, sinceDate):
     return ClassifiedFeedback.aggregate(feedback)
 ```
 
-### 5.4 Two classification strategies
+### 5.4 Classification approach
 
-**Strategy A — LLM-based classification (recommended for Phase 1)**:
-- Feed raw observation text + decision history to a fast model (e.g., Gemini Flash)
+**Structured signals** (decisions, ratings) are classified deterministically by
+the extraction algorithm above — rejections → negative, confirmations → positive,
+rating thresholds, etc. No LLM needed for these.
+
+**Unstructured observation text** is classified via an LLM call to a fast model
+(e.g., Gemini Flash):
 - Prompt: "Classify each item as positive/negative/neutral and assign a category"
-- Advantage: handles nuance, sarcasm, implicit feedback
+- Handles nuance, sarcasm, implicit feedback that rules cannot capture
 - Cost: one extra LLM call per ritual (no strict token budget — weekly frequency keeps cost negligible)
-
-**Strategy B — Rule-based classification (future optimization)**:
-- Rejection → negative, confirmation → positive
-- Keyword matching on observation text
-- Rating thresholds (< 0.3 = negative, > 0.7 = positive)
-- Advantage: zero cost, deterministic
-- Limitation: misses nuance
 
 ---
 
@@ -547,7 +539,7 @@ flowchart TD
     WQ --> DRAIN
     DRAIN --> EXEC
 
-    style TIMER fill:#f9f,stroke:#333
+    style TIMER fill:#f9f,stroke:#333,color:#000
 ```
 
 **Key decisions**:
@@ -608,28 +600,30 @@ flowchart TD
         P4D --> P3
     end
 
-    style P1 fill:#e1f5fe,stroke:#0288d1
-    style P2 fill:#f3e5f5,stroke:#7b1fa2
-    style P3 fill:#e8f5e9,stroke:#388e3c
-    style P4 fill:#fff3e0,stroke:#f57c00
+    style P1 fill:#e1f5fe,stroke:#0288d1,color:#000
+    style P2 fill:#f3e5f5,stroke:#7b1fa2,color:#000
+    style P3 fill:#e8f5e9,stroke:#388e3c,color:#000
+    style P4 fill:#fff3e0,stroke:#f57c00,color:#000
 ```
 
 ### 6.3 Ritual context assembly
 
 The ritual context extends `EvolutionContextBuilder` with classified feedback:
 
-```
-Ritual context window (~10k tokens):
+The ritual context window size is **configurable per improver template** via the
+`ritualContextTokenBudget` slot (default: 10,000 tokens). Improvers that oversee
+many instances or need richer feedback context can increase this.
 
 Note: This budget governs the *ritual prompt* sent to the evolution model,
-NOT the classification step. Classification (section 5.4) has no strict
-token limit — it runs separately via a fast model and can consume full
-observation text. The classified *output* is then summarized into the
-~2000-token slot below for the ritual prompt.
+NOT the classification step. Classification (section 5.4) runs separately
+and has no token limit.
+
+```text
+Example layout at default 10k budget:
 
 ├── System prompt scaffold:          ~600 tokens (fixed)
 ├── Current directives:              ~500 tokens
-├── Classified feedback summary:     ~2000 tokens (NEW — condensed from
+├── Classified feedback summary:     ~2000 tokens (condensed from
 │   │                                 full classification output)
 │   ├── Negative feedback (grouped): ~800
 │   ├── Positive feedback (grouped): ~600
@@ -642,37 +636,63 @@ observation text. The classified *output* is then summarized into the
 ├── Evolution notes (last 20):       ~800 tokens
 ├── Version history (last 3):        ~200 tokens
 └── Delta summary:                   ~100 tokens
+
+Sections scale proportionally when budget is increased. The feedback
+summary and instance reports sections benefit most from additional budget.
 ```
 
-### 6.4 Ritual system prompt
+### 6.4 Ritual system prompt and user interaction
 
-The improver agent receives a specialized system prompt during the ritual:
+The ritual is an **interactive session** between the improver agent and the user,
+rendered via **GenUI**. The agent presents its analysis, asks questions, and
+collects user input before proposing changes. This is not a fire-and-forget
+autonomous run — the user participates in the one-on-one.
 
-```
+**GenUI interaction flow:**
+
+1. The agent presents a **feedback summary card** (positive/negative highlights,
+   patterns detected) and asks the user to confirm or correct its assessment.
+2. The agent asks **targeted questions** about ambiguous signals — e.g., "You
+   rejected 3 priority changes this week. Is the agent over-prioritizing, or
+   were those specific cases wrong?" These are rendered as GenUI question cards
+   with selectable options.
+3. Based on user responses, the agent proposes directive changes via a GenUI
+   **proposal card** (same change set UI used by task agents).
+4. The user reviews and confirms/rejects individual proposals.
+
+The improver agent receives this system prompt:
+
+```markdown
 You are the Template Evolution Agent — a continuous improvement specialist
 responsible for the "{templateName}" agent template.
 
 ## Your Role
-You conduct weekly one-on-one reviews of this template's performance.
-Your goal is to identify patterns in how the template's agents are performing
-and propose incremental directive improvements that address observed issues.
+You conduct weekly one-on-one reviews of this template's performance
+together with the user. This is an interactive conversation — ask questions,
+present findings, and collect user input before proposing changes.
 
 ## Ritual Structure
-1. **Acknowledge feedback**: Start by summarizing what went well and what didn't.
+1. **Present feedback summary**: Summarize what went well and what didn't.
    Be specific — reference actual feedback items, not generic observations.
-2. **Identify patterns**: Look for recurring themes across agents and time.
+   Ask the user if your assessment matches their experience.
+2. **Ask targeted questions**: When feedback is ambiguous or conflicting,
+   ask the user for clarification. Present concrete options, not open-ended
+   questions. Use GenUI cards for structured input.
+3. **Identify patterns**: Look for recurring themes across agents and time.
    A single complaint is anecdotal; three similar complaints are a pattern.
-3. **Record notes**: Use `record_evolution_note` to persist your key observations
-   for next week's session.
-4. **Propose changes**: Use `propose_directives` with surgical, targeted
-   improvements. Avoid rewriting directives that are working well.
+4. **Record notes**: Use `record_evolution_note` to persist your key
+   observations and user responses for next week's session.
+5. **Propose changes**: Use `propose_directives` with surgical, targeted
+   improvements informed by the conversation. Avoid rewriting directives
+   that are working well.
 
 ## Rules
+- This is a conversation, not a monologue. Ask before assuming.
 - Be concise and actionable. No filler analysis.
 - Preserve the agent's core identity and personality.
 - Prioritize fixes for negative feedback over polishing what works.
 - Record at least one `hypothesis` note for testing in the next cycle.
-- When uncertain, propose a small conservative change over a large risky one.
+- When uncertain, ask the user rather than guessing.
 - Never remove capabilities that are confirmed working.
 ```
 
@@ -709,9 +729,9 @@ flowchart TD
 
     L2 -.->|"template is"| POLICY
 
-    style L1 fill:#bbf,stroke:#333,stroke-width:2px
-    style L2 fill:#ff9,stroke:#333,stroke-width:2px
-    style POLICY fill:#fcc,stroke:#c00,stroke-width:2px
+    style L1 fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+    style L2 fill:#ff9,stroke:#333,stroke-width:2px,color:#000
+    style POLICY fill:#fcc,stroke:#c00,stroke-width:2px,color:#000
 ```
 
 ### 7.2 Recursion depth policy
@@ -753,7 +773,7 @@ flowchart LR
 
     MI -->|"proposes"| ITV["Improved Improver\nTemplate Directives"]
 
-    style MI fill:#ff9,stroke:#333,stroke-width:2px
+    style MI fill:#ff9,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ---
@@ -811,7 +831,7 @@ class ClassifiedFeedbackItem with _$ClassifiedFeedbackItem {
     required String source,     // 'observation' | 'decision' | 'metric' | 'rating'
     required String detail,     // Human-readable description
     required String agentId,    // Source agent
-    String? entryId,            // Source journal entry if applicable
+    String? sourceEntityId,     // Source agent-domain entity (message, decision, etc.)
     double? confidence,         // Classification confidence (0-1)
   }) = _ClassifiedFeedbackItem;
 }
@@ -850,6 +870,7 @@ abstract class ImproverSlotKeys {
   static const feedbackWindowDays = 'feedbackWindowDays';
   static const totalSessionsCompleted = 'totalSessionsCompleted';
   static const recursionDepth = 'recursionDepth';
+  static const ritualContextTokenBudget = 'ritualContextTokenBudget';
 }
 ```
 
@@ -861,14 +882,12 @@ abstract class ImproverSlotKeys {
 class FeedbackExtractionService {
   FeedbackExtractionService({
     required this.agentRepository,
-    required this.journalDb,
   });
 
   final AgentRepository agentRepository;
-  final JournalDb journalDb;
 
-  /// Extract classified feedback for all agents assigned to [templateId]
-  /// within the time window [since] to [until].
+  /// Extract classified feedback for agents assigned to [templateId],
+  /// incrementally from [since] (typically `lastFeedbackScanAt`) to [until].
   Future<ClassifiedFeedback> extract({
     required String templateId,
     required DateTime since,
@@ -995,7 +1014,7 @@ gantt
 
 ### 9.3 Phase 2: Feedback Extraction Pipeline
 
-**Scope**: Extract, classify, and aggregate feedback from all agent data sources.
+**Scope**: Extract, classify, and aggregate feedback incrementally (delta since last scan).
 
 **Deliverables**:
 1. `FeedbackSentiment` and `FeedbackCategory` enums
@@ -1152,32 +1171,26 @@ meaningful recursive improvement.
 
 ---
 
-## 12. Open Questions
+## 12. Resolved Questions
 
-1. **Notification mechanism**: Should the "ritual ready for review" notification be
-   an in-app badge, a system notification, or both? This depends on platform capabilities
-   and user preferences.
+1. **Notification mechanism**: In-app badge only. No OS-level system notifications
+   for ritual readiness.
 
-2. **Feedback from journal entries**: The current design intentionally restricts all
-   feedback sources to the **agent domain** (`agent.sqlite`). The improver never reads
-   human journal data from `db.sqlite`. If journal-based feedback is desired in the
-   future (e.g., user journal entries tagged with agent feedback), it would cross the
-   journal/agent domain boundary and require an explicit opt-in gate per Core Principle 1
-   ("Human data is sacred"). This is deferred, not forgotten — it should be revisited
-   once the agent-domain-only pipeline proves its value.
+2. **Feedback from journal entries**: Agent-domain only (`agent.sqlite`). The improver
+   never reads human journal data from `db.sqlite`. If journal-based feedback is
+   desired in the future, it would require an explicit opt-in gate per Core Principle 1
+   ("Human data is sacred"). Revisit once the agent-domain-only pipeline proves its
+   value.
 
-3. **Multi-template improver**: Should one improver agent handle multiple templates,
-   or is it strictly 1:1 (one improver per template)? 1:1 is simpler and avoids
-   cross-template contamination, but 1:N enables cross-template pattern recognition.
+3. **Multi-template improver**: Strictly 1:1 — one improver per template. Simpler,
+   avoids cross-template contamination.
 
-4. **Ritual frequency**: Is weekly the right cadence for all templates? Low-activity
-   templates might benefit from bi-weekly or monthly rituals. Consider making the
-   `feedbackWindowDays` slot configurable per improver.
+4. **Ritual frequency**: Configurable per template via the `feedbackWindowDays` slot.
+   Default is weekly (7 days), but can be set to bi-weekly, monthly, etc.
 
-5. **Autonomous vs. interactive ritual**: Should the first ritual be fully autonomous
-   (agent proposes, user reviews async) or should it require the user to initiate?
-   The product direction doc (§3.8) favors "bounded autonomy" — autonomous with
-   approval gates.
+5. **Autonomous vs. interactive ritual**: Interactive. The ritual is a one-on-one
+   conversation rendered via GenUI — the agent presents findings, asks targeted
+   questions, and collects user input before proposing changes (see section 6.4).
 
 ---
 
@@ -1255,8 +1268,7 @@ flowchart TD
         OBS["Agent Observations\n(AgentMessageEntity\nkind: observation)"]
         DEC["Decision History\n(ChangeDecisionEntity\nverdict: confirmed|rejected)"]
         REP["Agent Reports\n(AgentReportEntity\nconfidence: 0-1)"]
-        WRL["Wake Run Log\n(status, duration,\nuser_rating)"]
-        RAT["Rating Entries\n(RatingData\ndimensions: [...])"]
+        WRL["Wake Run Log\n(user_rating, duration)"]
     end
 
     subgraph "Extraction"
@@ -1286,7 +1298,6 @@ flowchart TD
     DEC --> EXT
     REP --> EXT
     WRL --> EXT
-    RAT --> EXT
 
     EXT --> RULE
     EXT --> LLM_C
@@ -1307,9 +1318,9 @@ flowchart TD
     CTX --> NOTES
     CTX --> PROP
 
-    style EXT fill:#fbb,stroke:#333,stroke-width:2px
-    style AGG fill:#bbf,stroke:#333,stroke-width:2px
-    style CTX fill:#bfb,stroke:#333,stroke-width:2px
+    style EXT fill:#fbb,stroke:#333,stroke-width:2px,color:#000
+    style AGG fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+    style CTX fill:#bfb,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ## Appendix C: Weekly Rhythm Visualization

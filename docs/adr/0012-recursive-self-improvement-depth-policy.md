@@ -27,7 +27,7 @@ Without a policy, this recursion is unbounded. An unbounded chain risks:
 1. **Fixed recursion depth cap of 2**:
    - Level 0: Task agents — improved weekly by Level 1
    - Level 1: Template improver — improved monthly by Level 2
-   - Level 2: Meta-improver — **human-curated only** (no automated improvement)
+   - Level 2: Meta-improver — its own template is **human-curated only** (no Level 3 agent)
 
 2. **Enforcement mechanism**: each improver agent stores `recursionDepth` in its
    `AgentSlots`. The `ImproverAgentService.create()` method:
@@ -67,9 +67,9 @@ flowchart TD
         MT -->|"governs"| L2
     end
 
-    style HUMAN fill:#fcc,stroke:#c00,stroke-width:2px
-    style L1 fill:#bbf,stroke:#333
-    style L2 fill:#ff9,stroke:#333
+    style HUMAN fill:#fcc,stroke:#c00,stroke-width:2px,color:#000
+    style L1 fill:#bbf,stroke:#333,color:#000
+    style L2 fill:#ff9,stroke:#333,color:#000
 ```
 
 ## Consequences
