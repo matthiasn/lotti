@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -123,16 +124,26 @@ class ImproverAgentService {
       await syncService.upsertEntity(updatedState);
 
       // Create improverTarget link: agent -> target template.
-      await syncService.upsertLink(
-        AgentLink.improverTarget(
-          id: _uuid.v4(),
-          fromId: identity.agentId,
-          toId: targetTemplateId,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      );
+      // Uses insertLinkExclusive to enforce the DB-level unique constraint
+      // (idx_unique_improver_per_template) and close the TOCTOU gap between
+      // the getImproverForTemplate check above and this insert.
+      try {
+        await syncService.insertLinkExclusive(
+          AgentLink.improverTarget(
+            id: _uuid.v4(),
+            fromId: identity.agentId,
+            toId: targetTemplateId,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        );
+      } on DuplicateInsertException {
+        throw StateError(
+          'An improver agent already exists for template '
+          '$targetTemplateId (concurrent creation detected)',
+        );
+      }
 
       // Create templateAssignment link: improver template -> agent.
       await syncService.upsertLink(

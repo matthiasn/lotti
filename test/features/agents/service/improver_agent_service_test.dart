@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -83,6 +84,8 @@ void main() {
     // Stub syncService write methods.
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockSyncService.insertLinkExclusive(any()))
+        .thenAnswer((_) async {});
 
     service = ImproverAgentService(
       agentService: mockAgentService,
@@ -157,16 +160,22 @@ void main() {
           expect(updatedState.slots.totalSessionsCompleted, 0);
           expect(updatedState.scheduledWakeAt, isNotNull);
 
-          // Verify both links were created.
+          // Verify improverTarget link via insertLinkExclusive.
+          final capturedExclusive = verify(
+            () => mockSyncService.insertLinkExclusive(captureAny()),
+          ).captured;
+          expect(capturedExclusive, hasLength(1));
+
+          final improverTargetLink =
+              capturedExclusive.whereType<ImproverTargetLink>().first;
+          expect(improverTargetLink.fromId, identity.agentId);
+          expect(improverTargetLink.toId, targetTemplateId);
+
+          // Verify templateAssignment link via upsertLink.
           final capturedLinks = verify(
             () => mockSyncService.upsertLink(captureAny()),
           ).captured;
-          expect(capturedLinks, hasLength(2));
-
-          final improverTargetLink =
-              capturedLinks.whereType<ImproverTargetLink>().first;
-          expect(improverTargetLink.fromId, identity.agentId);
-          expect(improverTargetLink.toId, targetTemplateId);
+          expect(capturedLinks, hasLength(1));
 
           final templateAssignmentLink =
               capturedLinks.whereType<TemplateAssignmentLink>().first;
@@ -296,6 +305,57 @@ void main() {
             ),
           ),
         );
+      });
+
+      test(
+          'throws StateError on concurrent creation '
+          '(DB unique constraint)', () async {
+        await withClock(Clock.fixed(testDate), () async {
+          final identity = makeIdentity();
+          final state = makeState();
+
+          when(() => mockTemplateService.getTemplate(targetTemplateId))
+              .thenAnswer((_) async => makeTargetTemplate());
+          // No improver found in initial check (TOCTOU gap).
+          when(
+            () => mockRepository.getLinksTo(
+              targetTemplateId,
+              type: AgentLinkTypes.improverTarget,
+            ),
+          ).thenAnswer((_) async => []);
+          when(() => mockTemplateService.getTemplate(improverTemplateId))
+              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockAgentService.createAgent(
+              kind: AgentKinds.templateImprover,
+              displayName: 'Laura Improver',
+              config: const AgentConfig(),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(() => mockRepository.getAgentState(identity.agentId))
+              .thenAnswer((_) async => state);
+
+          // Simulate concurrent creation: insertLinkExclusive throws.
+          when(() => mockSyncService.insertLinkExclusive(any())).thenThrow(
+            const DuplicateInsertException(
+              'agent_links',
+              'target-template-001',
+            ),
+          );
+
+          expect(
+            () => service.createImproverAgent(
+              targetTemplateId: targetTemplateId,
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('concurrent creation detected'),
+              ),
+            ),
+          );
+        });
       });
 
       test('throws StateError when improver template not found', () async {

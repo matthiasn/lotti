@@ -35,6 +35,7 @@ CREATE TABLE agent_links (
 CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
 CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
 CREATE INDEX idx_agent_links_type ON agent_links(type);
+CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
   run_key TEXT NOT NULL PRIMARY KEY,

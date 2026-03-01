@@ -109,6 +109,29 @@ class AgentSyncService {
     }
   }
 
+  /// Insert an [AgentLink] exclusively — throws a
+  /// `DuplicateInsertException` if a unique constraint is violated (e.g. the
+  /// partial unique index on `improver_target` links). On success, enqueues a
+  /// sync message unless [fromSync] is `true`.
+  Future<void> insertLinkExclusive(
+    AgentLink link, {
+    bool fromSync = false,
+  }) async {
+    await _repository.insertLinkExclusive(link);
+    if (!fromSync) {
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+      final txCtx = _currentTxContext;
+      if (txCtx != null) {
+        txCtx.pendingMessages.add(message);
+      } else {
+        await _outboxService.enqueueMessage(message);
+      }
+    }
+  }
+
   /// Run [action] inside a database transaction with post-commit outbox flush.
   ///
   /// All [upsertEntity] and [upsertLink] calls within [action] buffer their

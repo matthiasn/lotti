@@ -433,6 +433,21 @@ class AgentRepository {
     await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
   }
 
+  /// Insert a link exclusively — throws [DuplicateInsertException] if a
+  /// unique constraint is violated (e.g. the partial unique index on
+  /// `improver_target` links).
+  Future<void> insertLinkExclusive(model.AgentLink link) async {
+    final companion = AgentDbConversions.toLinkCompanion(link);
+    try {
+      await _db.into(_db.agentLinks).insert(companion);
+    } on SqliteException catch (e) {
+      if (e.resultCode == 19) {
+        throw DuplicateInsertException('agent_links', link.toId, e);
+      }
+      rethrow;
+    }
+  }
+
   /// Fetch non-deleted links originating from [fromId], optionally filtered
   /// by [type] (the string stored in the `agent_links.type` column, e.g.
   /// `'agent_state'`).

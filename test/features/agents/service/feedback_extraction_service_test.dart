@@ -100,6 +100,23 @@ void main() {
       expect(result.windowEnd, now);
     });
 
+    test('throws ArgumentError when until is before since', () {
+      expect(
+        () => service.extract(
+          templateId: kTestTemplateId,
+          since: windowEnd,
+          until: windowStart,
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('must not be before since'),
+          ),
+        ),
+      );
+    });
+
     test('classifies confirmed decisions as positive', () async {
       final decision = makeTestChangeDecision(
         createdAt: DateTime(2024, 3, 15),

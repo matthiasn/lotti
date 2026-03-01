@@ -39,6 +39,11 @@ class FeedbackExtractionService {
     DateTime? until,
   }) async {
     final effectiveUntil = until ?? clock.now();
+    if (effectiveUntil.isBefore(since)) {
+      throw ArgumentError(
+        'until ($effectiveUntil) must not be before since ($since)',
+      );
+    }
     final items = <ClassifiedFeedbackItem>[];
 
     bool inWindow(DateTime dt) =>
