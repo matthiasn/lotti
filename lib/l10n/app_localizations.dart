@@ -552,6 +552,12 @@ abstract class AppLocalizations {
   /// **'Failed to start evolution session'**
   String get agentEvolutionSessionError;
 
+  /// No description provided for @agentEvolutionSessionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Session {sessionNumber} of {totalSessions}'**
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions);
+
   /// No description provided for @agentEvolutionSessionStarting.
   ///
   /// In en, this message translates to:
@@ -587,6 +593,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feedback'**
   String get agentEvolutionTimelineFeedbackLabel;
+
+  /// No description provided for @agentEvolutionVersionProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Version proposed'**
+  String get agentEvolutionVersionProposed;
 
   /// No description provided for @agentFeedbackCategoryAccuracy.
   ///
@@ -8388,18 +8400,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @agentEvolutionVersionProposed.
-  ///
-  /// In en, this message translates to:
-  /// **'Version proposed'**
-  String get agentEvolutionVersionProposed;
-
-  /// No description provided for @agentEvolutionSessionProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Session {sessionNumber} of {totalSessions}'**
-  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions);
 }
 
 class _AppLocalizationsDelegate

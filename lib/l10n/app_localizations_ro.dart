@@ -252,6 +252,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sesiunea de evoluție nu a putut fi pornită';
 
   @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Sesiunea $sessionNumber din $totalSessions';
+  }
+
+  @override
   String get agentEvolutionSessionStarting =>
       'Se pornește sesiunea de evoluție...';
 
@@ -271,6 +276,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Versiune propusă';
 
   @override
   String get agentFeedbackCategoryAccuracy => 'Acuratețe';
@@ -4648,12 +4656,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get agentEvolutionVersionProposed => 'Versiune propusă';
-
-  @override
-  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
-    return 'Sesiunea $sessionNumber din $totalSessions';
-  }
 }

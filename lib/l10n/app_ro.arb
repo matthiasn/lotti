@@ -1886,17 +1886,5 @@
   "unlinkTaskTitle": "Dezleagă sarcina",
   "viewMenuTitle": "Vizualizare",
   "whatsNewDoneButton": "Gata",
-  "whatsNewSkipButton": "Omite",
-  "agentEvolutionVersionProposed": "Versiune propusă",
-  "agentEvolutionSessionProgress": "Sesiunea {sessionNumber} din {totalSessions}",
-  "@agentEvolutionSessionProgress": {
-    "placeholders": {
-      "sessionNumber": {
-        "type": "int"
-      },
-      "totalSessions": {
-        "type": "int"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Omite"
 }

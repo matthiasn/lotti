@@ -234,35 +234,44 @@ class FeedbackExtractionService {
     if (agents.isEmpty) return [];
 
     // Resolve each agent's target template ID (the template it improves).
-    final targetTemplateIds = <String>{};
-    for (final agent in agents) {
-      final state = await agentRepository.getAgentState(agent.agentId);
-      final targetId = state?.slots.activeTemplateId;
-      if (targetId != null) {
-        targetTemplateIds.add(targetId);
-      }
-    }
+    final states = await Future.wait(
+      agents.map((agent) => agentRepository.getAgentState(agent.agentId)),
+    );
+    final targetTemplateIds = states
+        .map((state) => state?.slots.activeTemplateId)
+        .whereType<String>()
+        .toSet();
     if (targetTemplateIds.isEmpty) return [];
+
+    // Query evolution sessions and versions for all target templates in
+    // parallel.
+    final results = await Future.wait(
+      targetTemplateIds.map((targetId) async {
+        final (sessions, versions) = await (
+          templateService.getEvolutionSessions(targetId, limit: 50),
+          templateService.getVersionHistory(targetId),
+        ).wait;
+        return (
+          targetId: targetId,
+          sessions: sessions,
+          versions: versions,
+        );
+      }),
+    );
 
     final items = <ClassifiedFeedbackItem>[];
 
-    // Query evolution sessions for each target template within the window.
-    for (final targetId in targetTemplateIds) {
-      final sessions = await templateService.getEvolutionSessions(
-        targetId,
-        limit: 50,
-      );
-      final windowSessions = sessions.where(
+    for (final result in results) {
+      final windowSessions = result.sessions.where(
         (s) => _isInWindow(s.createdAt, since, until),
       );
 
       for (final session in windowSessions) {
-        items.add(_classifyEvolutionSession(session, targetId));
+        items.add(_classifyEvolutionSession(session, result.targetId));
       }
 
       // Directive churn detection: count template versions created in window.
-      final versions = await templateService.getVersionHistory(targetId);
-      final windowVersions = versions.where(
+      final windowVersions = result.versions.where(
         (v) => _isInWindow(v.createdAt, since, until),
       );
       final versionCount = windowVersions.length;
@@ -273,7 +282,7 @@ class FeedbackExtractionService {
             category: FeedbackCategory.general,
             source: FeedbackSources.directiveChurn,
             detail: 'Excessive directive churn: $versionCount versions '
-                'created for template $targetId in feedback window '
+                'created for template ${result.targetId} in feedback window '
                 '(threshold: '
                 '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
             agentId: templateId,

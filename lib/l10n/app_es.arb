@@ -1886,17 +1886,5 @@
   "unlinkTaskTitle": "Desvincular tarea",
   "viewMenuTitle": "Vista",
   "whatsNewDoneButton": "Listo",
-  "whatsNewSkipButton": "Omitir",
-  "agentEvolutionVersionProposed": "Versión propuesta",
-  "agentEvolutionSessionProgress": "Sesión {sessionNumber} de {totalSessions}",
-  "@agentEvolutionSessionProgress": {
-    "placeholders": {
-      "sessionNumber": {
-        "type": "int"
-      },
-      "totalSessions": {
-        "type": "int"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Omitir"
 }
