@@ -515,6 +515,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             VectorClock? vectorClock,
             String? taskId,
             String? rejectionReason,
+            String? humanSummary,
             DateTime? deletedAt)?
         changeDecision,
     TResult Function(
@@ -700,6 +701,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.humanSummary,
             _that.deletedAt);
       case WakeTokenUsageEntity() when wakeTokenUsage != null:
         return wakeTokenUsage(
@@ -899,6 +901,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             VectorClock? vectorClock,
             String? taskId,
             String? rejectionReason,
+            String? humanSummary,
             DateTime? deletedAt)
         changeDecision,
     required TResult Function(
@@ -1083,6 +1086,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.humanSummary,
             _that.deletedAt);
       case WakeTokenUsageEntity():
         return wakeTokenUsage(
@@ -1275,6 +1279,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             VectorClock? vectorClock,
             String? taskId,
             String? rejectionReason,
+            String? humanSummary,
             DateTime? deletedAt)?
         changeDecision,
     TResult? Function(
@@ -1459,6 +1464,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.vectorClock,
             _that.taskId,
             _that.rejectionReason,
+            _that.humanSummary,
             _that.deletedAt);
       case WakeTokenUsageEntity() when wakeTokenUsage != null:
         return wakeTokenUsage(
@@ -3911,6 +3917,7 @@ class ChangeDecisionEntity implements AgentDomainEntity {
       required this.vectorClock,
       this.taskId,
       this.rejectionReason,
+      this.humanSummary,
       this.deletedAt,
       final String? $type})
       : $type = $type ?? 'changeDecision';
@@ -3930,6 +3937,11 @@ class ChangeDecisionEntity implements AgentDomainEntity {
   final VectorClock? vectorClock;
   final String? taskId;
   final String? rejectionReason;
+
+  /// Human-readable summary of the change item (e.g., 'Check off: "Buy
+  /// milk"'). Stored at decision time so the agent can see *what* was
+  /// confirmed or rejected, not just the tool name.
+  final String? humanSummary;
   @override
   final DateTime? deletedAt;
 
@@ -3973,6 +3985,8 @@ class ChangeDecisionEntity implements AgentDomainEntity {
             (identical(other.taskId, taskId) || other.taskId == taskId) &&
             (identical(other.rejectionReason, rejectionReason) ||
                 other.rejectionReason == rejectionReason) &&
+            (identical(other.humanSummary, humanSummary) ||
+                other.humanSummary == humanSummary) &&
             (identical(other.deletedAt, deletedAt) ||
                 other.deletedAt == deletedAt));
   }
@@ -3991,11 +4005,12 @@ class ChangeDecisionEntity implements AgentDomainEntity {
       vectorClock,
       taskId,
       rejectionReason,
+      humanSummary,
       deletedAt);
 
   @override
   String toString() {
-    return 'AgentDomainEntity.changeDecision(id: $id, agentId: $agentId, changeSetId: $changeSetId, itemIndex: $itemIndex, toolName: $toolName, verdict: $verdict, createdAt: $createdAt, vectorClock: $vectorClock, taskId: $taskId, rejectionReason: $rejectionReason, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.changeDecision(id: $id, agentId: $agentId, changeSetId: $changeSetId, itemIndex: $itemIndex, toolName: $toolName, verdict: $verdict, createdAt: $createdAt, vectorClock: $vectorClock, taskId: $taskId, rejectionReason: $rejectionReason, humanSummary: $humanSummary, deletedAt: $deletedAt)';
   }
 }
 
@@ -4018,6 +4033,7 @@ abstract mixin class $ChangeDecisionEntityCopyWith<$Res>
       VectorClock? vectorClock,
       String? taskId,
       String? rejectionReason,
+      String? humanSummary,
       DateTime? deletedAt});
 }
 
@@ -4044,6 +4060,7 @@ class _$ChangeDecisionEntityCopyWithImpl<$Res>
     Object? vectorClock = freezed,
     Object? taskId = freezed,
     Object? rejectionReason = freezed,
+    Object? humanSummary = freezed,
     Object? deletedAt = freezed,
   }) {
     return _then(ChangeDecisionEntity(
@@ -4086,6 +4103,10 @@ class _$ChangeDecisionEntityCopyWithImpl<$Res>
       rejectionReason: freezed == rejectionReason
           ? _self.rejectionReason
           : rejectionReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      humanSummary: freezed == humanSummary
+          ? _self.humanSummary
+          : humanSummary // ignore: cast_nullable_to_non_nullable
               as String?,
       deletedAt: freezed == deletedAt
           ? _self.deletedAt

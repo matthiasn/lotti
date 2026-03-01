@@ -82,7 +82,7 @@ final class PendingChangeSetsProvider extends $FunctionalProvider<
   }
 }
 
-String _$pendingChangeSetsHash() => r'dd6bb4fde81b742c3f2736fd38ebe63fcf1c9db9';
+String _$pendingChangeSetsHash() => r'd6d7b1b642fb76948e8529af64e0c57c6728e034';
 
 /// Fetches pending (and partially resolved) change sets for a given task.
 ///

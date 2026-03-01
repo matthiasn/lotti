@@ -539,6 +539,7 @@ ChangeDecisionEntity _$ChangeDecisionEntityFromJson(
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       taskId: json['taskId'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
+      humanSummary: json['humanSummary'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -558,6 +559,7 @@ Map<String, dynamic> _$ChangeDecisionEntityToJson(
       'vectorClock': instance.vectorClock,
       'taskId': instance.taskId,
       'rejectionReason': instance.rejectionReason,
+      'humanSummary': instance.humanSummary,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

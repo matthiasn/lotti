@@ -29,4 +29,13 @@ abstract class ChangeItem with _$ChangeItem {
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>
       _$ChangeItemFromJson(json);
+
+  static const _deepEquals = DeepCollectionEquality();
+
+  /// Structural fingerprint based on `toolName` and `args`.
+  ///
+  /// Ignores `status` and `humanSummary` so that two items proposing the
+  /// same mutation are considered equal regardless of presentation.
+  static String fingerprint(ChangeItem item) =>
+      '${item.toolName}:${_deepEquals.hash(item.args)}';
 }

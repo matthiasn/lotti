@@ -1,4 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -31,7 +33,49 @@ Future<List<AgentDomainEntity>> pendingChangeSets(
   ref.watch(agentUpdateStreamProvider(agent.agentId));
 
   final repo = ref.watch(agentRepositoryProvider);
-  return repo.getPendingChangeSets(agent.agentId, taskId: taskId);
+  final sets = await repo.getPendingChangeSets(agent.agentId, taskId: taskId);
+  return _deduplicateChangeSets(sets);
+}
+
+/// Deduplicates change sets that have identical pending-item fingerprints.
+///
+/// When two wake cycles race, they may produce genuinely duplicate
+/// [ChangeSetEntity] records in the DB. This collapses them at the
+/// provider level by fingerprinting each set's pending items (toolName +
+/// args) and keeping only the newest set per fingerprint.
+List<AgentDomainEntity> _deduplicateChangeSets(
+  List<AgentDomainEntity> sets,
+) {
+  if (sets.length <= 1) return sets;
+
+  final seen = <String, AgentDomainEntity>{};
+
+  for (final entity in sets) {
+    if (entity is! ChangeSetEntity) {
+      seen[entity.id] = entity;
+      continue;
+    }
+
+    final fingerprint = entity.items
+        .where((i) => i.status == ChangeItemStatus.pending)
+        .map(ChangeItem.fingerprint)
+        .toList()
+      ..sort();
+
+    // Sets with no pending items are fully resolved — keep each one
+    // individually (keyed by entity ID) to avoid collapsing unrelated sets.
+    final key = fingerprint.isEmpty ? entity.id : fingerprint.join('|');
+
+    final existing = seen[key];
+    if (existing == null) {
+      seen[key] = entity;
+    } else if (existing is ChangeSetEntity &&
+        entity.createdAt.isAfter(existing.createdAt)) {
+      seen[key] = entity;
+    }
+  }
+
+  return seen.values.toList();
 }
 
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.

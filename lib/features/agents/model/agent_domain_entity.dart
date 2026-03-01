@@ -233,6 +233,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     String? taskId,
     String? rejectionReason,
+
+    /// Human-readable summary of the change item (e.g., 'Check off: "Buy
+    /// milk"'). Stored at decision time so the agent can see *what* was
+    /// confirmed or rejected, not just the tool name.
+    String? humanSummary,
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 

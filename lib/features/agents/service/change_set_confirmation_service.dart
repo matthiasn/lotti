@@ -82,6 +82,7 @@ class ChangeSetConfirmationService {
       itemIndex: itemIndex,
       toolName: item.toolName,
       verdict: ChangeDecisionVerdict.confirmed,
+      humanSummary: item.humanSummary,
     );
     await _updateChangeSetItemStatus(
       current,
@@ -155,6 +156,7 @@ class ChangeSetConfirmationService {
       toolName: item.toolName,
       verdict: ChangeDecisionVerdict.rejected,
       rejectionReason: reason,
+      humanSummary: item.humanSummary,
     );
 
     // 2. Update the change set item status and overall status.
@@ -209,6 +211,7 @@ class ChangeSetConfirmationService {
     required String toolName,
     required ChangeDecisionVerdict verdict,
     String? rejectionReason,
+    String? humanSummary,
   }) async {
     final decision = AgentDomainEntity.changeDecision(
       id: _uuid.v4(),
@@ -219,6 +222,7 @@ class ChangeSetConfirmationService {
       verdict: verdict,
       taskId: changeSet.taskId,
       rejectionReason: rejectionReason,
+      humanSummary: humanSummary,
       createdAt: clock.now(),
       vectorClock: const VectorClock({}),
     );
