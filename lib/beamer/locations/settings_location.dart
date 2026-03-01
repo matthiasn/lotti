@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
@@ -75,6 +76,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
         '/settings/agents',
         '/settings/agents/templates/create',
         '/settings/agents/templates/:templateId',
+        '/settings/agents/templates/:templateId/review',
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
@@ -339,6 +341,19 @@ class SettingsLocation extends BeamLocation<BeamState> {
           ),
           child: AgentTemplateDetailPage(
             templateId: state.pathParameters['templateId'],
+          ),
+        ),
+
+      if (pathContains('agents/templates') &&
+          pathContainsKey('templateId') &&
+          pathContains('/review'))
+        BeamPage(
+          key: ValueKey(
+            'settings-agents-templates-review-'
+            '${state.pathParameters['templateId']}',
+          ),
+          child: EvolutionReviewPage(
+            templateId: state.pathParameters['templateId']!,
           ),
         )
       else if (pathContains('agents/instances') && pathContainsKey('agentId'))

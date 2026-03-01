@@ -18,6 +18,9 @@ Catalog buildEvolutionCatalog() => Catalog(
         evolutionNoteConfirmationItem,
         metricsSummaryItem,
         versionComparisonItem,
+        feedbackClassificationItem,
+        feedbackCategoryBreakdownItem,
+        sessionProgressItem,
       ],
       catalogId: evolutionCatalogId,
     );
@@ -72,6 +75,75 @@ final _versionComparisonSchema = S.object(
     'beforeDirectives',
     'afterDirectives',
   ],
+);
+
+final _feedbackClassificationSchema = S.object(
+  properties: {
+    'items': S.list(
+      items: S.object(
+        properties: {
+          'sentiment': S.string(
+            description: 'Sentiment: positive, negative, or neutral',
+            enumValues: ['positive', 'negative', 'neutral'],
+          ),
+          'category': S.string(
+            description: 'Feedback category',
+            enumValues: [
+              'accuracy',
+              'communication',
+              'prioritization',
+              'tooling',
+              'timeliness',
+              'general',
+            ],
+          ),
+          'source': S.string(description: 'Signal source'),
+          'detail': S.string(description: 'Detail text'),
+        },
+        required: ['sentiment', 'category', 'source', 'detail'],
+      ),
+      description: 'List of classified feedback items',
+    ),
+    'positiveCount': S.integer(description: 'Number of positive signals'),
+    'negativeCount': S.integer(description: 'Number of negative signals'),
+    'neutralCount': S.integer(description: 'Number of neutral signals'),
+  },
+  required: ['items', 'positiveCount', 'negativeCount', 'neutralCount'],
+);
+
+final _feedbackCategoryBreakdownSchema = S.object(
+  properties: {
+    'categories': S.list(
+      items: S.object(
+        properties: {
+          'name': S.string(description: 'Category name'),
+          'count': S.integer(description: 'Total items in this category'),
+          'positiveCount':
+              S.integer(description: 'Positive items in this category'),
+          'negativeCount':
+              S.integer(description: 'Negative items in this category'),
+        },
+        required: ['name', 'count'],
+      ),
+      description: 'Category breakdown entries',
+    ),
+  },
+  required: ['categories'],
+);
+
+final _sessionProgressSchema = S.object(
+  properties: {
+    'sessionNumber': S.integer(description: 'Current session number'),
+    'totalSessions': S.integer(description: 'Total sessions so far'),
+    'feedbackCount': S.integer(description: 'Number of feedback items'),
+    'positiveCount': S.integer(description: 'Positive feedback count'),
+    'negativeCount': S.integer(description: 'Negative feedback count'),
+    'status': S.string(
+      description: 'Session status',
+      enumValues: ['active', 'completed', 'abandoned'],
+    ),
+  },
+  required: ['sessionNumber', 'totalSessions', 'feedbackCount', 'status'],
 );
 
 // ── Catalog Items ───────────────────────────────────────────────────────────
@@ -430,6 +502,222 @@ final versionComparisonItem = CatalogItem(
   },
 );
 
+/// Inline grouped feedback classification card.
+final feedbackClassificationItem = CatalogItem(
+  name: 'FeedbackClassification',
+  dataSchema: _feedbackClassificationSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data as Map<String, Object?>;
+    final items = (json['items'] as List?)?.cast<Map<String, Object?>>() ?? [];
+    final positiveCount = (json['positiveCount'] as num?)?.toInt() ?? 0;
+    final negativeCount = (json['negativeCount'] as num?)?.toInt() ?? 0;
+    final neutralCount = (json['neutralCount'] as num?)?.toInt() ?? 0;
+    final context = itemContext.buildContext;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.surfaceDarkElevated),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.analytics_outlined,
+                  size: 18,
+                  color: GameyColors.aiCyan,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.messages.agentFeedbackClassificationTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                if (negativeCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewNegativeSignals,
+                    negativeCount,
+                    GameyColors.primaryRed,
+                  ),
+                if (positiveCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewPositiveSignals,
+                    positiveCount,
+                    GameyColors.primaryGreen,
+                  ),
+                if (neutralCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewNeutralSignals,
+                    neutralCount,
+                    GameyColors.primaryOrange,
+                  ),
+              ],
+            ),
+            if (items.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...items.take(5).map(
+                    (item) => _feedbackLine(
+                      detail: item['detail'] as String? ?? '',
+                      sentiment: item['sentiment'] as String? ?? 'neutral',
+                    ),
+                  ),
+              if (items.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    context.messages.agentFeedbackItemCount(items.length - 5),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Category distribution visualization card.
+final feedbackCategoryBreakdownItem = CatalogItem(
+  name: 'FeedbackCategoryBreakdown',
+  dataSchema: _feedbackCategoryBreakdownSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data as Map<String, Object?>;
+    final categories =
+        (json['categories'] as List?)?.cast<Map<String, Object?>>() ?? [];
+    final context = itemContext.buildContext;
+
+    final totalCount = categories.fold<int>(
+      0,
+      (sum, c) => sum + ((c['count'] as num?)?.toInt() ?? 0),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.surfaceDarkElevated),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.category_outlined,
+                  size: 18,
+                  color: GameyColors.aiCyan,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.messages.agentFeedbackCategoryBreakdownTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...categories.map(
+              (c) => _categoryBar(
+                name: c['name'] as String? ?? '',
+                count: (c['count'] as num?)?.toInt() ?? 0,
+                positiveCount: (c['positiveCount'] as num?)?.toInt() ?? 0,
+                negativeCount: (c['negativeCount'] as num?)?.toInt() ?? 0,
+                totalCount: totalCount,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Compact session progress status card.
+final sessionProgressItem = CatalogItem(
+  name: 'SessionProgress',
+  dataSchema: _sessionProgressSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data as Map<String, Object?>;
+    final sessionNumber = (json['sessionNumber'] as num?)?.toInt() ?? 0;
+    final totalSessions = (json['totalSessions'] as num?)?.toInt() ?? 0;
+    final feedbackCount = (json['feedbackCount'] as num?)?.toInt() ?? 0;
+    final positiveCount = (json['positiveCount'] as num?)?.toInt() ?? 0;
+    final negativeCount = (json['negativeCount'] as num?)?.toInt() ?? 0;
+    final status = json['status'] as String? ?? 'active';
+    final context = itemContext.buildContext;
+
+    final statusColor = switch (status) {
+      'completed' => GameyColors.primaryGreen,
+      'abandoned' => GameyColors.primaryRed,
+      _ => GameyColors.primaryBlue,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(statusColor),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.loop, size: 20, color: statusColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.messages.agentSessionProgressTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Session $sessionNumber of $totalSessions',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                _metricChip('Feedback', '$feedbackCount'),
+                if (positiveCount > 0) _metricChip('+', '$positiveCount'),
+                if (negativeCount > 0) _metricChip('-', '$negativeCount'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
 // ── Private helpers ─────────────────────────────────────────────────────────
 
 Widget _sectionLabel(BuildContext context, String text) {
@@ -529,4 +817,127 @@ IconData _noteKindIcon(String kind) {
     'pattern' => Icons.pattern,
     _ => Icons.note,
   };
+}
+
+Widget _sentimentChip(String label, int count, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: color.withValues(alpha: 0.3)),
+    ),
+    child: Text(
+      '$count $label',
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+Widget _feedbackLine({required String detail, required String sentiment}) {
+  final color = switch (sentiment) {
+    'negative' => GameyColors.primaryRed,
+    'positive' => GameyColors.primaryGreen,
+    _ => GameyColors.primaryOrange,
+  };
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _categoryBar({
+  required String name,
+  required int count,
+  required int positiveCount,
+  required int negativeCount,
+  required int totalCount,
+}) {
+  final fraction = totalCount > 0 ? count / totalCount : 0.0;
+  final neutralCount = count - positiveCount - negativeCount;
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            Text(
+              '$count',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 6,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: fraction,
+              child: Row(
+                children: [
+                  if (negativeCount > 0)
+                    Expanded(
+                      flex: negativeCount,
+                      child: Container(color: GameyColors.primaryRed),
+                    ),
+                  if (positiveCount > 0)
+                    Expanded(
+                      flex: positiveCount,
+                      child: Container(color: GameyColors.primaryGreen),
+                    ),
+                  if (neutralCount > 0)
+                    Expanded(
+                      flex: neutralCount,
+                      child: Container(color: GameyColors.primaryOrange),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

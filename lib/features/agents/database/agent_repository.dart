@@ -435,9 +435,8 @@ class AgentRepository {
     required DateTime since,
     int limit = 500,
   }) async {
-    final rows = await _db
-        .getRecentDecisionsByTemplate(templateId, since, limit)
-        .get();
+    final rows =
+        await _db.getRecentDecisionsByTemplate(templateId, since, limit).get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeDecisionEntity>()

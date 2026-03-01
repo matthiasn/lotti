@@ -372,6 +372,12 @@ abstract class AppLocalizations {
   /// **'Unexpected entity type.'**
   String get agentDetailUnexpectedType;
 
+  /// No description provided for @agentEvolutionApprovalRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval Rate'**
+  String get agentEvolutionApprovalRate;
+
   /// No description provided for @agentEvolutionChartMttrTrend.
   ///
   /// In en, this message translates to:
@@ -414,6 +420,12 @@ abstract class AppLocalizations {
   /// **'Performance'**
   String get agentEvolutionDashboardTitle;
 
+  /// No description provided for @agentEvolutionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution History'**
+  String get agentEvolutionHistoryTitle;
+
   /// No description provided for @agentEvolutionMetricActive.
   ///
   /// In en, this message translates to:
@@ -455,6 +467,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mean Time to Resolution'**
   String get agentEvolutionMttrLabel;
+
+  /// No description provided for @agentEvolutionNoSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No evolution sessions yet'**
+  String get agentEvolutionNoSessions;
 
   /// No description provided for @agentEvolutionNoteRecorded.
   ///
@@ -522,6 +540,12 @@ abstract class AppLocalizations {
   /// **'Session completed — version {version} created'**
   String agentEvolutionSessionCompleted(int version);
 
+  /// No description provided for @agentEvolutionSessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get agentEvolutionSessionCount;
+
   /// No description provided for @agentEvolutionSessionError.
   ///
   /// In en, this message translates to:
@@ -557,6 +581,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get agentEvolutionStatusCompleted;
+
+  /// No description provided for @agentEvolutionTimelineFeedbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback'**
+  String get agentEvolutionTimelineFeedbackLabel;
+
+  /// No description provided for @agentFeedbackCategoryAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get agentFeedbackCategoryAccuracy;
+
+  /// No description provided for @agentFeedbackCategoryBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Category Breakdown'**
+  String get agentFeedbackCategoryBreakdownTitle;
+
+  /// No description provided for @agentFeedbackCategoryCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get agentFeedbackCategoryCommunication;
+
+  /// No description provided for @agentFeedbackCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get agentFeedbackCategoryGeneral;
+
+  /// No description provided for @agentFeedbackCategoryPrioritization.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritization'**
+  String get agentFeedbackCategoryPrioritization;
+
+  /// No description provided for @agentFeedbackCategoryTimeliness.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeliness'**
+  String get agentFeedbackCategoryTimeliness;
+
+  /// No description provided for @agentFeedbackCategoryTooling.
+  ///
+  /// In en, this message translates to:
+  /// **'Tooling'**
+  String get agentFeedbackCategoryTooling;
+
+  /// No description provided for @agentFeedbackClassificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback Classification'**
+  String get agentFeedbackClassificationTitle;
+
+  /// No description provided for @agentFeedbackItemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String agentFeedbackItemCount(int count);
+
+  /// No description provided for @agentFeedbackSourceDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision'**
+  String get agentFeedbackSourceDecision;
+
+  /// No description provided for @agentFeedbackSourceMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get agentFeedbackSourceMetric;
+
+  /// No description provided for @agentFeedbackSourceObservation.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get agentFeedbackSourceObservation;
+
+  /// No description provided for @agentFeedbackSourceRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get agentFeedbackSourceRating;
 
   /// No description provided for @agentInstancesEmptyList.
   ///
@@ -744,11 +852,101 @@ abstract class AppLocalizations {
   /// **'Agent Report'**
   String get agentReportSectionTitle;
 
+  /// No description provided for @agentRitualPendingNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Rituals pending review'**
+  String get agentRitualPendingNotification;
+
+  /// No description provided for @agentRitualPendingReviewCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending'**
+  String agentRitualPendingReviewCount(int count);
+
+  /// No description provided for @agentRitualReviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Conversation'**
+  String get agentRitualReviewAction;
+
+  /// No description provided for @agentRitualReviewByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'By Category'**
+  String get agentRitualReviewByCategory;
+
+  /// No description provided for @agentRitualReviewBySentiment.
+  ///
+  /// In en, this message translates to:
+  /// **'By Sentiment'**
+  String get agentRitualReviewBySentiment;
+
+  /// No description provided for @agentRitualReviewFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback Signals'**
+  String get agentRitualReviewFeedbackTitle;
+
+  /// No description provided for @agentRitualReviewNegativeSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative Signals'**
+  String get agentRitualReviewNegativeSignals;
+
+  /// No description provided for @agentRitualReviewNeutralSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral Signals'**
+  String get agentRitualReviewNeutralSignals;
+
+  /// No description provided for @agentRitualReviewNoFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'No feedback signals in this window'**
+  String get agentRitualReviewNoFeedback;
+
+  /// No description provided for @agentRitualReviewNoProposal.
+  ///
+  /// In en, this message translates to:
+  /// **'No active proposal'**
+  String get agentRitualReviewNoProposal;
+
+  /// No description provided for @agentRitualReviewPositiveSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive Signals'**
+  String get agentRitualReviewPositiveSignals;
+
+  /// No description provided for @agentRitualReviewProposalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Proposal'**
+  String get agentRitualReviewProposalSection;
+
+  /// No description provided for @agentRitualReviewSessionHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Session History'**
+  String get agentRitualReviewSessionHistory;
+
+  /// No description provided for @agentRitualReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ritual Review'**
+  String get agentRitualReviewTitle;
+
   /// No description provided for @agentRunningIndicator.
   ///
   /// In en, this message translates to:
   /// **'Running'**
   String get agentRunningIndicator;
+
+  /// No description provided for @agentSessionProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Progress'**
+  String get agentSessionProgressTitle;
 
   /// No description provided for @agentSettingsSubtitle.
   ///

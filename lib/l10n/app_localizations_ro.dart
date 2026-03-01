@@ -155,6 +155,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Tip de entitate neașteptat.';
 
   @override
+  String get agentEvolutionApprovalRate => 'Rata de aprobare';
+
+  @override
   String get agentEvolutionChartMttrTrend => 'Tendință MTTR';
 
   @override
@@ -177,6 +180,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Performanță';
 
   @override
+  String get agentEvolutionHistoryTitle => 'Istoricul evoluției';
+
+  @override
   String get agentEvolutionMetricActive => 'Active';
 
   @override
@@ -196,6 +202,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentEvolutionMttrLabel => 'Timp mediu de rezolvare';
+
+  @override
+  String get agentEvolutionNoSessions => 'Nu există sesiuni de evoluție încă';
 
   @override
   String get agentEvolutionNoteRecorded => 'Notă înregistrată';
@@ -236,6 +245,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get agentEvolutionSessionCount => 'Sesiuni';
+
+  @override
   String get agentEvolutionSessionError =>
       'Sesiunea de evoluție nu a putut fi pornită';
 
@@ -256,6 +268,50 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentEvolutionStatusCompleted => 'Finalizat';
+
+  @override
+  String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+
+  @override
+  String get agentFeedbackCategoryAccuracy => 'Acuratețe';
+
+  @override
+  String get agentFeedbackCategoryBreakdownTitle => 'Defalcare pe categorii';
+
+  @override
+  String get agentFeedbackCategoryCommunication => 'Comunicare';
+
+  @override
+  String get agentFeedbackCategoryGeneral => 'General';
+
+  @override
+  String get agentFeedbackCategoryPrioritization => 'Prioritizare';
+
+  @override
+  String get agentFeedbackCategoryTimeliness => 'Promptitudine';
+
+  @override
+  String get agentFeedbackCategoryTooling => 'Instrumente';
+
+  @override
+  String get agentFeedbackClassificationTitle => 'Clasificare feedback';
+
+  @override
+  String agentFeedbackItemCount(int count) {
+    return '$count elemente';
+  }
+
+  @override
+  String get agentFeedbackSourceDecision => 'Decizie';
+
+  @override
+  String get agentFeedbackSourceMetric => 'Metrică';
+
+  @override
+  String get agentFeedbackSourceObservation => 'Observație';
+
+  @override
+  String get agentFeedbackSourceRating => 'Evaluare';
 
   @override
   String get agentInstancesEmptyList => 'Nu s-au găsit instanțe de agent';
@@ -358,7 +414,56 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentReportSectionTitle => 'Raportul agentului';
 
   @override
+  String get agentRitualPendingNotification =>
+      'Ritualuri în așteptarea revizuirii';
+
+  @override
+  String agentRitualPendingReviewCount(int count) {
+    return '$count în așteptare';
+  }
+
+  @override
+  String get agentRitualReviewAction => 'Începe conversația';
+
+  @override
+  String get agentRitualReviewByCategory => 'După categorie';
+
+  @override
+  String get agentRitualReviewBySentiment => 'După sentiment';
+
+  @override
+  String get agentRitualReviewFeedbackTitle => 'Semnale de feedback';
+
+  @override
+  String get agentRitualReviewNegativeSignals => 'Semnale negative';
+
+  @override
+  String get agentRitualReviewNeutralSignals => 'Semnale neutre';
+
+  @override
+  String get agentRitualReviewNoFeedback =>
+      'Niciun semnal de feedback în această fereastră';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Nicio propunere activă';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Semnale pozitive';
+
+  @override
+  String get agentRitualReviewProposalSection => 'Propunerea curentă';
+
+  @override
+  String get agentRitualReviewSessionHistory => 'Istoricul sesiunilor';
+
+  @override
+  String get agentRitualReviewTitle => 'Revizuire ritual';
+
+  @override
   String get agentRunningIndicator => 'În execuție';
+
+  @override
+  String get agentSessionProgressTitle => 'Progresul sesiunii';
 
   @override
   String get agentSettingsSubtitle => 'Șabloane, instanțe și monitorizare';

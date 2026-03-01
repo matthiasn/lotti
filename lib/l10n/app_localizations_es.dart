@@ -157,6 +157,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Tipo de entidad inesperado.';
 
   @override
+  String get agentEvolutionApprovalRate => 'Tasa de aprobación';
+
+  @override
   String get agentEvolutionChartMttrTrend => 'Tendencia MTTR';
 
   @override
@@ -179,6 +182,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Rendimiento';
 
   @override
+  String get agentEvolutionHistoryTitle => 'Historial de evolución';
+
+  @override
   String get agentEvolutionMetricActive => 'Activos';
 
   @override
@@ -198,6 +204,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentEvolutionMttrLabel => 'Tiempo medio de resolución';
+
+  @override
+  String get agentEvolutionNoSessions => 'Aún no hay sesiones de evolución';
 
   @override
   String get agentEvolutionNoteRecorded => 'Nota registrada';
@@ -237,6 +246,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get agentEvolutionSessionCount => 'Sesiones';
+
+  @override
   String get agentEvolutionSessionError =>
       'No se pudo iniciar la sesión de evolución';
 
@@ -257,6 +269,51 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentEvolutionStatusCompleted => 'Completado';
+
+  @override
+  String get agentEvolutionTimelineFeedbackLabel => 'Retroalimentación';
+
+  @override
+  String get agentFeedbackCategoryAccuracy => 'Precisión';
+
+  @override
+  String get agentFeedbackCategoryBreakdownTitle => 'Desglose por categoría';
+
+  @override
+  String get agentFeedbackCategoryCommunication => 'Comunicación';
+
+  @override
+  String get agentFeedbackCategoryGeneral => 'General';
+
+  @override
+  String get agentFeedbackCategoryPrioritization => 'Priorización';
+
+  @override
+  String get agentFeedbackCategoryTimeliness => 'Puntualidad';
+
+  @override
+  String get agentFeedbackCategoryTooling => 'Herramientas';
+
+  @override
+  String get agentFeedbackClassificationTitle =>
+      'Clasificación de retroalimentación';
+
+  @override
+  String agentFeedbackItemCount(int count) {
+    return '$count elementos';
+  }
+
+  @override
+  String get agentFeedbackSourceDecision => 'Decisión';
+
+  @override
+  String get agentFeedbackSourceMetric => 'Métrica';
+
+  @override
+  String get agentFeedbackSourceObservation => 'Observación';
+
+  @override
+  String get agentFeedbackSourceRating => 'Calificación';
 
   @override
   String get agentInstancesEmptyList =>
@@ -359,7 +416,56 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentReportSectionTitle => 'Informe del agente';
 
   @override
+  String get agentRitualPendingNotification =>
+      'Rituales pendientes de revisión';
+
+  @override
+  String agentRitualPendingReviewCount(int count) {
+    return '$count pendientes';
+  }
+
+  @override
+  String get agentRitualReviewAction => 'Iniciar conversación';
+
+  @override
+  String get agentRitualReviewByCategory => 'Por categoría';
+
+  @override
+  String get agentRitualReviewBySentiment => 'Por sentimiento';
+
+  @override
+  String get agentRitualReviewFeedbackTitle => 'Señales de retroalimentación';
+
+  @override
+  String get agentRitualReviewNegativeSignals => 'Señales negativas';
+
+  @override
+  String get agentRitualReviewNeutralSignals => 'Señales neutras';
+
+  @override
+  String get agentRitualReviewNoFeedback =>
+      'Sin señales de retroalimentación en esta ventana';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Sin propuesta activa';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Señales positivas';
+
+  @override
+  String get agentRitualReviewProposalSection => 'Propuesta actual';
+
+  @override
+  String get agentRitualReviewSessionHistory => 'Historial de sesiones';
+
+  @override
+  String get agentRitualReviewTitle => 'Revisión de ritual';
+
+  @override
   String get agentRunningIndicator => 'Ejecutando';
+
+  @override
+  String get agentSessionProgressTitle => 'Progreso de sesión';
 
   @override
   String get agentSettingsSubtitle => 'Plantillas, instancias y monitoreo';

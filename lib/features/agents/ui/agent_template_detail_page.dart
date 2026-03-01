@@ -6,14 +6,17 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_model_selector.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -590,7 +593,7 @@ class _VersionTile extends ConsumerWidget {
 }
 
 /// Settings tab content — form fields, version history, evolve button.
-class _SettingsTabContent extends StatelessWidget {
+class _SettingsTabContent extends ConsumerWidget {
   const _SettingsTabContent({
     required this.formFields,
     required this.templateId,
@@ -600,7 +603,10 @@ class _SettingsTabContent extends StatelessWidget {
   final String templateId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasPendingReview =
+        ref.watch(pendingRitualReviewProvider(templateId)).value != null;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -608,6 +614,16 @@ class _SettingsTabContent extends StatelessWidget {
         const SizedBox(height: 24),
         _VersionHistorySection(templateId: templateId),
         const SizedBox(height: 24),
+        if (hasPendingReview) ...[
+          LottiPrimaryButton(
+            onPressed: () => beamToNamed(
+              '/settings/agents/templates/$templateId/review',
+            ),
+            label: context.messages.agentRitualReviewTitle,
+            icon: Icons.rate_review,
+          ),
+          const SizedBox(height: 12),
+        ],
         LottiSecondaryButton(
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -625,7 +641,7 @@ class _SettingsTabContent extends StatelessWidget {
   }
 }
 
-/// Stats tab content — aggregate token usage and per-instance breakdown.
+/// Stats tab content — evolution history dashboard + token usage.
 class _StatsTabContent extends StatelessWidget {
   const _StatsTabContent({required this.templateId});
 
@@ -636,6 +652,8 @@ class _StatsTabContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        EvolutionHistoryDashboard(templateId: templateId),
+        const SizedBox(height: 24),
         TemplateTokenUsageSection(templateId: templateId),
         const SizedBox(height: 80),
       ],

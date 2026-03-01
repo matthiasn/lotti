@@ -157,6 +157,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Unerwarteter Entitätstyp.';
 
   @override
+  String get agentEvolutionApprovalRate => 'Genehmigungsrate';
+
+  @override
   String get agentEvolutionChartMttrTrend => 'MTTR-Trend';
 
   @override
@@ -179,6 +182,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Leistung';
 
   @override
+  String get agentEvolutionHistoryTitle => 'Evolutionsverlauf';
+
+  @override
   String get agentEvolutionMetricActive => 'Aktiv';
 
   @override
@@ -198,6 +204,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentEvolutionMttrLabel => 'Mittlere Lösungszeit';
+
+  @override
+  String get agentEvolutionNoSessions => 'Noch keine Evolutionssitzungen';
 
   @override
   String get agentEvolutionNoteRecorded => 'Notiz aufgezeichnet';
@@ -238,6 +247,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get agentEvolutionSessionCount => 'Sitzungen';
+
+  @override
   String get agentEvolutionSessionError =>
       'Evolution-Sitzung konnte nicht gestartet werden';
 
@@ -258,6 +270,50 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentEvolutionStatusCompleted => 'Abgeschlossen';
+
+  @override
+  String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+
+  @override
+  String get agentFeedbackCategoryAccuracy => 'Genauigkeit';
+
+  @override
+  String get agentFeedbackCategoryBreakdownTitle => 'Kategorieaufschlüsselung';
+
+  @override
+  String get agentFeedbackCategoryCommunication => 'Kommunikation';
+
+  @override
+  String get agentFeedbackCategoryGeneral => 'Allgemein';
+
+  @override
+  String get agentFeedbackCategoryPrioritization => 'Priorisierung';
+
+  @override
+  String get agentFeedbackCategoryTimeliness => 'Zeitnähe';
+
+  @override
+  String get agentFeedbackCategoryTooling => 'Werkzeuge';
+
+  @override
+  String get agentFeedbackClassificationTitle => 'Feedback-Klassifizierung';
+
+  @override
+  String agentFeedbackItemCount(int count) {
+    return '$count Einträge';
+  }
+
+  @override
+  String get agentFeedbackSourceDecision => 'Entscheidung';
+
+  @override
+  String get agentFeedbackSourceMetric => 'Metrik';
+
+  @override
+  String get agentFeedbackSourceObservation => 'Beobachtung';
+
+  @override
+  String get agentFeedbackSourceRating => 'Bewertung';
 
   @override
   String get agentInstancesEmptyList => 'Keine Agenteninstanzen gefunden';
@@ -359,7 +415,55 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentReportSectionTitle => 'Agentenbericht';
 
   @override
+  String get agentRitualPendingNotification => 'Rituale warten auf Überprüfung';
+
+  @override
+  String agentRitualPendingReviewCount(int count) {
+    return '$count ausstehend';
+  }
+
+  @override
+  String get agentRitualReviewAction => 'Gespräch starten';
+
+  @override
+  String get agentRitualReviewByCategory => 'Nach Kategorie';
+
+  @override
+  String get agentRitualReviewBySentiment => 'Nach Stimmung';
+
+  @override
+  String get agentRitualReviewFeedbackTitle => 'Feedback-Signale';
+
+  @override
+  String get agentRitualReviewNegativeSignals => 'Negative Signale';
+
+  @override
+  String get agentRitualReviewNeutralSignals => 'Neutrale Signale';
+
+  @override
+  String get agentRitualReviewNoFeedback =>
+      'Keine Feedback-Signale in diesem Zeitfenster';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Positive Signale';
+
+  @override
+  String get agentRitualReviewProposalSection => 'Aktueller Vorschlag';
+
+  @override
+  String get agentRitualReviewSessionHistory => 'Sitzungsverlauf';
+
+  @override
+  String get agentRitualReviewTitle => 'Ritual-Überprüfung';
+
+  @override
   String get agentRunningIndicator => 'Läuft';
+
+  @override
+  String get agentSessionProgressTitle => 'Sitzungsfortschritt';
 
   @override
   String get agentSettingsSubtitle => 'Vorlagen, Instanzen und Überwachung';

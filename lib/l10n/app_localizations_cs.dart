@@ -155,6 +155,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentDetailUnexpectedType => 'Neočekávaný typ entity.';
 
   @override
+  String get agentEvolutionApprovalRate => 'Approval Rate';
+
+  @override
   String get agentEvolutionChartMttrTrend => 'MTTR Trend';
 
   @override
@@ -177,6 +180,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionDashboardTitle => 'Performance';
 
   @override
+  String get agentEvolutionHistoryTitle => 'Evolution History';
+
+  @override
   String get agentEvolutionMetricActive => 'Active';
 
   @override
@@ -196,6 +202,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentEvolutionMttrLabel => 'Mean Time to Resolution';
+
+  @override
+  String get agentEvolutionNoSessions => 'No evolution sessions yet';
 
   @override
   String get agentEvolutionNoteRecorded => 'Note Recorded';
@@ -235,6 +244,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get agentEvolutionSessionCount => 'Sessions';
+
+  @override
   String get agentEvolutionSessionError => 'Failed to start evolution session';
 
   @override
@@ -253,6 +265,50 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentEvolutionStatusCompleted => 'Completed';
+
+  @override
+  String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+
+  @override
+  String get agentFeedbackCategoryAccuracy => 'Accuracy';
+
+  @override
+  String get agentFeedbackCategoryBreakdownTitle => 'Category Breakdown';
+
+  @override
+  String get agentFeedbackCategoryCommunication => 'Communication';
+
+  @override
+  String get agentFeedbackCategoryGeneral => 'General';
+
+  @override
+  String get agentFeedbackCategoryPrioritization => 'Prioritization';
+
+  @override
+  String get agentFeedbackCategoryTimeliness => 'Timeliness';
+
+  @override
+  String get agentFeedbackCategoryTooling => 'Tooling';
+
+  @override
+  String get agentFeedbackClassificationTitle => 'Feedback Classification';
+
+  @override
+  String agentFeedbackItemCount(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get agentFeedbackSourceDecision => 'Decision';
+
+  @override
+  String get agentFeedbackSourceMetric => 'Metric';
+
+  @override
+  String get agentFeedbackSourceObservation => 'Observation';
+
+  @override
+  String get agentFeedbackSourceRating => 'Rating';
 
   @override
   String get agentInstancesEmptyList => 'No agent instances found';
@@ -353,7 +409,55 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentReportSectionTitle => 'Agent Report';
 
   @override
+  String get agentRitualPendingNotification => 'Rituals pending review';
+
+  @override
+  String agentRitualPendingReviewCount(int count) {
+    return '$count pending';
+  }
+
+  @override
+  String get agentRitualReviewAction => 'Start Conversation';
+
+  @override
+  String get agentRitualReviewByCategory => 'By Category';
+
+  @override
+  String get agentRitualReviewBySentiment => 'By Sentiment';
+
+  @override
+  String get agentRitualReviewFeedbackTitle => 'Feedback Signals';
+
+  @override
+  String get agentRitualReviewNegativeSignals => 'Negative Signals';
+
+  @override
+  String get agentRitualReviewNeutralSignals => 'Neutral Signals';
+
+  @override
+  String get agentRitualReviewNoFeedback =>
+      'No feedback signals in this window';
+
+  @override
+  String get agentRitualReviewNoProposal => 'No active proposal';
+
+  @override
+  String get agentRitualReviewPositiveSignals => 'Positive Signals';
+
+  @override
+  String get agentRitualReviewProposalSection => 'Current Proposal';
+
+  @override
+  String get agentRitualReviewSessionHistory => 'Session History';
+
+  @override
+  String get agentRitualReviewTitle => 'Ritual Review';
+
+  @override
   String get agentRunningIndicator => 'Running';
+
+  @override
+  String get agentSessionProgressTitle => 'Session Progress';
 
   @override
   String get agentSettingsSubtitle => 'Templates, instances, and monitoring';
