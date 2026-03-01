@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -2131,54 +2132,151 @@ void main() {
   });
 
   group('improverAgentServiceProvider', () {
-    test('creates ImproverAgentService instance', () {
-      final mockImproverService = MockImproverAgentService();
+    test('resolves dependencies through real provider', () {
+      final mockRepo = MockAgentRepository();
+      final mockSync = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+      final mockOrchestrator = MockWakeOrchestrator();
 
       final container = ProviderContainer(
         overrides: [
-          improverAgentServiceProvider.overrideWithValue(mockImproverService),
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSync),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
         ],
       );
       addTearDown(container.dispose);
 
       final service = container.read(improverAgentServiceProvider);
       expect(service, isA<ImproverAgentService>());
-      expect(service, same(mockImproverService));
     });
   });
 
   group('improverAgentWorkflowProvider', () {
-    test('creates ImproverAgentWorkflow instance', () {
-      final mockWorkflow = MockImproverAgentWorkflow();
+    test('resolves dependencies through real provider', () {
+      final mockRepo = MockAgentRepository();
+      final mockSync = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+      final mockOrchestrator = MockWakeOrchestrator();
+      final mockTemplateWorkflow = MockTemplateEvolutionWorkflow();
+      final mockLogging = MockLoggingService();
 
       final container = ProviderContainer(
         overrides: [
-          improverAgentWorkflowProvider.overrideWithValue(mockWorkflow),
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSync),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          templateEvolutionWorkflowProvider
+              .overrideWithValue(mockTemplateWorkflow),
+          loggingServiceProvider.overrideWithValue(mockLogging),
         ],
       );
       addTearDown(container.dispose);
 
       final workflow = container.read(improverAgentWorkflowProvider);
       expect(workflow, isA<ImproverAgentWorkflow>());
-      expect(workflow, same(mockWorkflow));
     });
   });
 
   group('templateEvolutionWorkflowProvider', () {
-    test('creates workflow instance', () {
-      final mockTemplateWorkflow = MockTemplateEvolutionWorkflow();
+    late MockAgentRepository mockRepo;
+    late MockAgentSyncService mockSync;
+    late MockOutboxService mockOutbox;
+    late MockWakeOrchestrator mockOrchestrator;
+    late MockAiConfigRepository mockAiConfig;
+    late MockCloudInferenceRepository mockCloudInference;
+    late MockUpdateNotifications mockNotifications;
+    late MockImproverAgentService mockImproverService;
 
+    setUp(() {
+      mockRepo = MockAgentRepository();
+      mockSync = MockAgentSyncService();
+      mockOutbox = MockOutboxService();
+      mockOrchestrator = MockWakeOrchestrator();
+      mockAiConfig = MockAiConfigRepository();
+      mockCloudInference = MockCloudInferenceRepository();
+      mockNotifications = MockUpdateNotifications();
+      mockImproverService = MockImproverAgentService();
+    });
+
+    ProviderContainer createWorkflowContainer({
+      MockImproverAgentService? improverOverride,
+    }) {
       final container = ProviderContainer(
         overrides: [
-          templateEvolutionWorkflowProvider
-              .overrideWithValue(mockTemplateWorkflow),
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSync),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfig),
+          cloudInferenceRepositoryProvider
+              .overrideWithValue(mockCloudInference),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
+          if (improverOverride != null)
+            improverAgentServiceProvider.overrideWithValue(improverOverride),
         ],
       );
       addTearDown(container.dispose);
+      return container;
+    }
+
+    test('resolves dependencies through real provider', () {
+      final container = createWorkflowContainer();
 
       final workflow = container.read(templateEvolutionWorkflowProvider);
       expect(workflow, isA<TemplateEvolutionWorkflow>());
-      expect(workflow, same(mockTemplateWorkflow));
+    });
+
+    test('onSessionCompleted schedules next ritual for improver', () async {
+      final identity = makeTestIdentity(
+        kind: AgentKinds.templateImprover,
+      );
+      when(() => mockImproverService.getImproverForTemplate(any()))
+          .thenAnswer((_) async => identity);
+      when(() => mockImproverService.scheduleNextRitual(any()))
+          .thenAnswer((_) async {});
+
+      final container = createWorkflowContainer(
+        improverOverride: mockImproverService,
+      );
+
+      final workflow = container.read(templateEvolutionWorkflowProvider);
+      expect(workflow.onSessionCompleted, isNotNull);
+
+      // Fire the callback manually.
+      workflow.onSessionCompleted!('template-123', 'session-456');
+
+      await pumpEventQueue();
+
+      verify(
+        () => mockImproverService.getImproverForTemplate('template-123'),
+      ).called(1);
+      verify(
+        () => mockImproverService.scheduleNextRitual(identity.agentId),
+      ).called(1);
+    });
+
+    test('onSessionCompleted is no-op when no improver exists', () async {
+      when(() => mockImproverService.getImproverForTemplate(any()))
+          .thenAnswer((_) async => null);
+
+      final container = createWorkflowContainer(
+        improverOverride: mockImproverService,
+      );
+
+      final workflow = container.read(templateEvolutionWorkflowProvider);
+      workflow.onSessionCompleted!('template-123', 'session-456');
+
+      await pumpEventQueue();
+
+      verify(
+        () => mockImproverService.getImproverForTemplate('template-123'),
+      ).called(1);
+      verifyNever(
+        () => mockImproverService.scheduleNextRitual(any()),
+      );
     });
   });
 
