@@ -38,6 +38,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? lastWakeAt,
     DateTime? nextWakeAt,
     DateTime? sleepUntil,
+    DateTime? scheduledWakeAt,
     String? recentHeadMessageId,
     String? latestSummaryMessageId,
     @Default(0) int consecutiveFailureCount,

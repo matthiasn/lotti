@@ -85,6 +85,9 @@ AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
       sleepUntil: json['sleepUntil'] == null
           ? null
           : DateTime.parse(json['sleepUntil'] as String),
+      scheduledWakeAt: json['scheduledWakeAt'] == null
+          ? null
+          : DateTime.parse(json['scheduledWakeAt'] as String),
       recentHeadMessageId: json['recentHeadMessageId'] as String?,
       latestSummaryMessageId: json['latestSummaryMessageId'] as String?,
       consecutiveFailureCount:
@@ -112,6 +115,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'lastWakeAt': instance.lastWakeAt?.toIso8601String(),
       'nextWakeAt': instance.nextWakeAt?.toIso8601String(),
       'sleepUntil': instance.sleepUntil?.toIso8601String(),
+      'scheduledWakeAt': instance.scheduledWakeAt?.toIso8601String(),
       'recentHeadMessageId': instance.recentHeadMessageId,
       'latestSummaryMessageId': instance.latestSummaryMessageId,
       'consecutiveFailureCount': instance.consecutiveFailureCount,
@@ -311,6 +315,7 @@ Map<String, dynamic> _$AgentTemplateEntityToJson(
 
 const _$AgentTemplateKindEnumMap = {
   AgentTemplateKind.taskAgent: 'taskAgent',
+  AgentTemplateKind.templateImprover: 'templateImprover',
 };
 
 AgentTemplateVersionEntity _$AgentTemplateVersionEntityFromJson(

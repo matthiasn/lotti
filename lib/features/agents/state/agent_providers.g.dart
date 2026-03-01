@@ -713,6 +713,55 @@ final class WakeOrchestratorProvider extends $FunctionalProvider<
 
 String _$wakeOrchestratorHash() => r'3801177be9afe3afb6e43f935f556ba7f273200e';
 
+/// The scheduled wake manager for time-based agent wakes.
+
+@ProviderFor(scheduledWakeManager)
+final scheduledWakeManagerProvider = ScheduledWakeManagerProvider._();
+
+/// The scheduled wake manager for time-based agent wakes.
+
+final class ScheduledWakeManagerProvider extends $FunctionalProvider<
+    ScheduledWakeManager,
+    ScheduledWakeManager,
+    ScheduledWakeManager> with $Provider<ScheduledWakeManager> {
+  /// The scheduled wake manager for time-based agent wakes.
+  ScheduledWakeManagerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'scheduledWakeManagerProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$scheduledWakeManagerHash();
+
+  @$internal
+  @override
+  $ProviderElement<ScheduledWakeManager> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ScheduledWakeManager create(Ref ref) {
+    return scheduledWakeManager(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ScheduledWakeManager value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ScheduledWakeManager>(value),
+    );
+  }
+}
+
+String _$scheduledWakeManagerHash() =>
+    r'3652b1b63cd7080347e2abaa86212b1239a04234';
+
 /// The high-level agent service.
 
 @ProviderFor(agentService)
@@ -3503,4 +3552,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'7ee0cebad04538fdc030a9582eab76f92d25f7c4';
+    r'd29419b8e7033a25a7f4f4e7e822c2c57df05dcd';

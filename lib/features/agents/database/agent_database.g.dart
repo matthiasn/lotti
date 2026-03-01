@@ -2279,6 +2279,9 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_agent_links_to ON agent_links (to_id, type)');
   late final Index idxAgentLinksType = Index('idx_agent_links_type',
       'CREATE INDEX idx_agent_links_type ON agent_links (type)');
+  late final Index idxUniqueImproverPerTemplate = Index(
+      'idx_unique_improver_per_template',
+      'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL');
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
   late final Index idxWakeRunLogAgent = Index('idx_wake_run_log_agent',
       'CREATE INDEX idx_wake_run_log_agent ON wake_run_log (agent_id, created_at DESC)');
@@ -2663,6 +2666,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
+        variables: [
+          Variable<String>(nowIso)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2677,6 +2691,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         idxAgentLinksFrom,
         idxAgentLinksTo,
         idxAgentLinksType,
+        idxUniqueImproverPerTemplate,
         wakeRunLog,
         idxWakeRunLogAgent,
         idxWakeRunLogTemplate,

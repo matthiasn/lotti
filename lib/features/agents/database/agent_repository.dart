@@ -234,6 +234,21 @@ class AgentRepository {
     );
   }
 
+  /// Fetch agent states whose `scheduledWakeAt` is at or before [now].
+  ///
+  /// Uses a single SQL query with `json_extract` on the serialized column
+  /// to avoid an N+1 fetch pattern.
+  Future<List<AgentStateEntity>> getDueScheduledAgentStates(
+    DateTime now,
+  ) async {
+    final rows =
+        await _db.getDueScheduledAgentStates(now.toIso8601String()).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentStateEntity>()
+        .toList();
+  }
+
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.
@@ -416,6 +431,21 @@ class AgentRepository {
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
     await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+  }
+
+  /// Insert a link exclusively — throws [DuplicateInsertException] if a
+  /// unique constraint is violated (e.g. the partial unique index on
+  /// `improver_target` links).
+  Future<void> insertLinkExclusive(model.AgentLink link) async {
+    final companion = AgentDbConversions.toLinkCompanion(link);
+    try {
+      await _db.into(_db.agentLinks).insert(companion);
+    } on SqliteException catch (e) {
+      if (e.resultCode == 19) {
+        throw DuplicateInsertException('agent_links', link.toId, e);
+      }
+      rethrow;
+    }
   }
 
   /// Fetch non-deleted links originating from [fromId], optionally filtered

@@ -21,11 +21,27 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
       activeTaskId: json['activeTaskId'] as String?,
+      activeTemplateId: json['activeTemplateId'] as String?,
+      lastOneOnOneAt: json['lastOneOnOneAt'] == null
+          ? null
+          : DateTime.parse(json['lastOneOnOneAt'] as String),
+      lastFeedbackScanAt: json['lastFeedbackScanAt'] == null
+          ? null
+          : DateTime.parse(json['lastFeedbackScanAt'] as String),
+      feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
+      totalSessionsCompleted: (json['totalSessionsCompleted'] as num?)?.toInt(),
+      recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
     <String, dynamic>{
       'activeTaskId': instance.activeTaskId,
+      'activeTemplateId': instance.activeTemplateId,
+      'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
+      'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),
+      'feedbackWindowDays': instance.feedbackWindowDays,
+      'totalSessionsCompleted': instance.totalSessionsCompleted,
+      'recursionDepth': instance.recursionDepth,
     };
 
 _AgentMessageMetadata _$AgentMessageMetadataFromJson(

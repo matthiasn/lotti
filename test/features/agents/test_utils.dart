@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -72,6 +73,7 @@ AgentStateEntity makeTestState({
   DateTime? lastWakeAt,
   DateTime? nextWakeAt,
   DateTime? sleepUntil,
+  DateTime? scheduledWakeAt,
 }) {
   return AgentDomainEntity.agentState(
     id: id,
@@ -85,6 +87,7 @@ AgentStateEntity makeTestState({
     lastWakeAt: lastWakeAt,
     nextWakeAt: nextWakeAt,
     sleepUntil: sleepUntil,
+    scheduledWakeAt: scheduledWakeAt,
   ) as AgentStateEntity;
 }
 
@@ -570,4 +573,42 @@ AiConfigModel testAiModel({
     outputModalities: const [Modality.text],
     isReasoningModel: false,
   ) as AiConfigModel;
+}
+
+// ── Feedback entity factories ──────────────────────────────────────────────
+
+ClassifiedFeedbackItem makeTestClassifiedFeedbackItem({
+  FeedbackSentiment sentiment = FeedbackSentiment.positive,
+  FeedbackCategory category = FeedbackCategory.accuracy,
+  String source = 'decision',
+  String detail = 'Test feedback item',
+  String agentId = kTestAgentId,
+  String? sourceEntityId,
+  double? confidence,
+}) {
+  return ClassifiedFeedbackItem(
+    sentiment: sentiment,
+    category: category,
+    source: source,
+    detail: detail,
+    agentId: agentId,
+    sourceEntityId: sourceEntityId,
+    confidence: confidence,
+  );
+}
+
+ClassifiedFeedback makeTestClassifiedFeedback({
+  List<ClassifiedFeedbackItem>? items,
+  DateTime? windowStart,
+  DateTime? windowEnd,
+  int totalObservationsScanned = 0,
+  int totalDecisionsScanned = 0,
+}) {
+  return ClassifiedFeedback(
+    items: items ?? [],
+    windowStart: windowStart ?? kAgentTestDate,
+    windowEnd: windowEnd ?? kAgentTestDate.add(const Duration(days: 7)),
+    totalObservationsScanned: totalObservationsScanned,
+    totalDecisionsScanned: totalDecisionsScanned,
+  );
 }

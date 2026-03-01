@@ -477,6 +477,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get agentTemplateKindImprover => 'Îmbunătățitor de șablon';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Agent de sarcini';
 
   @override

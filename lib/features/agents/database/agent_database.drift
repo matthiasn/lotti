@@ -35,6 +35,7 @@ CREATE TABLE agent_links (
 CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
 CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
 CREATE INDEX idx_agent_links_type ON agent_links(type);
+CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
   run_key TEXT NOT NULL PRIMARY KEY,
@@ -140,3 +141,5 @@ getRecentDecisionsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agent
 getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+
+getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;

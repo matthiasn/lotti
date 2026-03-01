@@ -948,6 +948,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}'**
   String agentTemplateInstanceCount(int count);
 
+  /// Display name for the template-improver agent kind.
+  ///
+  /// In en, this message translates to:
+  /// **'Template Improver'**
+  String get agentTemplateKindImprover;
+
   /// Display name for the task-agent template kind.
   ///
   /// In en, this message translates to:

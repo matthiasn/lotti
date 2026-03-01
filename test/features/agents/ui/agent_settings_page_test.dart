@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/get_it.dart';
@@ -156,6 +157,26 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('models/gemini-3-flash-preview'), findsOneWidget);
+    });
+
+    testWidgets('shows templateImprover kind badge', (tester) async {
+      final improverTemplate = makeTestTemplate(
+        id: 'tpl-improver',
+        agentId: 'tpl-improver',
+        displayName: 'Improver',
+        kind: AgentTemplateKind.templateImprover,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(templates: [improverTemplate]),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      expect(
+        find.text(context.messages.agentTemplateKindImprover),
+        findsOneWidget,
+      );
     });
 
     testWidgets('has FAB for creating templates', (tester) async {

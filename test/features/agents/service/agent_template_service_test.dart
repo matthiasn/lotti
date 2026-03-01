@@ -891,19 +891,21 @@ void main() {
   });
 
   group('seedDefaults', () {
-    test('creates Laura and Tom when neither is seeded', () async {
+    test('creates Laura, Tom, and Improver when none are seeded', () async {
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => null);
+      when(() => mockRepo.getEntity(improverTemplateId))
+          .thenAnswer((_) async => null);
 
       await service.seedDefaults();
 
-      // 2 templates * 3 entities each = 6 upserts.
-      verify(() => mockSync.upsertEntity(any())).called(6);
+      // 3 templates * 3 entities each = 9 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(9);
     });
 
-    test('skips creation when both already seeded', () async {
+    test('skips creation when all already seeded', () async {
       final laura = makeTestTemplate(
         id: lauraTemplateId,
         agentId: lauraTemplateId,
@@ -912,25 +914,37 @@ void main() {
         id: tomTemplateId,
         agentId: tomTemplateId,
       );
+      final improver = makeTestTemplate(
+        id: improverTemplateId,
+        agentId: improverTemplateId,
+      );
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => laura);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => tom);
+      when(() => mockRepo.getEntity(improverTemplateId))
+          .thenAnswer((_) async => improver);
 
       await service.seedDefaults();
 
       verifyNever(() => mockSync.upsertEntity(any()));
     });
 
-    test('seeds only Tom when Laura already exists', () async {
+    test('seeds only missing templates when some already exist', () async {
       final laura = makeTestTemplate(
         id: lauraTemplateId,
         agentId: lauraTemplateId,
+      );
+      final improver = makeTestTemplate(
+        id: improverTemplateId,
+        agentId: improverTemplateId,
       );
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => laura);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => null);
+      when(() => mockRepo.getEntity(improverTemplateId))
+          .thenAnswer((_) async => improver);
 
       await service.seedDefaults();
 
@@ -938,7 +952,7 @@ void main() {
       verify(() => mockSync.upsertEntity(any())).called(3);
     });
 
-    test('seeds only Laura when Tom already exists', () async {
+    test('seeds only Laura and Improver when Tom already exists', () async {
       final tom = makeTestTemplate(
         id: tomTemplateId,
         agentId: tomTemplateId,
@@ -947,11 +961,13 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => tom);
+      when(() => mockRepo.getEntity(improverTemplateId))
+          .thenAnswer((_) async => null);
 
       await service.seedDefaults();
 
-      // Only Laura: 3 entities (template + version + head).
-      verify(() => mockSync.upsertEntity(any())).called(3);
+      // Laura + Improver: 2 * 3 entities = 6 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(6);
     });
   });
 

@@ -25,6 +25,8 @@ AgentLink _$AgentLinkFromJson(Map<String, dynamic> json) {
       return AgentTaskLink.fromJson(json);
     case 'templateAssignment':
       return TemplateAssignmentLink.fromJson(json);
+    case 'improverTarget':
+      return ImproverTargetLink.fromJson(json);
 
     default:
       return BasicAgentLink.fromJson(json);
@@ -171,6 +173,7 @@ extension AgentLinkPatterns on AgentLink {
     TResult Function(ToolEffectLink value)? toolEffect,
     TResult Function(AgentTaskLink value)? agentTask,
     TResult Function(TemplateAssignmentLink value)? templateAssignment,
+    TResult Function(ImproverTargetLink value)? improverTarget,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -189,6 +192,8 @@ extension AgentLinkPatterns on AgentLink {
         return agentTask(_that);
       case TemplateAssignmentLink() when templateAssignment != null:
         return templateAssignment(_that);
+      case ImproverTargetLink() when improverTarget != null:
+        return improverTarget(_that);
       case _:
         return orElse();
     }
@@ -216,6 +221,7 @@ extension AgentLinkPatterns on AgentLink {
     required TResult Function(ToolEffectLink value) toolEffect,
     required TResult Function(AgentTaskLink value) agentTask,
     required TResult Function(TemplateAssignmentLink value) templateAssignment,
+    required TResult Function(ImproverTargetLink value) improverTarget,
   }) {
     final _that = this;
     switch (_that) {
@@ -233,6 +239,8 @@ extension AgentLinkPatterns on AgentLink {
         return agentTask(_that);
       case TemplateAssignmentLink():
         return templateAssignment(_that);
+      case ImproverTargetLink():
+        return improverTarget(_that);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -259,6 +267,7 @@ extension AgentLinkPatterns on AgentLink {
     TResult? Function(ToolEffectLink value)? toolEffect,
     TResult? Function(AgentTaskLink value)? agentTask,
     TResult? Function(TemplateAssignmentLink value)? templateAssignment,
+    TResult? Function(ImproverTargetLink value)? improverTarget,
   }) {
     final _that = this;
     switch (_that) {
@@ -276,6 +285,8 @@ extension AgentLinkPatterns on AgentLink {
         return agentTask(_that);
       case TemplateAssignmentLink() when templateAssignment != null:
         return templateAssignment(_that);
+      case ImproverTargetLink() when improverTarget != null:
+        return improverTarget(_that);
       case _:
         return null;
     }
@@ -316,6 +327,9 @@ extension AgentLinkPatterns on AgentLink {
     TResult Function(String id, String fromId, String toId, DateTime createdAt,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         templateAssignment,
+    TResult Function(String id, String fromId, String toId, DateTime createdAt,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        improverTarget,
     required TResult orElse(),
   }) {
     final _that = this;
@@ -346,6 +360,15 @@ extension AgentLinkPatterns on AgentLink {
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case TemplateAssignmentLink() when templateAssignment != null:
         return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case ImproverTargetLink() when improverTarget != null:
+        return improverTarget(
             _that.id,
             _that.fromId,
             _that.toId,
@@ -436,6 +459,15 @@ extension AgentLinkPatterns on AgentLink {
             VectorClock? vectorClock,
             DateTime? deletedAt)
         templateAssignment,
+    required TResult Function(
+            String id,
+            String fromId,
+            String toId,
+            DateTime createdAt,
+            DateTime updatedAt,
+            VectorClock? vectorClock,
+            DateTime? deletedAt)
+        improverTarget,
   }) {
     final _that = this;
     switch (_that) {
@@ -465,6 +497,15 @@ extension AgentLinkPatterns on AgentLink {
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case TemplateAssignmentLink():
         return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case ImproverTargetLink():
+        return improverTarget(
             _that.id,
             _that.fromId,
             _that.toId,
@@ -512,6 +553,9 @@ extension AgentLinkPatterns on AgentLink {
     TResult? Function(String id, String fromId, String toId, DateTime createdAt,
             DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
         templateAssignment,
+    TResult? Function(String id, String fromId, String toId, DateTime createdAt,
+            DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt)?
+        improverTarget,
   }) {
     final _that = this;
     switch (_that) {
@@ -541,6 +585,15 @@ extension AgentLinkPatterns on AgentLink {
             _that.updatedAt, _that.vectorClock, _that.deletedAt);
       case TemplateAssignmentLink() when templateAssignment != null:
         return templateAssignment(
+            _that.id,
+            _that.fromId,
+            _that.toId,
+            _that.createdAt,
+            _that.updatedAt,
+            _that.vectorClock,
+            _that.deletedAt);
+      case ImproverTargetLink() when improverTarget != null:
+        return improverTarget(
             _that.id,
             _that.fromId,
             _that.toId,
@@ -1573,6 +1626,156 @@ class _$TemplateAssignmentLinkCopyWithImpl<$Res>
     Object? deletedAt = freezed,
   }) {
     return _then(TemplateAssignmentLink(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      fromId: null == fromId
+          ? _self.fromId
+          : fromId // ignore: cast_nullable_to_non_nullable
+              as String,
+      toId: null == toId
+          ? _self.toId
+          : toId // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: null == createdAt
+          ? _self.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _self.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      vectorClock: freezed == vectorClock
+          ? _self.vectorClock
+          : vectorClock // ignore: cast_nullable_to_non_nullable
+              as VectorClock?,
+      deletedAt: freezed == deletedAt
+          ? _self.deletedAt
+          : deletedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class ImproverTargetLink implements AgentLink {
+  const ImproverTargetLink(
+      {required this.id,
+      required this.fromId,
+      required this.toId,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.vectorClock,
+      this.deletedAt,
+      final String? $type})
+      : $type = $type ?? 'improverTarget';
+  factory ImproverTargetLink.fromJson(Map<String, dynamic> json) =>
+      _$ImproverTargetLinkFromJson(json);
+
+  @override
+  final String id;
+  @override
+  final String fromId;
+  @override
+  final String toId;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+  @override
+  final VectorClock? vectorClock;
+  @override
+  final DateTime? deletedAt;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  /// Create a copy of AgentLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $ImproverTargetLinkCopyWith<ImproverTargetLink> get copyWith =>
+      _$ImproverTargetLinkCopyWithImpl<ImproverTargetLink>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$ImproverTargetLinkToJson(
+      this,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is ImproverTargetLink &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.fromId, fromId) || other.fromId == fromId) &&
+            (identical(other.toId, toId) || other.toId == toId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.vectorClock, vectorClock) ||
+                other.vectorClock == vectorClock) &&
+            (identical(other.deletedAt, deletedAt) ||
+                other.deletedAt == deletedAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, fromId, toId, createdAt,
+      updatedAt, vectorClock, deletedAt);
+
+  @override
+  String toString() {
+    return 'AgentLink.improverTarget(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $ImproverTargetLinkCopyWith<$Res>
+    implements $AgentLinkCopyWith<$Res> {
+  factory $ImproverTargetLinkCopyWith(
+          ImproverTargetLink value, $Res Function(ImproverTargetLink) _then) =
+      _$ImproverTargetLinkCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String fromId,
+      String toId,
+      DateTime createdAt,
+      DateTime updatedAt,
+      VectorClock? vectorClock,
+      DateTime? deletedAt});
+}
+
+/// @nodoc
+class _$ImproverTargetLinkCopyWithImpl<$Res>
+    implements $ImproverTargetLinkCopyWith<$Res> {
+  _$ImproverTargetLinkCopyWithImpl(this._self, this._then);
+
+  final ImproverTargetLink _self;
+  final $Res Function(ImproverTargetLink) _then;
+
+  /// Create a copy of AgentLink
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? fromId = null,
+    Object? toId = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? vectorClock = freezed,
+    Object? deletedAt = freezed,
+  }) {
+    return _then(ImproverTargetLink(
       id: null == id
           ? _self.id
           : id // ignore: cast_nullable_to_non_nullable

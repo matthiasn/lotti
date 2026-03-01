@@ -470,6 +470,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get agentTemplateKindImprover => 'Template Improver';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Task Agent';
 
   @override

@@ -216,6 +216,7 @@
       }
     }
   },
+  "agentTemplateKindImprover": "Vorlagen-Verbesserer",
   "agentTemplateKindTaskAgent": "Aufgaben-Agent",
   "agentTemplateMetricsActiveInstances": "Aktive Instanzen",
   "agentTemplateMetricsSuccessRate": "Erfolgsrate",

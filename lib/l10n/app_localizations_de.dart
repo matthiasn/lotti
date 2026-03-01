@@ -478,6 +478,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get agentTemplateKindImprover => 'Vorlagen-Verbesserer';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Aufgaben-Agent';
 
   @override

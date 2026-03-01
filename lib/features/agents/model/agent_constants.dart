@@ -4,6 +4,7 @@
 /// services, workflows, and persistence layers.
 abstract final class AgentKinds {
   static const taskAgent = 'task_agent';
+  static const templateImprover = 'template_improver';
 }
 
 abstract final class AgentLinkTypes {
@@ -14,6 +15,7 @@ abstract final class AgentLinkTypes {
   static const toolEffect = 'tool_effect';
   static const agentTask = 'agent_task';
   static const templateAssignment = 'template_assignment';
+  static const improverTarget = 'improver_target';
 }
 
 abstract final class AgentEntityTypes {

@@ -93,6 +93,7 @@ class AgentDbConversions {
       toolEffect: (l) => l.deletedAt,
       agentTask: (l) => l.deletedAt,
       templateAssignment: (l) => l.deletedAt,
+      improverTarget: (l) => l.deletedAt,
     );
 
     return AgentLinksCompanion(
@@ -216,6 +217,7 @@ class AgentDbConversions {
       toolEffect: (_) => AgentLinkTypes.toolEffect,
       agentTask: (_) => AgentLinkTypes.agentTask,
       templateAssignment: (_) => AgentLinkTypes.templateAssignment,
+      improverTarget: (_) => AgentLinkTypes.improverTarget,
     );
   }
 }

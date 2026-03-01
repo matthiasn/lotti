@@ -216,6 +216,7 @@
       }
     }
   },
+  "agentTemplateKindImprover": "Améliorateur de modèle",
   "agentTemplateKindTaskAgent": "Agent de tâches",
   "agentTemplateMetricsActiveInstances": "Instances actives",
   "agentTemplateMetricsSuccessRate": "Taux de réussite",

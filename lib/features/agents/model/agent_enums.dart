@@ -47,6 +47,9 @@ enum AgentRunStatus {
 enum AgentTemplateKind {
   /// A task-focused agent template.
   taskAgent,
+
+  /// A template-improver agent template (manages one-on-one rituals).
+  templateImprover,
 }
 
 /// Lifecycle status of an agent template version.
@@ -83,6 +86,9 @@ enum WakeReason {
 
   /// Triggered by a manual re-analysis request from the user.
   reanalysis,
+
+  /// Triggered by a scheduled timer (e.g., weekly one-on-one ritual).
+  scheduled,
 }
 
 /// Status of an evolution session.
@@ -152,6 +158,39 @@ enum ChangeDecisionVerdict {
 
   /// User deferred the decision.
   deferred,
+}
+
+/// Sentiment classification for agent feedback.
+enum FeedbackSentiment {
+  /// Positive signal (e.g., confirmed change, high confidence report).
+  positive,
+
+  /// Negative signal (e.g., rejected change, low confidence report).
+  negative,
+
+  /// Neutral or ambiguous signal.
+  neutral,
+}
+
+/// Category of agent feedback for aggregation and trending.
+enum FeedbackCategory {
+  /// Accuracy of agent observations and reports.
+  accuracy,
+
+  /// Quality of agent communication and report clarity.
+  communication,
+
+  /// Task prioritization and focus decisions.
+  prioritization,
+
+  /// Tool usage patterns and effectiveness.
+  tooling,
+
+  /// Response timeliness and wake frequency appropriateness.
+  timeliness,
+
+  /// General feedback that doesn't fit other categories.
+  general,
 }
 
 /// Kind of message in the agent's message log.

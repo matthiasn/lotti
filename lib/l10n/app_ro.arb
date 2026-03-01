@@ -216,6 +216,7 @@
       }
     }
   },
+  "agentTemplateKindImprover": "Îmbunătățitor de șablon",
   "agentTemplateKindTaskAgent": "Agent de sarcini",
   "agentTemplateMetricsActiveInstances": "Instanțe active",
   "agentTemplateMetricsSuccessRate": "Rata de succes",
