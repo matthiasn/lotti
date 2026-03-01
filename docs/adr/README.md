@@ -37,3 +37,6 @@ Each ADR should contain:
 - [`0007-token-usage-wake-run-log-storage.md`](./0007-token-usage-wake-run-log-storage.md)
 - [`0008-inference-profiles-agent-provider-mapping.md`](./0008-inference-profiles-agent-provider-mapping.md)
 - [`0009-redundant-change-proposal-suppression.md`](./0009-redundant-change-proposal-suppression.md)
+- [`0010-scheduled-wake-infrastructure.md`](./0010-scheduled-wake-infrastructure.md)
+- [`0011-feedback-classification-strategy.md`](./0011-feedback-classification-strategy.md)
+- [`0012-recursive-self-improvement-depth-policy.md`](./0012-recursive-self-improvement-depth-policy.md)
