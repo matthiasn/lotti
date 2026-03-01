@@ -375,7 +375,10 @@ stateDiagram-v2
 
 ### 5.1 Feedback sources
 
-The improver agent gathers feedback from four primary sources:
+The improver agent gathers feedback from three primary sources (plus wake run
+metrics). All sources live in the **agent domain** (`agent.sqlite`) — the
+improver never reads human journal data from `db.sqlite`. See Open Question #2
+for the rationale and future discussion on journal-based feedback.
 
 ```mermaid
 flowchart LR
@@ -397,12 +400,7 @@ flowchart LR
         AR --> ARC
     end
 
-    subgraph "Source 4: User Journal"
-        JE["Journal entries tagged\nwith agent feedback tags"]
-        RT["Rating entries\n(session/task ratings)"]
-    end
-
-    subgraph "Source 5: Wake Run Log"
+    subgraph "Source 4: Wake Run Log"
         WR["wake_run_log\n(user_rating, duration)"]
         WRN["Note: status (completed/failed)\nonly reflects LLM call success,\nnot output quality"]
     end
@@ -491,7 +489,9 @@ function extractFeedback(templateId, sinceDate):
         feedback.addAll(analyzeConfidenceTrend(reports))
 
     // Source 4: Wake run log (user_rating only — status merely reflects
-    // whether the LLM call succeeded, not output quality)
+    // whether the LLM call succeeded, not output quality).
+    // Note: all sources above are agent-domain only (agent.sqlite).
+    // Journal-domain data (db.sqlite) is not accessed — see Open Question #2.
     wakeRuns = getWakeRunsByTemplate(templateId, since: sinceDate)
     for each run in wakeRuns:
         if run.userRating != null:
@@ -619,10 +619,18 @@ flowchart TD
 The ritual context extends `EvolutionContextBuilder` with classified feedback:
 
 ```
-Token budget (~10k tokens):
+Ritual context window (~10k tokens):
+
+Note: This budget governs the *ritual prompt* sent to the evolution model,
+NOT the classification step. Classification (section 5.4) has no strict
+token limit — it runs separately via a fast model and can consume full
+observation text. The classified *output* is then summarized into the
+~2000-token slot below for the ritual prompt.
+
 ├── System prompt scaffold:          ~600 tokens (fixed)
 ├── Current directives:              ~500 tokens
-├── Classified feedback summary:     ~2000 tokens (NEW)
+├── Classified feedback summary:     ~2000 tokens (NEW — condensed from
+│   │                                 full classification output)
 │   ├── Negative feedback (grouped): ~800
 │   ├── Positive feedback (grouped): ~600
 │   └── Pattern observations:        ~600
@@ -1150,10 +1158,13 @@ meaningful recursive improvement.
    an in-app badge, a system notification, or both? This depends on platform capabilities
    and user preferences.
 
-2. **Feedback from journal entries**: Should the improver scan user's journal entries
-   (not just agent observations) for feedback? This crosses the journal/agent domain
-   boundary and needs careful privacy consideration per Core Principle 1 ("Human data
-   is sacred").
+2. **Feedback from journal entries**: The current design intentionally restricts all
+   feedback sources to the **agent domain** (`agent.sqlite`). The improver never reads
+   human journal data from `db.sqlite`. If journal-based feedback is desired in the
+   future (e.g., user journal entries tagged with agent feedback), it would cross the
+   journal/agent domain boundary and require an explicit opt-in gate per Core Principle 1
+   ("Human data is sacred"). This is deferred, not forgotten — it should be revisited
+   once the agent-domain-only pipeline proves its value.
 
 3. **Multi-template improver**: Should one improver agent handle multiple templates,
    or is it strictly 1:1 (one improver per template)? 1:1 is simpler and avoids

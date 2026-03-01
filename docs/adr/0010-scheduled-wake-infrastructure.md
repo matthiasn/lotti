@@ -16,7 +16,7 @@ whether any entity changes occurred.
 
 **Important**: The existing `nextWakeAt` field on `AgentStateEntity` is **already in
 active use** by the subscription throttle system. `WakeOrchestrator._setThrottleDeadline`
-writes the throttle expiry into `nextWakeAt`, and `TaskAgentService._hydrateThrottle`
+writes the throttle expiry into `nextWakeAt`, and `TaskAgentService._hydrateThrottleDeadline`
 restores it on startup. The UI also reads `nextWakeAt` to display a countdown timer.
 Reusing this field for scheduled wakes would create a semantic collision — a subscription
 throttle deadline could be mistaken for a scheduled ritual, and vice versa.
