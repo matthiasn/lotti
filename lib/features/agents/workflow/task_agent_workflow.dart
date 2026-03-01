@@ -379,6 +379,21 @@ class TaskAgentWorkflow {
 
       final observations = strategy.extractObservations();
 
+      // Collect pending items from existing change sets to deduplicate
+      // against. Fetched outside the write transaction to avoid extending
+      // the SQLite write-lock duration unnecessarily.
+      final pendingSets = await agentRepository.getPendingChangeSets(
+        agentId,
+        taskId: taskId,
+      );
+      final existingPendingItems = pendingSets
+          .expand(
+            (cs) => cs.items.where(
+              (i) => i.status == ChangeItemStatus.pending,
+            ),
+          )
+          .toList();
+
       await syncService.runInTransaction(() async {
         // 8. Persist the final assistant response as a thought message.
         final thoughtText = strategy.finalResponse;
@@ -470,18 +485,6 @@ class TaskAgentWorkflow {
         }
 
         // 10b. Persist deferred change set (if any items were accumulated).
-        // Collect pending items from existing change sets to avoid duplicates.
-        final pendingSets = await agentRepository.getPendingChangeSets(
-          agentId,
-          taskId: taskId,
-        );
-        final existingPendingItems = pendingSets
-            .expand(
-              (cs) => cs.items.where(
-                (i) => i.status == ChangeItemStatus.pending,
-              ),
-            )
-            .toList();
         await changeSetBuilder.build(
           syncService,
           existingPendingItems: existingPendingItems,

@@ -508,6 +508,9 @@ void main() {
       expect(result, isTrue);
       final writtenFile = File('${tmp.path}/agent_links/link-456.json');
       expect(writtenFile.readAsStringSync(), '{"new":"data"}');
+
+      // Verify download WAS called despite file existing
+      verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
     test('still dedupes non-agent files when they exist', () async {

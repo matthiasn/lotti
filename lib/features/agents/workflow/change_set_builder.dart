@@ -193,13 +193,13 @@ class ChangeSetBuilder {
     List<ChangeItem> existing,
   ) {
     if (existing.isEmpty) return proposed;
+    final existingHashes = existing
+        .map((e) => '${e.toolName}:${_deepEquals.hash(e.args)}')
+        .toSet();
     return proposed
         .where(
-          (item) => !existing.any(
-            (e) =>
-                e.toolName == item.toolName &&
-                _deepEquals.equals(e.args, item.args),
-          ),
+          (item) => !existingHashes
+              .contains('${item.toolName}:${_deepEquals.hash(item.args)}'),
         )
         .toList();
   }

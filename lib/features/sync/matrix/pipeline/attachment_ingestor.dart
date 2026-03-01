@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
 
@@ -203,7 +204,12 @@ class AttachmentIngestor {
     return '/${trimmed.replaceAll(r'\\', '/')}';
   }
 
-  /// Downloads and saves an attachment if it isn't already present on disk.
+  /// Downloads and saves an attachment.
+  ///
+  /// For non-agent payloads, an existing non-empty local file is treated as
+  /// up-to-date and download is skipped.
+  /// For `agent_entities`/`agent_links`, downloads are always re-attempted to
+  /// avoid stale reads (these files can be legitimately updated in-place).
   ///
   /// Returns `true` if a new file was written, `false` if skipped or failed.
   Future<bool> _saveAttachment({
@@ -239,14 +245,13 @@ class AttachmentIngestor {
       }
 
       final file = File(resolved);
-      // Agent entities/links use the entity ID in the path and can be
-      // legitimately updated (e.g. ChangeSetEntity status changes from
-      // 'pending' to 'resolved'). Always re-download to avoid stale reads.
-      final isAgentPayload = relativePath.contains('/agent_entities/') ||
-          relativePath.contains('/agent_links/');
+      // Agent entities/links can be legitimately updated in-place (e.g.
+      // ChangeSetEntity pending → resolved). Always re-download to avoid
+      // stale reads.
+      final isAgentPayload = isAgentPayloadPath(relativePath);
 
-      // Fast-path dedupe: if the file already exists and is non-empty,
-      // skip re-downloading to avoid repeated writes and log spam.
+      // Fast-path dedupe (non-agent only): if the file already exists and is
+      // non-empty, skip re-downloading to avoid repeated writes and log spam.
       // Note: We don't validate the file's vector clock here because
       // SmartJournalEntityLoader.load() will do that validation and
       // re-download via DescriptorDownloader if the local file is stale.

@@ -142,16 +142,30 @@ Future<Directory> findDocumentsDirectory() async {
   }
 }
 
-/// Returns the relative path (from the documents directory) for an agent
-/// entity JSON file. Uses `agent_entities/<id>.json`.
+/// Path segment for agent entity files.
+const agentEntitiesSegment = '/agent_entities/';
+
+/// Path segment for agent link files.
+const agentLinksSegment = '/agent_links/';
+
+/// Returns `true` if [relativePath] points to an agent entity or link file.
+///
+/// Agent payloads use the entity ID in the path and can be legitimately
+/// updated in-place (e.g. a ChangeSetEntity moving from pending to resolved).
+bool isAgentPayloadPath(String relativePath) =>
+    relativePath.contains(agentEntitiesSegment) ||
+    relativePath.contains(agentLinksSegment);
+
+/// Returns the documents-directory-relative path for an agent entity JSON
+/// file, including a leading `/`. Uses `/agent_entities/<id>.json`.
 String relativeAgentEntityPath(String entityId) {
-  return '/agent_entities/$entityId.json';
+  return '$agentEntitiesSegment$entityId.json';
 }
 
-/// Returns the relative path (from the documents directory) for an agent
-/// link JSON file. Uses `agent_links/<id>.json`.
+/// Returns the documents-directory-relative path for an agent link JSON
+/// file, including a leading `/`. Uses `/agent_links/<id>.json`.
 String relativeAgentLinkPath(String linkId) {
-  return '/agent_links/$linkId.json';
+  return '$agentLinksSegment$linkId.json';
 }
 
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {
