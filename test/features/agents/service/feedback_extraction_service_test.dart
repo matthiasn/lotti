@@ -36,7 +36,6 @@ void main() {
       () => mockRepo.getRecentDecisionsForTemplate(
         any(),
         since: any(named: 'since'),
-        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
     when(
@@ -66,7 +65,6 @@ void main() {
       () => mockRepo.getRecentDecisionsForTemplate(
         any(),
         since: any(named: 'since'),
-        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => decisions);
   }
