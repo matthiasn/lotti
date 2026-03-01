@@ -31,6 +31,7 @@ void main() {
     List<ClassifiedFeedbackItem>? feedbackItems,
     int sessionNumber = 1,
     int changesSinceLastSession = 0,
+    bool isMetaLevel = false,
   }) {
     return builder.buildRitualContext(
       template: template ?? makeTestTemplate(),
@@ -43,6 +44,7 @@ void main() {
       changesSinceLastSession: changesSinceLastSession,
       classifiedFeedback: makeFeedbackWith(feedbackItems: feedbackItems),
       sessionNumber: sessionNumber,
+      isMetaLevel: isMetaLevel,
     );
   }
 
@@ -216,6 +218,51 @@ void main() {
 
       expect(ctx.initialUserMessage, contains('2024-03-01'));
       expect(ctx.initialUserMessage, contains('2024-03-15'));
+    });
+
+    test('uses meta-level system prompt when isMetaLevel is true', () {
+      final ctx = buildCtx(isMetaLevel: true);
+
+      expect(ctx.systemPrompt, contains('meta-improver agent'));
+      expect(ctx.systemPrompt, contains('recursive self-improvement'));
+      expect(ctx.systemPrompt, contains('Directive churn stability'));
+      expect(ctx.systemPrompt, contains('Acceptance rates'));
+      // Should NOT contain the standard improver prompt.
+      expect(
+        ctx.systemPrompt,
+        isNot(contains('You are an improver agent')),
+      );
+    });
+
+    test('uses standard ritual prompt when isMetaLevel is false', () {
+      final ctx = buildCtx();
+
+      expect(ctx.systemPrompt, contains('improver agent'));
+      expect(ctx.systemPrompt, contains('one-on-one ritual'));
+      // Should NOT contain meta-level specific content.
+      expect(
+        ctx.systemPrompt,
+        isNot(contains('meta-improver agent')),
+      );
+    });
+
+    test('meta-level prompt preserves user message content', () {
+      final ctx = buildCtx(
+        isMetaLevel: true,
+        feedbackItems: [
+          makeTestClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            detail: 'Session abandoned',
+          ),
+        ],
+        sessionNumber: 3,
+      );
+
+      // User message content should be the same regardless of meta level.
+      expect(ctx.initialUserMessage, contains('Classified Feedback Summary'));
+      expect(ctx.initialUserMessage, contains('Session Continuity'));
+      expect(ctx.initialUserMessage, contains('ritual session #3'));
+      expect(ctx.initialUserMessage, contains('Session abandoned'));
     });
   });
 }

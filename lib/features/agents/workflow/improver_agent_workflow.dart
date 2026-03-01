@@ -132,6 +132,7 @@ class ImproverAgentWorkflow {
       }
 
       final contextBuilder = RitualContextBuilder();
+      final isMetaLevel = (state.slots.recursionDepth ?? 0) > 0;
 
       final ritualContext = contextBuilder.buildRitualContext(
         template: targetTemplate,
@@ -145,6 +146,7 @@ class ImproverAgentWorkflow {
         classifiedFeedback: feedback,
         sessionNumber: data.nextSessionNumber,
         observationPayloads: data.observationPayloads,
+        isMetaLevel: isMetaLevel,
       );
 
       // Start evolution session with the ritual context override.

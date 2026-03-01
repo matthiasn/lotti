@@ -56,6 +56,9 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    // Evolution session feedback: no agents → no meta-feedback.
+    when(() => mockTemplateService.getAgentsForTemplate(any()))
+        .thenAnswer((_) async => <AgentIdentityEntity>[]);
   }
 
   /// Stubs decisions for decision classification tests.

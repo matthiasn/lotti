@@ -61,6 +61,14 @@ class ImproverAgentService {
         'must be >= 0',
       );
     }
+    if (recursionDepth > ImproverSlotDefaults.maxRecursionDepth) {
+      throw ArgumentError.value(
+        recursionDepth,
+        'recursionDepth',
+        'exceeds maximum depth of '
+            '${ImproverSlotDefaults.maxRecursionDepth}',
+      );
+    }
 
     final resolvedImproverTemplateId =
         overrideImproverTemplateId ?? improverTemplateId;
@@ -108,8 +116,10 @@ class ImproverAgentService {
       }
 
       final now = clock.now();
-      const feedbackWindowDays = ImproverSlotDefaults.defaultFeedbackWindowDays;
-      final scheduledWakeAt = now.add(const Duration(days: feedbackWindowDays));
+      final feedbackWindowDays = recursionDepth > 0
+          ? ImproverSlotDefaults.defaultMetaFeedbackWindowDays
+          : ImproverSlotDefaults.defaultFeedbackWindowDays;
+      final scheduledWakeAt = now.add(Duration(days: feedbackWindowDays));
 
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(

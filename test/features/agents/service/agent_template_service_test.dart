@@ -891,18 +891,20 @@ void main() {
   });
 
   group('seedDefaults', () {
-    test('creates Laura, Tom, and Improver when none are seeded', () async {
+    test('creates all default templates when none are seeded', () async {
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(improverTemplateId))
           .thenAnswer((_) async => null);
+      when(() => mockRepo.getEntity(metaImproverTemplateId))
+          .thenAnswer((_) async => null);
 
       await service.seedDefaults();
 
-      // 3 templates * 3 entities each = 9 upserts.
-      verify(() => mockSync.upsertEntity(any())).called(9);
+      // 4 templates * 3 entities each = 12 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(12);
     });
 
     test('skips creation when all already seeded', () async {
@@ -918,12 +920,18 @@ void main() {
         id: improverTemplateId,
         agentId: improverTemplateId,
       );
+      final metaImprover = makeTestTemplate(
+        id: metaImproverTemplateId,
+        agentId: metaImproverTemplateId,
+      );
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => laura);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => tom);
       when(() => mockRepo.getEntity(improverTemplateId))
           .thenAnswer((_) async => improver);
+      when(() => mockRepo.getEntity(metaImproverTemplateId))
+          .thenAnswer((_) async => metaImprover);
 
       await service.seedDefaults();
 
@@ -939,12 +947,18 @@ void main() {
         id: improverTemplateId,
         agentId: improverTemplateId,
       );
+      final metaImprover = makeTestTemplate(
+        id: metaImproverTemplateId,
+        agentId: metaImproverTemplateId,
+      );
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => laura);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(improverTemplateId))
           .thenAnswer((_) async => improver);
+      when(() => mockRepo.getEntity(metaImproverTemplateId))
+          .thenAnswer((_) async => metaImprover);
 
       await service.seedDefaults();
 
@@ -957,12 +971,18 @@ void main() {
         id: tomTemplateId,
         agentId: tomTemplateId,
       );
+      final metaImprover = makeTestTemplate(
+        id: metaImproverTemplateId,
+        agentId: metaImproverTemplateId,
+      );
       when(() => mockRepo.getEntity(lauraTemplateId))
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(tomTemplateId))
           .thenAnswer((_) async => tom);
       when(() => mockRepo.getEntity(improverTemplateId))
           .thenAnswer((_) async => null);
+      when(() => mockRepo.getEntity(metaImproverTemplateId))
+          .thenAnswer((_) async => metaImprover);
 
       await service.seedDefaults();
 
