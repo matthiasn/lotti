@@ -112,13 +112,40 @@ void main() {
       expect(grouped[FeedbackCategory.general], hasLength(1));
     });
 
-    test('positive and negative return empty lists when no matches', () {
+    test('neutral returns only neutral-sentiment items', () {
+      final feedback = makeFeedback([
+        makeItem(sentiment: FeedbackSentiment.positive),
+        makeItem(sentiment: FeedbackSentiment.negative),
+        makeItem(),
+        makeItem(),
+      ]);
+
+      expect(feedback.neutral, hasLength(2));
+      expect(
+        feedback.neutral.every(
+          (i) => i.sentiment == FeedbackSentiment.neutral,
+        ),
+        isTrue,
+      );
+    });
+
+    test('positive, negative, and neutral return empty lists when no matches',
+        () {
       final feedback = makeFeedback([
         makeItem(),
       ]);
 
       expect(feedback.positive, isEmpty);
       expect(feedback.negative, isEmpty);
+    });
+
+    test('neutral returns empty list when no neutral items', () {
+      final feedback = makeFeedback([
+        makeItem(sentiment: FeedbackSentiment.positive),
+        makeItem(sentiment: FeedbackSentiment.negative),
+      ]);
+
+      expect(feedback.neutral, isEmpty);
     });
 
     test('byCategory returns empty map for empty items', () {

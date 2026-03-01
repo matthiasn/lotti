@@ -1293,6 +1293,170 @@ void main() {
     });
   });
 
+  group('gatherEvolutionData', () {
+    void stubGatherDependencies({
+      List<AgentMessageEntity>? observations,
+      List<EvolutionSessionEntity>? sessions,
+    }) {
+      final defaultObs = observations ?? <AgentMessageEntity>[];
+      final defaultSessions = sessions ?? <EvolutionSessionEntity>[];
+
+      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
+          .thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getLinksFrom(
+          kTestTemplateId,
+          type: 'template_assignment',
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          kTestTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [makeTestTemplateVersion()]);
+      when(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getRecentObservationsByTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => defaultObs);
+      when(
+        () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 30),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getEvolutionSessions(kTestTemplateId),
+      ).thenAnswer((_) async => defaultSessions);
+      when(
+        () => mockRepo.countChangedSinceForTemplate(
+          kTestTemplateId,
+          any(),
+        ),
+      ).thenAnswer((_) async => 0);
+    }
+
+    test('returns bundle with all fields populated', () async {
+      final report = makeTestReport();
+      final note = makeTestEvolutionNote();
+      final session = makeTestEvolutionSession(
+        createdAt: DateTime(2024, 3, 10),
+      );
+
+      stubGatherDependencies(sessions: [session]);
+      // Override specific stubs for this test.
+      when(
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => [report]);
+      when(
+        () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 30),
+      ).thenAnswer((_) async => [note]);
+      when(
+        () => mockRepo.countChangedSinceForTemplate(
+          kTestTemplateId,
+          session.createdAt,
+        ),
+      ).thenAnswer((_) async => 7);
+
+      final bundle = await service.gatherEvolutionData(kTestTemplateId);
+
+      expect(bundle.instanceReports, hasLength(1));
+      expect(bundle.pastNotes, hasLength(1));
+      expect(bundle.sessions, hasLength(1));
+      expect(bundle.recentVersions, hasLength(1));
+      expect(bundle.changesSinceLastSession, 7);
+    });
+
+    test('uses null since when no sessions exist', () async {
+      stubGatherDependencies();
+
+      await service.gatherEvolutionData(kTestTemplateId);
+
+      verify(
+        () => mockRepo.countChangedSinceForTemplate(kTestTemplateId, null),
+      ).called(1);
+    });
+
+    test('uses first session createdAt as since date', () async {
+      final session = makeTestEvolutionSession(
+        // ignore: avoid_redundant_argument_values
+        createdAt: DateTime(2024, 6, 1),
+      );
+      stubGatherDependencies(sessions: [session]);
+
+      await service.gatherEvolutionData(kTestTemplateId);
+
+      verify(
+        () => mockRepo.countChangedSinceForTemplate(
+          kTestTemplateId,
+          // ignore: avoid_redundant_argument_values
+          DateTime(2024, 6, 1),
+        ),
+      ).called(1);
+    });
+
+    test('resolves observation payloads for observations with contentEntryId',
+        () async {
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        kind: AgentMessageKind.observation,
+        contentEntryId: 'payload-abc',
+      );
+      final payload = makeTestMessagePayload(id: 'payload-abc');
+
+      stubGatherDependencies(observations: [obs]);
+      when(() => mockRepo.getEntity('payload-abc'))
+          .thenAnswer((_) async => payload);
+
+      final bundle = await service.gatherEvolutionData(kTestTemplateId);
+
+      expect(bundle.observationPayloads, hasLength(1));
+      expect(bundle.observationPayloads['payload-abc'], isNotNull);
+    });
+
+    test('skips observations without contentEntryId', () async {
+      final obs = makeTestMessage(
+        id: 'obs-no-payload',
+        kind: AgentMessageKind.observation,
+      );
+
+      stubGatherDependencies(observations: [obs]);
+
+      final bundle = await service.gatherEvolutionData(kTestTemplateId);
+
+      expect(bundle.observationPayloads, isEmpty);
+      verifyNever(() => mockRepo.getEntity('obs-no-payload'));
+    });
+  });
+
+  group('EvolutionDataBundle', () {
+    test('nextSessionNumber returns 1 when no sessions', () {
+      final bundle = makeTestEvolutionDataBundle();
+      expect(bundle.nextSessionNumber, 1);
+    });
+
+    test('nextSessionNumber returns max + 1', () {
+      final bundle = makeTestEvolutionDataBundle(
+        sessions: [
+          makeTestEvolutionSession(id: 's1', sessionNumber: 3),
+          makeTestEvolutionSession(id: 's2', sessionNumber: 7),
+          makeTestEvolutionSession(id: 's3', sessionNumber: 5),
+        ],
+      );
+      expect(bundle.nextSessionNumber, 8);
+    });
+
+    test('nextSessionNumber handles single session', () {
+      final bundle = makeTestEvolutionDataBundle(
+        sessions: [
+          // ignore: avoid_redundant_argument_values
+          makeTestEvolutionSession(id: 's1', sessionNumber: 1),
+        ],
+      );
+      expect(bundle.nextSessionNumber, 2);
+    });
+  });
+
   group('profileInUse', () {
     const profileId = 'profile-abc';
 

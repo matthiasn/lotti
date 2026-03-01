@@ -5,6 +5,7 @@ import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -90,6 +91,7 @@ class TemplateEvolutionWorkflow {
     this.syncService,
     this.contextBuilder,
     this.updateNotifications,
+    this.onSessionCompleted,
   });
 
   final ConversationRepository conversationRepository;
@@ -104,6 +106,12 @@ class TemplateEvolutionWorkflow {
   /// When provided, fires after local DB writes so UI providers refresh.
   final UpdateNotifications? updateNotifications;
 
+  /// Optional callback invoked after [approveProposal] completes successfully.
+  ///
+  /// Receives the template ID and session ID so callers (e.g., the improver
+  /// workflow) can schedule the next ritual and update state.
+  final void Function(String templateId, String sessionId)? onSessionCompleted;
+
   static const _uuid = Uuid();
   static const _logTag = 'TemplateEvolutionWorkflow';
 
@@ -117,7 +125,15 @@ class TemplateEvolutionWorkflow {
   /// creates an [EvolutionSessionEntity], starts the conversation, and sends
   /// the initial context message to the LLM. Returns the assistant's opening
   /// response, or `null` if setup fails.
-  Future<String?> startSession({required String templateId}) async {
+  ///
+  /// When [contextOverride] is provided, skips internal context building and
+  /// uses the given [EvolutionContext] directly. This allows callers (e.g.,
+  /// the improver ritual workflow) to inject enriched context.
+  Future<String?> startSession({
+    required String templateId,
+    EvolutionContext? contextOverride,
+    int? sessionNumberOverride,
+  }) async {
     final svc = templateService;
     final sync = syncService;
     final ctxBuilder = contextBuilder ?? EvolutionContextBuilder();
@@ -173,53 +189,38 @@ class TemplateEvolutionWorkflow {
     // propagating to the UI caller.
     final sessionId = _uuid.v4();
     try {
-      // Gather evolution context data.
-      final metrics = await svc.computeMetrics(templateId);
-      final recentVersions = await svc.getVersionHistory(templateId, limit: 5);
-      final reports = await svc.getRecentInstanceReports(templateId);
-      final observations = await svc.getRecentInstanceObservations(templateId);
-      final notes = await svc.getRecentEvolutionNotes(templateId, limit: 30);
-      final sessions = await svc.getEvolutionSessions(templateId);
+      final EvolutionContext ctx;
+      final int sessionNumber;
 
-      // Pre-fetch payload content for observations so the builder can include
-      // the actual observation text (AgentMessageEntity only stores a ref).
-      // Parallelise lookups to avoid sequential DB round-trips.
-      final payloadIds =
-          observations.map((obs) => obs.contentEntryId).whereType<String>();
-      final payloadEntities =
-          await Future.wait(payloadIds.map(svc.repository.getEntity));
-      final observationPayloads = <String, AgentMessagePayloadEntity>{
-        for (final entity
-            in payloadEntities.whereType<AgentMessagePayloadEntity>())
-          entity.id: entity,
-      };
+      if (contextOverride != null && sessionNumberOverride != null) {
+        // Fast path: use caller-provided context and session number.
+        ctx = contextOverride;
+        sessionNumber = sessionNumberOverride;
+      } else if (contextOverride != null) {
+        // Optimized path: context is provided but session number is not.
+        // Fetch only sessions instead of full gatherEvolutionData.
+        final sessions = await svc.getEvolutionSessions(templateId);
+        sessionNumber = sessions.fold(
+                0, (max, s) => s.sessionNumber > max ? s.sessionNumber : max) +
+            1;
+        ctx = contextOverride;
+      } else {
+        // Full path: gather all data to build context and session number.
+        final data = await svc.gatherEvolutionData(templateId);
+        sessionNumber = sessionNumberOverride ?? data.nextSessionNumber;
 
-      // Determine delta since last session.
-      final lastSessionDate =
-          sessions.isNotEmpty ? sessions.first.createdAt : null;
-      final changesSince =
-          await svc.countChangesSince(templateId, lastSessionDate);
-
-      // Build the LLM context.
-      final ctx = ctxBuilder.build(
-        template: template,
-        currentVersion: currentVersion,
-        recentVersions: recentVersions,
-        instanceReports: reports,
-        instanceObservations: observations,
-        pastNotes: notes,
-        metrics: metrics,
-        changesSinceLastSession: changesSince,
-        observationPayloads: observationPayloads,
-      );
-
-      // Determine session number.
-      final sessionNumber = sessions.isNotEmpty
-          ? sessions
-                  .map((s) => s.sessionNumber)
-                  .reduce((a, b) => a > b ? a : b) +
-              1
-          : 1;
+        ctx = ctxBuilder.build(
+          template: template,
+          currentVersion: currentVersion,
+          recentVersions: data.recentVersions,
+          instanceReports: data.instanceReports,
+          instanceObservations: data.instanceObservations,
+          pastNotes: data.pastNotes,
+          metrics: data.metrics,
+          changesSinceLastSession: data.changesSinceLastSession,
+          observationPayloads: data.observationPayloads,
+        );
+      }
 
       // Create the session entity, conversation, and send initial message.
       final now = clock.now();
@@ -396,6 +397,20 @@ class TemplateEvolutionWorkflow {
       _cleanupSession(sessionId);
       _notifyUpdate(active.templateId);
 
+      // Invoke the post-approval callback (e.g., schedule next ritual).
+      // Wrapped in try/catch so a callback failure does not convert a
+      // successful approval into a null return.
+      try {
+        onSessionCompleted?.call(active.templateId, sessionId);
+      } catch (e, s) {
+        developer.log(
+          'onSessionCompleted failed for $sessionId',
+          name: _logTag,
+          error: e,
+          stackTrace: s,
+        );
+      }
+
       developer.log(
         'Approved proposal for session $sessionId → version ${newVersion.id}',
         name: _logTag,
@@ -544,7 +559,7 @@ class TemplateEvolutionWorkflow {
       return await svc.createVersion(
         templateId: templateId,
         directives: directives,
-        authoredBy: 'evolution_agent',
+        authoredBy: AgentAuthors.evolutionAgent,
       );
     } catch (e) {
       // Check if the version was actually created despite the error
@@ -552,7 +567,7 @@ class TemplateEvolutionWorkflow {
       final activeVersion = await svc.getActiveVersion(templateId);
       if (activeVersion != null &&
           activeVersion.directives == directives &&
-          activeVersion.authoredBy == 'evolution_agent') {
+          activeVersion.authoredBy == AgentAuthors.evolutionAgent) {
         developer.log(
           'createVersion threw but version was persisted, recovering',
           name: _logTag,

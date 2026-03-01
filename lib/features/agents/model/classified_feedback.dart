@@ -57,6 +57,10 @@ extension ClassifiedFeedbackX on ClassifiedFeedback {
   List<ClassifiedFeedbackItem> get negative =>
       items.where((i) => i.sentiment == FeedbackSentiment.negative).toList();
 
+  /// All items with neutral sentiment.
+  List<ClassifiedFeedbackItem> get neutral =>
+      items.where((i) => i.sentiment == FeedbackSentiment.neutral).toList();
+
   /// Group items by category.
   Map<FeedbackCategory, List<ClassifiedFeedbackItem>> get byCategory =>
       items.groupListsBy((i) => i.category);

@@ -214,7 +214,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final v in capped) {
       buf.writeln(
         '- v${v.version} (${v.status.name}, by ${v.authoredBy}): '
-        '${_truncate(v.directives, 120)}',
+        '${truncateText(v.directives, 120)}',
       );
     }
     buf.writeln();
@@ -229,7 +229,7 @@ again. The conversation should always be driving toward an approved proposal.
     for (final report in capped) {
       buf
         ..writeln('### Agent ${_shortId(report.agentId)}')
-        ..writeln(_truncate(report.content, 500))
+        ..writeln(truncateText(report.content, 500))
         ..writeln();
     }
   }
@@ -250,7 +250,7 @@ again. The conversation should always be driving toward an approved proposal.
       if (payload != null) {
         final text = _extractPayloadText(payload);
         if (text != null) {
-          buf.writeln(_truncate(text, 400));
+          buf.writeln(truncateText(text, 400));
         }
       }
 
@@ -265,7 +265,8 @@ again. The conversation should always be driving toward an approved proposal.
     final capped = notes.take(maxPastNotes).toList();
     buf.writeln('## Your Notes From Past Sessions (${capped.length})');
     for (final note in capped) {
-      buf.writeln('- **${note.kind.name}**: ${_truncate(note.content, 200)}');
+      buf.writeln(
+          '- **${note.kind.name}**: ${truncateText(note.content, 200)}');
     }
     buf.writeln();
   }
@@ -278,7 +279,7 @@ again. The conversation should always be driving toward an approved proposal.
   }
 
   /// Truncate [text] to [maxLength] characters, appending "…" if truncated.
-  static String _truncate(String text, int maxLength) {
+  static String truncateText(String text, int maxLength) {
     final singleLine = text.replaceAll('\n', ' ').trim();
     if (singleLine.length <= maxLength) return singleLine;
     return '${singleLine.substring(0, min(maxLength, singleLine.length))}…';

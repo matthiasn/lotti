@@ -857,6 +857,153 @@ final class AgentTemplateServiceProvider extends $FunctionalProvider<
 String _$agentTemplateServiceHash() =>
     r'104340be1f31a3ca3b8a0e5b3726a0084969940b';
 
+/// The feedback extraction service.
+
+@ProviderFor(feedbackExtractionService)
+final feedbackExtractionServiceProvider = FeedbackExtractionServiceProvider._();
+
+/// The feedback extraction service.
+
+final class FeedbackExtractionServiceProvider extends $FunctionalProvider<
+    FeedbackExtractionService,
+    FeedbackExtractionService,
+    FeedbackExtractionService> with $Provider<FeedbackExtractionService> {
+  /// The feedback extraction service.
+  FeedbackExtractionServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'feedbackExtractionServiceProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$feedbackExtractionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<FeedbackExtractionService> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FeedbackExtractionService create(Ref ref) {
+    return feedbackExtractionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FeedbackExtractionService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FeedbackExtractionService>(value),
+    );
+  }
+}
+
+String _$feedbackExtractionServiceHash() =>
+    r'a5de05f01a608ba127a146f540f7ec515ec0cfd2';
+
+/// The improver agent service.
+
+@ProviderFor(improverAgentService)
+final improverAgentServiceProvider = ImproverAgentServiceProvider._();
+
+/// The improver agent service.
+
+final class ImproverAgentServiceProvider extends $FunctionalProvider<
+    ImproverAgentService,
+    ImproverAgentService,
+    ImproverAgentService> with $Provider<ImproverAgentService> {
+  /// The improver agent service.
+  ImproverAgentServiceProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'improverAgentServiceProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$improverAgentServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ImproverAgentService> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ImproverAgentService create(Ref ref) {
+    return improverAgentService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ImproverAgentService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ImproverAgentService>(value),
+    );
+  }
+}
+
+String _$improverAgentServiceHash() =>
+    r'2e5a9a2e49539c6295136a413cb7792f789e60f2';
+
+/// The improver agent workflow with all dependencies resolved.
+
+@ProviderFor(improverAgentWorkflow)
+final improverAgentWorkflowProvider = ImproverAgentWorkflowProvider._();
+
+/// The improver agent workflow with all dependencies resolved.
+
+final class ImproverAgentWorkflowProvider extends $FunctionalProvider<
+    ImproverAgentWorkflow,
+    ImproverAgentWorkflow,
+    ImproverAgentWorkflow> with $Provider<ImproverAgentWorkflow> {
+  /// The improver agent workflow with all dependencies resolved.
+  ImproverAgentWorkflowProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'improverAgentWorkflowProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$improverAgentWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<ImproverAgentWorkflow> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ImproverAgentWorkflow create(Ref ref) {
+    return improverAgentWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ImproverAgentWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ImproverAgentWorkflow>(value),
+    );
+  }
+}
+
+String _$improverAgentWorkflowHash() =>
+    r'aebcb692a46b2ad9d8e1460fcbbeba38fe49ec95';
+
 /// List all non-deleted agent templates.
 
 @ProviderFor(agentTemplates)
@@ -3239,7 +3386,7 @@ final class TemplateEvolutionWorkflowProvider extends $FunctionalProvider<
 }
 
 String _$templateEvolutionWorkflowHash() =>
-    r'6c59b89698bcb0d7bf6370bcee5ff35e2c179e98';
+    r'f70a522e55fd0ada765d7b8dcad9a1dd46cae01a';
 
 /// Fetch evolution sessions for a template, newest-first.
 ///

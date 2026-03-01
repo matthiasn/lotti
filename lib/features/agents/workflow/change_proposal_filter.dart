@@ -1,6 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 
@@ -56,7 +57,7 @@ class ChangeProposalFilter {
       status: data.status.toDbString,
       priority: data.priority.short,
       estimateMinutes: data.estimate?.inMinutes,
-      dueDate: _formatDate(data.due),
+      dueDate: formatIsoDate(data.due),
     );
   }
 
@@ -126,13 +127,5 @@ class ChangeProposalFilter {
         }
     }
     return null;
-  }
-
-  /// Format a [DateTime] as YYYY-MM-DD, matching the tool argument format.
-  static String? _formatDate(DateTime? date) {
-    if (date == null) return null;
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
   }
 }
