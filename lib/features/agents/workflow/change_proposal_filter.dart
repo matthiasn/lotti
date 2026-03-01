@@ -40,7 +40,7 @@ class ChangeProposalFilter {
   /// Returns `null` if the entity is not a [Task].
   ///
   /// **String coupling:** The `status` and `priority` fields use
-  /// [TaskStatus.toDbString] and [TaskPriority.short] respectively. These
+  /// `TaskStatus.toDbString` and `TaskPriority.short` respectively. These
   /// must match the string values the LLM sends as tool arguments (e.g.
   /// `"OPEN"`, `"P1"`). If those representations ever diverge, redundancy
   /// checks will silently become no-ops (never match).
@@ -98,44 +98,34 @@ class ChangeProposalFilter {
     Map<String, dynamic> args,
     TaskMetadataSnapshot snapshot,
   ) {
-    return switch (toolName) {
-      TaskAgentToolNames.updateTaskEstimate => () {
-          final minutes = args['minutes'];
-          if (minutes is int && snapshot.estimateMinutes == minutes) {
-            return 'Skipped: estimate is already $minutes minutes.';
-          }
-          return null;
-        }(),
-      TaskAgentToolNames.updateTaskPriority => () {
-          final priority = args['priority'];
-          if (priority is String && snapshot.priority == priority) {
-            return 'Skipped: priority is already $priority.';
-          }
-          return null;
-        }(),
-      TaskAgentToolNames.updateTaskDueDate => () {
-          final dueDate = args['dueDate'];
-          if (dueDate is String && snapshot.dueDate == dueDate) {
-            return 'Skipped: due date is already $dueDate.';
-          }
-          return null;
-        }(),
-      TaskAgentToolNames.setTaskStatus => () {
-          final status = args['status'];
-          if (status is String && snapshot.status == status) {
-            return 'Skipped: status is already $status.';
-          }
-          return null;
-        }(),
-      TaskAgentToolNames.setTaskTitle => () {
-          final title = args['title'];
-          if (title is String && snapshot.title == title) {
-            return 'Skipped: title is already "$title".';
-          }
-          return null;
-        }(),
-      _ => null,
-    };
+    switch (toolName) {
+      case TaskAgentToolNames.updateTaskEstimate:
+        final minutes = args['minutes'];
+        if (minutes is int && snapshot.estimateMinutes == minutes) {
+          return 'Skipped: estimate is already $minutes minutes.';
+        }
+      case TaskAgentToolNames.updateTaskPriority:
+        final priority = args['priority'];
+        if (priority is String && snapshot.priority == priority) {
+          return 'Skipped: priority is already $priority.';
+        }
+      case TaskAgentToolNames.updateTaskDueDate:
+        final dueDate = args['dueDate'];
+        if (dueDate is String && snapshot.dueDate == dueDate) {
+          return 'Skipped: due date is already $dueDate.';
+        }
+      case TaskAgentToolNames.setTaskStatus:
+        final status = args['status'];
+        if (status is String && snapshot.status == status) {
+          return 'Skipped: status is already $status.';
+        }
+      case TaskAgentToolNames.setTaskTitle:
+        final title = args['title'];
+        if (title is String && snapshot.title == title) {
+          return 'Skipped: title is already "$title".';
+        }
+    }
+    return null;
   }
 
   /// Format a [DateTime] as YYYY-MM-DD, matching the tool argument format.

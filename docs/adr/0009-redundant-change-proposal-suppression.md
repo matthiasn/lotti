@@ -84,14 +84,14 @@ compares the proposed value against the current value for:
 When proposals are suppressed, the response fed back to the LLM includes the
 reason. This serves as a correction signal:
 
-```
+```text
 Proposal queued for user review (1 item(s) queued).
 Skipped 2 redundant update(s): "Buy groceries" is already checked; "Walk dog" is already checked.
 ```
 
 or for non-batch tools:
 
-```
+```text
 Skipped: estimate is already 120 minutes.
 ```
 

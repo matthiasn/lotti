@@ -355,27 +355,25 @@ class ChangeSetBuilder {
     final proposedIsChecked = args['isChecked'];
     final proposedTitle = args['title'];
 
-    // If isChecked is not being changed, check title.
-    final isCheckedRedundant = proposedIsChecked is bool &&
-        currentState.isChecked != null &&
-        proposedIsChecked == currentState.isChecked;
+    // Determine whether each field represents an actual change.
+    final isCheckedChanging = proposedIsChecked is bool &&
+        (currentState.isChecked == null ||
+            proposedIsChecked != currentState.isChecked);
 
-    final hasTitleChange = proposedTitle is String &&
+    final isTitleChanging = proposedTitle is String &&
         proposedTitle.isNotEmpty &&
         proposedTitle != currentState.title;
 
-    // If the proposal only changes isChecked (no title) and it's redundant,
-    // suppress it.
-    if (proposedIsChecked is bool && !isCheckedRedundant) {
-      return null; // Actual change — keep it.
+    // If either field is changing, the proposal is not redundant.
+    if (isCheckedChanging || isTitleChanging) {
+      return null;
     }
 
-    if (proposedIsChecked is! bool && proposedTitle is! String) {
-      return null; // No meaningful fields — keep it (defensive).
-    }
-
-    if (hasTitleChange) {
-      return null; // Title is changing — keep it.
+    // Only suppress if the proposal contains at least one valid field.
+    final hasValidProposal =
+        proposedIsChecked is bool || proposedTitle is String;
+    if (!hasValidProposal) {
+      return null; // Malformed — keep it defensively.
     }
 
     // At this point the update is redundant.
