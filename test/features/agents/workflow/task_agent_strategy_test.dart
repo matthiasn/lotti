@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -10,6 +11,61 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+
+const _defaultSnapshot = (
+  title: 'Fix login bug',
+  status: 'IN PROGRESS',
+  priority: 'P1',
+  estimateMinutes: 120,
+  dueDate: '2026-03-15',
+);
+
+/// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
+/// optional [ResolveTaskMetadata] for metadata-redundancy tests.
+///
+/// Returns both the strategy and the builder so tests can inspect builder
+/// state after processing tool calls.
+({TaskAgentStrategy strategy, ChangeSetBuilder builder})
+    _createStrategyWithMetadata({
+  required MockAgentToolExecutor executor,
+  required MockAgentSyncService syncService,
+  ResolveTaskMetadata? resolveTaskMetadata,
+  ChecklistItemStateResolver? checklistItemStateResolver,
+}) {
+  const agentId = 'agent-001';
+  const taskId = 'task-001';
+  const threadId = 'thread-001';
+  const runKey = 'run-key-001';
+
+  final builder = ChangeSetBuilder(
+    agentId: agentId,
+    taskId: taskId,
+    threadId: threadId,
+    runKey: runKey,
+    checklistItemStateResolver: checklistItemStateResolver,
+  );
+
+  final strategy = TaskAgentStrategy(
+    executor: executor,
+    syncService: syncService,
+    agentId: agentId,
+    threadId: threadId,
+    runKey: runKey,
+    taskId: taskId,
+    resolveCategoryId: (_) async => 'cat-001',
+    readVectorClock: (_) async => null,
+    executeToolHandler: (toolName, args, manager) async =>
+        const ToolExecutionResult(
+      success: true,
+      output: 'done',
+      mutatedEntityId: taskId,
+    ),
+    changeSetBuilder: builder,
+    resolveTaskMetadata: resolveTaskMetadata,
+  );
+
+  return (strategy: strategy, builder: builder);
+}
 
 void main() {
   late MockAgentSyncService mockSyncService;
@@ -1054,36 +1110,10 @@ void main() {
 
       test('suppresses redundant non-batch tool and feeds back to LLM',
           () async {
-        final csBuilderWithResolver = ChangeSetBuilder(
-          agentId: agentId,
-          taskId: taskId,
-          threadId: threadId,
-          runKey: runKey,
-        );
-
-        final strategyWithMetadata = TaskAgentStrategy(
+        final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(
-            success: true,
-            output: 'done',
-            mutatedEntityId: taskId,
-          ),
-          changeSetBuilder: csBuilderWithResolver,
-          resolveTaskMetadata: () async => (
-            title: 'Fix login bug',
-            status: 'IN PROGRESS',
-            priority: 'P1',
-            estimateMinutes: 120,
-            dueDate: '2026-03-15',
-          ),
+          resolveTaskMetadata: () async => _defaultSnapshot,
         );
 
         final toolCalls = [
@@ -1097,15 +1127,12 @@ void main() {
           ),
         ];
 
-        await strategyWithMetadata.processToolCalls(
+        await strategy.processToolCalls(
           toolCalls: toolCalls,
           manager: mockManager,
         );
 
-        // Should NOT be added to the builder.
-        expect(csBuilderWithResolver.hasItems, isFalse);
-
-        // LLM should get a skip message.
+        expect(builder.hasItems, isFalse);
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-redundant',
@@ -1116,36 +1143,10 @@ void main() {
 
       test('keeps non-redundant non-batch tool when metadata differs',
           () async {
-        final csBuilderWithResolver = ChangeSetBuilder(
-          agentId: agentId,
-          taskId: taskId,
-          threadId: threadId,
-          runKey: runKey,
-        );
-
-        final strategyWithMetadata = TaskAgentStrategy(
+        final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(
-            success: true,
-            output: 'done',
-            mutatedEntityId: taskId,
-          ),
-          changeSetBuilder: csBuilderWithResolver,
-          resolveTaskMetadata: () async => (
-            title: 'Fix login bug',
-            status: 'IN PROGRESS',
-            priority: 'P1',
-            estimateMinutes: 120,
-            dueDate: '2026-03-15',
-          ),
+          resolveTaskMetadata: () async => _defaultSnapshot,
         );
 
         final toolCalls = [
@@ -1159,17 +1160,13 @@ void main() {
           ),
         ];
 
-        await strategyWithMetadata.processToolCalls(
+        await strategy.processToolCalls(
           toolCalls: toolCalls,
           manager: mockManager,
         );
 
-        // Should be added to the builder.
-        expect(csBuilderWithResolver.hasItems, isTrue);
-        expect(
-            csBuilderWithResolver.items.first.toolName, 'update_task_priority');
-
-        // LLM should get a queued message.
+        expect(builder.hasItems, isTrue);
+        expect(builder.items.first.toolName, 'update_task_priority');
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-actual',
@@ -1179,29 +1176,9 @@ void main() {
       });
 
       test('keeps tool when resolver throws (conservative)', () async {
-        final csBuilderWithResolver = ChangeSetBuilder(
-          agentId: agentId,
-          taskId: taskId,
-          threadId: threadId,
-          runKey: runKey,
-        );
-
-        final strategyWithResolver = TaskAgentStrategy(
+        final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(
-            success: true,
-            output: 'done',
-            mutatedEntityId: taskId,
-          ),
-          changeSetBuilder: csBuilderWithResolver,
           resolveTaskMetadata: () async => throw Exception('DB error'),
         );
 
@@ -1216,14 +1193,12 @@ void main() {
           ),
         ];
 
-        await strategyWithResolver.processToolCalls(
+        await strategy.processToolCalls(
           toolCalls: toolCalls,
           manager: mockManager,
         );
 
-        // Conservative: should still be added.
-        expect(csBuilderWithResolver.hasItems, isTrue);
-
+        expect(builder.hasItems, isTrue);
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-err',
@@ -1234,31 +1209,11 @@ void main() {
 
       test('redundant batch items include redundancy info in response',
           () async {
-        final csBuilderWithResolver = ChangeSetBuilder(
-          agentId: agentId,
-          taskId: taskId,
-          threadId: threadId,
-          runKey: runKey,
-          checklistItemStateResolver: (id) async =>
-              (title: 'Buy groceries', isChecked: true),
-        );
-
-        final strategyWithResolver = TaskAgentStrategy(
+        final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(
-            success: true,
-            output: 'done',
-            mutatedEntityId: taskId,
-          ),
-          changeSetBuilder: csBuilderWithResolver,
+          checklistItemStateResolver: (id) async =>
+              (title: 'Buy groceries', isChecked: true),
         );
 
         final toolCalls = [
@@ -1276,15 +1231,13 @@ void main() {
           ),
         ];
 
-        await strategyWithResolver.processToolCalls(
+        await strategy.processToolCalls(
           toolCalls: toolCalls,
           manager: mockManager,
         );
 
-        // Builder should have no items (all redundant).
-        expect(csBuilderWithResolver.hasItems, isFalse);
+        expect(builder.hasItems, isFalse);
 
-        // LLM should see the redundancy feedback.
         final captured = verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-batch-redundant',

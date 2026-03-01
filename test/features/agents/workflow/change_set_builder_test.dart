@@ -744,6 +744,62 @@ void main() {
       expect(result.redundant, 0);
     });
 
+    test('keeps item when resolver returns isChecked as null (conservative)',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Ambiguous item', isChecked: null),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-null', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('suppresses when both isChecked and title match current state',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Same title', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-both', 'isChecked': true, 'title': 'Same title'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, isEmpty);
+      expect(result.added, 0);
+      expect(result.redundant, 1);
+      expect(
+        result.redundantDetails.first,
+        contains('"Same title" is already checked'),
+      );
+    });
+
     test('does not filter add_checklist_item (only updates)', () async {
       final resolverBuilder = ChangeSetBuilder(
         agentId: 'agent-001',

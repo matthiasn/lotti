@@ -38,6 +38,12 @@ class ChangeProposalFilter {
   /// Build a [TaskMetadataSnapshot] from a [JournalDb] lookup.
   ///
   /// Returns `null` if the entity is not a [Task].
+  ///
+  /// **String coupling:** The `status` and `priority` fields use
+  /// [TaskStatus.toDbString] and [TaskPriority.short] respectively. These
+  /// must match the string values the LLM sends as tool arguments (e.g.
+  /// `"OPEN"`, `"P1"`). If those representations ever diverge, redundancy
+  /// checks will silently become no-ops (never match).
   static Future<TaskMetadataSnapshot?> resolveTaskMetadata(
     JournalDb journalDb,
     String taskId,
@@ -61,7 +67,7 @@ class ChangeProposalFilter {
   static String formatBatchResponse(BatchAddResult result) {
     final parts = <String>[];
 
-    if (result.added > 0 || result.skipped == 0 && result.redundant == 0) {
+    if (result.added > 0 || (result.skipped == 0 && result.redundant == 0)) {
       parts.add(
         'Proposal queued for user review '
         '(${result.added} item(s) queued).',
