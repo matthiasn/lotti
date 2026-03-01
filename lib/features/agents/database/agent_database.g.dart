@@ -2640,6 +2640,20 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getRecentDecisionsByTemplate(
+      String templateId, int limit) {
+    return customSelect(
+        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+        variables: [
+          Variable<String>(templateId),
+          Variable<int>(limit)
+        ],
+        readsFrom: {
+          agentEntities,
+          agentLinks,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getTokenUsageByAgentId(String agentId, int limit) {
     return customSelect(
         'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'wakeTokenUsage\' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',

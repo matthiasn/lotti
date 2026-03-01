@@ -49,20 +49,14 @@ class FeedbackExtractionService {
     bool inWindow(DateTime dt) =>
         !dt.isBefore(since) && !dt.isAfter(effectiveUntil);
 
-    // 1. Classify decisions
-    final agents = await templateService.getAgentsForTemplate(templateId);
-    var totalDecisionsScanned = 0;
-    for (final agent in agents) {
-      final decisions = await agentRepository.getRecentDecisions(
-        agent.agentId,
-        limit: 100,
-      );
-      final windowDecisions = decisions.where((d) => inWindow(d.createdAt));
-      totalDecisionsScanned += windowDecisions.length;
+    // 1. Classify decisions (single template-level query).
+    final allDecisions =
+        await agentRepository.getRecentDecisionsForTemplate(templateId);
+    final windowDecisions = allDecisions.where((d) => inWindow(d.createdAt));
+    final totalDecisionsScanned = windowDecisions.length;
 
-      for (final decision in windowDecisions) {
-        items.add(_classifyDecision(decision));
-      }
+    for (final decision in windowDecisions) {
+      items.add(_classifyDecision(decision));
     }
 
     // 2–4: Observations, reports, and wake runs are independent — fetch
