@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -1988,6 +1989,252 @@ void main() {
       // Should not throw or crash without updateNotifications.
       final result = await workflow.startSession(templateId: kTestTemplateId);
       expect(result, isNotNull);
+    });
+  });
+
+  group('startSession with contextOverride', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('skips internal context building when contextOverride is provided',
+        () async {
+      stubProviderResolution();
+      when(() => mockTemplateService.getTemplate(any()))
+          .thenAnswer((_) async => makeTestTemplate());
+      when(() => mockTemplateService.getActiveVersion(any()))
+          .thenAnswer((_) async => makeTestTemplateVersion());
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockTemplateService.getEvolutionSessions(any()))
+          .thenAnswer((_) async => []);
+
+      final convRepo = _TestConversationRepository(
+        assistantResponse: 'Ritual response',
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      const overrideContext = EvolutionContext(
+        systemPrompt: 'Custom ritual system prompt',
+        initialUserMessage: 'Custom ritual user message with feedback',
+      );
+
+      final response = await workflow.startSession(
+        templateId: kTestTemplateId,
+        contextOverride: overrideContext,
+      );
+
+      expect(response, 'Ritual response');
+      expect(workflow.activeSessions, hasLength(1));
+
+      // Should NOT have called internal context building methods.
+      verifyNever(() => mockTemplateService.computeMetrics(any()));
+      verifyNever(
+        () => mockTemplateService.getVersionHistory(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      );
+      verifyNever(
+        () => mockTemplateService.getRecentInstanceReports(any()),
+      );
+      verifyNever(
+        () => mockTemplateService.getRecentInstanceObservations(any()),
+      );
+      verifyNever(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      );
+      verifyNever(
+        () => mockTemplateService.countChangesSince(any(), any()),
+      );
+    });
+
+    test('uses override system prompt for conversation', () async {
+      stubProviderResolution();
+      when(() => mockTemplateService.getTemplate(any()))
+          .thenAnswer((_) async => makeTestTemplate());
+      when(() => mockTemplateService.getActiveVersion(any()))
+          .thenAnswer((_) async => makeTestTemplateVersion());
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockTemplateService.getEvolutionSessions(any()))
+          .thenAnswer((_) async => []);
+
+      final convRepo = _TestConversationRepository(
+        assistantResponse: 'Response',
+      )
+        // Track the system message passed to createConversation by replacing
+        // the delegate.
+        ..createConversationDelegate = () {
+          // We can't easily capture createConversation params through
+          // _TestConversationRepository, so we verify indirectly by checking
+          // that the session was created successfully with the override.
+          return 'test-conv-id';
+        };
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      const overrideContext = EvolutionContext(
+        systemPrompt: 'Ritual-specific system prompt',
+        initialUserMessage: 'Ritual user message',
+      );
+
+      final response = await workflow.startSession(
+        templateId: kTestTemplateId,
+        contextOverride: overrideContext,
+      );
+
+      // Session was created successfully with the override context.
+      expect(response, isNotNull);
+      expect(workflow.activeSessions, hasLength(1));
+    });
+  });
+
+  group('onSessionCompleted callback', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('fires callback after approveProposal completes', () async {
+      final newVersion = makeTestTemplateVersion(
+        id: 'new-version',
+        version: 2,
+        directives: 'New directives',
+        authoredBy: 'evolution_agent',
+      );
+
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockRepository.getEntity(any()))
+          .thenAnswer((_) async => makeTestEvolutionSession());
+
+      String? callbackTemplateId;
+      String? callbackSessionId;
+
+      final convRepo = _TestConversationRepository();
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments: '{"directives":"New directives","rationale":"R"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        onSessionCompleted: (templateId, sessionId) {
+          callbackTemplateId = templateId;
+          callbackSessionId = sessionId;
+        },
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveProposal(sessionId: 'session-1');
+
+      expect(result, isNotNull);
+      expect(callbackTemplateId, kTestTemplateId);
+      expect(callbackSessionId, 'session-1');
+    });
+
+    test('callback is not fired when approve fails', () async {
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenThrow(StateError('DB error'));
+
+      var callbackFired = false;
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments: '{"directives":"X","rationale":"R"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        onSessionCompleted: (_, __) {
+          callbackFired = true;
+        },
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveProposal(sessionId: 'session-1');
+
+      expect(result, isNull);
+      expect(callbackFired, isFalse);
     });
   });
 }

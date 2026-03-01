@@ -19,6 +19,8 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
+import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -348,6 +350,11 @@ class MockTemplateEvolutionWorkflow extends Mock
 
 class MockChangeSetConfirmationService extends Mock
     implements ChangeSetConfirmationService {}
+
+class MockFeedbackExtractionService extends Mock
+    implements FeedbackExtractionService {}
+
+class MockImproverAgentService extends Mock implements ImproverAgentService {}
 
 // --- Additional Fake classes ---
 

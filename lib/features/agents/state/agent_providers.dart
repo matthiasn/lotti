@@ -10,12 +10,15 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
+import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -210,6 +213,41 @@ AgentTemplateService agentTemplateService(Ref ref) {
   return AgentTemplateService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+  );
+}
+
+/// The feedback extraction service.
+@Riverpod(keepAlive: true)
+FeedbackExtractionService feedbackExtractionService(Ref ref) {
+  return FeedbackExtractionService(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+  );
+}
+
+/// The improver agent service.
+@Riverpod(keepAlive: true)
+ImproverAgentService improverAgentService(Ref ref) {
+  return ImproverAgentService(
+    agentService: ref.watch(agentServiceProvider),
+    agentTemplateService: ref.watch(agentTemplateServiceProvider),
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    orchestrator: ref.watch(wakeOrchestratorProvider),
+  );
+}
+
+/// The improver agent workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
+  return ImproverAgentWorkflow(
+    feedbackService: ref.watch(feedbackExtractionServiceProvider),
+    evolutionWorkflow: ref.watch(templateEvolutionWorkflowProvider),
+    improverService: ref.watch(improverAgentServiceProvider),
+    repository: ref.watch(agentRepositoryProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 
@@ -791,8 +829,8 @@ Future<void> agentInitialization(Ref ref) async {
   await taskAgentService.restoreSubscriptions();
 }
 
-/// Wires [TaskAgentWorkflow.execute] into the orchestrator's [WakeExecutor]
-/// callback so that [WakeOrchestrator.processNext] delegates to the workflow.
+/// Wires the wake executor into the orchestrator, routing to the appropriate
+/// workflow based on the agent's `kind` field.
 void _wireWakeExecutor(
   Ref ref,
   WakeOrchestrator orchestrator,
@@ -804,6 +842,29 @@ void _wireWakeExecutor(
     final identity = await agentService.getAgent(agentId);
     if (identity == null) return null;
 
+    // Route to appropriate workflow based on agent kind.
+    if (identity.kind == AgentKinds.templateImprover) {
+      final improverWorkflow = ref.read(improverAgentWorkflowProvider);
+      final result = await improverWorkflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        threadId: threadId,
+      );
+
+      if (!result.success) {
+        throw StateError(result.error ?? 'Improver agent wake failed');
+      }
+
+      await _notifyWakeCompletion(
+        ref,
+        agentId: agentId,
+        updateNotifications: updateNotifications,
+      );
+
+      return result.mutatedEntries;
+    }
+
+    // Default: task agent workflow.
     final result = await workflow.execute(
       agentIdentity: identity,
       runKey: runKey,
@@ -818,31 +879,44 @@ void _wireWakeExecutor(
       throw StateError(result.error ?? 'Task agent wake failed');
     }
 
-    // Notify the update stream so all detail providers self-invalidate.
-    // Include the templateId (if assigned) so template-level aggregate
-    // providers also refresh. Wrapped in try/catch so a lookup failure
-    // doesn't mark a successfully completed wake as failed.
-    String? templateId;
-    try {
-      final templateService = ref.read(agentTemplateServiceProvider);
-      final template = await templateService.getTemplateForAgent(agentId);
-      templateId = template?.id;
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to resolve template for wake notification: $error',
-        name: 'agentInitialization',
-        stackTrace: stackTrace,
-      );
-    }
-
-    updateNotifications.notify({
-      agentId,
-      if (templateId != null) templateId,
-      agentNotification,
-    });
+    await _notifyWakeCompletion(
+      ref,
+      agentId: agentId,
+      updateNotifications: updateNotifications,
+    );
 
     return result.mutatedEntries;
   };
+}
+
+/// Notify the update stream so all detail providers self-invalidate.
+///
+/// Include the templateId (if assigned) so template-level aggregate
+/// providers also refresh. Wrapped in try/catch so a lookup failure
+/// doesn't mark a successfully completed wake as failed.
+Future<void> _notifyWakeCompletion(
+  Ref ref, {
+  required String agentId,
+  required UpdateNotifications updateNotifications,
+}) async {
+  String? templateId;
+  try {
+    final templateService = ref.read(agentTemplateServiceProvider);
+    final template = await templateService.getTemplateForAgent(agentId);
+    templateId = template?.id;
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to resolve template for wake notification: $error',
+      name: 'agentInitialization',
+      stackTrace: stackTrace,
+    );
+  }
+
+  updateNotifications.notify({
+    agentId,
+    if (templateId != null) templateId,
+    agentNotification,
+  });
 }
 
 /// Wires the agent repository and wake orchestrator into the
