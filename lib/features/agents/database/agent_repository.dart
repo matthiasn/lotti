@@ -424,6 +424,26 @@ class AgentRepository {
     return results.take(limit).toList();
   }
 
+  /// Fetch change decisions across all instances of [templateId] created on
+  /// or after [since].
+  ///
+  /// Uses a JOIN between `agent_links` (template_assignment) and
+  /// `agent_entities` (changeDecision) to retrieve decisions in a single query,
+  /// avoiding per-agent N+1 lookups. The [since] filter is applied in SQL.
+  Future<List<ChangeDecisionEntity>> getRecentDecisionsForTemplate(
+    String templateId, {
+    required DateTime since,
+    int limit = 500,
+  }) async {
+    final rows = await _db
+        .getRecentDecisionsByTemplate(templateId, since, limit)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .toList();
+  }
+
   // ── Link CRUD ──────────────────────────────────────────────────────────────
 
   /// Insert or update a link using on-conflict update semantics against the

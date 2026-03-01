@@ -32,8 +32,12 @@ void main() {
 
   /// Stubs that return empty data for all data sources.
   void stubEmptyData() {
-    when(() => mockTemplateService.getAgentsForTemplate(any()))
-        .thenAnswer((_) async => <AgentIdentityEntity>[]);
+    when(
+      () => mockRepo.getRecentDecisionsForTemplate(
+        any(),
+        since: any(named: 'since'),
+      ),
+    ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
     when(
       () => mockTemplateService.getRecentInstanceObservations(
         any(),
@@ -54,16 +58,13 @@ void main() {
     ).thenAnswer((_) async => []);
   }
 
-  /// Stubs agents + decisions for decision classification tests.
+  /// Stubs decisions for decision classification tests.
   void stubDecisions(List<ChangeDecisionEntity> decisions) {
     stubEmptyData();
-    final agent = makeTestIdentity();
-    when(() => mockTemplateService.getAgentsForTemplate(any()))
-        .thenAnswer((_) async => [agent]);
     when(
-      () => mockRepo.getRecentDecisions(
+      () => mockRepo.getRecentDecisionsForTemplate(
         any(),
-        limit: any(named: 'limit'),
+        since: any(named: 'since'),
       ),
     ).thenAnswer((_) async => decisions);
   }

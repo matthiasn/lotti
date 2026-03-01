@@ -305,6 +305,69 @@ void main() {
     });
   });
 
+  group('getRecentDecisionsForTemplate', () {
+    test('returns decisions across all template instances', () async {
+      // Set up template assignment link.
+      await repo.upsertLink(makeTestTemplateAssignmentLink());
+
+      // Create decisions for the agent.
+      await repo.upsertEntity(makeTestChangeDecision(
+        id: 'cd-tpl-1',
+        createdAt: kAgentTestDate,
+      ));
+      await repo.upsertEntity(makeTestChangeDecision(
+        id: 'cd-tpl-2',
+        itemIndex: 1,
+        createdAt: kAgentTestDate.add(const Duration(hours: 1)),
+      ));
+
+      final results = await repo.getRecentDecisionsForTemplate(
+        kTestTemplateId,
+        since: kAgentTestDate.subtract(const Duration(days: 1)),
+      );
+
+      expect(results, hasLength(2));
+      // Newest first.
+      expect(results.first.id, 'cd-tpl-2');
+    });
+
+    test('filters by since parameter in SQL', () async {
+      await repo.upsertLink(makeTestTemplateAssignmentLink());
+
+      final oldDate = DateTime(2024);
+      final recentDate = DateTime(2024, 3, 15);
+
+      await repo.upsertEntity(makeTestChangeDecision(
+        id: 'cd-old',
+        createdAt: oldDate,
+      ));
+      await repo.upsertEntity(makeTestChangeDecision(
+        id: 'cd-recent',
+        itemIndex: 1,
+        createdAt: recentDate,
+      ));
+
+      final results = await repo.getRecentDecisionsForTemplate(
+        kTestTemplateId,
+        since: DateTime(2024, 3),
+      );
+
+      expect(results, hasLength(1));
+      expect(results.first.id, 'cd-recent');
+    });
+
+    test('returns empty list when no template assignment exists', () async {
+      await repo.upsertEntity(makeTestChangeDecision());
+
+      final results = await repo.getRecentDecisionsForTemplate(
+        'nonexistent-template',
+        since: kAgentTestDate.subtract(const Duration(days: 1)),
+      );
+
+      expect(results, isEmpty);
+    });
+  });
+
   // ── ChangeItem serialization ──────────────────────────────────────────────
 
   group('ChangeItem JSON serialization', () {
