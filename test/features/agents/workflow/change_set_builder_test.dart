@@ -800,6 +800,33 @@ void main() {
       );
     });
 
+    test('keeps update with empty title string (treated as malformed)',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Some item', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-y', 'title': ''}, // Empty title — malformed
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // Empty title is not a valid proposal — kept defensively.
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
     test('keeps malformed update with only id (no isChecked, no title)',
         () async {
       final resolverBuilder = ChangeSetBuilder(

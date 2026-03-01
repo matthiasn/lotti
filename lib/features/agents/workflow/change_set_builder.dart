@@ -370,8 +370,8 @@ class ChangeSetBuilder {
     }
 
     // Only suppress if the proposal contains at least one valid field.
-    final hasValidProposal =
-        proposedIsChecked is bool || proposedTitle is String;
+    final hasValidProposal = proposedIsChecked is bool ||
+        (proposedTitle is String && proposedTitle.isNotEmpty);
     if (!hasValidProposal) {
       return null; // Malformed — keep it defensively.
     }
