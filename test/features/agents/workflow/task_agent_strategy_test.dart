@@ -1051,6 +1051,255 @@ void main() {
           contains('1 item(s) queued'),
         );
       });
+
+      test('suppresses redundant non-batch tool and feeds back to LLM',
+          () async {
+        final csBuilderWithResolver = ChangeSetBuilder(
+          agentId: agentId,
+          taskId: taskId,
+          threadId: threadId,
+          runKey: runKey,
+        );
+
+        final strategyWithMetadata = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(
+            success: true,
+            output: 'done',
+            mutatedEntityId: taskId,
+          ),
+          changeSetBuilder: csBuilderWithResolver,
+          resolveTaskMetadata: () async => (
+            title: 'Fix login bug',
+            status: 'IN PROGRESS',
+            priority: 'P1',
+            estimateMinutes: 120,
+            dueDate: '2026-03-15',
+          ),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-redundant',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
+            ),
+          ),
+        ];
+
+        await strategyWithMetadata.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Should NOT be added to the builder.
+        expect(csBuilderWithResolver.hasItems, isFalse);
+
+        // LLM should get a skip message.
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-redundant',
+            response: 'Skipped: estimate is already 120 minutes.',
+          ),
+        ).called(1);
+      });
+
+      test('keeps non-redundant non-batch tool when metadata differs',
+          () async {
+        final csBuilderWithResolver = ChangeSetBuilder(
+          agentId: agentId,
+          taskId: taskId,
+          threadId: threadId,
+          runKey: runKey,
+        );
+
+        final strategyWithMetadata = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(
+            success: true,
+            output: 'done',
+            mutatedEntityId: taskId,
+          ),
+          changeSetBuilder: csBuilderWithResolver,
+          resolveTaskMetadata: () async => (
+            title: 'Fix login bug',
+            status: 'IN PROGRESS',
+            priority: 'P1',
+            estimateMinutes: 120,
+            dueDate: '2026-03-15',
+          ),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-actual',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_priority',
+              arguments: jsonEncode({'priority': 'P0'}),
+            ),
+          ),
+        ];
+
+        await strategyWithMetadata.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Should be added to the builder.
+        expect(csBuilderWithResolver.hasItems, isTrue);
+        expect(
+            csBuilderWithResolver.items.first.toolName, 'update_task_priority');
+
+        // LLM should get a queued message.
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-actual',
+            response: 'Proposal queued for user review.',
+          ),
+        ).called(1);
+      });
+
+      test('keeps tool when resolver throws (conservative)', () async {
+        final csBuilderWithResolver = ChangeSetBuilder(
+          agentId: agentId,
+          taskId: taskId,
+          threadId: threadId,
+          runKey: runKey,
+        );
+
+        final strategyWithResolver = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(
+            success: true,
+            output: 'done',
+            mutatedEntityId: taskId,
+          ),
+          changeSetBuilder: csBuilderWithResolver,
+          resolveTaskMetadata: () async => throw Exception('DB error'),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-err',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
+            ),
+          ),
+        ];
+
+        await strategyWithResolver.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Conservative: should still be added.
+        expect(csBuilderWithResolver.hasItems, isTrue);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-err',
+            response: 'Proposal queued for user review.',
+          ),
+        ).called(1);
+      });
+
+      test('redundant batch items include redundancy info in response',
+          () async {
+        final csBuilderWithResolver = ChangeSetBuilder(
+          agentId: agentId,
+          taskId: taskId,
+          threadId: threadId,
+          runKey: runKey,
+          checklistItemStateResolver: (id) async =>
+              (title: 'Buy groceries', isChecked: true),
+        );
+
+        final strategyWithResolver = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(
+            success: true,
+            output: 'done',
+            mutatedEntityId: taskId,
+          ),
+          changeSetBuilder: csBuilderWithResolver,
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-batch-redundant',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_checklist_items',
+              arguments: jsonEncode({
+                'items': [
+                  {'id': 'item-1', 'isChecked': true},
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategyWithResolver.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        // Builder should have no items (all redundant).
+        expect(csBuilderWithResolver.hasItems, isFalse);
+
+        // LLM should see the redundancy feedback.
+        final captured = verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-batch-redundant',
+            response: captureAny(named: 'response'),
+          ),
+        ).captured;
+        expect(
+          captured.last as String,
+          contains('Skipped 1 redundant update(s)'),
+        );
+        expect(
+          captured.last as String,
+          contains('"Buy groceries" is already checked'),
+        );
+      });
     });
   });
 }

@@ -8,20 +8,33 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-/// Resolves a checklist item's title from its ID.
+/// Resolves a checklist item's current state from its ID.
 ///
 /// Returns `null` if the item cannot be found.
-typedef ChecklistItemTitleResolver = Future<String?> Function(String itemId);
+typedef ChecklistItemStateResolver = Future<({String? title, bool? isChecked})?>
+    Function(String itemId);
 
 /// Result of adding batch items to a [ChangeSetBuilder].
 class BatchAddResult {
-  const BatchAddResult({required this.added, required this.skipped});
+  const BatchAddResult({
+    required this.added,
+    required this.skipped,
+    this.redundant = 0,
+    this.redundantDetails = const [],
+  });
 
   /// Number of valid items that were added.
   final int added;
 
   /// Number of array elements that were skipped (not `Map<String, dynamic>`).
   final int skipped;
+
+  /// Number of items suppressed because they propose no actual change.
+  final int redundant;
+
+  /// Human-readable descriptions of each suppressed redundant item,
+  /// e.g. `'"Buy groceries" is already checked'`.
+  final List<String> redundantDetails;
 }
 
 /// Accumulates deferred tool calls during an agent wake and produces a
@@ -36,7 +49,7 @@ class ChangeSetBuilder {
     required this.taskId,
     required this.threadId,
     required this.runKey,
-    this.checklistItemTitleResolver,
+    this.checklistItemStateResolver,
     this.domainLogger,
   });
 
@@ -52,10 +65,11 @@ class ChangeSetBuilder {
   /// The run key for the current wake cycle.
   final String runKey;
 
-  /// Optional resolver for checklist item titles. When provided, the builder
-  /// looks up the current title of checklist items that the LLM references
-  /// by ID only (without including the title in the tool args).
-  final ChecklistItemTitleResolver? checklistItemTitleResolver;
+  /// Optional resolver for checklist item state. When provided, the builder
+  /// looks up the current title and checked state of checklist items that the
+  /// LLM references by ID only (without including the title in the tool args).
+  /// Also used to detect and suppress redundant updates.
+  final ChecklistItemStateResolver? checklistItemStateResolver;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -130,12 +144,33 @@ class ChangeSetBuilder {
 
     var added = 0;
     var skipped = 0;
+    var redundant = 0;
+    final redundantDetails = <String>[];
     for (final element in array) {
       if (element is Map<String, dynamic>) {
-        final summary = await _generateItemSummary(
+        // Resolve state once per item to avoid redundant DB lookups and
+        // duplicate error logging.
+        final itemId = element['id'];
+        final resolvedState =
+            itemId is String ? await _resolveState(itemId) : null;
+
+        // Check for redundant update_checklist_item proposals.
+        final redundancyDetail = _checkRedundancy(
+          singularToolName,
+          element,
+          resolvedState,
+        );
+        if (redundancyDetail != null) {
+          redundant++;
+          redundantDetails.add(redundancyDetail);
+          continue;
+        }
+
+        final summary = _generateItemSummary(
           singularToolName,
           element,
           summaryPrefix,
+          resolvedState: resolvedState,
         );
         _items.add(
           ChangeItem(
@@ -149,7 +184,12 @@ class ChangeSetBuilder {
         skipped++;
       }
     }
-    return BatchAddResult(added: added, skipped: skipped);
+    return BatchAddResult(
+      added: added,
+      skipped: skipped,
+      redundant: redundant,
+      redundantDetails: redundantDetails,
+    );
   }
 
   /// Build and persist the [ChangeSetEntity].
@@ -217,11 +257,16 @@ class ChangeSetBuilder {
       };
 
   /// Generate a human-readable summary for a single exploded item.
-  Future<String> _generateItemSummary(
+  ///
+  /// [resolvedState] is the pre-resolved checklist item state (if available).
+  /// Callers should resolve the state once and pass it here to avoid redundant
+  /// DB lookups.
+  String _generateItemSummary(
     String singularToolName,
     Map<String, dynamic> args,
-    String prefix,
-  ) async {
+    String prefix, {
+    ({String? title, bool? isChecked})? resolvedState,
+  }) {
     // For checklist items, use the title.
     final title = args['title'];
     if (title is String && title.isNotEmpty) {
@@ -238,10 +283,10 @@ class ChangeSetBuilder {
       }
     }
 
-    // For updates by ID only (no title in args) — resolve from DB.
+    // For updates by ID only (no title in args) — use pre-resolved state.
     final id = args['id'];
     if (id is String) {
-      final resolvedTitle = await _resolveTitle(id);
+      final resolvedTitle = resolvedState?.title;
       final isChecked = args['isChecked'];
       if (isChecked is bool) {
         final action = isChecked ? 'Check off' : 'Uncheck';
@@ -259,24 +304,85 @@ class ChangeSetBuilder {
     return '$prefix item';
   }
 
-  /// Resolve a checklist item title via the injected resolver.
+  /// Resolve a checklist item's current state via the injected resolver.
   ///
   /// Returns `null` if no resolver is set or the item cannot be found.
-  Future<String?> _resolveTitle(String itemId) async {
-    final resolver = checklistItemTitleResolver;
+  Future<({String? title, bool? isChecked})?> _resolveState(
+    String itemId,
+  ) async {
+    final resolver = checklistItemStateResolver;
     if (resolver == null) return null;
     try {
       return await resolver(itemId);
     } catch (e, s) {
       domainLogger?.error(
         LogDomains.agentWorkflow,
-        'failed to resolve checklist item title for '
+        'failed to resolve checklist item state for '
         '${DomainLogger.sanitizeId(itemId)}',
         error: e,
         stackTrace: s,
       );
       return null;
     }
+  }
+
+  /// Check whether an `update_checklist_item` proposal is redundant.
+  ///
+  /// Returns a human-readable detail string if the item is redundant (should
+  /// be suppressed), or `null` if the item should be kept.
+  ///
+  /// An update is redundant when:
+  /// - The proposed `isChecked` matches the current `isChecked`, AND
+  /// - No title change is proposed (or the proposed title matches current).
+  ///
+  /// Conservative: if the resolver is unavailable or the item is not found,
+  /// the item is kept (returns `null`).
+  ///
+  /// [currentState] is the pre-resolved checklist item state.
+  static String? _checkRedundancy(
+    String singularToolName,
+    Map<String, dynamic> args,
+    ({String? title, bool? isChecked})? currentState,
+  ) {
+    if (singularToolName != TaskAgentToolNames.updateChecklistItem) {
+      return null;
+    }
+
+    final itemId = args['id'];
+    if (itemId is! String) return null;
+    if (currentState == null) return null; // Item not found — keep it.
+
+    final proposedIsChecked = args['isChecked'];
+    final proposedTitle = args['title'];
+
+    // If isChecked is not being changed, check title.
+    final isCheckedRedundant = proposedIsChecked is bool &&
+        currentState.isChecked != null &&
+        proposedIsChecked == currentState.isChecked;
+
+    final hasTitleChange = proposedTitle is String &&
+        proposedTitle.isNotEmpty &&
+        proposedTitle != currentState.title;
+
+    // If the proposal only changes isChecked (no title) and it's redundant,
+    // suppress it.
+    if (proposedIsChecked is bool && !isCheckedRedundant) {
+      return null; // Actual change — keep it.
+    }
+
+    if (proposedIsChecked is! bool && proposedTitle is! String) {
+      return null; // No meaningful fields — keep it (defensive).
+    }
+
+    if (hasTitleChange) {
+      return null; // Title is changing — keep it.
+    }
+
+    // At this point the update is redundant.
+    final displayTitle = currentState.title ?? _truncateId(itemId);
+    final checkedLabel =
+        currentState.isChecked == true ? 'checked' : 'unchecked';
+    return '"$displayTitle" is already $checkedLabel';
   }
 
   /// Truncate a UUID to a short prefix for display as a fallback.

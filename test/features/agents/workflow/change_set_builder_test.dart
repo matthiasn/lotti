@@ -2,13 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockAgentSyncService extends Mock implements AgentSyncService {}
 
 void main() {
   late ChangeSetBuilder builder;
@@ -157,8 +154,10 @@ void main() {
         taskId: 'task-001',
         threadId: 'thread-001',
         runKey: 'run-key-001',
-        checklistItemTitleResolver: (id) async {
-          if (id == 'item-42') return 'Buy groceries';
+        checklistItemStateResolver: (id) async {
+          if (id == 'item-42') {
+            return (title: 'Buy groceries', isChecked: false);
+          }
           return null;
         },
       );
@@ -186,7 +185,7 @@ void main() {
         taskId: 'task-001',
         threadId: 'thread-001',
         runKey: 'run-key-001',
-        checklistItemTitleResolver: (_) async => null,
+        checklistItemStateResolver: (_) async => null,
       );
 
       await resolverBuilder.addBatchItem(
@@ -215,7 +214,7 @@ void main() {
         taskId: 'task-001',
         threadId: 'thread-001',
         runKey: 'run-key-001',
-        checklistItemTitleResolver: (_) async => throw Exception('DB error'),
+        checklistItemStateResolver: (_) async => throw Exception('DB error'),
       );
 
       await resolverBuilder.addBatchItem(
@@ -256,8 +255,7 @@ void main() {
         threadId: 'thread-001',
         runKey: 'run-key-001',
         domainLogger: mockLogger,
-        checklistItemTitleResolver: (_) async =>
-            throw Exception('connection lost'),
+        checklistItemStateResolver: (_) => throw Exception('connection lost'),
       );
 
       await resolverBuilder.addBatchItem(
@@ -274,7 +272,7 @@ void main() {
       verify(
         () => mockLogger.error(
           'agent_workflow',
-          any(that: contains('failed to resolve checklist item title')),
+          any(that: contains('failed to resolve checklist item state')),
           error: any(named: 'error'),
           stackTrace: any(named: 'stackTrace'),
         ),
@@ -529,6 +527,246 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.items, hasLength(1));
+    });
+  });
+
+  group('addBatchItem redundancy filtering', () {
+    test('suppresses redundant check when item is already checked', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Buy groceries', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, isEmpty);
+      expect(result.added, 0);
+      expect(result.redundant, 1);
+      expect(result.redundantDetails, hasLength(1));
+      expect(
+        result.redundantDetails.first,
+        contains('"Buy groceries" is already checked'),
+      );
+    });
+
+    test('suppresses redundant uncheck when item is already unchecked',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Write tests', isChecked: false),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-2', 'isChecked': false},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, isEmpty);
+      expect(result.redundant, 1);
+      expect(
+        result.redundantDetails.first,
+        contains('"Write tests" is already unchecked'),
+      );
+    });
+
+    test('allows non-redundant check update to pass through', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Deploy app', isChecked: false),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-3', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('mixed batch: some items redundant, some not', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async {
+          if (id == 'item-a') return (title: 'Already done', isChecked: true);
+          if (id == 'item-b') return (title: 'Not done', isChecked: false);
+          return null;
+        },
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-a', 'isChecked': true}, // redundant
+            {'id': 'item-b', 'isChecked': true}, // not redundant
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(resolverBuilder.items.first.args['id'], 'item-b');
+      expect(result.added, 1);
+      expect(result.redundant, 1);
+    });
+
+    test('title-only update is NOT suppressed even when isChecked matches',
+        () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Old title', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'New title'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('title change with redundant isChecked is NOT suppressed', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Old title', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'isChecked': true, 'title': 'New title'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('keeps item when resolver returns null (item not found)', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (_) async => null,
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-unknown', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('keeps item when resolver throws (conservative)', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (_) async => throw Exception('DB error'),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-err', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
+    });
+
+    test('does not filter add_checklist_item (only updates)', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async =>
+            (title: 'Existing item', isChecked: true),
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'New item'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      expect(resolverBuilder.items, hasLength(1));
+      expect(result.added, 1);
+      expect(result.redundant, 0);
     });
   });
 }

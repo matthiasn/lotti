@@ -79,8 +79,10 @@ flowchart TD
   K --> L{"Tool deferred?"}
   L -->|No| M["AgentToolExecutor.execute(...)"]
   M --> N["Task handlers + Journal writes"]
-  L -->|Yes| O["ChangeSetBuilder.addItem(...)"]
-  O --> P["Respond: 'Proposal queued'"]
+  L -->|Yes| O{"Redundant?"}
+  O -->|Yes| P2["Respond: 'Skipped: already X'"]
+  O -->|No| Q2["ChangeSetBuilder.addItem(...)"]
+  Q2 --> P["Respond: 'Proposal queued'"]
   I --> Q["ChangeSetBuilder.build() → persist ChangeSetEntity"]
   I --> R["persist report/messages/state via AgentSyncService"]
   R --> S["WakeOrchestrator marks wake_run status"]
@@ -212,7 +214,7 @@ sequenceDiagram
 ## Module Responsibilities
 
 - `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
-- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), tool dispatch extraction (`TaskToolDispatcher`).
+- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`).
 - `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
 - `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.
