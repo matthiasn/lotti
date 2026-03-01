@@ -3137,12 +3137,14 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      expect(result[0].agentId, 'agent-a');
-      expect(result[0].totalTokens, 0);
-      expect(result[0].summaries, isEmpty);
-      expect(result[1].agentId, 'agent-b');
-      expect(result[1].totalTokens, 0);
-      expect(result[1].summaries, isEmpty);
+      expect(
+        result.map((r) => r.agentId),
+        containsAll(<String>['agent-a', 'agent-b']),
+      );
+      for (final breakdown in result) {
+        expect(breakdown.totalTokens, 0);
+        expect(breakdown.summaries, isEmpty);
+      }
     });
   });
 

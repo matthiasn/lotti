@@ -34,9 +34,13 @@ DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
     final timing = timingAccessor(run);
     if (timing.startedAt != null && timing.completedAt != null) {
-      totalDurationMs +=
+      final durationMs =
           timing.completedAt!.difference(timing.startedAt!).inMilliseconds;
-      durationCount++;
+      // Skip malformed entries where completedAt precedes startedAt.
+      if (durationMs >= 0) {
+        totalDurationMs += durationMs;
+        durationCount++;
+      }
     }
   }
 

@@ -37,6 +37,10 @@ class ToolExecutionResult {
     String? error,
     String? entityId,
   }) {
+    assert(
+      !didWrite || (entityId != null && entityId.isNotEmpty),
+      'entityId must be provided when didWrite is true',
+    );
     return ToolExecutionResult(
       success: success,
       output: message,
