@@ -240,21 +240,33 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.updateReport,
       description:
           'Publish the updated task report. You MUST call this tool exactly '
-          'once at the end of every wake with the full updated report as '
-          'markdown. Follow the report structure defined in the system prompt '
-          '(📋 TLDR, ✅ Achieved, 📌 What is left to do, 💡 Learnings). '
-          'Do NOT include a title line (H1) or status bar — these are shown '
-          'in the task header UI. Write in the task content language. Express '
-          'your personality and voice from your directives.',
+          'once at the end of every wake. Provide both a short TLDR summary '
+          'and the full report content as markdown. Follow the report '
+          'structure defined in your report directive. Write in the task '
+          'content language. Express your personality and voice from your '
+          'directives.',
       parameters: {
         'type': 'object',
         'properties': {
-          'markdown': {
+          'tldr': {
+            'type': 'string',
+            'description': 'A concise 1-3 sentence overview of the task '
+                'state. This is shown in the collapsed view. Be punchy and '
+                'include 1-2 relevant emojis.',
+          },
+          'content': {
             'type': 'string',
             'description': 'The full updated report as a markdown document.',
           },
+          // Keep legacy parameter name for backwards compatibility with
+          // older template versions that still reference `markdown`.
+          'markdown': {
+            'type': 'string',
+            'description': 'Deprecated — use "content" instead. If both are '
+                'provided, "content" takes precedence.',
+          },
         },
-        'required': ['markdown'],
+        'required': ['tldr', 'content'],
         'additionalProperties': false,
       },
     ),
@@ -369,15 +381,24 @@ class AgentToolRegistry {
     AgentToolDefinition(
       name: EvolutionToolNames.proposeDirectives,
       description: 'Formally propose a new version of the template directives. '
-          'Include the COMPLETE rewritten directives text (not a diff) and a '
-          'brief rationale explaining what changed and why.',
+          'Provide COMPLETE rewritten text for both the general directive '
+          '(persona, tools, objectives) and the report directive (report '
+          'structure, formatting). Include a brief rationale explaining what '
+          'changed and why.',
       parameters: {
         'type': 'object',
         'properties': {
-          'directives': {
+          'general_directive': {
             'type': 'string',
             'description':
-                'The complete proposed directives text for the new version.',
+                'The complete proposed general directive text (persona, '
+                    'tools, objectives).',
+          },
+          'report_directive': {
+            'type': 'string',
+            'description':
+                'The complete proposed report directive text (report '
+                    'structure, formatting rules).',
           },
           'rationale': {
             'type': 'string',
@@ -385,7 +406,7 @@ class AgentToolRegistry {
                 'Brief explanation of what changed and why (1-3 sentences).',
           },
         },
-        'required': ['directives', 'rationale'],
+        'required': ['general_directive', 'report_directive', 'rationale'],
         'additionalProperties': false,
       },
     ),

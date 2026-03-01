@@ -705,7 +705,8 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-report',
-            response: 'Error: "markdown" must be a non-empty string.',
+            response:
+                'Error: "content" (or "markdown") must be a non-empty string.',
           ),
         ).called(1);
       });

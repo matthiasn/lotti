@@ -235,11 +235,14 @@ void main() {
         expect(tool.description, contains('report'));
       });
 
-      test('requires a string markdown parameter', () {
+      test('requires tldr and content parameters', () {
         final properties = tool.parameters['properties'] as Map;
-        final markdownProp = properties['markdown'] as Map;
-        expect(markdownProp['type'], equals('string'));
-        expect(tool.parameters['required'], contains('markdown'));
+        final tldrProp = properties['tldr'] as Map;
+        expect(tldrProp['type'], equals('string'));
+        final contentProp = properties['content'] as Map;
+        expect(contentProp['type'], equals('string'));
+        expect(tool.parameters['required'], contains('tldr'));
+        expect(tool.parameters['required'], contains('content'));
       });
     });
 

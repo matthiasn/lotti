@@ -10,11 +10,13 @@ import 'package:openai_dart/openai_dart.dart';
 /// Holds a pending directive proposal from the evolution agent.
 class PendingProposal {
   const PendingProposal({
-    required this.directives,
+    required this.generalDirective,
+    required this.reportDirective,
     required this.rationale,
   });
 
-  final String directives;
+  final String generalDirective;
+  final String reportDirective;
   final String rationale;
 }
 
@@ -125,19 +127,21 @@ class EvolutionStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) {
-    final directives = _readStringArg(args, 'directives');
+    final generalDirective = _readStringArg(args, 'general_directive');
+    final reportDirective = _readStringArg(args, 'report_directive');
     final rationale = _readStringArg(args, 'rationale');
 
-    if (directives.trim().isEmpty) {
+    if (generalDirective.trim().isEmpty && reportDirective.trim().isEmpty) {
       manager.addToolResponse(
         toolCallId: callId,
-        response: 'Error: directives cannot be empty.',
+        response: 'Error: at least one directive must be non-empty.',
       );
       return;
     }
 
     _latestProposal = PendingProposal(
-      directives: directives,
+      generalDirective: generalDirective,
+      reportDirective: reportDirective,
       rationale: rationale,
     );
 
@@ -150,7 +154,8 @@ class EvolutionStrategy extends ConversationStrategy {
           'surfaceId': 'proposal-${callId.hashCode.toRadixString(16)}',
           'rootType': 'EvolutionProposal',
           'data': {
-            'directives': directives,
+            'generalDirective': generalDirective,
+            'reportDirective': reportDirective,
             'rationale': rationale,
           },
         });

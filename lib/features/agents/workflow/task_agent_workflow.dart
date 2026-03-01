@@ -376,6 +376,7 @@ class TaskAgentWorkflow {
       // ensures the state revision is only bumped if all outputs (thought,
       // report, observations) are successfully written.
       final reportContent = strategy.extractReportContent();
+      final reportTldr = strategy.extractReportTldr();
       if (reportContent.isEmpty) {
         _log(
           'no report published (violates update_report contract)',
@@ -433,6 +434,7 @@ class TaskAgentWorkflow {
               createdAt: now,
               vectorClock: null,
               content: reportContent,
+              tldr: reportTldr,
               threadId: threadId,
             ),
           );
@@ -601,20 +603,60 @@ class TaskAgentWorkflow {
     return _TemplateContext(template: template, version: version);
   }
 
-  /// Builds the full system prompt by appending the template's directives
-  /// to the rigid scaffold.
+  /// Builds the full system prompt from the scaffold and template directives.
+  ///
+  /// When the split directive fields (`generalDirective`, `reportDirective`)
+  /// are populated, they are used instead of the legacy `directives` field.
+  /// The report section in the scaffold is omitted when a custom report
+  /// directive is present, since the template provides its own.
   String _buildSystemPrompt(_TemplateContext ctx) {
+    final version = ctx.version;
+    final hasNewDirectives = version.generalDirective.isNotEmpty ||
+        version.reportDirective.isNotEmpty;
+
+    if (hasNewDirectives) {
+      final buf = StringBuffer()..write(taskAgentScaffoldCore);
+
+      if (version.reportDirective.isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Report Directive')
+          ..writeln()
+          ..write(version.reportDirective);
+      } else {
+        buf.write(taskAgentScaffoldReport);
+      }
+
+      buf.write(taskAgentScaffoldTrailing);
+
+      if (version.generalDirective.isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..write(version.generalDirective);
+      }
+
+      return buf.toString();
+    }
+
+    // Legacy fallback: single directives field.
     return '$taskAgentScaffold\n\n'
         '## Your Personality & Directives\n\n'
-        '${ctx.version.directives}';
+        '${version.directives}';
   }
 
-  /// The rigid scaffold of the Task Agent system prompt.
+  /// The rigid scaffold of the Task Agent system prompt, combining all parts.
   ///
-  /// Contains role description, report format, tool usage guidelines, and
-  /// important constraints. Template-specific directives are appended after
-  /// this scaffold.
-  static const taskAgentScaffold = '''
+  /// Used as a single constant for legacy templates that have no split
+  /// directives. New templates use the three sub-constants below.
+  static const taskAgentScaffold =
+      '$taskAgentScaffoldCore$taskAgentScaffoldReport$taskAgentScaffoldTrailing';
+
+  /// Core scaffold: role description and job responsibilities.
+  static const taskAgentScaffoldCore = '''
 You are a Task Agent — a persistent assistant that maintains a summary report
 for a single task. Your job is to:
 
@@ -622,7 +664,12 @@ for a single task. Your job is to:
 2. Call tools when appropriate to update task metadata (estimates, due dates,
    priorities, checklist items, title, labels).
 3. Publish an updated report via the `update_report` tool.
-4. Record observations worth remembering for future wakes.
+4. Record observations worth remembering for future wakes.''';
+
+  /// Default report section of the scaffold, used when the template version
+  /// does not provide its own `reportDirective`.
+  static const taskAgentScaffoldReport = '''
+
 
 ## Report
 
@@ -692,7 +739,11 @@ The report MUST NOT contain:
 - Agent self-reflection or meta-commentary
 
 Use `record_observations` for ALL internal notes. Observations are private
-and never shown to the user. They persist as your memory across wakes.
+and never shown to the user. They persist as your memory across wakes.''';
+
+  /// Trailing scaffold: tool usage guidelines and important constraints.
+  static const taskAgentScaffoldTrailing = '''
+
 
 ## Tool Usage Guidelines
 

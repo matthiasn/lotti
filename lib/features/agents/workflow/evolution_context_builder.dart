@@ -134,11 +134,31 @@ again. The conversation should always be driving toward an approved proposal.
   }) {
     final buf = StringBuffer()
       ..writeln('# Evolution Session: ${template.displayName}')
-      ..writeln()
-      // Current directives
-      ..writeln('## Current Directives (v${currentVersion.version})')
-      ..writeln(currentVersion.directives)
       ..writeln();
+
+    // Present directives — use split fields when available, fall back to
+    // the legacy single field.
+    final hasNewDirectives = currentVersion.generalDirective.isNotEmpty ||
+        currentVersion.reportDirective.isNotEmpty;
+
+    if (hasNewDirectives) {
+      buf
+        ..writeln(
+          '## Current General Directive (v${currentVersion.version})',
+        )
+        ..writeln(currentVersion.generalDirective)
+        ..writeln()
+        ..writeln(
+          '## Current Report Directive (v${currentVersion.version})',
+        )
+        ..writeln(currentVersion.reportDirective)
+        ..writeln();
+    } else {
+      buf
+        ..writeln('## Current Directives (v${currentVersion.version})')
+        ..writeln(currentVersion.directives)
+        ..writeln();
+    }
 
     // Performance metrics
     _writeMetrics(buf, metrics);
