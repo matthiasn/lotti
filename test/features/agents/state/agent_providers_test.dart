@@ -1670,8 +1670,8 @@ void main() {
         await container.read(agentInitializationProvider.future);
 
         expect(capturedExecutor, isNotNull);
-        expect(
-          () => capturedExecutor!(
+        await expectLater(
+          capturedExecutor!(
             kTestAgentId,
             'run-key-fail',
             {'tok-a'},

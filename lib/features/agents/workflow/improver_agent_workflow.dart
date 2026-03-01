@@ -79,45 +79,46 @@ class ImproverAgentWorkflow {
       );
     }
 
-    // 4. Extract feedback since last scan.
-    final feedbackSince =
-        state.slots.lastFeedbackScanAt ?? state.slots.lastOneOnOneAt;
-    final since = feedbackSince ?? agentIdentity.createdAt;
-    final feedback = await feedbackService.extract(
-      templateId: targetTemplateId,
-      since: since,
-    );
+    // 4. Extract feedback, check threshold, and run ritual.
+    //    Wrapped in try/catch so any failure triggers best-effort rescheduling.
+    try {
+      final feedbackSince =
+          state.slots.lastFeedbackScanAt ?? state.slots.lastOneOnOneAt;
+      final since = feedbackSince ?? agentIdentity.createdAt;
+      final feedback = await feedbackService.extract(
+        templateId: targetTemplateId,
+        since: since,
+      );
 
-    developer.log(
-      'Extracted ${feedback.items.length} feedback items for '
-      'template $targetTemplateId (since $since)',
-      name: _logTag,
-    );
-
-    // 5. Threshold gate — skip if insufficient feedback.
-    if (feedback.items.length < minFeedbackThreshold) {
       developer.log(
-        'Skipped ritual — insufficient feedback '
-        '(${feedback.items.length} < $minFeedbackThreshold)',
+        'Extracted ${feedback.items.length} feedback items for '
+        'template $targetTemplateId (since $since)',
         name: _logTag,
       );
 
-      // Record a no-op observation.
-      final now = clock.now();
-      final updatedState = state.copyWith(
-        slots: state.slots.copyWith(lastFeedbackScanAt: now),
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updatedState);
+      // 5. Threshold gate — skip if insufficient feedback.
+      if (feedback.items.length < minFeedbackThreshold) {
+        developer.log(
+          'Skipped ritual — insufficient feedback '
+          '(${feedback.items.length} < $minFeedbackThreshold)',
+          name: _logTag,
+        );
 
-      // Schedule next wake.
-      await improverService.scheduleNextRitual(agentId);
+        // Record a no-op observation.
+        final now = clock.now();
+        final updatedState = state.copyWith(
+          slots: state.slots.copyWith(lastFeedbackScanAt: now),
+          updatedAt: now,
+        );
+        await syncService.upsertEntity(updatedState);
 
-      return const WakeResult(success: true);
-    }
+        // Schedule next wake.
+        await improverService.scheduleNextRitual(agentId);
 
-    // 6. Build ritual context and start evolution session.
-    try {
+        return const WakeResult(success: true);
+      }
+
+      // 6. Build ritual context and start evolution session.
       // Parallelize: active version and evolution data are independent.
       final (currentVersion, data) = await (
         templateService.getActiveVersion(targetTemplateId),
