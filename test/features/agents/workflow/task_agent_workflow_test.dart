@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -234,6 +235,13 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <ChangeDecisionEntity>[]);
+    when(
+      () => mockAgentRepository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <ChangeSetEntity>[]);
     when(() => mockAiInputRepository.buildLinkedFromContext(any()))
         .thenAnswer((_) async => <AiLinkedTaskContext>[]);
     when(() => mockAiInputRepository.buildLinkedToContext(any()))
@@ -471,6 +479,53 @@ void main() {
           mockConversationRepository.deletedConversationIds,
           contains('test-conv-id'),
         );
+      });
+
+      test('queries pending change sets for deduplication', () async {
+        // Override with non-empty pending change sets to exercise the
+        // expand/where lambda in the dedup path.
+        final pendingChangeSet = AgentDomainEntity.changeSet(
+          id: 'cs-existing',
+          agentId: agentId,
+          taskId: taskId,
+          threadId: 'old-thread',
+          runKey: 'old-run',
+          status: ChangeSetStatus.pending,
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Existing proposal'},
+              humanSummary: 'Set title',
+            ),
+          ],
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ) as ChangeSetEntity;
+
+        when(
+          () => mockAgentRepository.getPendingChangeSets(
+            any(),
+            taskId: any(named: 'taskId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [pendingChangeSet]);
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+
+        // Verify getPendingChangeSets was called during the wake.
+        verify(
+          () => mockAgentRepository.getPendingChangeSets(
+            agentId,
+            taskId: taskId,
+          ),
+        ).called(1);
       });
 
       test('system prompt contains scaffold and template directives', () async {
