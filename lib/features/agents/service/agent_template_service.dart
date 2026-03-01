@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:uuid/uuid.dart';
@@ -88,6 +89,8 @@ class AgentTemplateService {
     required String modelId,
     required String directives,
     required String authoredBy,
+    String generalDirective = '',
+    String reportDirective = '',
     Set<String> categoryIds = const {},
     String? templateId,
     String? profileId,
@@ -116,6 +119,8 @@ class AgentTemplateService {
       version: 1,
       status: AgentTemplateVersionStatus.active,
       directives: directives,
+      generalDirective: generalDirective,
+      reportDirective: reportDirective,
       authoredBy: authoredBy,
       createdAt: now,
       vectorClock: null,
@@ -209,6 +214,8 @@ class AgentTemplateService {
     required String templateId,
     required String directives,
     required String authoredBy,
+    String generalDirective = '',
+    String reportDirective = '',
   }) async {
     final now = clock.now();
     final newVersionId = _uuid.v4();
@@ -244,6 +251,8 @@ class AgentTemplateService {
         version: nextVersion,
         status: AgentTemplateVersionStatus.active,
         directives: directives,
+        generalDirective: generalDirective,
+        reportDirective: reportDirective,
         authoredBy: authoredBy,
         createdAt: now,
         vectorClock: null,
@@ -675,6 +684,8 @@ class AgentTemplateService {
         directives: 'You are Laura, a diligent task management agent. '
             'You help users organize, prioritize, and complete their tasks '
             'efficiently. You write clear, actionable reports.',
+        generalDirective: taskAgentGeneralDirective,
+        reportDirective: taskAgentReportDirective,
         authoredBy: 'system',
       );
     }
@@ -688,6 +699,8 @@ class AgentTemplateService {
         directives: 'You are Tom, a creative and analytical task agent. '
             'You help users think through problems, break down complex tasks, '
             'and find innovative solutions. You write insightful reports.',
+        generalDirective: taskAgentGeneralDirective,
+        reportDirective: taskAgentReportDirective,
         authoredBy: 'system',
       );
     }
@@ -702,6 +715,7 @@ class AgentTemplateService {
             'feedback from agent instances, identify patterns in user '
             'decisions, and propose directive improvements during weekly '
             'one-on-one rituals.',
+        generalDirective: templateImproverGeneralDirective,
         authoredBy: 'system',
       );
     }
@@ -725,6 +739,7 @@ class AgentTemplateService {
             'You do NOT evaluate task-level agent performance directly. '
             'Your scope is the effectiveness of the improvement process '
             'itself.',
+        generalDirective: templateImproverGeneralDirective,
         authoredBy: 'system',
       );
     }
@@ -734,5 +749,54 @@ class AgentTemplateService {
       'Meta Improver)',
       name: 'AgentTemplateService',
     );
+
+    // Seed new directive fields for any existing versions that lack them.
+    await seedDirectiveFields();
+  }
+
+  /// Populate `generalDirective` and `reportDirective` on existing template
+  /// versions where both fields are empty.
+  ///
+  /// This is a one-time migration that writes fresh, purpose-built directives
+  /// based on the template's kind. It does NOT copy the old `directives` blob
+  /// — instead it writes clean content appropriate for each field.
+  ///
+  /// Called automatically at the end of [seedDefaults].
+  Future<void> seedDirectiveFields() async {
+    final templates = await listTemplates();
+
+    for (final template in templates) {
+      final activeVersion = await getActiveVersion(template.id);
+      if (activeVersion == null) continue;
+
+      // Skip versions that already have the new fields populated.
+      if (activeVersion.generalDirective.isNotEmpty ||
+          activeVersion.reportDirective.isNotEmpty) {
+        continue;
+      }
+
+      final (general, report) = switch (template.kind) {
+        AgentTemplateKind.taskAgent => (
+            taskAgentGeneralDirective,
+            taskAgentReportDirective,
+          ),
+        AgentTemplateKind.templateImprover => (
+            templateImproverGeneralDirective,
+            templateImproverReportDirective,
+          ),
+      };
+
+      final updated = activeVersion.copyWith(
+        generalDirective: general,
+        reportDirective: report,
+      );
+      await syncService.upsertEntity(updated);
+
+      developer.log(
+        'Seeded directive fields for template ${template.displayName} '
+        '(v${activeVersion.version})',
+        name: 'AgentTemplateService',
+      );
+    }
   }
 }

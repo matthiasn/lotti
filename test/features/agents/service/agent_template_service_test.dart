@@ -900,6 +900,8 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => null);
+      // seedDirectiveFields calls listTemplates after creating defaults.
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
@@ -959,6 +961,7 @@ void main() {
           .thenAnswer((_) async => improver);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
@@ -983,6 +986,7 @@ void main() {
           .thenAnswer((_) async => null);
       when(() => mockRepo.getEntity(metaImproverTemplateId))
           .thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
 
