@@ -2663,6 +2663,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
+    return customSelect(
+        'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
+        variables: [
+          Variable<String>(nowIso)
+        ],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap(agentEntities.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

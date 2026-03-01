@@ -129,10 +129,12 @@ class FeedbackExtractionService {
     );
   }
 
-  /// Heuristic classification for observations.
+  /// Placeholder classification for observations.
   ///
-  /// This is a placeholder that will be replaced by LLM classification
-  /// in Phase 4. Currently uses simple keyword matching.
+  /// This is a temporary stub that will be replaced by LLM classification
+  /// in Phase 4. Currently always emits a neutral observation signal because
+  /// the observation text lives in a linked payload entity that is not
+  /// loaded here.
   ClassifiedFeedbackItem? _classifyObservation(
     AgentMessageEntity observation,
   ) {

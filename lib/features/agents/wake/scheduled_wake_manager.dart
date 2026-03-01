@@ -26,6 +26,7 @@ class ScheduledWakeManager {
   final Duration checkInterval;
 
   Timer? _timer;
+  bool _isChecking = false;
 
   /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
@@ -55,31 +56,28 @@ class ScheduledWakeManager {
     );
   }
 
-  /// Check all agents for due scheduled wakes and enqueue them.
+  /// Check for agents with a due `scheduledWakeAt` and enqueue them.
+  ///
+  /// Uses a single DB query instead of fetching each agent's state
+  /// individually, avoiding an N+1 query pattern.
   Future<void> _checkAndEnqueue() async {
+    if (_isChecking) return;
+    _isChecking = true;
     try {
       final now = clock.now();
-      final identities = await _repository.getAllAgentIdentities();
+      final dueStates = await _repository.getDueScheduledAgentStates(now);
 
-      for (final identity in identities) {
-        final state = await _repository.getAgentState(identity.agentId);
-        if (state == null) continue;
+      for (final state in dueStates) {
+        _orchestrator.enqueueManualWake(
+          agentId: state.agentId,
+          reason: WakeReason.scheduled.name,
+        );
 
-        final scheduledAt = state.scheduledWakeAt;
-        if (scheduledAt == null) continue;
-
-        if (!scheduledAt.isAfter(now)) {
-          _orchestrator.enqueueManualWake(
-            agentId: identity.agentId,
-            reason: WakeReason.scheduled.name,
-          );
-
-          developer.log(
-            'Enqueued scheduled wake for ${identity.agentId} '
-            '(was due at $scheduledAt)',
-            name: 'ScheduledWakeManager',
-          );
-        }
+        developer.log(
+          'Enqueued scheduled wake for ${state.agentId} '
+          '(was due at ${state.scheduledWakeAt})',
+          name: 'ScheduledWakeManager',
+        );
       }
     } catch (e, s) {
       developer.log(
@@ -88,6 +86,8 @@ class ScheduledWakeManager {
         error: e,
         stackTrace: s,
       );
+    } finally {
+      _isChecking = false;
     }
   }
 }

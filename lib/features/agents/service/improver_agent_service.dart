@@ -35,9 +35,6 @@ class ImproverAgentService {
 
   static const _uuid = Uuid();
 
-  /// Well-known improver template ID for the seeded default.
-  static const improverTemplateId = 'template-improver-001';
-
   /// Create an improver agent for a target template.
   ///
   /// Steps:
@@ -49,14 +46,23 @@ class ImproverAgentService {
   /// 5. Set `scheduledWakeAt` for the first ritual.
   ///
   /// Throws [StateError] if an improver already exists for [targetTemplateId].
+  /// Throws [ArgumentError] if [recursionDepth] is negative.
   Future<AgentIdentityEntity> createImproverAgent({
     required String targetTemplateId,
-    String? improverTemplateId,
+    String? overrideImproverTemplateId,
     String? displayName,
     int recursionDepth = 0,
   }) async {
+    if (recursionDepth < 0) {
+      throw ArgumentError.value(
+        recursionDepth,
+        'recursionDepth',
+        'must be >= 0',
+      );
+    }
+
     final resolvedImproverTemplateId =
-        improverTemplateId ?? ImproverAgentService.improverTemplateId;
+        overrideImproverTemplateId ?? improverTemplateId;
 
     return syncService.runInTransaction(() async {
       // Validate target template exists.
@@ -163,7 +169,12 @@ class ImproverAgentService {
     );
     if (links.isEmpty) return null;
 
-    return agentService.getAgent(links.first.fromId);
+    // Iterate defensively — stale links may point to missing agents.
+    for (final link in links) {
+      final agent = await agentService.getAgent(link.fromId);
+      if (agent != null) return agent;
+    }
+    return null;
   }
 
   /// Schedule the next one-on-one wake for an improver agent.
@@ -176,8 +187,11 @@ class ImproverAgentService {
       throw StateError('Agent state not found for $agentId');
     }
 
-    final feedbackWindowDays = state.slots.feedbackWindowDays ??
-        ImproverSlotDefaults.defaultFeedbackWindowDays;
+    final configuredWindowDays = state.slots.feedbackWindowDays;
+    final feedbackWindowDays =
+        configuredWindowDays != null && configuredWindowDays > 0
+            ? configuredWindowDays
+            : ImproverSlotDefaults.defaultFeedbackWindowDays;
     final now = clock.now();
     final nextWake = now.add(Duration(days: feedbackWindowDays));
 

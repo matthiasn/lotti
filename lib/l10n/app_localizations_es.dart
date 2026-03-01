@@ -476,6 +476,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get agentTemplateKindImprover => 'Mejorador de plantilla';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Agente de tareas';
 
   @override

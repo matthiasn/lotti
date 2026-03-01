@@ -1,19 +1,17 @@
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class MockAgentRepository extends Mock implements AgentRepository {}
-
-class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
-
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockAgentRepository repository;
   late MockWakeOrchestrator orchestrator;
 
@@ -39,11 +37,8 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(scheduledWakeAt: pastSchedule),
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
           );
 
           final manager = createAndStart();
@@ -66,11 +61,8 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(scheduledWakeAt: now),
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [makeTestState(scheduledWakeAt: now)],
           );
 
           final manager = createAndStart();
@@ -88,72 +80,13 @@ void main() {
       });
     });
 
-    test('does not enqueue wake for agent with scheduledWakeAt in the future',
-        () {
-      final now = DateTime(2024, 3, 15, 10, 30);
-      final futureSchedule = DateTime(2024, 3, 15, 12);
-
-      fakeAsync((async) {
-        withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(scheduledWakeAt: futureSchedule),
-          );
-
-          final manager = createAndStart();
-          async.flushMicrotasks();
-
-          verifyNever(
-            () => orchestrator.enqueueManualWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-            ),
-          );
-
-          manager.stop();
-        });
-      });
-    });
-
-    test('skips agent with no scheduledWakeAt', () {
+    test('does not enqueue wake when no agents are due', () {
       final now = DateTime(2024, 3, 15, 10, 30);
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(),
-          );
-
-          final manager = createAndStart();
-          async.flushMicrotasks();
-
-          verifyNever(
-            () => orchestrator.enqueueManualWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-            ),
-          );
-
-          manager.stop();
-        });
-      });
-    });
-
-    test('skips agent with no state', () {
-      final now = DateTime(2024, 3, 15, 10, 30);
-
-      fakeAsync((async) {
-        withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => null,
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [],
           );
 
           final manager = createAndStart();
@@ -179,18 +112,14 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [
-              makeTestIdentity(),
-              makeTestIdentity(id: agentId2, agentId: agentId2),
+              makeTestState(scheduledWakeAt: pastSchedule),
+              makeTestState(
+                agentId: agentId2,
+                scheduledWakeAt: pastSchedule,
+              ),
             ],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(scheduledWakeAt: pastSchedule),
-          );
-          when(() => repository.getAgentState(agentId2)).thenAnswer(
-            (_) async =>
-                makeTestState(agentId: agentId2, scheduledWakeAt: pastSchedule),
           );
 
           final manager = createAndStart();
@@ -220,11 +149,8 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [makeTestIdentity()],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => makeTestState(scheduledWakeAt: pastSchedule),
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
           );
 
           final manager = createAndStart();
@@ -261,7 +187,7 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [],
           );
 
@@ -278,7 +204,9 @@ void main() {
             ..elapse(const Duration(minutes: 2))
             ..flushMicrotasks();
 
-          verifyNever(() => repository.getAllAgentIdentities());
+          verifyNever(
+            () => repository.getDueScheduledAgentStates(any()),
+          );
         });
       });
     });
@@ -288,18 +216,19 @@ void main() {
 
       fakeAsync((async) {
         withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities())
+          when(() => repository.getDueScheduledAgentStates(any()))
               .thenThrow(Exception('DB error'));
 
           // Should not throw.
           final manager = createAndStart();
           async.flushMicrotasks();
 
-          // Clear invocation history so verify below only sees the recovery call.
+          // Clear invocation history so verify below only sees the recovery
+          // call.
           clearInteractions(repository);
 
           // Timer should still be running — next tick should try again.
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [],
           );
 
@@ -308,71 +237,7 @@ void main() {
             ..flushMicrotasks();
 
           // Verify it recovered and called again after the error.
-          verify(() => repository.getAllAgentIdentities()).called(1);
-
-          manager.stop();
-        });
-      });
-    });
-
-    test('only enqueues due agents in a mixed set', () {
-      final now = DateTime(2024, 3, 15, 10, 30);
-      final pastSchedule = DateTime(2024, 3, 15, 8);
-      final futureSchedule = DateTime(2024, 3, 16, 10);
-
-      const dueAgentId = 'agent-due';
-      const futureAgentId = 'agent-future';
-      const noScheduleAgentId = 'agent-none';
-
-      fakeAsync((async) {
-        withClock(Clock.fixed(now), () {
-          when(() => repository.getAllAgentIdentities()).thenAnswer(
-            (_) async => [
-              makeTestIdentity(id: dueAgentId, agentId: dueAgentId),
-              makeTestIdentity(id: futureAgentId, agentId: futureAgentId),
-              makeTestIdentity(
-                id: noScheduleAgentId,
-                agentId: noScheduleAgentId,
-              ),
-            ],
-          );
-          when(() => repository.getAgentState(dueAgentId)).thenAnswer(
-            (_) async => makeTestState(
-              agentId: dueAgentId,
-              scheduledWakeAt: pastSchedule,
-            ),
-          );
-          when(() => repository.getAgentState(futureAgentId)).thenAnswer(
-            (_) async => makeTestState(
-              agentId: futureAgentId,
-              scheduledWakeAt: futureSchedule,
-            ),
-          );
-          when(() => repository.getAgentState(noScheduleAgentId)).thenAnswer(
-            (_) async => makeTestState(agentId: noScheduleAgentId),
-          );
-
-          final manager = createAndStart();
-          async.flushMicrotasks();
-
-          verify(
-            () => orchestrator.enqueueManualWake(
-              agentId: dueAgentId,
-              reason: WakeReason.scheduled.name,
-            ),
-          ).called(1);
-          verifyNever(
-            () => orchestrator.enqueueManualWake(
-              agentId: futureAgentId,
-              reason: any(named: 'reason'),
-            ),
-          );
-          verifyNever(
-            () => orchestrator.enqueueManualWake(
-              agentId: noScheduleAgentId,
-              reason: any(named: 'reason'),
-            ),
-          );
+          verify(() => repository.getDueScheduledAgentStates(any())).called(1);
 
           manager.stop();
         });

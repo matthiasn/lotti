@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -24,7 +25,6 @@ void main() {
 
   final testDate = DateTime(2024, 3, 15, 10, 30);
   const targetTemplateId = 'target-template-001';
-  const improverTemplateId = ImproverAgentService.improverTemplateId;
 
   AgentTemplateEntity makeTargetTemplate({
     String id = 'target-template-001',

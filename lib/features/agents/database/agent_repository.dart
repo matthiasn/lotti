@@ -234,6 +234,21 @@ class AgentRepository {
     );
   }
 
+  /// Fetch agent states whose `scheduledWakeAt` is at or before [now].
+  ///
+  /// Uses a single SQL query with `json_extract` on the serialized column
+  /// to avoid an N+1 fetch pattern.
+  Future<List<AgentStateEntity>> getDueScheduledAgentStates(
+    DateTime now,
+  ) async {
+    final rows =
+        await _db.getDueScheduledAgentStates(now.toIso8601String()).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<AgentStateEntity>()
+        .toList();
+  }
+
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.

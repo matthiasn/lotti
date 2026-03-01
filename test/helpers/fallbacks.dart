@@ -199,4 +199,5 @@ void registerAllFallbackValues() {
   registerFallbackValue(Duration.zero);
   registerFallbackValue(Uri());
   registerFallbackValue(<String>{});
+  registerFallbackValue(DateTime(2024));
 }

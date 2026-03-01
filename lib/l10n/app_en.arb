@@ -276,6 +276,10 @@
       }
     }
   },
+  "agentTemplateKindImprover": "Template Improver",
+  "@agentTemplateKindImprover": {
+    "description": "Display name for the template-improver agent kind."
+  },
   "agentTemplateKindTaskAgent": "Task Agent",
   "@agentTemplateKindTaskAgent": {
     "description": "Display name for the task-agent template kind."

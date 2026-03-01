@@ -194,7 +194,8 @@ class _KindBadge extends StatelessWidget {
     final label = switch (kind) {
       AgentTemplateKind.taskAgent =>
         context.messages.agentTemplateKindTaskAgent,
-      AgentTemplateKind.templateImprover => 'Template Improver',
+      AgentTemplateKind.templateImprover =>
+        context.messages.agentTemplateKindImprover,
     };
 
     return Container(
