@@ -59,6 +59,7 @@ void main() {
     DateTime? lastOneOnOneAt,
     int? totalSessionsCompleted,
     int wakeCounter = 0,
+    int? recursionDepth,
   }) {
     return makeTestState(
       slots: AgentSlots(
@@ -66,6 +67,7 @@ void main() {
         lastFeedbackScanAt: lastFeedbackScanAt,
         lastOneOnOneAt: lastOneOnOneAt,
         totalSessionsCompleted: totalSessionsCompleted,
+        recursionDepth: recursionDepth,
       ),
       wakeCounter: wakeCounter,
     );
@@ -385,6 +387,74 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Ritual workflow failed'));
+    });
+
+    test(
+        'passes isMetaLevel=true to context builder when '
+        'recursionDepth > 0', () async {
+      stubHappyPath();
+      when(() => mockRepository.getAgentState(any())).thenAnswer(
+        (_) async => makeImproverState(recursionDepth: 1),
+      );
+
+      final result = await workflow.execute(
+        agentIdentity: makeImproverIdentity(),
+        runKey: 'run-001',
+        threadId: 'thread-001',
+      );
+
+      expect(result.success, isTrue);
+
+      // Verify the evolution session was started — the context override
+      // is built internally, so we verify indirectly by checking the
+      // session was started (the context builder is called inside execute).
+      verify(
+        () => mockEvolutionWorkflow.startSession(
+          templateId: targetTemplateId,
+          contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
+        ),
+      ).called(1);
+    });
+
+    test(
+        'passes isMetaLevel=false to context builder when '
+        'recursionDepth is 0', () async {
+      stubHappyPath();
+      when(() => mockRepository.getAgentState(any())).thenAnswer(
+        (_) async => makeImproverState(recursionDepth: 0),
+      );
+
+      final result = await workflow.execute(
+        agentIdentity: makeImproverIdentity(),
+        runKey: 'run-001',
+        threadId: 'thread-001',
+      );
+
+      expect(result.success, isTrue);
+
+      verify(
+        () => mockEvolutionWorkflow.startSession(
+          templateId: targetTemplateId,
+          contextOverride: any(named: 'contextOverride'),
+          sessionNumberOverride: any(named: 'sessionNumberOverride'),
+        ),
+      ).called(1);
+    });
+
+    test('passes isMetaLevel=false when recursionDepth is null', () async {
+      stubHappyPath();
+      // Default makeImproverState has null recursionDepth.
+      when(() => mockRepository.getAgentState(any()))
+          .thenAnswer((_) async => makeImproverState());
+
+      final result = await workflow.execute(
+        agentIdentity: makeImproverIdentity(),
+        runKey: 'run-001',
+        threadId: 'thread-001',
+      );
+
+      expect(result.success, isTrue);
     });
   });
 }

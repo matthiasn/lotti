@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 
 /// Well-known feedback source identifiers.
@@ -12,6 +13,8 @@ abstract final class FeedbackSources {
   static const observation = 'observation';
   static const metric = 'metric';
   static const rating = 'rating';
+  static const evolutionSession = 'evolution_session';
+  static const directiveChurn = 'directive_churn';
 }
 
 /// Extracts and classifies feedback from agent observations and decisions.
@@ -100,6 +103,17 @@ class FeedbackExtractionService {
         items.add(classified);
       }
     }
+
+    // 5. Extract evolution session feedback for improver templates.
+    // When the target template governs improver agents, the most meaningful
+    // meta-feedback comes from how well those improvers performed their
+    // rituals (evolution session quality signals).
+    final evolutionItems = await _extractEvolutionSessionFeedback(
+      templateId: templateId,
+      since: since,
+      until: effectiveUntil,
+    );
+    items.addAll(evolutionItems);
 
     return ClassifiedFeedback(
       items: items,
@@ -191,6 +205,126 @@ class FeedbackExtractionService {
       detail: 'Wake run rated ${rating.toStringAsFixed(1)}',
       agentId: wakeRun.agentId,
       confidence: 1,
+    );
+  }
+
+  /// Extract feedback from evolution sessions created by improver agents
+  /// governed by [templateId].
+  ///
+  /// This is the meta-feedback layer: when the target is an improver template,
+  /// the most meaningful signals come from how well those improver agents
+  /// performed their rituals (evolution session outcomes).
+  Future<List<ClassifiedFeedbackItem>> _extractEvolutionSessionFeedback({
+    required String templateId,
+    required DateTime since,
+    required DateTime until,
+  }) async {
+    // Get all agent instances governed by this template.
+    final agents = await templateService.getAgentsForTemplate(templateId);
+    if (agents.isEmpty) return [];
+
+    // Resolve each agent's target template ID (the template it improves).
+    final targetTemplateIds = <String>{};
+    for (final agent in agents) {
+      final state = await agentRepository.getAgentState(agent.agentId);
+      final targetId = state?.slots.activeTemplateId;
+      if (targetId != null) {
+        targetTemplateIds.add(targetId);
+      }
+    }
+    if (targetTemplateIds.isEmpty) return [];
+
+    final items = <ClassifiedFeedbackItem>[];
+
+    // Query evolution sessions for each target template within the window.
+    for (final targetId in targetTemplateIds) {
+      final sessions = await templateService.getEvolutionSessions(
+        targetId,
+        limit: 50,
+      );
+      final windowSessions = sessions.where(
+        (s) => !s.createdAt.isBefore(since) && !s.createdAt.isAfter(until),
+      );
+
+      for (final session in windowSessions) {
+        items.add(_classifyEvolutionSession(session, targetId));
+      }
+
+      // Directive churn detection: count template versions created in window.
+      final versions = await templateService.getVersionHistory(targetId);
+      final windowVersions = versions.where(
+        (v) => !v.createdAt.isBefore(since) && !v.createdAt.isAfter(until),
+      );
+      final versionCount = windowVersions.length;
+      if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
+        items.add(
+          ClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            category: FeedbackCategory.general,
+            source: FeedbackSources.directiveChurn,
+            detail: 'Excessive directive churn: $versionCount versions '
+                'created for template $targetId in feedback window '
+                '(threshold: '
+                '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
+            agentId: templateId,
+            confidence: 1,
+          ),
+        );
+      }
+    }
+
+    return items;
+  }
+
+  /// Classify a single evolution session into a feedback item.
+  ClassifiedFeedbackItem _classifyEvolutionSession(
+    EvolutionSessionEntity session,
+    String targetTemplateId,
+  ) {
+    final rating = session.userRating;
+
+    if (session.status == EvolutionSessionStatus.abandoned) {
+      return ClassifiedFeedbackItem(
+        sentiment: FeedbackSentiment.negative,
+        category: FeedbackCategory.general,
+        source: FeedbackSources.evolutionSession,
+        detail: 'Evolution session #${session.sessionNumber} for '
+            'template $targetTemplateId was abandoned',
+        agentId: session.agentId,
+        sourceEntityId: session.id,
+        confidence: 1,
+      );
+    }
+
+    if (session.status == EvolutionSessionStatus.completed && rating != null) {
+      final sentiment = rating >= 4.0
+          ? FeedbackSentiment.positive
+          : rating <= 2.0
+              ? FeedbackSentiment.negative
+              : FeedbackSentiment.neutral;
+
+      return ClassifiedFeedbackItem(
+        sentiment: sentiment,
+        category: FeedbackCategory.general,
+        source: FeedbackSources.evolutionSession,
+        detail: 'Evolution session #${session.sessionNumber} for '
+            'template $targetTemplateId completed with rating '
+            '${rating.toStringAsFixed(1)}',
+        agentId: session.agentId,
+        sourceEntityId: session.id,
+        confidence: 1,
+      );
+    }
+
+    // Completed without rating or still active.
+    return ClassifiedFeedbackItem(
+      sentiment: FeedbackSentiment.neutral,
+      category: FeedbackCategory.general,
+      source: FeedbackSources.evolutionSession,
+      detail: 'Evolution session #${session.sessionNumber} for '
+          'template $targetTemplateId: ${session.status.name}',
+      agentId: session.agentId,
+      sourceEntityId: session.id,
     );
   }
 }

@@ -61,6 +61,7 @@ class EvolutionDataBundle {
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
 const improverTemplateId = 'template-improver-001';
+const metaImproverTemplateId = 'template-meta-improver-001';
 
 /// High-level service for agent template management.
 ///
@@ -647,13 +648,17 @@ class AgentTemplateService {
   /// missing. This handles partial-seed scenarios (e.g., Laura exists but Tom
   /// does not).
   Future<void> seedDefaults() async {
-    final [laura, tom, improver] = await Future.wait([
+    final [laura, tom, improver, metaImprover] = await Future.wait([
       getTemplate(lauraTemplateId),
       getTemplate(tomTemplateId),
       getTemplate(improverTemplateId),
+      getTemplate(metaImproverTemplateId),
     ]);
 
-    if (laura != null && tom != null && improver != null) {
+    if (laura != null &&
+        tom != null &&
+        improver != null &&
+        metaImprover != null) {
       developer.log(
         'Default templates already seeded, skipping',
         name: 'AgentTemplateService',
@@ -701,8 +706,32 @@ class AgentTemplateService {
       );
     }
 
+    if (metaImprover == null) {
+      await createTemplate(
+        templateId: metaImproverTemplateId,
+        displayName: 'Meta Improver',
+        kind: AgentTemplateKind.templateImprover,
+        modelId: 'models/gemini-3-flash-preview',
+        directives: 'You are a meta-improver agent. You evaluate and improve '
+            'the template-improver agents themselves. Your focus is on:\n'
+            '- Improver ritual effectiveness: Are the one-on-one sessions '
+            'producing useful directive proposals?\n'
+            '- Directive churn stability: Are improvers making too many '
+            'changes too frequently, or is the rate of change appropriate?\n'
+            '- Acceptance rates: Are users approving or rejecting the '
+            'proposals? What patterns emerge from the decisions?\n'
+            '- Session outcome trends: Are user ratings of evolution sessions '
+            'improving, stable, or declining over time?\n\n'
+            'You do NOT evaluate task-level agent performance directly. '
+            'Your scope is the effectiveness of the improvement process '
+            'itself.',
+        authoredBy: 'system',
+      );
+    }
+
     developer.log(
-      'Seeded default templates (Laura, Tom, Template Improver)',
+      'Seeded default templates (Laura, Tom, Template Improver, '
+      'Meta Improver)',
       name: 'AgentTemplateService',
     );
   }
