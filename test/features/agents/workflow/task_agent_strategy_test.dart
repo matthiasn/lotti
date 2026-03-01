@@ -11,14 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
-
-const _defaultSnapshot = (
-  title: 'Fix login bug',
-  status: 'IN PROGRESS',
-  priority: 'P1',
-  estimateMinutes: 120,
-  dueDate: '2026-03-15',
-);
+import '../test_utils.dart';
 
 /// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
 /// optional [ResolveTaskMetadata] for metadata-redundancy tests.
@@ -1113,7 +1106,7 @@ void main() {
         final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          resolveTaskMetadata: () async => _defaultSnapshot,
+          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
         );
 
         final toolCalls = [
@@ -1146,7 +1139,7 @@ void main() {
         final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
           syncService: mockSyncService,
-          resolveTaskMetadata: () async => _defaultSnapshot,
+          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
         );
 
         final toolCalls = [

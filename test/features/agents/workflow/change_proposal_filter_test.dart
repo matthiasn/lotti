@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 
+import '../test_utils.dart';
+
 void main() {
   group('ChangeProposalFilter.formatBatchResponse', () {
     test('formats clean batch with only added items', () {
@@ -79,13 +81,7 @@ void main() {
   });
 
   group('ChangeProposalFilter.checkTaskMetadataRedundancy', () {
-    const baseSnapshot = (
-      title: 'Fix login bug',
-      status: 'IN PROGRESS',
-      priority: 'P1',
-      estimateMinutes: 120,
-      dueDate: '2026-03-15',
-    );
+    const baseSnapshot = kTestTaskMetadataSnapshot;
 
     group('update_task_estimate', () {
       test('returns skip message when estimate matches', () {
