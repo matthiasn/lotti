@@ -188,7 +188,7 @@ class AgentTemplateService {
 
       // Archive ALL non-head versions to ensure no stale active statuses.
       final currentHead = await repository.getTemplateHead(templateId);
-      final allVersions = await getVersionHistory(templateId, limit: 1000000);
+      final allVersions = await getVersionHistory(templateId, limit: -1);
       for (final version in allVersions) {
         if (version.status != AgentTemplateVersionStatus.archived) {
           final archived = version.copyWith(
@@ -379,7 +379,7 @@ class AgentTemplateService {
       }
 
       // Archive ALL versions to ensure no stale active statuses.
-      final allVersions = await getVersionHistory(templateId, limit: 1000000);
+      final allVersions = await getVersionHistory(templateId, limit: -1);
       for (final version in allVersions) {
         if (version.status != AgentTemplateVersionStatus.archived) {
           await syncService.upsertEntity(

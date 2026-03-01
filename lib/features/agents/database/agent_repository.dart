@@ -296,6 +296,19 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch all evolution sessions across all non-deleted templates,
+  /// newest-first.
+  ///
+  /// Uses an INNER JOIN against `agent_entities` (type = 'agentTemplate') to
+  /// exclude orphan sessions whose parent template has been soft-deleted.
+  Future<List<EvolutionSessionEntity>> getAllEvolutionSessions() async {
+    final rows = await _db.getAllEvolutionSessions().get();
+    return rows
+        .map((r) => AgentDbConversions.fromEntityRow(r.es))
+        .whereType<EvolutionSessionEntity>()
+        .toList();
+  }
+
   /// Fetch evolution notes for [templateId], newest-first.
   Future<List<EvolutionNoteEntity>> getEvolutionNotes(
     String templateId, {

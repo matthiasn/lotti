@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 
 /// Result of processing a task title update.
@@ -72,7 +71,7 @@ class TaskTitleResult {
 /// ```
 ///
 /// See also:
-/// - [AgentToolExecutor] for the orchestration layer that wraps this handler.
+/// - `AgentToolExecutor` for the orchestration layer that wraps this handler.
 class TaskTitleHandler {
   /// Creates a handler for processing task title updates.
   ///
@@ -111,9 +110,8 @@ class TaskTitleHandler {
   /// 3. **Success**: Persists the update and returns a success result.
   /// 4. **Repository error**: Returns an error result and logs the exception.
   ///
-  /// The result also exposes [ToolExecutionResult]-compatible information via
-  /// [toToolExecutionResult] so it can be returned directly from an
-  /// [AgentToolExecutor.execute] handler.
+  /// The result exposes `success`, `message`, `didWrite`, and `error` fields
+  /// compatible with `ToolExecutionResult.fromHandlerResult`.
   Future<TaskTitleResult> handle(String newTitle) async {
     final trimmed = newTitle.trim();
 
@@ -204,19 +202,5 @@ class TaskTitleHandler {
         error: e.toString(),
       );
     }
-  }
-
-  /// Converts a [TaskTitleResult] into a [ToolExecutionResult] for use with
-  /// [AgentToolExecutor.execute].
-  static ToolExecutionResult toToolExecutionResult(
-    TaskTitleResult result, {
-    String? entityId,
-  }) {
-    return ToolExecutionResult(
-      success: result.success,
-      output: result.message,
-      mutatedEntityId: result.didWrite ? entityId : null,
-      errorMessage: result.error,
-    );
   }
 }

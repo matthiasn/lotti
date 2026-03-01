@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
@@ -73,51 +74,51 @@ class TaskToolDispatcher {
     }
 
     switch (toolName) {
-      case 'set_task_title':
+      case TaskAgentToolNames.setTaskTitle:
         return _handleSetTaskTitle(taskEntity, args, taskId);
 
-      case 'update_task_estimate':
+      case TaskAgentToolNames.updateTaskEstimate:
         return _handleProcessToolCall(taskEntity, toolName, args, taskId);
 
-      case 'update_task_due_date':
+      case TaskAgentToolNames.updateTaskDueDate:
         return _handleProcessToolCall(taskEntity, toolName, args, taskId);
 
-      case 'update_task_priority':
+      case TaskAgentToolNames.updateTaskPriority:
         return _handleProcessToolCall(taskEntity, toolName, args, taskId);
 
-      case 'add_checklist_item':
+      case TaskAgentToolNames.addChecklistItem:
         return _handleBatchChecklist(
           taskEntity,
-          'add_multiple_checklist_items',
+          TaskAgentToolNames.addMultipleChecklistItems,
           {
             'items': [args]
           },
           taskId,
         );
 
-      case 'add_multiple_checklist_items':
+      case TaskAgentToolNames.addMultipleChecklistItems:
         return _handleBatchChecklist(taskEntity, toolName, args, taskId);
 
-      case 'update_checklist_item':
+      case TaskAgentToolNames.updateChecklistItem:
         return _handleChecklistUpdate(
           taskEntity,
-          'update_checklist_items',
+          TaskAgentToolNames.updateChecklistItems,
           {
             'items': [args]
           },
           taskId,
         );
 
-      case 'update_checklist_items':
+      case TaskAgentToolNames.updateChecklistItems:
         return _handleChecklistUpdate(taskEntity, toolName, args, taskId);
 
-      case 'assign_task_labels':
+      case TaskAgentToolNames.assignTaskLabels:
         return _handleAssignLabels(taskEntity, args, taskId);
 
-      case 'set_task_language':
+      case TaskAgentToolNames.setTaskLanguage:
         return _handleSetLanguage(taskEntity, args, taskId);
 
-      case 'set_task_status':
+      case TaskAgentToolNames.setTaskStatus:
         return _handleSetStatus(taskEntity, args, taskId);
 
       default:
@@ -149,7 +150,13 @@ class TaskToolDispatcher {
       journalRepository: journalRepository,
     );
     final result = await handler.handle(titleArg);
-    return TaskTitleHandler.toToolExecutionResult(result, entityId: taskId);
+    return ToolExecutionResult.fromHandlerResult(
+      success: result.success,
+      message: result.message,
+      didWrite: result.didWrite,
+      error: result.error,
+      entityId: taskId,
+    );
   }
 
   Future<ToolExecutionResult> _handleProcessToolCall(
@@ -160,8 +167,8 @@ class TaskToolDispatcher {
   ) async {
     // Validate the expected string argument for string-typed tools.
     final expectedStringKey = switch (toolName) {
-      'update_task_due_date' => 'dueDate',
-      'update_task_priority' => 'priority',
+      TaskAgentToolNames.updateTaskDueDate => 'dueDate',
+      TaskAgentToolNames.updateTaskPriority => 'priority',
       _ => null,
     };
     if (expectedStringKey != null) {
@@ -179,7 +186,7 @@ class TaskToolDispatcher {
     // Validate minutes for estimate tool — accept int, double, or numeric
     // string since the handler's parseMinutes() handles all three. Only
     // reject null / clearly wrong types up front.
-    if (toolName == 'update_task_estimate') {
+    if (toolName == TaskAgentToolNames.updateTaskEstimate) {
       final value = args['minutes'];
       if (value == null) {
         return const ToolExecutionResult(
@@ -202,7 +209,7 @@ class TaskToolDispatcher {
     // Only estimate, due date, and priority tools are routed here by the
     // caller (dispatch).
     switch (toolName) {
-      case 'update_task_estimate':
+      case TaskAgentToolNames.updateTaskEstimate:
         final handler = TaskEstimateHandler(
           task: task,
           journalRepository: journalRepository,
@@ -211,37 +218,40 @@ class TaskToolDispatcher {
         // tool response with the real call ID. Passing a manager here would
         // cause the handler to emit a duplicate response with the synthetic ID.
         final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult(
+        return ToolExecutionResult.fromHandlerResult(
           success: result.success,
-          output: result.message,
-          mutatedEntityId: result.didWrite ? taskId : null,
-          errorMessage: result.error,
+          message: result.message,
+          didWrite: result.didWrite,
+          error: result.error,
+          entityId: taskId,
         );
 
-      case 'update_task_due_date':
+      case TaskAgentToolNames.updateTaskDueDate:
         final handler = TaskDueDateHandler(
           task: task,
           journalRepository: journalRepository,
         );
         final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult(
+        return ToolExecutionResult.fromHandlerResult(
           success: result.success,
-          output: result.message,
-          mutatedEntityId: result.didWrite ? taskId : null,
-          errorMessage: result.error,
+          message: result.message,
+          didWrite: result.didWrite,
+          error: result.error,
+          entityId: taskId,
         );
 
-      case 'update_task_priority':
+      case TaskAgentToolNames.updateTaskPriority:
         final handler = TaskPriorityHandler(
           task: task,
           journalRepository: journalRepository,
         );
         final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult(
+        return ToolExecutionResult.fromHandlerResult(
           success: result.success,
-          output: result.message,
-          mutatedEntityId: result.didWrite ? taskId : null,
-          errorMessage: result.error,
+          message: result.message,
+          didWrite: result.didWrite,
+          error: result.error,
+          entityId: taskId,
         );
 
       default:
@@ -275,8 +285,11 @@ class TaskToolDispatcher {
       processor: processor,
     );
     final result = await handler.handle(args);
-    return TaskLabelHandler.toToolExecutionResult(
-      result,
+    return ToolExecutionResult.fromHandlerResult(
+      success: result.success,
+      message: result.message,
+      didWrite: result.didWrite,
+      error: result.error,
       entityId: taskId,
     );
   }
@@ -301,8 +314,11 @@ class TaskToolDispatcher {
       journalRepository: journalRepository,
     );
     final result = await handler.handle(languageCode);
-    return TaskLanguageHandler.toToolExecutionResult(
-      result,
+    return ToolExecutionResult.fromHandlerResult(
+      success: result.success,
+      message: result.message,
+      didWrite: result.didWrite,
+      error: result.error,
       entityId: taskId,
     );
   }
@@ -331,8 +347,11 @@ class TaskToolDispatcher {
       status,
       reason: reason is String ? reason : null,
     );
-    return TaskStatusHandler.toToolExecutionResult(
-      result,
+    return ToolExecutionResult.fromHandlerResult(
+      success: result.success,
+      message: result.message,
+      didWrite: result.didWrite,
+      error: result.error,
       entityId: taskId,
     );
   }

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
@@ -107,7 +108,7 @@ class AgentDetailPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppTheme.spacingSmall),
-            _LifecycleBadge(lifecycle: identity.lifecycle),
+            AgentLifecycleBadge(lifecycle: identity.lifecycle),
             if (isRunning) ...[
               const SizedBox(width: AppTheme.spacingMedium),
               Tooltip(
@@ -469,50 +470,6 @@ class _ProfileSection extends ConsumerWidget {
         ],
       ),
     );
-  }
-}
-
-class _LifecycleBadge extends StatelessWidget {
-  const _LifecycleBadge({required this.lifecycle});
-
-  final AgentLifecycle lifecycle;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, color) = _lifecycleStyle(context, lifecycle);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingSmall,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  (String, Color) _lifecycleStyle(
-    BuildContext context,
-    AgentLifecycle lifecycle,
-  ) {
-    final scheme = context.colorScheme;
-    final l10n = context.messages;
-    return switch (lifecycle) {
-      AgentLifecycle.created => (l10n.agentLifecycleCreated, scheme.tertiary),
-      AgentLifecycle.active => (l10n.agentLifecycleActive, scheme.primary),
-      AgentLifecycle.dormant => (l10n.agentLifecyclePaused, scheme.secondary),
-      AgentLifecycle.destroyed => (l10n.agentLifecycleDestroyed, scheme.error),
-    };
   }
 }
 

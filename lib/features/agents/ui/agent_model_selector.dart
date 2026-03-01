@@ -274,23 +274,18 @@ class _ModelPickerContent extends StatelessWidget {
   final bool showProviderName;
   final ValueChanged<String> onSelected;
 
-  String? _providerName(String providerId) {
-    return providers
-        .where((p) => p.id == providerId)
-        .map((p) => p.name)
-        .firstOrNull;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final providerNameById = showProviderName
+        ? {for (final p in providers) p.id: p.name}
+        : const <String, String>{};
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: models.map((model) {
-          final providerLabel = showProviderName
-              ? _providerName(model.inferenceProviderId)
-              : null;
+          final providerLabel = providerNameById[model.inferenceProviderId];
           final subtitle = [
             if (providerLabel != null) providerLabel,
             model.providerModelId,

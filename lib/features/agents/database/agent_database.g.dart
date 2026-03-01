@@ -2561,6 +2561,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
         }).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<GetAllEvolutionSessionsResult> getAllEvolutionSessions() {
+    return customSelect(
+        'SELECT"es"."id" AS "nested_0.id", "es"."agent_id" AS "nested_0.agent_id", "es"."type" AS "nested_0.type", "es"."subtype" AS "nested_0.subtype", "es"."thread_id" AS "nested_0.thread_id", "es"."created_at" AS "nested_0.created_at", "es"."updated_at" AS "nested_0.updated_at", "es"."deleted_at" AS "nested_0.deleted_at", "es"."serialized" AS "nested_0.serialized", "es"."schema_version" AS "nested_0.schema_version" FROM agent_entities AS es INNER JOIN agent_entities AS tpl ON tpl.id = es.agent_id AND tpl.type = \'agentTemplate\' AND tpl.deleted_at IS NULL WHERE es.type = \'evolutionSession\' AND es.deleted_at IS NULL ORDER BY es.updated_at DESC',
+        variables: [],
+        readsFrom: {
+          agentEntities,
+        }).asyncMap((QueryRow row) async => GetAllEvolutionSessionsResult(
+          es: await agentEntities.mapFromRow(row, tablePrefix: 'nested_0'),
+        ));
+  }
+
   Selectable<AgentEntity> getEvolutionNotesByTemplate(
       String templateId, int limit) {
     return customSelect(
@@ -3700,4 +3711,11 @@ class $AgentDatabaseManager {
   $WakeRunLogTableManager get wakeRunLog =>
       $WakeRunLogTableManager(_db, _db.wakeRunLog);
   $SagaLogTableManager get sagaLog => $SagaLogTableManager(_db, _db.sagaLog);
+}
+
+class GetAllEvolutionSessionsResult {
+  final AgentEntity es;
+  GetAllEvolutionSessionsResult({
+    required this.es,
+  });
 }

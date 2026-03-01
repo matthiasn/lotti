@@ -205,18 +205,16 @@ class ChangeSetBuilder {
   }
 
   /// Convert batch tool name to a singular form for individual items.
-  static String _singularize(String toolName) {
-    if (toolName == 'add_multiple_checklist_items') {
-      return 'add_checklist_item';
-    }
-    if (toolName == 'update_checklist_items') {
-      return 'update_checklist_item';
-    }
-    throw ArgumentError(
-      'Unsupported batch tool for singularization: $toolName. '
-      'Add an explicit mapping above.',
-    );
-  }
+  static String _singularize(String toolName) => switch (toolName) {
+        TaskAgentToolNames.addMultipleChecklistItems =>
+          TaskAgentToolNames.addChecklistItem,
+        TaskAgentToolNames.updateChecklistItems =>
+          TaskAgentToolNames.updateChecklistItem,
+        _ => throw ArgumentError(
+            'Unsupported batch tool for singularization: $toolName. '
+            'Add an explicit mapping.',
+          ),
+      };
 
   /// Generate a human-readable summary for a single exploded item.
   Future<String> _generateItemSummary(

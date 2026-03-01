@@ -217,21 +217,14 @@ Future<List<AgentDomainEntity>> allAgentInstances(Ref ref) async {
 }
 
 /// List all evolution sessions across all templates.
+///
+/// Uses a single DB query instead of N per-template lookups.
+/// Reactively rebuilds when any agent data changes.
 @riverpod
 Future<List<AgentDomainEntity>> allEvolutionSessions(Ref ref) async {
-  final templateService = ref.watch(agentTemplateServiceProvider);
-  final templates = await templateService.listTemplates();
-  final templateIds = templates
-      .map((t) => t.mapOrNull(agentTemplate: (tpl) => tpl.id))
-      .whereType<String>()
-      .toList();
-
-  final sessionLists = await Future.wait(
-    templateIds.map(templateService.getEvolutionSessions),
-  );
-
-  final sessions = sessionLists.expand((items) => items).toList()
-    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  ref.watch(agentUpdateStreamProvider(agentNotification));
+  final repository = ref.watch(agentRepositoryProvider);
+  final sessions = await repository.getAllEvolutionSessions();
   return sessions.cast<AgentDomainEntity>();
 }
 
@@ -399,23 +392,7 @@ Future<List<AgentTokenUsageSummary>> agentTokenUsageSummaries(
   final entities =
       await ref.watch(agentTokenUsageRecordsProvider(agentId).future);
   final records = entities.whereType<WakeTokenUsageEntity>();
-
-  final map = <String, AgentTokenUsageSummary>{};
-  for (final r in records) {
-    final existing = map[r.modelId];
-    map[r.modelId] = AgentTokenUsageSummary(
-      modelId: r.modelId,
-      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
-      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
-      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
-      cachedInputTokens:
-          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
-      wakeCount: (existing?.wakeCount ?? 0) + 1,
-    );
-  }
-
-  return map.values.toList()
-    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+  return _aggregateByModel(records);
 }
 
 /// Aggregated token usage summary for a specific thread.
@@ -481,23 +458,7 @@ Future<List<AgentTokenUsageSummary>> templateTokenUsageSummaries(
   final entities =
       await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
   final records = entities.whereType<WakeTokenUsageEntity>();
-
-  final map = <String, AgentTokenUsageSummary>{};
-  for (final r in records) {
-    final existing = map[r.modelId];
-    map[r.modelId] = AgentTokenUsageSummary(
-      modelId: r.modelId,
-      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
-      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
-      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
-      cachedInputTokens:
-          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
-      wakeCount: (existing?.wakeCount ?? 0) + 1,
-    );
-  }
-
-  return map.values.toList()
-    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+  return _aggregateByModel(records);
 }
 
 /// Per-instance token usage breakdown for a template.
@@ -514,20 +475,10 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
       await ref.watch(templateTokenUsageRecordsProvider(templateId).future);
   final records = entities.whereType<WakeTokenUsageEntity>();
 
-  // Group by agentId → modelId → AgentTokenUsageSummary
-  final byAgent = <String, Map<String, AgentTokenUsageSummary>>{};
+  // Group by agentId, then aggregate each group by model.
+  final byAgent = <String, List<WakeTokenUsageEntity>>{};
   for (final r in records) {
-    final modelMap = byAgent.putIfAbsent(r.agentId, () => {});
-    final existing = modelMap[r.modelId];
-    modelMap[r.modelId] = AgentTokenUsageSummary(
-      modelId: r.modelId,
-      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
-      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
-      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
-      cachedInputTokens:
-          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
-      wakeCount: (existing?.wakeCount ?? 0) + 1,
-    );
+    byAgent.putIfAbsent(r.agentId, () => []).add(r);
   }
 
   // Enrich with instance metadata
@@ -535,8 +486,8 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
   final agents = await templateService.getAgentsForTemplate(templateId);
 
   return agents.map((agent) {
-    final summaries = (byAgent[agent.agentId]?.values.toList() ?? [])
-      ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+    final agentRecords = byAgent[agent.agentId] ?? [];
+    final summaries = _aggregateByModel(agentRecords);
     return InstanceTokenBreakdown(
       agentId: agent.id,
       displayName: agent.displayName,
@@ -814,11 +765,14 @@ Future<void> agentInitialization(Ref ref) async {
     syncEventProcessor,
   );
 
-  // 5. Seed default templates, profiles, and restore subscriptions.
-  await templateService.seedDefaults();
-  await ProfileSeedingService(
-    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-  ).seedDefaults();
+  // 5. Seed default templates and profiles in parallel, then restore
+  //    subscriptions (which depends on templates being seeded).
+  await Future.wait([
+    templateService.seedDefaults(),
+    ProfileSeedingService(
+      aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    ).seedDefaults(),
+  ]);
   await taskAgentService.restoreSubscriptions();
 }
 
@@ -895,4 +849,28 @@ void _wireSyncEventProcessor(
       ..agentRepository = null
       ..wakeOrchestrator = null;
   });
+}
+
+// ── Shared helpers ──────────────────────────────────────────────────────────
+
+/// Aggregates [WakeTokenUsageEntity] records by model ID into sorted
+/// [AgentTokenUsageSummary] entries (total tokens descending).
+List<AgentTokenUsageSummary> _aggregateByModel(
+  Iterable<WakeTokenUsageEntity> records,
+) {
+  final map = <String, AgentTokenUsageSummary>{};
+  for (final r in records) {
+    final existing = map[r.modelId];
+    map[r.modelId] = AgentTokenUsageSummary(
+      modelId: r.modelId,
+      inputTokens: (existing?.inputTokens ?? 0) + (r.inputTokens ?? 0),
+      outputTokens: (existing?.outputTokens ?? 0) + (r.outputTokens ?? 0),
+      thoughtsTokens: (existing?.thoughtsTokens ?? 0) + (r.thoughtsTokens ?? 0),
+      cachedInputTokens:
+          (existing?.cachedInputTokens ?? 0) + (r.cachedInputTokens ?? 0),
+      wakeCount: (existing?.wakeCount ?? 0) + 1,
+    );
+  }
+  return map.values.toList()
+    ..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
 }

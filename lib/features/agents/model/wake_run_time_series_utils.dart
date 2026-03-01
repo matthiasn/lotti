@@ -1,5 +1,6 @@
 import 'package:lotti/features/agents/database/agent_database.dart'
     show WakeRunLogData;
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 
 /// Computes time-series data from raw [WakeRunLogData] entries.
@@ -28,7 +29,7 @@ List<DailyWakeBucket> _computeDailyBuckets(List<WakeRunLogData> runs) {
   // Group by day
   final byDay = <DateTime, List<WakeRunLogData>>{};
   for (final run in runs) {
-    final day = _truncateToDay(run.createdAt);
+    final day = truncateToDay(run.createdAt);
     byDay.putIfAbsent(day, () => []).add(run);
   }
 
@@ -62,38 +63,18 @@ List<DailyWakeBucket> _computeDailyBuckets(List<WakeRunLogData> runs) {
 }
 
 DailyWakeBucket _bucketFromRuns(DateTime day, List<WakeRunLogData> runs) {
-  var successCount = 0;
-  var failureCount = 0;
-  var totalDurationMs = 0;
-  var durationCount = 0;
-
-  for (final run in runs) {
-    if (run.status == 'completed') {
-      successCount++;
-    } else if (run.status == 'failed') {
-      failureCount++;
-    }
-
-    final started = run.startedAt;
-    final completed = run.completedAt;
-    if (started != null && completed != null) {
-      totalDurationMs += completed.difference(started).inMilliseconds;
-      durationCount++;
-    }
-  }
-
-  final total = successCount + failureCount;
-  final successRate = total > 0 ? successCount / total : 0.0;
-  final avgDuration = durationCount > 0
-      ? Duration(milliseconds: totalDurationMs ~/ durationCount)
-      : Duration.zero;
+  final stats = computeRunStats(
+    runs,
+    statusAccessor: (r) => r.status,
+    timingAccessor: (r) => (startedAt: r.startedAt, completedAt: r.completedAt),
+  );
 
   return DailyWakeBucket(
     date: day,
-    successCount: successCount,
-    failureCount: failureCount,
-    successRate: successRate,
-    averageDuration: avgDuration,
+    successCount: stats.successCount,
+    failureCount: stats.failureCount,
+    successRate: stats.successRate,
+    averageDuration: stats.averageDuration,
   );
 }
 
@@ -125,40 +106,19 @@ List<VersionPerformanceBucket> _computeVersionBuckets(
     final (index, versionId) = entry;
     final versionRuns = byVersion[versionId]!;
 
-    var successCount = 0;
-    var failureCount = 0;
-    var totalDurationMs = 0;
-    var durationCount = 0;
-
-    for (final run in versionRuns) {
-      if (run.status == 'completed') {
-        successCount++;
-      } else if (run.status == 'failed') {
-        failureCount++;
-      }
-
-      final started = run.startedAt;
-      final completed = run.completedAt;
-      if (started != null && completed != null) {
-        totalDurationMs += completed.difference(started).inMilliseconds;
-        durationCount++;
-      }
-    }
-
-    final total = successCount + failureCount;
-    final successRate = total > 0 ? successCount / total : 0.0;
-    final avgDuration = durationCount > 0
-        ? Duration(milliseconds: totalDurationMs ~/ durationCount)
-        : Duration.zero;
+    final stats = computeRunStats(
+      versionRuns,
+      statusAccessor: (r) => r.status,
+      timingAccessor: (r) =>
+          (startedAt: r.startedAt, completedAt: r.completedAt),
+    );
 
     return VersionPerformanceBucket(
       versionId: versionId,
       versionNumber: index + 1,
       totalRuns: versionRuns.length,
-      successRate: successRate,
-      averageDuration: avgDuration,
+      successRate: stats.successRate,
+      averageDuration: stats.averageDuration,
     );
   }).toList();
 }
-
-DateTime _truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);

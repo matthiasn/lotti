@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -225,7 +226,7 @@ void main() {
       });
     });
 
-    group('toToolExecutionResult', () {
+    group('fromHandlerResult conversion', () {
       test('maps successful write result with entityId', () {
         final titleResult = TaskTitleResult(
           success: true,
@@ -235,8 +236,11 @@ void main() {
           didWrite: true,
         );
 
-        final toolResult = TaskTitleHandler.toToolExecutionResult(
-          titleResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: titleResult.success,
+          message: titleResult.message,
+          didWrite: titleResult.didWrite,
+          error: titleResult.error,
           entityId: 'ent-123',
         );
 
@@ -254,8 +258,11 @@ void main() {
           requestedTitle: 'Foo',
         );
 
-        final toolResult = TaskTitleHandler.toToolExecutionResult(
-          titleResult,
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: titleResult.success,
+          message: titleResult.message,
+          didWrite: titleResult.didWrite,
+          error: titleResult.error,
           entityId: 'ent-123',
         );
 
@@ -270,7 +277,12 @@ void main() {
           error: 'Invalid title: title must not be empty.',
         );
 
-        final toolResult = TaskTitleHandler.toToolExecutionResult(titleResult);
+        final toolResult = ToolExecutionResult.fromHandlerResult(
+          success: titleResult.success,
+          message: titleResult.message,
+          didWrite: titleResult.didWrite,
+          error: titleResult.error,
+        );
 
         expect(toolResult.success, isFalse);
         expect(toolResult.errorMessage, contains('empty'));
