@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
@@ -146,6 +148,48 @@ final _sessionProgressSchema = S.object(
   required: ['sessionNumber', 'totalSessions', 'feedbackCount', 'status'],
 );
 
+// ── JSON Parsing Helpers ────────────────────────────────────────────────────
+
+/// Reads an integer from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a number.
+int _readInt(Map<String, Object?> json, String key, [int fallback = 0]) =>
+    (json[key] is num) ? (json[key]! as num).toInt() : fallback;
+
+/// Reads a double from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a number.
+double _readDouble(
+  Map<String, Object?> json,
+  String key, [
+  double fallback = 0.0,
+]) =>
+    (json[key] is num) ? (json[key]! as num).toDouble() : fallback;
+
+/// Reads an optional num from a dynamic JSON map.
+num? _readNumOrNull(Map<String, Object?> json, String key) =>
+    json[key] is num ? json[key]! as num : null;
+
+/// Reads a string from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a string.
+String _readString(
+  Map<String, Object?> json,
+  String key, [
+  String fallback = '',
+]) =>
+    json[key] is String ? json[key]! as String : fallback;
+
+/// Reads an optional string from a dynamic JSON map.
+String? _readStringOrNull(Map<String, Object?> json, String key) =>
+    json[key] is String ? json[key]! as String : null;
+
+/// Reads a list of maps from a dynamic JSON map, filtering out non-map items.
+List<Map<String, Object?>> _readMapList(
+  Map<String, Object?> json,
+  String key,
+) =>
+    (json[key] is List)
+        ? (json[key]! as List).whereType<Map<String, Object?>>().toList()
+        : <Map<String, Object?>>[];
+
 // ── Catalog Items ───────────────────────────────────────────────────────────
 
 /// Proposal card with approve/reject actions.
@@ -155,13 +199,9 @@ final evolutionProposalItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final directives =
-        json['directives'] is String ? json['directives']! as String : '';
-    final rationale =
-        json['rationale'] is String ? json['rationale']! as String : '';
-    final currentDirectives = json['currentDirectives'] is String
-        ? json['currentDirectives']! as String
-        : null;
+    final directives = _readString(json, 'directives');
+    final rationale = _readString(json, 'rationale');
+    final currentDirectives = _readStringOrNull(json, 'currentDirectives');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -275,9 +315,8 @@ final evolutionNoteConfirmationItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final kind =
-        json['kind'] is String ? json['kind']! as String : 'reflection';
-    final content = json['content'] is String ? json['content']! as String : '';
+    final kind = _readString(json, 'kind', 'reflection');
+    final content = _readString(json, 'content');
 
     return _EvolutionNoteConfirmationCard(
       kind: kind,
@@ -389,19 +428,11 @@ final metricsSummaryItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final totalWakes =
-        (json['totalWakes'] is num) ? (json['totalWakes']! as num).toInt() : 0;
-    final successRate = (json['successRate'] is num)
-        ? (json['successRate']! as num).toDouble()
-        : 0.0;
-    final failureCount = (json['failureCount'] is num)
-        ? (json['failureCount']! as num).toInt()
-        : 0;
-    final avgDuration = json['averageDurationSeconds'] is num
-        ? json['averageDurationSeconds']! as num
-        : null;
-    final activeInstances =
-        json['activeInstances'] is num ? json['activeInstances']! as num : null;
+    final totalWakes = _readInt(json, 'totalWakes');
+    final successRate = _readDouble(json, 'successRate');
+    final failureCount = _readInt(json, 'failureCount');
+    final avgDuration = _readNumOrNull(json, 'averageDurationSeconds');
+    final activeInstances = _readNumOrNull(json, 'activeInstances');
 
     final context = itemContext.buildContext;
     final messages = context.messages;
@@ -448,21 +479,11 @@ final versionComparisonItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final beforeVersion = (json['beforeVersion'] is num)
-        ? (json['beforeVersion']! as num).toInt()
-        : 0;
-    final afterVersion = (json['afterVersion'] is num)
-        ? (json['afterVersion']! as num).toInt()
-        : 0;
-    final beforeDirectives = json['beforeDirectives'] is String
-        ? json['beforeDirectives']! as String
-        : '';
-    final afterDirectives = json['afterDirectives'] is String
-        ? json['afterDirectives']! as String
-        : '';
-    final changesSummary = json['changesSummary'] is String
-        ? json['changesSummary']! as String
-        : null;
+    final beforeVersion = _readInt(json, 'beforeVersion');
+    final afterVersion = _readInt(json, 'afterVersion');
+    final beforeDirectives = _readString(json, 'beforeDirectives');
+    final afterDirectives = _readString(json, 'afterDirectives');
+    final changesSummary = _readStringOrNull(json, 'changesSummary');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -536,18 +557,10 @@ final feedbackClassificationItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final items = (json['items'] is List)
-        ? (json['items']! as List).whereType<Map<String, Object?>>().toList()
-        : <Map<String, Object?>>[];
-    final positiveCount = (json['positiveCount'] is num)
-        ? (json['positiveCount']! as num).toInt()
-        : 0;
-    final negativeCount = (json['negativeCount'] is num)
-        ? (json['negativeCount']! as num).toInt()
-        : 0;
-    final neutralCount = (json['neutralCount'] is num)
-        ? (json['neutralCount']! as num).toInt()
-        : 0;
+    final items = _readMapList(json, 'items');
+    final positiveCount = _readInt(json, 'positiveCount');
+    final negativeCount = _readInt(json, 'negativeCount');
+    final neutralCount = _readInt(json, 'neutralCount');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -605,12 +618,8 @@ final feedbackClassificationItem = CatalogItem(
               const SizedBox(height: 10),
               ...items.take(5).map(
                     (item) => _feedbackLine(
-                      detail: item['detail'] is String
-                          ? item['detail']! as String
-                          : '',
-                      sentiment: item['sentiment'] is String
-                          ? item['sentiment']! as String
-                          : 'neutral',
+                      detail: _readString(item, 'detail'),
+                      sentiment: _readString(item, 'sentiment', 'neutral'),
                     ),
                   ),
               if (items.length > 5)
@@ -640,17 +649,12 @@ final feedbackCategoryBreakdownItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final categories = (json['categories'] is List)
-        ? (json['categories']! as List)
-            .whereType<Map<String, Object?>>()
-            .toList()
-        : <Map<String, Object?>>[];
+    final categories = _readMapList(json, 'categories');
     final context = itemContext.buildContext;
 
     final totalCount = categories.fold<int>(
       0,
-      (sum, c) =>
-          sum + ((c['count'] is num) ? (c['count']! as num).toInt() : 0),
+      (sum, c) => sum + _readInt(c, 'count'),
     );
 
     return Padding(
@@ -682,14 +686,10 @@ final feedbackCategoryBreakdownItem = CatalogItem(
             const SizedBox(height: 10),
             ...categories.map(
               (c) => _categoryBar(
-                name: c['name'] is String ? c['name']! as String : '',
-                count: (c['count'] is num) ? (c['count']! as num).toInt() : 0,
-                positiveCount: (c['positiveCount'] is num)
-                    ? (c['positiveCount']! as num).toInt()
-                    : 0,
-                negativeCount: (c['negativeCount'] is num)
-                    ? (c['negativeCount']! as num).toInt()
-                    : 0,
+                name: _readString(c, 'name'),
+                count: _readInt(c, 'count'),
+                positiveCount: _readInt(c, 'positiveCount'),
+                negativeCount: _readInt(c, 'negativeCount'),
                 totalCount: totalCount,
               ),
             ),
@@ -707,23 +707,12 @@ final sessionProgressItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final sessionNumber = (json['sessionNumber'] is num)
-        ? (json['sessionNumber']! as num).toInt()
-        : 0;
-    final totalSessions = (json['totalSessions'] is num)
-        ? (json['totalSessions']! as num).toInt()
-        : 0;
-    final feedbackCount = (json['feedbackCount'] is num)
-        ? (json['feedbackCount']! as num).toInt()
-        : 0;
-    final positiveCount = (json['positiveCount'] is num)
-        ? (json['positiveCount']! as num).toInt()
-        : 0;
-    final negativeCount = (json['negativeCount'] is num)
-        ? (json['negativeCount']! as num).toInt()
-        : 0;
-    final status =
-        json['status'] is String ? json['status']! as String : 'active';
+    final sessionNumber = _readInt(json, 'sessionNumber');
+    final totalSessions = _readInt(json, 'totalSessions');
+    final feedbackCount = _readInt(json, 'feedbackCount');
+    final positiveCount = _readInt(json, 'positiveCount');
+    final negativeCount = _readInt(json, 'negativeCount');
+    final status = _readString(json, 'status', 'active');
     final context = itemContext.buildContext;
 
     final statusColor = switch (status) {
@@ -947,7 +936,7 @@ Widget _categoryBar({
   required int totalCount,
 }) {
   final fraction = totalCount > 0 ? count / totalCount : 0.0;
-  final neutralCount = count - positiveCount - negativeCount;
+  final neutralCount = max(0, count - positiveCount - negativeCount);
 
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
