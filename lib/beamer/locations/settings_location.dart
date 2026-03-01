@@ -346,7 +346,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       if (pathContains('agents/templates') &&
           pathContainsKey('templateId') &&
-          pathContains('/review'))
+          path.endsWith('/review'))
         BeamPage(
           key: ValueKey(
             'settings-agents-templates-review-'

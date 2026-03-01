@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
@@ -42,15 +44,13 @@ void main() {
     });
 
     testWidgets('renders SizedBox.shrink during loading state', (tester) async {
+      final pending = Completer<Set<String>>();
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const RitualPendingIndicator(),
           overrides: [
-            // A Completer future that never completes keeps loading state.
             templatesPendingReviewProvider.overrideWith(
-              (ref) => Future<Set<String>>.error(Exception('never'))
-                  .catchError((_) => <String>{})
-                  .then((_) => throw UnimplementedError()),
+              (ref) => pending.future,
             ),
           ],
         ),
@@ -87,22 +87,21 @@ void main() {
       expect(decoration.shape, BoxShape.circle);
     });
 
-    testWidgets('dot Container has 10×10 size when count > 0', (tester) async {
+    testWidgets('dot Container has 10×10 rendered size when count > 0',
+        (tester) async {
       await tester.pumpWidget(buildSubject(count: 1));
       await pumpUntilResolved(tester);
       await tester.pump(const Duration(milliseconds: 16));
 
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final dotContainer = containers.firstWhere(
-        (c) {
-          final d = c.decoration;
+      final dotFinder = find.byWidgetPredicate((widget) {
+        if (widget is Container) {
+          final d = widget.decoration;
           return d is BoxDecoration && d.shape == BoxShape.circle;
-        },
-        orElse: () => throw TestFailure('Expected a 10×10 circular Container'),
-      );
-
-      expect(dotContainer.constraints?.maxWidth, 10);
-      expect(dotContainer.constraints?.maxHeight, 10);
+        }
+        return false;
+      });
+      expect(dotFinder, findsOneWidget);
+      expect(tester.getSize(dotFinder), const Size(10, 10));
     });
 
     testWidgets('dot Container has a boxShadow when count > 0', (tester) async {

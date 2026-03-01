@@ -308,13 +308,11 @@ void main() {
               makeTestEvolutionSession(
                 id: 'evo-1',
                 templateId: 'template-A',
-
               ),
               makeTestEvolutionSession(
                 id: 'evo-2',
                 templateId: 'template-B',
                 sessionNumber: 2,
-
               ),
             ],
           ),
@@ -351,7 +349,6 @@ void main() {
                 id: 'evo-3',
                 templateId: 'template-C',
                 sessionNumber: 3,
-
               ),
             ],
           ),
@@ -401,13 +398,11 @@ void main() {
               makeTestEvolutionSession(
                 id: 'evo-1',
                 templateId: 'template-A',
-
               ),
               makeTestEvolutionSession(
                 id: 'evo-2',
                 templateId: 'template-A',
                 sessionNumber: 2,
-
               ),
             ],
           ),

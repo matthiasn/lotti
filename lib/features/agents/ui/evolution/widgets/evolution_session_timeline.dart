@@ -58,7 +58,18 @@ class EvolutionSessionTimeline extends ConsumerWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            context.messages.commonError,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -507,11 +507,20 @@ final feedbackClassificationItem = CatalogItem(
   name: 'FeedbackClassification',
   dataSchema: _feedbackClassificationSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final items = (json['items'] as List?)?.cast<Map<String, Object?>>() ?? [];
-    final positiveCount = (json['positiveCount'] as num?)?.toInt() ?? 0;
-    final negativeCount = (json['negativeCount'] as num?)?.toInt() ?? 0;
-    final neutralCount = (json['neutralCount'] as num?)?.toInt() ?? 0;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final items = (json['items'] is List)
+        ? (json['items']! as List).whereType<Map<String, Object?>>().toList()
+        : <Map<String, Object?>>[];
+    final positiveCount = (json['positiveCount'] is num)
+        ? (json['positiveCount']! as num).toInt()
+        : 0;
+    final negativeCount = (json['negativeCount'] is num)
+        ? (json['negativeCount']! as num).toInt()
+        : 0;
+    final neutralCount = (json['neutralCount'] is num)
+        ? (json['neutralCount']! as num).toInt()
+        : 0;
     final context = itemContext.buildContext;
 
     return Padding(
@@ -569,8 +578,12 @@ final feedbackClassificationItem = CatalogItem(
               const SizedBox(height: 10),
               ...items.take(5).map(
                     (item) => _feedbackLine(
-                      detail: item['detail'] as String? ?? '',
-                      sentiment: item['sentiment'] as String? ?? 'neutral',
+                      detail: item['detail'] is String
+                          ? item['detail']! as String
+                          : '',
+                      sentiment: item['sentiment'] is String
+                          ? item['sentiment']! as String
+                          : 'neutral',
                     ),
                   ),
               if (items.length > 5)
@@ -598,14 +611,19 @@ final feedbackCategoryBreakdownItem = CatalogItem(
   name: 'FeedbackCategoryBreakdown',
   dataSchema: _feedbackCategoryBreakdownSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final categories =
-        (json['categories'] as List?)?.cast<Map<String, Object?>>() ?? [];
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final categories = (json['categories'] is List)
+        ? (json['categories']! as List)
+            .whereType<Map<String, Object?>>()
+            .toList()
+        : <Map<String, Object?>>[];
     final context = itemContext.buildContext;
 
     final totalCount = categories.fold<int>(
       0,
-      (sum, c) => sum + ((c['count'] as num?)?.toInt() ?? 0),
+      (sum, c) =>
+          sum + ((c['count'] is num) ? (c['count']! as num).toInt() : 0),
     );
 
     return Padding(
@@ -637,10 +655,14 @@ final feedbackCategoryBreakdownItem = CatalogItem(
             const SizedBox(height: 10),
             ...categories.map(
               (c) => _categoryBar(
-                name: c['name'] as String? ?? '',
-                count: (c['count'] as num?)?.toInt() ?? 0,
-                positiveCount: (c['positiveCount'] as num?)?.toInt() ?? 0,
-                negativeCount: (c['negativeCount'] as num?)?.toInt() ?? 0,
+                name: c['name'] is String ? c['name']! as String : '',
+                count: (c['count'] is num) ? (c['count']! as num).toInt() : 0,
+                positiveCount: (c['positiveCount'] is num)
+                    ? (c['positiveCount']! as num).toInt()
+                    : 0,
+                negativeCount: (c['negativeCount'] is num)
+                    ? (c['negativeCount']! as num).toInt()
+                    : 0,
                 totalCount: totalCount,
               ),
             ),
@@ -656,13 +678,25 @@ final sessionProgressItem = CatalogItem(
   name: 'SessionProgress',
   dataSchema: _sessionProgressSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final sessionNumber = (json['sessionNumber'] as num?)?.toInt() ?? 0;
-    final totalSessions = (json['totalSessions'] as num?)?.toInt() ?? 0;
-    final feedbackCount = (json['feedbackCount'] as num?)?.toInt() ?? 0;
-    final positiveCount = (json['positiveCount'] as num?)?.toInt() ?? 0;
-    final negativeCount = (json['negativeCount'] as num?)?.toInt() ?? 0;
-    final status = json['status'] as String? ?? 'active';
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final sessionNumber = (json['sessionNumber'] is num)
+        ? (json['sessionNumber']! as num).toInt()
+        : 0;
+    final totalSessions = (json['totalSessions'] is num)
+        ? (json['totalSessions']! as num).toInt()
+        : 0;
+    final feedbackCount = (json['feedbackCount'] is num)
+        ? (json['feedbackCount']! as num).toInt()
+        : 0;
+    final positiveCount = (json['positiveCount'] is num)
+        ? (json['positiveCount']! as num).toInt()
+        : 0;
+    final negativeCount = (json['negativeCount'] is num)
+        ? (json['negativeCount']! as num).toInt()
+        : 0;
+    final status =
+        json['status'] is String ? json['status']! as String : 'active';
     final context = itemContext.buildContext;
 
     final statusColor = switch (status) {

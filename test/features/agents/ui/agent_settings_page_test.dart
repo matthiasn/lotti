@@ -298,73 +298,56 @@ void main() {
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
     });
 
-    testWidgets('shows pending dot when template has pending ritual review',
-        (tester) async {
-      final template = makeTestTemplate(
-        id: 'tpl-pending',
-        agentId: 'tpl-pending',
-        displayName: 'Pending Template',
+    Finder pendingDotInCard(String templateName) {
+      final card = find.ancestor(
+        of: find.text(templateName),
+        matching: find.byType(ListTile),
       );
-
-      await tester.pumpWidget(
-        buildSubject(
-          templates: [template],
-          extraOverrides: [
-            templatesPendingReviewProvider.overrideWith(
-              (ref) async => {'tpl-pending'},
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Find the pending dot: a Container with circle shape and purple color
-      final pendingDot = find.byWidgetPredicate((widget) {
-        if (widget is Container) {
-          final decoration = widget.decoration;
-          if (decoration is BoxDecoration) {
-            return decoration.shape == BoxShape.circle &&
-                decoration.color == GameyColors.primaryPurple;
+      return find.descendant(
+        of: card,
+        matching: find.byWidgetPredicate((widget) {
+          if (widget is Container) {
+            final decoration = widget.decoration;
+            if (decoration is BoxDecoration) {
+              return decoration.shape == BoxShape.circle &&
+                  decoration.color == GameyColors.primaryPurple;
+            }
           }
-        }
-        return false;
-      });
-      expect(pendingDot, findsOneWidget);
-    });
-
-    testWidgets('does not show pending dot when template has no pending review',
-        (tester) async {
-      final template = makeTestTemplate(
-        id: 'tpl-clean',
-        agentId: 'tpl-clean',
-        displayName: 'Clean Template',
+          return false;
+        }),
       );
+    }
 
-      await tester.pumpWidget(
-        buildSubject(
-          templates: [template],
-          extraOverrides: [
-            templatesPendingReviewProvider.overrideWith(
-              (ref) async => <String>{},
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+    for (final (label, pendingIds, expectVisible) in [
+      ('visible when pending', {'tpl-dot'}, true),
+      ('absent when not pending', <String>{}, false),
+    ]) {
+      testWidgets('pending dot is $label', (tester) async {
+        final template = makeTestTemplate(
+          id: 'tpl-dot',
+          agentId: 'tpl-dot',
+          displayName: 'Dot Template',
+        );
 
-      // Verify no pending dot is rendered
-      final pendingDot = find.byWidgetPredicate((widget) {
-        if (widget is Container) {
-          final decoration = widget.decoration;
-          if (decoration is BoxDecoration) {
-            return decoration.shape == BoxShape.circle &&
-                decoration.color == GameyColors.primaryPurple;
-          }
+        await tester.pumpWidget(
+          buildSubject(
+            templates: [template],
+            extraOverrides: [
+              templatesPendingReviewProvider.overrideWith(
+                (ref) async => pendingIds,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        if (expectVisible) {
+          expect(pendingDotInCard('Dot Template'), findsOneWidget);
+        } else {
+          expect(pendingDotInCard('Dot Template'), findsNothing);
         }
-        return false;
       });
-      expect(pendingDot, findsNothing);
-    });
+    }
 
     testWidgets('tapping back chevron calls NavService.beamBack',
         (tester) async {
