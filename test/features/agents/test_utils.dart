@@ -72,6 +72,7 @@ AgentStateEntity makeTestState({
   DateTime? lastWakeAt,
   DateTime? nextWakeAt,
   DateTime? sleepUntil,
+  DateTime? scheduledWakeAt,
 }) {
   return AgentDomainEntity.agentState(
     id: id,
@@ -85,6 +86,7 @@ AgentStateEntity makeTestState({
     lastWakeAt: lastWakeAt,
     nextWakeAt: nextWakeAt,
     sleepUntil: sleepUntil,
+    scheduledWakeAt: scheduledWakeAt,
   ) as AgentStateEntity;
 }
 

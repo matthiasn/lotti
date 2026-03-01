@@ -27,6 +27,24 @@ abstract class AgentSlots with _$AgentSlots {
   const factory AgentSlots({
     /// The journal-domain task ID this agent is working on.
     String? activeTaskId,
+
+    /// The template ID this improver agent manages.
+    String? activeTemplateId,
+
+    /// When the last one-on-one ritual completed.
+    DateTime? lastOneOnOneAt,
+
+    /// Incremental feedback scan watermark.
+    DateTime? lastFeedbackScanAt,
+
+    /// Configurable ritual frequency in days (default 7).
+    int? feedbackWindowDays,
+
+    /// Total one-on-one sessions completed by this improver.
+    int? totalSessionsCompleted,
+
+    /// Recursion depth: 0 = task improver, 1 = meta-improver.
+    int? recursionDepth,
   }) = _AgentSlots;
 
   factory AgentSlots.fromJson(Map<String, dynamic> json) =>

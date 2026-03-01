@@ -388,6 +388,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime? lastWakeAt,
             DateTime? nextWakeAt,
             DateTime? sleepUntil,
+            DateTime? scheduledWakeAt,
             String? recentHeadMessageId,
             String? latestSummaryMessageId,
             int consecutiveFailureCount,
@@ -566,6 +567,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.lastWakeAt,
             _that.nextWakeAt,
             _that.sleepUntil,
+            _that.scheduledWakeAt,
             _that.recentHeadMessageId,
             _that.latestSummaryMessageId,
             _that.consecutiveFailureCount,
@@ -764,6 +766,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime? lastWakeAt,
             DateTime? nextWakeAt,
             DateTime? sleepUntil,
+            DateTime? scheduledWakeAt,
             String? recentHeadMessageId,
             String? latestSummaryMessageId,
             int consecutiveFailureCount,
@@ -947,6 +950,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.lastWakeAt,
             _that.nextWakeAt,
             _that.sleepUntil,
+            _that.scheduledWakeAt,
             _that.recentHeadMessageId,
             _that.latestSummaryMessageId,
             _that.consecutiveFailureCount,
@@ -1144,6 +1148,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             DateTime? lastWakeAt,
             DateTime? nextWakeAt,
             DateTime? sleepUntil,
+            DateTime? scheduledWakeAt,
             String? recentHeadMessageId,
             String? latestSummaryMessageId,
             int consecutiveFailureCount,
@@ -1321,6 +1326,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
             _that.lastWakeAt,
             _that.nextWakeAt,
             _that.sleepUntil,
+            _that.scheduledWakeAt,
             _that.recentHeadMessageId,
             _that.latestSummaryMessageId,
             _that.consecutiveFailureCount,
@@ -1741,6 +1747,7 @@ class AgentStateEntity implements AgentDomainEntity {
       this.lastWakeAt,
       this.nextWakeAt,
       this.sleepUntil,
+      this.scheduledWakeAt,
       this.recentHeadMessageId,
       this.latestSummaryMessageId,
       this.consecutiveFailureCount = 0,
@@ -1765,6 +1772,7 @@ class AgentStateEntity implements AgentDomainEntity {
   final DateTime? lastWakeAt;
   final DateTime? nextWakeAt;
   final DateTime? sleepUntil;
+  final DateTime? scheduledWakeAt;
   final String? recentHeadMessageId;
   final String? latestSummaryMessageId;
   @JsonKey()
@@ -1821,6 +1829,8 @@ class AgentStateEntity implements AgentDomainEntity {
                 other.nextWakeAt == nextWakeAt) &&
             (identical(other.sleepUntil, sleepUntil) ||
                 other.sleepUntil == sleepUntil) &&
+            (identical(other.scheduledWakeAt, scheduledWakeAt) ||
+                other.scheduledWakeAt == scheduledWakeAt) &&
             (identical(other.recentHeadMessageId, recentHeadMessageId) ||
                 other.recentHeadMessageId == recentHeadMessageId) &&
             (identical(other.latestSummaryMessageId, latestSummaryMessageId) ||
@@ -1849,6 +1859,7 @@ class AgentStateEntity implements AgentDomainEntity {
       lastWakeAt,
       nextWakeAt,
       sleepUntil,
+      scheduledWakeAt,
       recentHeadMessageId,
       latestSummaryMessageId,
       consecutiveFailureCount,
@@ -1858,7 +1869,7 @@ class AgentStateEntity implements AgentDomainEntity {
 
   @override
   String toString() {
-    return 'AgentDomainEntity.agentState(id: $id, agentId: $agentId, revision: $revision, slots: $slots, updatedAt: $updatedAt, vectorClock: $vectorClock, lastWakeAt: $lastWakeAt, nextWakeAt: $nextWakeAt, sleepUntil: $sleepUntil, recentHeadMessageId: $recentHeadMessageId, latestSummaryMessageId: $latestSummaryMessageId, consecutiveFailureCount: $consecutiveFailureCount, wakeCounter: $wakeCounter, processedCounterByHost: $processedCounterByHost, deletedAt: $deletedAt)';
+    return 'AgentDomainEntity.agentState(id: $id, agentId: $agentId, revision: $revision, slots: $slots, updatedAt: $updatedAt, vectorClock: $vectorClock, lastWakeAt: $lastWakeAt, nextWakeAt: $nextWakeAt, sleepUntil: $sleepUntil, scheduledWakeAt: $scheduledWakeAt, recentHeadMessageId: $recentHeadMessageId, latestSummaryMessageId: $latestSummaryMessageId, consecutiveFailureCount: $consecutiveFailureCount, wakeCounter: $wakeCounter, processedCounterByHost: $processedCounterByHost, deletedAt: $deletedAt)';
   }
 }
 
@@ -1880,6 +1891,7 @@ abstract mixin class $AgentStateEntityCopyWith<$Res>
       DateTime? lastWakeAt,
       DateTime? nextWakeAt,
       DateTime? sleepUntil,
+      DateTime? scheduledWakeAt,
       String? recentHeadMessageId,
       String? latestSummaryMessageId,
       int consecutiveFailureCount,
@@ -1912,6 +1924,7 @@ class _$AgentStateEntityCopyWithImpl<$Res>
     Object? lastWakeAt = freezed,
     Object? nextWakeAt = freezed,
     Object? sleepUntil = freezed,
+    Object? scheduledWakeAt = freezed,
     Object? recentHeadMessageId = freezed,
     Object? latestSummaryMessageId = freezed,
     Object? consecutiveFailureCount = null,
@@ -1955,6 +1968,10 @@ class _$AgentStateEntityCopyWithImpl<$Res>
       sleepUntil: freezed == sleepUntil
           ? _self.sleepUntil
           : sleepUntil // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      scheduledWakeAt: freezed == scheduledWakeAt
+          ? _self.scheduledWakeAt
+          : scheduledWakeAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
       recentHeadMessageId: freezed == recentHeadMessageId
           ? _self.recentHeadMessageId
