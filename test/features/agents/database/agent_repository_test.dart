@@ -875,6 +875,93 @@ void main() {
         throwsA(isException),
       );
     });
+
+    group('insertLinkExclusive', () {
+      test('inserts a link successfully when no conflict', () async {
+        final link = model.AgentLink.improverTarget(
+          id: 'link-exc-1',
+          fromId: 'agent-imp-1',
+          toId: 'tpl-target-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        await repo.insertLinkExclusive(link);
+
+        final results = await repo.getLinksTo(
+          'tpl-target-1',
+          type: 'improver_target',
+        );
+        expect(results, hasLength(1));
+        expect(results.first.fromId, 'agent-imp-1');
+      });
+
+      test(
+          'throws DuplicateInsertException when partial unique index '
+          'is violated', () async {
+        // First improverTarget link to tpl-target-2 succeeds.
+        await repo.insertLinkExclusive(
+          model.AgentLink.improverTarget(
+            id: 'link-exc-first',
+            fromId: 'agent-imp-A',
+            toId: 'tpl-target-2',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        // Second improverTarget link to same to_id with different from_id
+        // violates idx_unique_improver_per_template.
+        await expectLater(
+          repo.insertLinkExclusive(
+            model.AgentLink.improverTarget(
+              id: 'link-exc-second',
+              fromId: 'agent-imp-B',
+              toId: 'tpl-target-2',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          ),
+          throwsA(
+            isA<DuplicateInsertException>().having(
+              (e) => e.key,
+              'key',
+              'tpl-target-2',
+            ),
+          ),
+        );
+      });
+
+      test('allows improverTarget to different templates', () async {
+        await repo.insertLinkExclusive(
+          model.AgentLink.improverTarget(
+            id: 'link-exc-tpl1',
+            fromId: 'agent-imp-X',
+            toId: 'tpl-A',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.insertLinkExclusive(
+          model.AgentLink.improverTarget(
+            id: 'link-exc-tpl2',
+            fromId: 'agent-imp-Y',
+            toId: 'tpl-B',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        final linksA = await repo.getLinksTo('tpl-A', type: 'improver_target');
+        final linksB = await repo.getLinksTo('tpl-B', type: 'improver_target');
+        expect(linksA, hasLength(1));
+        expect(linksB, hasLength(1));
+      });
+    });
   });
 
   // ── Wake run log ────────────────────────────────────────────────────────────
