@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.889" date="2026-03-01">
       <description>
-          <p>Agent no longer proposes redundant changes that match the current state. Checklist items, estimates, priorities, due dates, statuses, and titles are filtered at proposal time with corrective feedback to the LLM.</p>
+          <p>Agent no longer proposes redundant changes that match the current state. Checklist items, estimates, priorities, due dates, statuses, and titles are filtered at proposal time with corrective feedback to the LLM. Cross-device sync of confirmed/rejected change sets now works reliably.</p>
       </description>
     </release>
     <release version="0.9.888" date="2026-02-28">

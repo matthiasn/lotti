@@ -221,4 +221,28 @@ void main() {
       );
     });
   });
+
+  group('normalizeAttachmentIndexKey', () {
+    test('adds leading slash to bare path', () {
+      expect(normalizeAttachmentIndexKey('agent_entities/a.json'),
+          '/agent_entities/a.json');
+    });
+
+    test('preserves single leading slash', () {
+      expect(normalizeAttachmentIndexKey('/agent_entities/a.json'),
+          '/agent_entities/a.json');
+    });
+
+    test('collapses multiple leading slashes', () {
+      expect(normalizeAttachmentIndexKey('///agent_entities/a.json'),
+          '/agent_entities/a.json');
+    });
+
+    test('converts backslashes to forward slashes', () {
+      expect(
+        normalizeAttachmentIndexKey(r'\agent_entities\a.json'),
+        '/agent_entities/a.json',
+      );
+    });
+  });
 }

@@ -405,17 +405,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     return entity;
   }
 
-  // Construct a canonical index key for AttachmentIndex lookups.
-  // - Normalizes separators using POSIX rules so keys always use '/'
-  // - Trims any leading '/' or '\\' characters
-  // - Returns the path with a single leading '/'
-  String _buildIndexKey(String rawPath) {
-    // Normalize with POSIX semantics and coerce backslashes to forward slashes.
-    final normalizedPosix =
-        path.posix.normalize(rawPath.replaceAll(r'\\', '/'));
-    final trimmed = normalizedPosix.replaceFirst(RegExp(r'^[\\/]+'), '');
-    return '/$trimmed';
-  }
+  String _buildIndexKey(String rawPath) => normalizeAttachmentIndexKey(rawPath);
 
   Future<void> _ensureMediaOnMissing(JournalEntity e) async {
     switch (e) {
@@ -1096,8 +1086,10 @@ class SyncEventProcessor {
       return null;
     }
 
-    // Try to fetch fresh content from the AttachmentIndex descriptor,
-    // like SmartJournalEntityLoader does for journal entities.
+    // Fetch from the AttachmentIndex descriptor first to avoid reading
+    // stale data from disk. Agent entity files can be updated in-place
+    // (e.g. ChangeSetEntity pending → resolved), and the background
+    // download may not have completed yet when this text event arrives.
     final fetched = await _fetchFromDescriptor(
       jsonPath: jp,
       targetFile: file,
@@ -1117,7 +1109,7 @@ class SyncEventProcessor {
       }
     }
 
-    // Fallback: read from disk (may be stale if download hasn't completed).
+    // No descriptor available — fall back to disk.
     try {
       final jsonString = await file.readAsString();
       return fromJson(json.decode(jsonString) as Map<String, dynamic>);
@@ -1138,7 +1130,11 @@ class SyncEventProcessor {
 
   /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it
   /// to [targetFile]. Returns the JSON string on success, or null if no
-  /// descriptor is available or the download fails.
+  /// descriptor is available (index missing or not initialized).
+  ///
+  /// When a descriptor IS found but download/decode fails, throws
+  /// [FileSystemException] to prevent falling back to potentially stale
+  /// disk data.
   Future<String?> _fetchFromDescriptor({
     required String jsonPath,
     required File targetFile,
@@ -1162,12 +1158,7 @@ class SyncEventProcessor {
       final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
       final bytes = matrixFile.bytes;
       if (bytes.isEmpty) {
-        _loggingService.captureEvent(
-          '$typeName.descriptor.empty path=$jsonPath',
-          domain: 'AGENT_SYNC',
-          subDomain: 'resolve',
-        );
-        return null;
+        throw const FileSystemException('empty attachment bytes');
       }
       final jsonString = utf8.decode(bytes);
       await saveJson(targetFile.path, jsonString);
@@ -1184,17 +1175,17 @@ class SyncEventProcessor {
         subDomain: 'resolve.$typeName.descriptorFetch',
         stackTrace: st,
       );
-      return null;
+      // Descriptor was found but download/decode failed — throw to prevent
+      // falling back to potentially stale disk data. The pipeline will retry.
+      throw FileSystemException(
+        '$typeName descriptor fetch failed',
+        jsonPath,
+      );
     }
   }
 
-  /// Builds a canonical index key for [AttachmentIndex] lookups,
-  /// normalizing path separators and ensuring a single leading '/'.
-  static String _buildAgentIndexKey(String rawPath) {
-    final normalized = rawPath.replaceAll(r'\', '/');
-    final trimmed = normalized.replaceFirst(RegExp('^/+'), '');
-    return '/$trimmed';
-  }
+  static String _buildAgentIndexKey(String rawPath) =>
+      normalizeAttachmentIndexKey(rawPath);
 
   Future<AgentDomainEntity?> _resolveAgentEntity(
     SyncAgentEntity msg,
