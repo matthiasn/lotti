@@ -569,6 +569,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateDirectivesLabel => 'Directives';
 
   @override
+  String get agentTemplateGeneralDirectiveHint =>
+      'Définis la personnalité, les outils, les objectifs et le style d\'interaction de l\'agent...';
+
+  @override
+  String get agentTemplateGeneralDirectiveLabel => 'Directive générale';
+
+  @override
+  String get agentTemplateReportDirectiveHint =>
+      'Définis la structure du rapport, les sections requises et les règles de formatage...';
+
+  @override
+  String get agentTemplateReportDirectiveLabel => 'Directive de rapport';
+
+  @override
   String get agentTemplateDisplayNameLabel => 'Nom';
 
   @override

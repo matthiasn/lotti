@@ -34,6 +34,7 @@
     <release version="0.9.890" date="2026-03-01">
       <description>
           <p>Meta-improver agent: recursive self-improvement layer that evaluates and improves template-improver agents. Runs monthly rituals focused on improver effectiveness, directive churn, acceptance rates, and session trends. Includes evolution session feedback extraction, directive churn detection, and recursion depth policy enforcement (capped at depth 2).</p>
+          <p>Split agent template directives into separate general and report directive fields for cleaner evolution. Agent reports now support a structured TLDR field shown in collapsed view with full report expandable below.</p>
       </description>
     </release>
     <release version="0.9.889" date="2026-03-01">

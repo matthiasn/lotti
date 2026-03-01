@@ -31,12 +31,13 @@ Catalog buildEvolutionCatalog() => Catalog(
 
 final _proposalSchema = S.object(
   properties: {
-    'directives': S.string(description: 'The proposed directives text'),
+    'generalDirective':
+        S.string(description: 'The proposed general directive text'),
+    'reportDirective':
+        S.string(description: 'The proposed report directive text'),
     'rationale': S.string(description: 'Brief rationale for the changes'),
-    'currentDirectives':
-        S.string(description: 'The current directives for comparison'),
   },
-  required: ['directives', 'rationale'],
+  required: ['generalDirective', 'reportDirective', 'rationale'],
 );
 
 final _noteConfirmationSchema = S.object(
@@ -199,9 +200,9 @@ final evolutionProposalItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final directives = _readString(json, 'directives');
+    final generalDirective = _readString(json, 'generalDirective');
+    final reportDirective = _readString(json, 'reportDirective');
     final rationale = _readString(json, 'rationale');
-    final currentDirectives = _readStringOrNull(json, 'currentDirectives');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -232,26 +233,34 @@ final evolutionProposalItem = CatalogItem(
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (currentDirectives != null && currentDirectives.isNotEmpty) ...[
+            if (generalDirective.isNotEmpty) ...[
+              const SizedBox(height: 16),
               _sectionLabel(
                 context,
-                context.messages.agentEvolutionCurrentDirectives,
+                context.messages.agentTemplateGeneralDirectiveLabel,
               ),
               const SizedBox(height: 6),
-              _directiveBox(text: currentDirectives),
-              const SizedBox(height: 14),
+              _directiveBox(
+                text: generalDirective,
+                backgroundColor:
+                    GameyColors.primaryPurple.withValues(alpha: 0.1),
+                borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
+              ),
             ],
-            _sectionLabel(
-              context,
-              context.messages.agentEvolutionProposedDirectives,
-            ),
-            const SizedBox(height: 6),
-            _directiveBox(
-              text: directives,
-              backgroundColor: GameyColors.primaryPurple.withValues(alpha: 0.1),
-              borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
-            ),
+            if (reportDirective.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _sectionLabel(
+                context,
+                context.messages.agentTemplateReportDirectiveLabel,
+              ),
+              const SizedBox(height: 6),
+              _directiveBox(
+                text: reportDirective,
+                backgroundColor:
+                    GameyColors.primaryPurple.withValues(alpha: 0.1),
+                borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
+              ),
+            ],
             if (rationale.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(

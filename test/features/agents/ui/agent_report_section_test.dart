@@ -7,9 +7,9 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('AgentReportSection', () {
-    Widget buildSubject(String content) {
+    Widget buildSubject(String content, {String? tldr}) {
       return makeTestableWidget(
-        AgentReportSection(content: content),
+        AgentReportSection(content: content, tldr: tldr),
       );
     }
 
@@ -142,6 +142,68 @@ void main() {
 
       // No expand button since there is no additional content
       expect(find.byIcon(Icons.expand_more), findsNothing);
+    });
+
+    testWidgets('uses explicit tldr when provided', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          '## ✅ Achieved\n- Done item\n\n## 📌 Left\n- Todo',
+          tldr: 'Explicit TLDR summary',
+        ),
+      );
+      await tester.pump();
+
+      final gptMarkdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      // TLDR visible, additional content collapsed
+      expect(gptMarkdowns.length, 1);
+      expect(gptMarkdowns.first.data, 'Explicit TLDR summary');
+
+      // Expand to verify full content is the content field, not re-parsed
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final expanded =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(expanded.length, 2);
+      expect(expanded.last.data, contains('Achieved'));
+    });
+
+    testWidgets('falls back to parseReportContent when tldr is null',
+        (tester) async {
+      // No explicit tldr — should parse from content
+      await tester.pumpWidget(
+        buildSubject(
+          '## 📋 TLDR\nParsed summary.\n\n## ✅ Achieved\n- Item',
+        ),
+      );
+      await tester.pump();
+
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown).first,
+      );
+      expect(gptMarkdown.data, contains('Parsed summary.'));
+    });
+
+    testWidgets('explicit tldr with empty content shows only tldr',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject('', tldr: 'Just the TLDR'),
+      );
+      await tester.pump();
+
+      // Empty content renders nothing (the widget returns SizedBox.shrink)
+      expect(find.byType(GptMarkdown), findsNothing);
+    });
+
+    testWidgets('explicit tldr with non-empty content shows expand button',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject('Full report body here.', tldr: 'Short summary'),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
     });
 
     testWidgets('collapses back on second tap', (tester) async {

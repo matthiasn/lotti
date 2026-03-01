@@ -157,7 +157,8 @@ class _TaskAgentReportSectionState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildAgentHeader(context, identity, template),
-        if (hasReport) AgentReportSection(content: report.content),
+        if (hasReport)
+          AgentReportSection(content: report.content, tldr: report.tldr),
       ],
     );
   }

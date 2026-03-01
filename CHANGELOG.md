@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and directive churn detection for improver templates.
 - Recursion depth policy enforcement: improver agent creation validates against
   the maximum recursion depth (capped at 2 per ADR 0012).
+- Split agent template directives into separate general directive (persona,
+  tools, objectives) and report directive (output structure, formatting) fields.
+  Existing templates are automatically seeded with purpose-built defaults.
+- Agent reports now support a structured TLDR field alongside the full report
+  content. The TLDR is always visible with the full report expandable below.
+- Template edit page shows two distinct text areas for general and report
+  directives instead of a single combined field.
+- Evolution proposals now present both directive fields independently with
+  separate diff views.
 
 ## [0.9.889] - 2026-03-01
 ### Fixed

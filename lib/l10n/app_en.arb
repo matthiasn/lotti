@@ -299,6 +299,22 @@
   "@agentTemplateDirectivesLabel": {
     "description": "Label for the text field where the user writes agent directives."
   },
+  "agentTemplateGeneralDirectiveHint": "Define the agent's personality, tools, objectives, and interaction style...",
+  "@agentTemplateGeneralDirectiveHint": {
+    "description": "Placeholder hint for the general directive text field."
+  },
+  "agentTemplateGeneralDirectiveLabel": "General Directive",
+  "@agentTemplateGeneralDirectiveLabel": {
+    "description": "Label for the general directive text field (persona, tools, objectives)."
+  },
+  "agentTemplateReportDirectiveHint": "Define the report structure, required sections, and formatting rules...",
+  "@agentTemplateReportDirectiveHint": {
+    "description": "Placeholder hint for the report directive text field."
+  },
+  "agentTemplateReportDirectiveLabel": "Report Directive",
+  "@agentTemplateReportDirectiveLabel": {
+    "description": "Label for the report directive text field (report formatting)."
+  },
   "agentTemplateDisplayNameLabel": "Name",
   "@agentTemplateDisplayNameLabel": {
     "description": "Label for the template display name input field."

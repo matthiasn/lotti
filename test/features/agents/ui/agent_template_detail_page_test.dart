@@ -262,7 +262,7 @@ void main() {
           ),
           activeVersion: makeTestTemplateVersion(
             agentId: templateId,
-            directives: 'Be helpful and kind.',
+            generalDirective: 'Be helpful and kind.',
           ),
         ),
       );
@@ -294,13 +294,35 @@ void main() {
 
       // Name field populated with template display name
       expect(find.text('Test Template'), findsOneWidget);
-      // Directives field populated with version directives
+      // General directive field falls back to legacy directives when empty.
       expect(find.text('You are a helpful agent.'), findsOneWidget);
       // Save-as-new-version button present
       expect(
         find.text(context.messages.agentTemplateSaveNewVersion),
         findsOneWidget,
       );
+    });
+
+    testWidgets('uses generalDirective over legacy directives when non-empty',
+        (tester) async {
+      when(() => mockTemplateService.getAgentsForTemplate(any()))
+          .thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          templateId: templateId,
+          activeVersion: makeTestTemplateVersion(
+            agentId: templateId,
+            directives: 'Legacy text',
+            generalDirective: 'Modern general directive',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should use the new field, not the legacy one.
+      expect(find.text('Modern general directive'), findsOneWidget);
+      expect(find.text('Legacy text'), findsNothing);
     });
 
     testWidgets('save calls updateTemplate and createVersion', (tester) async {
@@ -320,6 +342,8 @@ void main() {
           templateId: any(named: 'templateId'),
           directives: any(named: 'directives'),
           authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).thenAnswer((_) async => makeTestTemplateVersion(version: 2));
 
@@ -348,6 +372,8 @@ void main() {
           templateId: templateId,
           directives: any(named: 'directives'),
           authoredBy: 'user',
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
         ),
       ).called(1);
     });

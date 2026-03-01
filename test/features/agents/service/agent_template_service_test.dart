@@ -995,6 +995,136 @@ void main() {
     });
   });
 
+  group('seedDirectiveFields', () {
+    test('seeds empty directive fields for task agent template', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-task',
+        agentId: 'tpl-task',
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-task',
+        directives: 'Legacy directives',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      expect(captured, hasLength(1));
+      final seeded = captured.first as AgentTemplateVersionEntity;
+      expect(seeded.generalDirective, isNotEmpty);
+      expect(seeded.reportDirective, isNotEmpty);
+      // Legacy field is preserved unchanged.
+      expect(seeded.directives, 'Legacy directives');
+    });
+
+    test('seeds empty directive fields for improver template', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-imp',
+        agentId: 'tpl-imp',
+        kind: AgentTemplateKind.templateImprover,
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-imp',
+        directives: 'Old improver directives',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      final captured = verify(() => mockSync.upsertEntity(captureAny()))
+          .captured
+          .cast<AgentDomainEntity>();
+      expect(captured, hasLength(1));
+      final seeded = captured.first as AgentTemplateVersionEntity;
+      expect(seeded.generalDirective, isNotEmpty);
+      // Template improver has empty report directive.
+      expect(seeded.reportDirective, isEmpty);
+    });
+
+    test('skips versions that already have directive fields populated',
+        () async {
+      final template = makeTestTemplate(
+        id: 'tpl-seeded',
+        agentId: 'tpl-seeded',
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v1',
+        agentId: 'tpl-seeded',
+        generalDirective: 'Already set',
+        reportDirective: 'Already set',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-seeded'))
+          .thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('skips templates without active version', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-no-ver',
+        agentId: 'tpl-no-ver',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [template]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-no-ver'))
+          .thenAnswer((_) async => null);
+
+      await service.seedDirectiveFields();
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+
+    test('seeds multiple templates in a single pass', () async {
+      final taskTemplate = makeTestTemplate(
+        id: 'tpl-task',
+        agentId: 'tpl-task',
+      );
+      final improverTemplate = makeTestTemplate(
+        id: 'tpl-imp',
+        agentId: 'tpl-imp',
+        kind: AgentTemplateKind.templateImprover,
+      );
+      final taskVersion = makeTestTemplateVersion(
+        id: 'v-task',
+        agentId: 'tpl-task',
+      );
+      final improverVersion = makeTestTemplateVersion(
+        id: 'v-imp',
+        agentId: 'tpl-imp',
+      );
+
+      when(() => mockRepo.getAllTemplates())
+          .thenAnswer((_) async => [taskTemplate, improverTemplate]);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
+          .thenAnswer((_) async => taskVersion);
+      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
+          .thenAnswer((_) async => improverVersion);
+
+      await service.seedDirectiveFields();
+
+      verify(() => mockSync.upsertEntity(any())).called(2);
+    });
+  });
+
   group('getVersionHistory', () {
     test('returns versions sorted by version number descending', () async {
       final v1 = makeTestTemplateVersion(id: 'v1');
