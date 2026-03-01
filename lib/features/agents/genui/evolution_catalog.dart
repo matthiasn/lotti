@@ -153,10 +153,15 @@ final evolutionProposalItem = CatalogItem(
   name: 'EvolutionProposal',
   dataSchema: _proposalSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final directives = json['directives'] as String? ?? '';
-    final rationale = json['rationale'] as String? ?? '';
-    final currentDirectives = json['currentDirectives'] as String?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final directives =
+        json['directives'] is String ? json['directives']! as String : '';
+    final rationale =
+        json['rationale'] is String ? json['rationale']! as String : '';
+    final currentDirectives = json['currentDirectives'] is String
+        ? json['currentDirectives']! as String
+        : null;
     final context = itemContext.buildContext;
 
     return Padding(
@@ -268,9 +273,11 @@ final evolutionNoteConfirmationItem = CatalogItem(
   name: 'EvolutionNoteConfirmation',
   dataSchema: _noteConfirmationSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final kind = json['kind'] as String? ?? 'reflection';
-    final content = json['content'] as String? ?? '';
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final kind =
+        json['kind'] is String ? json['kind']! as String : 'reflection';
+    final content = json['content'] is String ? json['content']! as String : '';
 
     return _EvolutionNoteConfirmationCard(
       kind: kind,
@@ -380,12 +387,21 @@ final metricsSummaryItem = CatalogItem(
   name: 'MetricsSummary',
   dataSchema: _metricsSummarySchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final totalWakes = (json['totalWakes'] as num?)?.toInt() ?? 0;
-    final successRate = (json['successRate'] as num?)?.toDouble() ?? 0;
-    final failureCount = (json['failureCount'] as num?)?.toInt() ?? 0;
-    final avgDuration = json['averageDurationSeconds'] as num?;
-    final activeInstances = json['activeInstances'] as num?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final totalWakes =
+        (json['totalWakes'] is num) ? (json['totalWakes']! as num).toInt() : 0;
+    final successRate = (json['successRate'] is num)
+        ? (json['successRate']! as num).toDouble()
+        : 0.0;
+    final failureCount = (json['failureCount'] is num)
+        ? (json['failureCount']! as num).toInt()
+        : 0;
+    final avgDuration = json['averageDurationSeconds'] is num
+        ? json['averageDurationSeconds']! as num
+        : null;
+    final activeInstances =
+        json['activeInstances'] is num ? json['activeInstances']! as num : null;
 
     final context = itemContext.buildContext;
     final messages = context.messages;
@@ -430,12 +446,23 @@ final versionComparisonItem = CatalogItem(
   name: 'VersionComparison',
   dataSchema: _versionComparisonSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final beforeVersion = (json['beforeVersion'] as num?)?.toInt() ?? 0;
-    final afterVersion = (json['afterVersion'] as num?)?.toInt() ?? 0;
-    final beforeDirectives = json['beforeDirectives'] as String? ?? '';
-    final afterDirectives = json['afterDirectives'] as String? ?? '';
-    final changesSummary = json['changesSummary'] as String?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final beforeVersion = (json['beforeVersion'] is num)
+        ? (json['beforeVersion']! as num).toInt()
+        : 0;
+    final afterVersion = (json['afterVersion'] is num)
+        ? (json['afterVersion']! as num).toInt()
+        : 0;
+    final beforeDirectives = json['beforeDirectives'] is String
+        ? json['beforeDirectives']! as String
+        : '';
+    final afterDirectives = json['afterDirectives'] is String
+        ? json['afterDirectives']! as String
+        : '';
+    final changesSummary = json['changesSummary'] is String
+        ? json['changesSummary']! as String
+        : null;
     final context = itemContext.buildContext;
 
     return Padding(
