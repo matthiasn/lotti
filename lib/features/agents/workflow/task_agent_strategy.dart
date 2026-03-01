@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -63,6 +64,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     required this.readVectorClock,
     required this.executeToolHandler,
     this.changeSetBuilder,
+    this.resolveTaskMetadata,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -101,9 +103,16 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// set is persisted at the end of the wake via [ChangeSetBuilder.build].
   final ChangeSetBuilder? changeSetBuilder;
 
+  /// Optional resolver for the current task metadata. Used to detect and
+  /// suppress redundant non-batch tool proposals (e.g. setting priority to
+  /// the value it already has).
+  final ResolveTaskMetadata? resolveTaskMetadata;
+
   String? _reportMarkdown;
   String? _finalResponse;
   final _observations = <String>[];
+  TaskMetadataSnapshot? _cachedTaskMetadata;
+  bool _taskMetadataResolved = false;
   static const _uuid = Uuid();
 
   /// Tool name for the report publishing tool.
@@ -351,20 +360,20 @@ class TaskAgentStrategy extends ConversationStrategy {
         args: args,
         summaryPrefix: _humanToolPrefix(toolName),
       );
-      if (result.skipped > 0) {
-        response = 'Proposal queued for user review '
-            '(${result.added} item(s) queued, '
-            '${result.skipped} malformed item(s) skipped).';
+      response = ChangeProposalFilter.formatBatchResponse(result);
+    } else {
+      // Check for redundancy on non-batch deferred tools.
+      final redundancyMsg = await _checkTaskMetadataRedundancy(toolName, args);
+      if (redundancyMsg != null) {
+        response = redundancyMsg;
       } else {
+        csBuilder.addItem(
+          toolName: toolName,
+          args: args,
+          humanSummary: _generateHumanSummary(toolName, args),
+        );
         response = 'Proposal queued for user review.';
       }
-    } else {
-      csBuilder.addItem(
-        toolName: toolName,
-        args: args,
-        humanSummary: _generateHumanSummary(toolName, args),
-      );
-      response = 'Proposal queued for user review.';
     }
 
     developer.log(
@@ -408,6 +417,42 @@ class TaskAgentStrategy extends ConversationStrategy {
       TaskAgentToolNames.updateChecklistItems => 'Checklist update',
       _ => toolName,
     };
+  }
+
+  /// Check whether a non-batch deferred tool proposal is redundant against
+  /// the current task metadata.
+  ///
+  /// Returns a feedback message for the LLM if the proposal is redundant,
+  /// or `null` if the proposal should be kept.
+  ///
+  /// The snapshot is resolved once and cached for the lifetime of this
+  /// strategy instance to avoid repeated DB lookups when the LLM proposes
+  /// multiple deferred tools in the same wake.
+  Future<String?> _checkTaskMetadataRedundancy(
+    String toolName,
+    Map<String, dynamic> args,
+  ) async {
+    final resolver = resolveTaskMetadata;
+    if (resolver == null) return null;
+
+    if (!_taskMetadataResolved) {
+      _taskMetadataResolved = true;
+      try {
+        _cachedTaskMetadata = await resolver();
+      } catch (e) {
+        // Conservative: if we can't resolve, keep the proposal.
+        _cachedTaskMetadata = null;
+      }
+    }
+
+    final snapshot = _cachedTaskMetadata;
+    if (snapshot == null) return null;
+
+    return ChangeProposalFilter.checkTaskMetadataRedundancy(
+      toolName,
+      args,
+      snapshot,
+    );
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

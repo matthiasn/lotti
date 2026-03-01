@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.889] - 2026-03-01
+### Fixed
+- Agent no longer proposes redundant changes that match the current state.
+  Checklist items already checked/unchecked, estimates, priorities, due dates,
+  statuses, and titles are now filtered at proposal time instead of cluttering
+  the confirmation UI. The agent receives corrective feedback so it adjusts its
+  reasoning.
+
 ## [0.9.888] - 2026-02-28
 ### Added
 - Inference Profiles: named configuration bundles that group model assignments

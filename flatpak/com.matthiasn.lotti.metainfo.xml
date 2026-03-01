@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.889" date="2026-03-01">
+      <description>
+          <p>Agent no longer proposes redundant changes that match the current state. Checklist items, estimates, priorities, due dates, statuses, and titles are filtered at proposal time with corrective feedback to the LLM.</p>
+      </description>
+    </release>
     <release version="0.9.888" date="2026-02-28">
       <description>
           <p>Inference Profiles: named configuration bundles grouping model assignments per capability slot. Profiles replace direct model references on agent templates and instances. Includes profile management UI, two-page agent creation modal, and six seeded default profiles.</p>

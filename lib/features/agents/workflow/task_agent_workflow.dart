@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -292,10 +293,13 @@ class TaskAgentWorkflow {
         threadId: threadId,
         runKey: runKey,
         domainLogger: domainLogger,
-        checklistItemTitleResolver: (itemId) async {
+        checklistItemStateResolver: (itemId) async {
           final entity = await journalDb.journalEntityById(itemId);
           if (entity is ChecklistItem) {
-            return entity.data.title;
+            return (
+              title: entity.data.title,
+              isChecked: entity.data.isChecked,
+            );
           }
           return null;
         },
@@ -309,6 +313,8 @@ class TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
+        resolveTaskMetadata: () =>
+            ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
         resolveCategoryId: (entityId) async {
           final entity = await journalDb.journalEntityById(entityId);
           return entity?.categoryId;

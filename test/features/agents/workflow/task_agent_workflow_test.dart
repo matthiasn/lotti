@@ -2380,10 +2380,10 @@ void main() {
           ).called(1);
         });
 
-        test('update_task_estimate with already-set estimate is deferred',
+        test('update_task_estimate with already-set estimate is suppressed',
             () async {
-          // Even when the value matches, it is still deferred — validation
-          // happens at confirmation time.
+          // When the proposed value matches the current value, the redundancy
+          // filter suppresses it and feeds back a skip message to the LLM.
           final result = await executeWithToolCallOnRealTask(
             'update_task_estimate',
             '{"minutes":240}',
@@ -2394,7 +2394,7 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: contains('Skipped: estimate is already 240 minutes'),
               ),
             ),
           ).called(1);

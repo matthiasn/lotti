@@ -36,3 +36,4 @@ Each ADR should contain:
 - [`0006-change-set-deferred-tool-confirmation.md`](./0006-change-set-deferred-tool-confirmation.md)
 - [`0007-token-usage-wake-run-log-storage.md`](./0007-token-usage-wake-run-log-storage.md)
 - [`0008-inference-profiles-agent-provider-mapping.md`](./0008-inference-profiles-agent-provider-mapping.md)
+- [`0009-redundant-change-proposal-suppression.md`](./0009-redundant-change-proposal-suppression.md)

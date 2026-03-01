@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -10,6 +11,54 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
+
+/// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
+/// optional [ResolveTaskMetadata] for metadata-redundancy tests.
+///
+/// Returns both the strategy and the builder so tests can inspect builder
+/// state after processing tool calls.
+({TaskAgentStrategy strategy, ChangeSetBuilder builder})
+    _createStrategyWithMetadata({
+  required MockAgentToolExecutor executor,
+  required MockAgentSyncService syncService,
+  ResolveTaskMetadata? resolveTaskMetadata,
+  ChecklistItemStateResolver? checklistItemStateResolver,
+}) {
+  const agentId = 'agent-001';
+  const taskId = 'task-001';
+  const threadId = 'thread-001';
+  const runKey = 'run-key-001';
+
+  final builder = ChangeSetBuilder(
+    agentId: agentId,
+    taskId: taskId,
+    threadId: threadId,
+    runKey: runKey,
+    checklistItemStateResolver: checklistItemStateResolver,
+  );
+
+  final strategy = TaskAgentStrategy(
+    executor: executor,
+    syncService: syncService,
+    agentId: agentId,
+    threadId: threadId,
+    runKey: runKey,
+    taskId: taskId,
+    resolveCategoryId: (_) async => 'cat-001',
+    readVectorClock: (_) async => null,
+    executeToolHandler: (toolName, args, manager) async =>
+        const ToolExecutionResult(
+      success: true,
+      output: 'done',
+      mutatedEntityId: taskId,
+    ),
+    changeSetBuilder: builder,
+    resolveTaskMetadata: resolveTaskMetadata,
+  );
+
+  return (strategy: strategy, builder: builder);
+}
 
 void main() {
   late MockAgentSyncService mockSyncService;
@@ -1049,6 +1098,152 @@ void main() {
         expect(
           captured.last as String,
           contains('1 item(s) queued'),
+        );
+      });
+
+      test('suppresses redundant non-batch tool and feeds back to LLM',
+          () async {
+        final (:strategy, :builder) = _createStrategyWithMetadata(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-redundant',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(builder.hasItems, isFalse);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-redundant',
+            response: 'Skipped: estimate is already 120 minutes.',
+          ),
+        ).called(1);
+      });
+
+      test('keeps non-redundant non-batch tool when metadata differs',
+          () async {
+        final (:strategy, :builder) = _createStrategyWithMetadata(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-actual',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_priority',
+              arguments: jsonEncode({'priority': 'P0'}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(builder.hasItems, isTrue);
+        expect(builder.items.first.toolName, 'update_task_priority');
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-actual',
+            response: 'Proposal queued for user review.',
+          ),
+        ).called(1);
+      });
+
+      test('keeps tool when resolver throws (conservative)', () async {
+        final (:strategy, :builder) = _createStrategyWithMetadata(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveTaskMetadata: () async => throw Exception('DB error'),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-err',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_estimate',
+              arguments: jsonEncode({'minutes': 120}),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(builder.hasItems, isTrue);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-err',
+            response: 'Proposal queued for user review.',
+          ),
+        ).called(1);
+      });
+
+      test('redundant batch items include redundancy info in response',
+          () async {
+        final (:strategy, :builder) = _createStrategyWithMetadata(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          checklistItemStateResolver: (id) async =>
+              (title: 'Buy groceries', isChecked: true),
+        );
+
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-batch-redundant',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_checklist_items',
+              arguments: jsonEncode({
+                'items': [
+                  {'id': 'item-1', 'isChecked': true},
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(builder.hasItems, isFalse);
+
+        final captured = verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-batch-redundant',
+            response: captureAny(named: 'response'),
+          ),
+        ).captured;
+        expect(
+          captured.last as String,
+          contains('Skipped 1 redundant update(s)'),
+        );
+        expect(
+          captured.last as String,
+          contains('"Buy groceries" is already checked'),
         );
       });
     });
