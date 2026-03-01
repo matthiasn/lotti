@@ -32,6 +32,10 @@ class FeedbackExtractionService {
   final AgentRepository agentRepository;
   final AgentTemplateService templateService;
 
+  /// Inclusive date-range check shared by all extraction stages.
+  static bool _isInWindow(DateTime dt, DateTime since, DateTime until) =>
+      !dt.isBefore(since) && !dt.isAfter(until);
+
   /// Extract and classify feedback for a template within a time window.
   ///
   /// Scans observations, decisions, and reports from all instances of
@@ -49,8 +53,7 @@ class FeedbackExtractionService {
     }
     final items = <ClassifiedFeedbackItem>[];
 
-    bool inWindow(DateTime dt) =>
-        !dt.isBefore(since) && !dt.isAfter(effectiveUntil);
+    bool inWindow(DateTime dt) => _isInWindow(dt, since, effectiveUntil);
 
     // 1. Classify decisions (single template-level query with SQL filter).
     final allDecisions = await agentRepository.getRecentDecisionsForTemplate(
@@ -105,15 +108,17 @@ class FeedbackExtractionService {
     }
 
     // 5. Extract evolution session feedback for improver templates.
-    // When the target template governs improver agents, the most meaningful
-    // meta-feedback comes from how well those improvers performed their
-    // rituals (evolution session quality signals).
-    final evolutionItems = await _extractEvolutionSessionFeedback(
-      templateId: templateId,
-      since: since,
-      until: effectiveUntil,
-    );
-    items.addAll(evolutionItems);
+    // Only relevant when the template governs improver agents — skip entirely
+    // for task agent templates to avoid unnecessary DB queries.
+    final template = await templateService.getTemplate(templateId);
+    if (template?.kind == AgentTemplateKind.templateImprover) {
+      final evolutionItems = await _extractEvolutionSessionFeedback(
+        templateId: templateId,
+        since: since,
+        until: effectiveUntil,
+      );
+      items.addAll(evolutionItems);
+    }
 
     return ClassifiedFeedback(
       items: items,
@@ -187,16 +192,21 @@ class FeedbackExtractionService {
     );
   }
 
+  /// Map a numeric rating to a sentiment.
+  ///
+  /// Shared by wake-run and evolution-session classification.
+  static FeedbackSentiment _sentimentFromRating(double rating) => rating >= 4.0
+      ? FeedbackSentiment.positive
+      : rating <= 2.0
+          ? FeedbackSentiment.negative
+          : FeedbackSentiment.neutral;
+
   /// Classify wake run user ratings.
   ClassifiedFeedbackItem? _classifyWakeRunRating(WakeRunLogData wakeRun) {
     final rating = wakeRun.userRating;
     if (rating == null) return null;
 
-    final sentiment = rating >= 4.0
-        ? FeedbackSentiment.positive
-        : rating <= 2.0
-            ? FeedbackSentiment.negative
-            : FeedbackSentiment.neutral;
+    final sentiment = _sentimentFromRating(rating);
 
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
@@ -243,7 +253,7 @@ class FeedbackExtractionService {
         limit: 50,
       );
       final windowSessions = sessions.where(
-        (s) => !s.createdAt.isBefore(since) && !s.createdAt.isAfter(until),
+        (s) => _isInWindow(s.createdAt, since, until),
       );
 
       for (final session in windowSessions) {
@@ -253,7 +263,7 @@ class FeedbackExtractionService {
       // Directive churn detection: count template versions created in window.
       final versions = await templateService.getVersionHistory(targetId);
       final windowVersions = versions.where(
-        (v) => !v.createdAt.isBefore(since) && !v.createdAt.isAfter(until),
+        (v) => _isInWindow(v.createdAt, since, until),
       );
       final versionCount = windowVersions.length;
       if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
@@ -297,11 +307,7 @@ class FeedbackExtractionService {
     }
 
     if (session.status == EvolutionSessionStatus.completed && rating != null) {
-      final sentiment = rating >= 4.0
-          ? FeedbackSentiment.positive
-          : rating <= 2.0
-              ? FeedbackSentiment.negative
-              : FeedbackSentiment.neutral;
+      final sentiment = _sentimentFromRating(rating);
 
       return ClassifiedFeedbackItem(
         sentiment: sentiment,
