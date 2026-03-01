@@ -253,6 +253,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo iniciar la sesión de evolución';
 
   @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Sesión $sessionNumber de $totalSessions';
+  }
+
+  @override
   String get agentEvolutionSessionStarting =>
       'Iniciando sesión de evolución...';
 
@@ -272,6 +277,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentEvolutionTimelineFeedbackLabel => 'Retroalimentación';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Versión propuesta';
 
   @override
   String get agentFeedbackCategoryAccuracy => 'Precisión';
@@ -4710,12 +4718,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get agentEvolutionVersionProposed => 'Versión propuesta';
-
-  @override
-  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
-    return 'Sesión $sessionNumber de $totalSessions';
-  }
 }

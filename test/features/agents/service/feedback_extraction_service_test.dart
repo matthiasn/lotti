@@ -1,8 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,6 +59,9 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    // Template kind check: null → not an improver, skips evolution feedback.
+    when(() => mockTemplateService.getTemplate(any()))
+        .thenAnswer((_) async => null);
   }
 
   /// Stubs decisions for decision classification tests.
@@ -482,6 +488,355 @@ void main() {
       expect(feedback.positive, isEmpty);
       expect(feedback.negative, isEmpty);
       expect(feedback.byCategory, isEmpty);
+    });
+  });
+
+  group('evolution session feedback extraction', () {
+    const improverTplId = 'template-improver-001';
+    const taskTplId = 'task-template-001';
+
+    /// Stubs that return empty data plus an improver-kind template.
+    void stubEmptyImproverData() {
+      stubEmptyData();
+      when(() => mockTemplateService.getTemplate(improverTplId)).thenAnswer(
+        (_) async => makeTestTemplate(
+          id: improverTplId,
+          agentId: improverTplId,
+          kind: AgentTemplateKind.templateImprover,
+        ),
+      );
+    }
+
+    /// Stub an improver agent instance governed by the template.
+    void stubImproverAgentInstances({
+      String agentId = 'improver-agent-1',
+      String activeTemplateId = taskTplId,
+    }) {
+      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
+          .thenAnswer(
+        (_) async => [
+          makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.templateImprover,
+          ),
+        ],
+      );
+      when(() => mockRepo.getAgentState(agentId)).thenAnswer(
+        (_) async => makeTestState(
+          agentId: agentId,
+          slots: AgentSlots(activeTemplateId: activeTemplateId),
+        ),
+      );
+    }
+
+    /// Stub evolution sessions for a target template.
+    void stubEvolutionSessions(
+      String templateId,
+      List<EvolutionSessionEntity> sessions,
+    ) {
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          templateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => sessions);
+    }
+
+    /// Stub version history for a target template.
+    void stubVersionHistory(
+      String templateId,
+      List<AgentTemplateVersionEntity> versions,
+    ) {
+      when(
+        () => mockTemplateService.getVersionHistory(
+          templateId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => versions);
+    }
+
+    test('skips evolution feedback for non-improver templates', () async {
+      stubEmptyData();
+      // getTemplate returns null → not an improver template.
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(
+        result.items.where(
+          (i) => i.source == FeedbackSources.evolutionSession,
+        ),
+        isEmpty,
+      );
+      // Should NOT have called getAgentsForTemplate at all.
+      verifyNever(
+        () => mockTemplateService.getAgentsForTemplate(any()),
+      );
+    });
+
+    test('extracts no evolution feedback when template has no agents',
+        () async {
+      stubEmptyImproverData();
+      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
+          .thenAnswer((_) async => []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(
+        result.items.where(
+          (i) => i.source == FeedbackSources.evolutionSession,
+        ),
+        isEmpty,
+      );
+    });
+
+    test(
+        'classifies completed sessions with high rating '
+        'as positive', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, [
+        makeTestEvolutionSession(
+          id: 'session-1',
+          status: EvolutionSessionStatus.completed,
+          userRating: 4.5,
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      ]);
+      stubVersionHistory(taskTplId, []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, hasLength(1));
+      expect(evoItems.first.sentiment, FeedbackSentiment.positive);
+      expect(evoItems.first.detail, contains('4.5'));
+    });
+
+    test(
+        'classifies completed sessions with low rating '
+        'as negative', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, [
+        makeTestEvolutionSession(
+          id: 'session-1',
+          status: EvolutionSessionStatus.completed,
+          userRating: 1.5,
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      ]);
+      stubVersionHistory(taskTplId, []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, hasLength(1));
+      expect(evoItems.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('classifies abandoned sessions as negative', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, [
+        makeTestEvolutionSession(
+          id: 'session-1',
+          status: EvolutionSessionStatus.abandoned,
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      ]);
+      stubVersionHistory(taskTplId, []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, hasLength(1));
+      expect(evoItems.first.sentiment, FeedbackSentiment.negative);
+      expect(evoItems.first.detail, contains('abandoned'));
+    });
+
+    test('classifies completed sessions without rating as neutral', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, [
+        makeTestEvolutionSession(
+          id: 'session-1',
+          status: EvolutionSessionStatus.completed,
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      ]);
+      stubVersionHistory(taskTplId, []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, hasLength(1));
+      expect(evoItems.first.sentiment, FeedbackSentiment.neutral);
+    });
+
+    test('filters out sessions outside the time window', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, [
+        // Before window
+        makeTestEvolutionSession(
+          id: 'session-early',
+          status: EvolutionSessionStatus.completed,
+          userRating: 5,
+          createdAt: DateTime(2024, 3, 5),
+        ),
+        // Inside window
+        makeTestEvolutionSession(
+          id: 'session-inside',
+          status: EvolutionSessionStatus.completed,
+          userRating: 4,
+          createdAt: DateTime(2024, 3, 15),
+        ),
+        // After window
+        makeTestEvolutionSession(
+          id: 'session-late',
+          status: EvolutionSessionStatus.completed,
+          userRating: 5,
+          createdAt: DateTime(2024, 3, 25),
+        ),
+      ]);
+      stubVersionHistory(taskTplId, []);
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, hasLength(1));
+      expect(evoItems.first.sourceEntityId, 'session-inside');
+    });
+
+    test(
+        'flags excessive directive churn when version count '
+        'exceeds threshold', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, []);
+      stubVersionHistory(
+        taskTplId,
+        List.generate(
+          ImproverSlotDefaults.maxDirectiveChurnVersions + 1,
+          (i) => makeTestTemplateVersion(
+            id: 'version-$i',
+            agentId: taskTplId,
+            version: i + 1,
+            createdAt: DateTime(2024, 3, 12 + i),
+          ),
+        ),
+      );
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final churnItems = result.items
+          .where((i) => i.source == FeedbackSources.directiveChurn)
+          .toList();
+      expect(churnItems, hasLength(1));
+      expect(churnItems.first.sentiment, FeedbackSentiment.negative);
+      expect(churnItems.first.detail, contains('Excessive directive churn'));
+    });
+
+    test(
+        'does not flag directive churn when version count '
+        'is within threshold', () async {
+      stubEmptyImproverData();
+      stubImproverAgentInstances();
+      stubEvolutionSessions(taskTplId, []);
+      stubVersionHistory(
+        taskTplId,
+        List.generate(
+          ImproverSlotDefaults.maxDirectiveChurnVersions,
+          (i) => makeTestTemplateVersion(
+            id: 'version-$i',
+            agentId: taskTplId,
+            version: i + 1,
+            createdAt: DateTime(2024, 3, 12 + i),
+          ),
+        ),
+      );
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final churnItems = result.items
+          .where((i) => i.source == FeedbackSources.directiveChurn)
+          .toList();
+      expect(churnItems, isEmpty);
+    });
+
+    test('skips agents without activeTemplateId in state', () async {
+      stubEmptyImproverData();
+      when(() => mockTemplateService.getAgentsForTemplate(improverTplId))
+          .thenAnswer(
+        (_) async => [
+          makeTestIdentity(
+            id: 'agent-no-target',
+            agentId: 'agent-no-target',
+            kind: AgentKinds.templateImprover,
+          ),
+        ],
+      );
+      when(() => mockRepo.getAgentState('agent-no-target')).thenAnswer(
+        (_) async => makeTestState(agentId: 'agent-no-target'),
+      );
+
+      final result = await service.extract(
+        templateId: improverTplId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      final evoItems = result.items
+          .where((i) => i.source == FeedbackSources.evolutionSession)
+          .toList();
+      expect(evoItems, isEmpty);
     });
   });
 }

@@ -254,6 +254,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Evolution-Sitzung konnte nicht gestartet werden';
 
   @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Sitzung $sessionNumber von $totalSessions';
+  }
+
+  @override
   String get agentEvolutionSessionStarting =>
       'Evolution-Sitzung wird gestartet...';
 
@@ -273,6 +278,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentEvolutionTimelineFeedbackLabel => 'Feedback';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version vorgeschlagen';
 
   @override
   String get agentFeedbackCategoryAccuracy => 'Genauigkeit';
@@ -4651,12 +4659,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get agentEvolutionVersionProposed => 'Version vorgeschlagen';
-
-  @override
-  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
-    return 'Sitzung $sessionNumber von $totalSessions';
-  }
 }

@@ -256,6 +256,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de démarrer la session d\'évolution';
 
   @override
+  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
+    return 'Session $sessionNumber sur $totalSessions';
+  }
+
+  @override
   String get agentEvolutionSessionStarting =>
       'Démarrage de la session d\'évolution...';
 
@@ -275,6 +280,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentEvolutionTimelineFeedbackLabel => 'Retours';
+
+  @override
+  String get agentEvolutionVersionProposed => 'Version proposée';
 
   @override
   String get agentFeedbackCategoryAccuracy => 'Précision';
@@ -4712,12 +4720,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get agentEvolutionVersionProposed => 'Version proposée';
-
-  @override
-  String agentEvolutionSessionProgress(int sessionNumber, int totalSessions) {
-    return 'Session $sessionNumber sur $totalSessions';
-  }
 }

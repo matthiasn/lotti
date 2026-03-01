@@ -424,6 +424,115 @@ void main() {
         });
       });
 
+      test('throws ArgumentError when recursionDepth exceeds max', () {
+        expect(
+          () => service.createImproverAgent(
+            targetTemplateId: targetTemplateId,
+            recursionDepth: ImproverSlotDefaults.maxRecursionDepth + 1,
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('exceeds maximum depth'),
+            ),
+          ),
+        );
+      });
+
+      test('uses monthly feedback window for depth 1', () async {
+        await withClock(Clock.fixed(testDate), () async {
+          final identity = makeIdentity();
+          final state = makeState();
+
+          when(() => mockTemplateService.getTemplate(targetTemplateId))
+              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockRepository.getLinksTo(
+              targetTemplateId,
+              type: AgentLinkTypes.improverTarget,
+            ),
+          ).thenAnswer((_) async => []);
+          when(() => mockTemplateService.getTemplate(improverTemplateId))
+              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(() => mockRepository.getAgentState(identity.agentId))
+              .thenAnswer((_) async => state);
+
+          await service.createImproverAgent(
+            targetTemplateId: targetTemplateId,
+            recursionDepth: 1,
+          );
+
+          final capturedEntities = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final updatedState =
+              capturedEntities.whereType<AgentStateEntity>().first;
+          expect(
+            updatedState.slots.feedbackWindowDays,
+            ImproverSlotDefaults.defaultMetaFeedbackWindowDays,
+          );
+          expect(
+            updatedState.scheduledWakeAt,
+            testDate.add(
+              const Duration(
+                days: ImproverSlotDefaults.defaultMetaFeedbackWindowDays,
+              ),
+            ),
+          );
+        });
+      });
+
+      test('uses weekly feedback window for depth 0', () async {
+        await withClock(Clock.fixed(testDate), () async {
+          final identity = makeIdentity();
+          final state = makeState();
+
+          when(() => mockTemplateService.getTemplate(targetTemplateId))
+              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockRepository.getLinksTo(
+              targetTemplateId,
+              type: AgentLinkTypes.improverTarget,
+            ),
+          ).thenAnswer((_) async => []);
+          when(() => mockTemplateService.getTemplate(improverTemplateId))
+              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(() => mockRepository.getAgentState(identity.agentId))
+              .thenAnswer((_) async => state);
+
+          await service.createImproverAgent(
+            targetTemplateId: targetTemplateId,
+          );
+
+          final capturedEntities = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final updatedState =
+              capturedEntities.whereType<AgentStateEntity>().first;
+          expect(
+            updatedState.slots.feedbackWindowDays,
+            ImproverSlotDefaults.defaultFeedbackWindowDays,
+          );
+        });
+      });
+
       test('passes recursionDepth to state slots', () async {
         await withClock(Clock.fixed(testDate), () async {
           final identity = makeIdentity();

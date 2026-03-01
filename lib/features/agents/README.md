@@ -4,6 +4,8 @@ This feature provides persistent, sync-aware agents for Lotti, centered on:
 
 1. Task Agents (production path): wake on task changes, run tool calls, and keep a durable report.
 2. Template Evolution Sessions: chat-driven directive evolution with versioned template history.
+3. Improver Agents: scheduled weekly rituals that extract feedback from agent instances and propose directive improvements.
+4. Meta-Improver: recursive self-improvement that evaluates and improves the improver agents themselves on a monthly cadence, with recursion depth governed by the policy cap (max depth 2 per ADR 0012).
 
 The system is enabled only when `enableAgents` is true.
 
