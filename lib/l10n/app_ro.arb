@@ -85,6 +85,7 @@
   },
   "agentDetailNotFound": "Agentul nu a fost găsit.",
   "agentDetailUnexpectedType": "Tip de entitate neașteptat.",
+  "agentEvolutionApprovalRate": "Rata de aprobare",
   "agentEvolutionChartMttrTrend": "Tendință MTTR",
   "agentEvolutionChartSuccessRateTrend": "Rata de succes",
   "agentEvolutionChartVersionPerformance": "Pe versiune",
@@ -92,6 +93,7 @@
   "agentEvolutionChatPlaceholder": "Împărtășiți feedback sau întrebați despre performanță...",
   "agentEvolutionCurrentDirectives": "Directive curente",
   "agentEvolutionDashboardTitle": "Performanță",
+  "agentEvolutionHistoryTitle": "Istoricul evoluției",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Durată medie",
   "agentEvolutionMetricFailures": "Eșecuri",
@@ -99,6 +101,7 @@
   "agentEvolutionMetricSuccess": "Succes",
   "agentEvolutionMetricWakes": "Activări",
   "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
+  "agentEvolutionNoSessions": "Nu există sesiuni de evoluție încă",
   "agentEvolutionNoteRecorded": "Notă înregistrată",
   "agentEvolutionProposalRationale": "Justificare",
   "agentEvolutionProposalRejected": "Propunere respinsă — continuați conversația",
@@ -110,7 +113,19 @@
   "agentEvolutionRatingPrompt": "Cât de bine funcționează acest șablon?",
   "agentEvolutionSessionAbandoned": "Sesiune încheiată fără modificări",
   "agentEvolutionSessionCompleted": "Sesiune finalizată — versiunea {version} creată",
+  "agentEvolutionSessionCount": "Sesiuni",
   "agentEvolutionSessionError": "Sesiunea de evoluție nu a putut fi pornită",
+  "agentEvolutionSessionProgress": "Sesiunea {sessionNumber} din {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Se pornește sesiunea de evoluție...",
   "agentEvolutionSessionTitle": "Evoluție #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -123,6 +138,28 @@
   "agentEvolutionStatusAbandoned": "Abandonat",
   "agentEvolutionStatusActive": "Activ",
   "agentEvolutionStatusCompleted": "Finalizat",
+  "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionVersionProposed": "Versiune propusă",
+  "agentFeedbackCategoryAccuracy": "Acuratețe",
+  "agentFeedbackCategoryBreakdownTitle": "Defalcare pe categorii",
+  "agentFeedbackCategoryCommunication": "Comunicare",
+  "agentFeedbackCategoryGeneral": "General",
+  "agentFeedbackCategoryPrioritization": "Prioritizare",
+  "agentFeedbackCategoryTimeliness": "Promptitudine",
+  "agentFeedbackCategoryTooling": "Instrumente",
+  "agentFeedbackClassificationTitle": "Clasificare feedback",
+  "agentFeedbackItemCount": "{count, plural, one{1 element} few{{count} elemente} other{{count} de elemente}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Decizie",
+  "agentFeedbackSourceMetric": "Metrică",
+  "agentFeedbackSourceObservation": "Observație",
+  "agentFeedbackSourceRating": "Evaluare",
   "agentInstancesEmptyList": "Nu s-au găsit instanțe de agent",
   "agentInstancesFilterActive": "Activ",
   "agentInstancesFilterAll": "Toate",
@@ -168,7 +205,29 @@
   "agentReportHistoryError": "A apărut o eroare la încărcarea istoricului rapoartelor.",
   "agentReportNone": "Niciun raport disponibil încă.",
   "agentReportSectionTitle": "Raportul agentului",
+  "agentRitualPendingNotification": "Ritualuri în așteptarea revizuirii",
+  "agentRitualPendingReviewCount": "{count, plural, one{1 în așteptare} few{{count} în așteptare} other{{count} în așteptare}}",
+  "@agentRitualPendingReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentRitualReviewAction": "Începe conversația",
+  "agentRitualReviewByCategory": "După categorie",
+  "agentRitualReviewBySentiment": "După sentiment",
+  "agentRitualReviewFeedbackTitle": "Semnale de feedback",
+  "agentRitualReviewNegativeSignals": "Semnale negative",
+  "agentRitualReviewNeutralSignals": "Semnale neutre",
+  "agentRitualReviewNoFeedback": "Niciun semnal de feedback în această fereastră",
+  "agentRitualReviewNoProposal": "Nicio propunere activă",
+  "agentRitualReviewPositiveSignals": "Semnale pozitive",
+  "agentRitualReviewProposalSection": "Propunerea curentă",
+  "agentRitualReviewSessionHistory": "Istoricul sesiunilor",
+  "agentRitualReviewTitle": "Revizuire ritual",
   "agentRunningIndicator": "În execuție",
+  "agentSessionProgressTitle": "Progresul sesiunii",
   "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
   "agentSettingsTitle": "Agenți",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",

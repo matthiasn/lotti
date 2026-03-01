@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/gamey/gamey_fab.dart';
@@ -141,16 +143,38 @@ class _TemplateListTile extends ConsumerWidget {
         ref.watch(activeTemplateVersionProvider(template.id));
     final versionNumber = activeVersionAsync.value
         ?.mapOrNull(agentTemplateVersion: (v) => v.version);
+    final hasPending = ref.watch(
+      templatesPendingReviewProvider.select(
+        (async) => async.value?.contains(template.id) ?? false,
+      ),
+    );
 
     return ModernBaseCard(
       onTap: () => beamToNamed('/settings/agents/templates/${template.id}'),
       padding: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(
-          Icons.smart_toy_outlined,
-          size: 32,
-          color: context.colorScheme.primary,
+        leading: Stack(
+          children: [
+            Icon(
+              Icons.smart_toy_outlined,
+              size: 32,
+              color: context.colorScheme.primary,
+            ),
+            if (hasPending)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: GameyColors.primaryPurple,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
         ),
         title: Text(
           template.displayName,

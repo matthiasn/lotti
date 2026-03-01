@@ -85,6 +85,7 @@
   },
   "agentDetailNotFound": "Agente no encontrado.",
   "agentDetailUnexpectedType": "Tipo de entidad inesperado.",
+  "agentEvolutionApprovalRate": "Tasa de aprobación",
   "agentEvolutionChartMttrTrend": "Tendencia MTTR",
   "agentEvolutionChartSuccessRateTrend": "Tasa de éxito",
   "agentEvolutionChartVersionPerformance": "Por versión",
@@ -92,6 +93,7 @@
   "agentEvolutionChatPlaceholder": "Comparte comentarios o pregunta sobre el rendimiento...",
   "agentEvolutionCurrentDirectives": "Directivas actuales",
   "agentEvolutionDashboardTitle": "Rendimiento",
+  "agentEvolutionHistoryTitle": "Historial de evolución",
   "agentEvolutionMetricActive": "Activos",
   "agentEvolutionMetricAvgDuration": "Duración media",
   "agentEvolutionMetricFailures": "Fallos",
@@ -99,6 +101,7 @@
   "agentEvolutionMetricSuccess": "Éxito",
   "agentEvolutionMetricWakes": "Activaciones",
   "agentEvolutionMttrLabel": "Tiempo medio de resolución",
+  "agentEvolutionNoSessions": "Aún no hay sesiones de evolución",
   "agentEvolutionNoteRecorded": "Nota registrada",
   "agentEvolutionProposalRationale": "Justificación",
   "agentEvolutionProposalRejected": "Propuesta rechazada — continúa la conversación",
@@ -110,7 +113,19 @@
   "agentEvolutionRatingPrompt": "¿Qué tan bien funciona esta plantilla?",
   "agentEvolutionSessionAbandoned": "Sesión finalizada sin cambios",
   "agentEvolutionSessionCompleted": "Sesión completada — versión {version} creada",
+  "agentEvolutionSessionCount": "Sesiones",
   "agentEvolutionSessionError": "No se pudo iniciar la sesión de evolución",
+  "agentEvolutionSessionProgress": "Sesión {sessionNumber} de {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Iniciando sesión de evolución...",
   "agentEvolutionSessionTitle": "Evolución #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -123,6 +138,28 @@
   "agentEvolutionStatusAbandoned": "Abandonado",
   "agentEvolutionStatusActive": "Activo",
   "agentEvolutionStatusCompleted": "Completado",
+  "agentEvolutionTimelineFeedbackLabel": "Retroalimentación",
+  "agentEvolutionVersionProposed": "Versión propuesta",
+  "agentFeedbackCategoryAccuracy": "Precisión",
+  "agentFeedbackCategoryBreakdownTitle": "Desglose por categoría",
+  "agentFeedbackCategoryCommunication": "Comunicación",
+  "agentFeedbackCategoryGeneral": "General",
+  "agentFeedbackCategoryPrioritization": "Priorización",
+  "agentFeedbackCategoryTimeliness": "Puntualidad",
+  "agentFeedbackCategoryTooling": "Herramientas",
+  "agentFeedbackClassificationTitle": "Clasificación de retroalimentación",
+  "agentFeedbackItemCount": "{count, plural, =1{1 elemento} other{{count} elementos}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Decisión",
+  "agentFeedbackSourceMetric": "Métrica",
+  "agentFeedbackSourceObservation": "Observación",
+  "agentFeedbackSourceRating": "Calificación",
   "agentInstancesEmptyList": "No se encontraron instancias de agente",
   "agentInstancesFilterActive": "Activo",
   "agentInstancesFilterAll": "Todos",
@@ -168,7 +205,29 @@
   "agentReportHistoryError": "Se produjo un error al cargar el historial de informes.",
   "agentReportNone": "Aún no hay informe disponible.",
   "agentReportSectionTitle": "Informe del agente",
+  "agentRitualPendingNotification": "Rituales pendientes de revisión",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 pendiente} other{{count} pendientes}}",
+  "@agentRitualPendingReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentRitualReviewAction": "Iniciar conversación",
+  "agentRitualReviewByCategory": "Por categoría",
+  "agentRitualReviewBySentiment": "Por sentimiento",
+  "agentRitualReviewFeedbackTitle": "Señales de retroalimentación",
+  "agentRitualReviewNegativeSignals": "Señales negativas",
+  "agentRitualReviewNeutralSignals": "Señales neutras",
+  "agentRitualReviewNoFeedback": "Sin señales de retroalimentación en esta ventana",
+  "agentRitualReviewNoProposal": "Sin propuesta activa",
+  "agentRitualReviewPositiveSignals": "Señales positivas",
+  "agentRitualReviewProposalSection": "Propuesta actual",
+  "agentRitualReviewSessionHistory": "Historial de sesiones",
+  "agentRitualReviewTitle": "Revisión de ritual",
   "agentRunningIndicator": "Ejecutando",
+  "agentSessionProgressTitle": "Progreso de sesión",
   "agentSettingsSubtitle": "Plantillas, instancias y monitoreo",
   "agentSettingsTitle": "Agentes",
   "agentStateConsecutiveFailures": "Fallos consecutivos",

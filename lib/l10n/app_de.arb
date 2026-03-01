@@ -85,6 +85,7 @@
   },
   "agentDetailNotFound": "Agent nicht gefunden.",
   "agentDetailUnexpectedType": "Unerwarteter Entitätstyp.",
+  "agentEvolutionApprovalRate": "Genehmigungsrate",
   "agentEvolutionChartMttrTrend": "MTTR-Trend",
   "agentEvolutionChartSuccessRateTrend": "Erfolgstrend",
   "agentEvolutionChartVersionPerformance": "Nach Version",
@@ -92,6 +93,7 @@
   "agentEvolutionChatPlaceholder": "Feedback teilen oder nach Leistung fragen...",
   "agentEvolutionCurrentDirectives": "Aktuelle Anweisungen",
   "agentEvolutionDashboardTitle": "Leistung",
+  "agentEvolutionHistoryTitle": "Evolutionsverlauf",
   "agentEvolutionMetricActive": "Aktiv",
   "agentEvolutionMetricAvgDuration": "Durchschn. Dauer",
   "agentEvolutionMetricFailures": "Fehler",
@@ -99,6 +101,7 @@
   "agentEvolutionMetricSuccess": "Erfolg",
   "agentEvolutionMetricWakes": "Aufrufe",
   "agentEvolutionMttrLabel": "Mittlere Lösungszeit",
+  "agentEvolutionNoSessions": "Noch keine Evolutionssitzungen",
   "agentEvolutionNoteRecorded": "Notiz aufgezeichnet",
   "agentEvolutionProposalRationale": "Begründung",
   "agentEvolutionProposalRejected": "Vorschlag abgelehnt — Gespräch fortsetzen",
@@ -110,7 +113,19 @@
   "agentEvolutionRatingPrompt": "Wie gut funktioniert dieses Template?",
   "agentEvolutionSessionAbandoned": "Sitzung ohne Änderungen beendet",
   "agentEvolutionSessionCompleted": "Sitzung abgeschlossen — Version {version} erstellt",
+  "agentEvolutionSessionCount": "Sitzungen",
   "agentEvolutionSessionError": "Evolution-Sitzung konnte nicht gestartet werden",
+  "agentEvolutionSessionProgress": "Sitzung {sessionNumber} von {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Evolution-Sitzung wird gestartet...",
   "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -123,6 +138,28 @@
   "agentEvolutionStatusAbandoned": "Abgebrochen",
   "agentEvolutionStatusActive": "Aktiv",
   "agentEvolutionStatusCompleted": "Abgeschlossen",
+  "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionVersionProposed": "Version vorgeschlagen",
+  "agentFeedbackCategoryAccuracy": "Genauigkeit",
+  "agentFeedbackCategoryBreakdownTitle": "Kategorieaufschlüsselung",
+  "agentFeedbackCategoryCommunication": "Kommunikation",
+  "agentFeedbackCategoryGeneral": "Allgemein",
+  "agentFeedbackCategoryPrioritization": "Priorisierung",
+  "agentFeedbackCategoryTimeliness": "Zeitnähe",
+  "agentFeedbackCategoryTooling": "Werkzeuge",
+  "agentFeedbackClassificationTitle": "Feedback-Klassifizierung",
+  "agentFeedbackItemCount": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Entscheidung",
+  "agentFeedbackSourceMetric": "Metrik",
+  "agentFeedbackSourceObservation": "Beobachtung",
+  "agentFeedbackSourceRating": "Bewertung",
   "agentInstancesEmptyList": "Keine Agenteninstanzen gefunden",
   "agentInstancesFilterActive": "Aktiv",
   "agentInstancesFilterAll": "Alle",
@@ -168,7 +205,29 @@
   "agentReportHistoryError": "Fehler beim Laden der Berichtshistorie.",
   "agentReportNone": "Noch kein Bericht verfügbar.",
   "agentReportSectionTitle": "Agentenbericht",
+  "agentRitualPendingNotification": "Rituale warten auf Überprüfung",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 ausstehend} other{{count} ausstehend}}",
+  "@agentRitualPendingReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentRitualReviewAction": "Gespräch starten",
+  "agentRitualReviewByCategory": "Nach Kategorie",
+  "agentRitualReviewBySentiment": "Nach Stimmung",
+  "agentRitualReviewFeedbackTitle": "Feedback-Signale",
+  "agentRitualReviewNegativeSignals": "Negative Signale",
+  "agentRitualReviewNeutralSignals": "Neutrale Signale",
+  "agentRitualReviewNoFeedback": "Keine Feedback-Signale in diesem Zeitfenster",
+  "agentRitualReviewNoProposal": "Kein aktiver Vorschlag",
+  "agentRitualReviewPositiveSignals": "Positive Signale",
+  "agentRitualReviewProposalSection": "Aktueller Vorschlag",
+  "agentRitualReviewSessionHistory": "Sitzungsverlauf",
+  "agentRitualReviewTitle": "Ritual-Überprüfung",
   "agentRunningIndicator": "Läuft",
+  "agentSessionProgressTitle": "Sitzungsfortschritt",
   "agentSettingsSubtitle": "Vorlagen, Instanzen und Überwachung",
   "agentSettingsTitle": "Agenten",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",

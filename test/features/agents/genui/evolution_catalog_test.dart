@@ -31,7 +31,7 @@ void main() {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(4));
+      expect(items, hasLength(7));
       expect(
           items.map((i) => i.name),
           containsAll([
@@ -39,6 +39,9 @@ void main() {
             'EvolutionNoteConfirmation',
             'MetricsSummary',
             'VersionComparison',
+            'FeedbackClassification',
+            'FeedbackCategoryBreakdown',
+            'SessionProgress',
           ]));
     });
 
@@ -428,6 +431,272 @@ void main() {
       );
 
       expect(find.byIcon(Icons.compare_arrows), findsOneWidget);
+    });
+  });
+
+  group('FeedbackClassification', () {
+    testWidgets('renders analytics icon and sentiment chips', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackClassificationItem, {
+            'items': <Map<String, Object?>>[],
+            'positiveCount': 3,
+            'negativeCount': 2,
+            'neutralCount': 1,
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+      expect(find.textContaining('2'), findsWidgets);
+      expect(find.textContaining('3'), findsWidgets);
+      expect(find.textContaining('1'), findsWidgets);
+    });
+
+    testWidgets('renders up to 5 feedback lines', (tester) async {
+      final items = List.generate(
+        5,
+        (i) => <String, Object?>{
+          'sentiment': 'positive',
+          'category': 'general',
+          'source': 'session',
+          'detail': 'Feedback detail $i',
+        },
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackClassificationItem, {
+            'items': items,
+            'positiveCount': 5,
+            'negativeCount': 0,
+            'neutralCount': 0,
+          }),
+        ),
+      );
+
+      for (var i = 0; i < 5; i++) {
+        expect(find.text('Feedback detail $i'), findsOneWidget);
+      }
+    });
+
+    testWidgets('shows more text when items exceed 5', (tester) async {
+      final items = List.generate(
+        8,
+        (i) => <String, Object?>{
+          'sentiment': 'negative',
+          'category': 'accuracy',
+          'source': 'session',
+          'detail': 'Detail $i',
+        },
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackClassificationItem, {
+            'items': items,
+            'positiveCount': 0,
+            'negativeCount': 8,
+            'neutralCount': 0,
+          }),
+        ),
+      );
+
+      // First 5 details shown, remainder indicated by "more" text.
+      expect(find.text('Detail 0'), findsOneWidget);
+      expect(find.text('Detail 4'), findsOneWidget);
+      // The "3 items" text reflects items.length - 5 = 3.
+      expect(find.text('3 items'), findsOneWidget);
+      // Detail 5 onwards should not be visible.
+      expect(find.text('Detail 5'), findsNothing);
+    });
+
+    testWidgets('hides sentiment chips with zero count', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackClassificationItem, {
+            'items': <Map<String, Object?>>[],
+            'positiveCount': 0,
+            'negativeCount': 0,
+            'neutralCount': 0,
+          }),
+        ),
+      );
+
+      expect(find.text('Positive Signals'), findsNothing);
+      expect(find.text('Negative Signals'), findsNothing);
+      expect(find.text('Neutral Signals'), findsNothing);
+    });
+
+    testWidgets('renders with empty items list', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackClassificationItem, {
+            'items': <Map<String, Object?>>[],
+            'positiveCount': 1,
+            'negativeCount': 0,
+            'neutralCount': 0,
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.analytics_outlined), findsOneWidget);
+    });
+  });
+
+  group('FeedbackCategoryBreakdown', () {
+    testWidgets('renders category icon and title', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+            'categories': <Map<String, Object?>>[
+              {
+                'name': 'accuracy',
+                'count': 5,
+                'positiveCount': 3,
+                'negativeCount': 2,
+              },
+            ],
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      expect(find.text('accuracy'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+    });
+
+    testWidgets('renders proportion bars for multiple categories',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+            'categories': <Map<String, Object?>>[
+              {'name': 'accuracy', 'count': 4, 'positiveCount': 2},
+              {'name': 'communication', 'count': 6, 'negativeCount': 1},
+            ],
+          }),
+        ),
+      );
+
+      expect(find.text('accuracy'), findsOneWidget);
+      expect(find.text('communication'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('6'), findsOneWidget);
+    });
+
+    testWidgets('renders with empty categories list', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+            'categories': <Map<String, Object?>>[],
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+    });
+
+    testWidgets('renders categories without optional positive/negative counts',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+            'categories': <Map<String, Object?>>[
+              {'name': 'tooling', 'count': 3},
+            ],
+          }),
+        ),
+      );
+
+      expect(find.text('tooling'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+    });
+  });
+
+  group('SessionProgress', () {
+    testWidgets('renders loop icon, title, and session info', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(sessionProgressItem, {
+            'sessionNumber': 3,
+            'totalSessions': 10,
+            'feedbackCount': 7,
+            'status': 'active',
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.loop), findsOneWidget);
+      expect(find.text('Session 3 of 10'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('renders positive and negative metric chips when non-zero',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(sessionProgressItem, {
+            'sessionNumber': 1,
+            'totalSessions': 5,
+            'feedbackCount': 4,
+            'positiveCount': 3,
+            'negativeCount': 1,
+            'status': 'completed',
+          }),
+        ),
+      );
+
+      expect(find.text('3'), findsWidgets);
+      expect(find.text('1'), findsWidgets);
+    });
+
+    testWidgets('hides positive and negative chips when zero', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(sessionProgressItem, {
+            'sessionNumber': 2,
+            'totalSessions': 8,
+            'feedbackCount': 0,
+            'positiveCount': 0,
+            'negativeCount': 0,
+            'status': 'active',
+          }),
+        ),
+      );
+
+      expect(find.text('+'), findsNothing);
+      expect(find.text('-'), findsNothing);
+    });
+
+    testWidgets('renders completed status', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(sessionProgressItem, {
+            'sessionNumber': 5,
+            'totalSessions': 5,
+            'feedbackCount': 10,
+            'status': 'completed',
+          }),
+        ),
+      );
+
+      expect(find.text('Session 5 of 5'), findsOneWidget);
+    });
+
+    testWidgets('renders abandoned status', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(sessionProgressItem, {
+            'sessionNumber': 2,
+            'totalSessions': 5,
+            'feedbackCount': 3,
+            'status': 'abandoned',
+          }),
+        ),
+      );
+
+      expect(find.text('Session 2 of 5'), findsOneWidget);
     });
   });
 }

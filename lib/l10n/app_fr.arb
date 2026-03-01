@@ -85,6 +85,7 @@
   },
   "agentDetailNotFound": "Agent introuvable.",
   "agentDetailUnexpectedType": "Type d'entité inattendu.",
+  "agentEvolutionApprovalRate": "Taux d'approbation",
   "agentEvolutionChartMttrTrend": "Tendance MTTR",
   "agentEvolutionChartSuccessRateTrend": "Taux de réussite",
   "agentEvolutionChartVersionPerformance": "Par version",
@@ -92,6 +93,7 @@
   "agentEvolutionChatPlaceholder": "Partage tes retours ou demande des infos sur les performances...",
   "agentEvolutionCurrentDirectives": "Directives actuelles",
   "agentEvolutionDashboardTitle": "Performance",
+  "agentEvolutionHistoryTitle": "Historique d'évolution",
   "agentEvolutionMetricActive": "Actifs",
   "agentEvolutionMetricAvgDuration": "Durée moy.",
   "agentEvolutionMetricFailures": "Échecs",
@@ -99,6 +101,7 @@
   "agentEvolutionMetricSuccess": "Succès",
   "agentEvolutionMetricWakes": "Réveils",
   "agentEvolutionMttrLabel": "Temps moyen de résolution",
+  "agentEvolutionNoSessions": "Aucune session d'évolution pour l'instant",
   "agentEvolutionNoteRecorded": "Note enregistrée",
   "agentEvolutionProposalRationale": "Justification",
   "agentEvolutionProposalRejected": "Proposition rejetée — continue la conversation",
@@ -110,7 +113,19 @@
   "agentEvolutionRatingPrompt": "Comment ce template fonctionne-t-il ?",
   "agentEvolutionSessionAbandoned": "Session terminée sans modifications",
   "agentEvolutionSessionCompleted": "Session terminée — version {version} créée",
+  "agentEvolutionSessionCount": "Sessions",
   "agentEvolutionSessionError": "Impossible de démarrer la session d'évolution",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} sur {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Démarrage de la session d'évolution...",
   "agentEvolutionSessionTitle": "Évolution #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -123,6 +138,28 @@
   "agentEvolutionStatusAbandoned": "Abandonné",
   "agentEvolutionStatusActive": "Actif",
   "agentEvolutionStatusCompleted": "Terminé",
+  "agentEvolutionTimelineFeedbackLabel": "Retours",
+  "agentEvolutionVersionProposed": "Version proposée",
+  "agentFeedbackCategoryAccuracy": "Précision",
+  "agentFeedbackCategoryBreakdownTitle": "Répartition par catégorie",
+  "agentFeedbackCategoryCommunication": "Communication",
+  "agentFeedbackCategoryGeneral": "Général",
+  "agentFeedbackCategoryPrioritization": "Priorisation",
+  "agentFeedbackCategoryTimeliness": "Ponctualité",
+  "agentFeedbackCategoryTooling": "Outils",
+  "agentFeedbackClassificationTitle": "Classification des retours",
+  "agentFeedbackItemCount": "{count, plural, =1{1 élément} other{{count} éléments}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Décision",
+  "agentFeedbackSourceMetric": "Métrique",
+  "agentFeedbackSourceObservation": "Observation",
+  "agentFeedbackSourceRating": "Évaluation",
   "agentInstancesEmptyList": "Aucune instance d'agent trouvée",
   "agentInstancesFilterActive": "Actif",
   "agentInstancesFilterAll": "Tous",
@@ -168,7 +205,29 @@
   "agentReportHistoryError": "Une erreur est survenue lors du chargement de l'historique des rapports.",
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
   "agentReportSectionTitle": "Rapport de l'agent",
+  "agentRitualPendingNotification": "Rituels en attente de révision",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 en attente} other{{count} en attente}}",
+  "@agentRitualPendingReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentRitualReviewAction": "Démarrer la conversation",
+  "agentRitualReviewByCategory": "Par catégorie",
+  "agentRitualReviewBySentiment": "Par sentiment",
+  "agentRitualReviewFeedbackTitle": "Signaux de retour",
+  "agentRitualReviewNegativeSignals": "Signaux négatifs",
+  "agentRitualReviewNeutralSignals": "Signaux neutres",
+  "agentRitualReviewNoFeedback": "Aucun signal de retour dans cette fenêtre",
+  "agentRitualReviewNoProposal": "Pas de proposition active",
+  "agentRitualReviewPositiveSignals": "Signaux positifs",
+  "agentRitualReviewProposalSection": "Proposition actuelle",
+  "agentRitualReviewSessionHistory": "Historique des sessions",
+  "agentRitualReviewTitle": "Révision de rituel",
   "agentRunningIndicator": "En cours",
+  "agentSessionProgressTitle": "Progression de session",
   "agentSettingsSubtitle": "Modèles, instances et surveillance",
   "agentSettingsTitle": "Agents",
   "agentStateConsecutiveFailures": "Échecs consécutifs",

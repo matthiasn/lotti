@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
@@ -18,6 +20,9 @@ Catalog buildEvolutionCatalog() => Catalog(
         evolutionNoteConfirmationItem,
         metricsSummaryItem,
         versionComparisonItem,
+        feedbackClassificationItem,
+        feedbackCategoryBreakdownItem,
+        sessionProgressItem,
       ],
       catalogId: evolutionCatalogId,
     );
@@ -74,6 +79,117 @@ final _versionComparisonSchema = S.object(
   ],
 );
 
+final _feedbackClassificationSchema = S.object(
+  properties: {
+    'items': S.list(
+      items: S.object(
+        properties: {
+          'sentiment': S.string(
+            description: 'Sentiment: positive, negative, or neutral',
+            enumValues: ['positive', 'negative', 'neutral'],
+          ),
+          'category': S.string(
+            description: 'Feedback category',
+            enumValues: [
+              'accuracy',
+              'communication',
+              'prioritization',
+              'tooling',
+              'timeliness',
+              'general',
+            ],
+          ),
+          'source': S.string(description: 'Signal source'),
+          'detail': S.string(description: 'Detail text'),
+        },
+        required: ['sentiment', 'category', 'source', 'detail'],
+      ),
+      description: 'List of classified feedback items',
+    ),
+    'positiveCount': S.integer(description: 'Number of positive signals'),
+    'negativeCount': S.integer(description: 'Number of negative signals'),
+    'neutralCount': S.integer(description: 'Number of neutral signals'),
+  },
+  required: ['items', 'positiveCount', 'negativeCount', 'neutralCount'],
+);
+
+final _feedbackCategoryBreakdownSchema = S.object(
+  properties: {
+    'categories': S.list(
+      items: S.object(
+        properties: {
+          'name': S.string(description: 'Category name'),
+          'count': S.integer(description: 'Total items in this category'),
+          'positiveCount':
+              S.integer(description: 'Positive items in this category'),
+          'negativeCount':
+              S.integer(description: 'Negative items in this category'),
+        },
+        required: ['name', 'count'],
+      ),
+      description: 'Category breakdown entries',
+    ),
+  },
+  required: ['categories'],
+);
+
+final _sessionProgressSchema = S.object(
+  properties: {
+    'sessionNumber': S.integer(description: 'Current session number'),
+    'totalSessions': S.integer(description: 'Total sessions so far'),
+    'feedbackCount': S.integer(description: 'Number of feedback items'),
+    'positiveCount': S.integer(description: 'Positive feedback count'),
+    'negativeCount': S.integer(description: 'Negative feedback count'),
+    'status': S.string(
+      description: 'Session status',
+      enumValues: ['active', 'completed', 'abandoned'],
+    ),
+  },
+  required: ['sessionNumber', 'totalSessions', 'feedbackCount', 'status'],
+);
+
+// ── JSON Parsing Helpers ────────────────────────────────────────────────────
+
+/// Reads an integer from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a number.
+int _readInt(Map<String, Object?> json, String key, [int fallback = 0]) =>
+    (json[key] is num) ? (json[key]! as num).toInt() : fallback;
+
+/// Reads a double from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a number.
+double _readDouble(
+  Map<String, Object?> json,
+  String key, [
+  double fallback = 0.0,
+]) =>
+    (json[key] is num) ? (json[key]! as num).toDouble() : fallback;
+
+/// Reads an optional num from a dynamic JSON map.
+num? _readNumOrNull(Map<String, Object?> json, String key) =>
+    json[key] is num ? json[key]! as num : null;
+
+/// Reads a string from a dynamic JSON map, returning [fallback] if the
+/// value is missing or not a string.
+String _readString(
+  Map<String, Object?> json,
+  String key, [
+  String fallback = '',
+]) =>
+    json[key] is String ? json[key]! as String : fallback;
+
+/// Reads an optional string from a dynamic JSON map.
+String? _readStringOrNull(Map<String, Object?> json, String key) =>
+    json[key] is String ? json[key]! as String : null;
+
+/// Reads a list of maps from a dynamic JSON map, filtering out non-map items.
+List<Map<String, Object?>> _readMapList(
+  Map<String, Object?> json,
+  String key,
+) =>
+    (json[key] is List)
+        ? (json[key]! as List).whereType<Map<String, Object?>>().toList()
+        : <Map<String, Object?>>[];
+
 // ── Catalog Items ───────────────────────────────────────────────────────────
 
 /// Proposal card with approve/reject actions.
@@ -81,10 +197,11 @@ final evolutionProposalItem = CatalogItem(
   name: 'EvolutionProposal',
   dataSchema: _proposalSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final directives = json['directives'] as String? ?? '';
-    final rationale = json['rationale'] as String? ?? '';
-    final currentDirectives = json['currentDirectives'] as String?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final directives = _readString(json, 'directives');
+    final rationale = _readString(json, 'rationale');
+    final currentDirectives = _readStringOrNull(json, 'currentDirectives');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -196,9 +313,10 @@ final evolutionNoteConfirmationItem = CatalogItem(
   name: 'EvolutionNoteConfirmation',
   dataSchema: _noteConfirmationSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final kind = json['kind'] as String? ?? 'reflection';
-    final content = json['content'] as String? ?? '';
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final kind = _readString(json, 'kind', 'reflection');
+    final content = _readString(json, 'content');
 
     return _EvolutionNoteConfirmationCard(
       kind: kind,
@@ -308,12 +426,13 @@ final metricsSummaryItem = CatalogItem(
   name: 'MetricsSummary',
   dataSchema: _metricsSummarySchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final totalWakes = (json['totalWakes'] as num?)?.toInt() ?? 0;
-    final successRate = (json['successRate'] as num?)?.toDouble() ?? 0;
-    final failureCount = (json['failureCount'] as num?)?.toInt() ?? 0;
-    final avgDuration = json['averageDurationSeconds'] as num?;
-    final activeInstances = json['activeInstances'] as num?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final totalWakes = _readInt(json, 'totalWakes');
+    final successRate = _readDouble(json, 'successRate');
+    final failureCount = _readInt(json, 'failureCount');
+    final avgDuration = _readNumOrNull(json, 'averageDurationSeconds');
+    final activeInstances = _readNumOrNull(json, 'activeInstances');
 
     final context = itemContext.buildContext;
     final messages = context.messages;
@@ -358,12 +477,13 @@ final versionComparisonItem = CatalogItem(
   name: 'VersionComparison',
   dataSchema: _versionComparisonSchema,
   widgetBuilder: (itemContext) {
-    final json = itemContext.data as Map<String, Object?>;
-    final beforeVersion = (json['beforeVersion'] as num?)?.toInt() ?? 0;
-    final afterVersion = (json['afterVersion'] as num?)?.toInt() ?? 0;
-    final beforeDirectives = json['beforeDirectives'] as String? ?? '';
-    final afterDirectives = json['afterDirectives'] as String? ?? '';
-    final changesSummary = json['changesSummary'] as String?;
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final beforeVersion = _readInt(json, 'beforeVersion');
+    final afterVersion = _readInt(json, 'afterVersion');
+    final beforeDirectives = _readString(json, 'beforeDirectives');
+    final afterDirectives = _readString(json, 'afterDirectives');
+    final changesSummary = _readStringOrNull(json, 'changesSummary');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -423,6 +543,230 @@ final versionComparisonItem = CatalogItem(
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Inline grouped feedback classification card.
+final feedbackClassificationItem = CatalogItem(
+  name: 'FeedbackClassification',
+  dataSchema: _feedbackClassificationSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final items = _readMapList(json, 'items');
+    final positiveCount = _readInt(json, 'positiveCount');
+    final negativeCount = _readInt(json, 'negativeCount');
+    final neutralCount = _readInt(json, 'neutralCount');
+    final context = itemContext.buildContext;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.surfaceDarkElevated),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.analytics_outlined,
+                  size: 18,
+                  color: GameyColors.aiCyan,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.messages.agentFeedbackClassificationTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                if (negativeCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewNegativeSignals,
+                    negativeCount,
+                    GameyColors.primaryRed,
+                  ),
+                if (positiveCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewPositiveSignals,
+                    positiveCount,
+                    GameyColors.primaryGreen,
+                  ),
+                if (neutralCount > 0)
+                  _sentimentChip(
+                    context.messages.agentRitualReviewNeutralSignals,
+                    neutralCount,
+                    GameyColors.primaryOrange,
+                  ),
+              ],
+            ),
+            if (items.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...items.take(5).map(
+                    (item) => _feedbackLine(
+                      detail: _readString(item, 'detail'),
+                      sentiment: _readString(item, 'sentiment', 'neutral'),
+                    ),
+                  ),
+              if (items.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    context.messages.agentFeedbackItemCount(items.length - 5),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Category distribution visualization card.
+final feedbackCategoryBreakdownItem = CatalogItem(
+  name: 'FeedbackCategoryBreakdown',
+  dataSchema: _feedbackCategoryBreakdownSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final categories = _readMapList(json, 'categories');
+    final context = itemContext.buildContext;
+
+    final totalCount = categories.fold<int>(
+      0,
+      (sum, c) => sum + _readInt(c, 'count'),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(GameyColors.surfaceDarkElevated),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.category_outlined,
+                  size: 18,
+                  color: GameyColors.aiCyan,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.messages.agentFeedbackCategoryBreakdownTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...categories.map(
+              (c) => _categoryBar(
+                name: _readString(c, 'name'),
+                count: _readInt(c, 'count'),
+                positiveCount: _readInt(c, 'positiveCount'),
+                negativeCount: _readInt(c, 'negativeCount'),
+                totalCount: totalCount,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Compact session progress status card.
+final sessionProgressItem = CatalogItem(
+  name: 'SessionProgress',
+  dataSchema: _sessionProgressSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final sessionNumber = _readInt(json, 'sessionNumber');
+    final totalSessions = _readInt(json, 'totalSessions');
+    final feedbackCount = _readInt(json, 'feedbackCount');
+    final positiveCount = _readInt(json, 'positiveCount');
+    final negativeCount = _readInt(json, 'negativeCount');
+    final status = _readString(json, 'status', 'active');
+    final context = itemContext.buildContext;
+
+    final statusColor = switch (status) {
+      'completed' => GameyColors.primaryGreen,
+      'abandoned' => GameyColors.primaryRed,
+      _ => GameyColors.primaryBlue,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ModernBaseCard(
+        gradient: GameyGradients.cardDark(statusColor),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.loop, size: 20, color: statusColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.messages.agentSessionProgressTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.messages.agentEvolutionSessionProgress(
+                      sessionNumber,
+                      totalSessions,
+                    ),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              children: [
+                _metricChip(
+                  context.messages.agentEvolutionTimelineFeedbackLabel,
+                  '$feedbackCount',
+                ),
+                if (positiveCount > 0) _metricChip('+', '$positiveCount'),
+                if (negativeCount > 0) _metricChip('-', '$negativeCount'),
+              ],
+            ),
           ],
         ),
       ),
@@ -529,4 +873,127 @@ IconData _noteKindIcon(String kind) {
     'pattern' => Icons.pattern,
     _ => Icons.note,
   };
+}
+
+Widget _sentimentChip(String label, int count, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: color.withValues(alpha: 0.3)),
+    ),
+    child: Text(
+      '$count $label',
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+Widget _feedbackLine({required String detail, required String sentiment}) {
+  final color = switch (sentiment) {
+    'negative' => GameyColors.primaryRed,
+    'positive' => GameyColors.primaryGreen,
+    _ => GameyColors.primaryOrange,
+  };
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _categoryBar({
+  required String name,
+  required int count,
+  required int positiveCount,
+  required int negativeCount,
+  required int totalCount,
+}) {
+  final fraction = totalCount > 0 ? count / totalCount : 0.0;
+  final neutralCount = max(0, count - positiveCount - negativeCount);
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            Text(
+              '$count',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 6,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: fraction,
+              child: Row(
+                children: [
+                  if (negativeCount > 0)
+                    Expanded(
+                      flex: negativeCount,
+                      child: Container(color: GameyColors.primaryRed),
+                    ),
+                  if (positiveCount > 0)
+                    Expanded(
+                      flex: positiveCount,
+                      child: Container(color: GameyColors.primaryGreen),
+                    ),
+                  if (neutralCount > 0)
+                    Expanded(
+                      flex: neutralCount,
+                      child: Container(color: GameyColors.primaryOrange),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

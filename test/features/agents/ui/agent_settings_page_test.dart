@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/gamey/colors.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -295,6 +297,57 @@ void main() {
       await tester.tap(find.text('Nav Template'));
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
     });
+
+    Finder pendingDotInCard(String templateName) {
+      final card = find.ancestor(
+        of: find.text(templateName),
+        matching: find.byType(ListTile),
+      );
+      return find.descendant(
+        of: card,
+        matching: find.byWidgetPredicate((widget) {
+          if (widget is Container) {
+            final decoration = widget.decoration;
+            if (decoration is BoxDecoration) {
+              return decoration.shape == BoxShape.circle &&
+                  decoration.color == GameyColors.primaryPurple;
+            }
+          }
+          return false;
+        }),
+      );
+    }
+
+    for (final (label, pendingIds, expectVisible) in [
+      ('visible when pending', {'tpl-dot'}, true),
+      ('absent when not pending', <String>{}, false),
+    ]) {
+      testWidgets('pending dot is $label', (tester) async {
+        final template = makeTestTemplate(
+          id: 'tpl-dot',
+          agentId: 'tpl-dot',
+          displayName: 'Dot Template',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            templates: [template],
+            extraOverrides: [
+              templatesPendingReviewProvider.overrideWith(
+                (ref) async => pendingIds,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        if (expectVisible) {
+          expect(pendingDotInCard('Dot Template'), findsOneWidget);
+        } else {
+          expect(pendingDotInCard('Dot Template'), findsNothing);
+        }
+      });
+    }
 
     testWidgets('tapping back chevron calls NavService.beamBack',
         (tester) async {

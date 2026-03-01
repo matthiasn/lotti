@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/ui/ritual_pending_indicator.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
@@ -76,11 +77,20 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => context.beamToNamed('/settings/ai'),
           ),
           if (enableAgents)
-            settingsCard(
-              title: context.messages.agentSettingsTitle,
-              subtitle: context.messages.agentSettingsSubtitle,
-              icon: Icons.smart_toy_outlined,
-              onTap: () => context.beamToNamed('/settings/agents'),
+            Stack(
+              children: [
+                settingsCard(
+                  title: context.messages.agentSettingsTitle,
+                  subtitle: context.messages.agentSettingsSubtitle,
+                  icon: Icons.smart_toy_outlined,
+                  onTap: () => context.beamToNamed('/settings/agents'),
+                ),
+                const Positioned(
+                  top: 12,
+                  right: 16,
+                  child: RitualPendingIndicator(),
+                ),
+              ],
             ),
           if (enableHabits)
             settingsCard(

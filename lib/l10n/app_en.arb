@@ -84,6 +84,7 @@
   },
   "agentDetailNotFound": "Agent not found.",
   "agentDetailUnexpectedType": "Unexpected entity type.",
+  "agentEvolutionApprovalRate": "Approval Rate",
   "agentEvolutionChartMttrTrend": "MTTR Trend",
   "agentEvolutionChartSuccessRateTrend": "Success Trend",
   "agentEvolutionChartVersionPerformance": "By Version",
@@ -91,6 +92,7 @@
   "agentEvolutionChatPlaceholder": "Share feedback or ask about performance...",
   "agentEvolutionCurrentDirectives": "Current Directives",
   "agentEvolutionDashboardTitle": "Performance",
+  "agentEvolutionHistoryTitle": "Evolution History",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Avg Duration",
   "agentEvolutionMetricFailures": "Failures",
@@ -98,6 +100,7 @@
   "agentEvolutionMetricSuccess": "Success",
   "agentEvolutionMetricWakes": "Wakes",
   "agentEvolutionMttrLabel": "Mean Time to Resolution",
+  "agentEvolutionNoSessions": "No evolution sessions yet",
   "agentEvolutionNoteRecorded": "Note Recorded",
   "agentEvolutionProposalRationale": "Rationale",
   "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
@@ -116,7 +119,19 @@
       }
     }
   },
+  "agentEvolutionSessionCount": "Sessions",
   "agentEvolutionSessionError": "Failed to start evolution session",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} of {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Starting evolution session...",
   "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -129,6 +144,28 @@
   "agentEvolutionStatusAbandoned": "Abandoned",
   "agentEvolutionStatusActive": "Active",
   "agentEvolutionStatusCompleted": "Completed",
+  "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionVersionProposed": "Version proposed",
+  "agentFeedbackCategoryAccuracy": "Accuracy",
+  "agentFeedbackCategoryBreakdownTitle": "Category Breakdown",
+  "agentFeedbackCategoryCommunication": "Communication",
+  "agentFeedbackCategoryGeneral": "General",
+  "agentFeedbackCategoryPrioritization": "Prioritization",
+  "agentFeedbackCategoryTimeliness": "Timeliness",
+  "agentFeedbackCategoryTooling": "Tooling",
+  "agentFeedbackClassificationTitle": "Feedback Classification",
+  "agentFeedbackItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@agentFeedbackItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentFeedbackSourceDecision": "Decision",
+  "agentFeedbackSourceMetric": "Metric",
+  "agentFeedbackSourceObservation": "Observation",
+  "agentFeedbackSourceRating": "Rating",
   "agentInstancesEmptyList": "No agent instances found",
   "agentInstancesFilterActive": "Active",
   "agentInstancesFilterAll": "All",
@@ -177,7 +214,29 @@
   "@agentReportSectionTitle": {
     "description": "Header title for the agent report section on a task page."
   },
+  "agentRitualPendingNotification": "Rituals pending review",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 pending} other{{count} pending}}",
+  "@agentRitualPendingReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentRitualReviewAction": "Start Conversation",
+  "agentRitualReviewByCategory": "By Category",
+  "agentRitualReviewBySentiment": "By Sentiment",
+  "agentRitualReviewFeedbackTitle": "Feedback Signals",
+  "agentRitualReviewNegativeSignals": "Negative Signals",
+  "agentRitualReviewNeutralSignals": "Neutral Signals",
+  "agentRitualReviewNoFeedback": "No feedback signals in this window",
+  "agentRitualReviewNoProposal": "No active proposal",
+  "agentRitualReviewPositiveSignals": "Positive Signals",
+  "agentRitualReviewProposalSection": "Current Proposal",
+  "agentRitualReviewSessionHistory": "Session History",
+  "agentRitualReviewTitle": "Ritual Review",
   "agentRunningIndicator": "Running",
+  "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
   "agentStateConsecutiveFailures": "Consecutive failures",
