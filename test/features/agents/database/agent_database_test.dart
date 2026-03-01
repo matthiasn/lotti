@@ -263,5 +263,138 @@ void main() {
 
       await db.close();
     });
+
+    test('v2 to v3 deduplicates existing improver_target rows', () async {
+      final dbFile = path.join(testDirectory.path, agentDbFileName);
+      final rawDb = sqlite3.open(dbFile);
+
+      rawDb
+        ..execute('''
+          CREATE TABLE agent_entities (
+            id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            subtype TEXT,
+            thread_id TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE agent_links (
+            id TEXT NOT NULL PRIMARY KEY,
+            from_id TEXT NOT NULL,
+            to_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE wake_run_log (
+            run_key TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            reason_id TEXT,
+            thread_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            logical_change_key TEXT,
+            created_at DATETIME NOT NULL,
+            started_at DATETIME,
+            completed_at DATETIME,
+            error_message TEXT,
+            template_id TEXT,
+            template_version_id TEXT,
+            user_rating REAL,
+            rated_at DATETIME
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE saga_log (
+            operation_id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            run_key TEXT NOT NULL,
+            phase TEXT NOT NULL,
+            status TEXT NOT NULL,
+            tool_name TEXT NOT NULL,
+            last_error TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+          )
+        ''');
+
+      // Insert two duplicate improver_target links to the same template.
+      // Note: no UNIQUE(from_id, to_id, type) constraint in this v2 schema
+      // variant to simulate the scenario where duplicates slipped through.
+      rawDb
+        ..execute('''
+          INSERT INTO agent_links
+            (id, from_id, to_id, type, created_at, updated_at, serialized,
+             schema_version)
+          VALUES
+            ('link-dup-1', 'agent-A', 'tpl-X', 'improver_target',
+             '2026-01-01', '2026-01-01', '{}', 1)
+        ''')
+        ..execute('''
+          INSERT INTO agent_links
+            (id, from_id, to_id, type, created_at, updated_at, serialized,
+             schema_version)
+          VALUES
+            ('link-dup-2', 'agent-B', 'tpl-X', 'improver_target',
+             '2026-01-02', '2026-01-02', '{}', 1)
+        ''')
+        // A link to a different template should be unaffected.
+        ..execute('''
+          INSERT INTO agent_links
+            (id, from_id, to_id, type, created_at, updated_at, serialized,
+             schema_version)
+          VALUES
+            ('link-other', 'agent-C', 'tpl-Y', 'improver_target',
+             '2026-01-01', '2026-01-01', '{}', 1)
+        ''');
+
+      rawDb.execute('PRAGMA user_version = 2');
+      rawDb.dispose();
+
+      // Migration should deduplicate before creating the index.
+      final db = AgentDatabase(
+        background: false,
+        documentsDirectoryProvider: () async => testDirectory,
+        tempDirectoryProvider: () async => testDirectory,
+      );
+
+      // Only one non-deleted link should remain per to_id.
+      final activeLinks = await db
+          .customSelect(
+            'SELECT id FROM agent_links '
+            "WHERE type = 'improver_target' AND deleted_at IS NULL",
+          )
+          .get();
+
+      // tpl-X: 1 survivor, tpl-Y: 1 survivor = 2 total.
+      expect(activeLinks, hasLength(2));
+
+      // The soft-deleted duplicate should still exist in the table.
+      final allLinks = await db
+          .customSelect(
+            'SELECT id, deleted_at FROM agent_links '
+            "WHERE type = 'improver_target'",
+          )
+          .get();
+      expect(allLinks, hasLength(3));
+
+      final softDeleted = allLinks
+          .where((r) => r.readNullable<String>('deleted_at') != null)
+          .toList();
+      expect(softDeleted, hasLength(1));
+
+      await db.close();
+    });
   });
 }
