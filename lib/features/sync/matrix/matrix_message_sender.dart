@@ -425,7 +425,10 @@ class MatrixMessageSender {
   /// Enriches and uploads agent payload (entity or link).
   ///
   /// For legacy items (inline payload but no jsonPath), saves the payload to
-  /// disk first. Then uploads the file and returns a descriptor-only message.
+  /// disk first. Then uploads the file and returns the message with jsonPath
+  /// set. Agent entities are stripped (file-only, as they can be large); agent
+  /// links are kept inline (small, like entry links) so receivers can use them
+  /// immediately without waiting for the file download to complete.
   /// Returns the original [message] unchanged for non-agent types.
   /// Returns null on upload failure.
   Future<SyncMessage?> _enrichAndUploadAgentPayload({
@@ -487,10 +490,12 @@ class MatrixMessageSender {
     if (!uploaded) return null;
 
     return switch (message) {
+      // Agent entities can be large — strip inline, use file only.
       final SyncAgentEntity m =>
         m.copyWith(jsonPath: enrichedPath, agentEntity: null),
-      final SyncAgentLink m =>
-        m.copyWith(jsonPath: enrichedPath, agentLink: null),
+      // Agent links are small (like entry links) — keep inline for
+      // reliable sync, avoiding race conditions with file downloads.
+      final SyncAgentLink m => m.copyWith(jsonPath: enrichedPath),
       _ => throw StateError('unreachable'),
     };
   }

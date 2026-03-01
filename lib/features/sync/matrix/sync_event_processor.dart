@@ -497,6 +497,7 @@ class SyncEventProcessor {
     required SettingsDb settingsDb,
     SyncJournalEntityLoader? journalEntityLoader,
     SyncSequenceLogService? sequenceLogService,
+    AttachmentIndex? attachmentIndex,
     this.backfillResponseHandler,
   })  : _loggingService = loggingService,
         _updateNotifications = updateNotifications,
@@ -504,7 +505,8 @@ class SyncEventProcessor {
         _settingsDb = settingsDb,
         _journalEntityLoader =
             journalEntityLoader ?? const FileSyncJournalEntityLoader(),
-        _sequenceLogService = sequenceLogService;
+        _sequenceLogService = sequenceLogService,
+        _attachmentIndex = attachmentIndex;
 
   final LoggingService _loggingService;
   final UpdateNotifications _updateNotifications;
@@ -512,6 +514,7 @@ class SyncEventProcessor {
   final SettingsDb _settingsDb;
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
+  final AttachmentIndex? _attachmentIndex;
 
   static const int _recentJournalEntityLimit = 500;
   final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
@@ -1049,7 +1052,13 @@ class SyncEventProcessor {
   }
 
   /// Resolves an agent payload from a sync message: inline first, then
-  /// jsonPath from disk.
+  /// fetches from [AttachmentIndex] descriptor (like [SmartJournalEntityLoader]
+  /// does for journal entities), falling back to disk.
+  ///
+  /// Agent entity files can be updated in-place (e.g. ChangeSetEntity
+  /// pending → resolved), so reading from disk alone risks stale data when
+  /// the file download hasn't completed yet. Fetching from the descriptor
+  /// ensures we always get the version that matches this text event.
   ///
   /// Path-validation errors from [resolveJsonCandidateFile] (e.g. path
   /// traversal) are permanent — logged and skipped. File-read
@@ -1086,6 +1095,29 @@ class SyncEventProcessor {
       );
       return null;
     }
+
+    // Try to fetch fresh content from the AttachmentIndex descriptor,
+    // like SmartJournalEntityLoader does for journal entities.
+    final fetched = await _fetchFromDescriptor(
+      jsonPath: jp,
+      targetFile: file,
+      typeName: typeName,
+    );
+    if (fetched != null) {
+      try {
+        return fromJson(json.decode(fetched) as Map<String, dynamic>);
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'AGENT_SYNC',
+          subDomain: 'resolve.$typeName.parseFetched',
+          stackTrace: st,
+        );
+        return null;
+      }
+    }
+
+    // Fallback: read from disk (may be stale if download hasn't completed).
     try {
       final jsonString = await file.readAsString();
       return fromJson(json.decode(jsonString) as Map<String, dynamic>);
@@ -1102,6 +1134,66 @@ class SyncEventProcessor {
       );
       return null;
     }
+  }
+
+  /// Fetches fresh JSON from the [AttachmentIndex] descriptor and writes it
+  /// to [targetFile]. Returns the JSON string on success, or null if no
+  /// descriptor is available or the download fails.
+  Future<String?> _fetchFromDescriptor({
+    required String jsonPath,
+    required File targetFile,
+    required String typeName,
+  }) async {
+    final index = _attachmentIndex;
+    if (index == null) return null;
+
+    final indexKey = _buildAgentIndexKey(jsonPath);
+    final descriptorEvent = index.find(indexKey);
+    if (descriptorEvent == null) {
+      _loggingService.captureEvent(
+        '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve',
+      );
+      return null;
+    }
+
+    try {
+      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final bytes = matrixFile.bytes;
+      if (bytes.isEmpty) {
+        _loggingService.captureEvent(
+          '$typeName.descriptor.empty path=$jsonPath',
+          domain: 'AGENT_SYNC',
+          subDomain: 'resolve',
+        );
+        return null;
+      }
+      final jsonString = utf8.decode(bytes);
+      await saveJson(targetFile.path, jsonString);
+      _loggingService.captureEvent(
+        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve',
+      );
+      return jsonString;
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'resolve.$typeName.descriptorFetch',
+        stackTrace: st,
+      );
+      return null;
+    }
+  }
+
+  /// Builds a canonical index key for [AttachmentIndex] lookups,
+  /// normalizing path separators and ensuring a single leading '/'.
+  static String _buildAgentIndexKey(String rawPath) {
+    final normalized = rawPath.replaceAll(r'\', '/');
+    final trimmed = normalized.replaceFirst(RegExp('^/+'), '');
+    return '/$trimmed';
   }
 
   Future<AgentDomainEntity?> _resolveAgentEntity(
