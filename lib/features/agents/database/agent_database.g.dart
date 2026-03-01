@@ -2641,11 +2641,12 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   }
 
   Selectable<AgentEntity> getRecentDecisionsByTemplate(
-      String templateId, int limit) {
+      String templateId, DateTime since, int limit) {
     return customSelect(
-        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
+        'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?3',
         variables: [
           Variable<String>(templateId),
+          Variable<DateTime>(since),
           Variable<int>(limit)
         ],
         readsFrom: {

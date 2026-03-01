@@ -49,9 +49,11 @@ class FeedbackExtractionService {
     bool inWindow(DateTime dt) =>
         !dt.isBefore(since) && !dt.isAfter(effectiveUntil);
 
-    // 1. Classify decisions (single template-level query).
-    final allDecisions =
-        await agentRepository.getRecentDecisionsForTemplate(templateId);
+    // 1. Classify decisions (single template-level query with SQL filter).
+    final allDecisions = await agentRepository.getRecentDecisionsForTemplate(
+      templateId,
+      since: since,
+    );
     final windowDecisions = allDecisions.where((d) => inWindow(d.createdAt));
     final totalDecisionsScanned = windowDecisions.length;
 
