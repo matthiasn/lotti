@@ -300,7 +300,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentFeedbackItemCount(int count) {
-    return '$count Einträge';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge',
+      one: '1 Eintrag',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -419,7 +425,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentRitualPendingReviewCount(int count) {
-    return '$count ausstehend';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ausstehend',
+      one: '1 ausstehend',
+    );
+    return '$_temp0';
   }
 
   @override

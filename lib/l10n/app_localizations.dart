@@ -639,7 +639,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentFeedbackItemCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} items'**
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
   String agentFeedbackItemCount(int count);
 
   /// No description provided for @agentFeedbackSourceDecision.
@@ -861,7 +861,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualPendingReviewCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} pending'**
+  /// **'{count, plural, =1{1 pending} other{{count} pending}}'**
   String agentRitualPendingReviewCount(int count);
 
   /// No description provided for @agentRitualReviewAction.

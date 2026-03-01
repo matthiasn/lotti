@@ -355,8 +355,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: EvolutionReviewPage(
             templateId: state.pathParameters['templateId']!,
           ),
-        )
-      else if (pathContains('agents/instances') && pathContainsKey('agentId'))
+        ),
+      if (pathContains('agents/instances') && pathContainsKey('agentId'))
         BeamPage(
           key: ValueKey(
             'settings-agents-instances-'

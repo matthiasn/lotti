@@ -115,6 +115,17 @@
   "agentEvolutionSessionCompleted": "Sesiune finalizată — versiunea {version} creată",
   "agentEvolutionSessionCount": "Sesiuni",
   "agentEvolutionSessionError": "Sesiunea de evoluție nu a putut fi pornită",
+  "agentEvolutionSessionProgress": "Sesiunea {sessionNumber} din {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Se pornește sesiunea de evoluție...",
   "agentEvolutionSessionTitle": "Evoluție #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -128,6 +139,7 @@
   "agentEvolutionStatusActive": "Activ",
   "agentEvolutionStatusCompleted": "Finalizat",
   "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionVersionProposed": "Versiune propusă",
   "agentFeedbackCategoryAccuracy": "Acuratețe",
   "agentFeedbackCategoryBreakdownTitle": "Defalcare pe categorii",
   "agentFeedbackCategoryCommunication": "Comunicare",
@@ -136,7 +148,7 @@
   "agentFeedbackCategoryTimeliness": "Promptitudine",
   "agentFeedbackCategoryTooling": "Instrumente",
   "agentFeedbackClassificationTitle": "Clasificare feedback",
-  "agentFeedbackItemCount": "{count} elemente",
+  "agentFeedbackItemCount": "{count, plural, one{1 element} few{{count} elemente} other{{count} de elemente}}",
   "@agentFeedbackItemCount": {
     "placeholders": {
       "count": {
@@ -194,7 +206,7 @@
   "agentReportNone": "Niciun raport disponibil încă.",
   "agentReportSectionTitle": "Raportul agentului",
   "agentRitualPendingNotification": "Ritualuri în așteptarea revizuirii",
-  "agentRitualPendingReviewCount": "{count} în așteptare",
+  "agentRitualPendingReviewCount": "{count, plural, one{1 în așteptare} few{{count} în așteptare} other{{count} în așteptare}}",
   "@agentRitualPendingReviewCount": {
     "placeholders": {
       "count": {
@@ -1874,17 +1886,5 @@
   "unlinkTaskTitle": "Dezleagă sarcina",
   "viewMenuTitle": "Vizualizare",
   "whatsNewDoneButton": "Gata",
-  "whatsNewSkipButton": "Omite",
-  "agentEvolutionVersionProposed": "Versiune propusă",
-  "agentEvolutionSessionProgress": "Sesiunea {sessionNumber} din {totalSessions}",
-  "@agentEvolutionSessionProgress": {
-    "placeholders": {
-      "sessionNumber": {
-        "type": "int"
-      },
-      "totalSessions": {
-        "type": "int"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Omite"
 }

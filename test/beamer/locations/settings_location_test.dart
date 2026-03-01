@@ -100,6 +100,7 @@ void main() {
         '/settings/agents',
         '/settings/agents/templates/create',
         '/settings/agents/templates/:templateId',
+        '/settings/agents/templates/:templateId/review',
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',

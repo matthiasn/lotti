@@ -298,7 +298,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String agentFeedbackItemCount(int count) {
-    return '$count elemente';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de elemente',
+      few: '$count elemente',
+      one: '1 element',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -419,7 +426,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String agentRitualPendingReviewCount(int count) {
-    return '$count în așteptare';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count în așteptare',
+      few: '$count în așteptare',
+      one: '1 în așteptare',
+    );
+    return '$_temp0';
   }
 
   @override

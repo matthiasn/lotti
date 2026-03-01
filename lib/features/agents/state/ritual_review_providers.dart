@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
@@ -19,13 +20,9 @@ Future<AgentDomainEntity?> pendingRitualReview(
 ) async {
   final sessions =
       await ref.watch(evolutionSessionsProvider(templateId).future);
-  final typed = sessions.whereType<EvolutionSessionEntity>();
-  for (final session in typed) {
-    if (session.status == EvolutionSessionStatus.active) {
-      return session;
-    }
-  }
-  return null;
+  return sessions
+      .whereType<EvolutionSessionEntity>()
+      .firstWhereOrNull((s) => s.status == EvolutionSessionStatus.active);
 }
 
 /// Extracts classified feedback for a template's review window.

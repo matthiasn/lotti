@@ -80,7 +80,7 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
 }
 
 String _$pendingRitualReviewHash() =>
-    r'46a223a6fe523b4df646eb4cebe12603de9eb998';
+    r'97fe8447294a1c650d34ff666a12f0841ef6ad26';
 
 /// Returns the most recent active [EvolutionSessionEntity] for a template,
 /// or `null` if there is no active session pending review.

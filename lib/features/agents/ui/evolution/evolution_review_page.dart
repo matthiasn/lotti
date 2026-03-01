@@ -92,7 +92,7 @@ class EvolutionReviewPage extends ConsumerWidget {
           const SizedBox(height: 12),
           pendingAsync.when(
             data: (entity) {
-              final session = entity as EvolutionSessionEntity?;
+              final session = entity is EvolutionSessionEntity ? entity : null;
               if (session == null) {
                 return _EmptyState(
                   text: context.messages.agentRitualReviewNoProposal,

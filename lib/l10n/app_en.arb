@@ -121,6 +121,17 @@
   },
   "agentEvolutionSessionCount": "Sessions",
   "agentEvolutionSessionError": "Failed to start evolution session",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} of {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Starting evolution session...",
   "agentEvolutionSessionTitle": "Evolution #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -134,6 +145,7 @@
   "agentEvolutionStatusActive": "Active",
   "agentEvolutionStatusCompleted": "Completed",
   "agentEvolutionTimelineFeedbackLabel": "Feedback",
+  "agentEvolutionVersionProposed": "Version proposed",
   "agentFeedbackCategoryAccuracy": "Accuracy",
   "agentFeedbackCategoryBreakdownTitle": "Category Breakdown",
   "agentFeedbackCategoryCommunication": "Communication",
@@ -142,7 +154,7 @@
   "agentFeedbackCategoryTimeliness": "Timeliness",
   "agentFeedbackCategoryTooling": "Tooling",
   "agentFeedbackClassificationTitle": "Feedback Classification",
-  "agentFeedbackItemCount": "{count} items",
+  "agentFeedbackItemCount": "{count, plural, =1{1 item} other{{count} items}}",
   "@agentFeedbackItemCount": {
     "placeholders": {
       "count": {
@@ -203,7 +215,7 @@
     "description": "Header title for the agent report section on a task page."
   },
   "agentRitualPendingNotification": "Rituals pending review",
-  "agentRitualPendingReviewCount": "{count} pending",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 pending} other{{count} pending}}",
   "@agentRitualPendingReviewCount": {
     "placeholders": {
       "count": {
@@ -2012,17 +2024,5 @@
   "unlinkTaskTitle": "Unlink Task",
   "viewMenuTitle": "View",
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip",
-  "agentEvolutionVersionProposed": "Version proposed",
-  "agentEvolutionSessionProgress": "Session {sessionNumber} of {totalSessions}",
-  "@agentEvolutionSessionProgress": {
-    "placeholders": {
-      "sessionNumber": {
-        "type": "int"
-      },
-      "totalSessions": {
-        "type": "int"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Skip"
 }

@@ -115,6 +115,17 @@
   "agentEvolutionSessionCompleted": "Session terminée — version {version} créée",
   "agentEvolutionSessionCount": "Sessions",
   "agentEvolutionSessionError": "Impossible de démarrer la session d'évolution",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} sur {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  },
   "agentEvolutionSessionStarting": "Démarrage de la session d'évolution...",
   "agentEvolutionSessionTitle": "Évolution #{sessionNumber}",
   "@agentEvolutionSessionTitle": {
@@ -128,6 +139,7 @@
   "agentEvolutionStatusActive": "Actif",
   "agentEvolutionStatusCompleted": "Terminé",
   "agentEvolutionTimelineFeedbackLabel": "Retours",
+  "agentEvolutionVersionProposed": "Version proposée",
   "agentFeedbackCategoryAccuracy": "Précision",
   "agentFeedbackCategoryBreakdownTitle": "Répartition par catégorie",
   "agentFeedbackCategoryCommunication": "Communication",
@@ -136,7 +148,7 @@
   "agentFeedbackCategoryTimeliness": "Ponctualité",
   "agentFeedbackCategoryTooling": "Outils",
   "agentFeedbackClassificationTitle": "Classification des retours",
-  "agentFeedbackItemCount": "{count} éléments",
+  "agentFeedbackItemCount": "{count, plural, =1{1 élément} other{{count} éléments}}",
   "@agentFeedbackItemCount": {
     "placeholders": {
       "count": {
@@ -194,7 +206,7 @@
   "agentReportNone": "Aucun rapport disponible pour l'instant.",
   "agentReportSectionTitle": "Rapport de l'agent",
   "agentRitualPendingNotification": "Rituels en attente de révision",
-  "agentRitualPendingReviewCount": "{count} en attente",
+  "agentRitualPendingReviewCount": "{count, plural, =1{1 en attente} other{{count} en attente}}",
   "@agentRitualPendingReviewCount": {
     "placeholders": {
       "count": {
@@ -1874,17 +1886,5 @@
   "unlinkTaskTitle": "Délier la tâche",
   "viewMenuTitle": "Affichage",
   "whatsNewDoneButton": "Terminé",
-  "whatsNewSkipButton": "Ignorer",
-  "agentEvolutionVersionProposed": "Version proposée",
-  "agentEvolutionSessionProgress": "Session {sessionNumber} sur {totalSessions}",
-  "@agentEvolutionSessionProgress": {
-    "placeholders": {
-      "sessionNumber": {
-        "type": "int"
-      },
-      "totalSessions": {
-        "type": "int"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Ignorer"
 }
