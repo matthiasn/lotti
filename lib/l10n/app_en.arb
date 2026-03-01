@@ -2024,5 +2024,17 @@
   "unlinkTaskTitle": "Unlink Task",
   "viewMenuTitle": "View",
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip"
+  "whatsNewSkipButton": "Skip",
+  "agentEvolutionVersionProposed": "Version proposed",
+  "agentEvolutionSessionProgress": "Session {sessionNumber} of {totalSessions}",
+  "@agentEvolutionSessionProgress": {
+    "placeholders": {
+      "sessionNumber": {
+        "type": "int"
+      },
+      "totalSessions": {
+        "type": "int"
+      }
+    }
+  }
 }
