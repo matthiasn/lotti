@@ -96,6 +96,32 @@ class _AgentReportSectionState extends State<AgentReportSection>
     }
   }
 
+  Widget _buildLink(
+    BuildContext context,
+    InlineSpan text,
+    String url,
+    TextStyle style,
+  ) {
+    final linkColor = Theme.of(context).colorScheme.primary;
+    return Semantics(
+      link: true,
+      child: InkWell(
+        onTap: () => _handleLinkTap(url, ''),
+        mouseCursor: SystemMouseCursors.click,
+        child: Text.rich(
+          TextSpan(
+            children: [text],
+            style: style.copyWith(
+              color: linkColor,
+              decoration: TextDecoration.underline,
+              decorationColor: linkColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasContent = widget.content.trim().isNotEmpty;
@@ -117,6 +143,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                   child: GptMarkdown(
                     parsed.tldr,
                     onLinkTap: _handleLinkTap,
+                    linkBuilder: _buildLink,
                   ),
                 ),
                 // Expandable additional content
@@ -143,6 +170,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                           child: GptMarkdown(
                             parsed.additional!,
                             onLinkTap: _handleLinkTap,
+                            linkBuilder: _buildLink,
                           ),
                         ),
                       ],

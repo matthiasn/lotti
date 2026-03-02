@@ -233,5 +233,62 @@ void main() {
         1,
       );
     });
+
+    testWidgets('renders links with underline decoration', (tester) async {
+      const markdown = '## 📋 TLDR\n'
+          'Check [Example](https://example.com) for details.\n\n'
+          '## Details\nMore info.';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      // Verify GptMarkdown is rendered (link builder is passed)
+      expect(find.byType(GptMarkdown), findsOneWidget);
+
+      // Expand to see additional content with links too
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).length,
+        2,
+      );
+    });
+
+    testWidgets('link in expanded content is tappable', (tester) async {
+      const markdown = '## 📋 TLDR\nSummary here.\n\n'
+          '## Details\n[Link text](https://example.com)\n';
+      await tester.pumpWidget(buildSubject(markdown));
+      await tester.pump();
+
+      // Expand
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      // Verify both sections are rendered
+      final markdowns =
+          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      expect(markdowns.length, 2);
+      expect(markdowns.last.data, contains('Link text'));
+    });
+
+    testWidgets('renders nothing when both content and tldr are empty',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject('', tldr: ''),
+      );
+      await tester.pump();
+
+      expect(find.byType(GptMarkdown), findsNothing);
+    });
+
+    testWidgets('renders nothing when both are whitespace only',
+        (tester) async {
+      await tester.pumpWidget(
+        buildSubject('   ', tldr: '  '),
+      );
+      await tester.pump();
+
+      expect(find.byType(GptMarkdown), findsNothing);
+    });
   });
 }
