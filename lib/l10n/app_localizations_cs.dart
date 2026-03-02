@@ -470,11 +470,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'V této záložce nejsou žádné neutrální signály zpětné vazby';
 
   @override
-  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'V této záložce nejsou žádné pozitivní signály zpětné vazby';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Žádný aktivní návrh';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Pozitivní';
@@ -2817,6 +2817,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get logsSearchHint => 'Prohledat všechny logy...';
 
   @override
+  String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Smazat databázi agentů a restartovat aplikaci';
+
+  @override
   String get maintenanceDeleteDatabaseConfirm => 'ANO, SMAZAT DATABÁZI';
 
   @override
@@ -4634,13 +4641,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get thinkingDisclosureHide => 'Skrýt úvahu';
 
   @override
+  String get thinkingDisclosureShow => 'Zobrazit úvahu';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'sbaleno';
 
   @override
   String get thinkingDisclosureStateExpanded => 'rozbaleno';
-
-  @override
-  String get thinkingDisclosureShow => 'Zobrazit úvahu';
 
   @override
   String get timeByCategoryChartTitle => 'Čas podle kategorie';

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
@@ -6,6 +8,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -60,6 +63,25 @@ class Maintenance {
           );
         }
       }
+    }
+  }
+
+  Future<void> deleteAgentDb() async {
+    final file = await getDatabaseFile(agentDbFileName);
+    if (file.existsSync()) {
+      await createDbBackup(agentDbFileName);
+      file.deleteSync();
+      // Delete WAL companion files created when SQLite WAL mode is enabled
+      final shmFile = File('${file.path}-shm');
+      final walFile = File('${file.path}-wal');
+      if (shmFile.existsSync()) shmFile.deleteSync();
+      if (walFile.existsSync()) walFile.deleteSync();
+    } else {
+      getIt<LoggingService>().captureEvent(
+        'Database file $agentDbFileName does not exist',
+        domain: 'MAINTENANCE',
+        subDomain: 'deleteAgentDb',
+      );
     }
   }
 

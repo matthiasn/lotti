@@ -476,11 +476,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine neutralen Feedback-Signale in diesem Tab';
 
   @override
-  String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
-
-  @override
   String get agentRitualReviewNoPositiveSignals =>
       'Keine positiven Feedback-Signale in diesem Tab';
+
+  @override
+  String get agentRitualReviewNoProposal => 'Kein aktiver Vorschlag';
 
   @override
   String get agentRitualReviewPositiveSignals => 'Positiv';
@@ -2849,6 +2849,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get logsSearchHint => 'Alle Logs durchsuchen...';
 
   @override
+  String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
+
+  @override
+  String get maintenanceDeleteAgentDbDescription =>
+      'Agenten-Datenbank löschen und App neu starten';
+
+  @override
   String get maintenanceDeleteDatabaseConfirm => 'JA, DATENBANK LÖSCHEN';
 
   @override
@@ -4674,13 +4681,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get thinkingDisclosureHide => 'Begründung ausblenden';
 
   @override
+  String get thinkingDisclosureShow => 'Begründung anzeigen';
+
+  @override
   String get thinkingDisclosureStateCollapsed => 'eingeklappt';
 
   @override
   String get thinkingDisclosureStateExpanded => 'ausgeklappt';
-
-  @override
-  String get thinkingDisclosureShow => 'Begründung anzeigen';
 
   @override
   String get timeByCategoryChartTitle => 'Zeit nach Kategorie';

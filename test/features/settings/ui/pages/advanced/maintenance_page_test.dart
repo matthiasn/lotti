@@ -99,6 +99,7 @@ void main() {
       when(mockMaintenance.deleteLoggingDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteSyncDb).thenAnswer((_) async {});
+      when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -118,6 +119,7 @@ void main() {
 
       expect(find.text('Delete Logging Database'), findsOneWidget);
       expect(find.text('Delete Editor Database'), findsOneWidget);
+      expect(find.text('Delete Agents Database'), findsOneWidget);
       expect(find.text('Delete Sync Database'), findsNothing);
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
       expect(
@@ -197,6 +199,24 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => getIt<Maintenance>().deleteEditorDb()).called(1);
+    });
+
+    testWidgets('delete agents database button shows confirmation dialog',
+        (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Delete Agents Database'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Are you sure you want to delete Agents Database?'),
+        findsOneWidget,
+      );
+      expect(find.text('YES, DELETE DATABASE'), findsOneWidget);
+      expect(find.text('CANCEL'), findsOneWidget);
     });
 
     testWidgets('purge deleted entries button opens purge modal',

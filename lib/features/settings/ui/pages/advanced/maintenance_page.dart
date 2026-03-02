@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
@@ -103,6 +105,24 @@ class MaintenancePage extends ConsumerWidget {
                   );
                   if (confirmed && context.mounted) {
                     await maintenance.deleteLoggingDb();
+                  }
+                },
+              ),
+              AdaptiveSettingsCard(
+                title: context.messages.maintenanceDeleteAgentDb,
+                subtitle: context.messages.maintenanceDeleteAgentDbDescription,
+                icon: Icons.smart_toy_outlined,
+                onTap: () async {
+                  final confirmed = await showConfirmationModal(
+                    context: context,
+                    message: context.messages
+                        .maintenanceDeleteDatabaseQuestion('Agents'),
+                    confirmLabel:
+                        context.messages.maintenanceDeleteDatabaseConfirm,
+                  );
+                  if (confirmed && context.mounted) {
+                    await maintenance.deleteAgentDb();
+                    exit(0);
                   }
                 },
               ),
