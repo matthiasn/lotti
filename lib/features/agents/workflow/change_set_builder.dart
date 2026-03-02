@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:collection/collection.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -194,20 +193,80 @@ class ChangeSetBuilder {
 
   /// Build and persist the [ChangeSetEntity].
   ///
-  /// Items that already appear in [existingPendingItems] (matched by
+  /// Items that already appear in [existingPendingSets] (matched by
   /// `toolName` + `args`) are silently dropped to avoid showing the user
-  /// duplicate proposals across consecutive agent wakes.
+  /// duplicate proposals across consecutive agent wakes. Rejected and
+  /// deferred items are included in the dedup set so the agent cannot
+  /// re-propose a mutation the user already rejected.
+  ///
+  /// When existing pending change sets exist, all their items are
+  /// consolidated into a single set together with the new items. Any
+  /// surplus sets are marked as [ChangeSetStatus.resolved] so they no
+  /// longer appear in the UI or future queries.
   ///
   /// Returns `null` if no items remain after deduplication.
   Future<ChangeSetEntity?> build(
     AgentSyncService syncService, {
-    List<ChangeItem> existingPendingItems = const [],
+    List<ChangeSetEntity> existingPendingSets = const [],
   }) async {
     if (!hasItems) return null;
 
-    final deduped = _deduplicateItems(_items, existingPendingItems);
+    // Extract all non-confirmed items from existing change sets for
+    // deduplication. Rejected and deferred items must be included so the
+    // agent cannot re-propose a mutation the user already rejected.
+    final existingItems = existingPendingSets
+        .expand(
+          (cs) => cs.items.where(
+            (i) => i.status != ChangeItemStatus.confirmed,
+          ),
+        )
+        .toList();
+
+    final deduped = _deduplicateItems(_items, existingItems);
     if (deduped.isEmpty) return null;
 
+    if (existingPendingSets.isNotEmpty) {
+      // Consolidate: pick the newest set as the survivor, collect all
+      // items from every set, append the new deduplicated items, and
+      // mark all other sets as resolved so the UI shows exactly one card.
+      final survivor = existingPendingSets.reduce(
+        (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
+      );
+
+      // Gather items from non-survivor sets that aren't already in the
+      // survivor (e.g. from a race that created duplicates).
+      final survivorFingerprints =
+          survivor.items.map(ChangeItem.fingerprint).toSet();
+      final otherItems = existingPendingSets
+          .where((cs) => cs.id != survivor.id)
+          .expand((cs) => cs.items)
+          .where((i) => !survivorFingerprints.contains(
+                ChangeItem.fingerprint(i),
+              ))
+          .toList();
+
+      final merged = survivor.copyWith(
+        items: [...survivor.items, ...otherItems, ...deduped],
+      );
+      await syncService.upsertEntity(merged);
+
+      // Mark all non-survivor sets as resolved so they disappear from
+      // pending queries and the UI.
+      for (final cs in existingPendingSets) {
+        if (cs.id != survivor.id) {
+          await syncService.upsertEntity(
+            cs.copyWith(
+              status: ChangeSetStatus.resolved,
+              resolvedAt: clock.now(),
+            ),
+          );
+        }
+      }
+
+      return merged;
+    }
+
+    // No existing set — create a new one.
     final entity = AgentDomainEntity.changeSet(
       id: _uuid.v4(),
       agentId: agentId,
@@ -224,8 +283,6 @@ class ChangeSetBuilder {
     return entity;
   }
 
-  static const _deepEquals = DeepCollectionEquality();
-
   /// Returns items from [proposed] that do not already exist in [existing],
   /// comparing on `toolName` and `args` only (ignoring `humanSummary`).
   static List<ChangeItem> _deduplicateItems(
@@ -233,14 +290,9 @@ class ChangeSetBuilder {
     List<ChangeItem> existing,
   ) {
     if (existing.isEmpty) return proposed;
-    final existingHashes = existing
-        .map((e) => '${e.toolName}:${_deepEquals.hash(e.args)}')
-        .toSet();
+    final existingHashes = existing.map(ChangeItem.fingerprint).toSet();
     return proposed
-        .where(
-          (item) => !existingHashes
-              .contains('${item.toolName}:${_deepEquals.hash(item.args)}'),
-        )
+        .where((item) => !existingHashes.contains(ChangeItem.fingerprint(item)))
         .toList();
   }
 

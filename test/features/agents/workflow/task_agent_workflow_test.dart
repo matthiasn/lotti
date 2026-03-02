@@ -1661,6 +1661,7 @@ void main() {
           required String toolName,
           required ChangeDecisionVerdict verdict,
           String? rejectionReason,
+          String? humanSummary,
         }) {
           return AgentDomainEntity.changeDecision(
             id: 'dec-${toolName.hashCode}',
@@ -1673,6 +1674,7 @@ void main() {
             vectorClock: null,
             taskId: taskId,
             rejectionReason: rejectionReason,
+            humanSummary: humanSummary,
           ) as ChangeDecisionEntity;
         }
 
@@ -1759,10 +1761,43 @@ void main() {
           expect(message, contains('\u2713 set_task_title'));
           // Rejected with reason
           expect(message, contains('\u2717 update_task_estimate'));
-          expect(message, contains('Too high'));
+          expect(message, contains('(reason: "Too high")'));
           // Deferred
           expect(message, contains('\u23f8 assign_task_labels'));
           expect(message, contains('deferred'));
+        });
+
+        test('displays human summary instead of tool name when available',
+            () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              any(),
+              taskId: any(named: 'taskId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [
+                makeDecision(
+                  toolName: 'update_checklist_item',
+                  verdict: ChangeDecisionVerdict.rejected,
+                  humanSummary: 'Check off: "Buy milk"',
+                  rejectionReason: 'Not relevant',
+                ),
+              ]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            contains('Check off: "Buy milk"'),
+            reason: 'should show human summary, not raw tool name',
+          );
+          expect(
+            message,
+            isNot(contains('update_checklist_item')),
+            reason: 'tool name should be replaced by human summary',
+          );
+          expect(message, contains('(reason: "Not relevant")'));
         });
 
         test('error in getRecentDecisions does not crash the wake', () async {

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart';
 
 void main() {
   late ChangeSetBuilder builder;
@@ -417,22 +418,27 @@ void main() {
           humanSummary: 'Set estimate to 2 hours',
         );
 
-      final existingPending = [
-        const ChangeItem(
-          toolName: 'set_task_title',
-          args: {'title': 'Fix bug'},
-          humanSummary: 'Different summary, same change',
-        ),
-      ];
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Different summary, same change',
+          ),
+        ],
+      );
 
       final result = await builder.build(
         mockSyncService,
-        existingPendingItems: existingPending,
+        existingPendingSets: [existingSet],
       );
 
       expect(result, isNotNull);
-      expect(result!.items, hasLength(1));
-      expect(result.items.first.toolName, 'update_task_estimate');
+      // Merged into existing set: 1 existing + 1 new.
+      expect(
+        result!.items.where((i) => i.toolName == 'update_task_estimate'),
+        hasLength(1),
+      );
     });
 
     test('returns null when all items are duplicates', () async {
@@ -442,17 +448,19 @@ void main() {
         humanSummary: 'Set title',
       );
 
-      final existingPending = [
-        const ChangeItem(
-          toolName: 'set_task_title',
-          args: {'title': 'Fix bug'},
-          humanSummary: 'Already proposed',
-        ),
-      ];
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Already proposed',
+          ),
+        ],
+      );
 
       final result = await builder.build(
         mockSyncService,
-        existingPendingItems: existingPending,
+        existingPendingSets: [existingSet],
       );
 
       expect(result, isNull);
@@ -466,22 +474,26 @@ void main() {
         humanSummary: 'Set estimate to 2 hours',
       );
 
-      final existingPending = [
-        const ChangeItem(
-          toolName: 'update_task_estimate',
-          args: {'minutes': 60},
-          humanSummary: 'Set estimate to 1 hour',
-        ),
-      ];
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 60},
+            humanSummary: 'Set estimate to 1 hour',
+          ),
+        ],
+      );
 
       final result = await builder.build(
         mockSyncService,
-        existingPendingItems: existingPending,
+        existingPendingSets: [existingSet],
       );
 
       expect(result, isNotNull);
-      expect(result!.items, hasLength(1));
-      expect(result.items.first.args['minutes'], 120);
+      expect(
+        result!.items.last.args['minutes'],
+        120,
+      );
     });
 
     test('dedupes with deep map equality in args', () async {
@@ -494,26 +506,28 @@ void main() {
         humanSummary: 'Add checklist item',
       );
 
-      final existingPending = [
-        const ChangeItem(
-          toolName: 'add_checklist_item',
-          args: {
-            'title': 'Design mockup',
-            'metadata': {'priority': 'high'},
-          },
-          humanSummary: 'Already proposed',
-        ),
-      ];
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {
+              'title': 'Design mockup',
+              'metadata': {'priority': 'high'},
+            },
+            humanSummary: 'Already proposed',
+          ),
+        ],
+      );
 
       final result = await builder.build(
         mockSyncService,
-        existingPendingItems: existingPending,
+        existingPendingSets: [existingSet],
       );
 
       expect(result, isNull);
     });
 
-    test('does not dedupe when existing items list is empty', () async {
+    test('does not dedupe when existing sets list is empty', () async {
       builder.addItem(
         toolName: 'set_task_title',
         args: {'title': 'Fix bug'},
@@ -522,11 +536,275 @@ void main() {
 
       final result = await builder.build(
         mockSyncService,
-        existingPendingItems: [],
+        existingPendingSets: [],
       );
 
       expect(result, isNotNull);
       expect(result!.items, hasLength(1));
+    });
+
+    test('merges new items into existing change set', () async {
+      builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 90},
+        humanSummary: 'Set estimate to 1.5 hours',
+      );
+
+      final existingSet = makeTestChangeSet(
+        id: 'cs-existing',
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Set title',
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.id, 'cs-existing');
+      expect(result.items, hasLength(2));
+      expect(result.items[0].toolName, 'set_task_title');
+      expect(result.items[1].toolName, 'update_task_estimate');
+    });
+
+    test('preserves existing item statuses when merging', () async {
+      builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 90},
+        humanSummary: 'Set estimate',
+      );
+
+      final existingSet = makeTestChangeSet(
+        id: 'cs-existing',
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Set title',
+            status: ChangeItemStatus.confirmed,
+          ),
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'IN_PROGRESS'},
+            humanSummary: 'Set status',
+            status: ChangeItemStatus.rejected,
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(3));
+      expect(result.items[0].status, ChangeItemStatus.confirmed);
+      expect(result.items[1].status, ChangeItemStatus.rejected);
+      expect(result.items[2].status, ChangeItemStatus.pending);
+    });
+
+    test('blocks re-proposal of rejected items', () async {
+      // The agent proposes the exact same mutation that was already rejected.
+      builder.addItem(
+        toolName: 'update_checklist_item',
+        args: {'id': 'item-1', 'isChecked': true},
+        humanSummary: 'Check off: "Buy milk"',
+      );
+
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'update_checklist_item',
+            args: {'id': 'item-1', 'isChecked': true},
+            humanSummary: 'Check off: "Buy milk"',
+            status: ChangeItemStatus.rejected,
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNull, reason: 'rejected items must not be re-proposed');
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test('blocks re-proposal of deferred items', () async {
+      builder.addItem(
+        toolName: 'set_task_status',
+        args: {'status': 'IN_PROGRESS'},
+        humanSummary: 'Set status',
+      );
+
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'IN_PROGRESS'},
+            humanSummary: 'Set status',
+            status: ChangeItemStatus.deferred,
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNull, reason: 'deferred items must not be re-proposed');
+    });
+
+    test('allows proposal when same tool has different args than rejected',
+        () async {
+      // The agent proposes a different value than what was rejected.
+      builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 60},
+        humanSummary: 'Set estimate to 1 hour',
+      );
+
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Set estimate to 2 hours',
+            status: ChangeItemStatus.rejected,
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNotNull, reason: 'different args should not be blocked');
+    });
+
+    test('skips confirmed items during dedup (already applied)', () async {
+      // The agent proposes the same mutation that was already confirmed.
+      // Confirmed items have been applied — re-proposing is a no-op but
+      // should not be blocked by dedup (the redundancy filter catches this
+      // at the checklist-item level instead).
+      builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'Fix bug'},
+        humanSummary: 'Set title',
+      );
+
+      final existingSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Set title',
+            status: ChangeItemStatus.confirmed,
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [existingSet],
+      );
+
+      expect(result, isNotNull, reason: 'confirmed items are not in dedup set');
+    });
+
+    test('creates new entity when no existing pending set', () async {
+      builder.addItem(
+        toolName: 'set_task_title',
+        args: {'title': 'New task'},
+        humanSummary: 'Set title',
+      );
+
+      final result = await builder.build(mockSyncService);
+
+      expect(result, isNotNull);
+      expect(result!.items, hasLength(1));
+      expect(result.agentId, 'agent-001');
+      expect(result.taskId, 'task-001');
+      verify(() => mockSyncService.upsertEntity(any())).called(1);
+    });
+
+    test('consolidates multiple existing sets into one and resolves surplus',
+        () async {
+      builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 45},
+        humanSummary: 'Set estimate to 45 min',
+      );
+
+      // Two racing sets with some overlapping items.
+      final older = makeTestChangeSet(
+        id: 'cs-older',
+        createdAt: DateTime(2024, 3, 15, 10),
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Set title',
+          ),
+        ],
+      );
+      final newer = makeTestChangeSet(
+        id: 'cs-newer',
+        createdAt: DateTime(2024, 3, 15, 11),
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Fix bug'},
+            humanSummary: 'Set title',
+          ),
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'IN_PROGRESS'},
+            humanSummary: 'Set status',
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [older, newer],
+      );
+
+      expect(result, isNotNull);
+      // Survivor is the newer set. It keeps its own items + new items.
+      // The older set's title item is a duplicate (already in newer) so
+      // it's not added again.
+      expect(result!.id, 'cs-newer');
+      expect(result.items, hasLength(3));
+      expect(result.items[0].toolName, 'set_task_title');
+      expect(result.items[1].toolName, 'set_task_status');
+      expect(result.items[2].toolName, 'update_task_estimate');
+
+      // Verify: survivor updated + older marked as resolved = 2 upserts.
+      final captured =
+          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      expect(captured, hasLength(2));
+
+      // First upsert: the consolidated survivor.
+      final survivor = captured[0] as ChangeSetEntity;
+      expect(survivor.id, 'cs-newer');
+      expect(survivor.items, hasLength(3));
+
+      // Second upsert: the surplus set marked as resolved.
+      final resolved = captured[1] as ChangeSetEntity;
+      expect(resolved.id, 'cs-older');
+      expect(resolved.status, ChangeSetStatus.resolved);
+      expect(resolved.resolvedAt, isNotNull);
     });
   });
 

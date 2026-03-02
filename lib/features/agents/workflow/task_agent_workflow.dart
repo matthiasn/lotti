@@ -392,13 +392,6 @@ class TaskAgentWorkflow {
         agentId,
         taskId: taskId,
       );
-      final existingPendingItems = pendingSets
-          .expand(
-            (cs) => cs.items.where(
-              (i) => i.status == ChangeItemStatus.pending,
-            ),
-          )
-          .toList();
 
       await syncService.runInTransaction(() async {
         // 8. Persist the final assistant response as a thought message.
@@ -491,9 +484,11 @@ class TaskAgentWorkflow {
         }
 
         // 10b. Persist deferred change set (if any items were accumulated).
+        // Pass the full pending sets so the builder can merge into an
+        // existing one rather than creating a duplicate entity.
         await changeSetBuilder.build(
           syncService,
-          existingPendingItems: existingPendingItems,
+          existingPendingSets: pendingSets,
         );
 
         // 11. Persist state.
@@ -924,9 +919,15 @@ and never shown to the user. They persist as your memory across wakes.
         ChangeDecisionVerdict.deferred => '\u23f8',
       };
       final verdictLabel = d.verdict.name;
-      final reason =
-          d.rejectionReason != null ? ': "${d.rejectionReason}"' : '';
-      buffer.writeln('- $icon ${d.toolName} — $verdictLabel$reason');
+      final trimmedSummary = d.humanSummary?.trim();
+      final summary = (trimmedSummary != null && trimmedSummary.isNotEmpty)
+          ? ' "$trimmedSummary"'
+          : ' ${d.toolName}';
+      final trimmedReason = d.rejectionReason?.trim();
+      final reason = (trimmedReason != null && trimmedReason.isNotEmpty)
+          ? ' (reason: "$trimmedReason")'
+          : '';
+      buffer.writeln('- $icon$summary — $verdictLabel$reason');
     }
 
     buffer.writeln();
